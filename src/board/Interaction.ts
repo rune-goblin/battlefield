@@ -54,6 +54,8 @@ export interface InteractionOptions {
   onClear(): void;
   /** Pan or zoom happened; zoom-invariant text needs rescaling. */
   onViewport(): void;
+  /** A board-internal token drag: `point` (board-local) while live, `null` on drop/cancel. */
+  onDrag(id: string, point: Point | null): void;
 }
 
 /**
@@ -201,6 +203,7 @@ export class Interaction {
     } else if (this.gesture.kind === 'press' && this.gesture.token && moved > CLICK_SLOP) {
       this.gesture = { kind: 'drag', token: this.gesture.token };
     }
+    if (this.gesture.kind === 'drag') this.o.onDrag(this.gesture.token, this.o.toLocal(screen));
     this.updateHover(screen);
   };
 
@@ -226,6 +229,7 @@ export class Interaction {
       const geometry = this.o.geometry();
       const cell = geometry?.grid.fromPoint(this.o.toLocal(screen), geometry.size);
       if (geometry && cell) this.o.emit({ type: 'drop', id: gesture.token, cell: geometry.grid.key(cell) });
+      this.o.onDrag(gesture.token, null);
       return;
     }
 
@@ -375,8 +379,10 @@ export class Interaction {
   }
 
   private cancel(): void {
+    const gesture = this.gesture;
     this.gesture = { kind: 'none' };
     this.o.onPreview([], [], null);
+    if (gesture.kind === 'drag') this.o.onDrag(gesture.token, null);
     this.applyCursor();
   }
 }

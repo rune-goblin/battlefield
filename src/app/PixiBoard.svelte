@@ -1,14 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { createBoardView, type BoardEventOf, type BoardMode, type BoardView, type Brush } from '../board/index.js';
+  import { createBoardView, type BoardEventOf, type BoardMode, type BoardView, type Brush, type HighlightStyle, type TokenModel } from '../board/index.js';
   import type { Board } from '../engine/index.js';
 
   interface Props {
     board: Board | null;
-    // proto: TokenModel lands with TokenLayer in Wave 4; forwarded untyped until then.
-    tokens?: unknown[];
+    tokens?: TokenModel[];
     mode?: BoardMode;
     brush?: Brush | null;
+    highlight?: string[];
+    highlightStyle?: HighlightStyle;
+    selected?: string | null;
     onhover?: (event: BoardEventOf<'hover'>) => void;
     oncell?: (event: BoardEventOf<'cell'>) => void;
     onedge?: (event: BoardEventOf<'edge'>) => void;
@@ -16,10 +18,12 @@
     onpaint?: (event: BoardEventOf<'paint'>) => void;
     ondrop?: (event: BoardEventOf<'drop'>) => void;
     onbrush?: (brush: Brush | null) => void;
+    /** A native drag (e.g. a tray item) released over the canvas; `cell` is null outside the grid. */
+    ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null,
-    onhover, oncell, onedge, ontoken, onpaint, ondrop, onbrush,
+    board, tokens = [], mode = 'view', brush = null, highlight = [], highlightStyle = 'deploy', selected = null,
+    onhover, oncell, onedge, ontoken, onpaint, ondrop, onbrush, ontraydrop,
   }: Props = $props();
 
   let container: HTMLDivElement;
@@ -46,11 +50,20 @@
   $effect(() => { view?.setTokens(tokens); });
   $effect(() => { view?.setMode(mode); });
   $effect(() => { view?.setBrush(brush); });
+  $effect(() => { view?.setHighlight(highlight, highlightStyle); });
+  $effect(() => { view?.setSelected(selected); });
 </script>
 
 <div class="pixiboard" bind:this={container}>
-  <!-- Interaction listens on this element, so it has to take focus for the brush keys. -->
-  <canvas bind:this={canvas} tabindex="0" aria-label="Battle board"></canvas>
+  <!-- Interaction listens on this element, so it has to take focus for the brush keys; the
+       same element is the tray's drop target, since it already has an interactive role. -->
+  <canvas
+    bind:this={canvas}
+    tabindex="0"
+    aria-label="Battle board"
+    ondragover={ontraydrop && ((e) => e.preventDefault())}
+    ondrop={ontraydrop && ((e) => { e.preventDefault(); ontraydrop(view?.cellAt(e.clientX, e.clientY) ?? null, e.dataTransfer); })}
+  ></canvas>
 </div>
 
 <style>

@@ -17,6 +17,16 @@ export interface BoardTheme {
     selected: number;
     highlight: Record<HighlightStyle, number>;
   };
+  token: {
+    routed: number;
+    ringActive: number;
+    ringSelected: number;
+    ringHighlight: number;
+    pipFilled: number;
+    pipEmpty: number;
+    badgeFill: number;
+    badgeText: number;
+  };
 }
 
 // proto: seeded from pf2e-reignmaker's TERRAIN_OVERLAY_COLORS (src/styles/colors.ts) —
@@ -48,6 +58,16 @@ const LIGHT: BoardTheme = {
     selected: 0xb4611f,
     highlight: { deploy: 0xc9a227, move: 0x3f7d4f, attack: 0xb23b3b },
   },
+  token: {
+    routed: 0xb9ab93,
+    ringActive: 0xb4611f,
+    ringSelected: 0x1f1a17,
+    ringHighlight: 0x3f7d4f,
+    pipFilled: 0x1f1a17,
+    pipEmpty: 0xf8f4ec,
+    badgeFill: 0xf8f4ec,
+    badgeText: 0x1f1a17,
+  },
 };
 
 const DARK: BoardTheme = {
@@ -71,6 +91,16 @@ const DARK: BoardTheme = {
     hover: 0xe8e1d5,
     selected: 0xd98b6e,
     highlight: { deploy: 0xe8c34a, move: 0x5fbf7f, attack: 0xe0685a },
+  },
+  token: {
+    routed: 0x8c8378,
+    ringActive: 0xd98b6e,
+    ringSelected: 0xe8e1d5,
+    ringHighlight: 0x5fbf7f,
+    pipFilled: 0xe8e1d5,
+    pipEmpty: 0x2a2520,
+    badgeFill: 0x1d1a17,
+    badgeText: 0xe8e1d5,
   },
 };
 

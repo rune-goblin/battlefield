@@ -276,3 +276,122 @@ Open questions raised here:
 - Touch: `pointer*` listeners mean a finger drags-paints, but there is no pinch-zoom and
   `touch-action: none` on the canvas kills page scrolling over the board. Mobile is a
   non-goal, but that is the trade as it stands.
+
+## Wave 4 notes — tokens (2026-08-24)
+
+Ran the token half of Wave 4 (`Token.ts`, `TokenLayer.ts`, `setTokens` wired for real, the
+Place stage's tray) against the already-committed art half (`99a7b54`).
+
+Judgment calls taken inside the wave:
+
+- `TokenModel` is a discriminated union on `kind`: `UnitTokenModel` (side, name, role, level,
+  cell, wounds, shaken, `engine: string | null` for the crewed-engine chip, `ring`) and
+  `EngineTokenModel` (side, name, cell, `ring`) for an abandoned/captured engine standing
+  alone, per the plan's "Abandoned engines are their own tokens". `broken`/`routed` are not
+  fields — `Token.draw` derives them itself from `wounds`/`shaken` against `MAX_WOUNDS` and
+  `ROUTED_AT` (imported from `engine/types.ts`), the same thresholds `battle.ts`'s
+  `isBroken`/`isRouted` use, so the two can't drift by drawing on different constants even
+  though `Token.ts` doesn't call those functions directly (they take a full `Unit`, which the
+  Place stage doesn't have yet — pre-battle units carry no wounds/shaken at all).
+- `ring: 'active' | 'selected' | 'highlighted' | null` is one field, not three booleans — the
+  plan's states are visually exclusive rings (a pulsing outline vs. a solid one vs. a thin
+  one), so nothing is lost by making a token wear at most one at a time. `broken` (desaturate)
+  and `routed` (grey base + arrow) stack independently on top since they're derived, not
+  chosen.
+- `Token`'s own draw method is named `draw`, not `render` — `PIXI.DisplayObject` already owns
+  `render(renderer)` as part of its own draw call; a same-named override compiles (structural
+  typing) but silently breaks PIXI's rendering, and `svelte-check` catches the signature
+  mismatch even before that. Named it `draw(model, grid, size, theme)` instead, matching
+  `TerrainLayer`/`EdgeLayer`'s own `draw(...)` naming.
+- Sprite cache diff follows `FogOfWarRenderer` but is an instance field (`TokenLayer.cache`),
+  not the module-scoped `Map` Reignmaker uses — Reignmaker has exactly one Foundry canvas, this
+  app can (and, in earlier waves' screenshots, does) mount more than one `BoardView` at once,
+  and a module-level cache would let two boards' tokens collide on id.
+- Art anchor: pf2e-trooper's `*_strategy.webp` renders put the miniature's own base ellipse
+  about four-fifths of the way down a square image, not centred — confirmed by eye against six
+  samples (three troops, one engine, both Reignmaker fallbacks) before picking one tuned
+  constant (`ART_ANCHOR_Y = 0.8`) for anchoring every sprite, since there's no per-image crop
+  data to anchor exactly. The coloured base disc (`TOKEN_DISC_RATIO = 0.82`, matching the
+  plan's number) is sized independently of the art, so it shows as a coloured rim around
+  whatever the art's own base looks like rather than trying to align disc-to-base pixel-for-
+  pixel. Confirmed by screenshot (`wave4-place.png`) rather than measurement.
+- `PIXI.Assets.load` is called with a plain `import.meta.env.BASE_URL`-prefixed string every
+  `Token.draw`, guarded by a path-equality check plus a per-token "generation" counter (bumped
+  on every new load, checked in the `.then`) so a token destroyed or given a new path mid-load
+  can't have a stale texture land on it later — `PIXI.Assets`' own cache means a second token
+  requesting the same path doesn't refetch, only the generation guard is Token's own.
+- `Interaction.ts` gained one new callback, `onDrag(id, point | null)`, fired on drag
+  start/move/end — not a new `BoardEvent` (the plan fixes that union; Wave 3's notes call this
+  out explicitly). It's wired straight to `TokenLayer.setDrag` inside `createBoardView`, so
+  Svelte never sees it; the existing `drop` event still carries the result to the stage.
+  Without this, "move follows the pointer" had nothing to drive it — Wave 3 built the hit-
+  testing and the final `drop` event but explicitly left "the lift visuals ... are Wave 4's".
+- **Bug caught by the interactive Playwright check below, fixed before committing**: the first
+  cut of `Token.endDrag()` only reset scale/alpha/zIndex and relied on the caller's next
+  `draw()` (via the reactive `setTokens` the `drop` event triggers) to put the token back at
+  the right cell. That's true for an *accepted* drop — the model's `cell` changes, Svelte's
+  `$state` mutation fires the effect, `draw()` runs. It's false for a *rejected* one: the
+  stage's drop handler returns early without mutating anything, so nothing reactive fires, and
+  the token was left stranded exactly where the pointer let go, forever (or until some
+  unrelated redraw). Fixed by having `endDrag(grid, size)` immediately re-place the token at
+  its own last-drawn `model.cell` — correct at once for a rejection, and for an accepted drop
+  it lands there for one flush and then jumps again when `draw()` reruns with the new cell,
+  which reads as a single snap in practice. No separate tween either way, matching "a
+  drag-drop snap is in scope, move tweens are Wave 5's".
+- Place stage: kept the existing sidebar list (not a separate tray section) and just made its
+  *unplaced* rows `draggable`, since that list already sits beside the board and already is a
+  DOM list — the plan only asks for "a DOM list is fine", not a new UI area. Placed rows are
+  represented purely as board tokens; dragging one off the board is the canvas-internal
+  `Interaction` drag, not a second HTML5-drag code path.
+  - `PixiBoard.svelte` gained `highlight`/`highlightStyle`/`selected` passthrough props (it
+    had none before — Wave 3's paint/board stages never needed `setHighlight`/`setSelected`)
+    and one new prop, `ontraydrop`, which converts a native `DragEvent`'s client point to a
+    cell key via a new `BoardView.cellAt(clientX, clientY)` method and hands back
+    `(cell | null, DataTransfer | null)`. `cellAt` reuses the exact same `toLocal` +
+    `grid.fromPoint` path `Interaction` uses internally, so tray-drop and canvas-drag hit-test
+    identically.
+  - Two independent validity checks, not one: `highlight` (deploy cells for the sidebar's
+    `selected` unit) gates tray drops, since `dragstart` is a real Svelte hook and sets
+    `selected` to the dragged row immediately. A board-internal token drag has no such hook —
+    `Interaction` never tells Svelte a drag started, only that it ended — so `onTokenDrop`
+    instead computes deploy cells for *that specific unit's own* side/ambush on the spot
+    (`deployCells(u.side, ambush(u), i)`), independent of whatever `selected` happens to be.
+    Using the sidebar's possibly-stale `highlight` for that check would validate a defender's
+    drag against the attacker's ranks whenever the toggle/selection didn't happen to match.
+    One consequence, left as-is: the gold deploy-wash shown *while* free-dragging an existing
+    token (not the sidebar-selected one) can be stale/wrong-side — only the actual accept/
+    reject decision is guaranteed correct.
+  - `deployCells(side, ambush, excludeIndex)` excludes one unit's own square from "taken"
+    (the original inline version excluded nothing, so a selected-and-already-placed unit's own
+    square never counted as available). That's needed for a move to validate a same-square or
+    swap-adjacent drop at all, and as a side effect also slightly changes old click-to-place
+    behaviour: reselecting an already-placed unit now shows its own square as part of the
+    highlighted set. Not expected to matter in play; flagging since it's a small, deliberate
+    deviation from the pre-Wave-4 semantics.
+- Engine chip only ever shows `u.engines[0]` — `SetupUnit.engines` is an array (the UI lets
+  more than one attach) but the plan's spec describes one chip singular. A second attached
+  engine has no visual today; revisit if multi-engine units turn out to matter.
+- Theme: added a `token` sub-object to `BoardTheme` (`routed`, `ringActive`, `ringSelected`,
+  `ringHighlight`, `pipFilled`, `pipEmpty`, `badgeFill`, `badgeText`) rather than overloading
+  the existing `overlay`/`terrain` groups, so Wave 5's battle-mode rings have named colours to
+  reach for instead of repurposing the paint-mode selection colour.
+- Screenshot gate: `docs/plans/pixi-board-shots/wave4-place.png`, captured the same
+  Playwright + cached-Chromium way as Waves 0/2/3, seeding `localStorage['battlefield.v2']`
+  directly with a hand-built flat 8×8 board and eight `SetupUnit`s (four a side, two carrying
+  an engine, one — "Peasant Levy" — a `ROSTER` card with no pf2e-trooper art) rather than
+  driving the board/paint stages through the UI first; the harness lived in the session
+  scratchpad and is not part of this commit.
+- Verified interactively (also scratchpad-only, not committed): a real native-drag tray drop
+  places a unit on the exact cell under the pointer; a canvas-internal drag then moves that
+  same token to a different cell (state updates, token follows visually, ends up on the right
+  square); a third drag to a cell outside the deploy wash is rejected and the token stays at
+  its last valid square — this last case is what caught the `endDrag` bug above.
+
+Open questions raised here:
+
+- The stale-highlight gap noted above (deploy wash can lag the unit actually being dragged on
+  the canvas) has no `BoardEvent` to fix without widening the plan's fixed union; a
+  `dragstart`-only hook would need one. Left as a known trade, not a rule question.
+- Pulsing `active` rings and the `routed` grey-base-plus-arrow treatment are implemented but
+  unexercised by anything in this wave (Place has no wounds/shaken/active unit) — first real
+  look at them is whenever Wave 5 wires a live `Unit[]` through.

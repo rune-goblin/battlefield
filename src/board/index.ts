@@ -7,28 +7,31 @@ import { EdgeLayer } from './layers/EdgeLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
-import type { TokenBounds, TokenBoundsProvider } from './hit.js';
+import { TokenLayer } from './layers/TokenLayer.js';
+import type { TokenModel } from './Token.js';
 import type { BoardTheme, HighlightStyle } from './theme.js';
 
 export type { HighlightStyle } from './theme.js';
 export type { Brush } from './brush.js';
 export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
 export type { TokenBounds } from './hit.js';
+export type { EngineTokenModel, TokenModel, TokenRing, UnitTokenModel } from './Token.js';
 
 // The grid fills this fraction of the container; the rest is margin for LabelLayer's
 // coordinate text, which sits just outside the grid bounds.
 const FIT_MARGIN = 0.86;
 
-// proto: setTokens stays a stub until TokenLayer lands in Wave 4. Token hit-testing already
-// works — Interaction reads a token-bounds provider, which Wave 4 points at the sprite cache.
 export interface BoardView {
   setBoard(board: Board | null): void;
-  setTokens(tokens: unknown[]): void;
+  setTokens(tokens: TokenModel[]): void;
   setHighlight(cells: string[], style: HighlightStyle): void;
   setSelected(id: string | null): void;
   setMode(mode: BoardMode): void;
   setBrush(brush: Brush | null): void;
   on<T extends BoardEventType>(event: T, handler: (event: BoardEventOf<T>) => void): () => void;
+  /** Screen point (e.g. from a native `DragEvent`) to a cell key, for drag-drop from outside
+   * the canvas — a DOM tray item dropped onto the board. */
+  cellAt(clientX: number, clientY: number): string | null;
   resetView(): void;
   resize(): void;
   destroy(): void;
@@ -38,8 +41,6 @@ export interface CreateBoardViewOptions {
   theme?: BoardTheme;
   /** Keyboard brush changes, so a palette can follow the canvas. Escape sends null. */
   onBrush?: (brush: Brush | null) => void;
-  /** Wave 4's TokenLayer supplies token discs in board-local coordinates. */
-  tokenBounds?: TokenBoundsProvider;
 }
 
 export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElement, opts: CreateBoardViewOptions = {}): BoardView {
@@ -51,6 +52,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
   const terrainLayer = new TerrainLayer(layers.createLayer('terrain', layers.getDefaultZIndex('terrain')));
   const edgeLayer = new EdgeLayer(layers.createLayer('edges', layers.getDefaultZIndex('edges')));
   const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), boardApp.theme);
+  const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), boardApp.app.ticker, boardApp.theme);
   const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), boardApp.viewport);
 
   let currentBoard: Board | null = null;
@@ -73,6 +75,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
       edgeLayer.clear();
       labelLayer.clear();
       overlayLayer.setGeometry(null, 0, boardApp.theme);
+      tokenLayer.setGeometry(null, 0, boardApp.theme);
       return;
     }
     const { grid, size } = geometry;
@@ -85,6 +88,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     labelLayer.draw(grid, size, boardApp.theme);
     labelLayer.rescale();
     overlayLayer.setGeometry(grid, size, boardApp.theme);
+    tokenLayer.setGeometry(grid, size, boardApp.theme);
   }
 
   /** Shift-click fill: the connected run of cells sharing the clicked cell's terrain. */
@@ -116,7 +120,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     viewport: boardApp.viewport,
     toLocal: (screen: Point) => boardContainer.toLocal(screen),
     geometry: () => geometry,
-    tokens: opts.tokenBounds ?? ((): TokenBounds[] => []),
+    tokens: () => tokenLayer.bounds(),
     region,
     emit,
     onHover: (cell, edge) => overlayLayer.setHover(cell, edge),
@@ -124,6 +128,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     onBrush: (brush) => opts.onBrush?.(brush),
     onClear: () => overlayLayer.setSelected(null),
     onViewport: () => labelLayer.rescale(),
+    onDrag: (id, point) => tokenLayer.setDrag(id, point),
   });
 
   // Pixi's own resizeTo only reacts to window resize (see ResizePlugin); a container that
@@ -139,7 +144,9 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
       currentBoard = board;
       redraw();
     },
-    setTokens(_tokens) {},
+    setTokens(tokens) {
+      tokenLayer.setTokens(tokens);
+    },
     setHighlight(cells, style) {
       overlayLayer.setHighlight(cells, style);
     },
@@ -158,6 +165,13 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
       set.add(handler as (event: never) => void);
       return () => set.delete(handler as (event: never) => void);
     },
+    cellAt(clientX, clientY) {
+      if (!geometry) return null;
+      const rect = canvas.getBoundingClientRect();
+      const local = boardContainer.toLocal({ x: clientX - rect.left, y: clientY - rect.top });
+      const cell = geometry.grid.fromPoint(local, geometry.size);
+      return cell ? geometry.grid.key(cell) : null;
+    },
     resetView() {
       interaction.resetView();
     },
@@ -169,6 +183,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
       resizeObserver.disconnect();
       interaction.destroy();
       terrainLayer.destroy();
+      tokenLayer.destroy();
       boardContainer.destroy({ children: true });
       boardApp.destroy();
     },

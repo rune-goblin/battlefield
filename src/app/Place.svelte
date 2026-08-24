@@ -1,6 +1,7 @@
 <script lang="ts">
   import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, notation, OFFICIAL, paceReason, seededRandom, REACHES, ROLES, ROLE_BLURBS, ROSTER, SIZE, TACTICS, type Reach, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
-  import Board from './Board.svelte';
+  import type { BoardEventOf, TokenModel } from '../board/index.js';
+  import PixiBoard from './PixiBoard.svelte';
   import { back, game, resetSetup, save, startBattle, type SetupUnit } from './game.svelte.js';
 
   let side: Side = $state('attacker');
@@ -8,6 +9,10 @@
   const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
   let custom = $state<{ name: string; level: number; role: Role; salvo: Reach | null; pace: boolean; fear: boolean; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', salvo: null, pace: false, fear: false, tactics: [] });
   let selected = $state<number | null>(null);
+  // Set on a tray item's dragstart, read back from DataTransfer on drop — dragstart is the
+  // only point a native drag gives Svelte a hook, so it also drives the live deploy-wash
+  // highlight during that drag (see the `highlight` derivation below).
+  let dragIndex = $state<number | null>(null);
 
   const units = $derived(game.setup.units);
   const board = $derived(game.setup.board!);
@@ -16,10 +21,14 @@
   const ambush = (u: SetupUnit) => (u.card.tactics ?? []).includes('ambush');
   const deploySide = $derived(selected !== null && units[selected] ? units[selected].side : side);
   const deployAmbush = $derived(selected !== null && units[selected] ? ambush(units[selected]) : false);
-  const highlight = $derived.by(() => {
-    const taken = new Set(units.map((u) => u.square));
+
+  // The open deploy-rank cells for one unit's own side, excluding every OTHER unit's square
+  // — excluding its own (`excludeIndex`) lets a placed, selected unit's current square count
+  // as an available destination, which a token-move drop needs as much as a fresh placement.
+  function deployCells(forSide: Side, forAmbush: boolean, excludeIndex: number | null): Set<string> {
+    const taken = new Set(units.filter((_, i) => i !== excludeIndex).map((u) => u.square).filter((s): s is string => s !== null));
     const out = new Set<string>();
-    for (const rank of deployRanks(deploySide, deployAmbush)) {
+    for (const rank of deployRanks(forSide, forAmbush)) {
       for (let file = 0; file < SIZE; file++) {
         const sq = { file, rank };
         const n = notation(sq);
@@ -27,9 +36,28 @@
       }
     }
     return out;
-  });
-  const boardUnits = $derived(units.flatMap((u, i) => (u.square ? [{ id: String(i), name: u.card.name, side: u.side, square: u.square, active: selected === i }] : [])));
-  const selectedSquare = $derived(selected !== null ? units[selected]?.square ?? null : null);
+  }
+  const highlight = $derived(deployCells(deploySide, deployAmbush, selected));
+  const highlightCells = $derived([...highlight]);
+
+  const tokens = $derived.by<TokenModel[]>(() =>
+    units.flatMap((u, i) => {
+      if (!u.square) return [];
+      return [{
+        kind: 'unit',
+        id: String(i),
+        side: u.side,
+        name: u.card.name,
+        role: u.card.role,
+        level: u.card.level,
+        cell: u.square,
+        wounds: 0,
+        shaken: 0,
+        engine: u.engines[0] ?? null,
+        ring: selected === i ? 'selected' : null,
+      }];
+    }),
+  );
 
   const wallsTier = $derived(Math.max(-1, ...Object.values(board.walls).map((w) => w.tier)) + 1);
 
@@ -52,7 +80,39 @@
     if (selected === -1) selected = null;
     save();
   }
-  function pickUnit(id: string) { selected = Number(id); }
+  function onCell(e: BoardEventOf<'cell'>) { placeOn(e.cell); }
+  function onToken(e: BoardEventOf<'token'>) { selected = Number(e.id); }
+
+  // A board-internal drag of an already-placed token. Validated against that token's own
+  // side/ambush ranks (not `highlight`, which follows the sidebar's `selected` unit and may
+  // be stale mid-drag — see `dragIndex`'s note above): an invalid or occupied drop is a no-op,
+  // so the token stays put and TokenLayer's next render snaps it back on its own.
+  function onTokenDrop(e: BoardEventOf<'drop'>) {
+    const i = Number(e.id);
+    const u = units[i];
+    if (!u || !deployCells(u.side, ambush(u), i).has(e.cell)) return;
+    u.square = e.cell;
+    save();
+  }
+
+  function onTrayDragStart(i: number, e: DragEvent) {
+    e.dataTransfer?.setData('text/plain', String(i));
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    dragIndex = i;
+    selected = i;
+  }
+  function onTrayDragEnd() { dragIndex = null; }
+
+  // A tray item dropped onto the canvas. `cell` is null outside the grid entirely; outside
+  // the deploy wash (or over an occupied square) the unit simply stays in the tray.
+  function onTrayDrop(cell: string | null, data: DataTransfer | null) {
+    const i = data?.getData('text/plain') ? Number(data.getData('text/plain')) : dragIndex;
+    dragIndex = null;
+    if (cell === null || i === null || !units[i] || !highlight.has(cell)) return;
+    units[i].square = cell;
+    save();
+  }
+
   const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', perception: 'Per', reach: 'Reach' };
   let engineName = $state(ENGINES.find((e) => e.name === 'Catapult')?.name ?? ENGINES[0].name);
   let engineTarget = $state(0);
@@ -157,21 +217,31 @@
 
   <section>
     <h2>Deployment</h2>
-    <p class="muted">Attackers deploy on ranks 1–3, defenders on 6–8. Ambush units may deploy one rank further in. Select a unit, then click a highlighted square.</p>
-    <Board {board} units={boardUnits} {highlight} selected={selectedSquare} onSquare={placeOn} onUnit={pickUnit} />
+    <p class="muted">Attackers deploy on ranks 1–3, defenders on 6–8. Ambush units may deploy one rank further in. Drag an unplaced unit onto a highlighted square, or select one below and click a square. Drag a placed token to move it.</p>
+    <PixiBoard {board} {tokens} mode="place" highlight={highlightCells} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop} />
 
     {#each ['attacker', 'defender'] as const as s (s)}
       <h3 class={s === 'attacker' ? 'side-att' : 'side-def'}>{s === 'attacker' ? 'Attacker' : 'Defender'}</h3>
       <div class="unitlist">
         {#each bySide(s) as { u, i } (i)}
-          <div class="unitrow click" class:sel={selected === i} role="button" tabindex="0" onclick={() => (selected = i)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selected = i; } }}>
+          <div
+            class="unitrow click"
+            class:sel={selected === i}
+            role="button"
+            tabindex="0"
+            draggable={!u.square}
+            ondragstart={u.square ? undefined : (e) => onTrayDragStart(i, e)}
+            ondragend={u.square ? undefined : onTrayDragEnd}
+            onclick={() => (selected = i)}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selected = i; } }}
+          >
             <div><strong>{u.card.name}</strong> <span class="muted">L{u.card.level} {u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(', ') : ''}</span><br>
               {@render sheetLines(u.card)}
               {#each u.engines as e, ei (ei)}
                 <div class="muted">⚙ {e} <button onclick={(ev) => { ev.stopPropagation(); removeEngine(u, ei); }} title="Remove engine" style="padding:0 .35rem">×</button></div>
               {/each}
             </div>
-            <span class="muted stat">{u.square ? `on ${u.square}` : `unplaced · ${deployNote(u)}`}</span>
+            <span class="muted stat">{u.square ? `on ${u.square}` : `drag to place · ${deployNote(u)}`}</span>
             <button disabled={!u.square} onclick={(ev) => { ev.stopPropagation(); unplace(i); }} title="Unplace">↩</button>
             <button onclick={(ev) => { ev.stopPropagation(); remove(i); }} title="Remove">×</button>
           </div>
