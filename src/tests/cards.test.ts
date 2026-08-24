@@ -27,3 +27,17 @@ describe('deriveStats', () => {
     expect(s.will).toBe(13);
   });
 });
+
+describe('derivation', () => {
+  it('cites the troop sheet for imported troops', async () => {
+    const { derivation, paceReason } = await import('../engine/cards.js');
+    const { COMBATANTS } = await import('../engine/combatants.js');
+    const li = COMBATANTS.find((c) => c.name === 'Line Infantry')!;
+    expect(derivation(li).map((d) => d.from)).toEqual(['Battle DC 21 − 10', 'Salvo DC 21 − 10; 120 ft → long', 'AC 24', 'Will save +13', 'Perception +13']);
+    expect(paceReason(li)).toBe('no Pace: Speed 20 ft');
+  });
+  it('cites the level table for generic cards', async () => {
+    const { derivation } = await import('../engine/cards.js');
+    expect(derivation({ name: 'x', level: 6, role: 'infantry' })[0].from).toBe('level 6 moderate DC − 10');
+  });
+});

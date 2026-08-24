@@ -1,12 +1,14 @@
+import type { Board, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
 
 export type Side = 'attacker' | 'defender';
 export const SIDES: Side[] = ['attacker', 'defender'];
-export const STEPS = 7;
 export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 export const ROUTED_AT = 3;
+export const ACTIONS_PER_TURN = 3;
+export const MAP_STEP = 5;
 
 export interface EngineState {
   name: string;
@@ -15,7 +17,7 @@ export interface EngineState {
   reach: Reach | null;
   fired: boolean;
   status: 'crewed' | 'abandoned' | 'captured';
-  step: number;
+  square: Square;
 }
 
 export interface Unit {
@@ -29,14 +31,15 @@ export interface Unit {
   fear: boolean;
   tactics: Tactic[];
   engines: EngineState[];
-  step: number;
+  square: Square;
   wounds: number;
   shaken: number;
   status: 'active' | 'destroyed' | 'left';
   initiative: number;
   braced: boolean;
   exposed: boolean;
-  strikeUsed: boolean;
+  reactionUsed: boolean;
+  attacks: number;
   shieldBlockUsed: boolean;
   routImmune: boolean;
   feinted: boolean;
@@ -46,18 +49,23 @@ export interface Unit {
   woundedThisRound: boolean;
 }
 
-export interface Terrain { cover: boolean; rough: boolean; river: boolean; }
-
-export interface Walls { tier: number; boxes: number; remaining: number; }
-
 export type ActionKind =
-  | 'advance' | 'double-advance' | 'withdraw' | 'strike' | 'volley' | 'brace' | 'rally' | 'retreat' | 'pass'
+  | 'advance' | 'withdraw' | 'strike' | 'volley' | 'brace' | 'rally' | 'retreat' | 'pass'
   | 'cavalry-charge' | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire'
   | 'defend-allies' | 'battlefield-medicine' | 'fire-engine' | 'engine-bombard';
 
+export type TargetKind = 'unit' | 'square' | 'wall';
+
 export interface Action { kind: ActionKind; target?: string; engine?: number; }
 
-export interface ActionOption { kind: ActionKind; cost: number; targets: string[] | null; label: string; engine?: number; }
+export interface ActionOption {
+  kind: ActionKind;
+  cost: number;
+  targetKind: TargetKind | null;
+  targets: string[] | null;
+  label: string;
+  engine?: number;
+}
 
 export interface LogEntry {
   round: number;
@@ -74,8 +82,7 @@ export interface BattleState {
   round: number;
   activeIndex: number;
   actionsLeft: number;
-  terrain: Terrain;
-  walls: Walls | null;
+  board: Board;
   phase: Phase;
   winner: Side | 'draw' | null;
   endedBy: 'rout' | 'dusk' | null;

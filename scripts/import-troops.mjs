@@ -5,8 +5,9 @@ const dir = new URL('../data/troops/', import.meta.url);
 const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
 
 const dc = (html) => Number(/dc:(\d+)/.exec(html ?? '')?.[1] ?? NaN);
+const feet = (html) => Number(/within (\d+) feet/.exec(html ?? '')?.[1] ?? NaN);
 const reachOf = (html) => {
-  const ft = Number(/within (\d+) feet/.exec(html ?? '')?.[1] ?? NaN);
+  const ft = feet(html);
   return Number.isNaN(ft) ? null : ft <= 60 ? 'close' : ft <= 120 ? 'long' : 'extreme';
 };
 
@@ -33,6 +34,19 @@ const cards = files.map((f) => {
     pace: fly || s.attributes.speed.value >= 30,
     fear: false,
     tactics: [],
+    sheet: {
+      ac: s.attributes.ac.value,
+      hp: s.attributes.hp.max,
+      battleDc,
+      salvoDc: salvo ? salvoDc : null,
+      salvoFeet: salvo ? feet(salvo.system.description.value) : null,
+      fortitude: s.saves.fortitude.value,
+      reflex: s.saves.reflex.value,
+      will: s.saves.will.value,
+      perception: s.perception?.mod ?? s.attributes.perception?.value ?? 0,
+      speed: s.attributes.speed.value,
+      fly,
+    },
     overrides: {
       strike: battleDc - 10,
       volley: salvo ? salvoDc - 10 : null,
@@ -47,7 +61,7 @@ const cards = files.map((f) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, tactics: [], overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/combatants.ts', import.meta.url),

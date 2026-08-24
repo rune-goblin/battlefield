@@ -73,6 +73,19 @@ const cards = SELECTION.map(([path, role]) => {
     pace: fly || s.attributes.speed.value >= 30,
     fear: d.items.some((it) => /frightful presence/i.test(it.name)),
     source: d.system.details.publication?.title ?? '',
+    sheet: {
+      ac: s.attributes.ac.value,
+      hp: s.attributes.hp.max,
+      battleDc,
+      salvoDc,
+      salvoFeet: salvo ? ft : null,
+      fortitude: s.saves.fortitude.value,
+      reflex: s.saves.reflex.value,
+      will: s.saves.will.value,
+      perception: s.perception?.mod ?? 0,
+      speed: s.attributes.speed.value,
+      fly,
+    },
     overrides: {
       strike: (melee.length ? Math.min(...melee.flatMap((a) => dcs(a.text))) : battleDc) - 10,
       volley: salvoDc === null ? null : salvoDc - 10,
@@ -87,7 +100,7 @@ const cards = SELECTION.map(([path, role]) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, tactics: [], overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/official.ts', import.meta.url),

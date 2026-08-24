@@ -1,0 +1,189 @@
+<script lang="ts">
+  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, notation, OFFICIAL, paceReason, seededRandom, REACHES, ROLES, ROLE_BLURBS, ROSTER, SIZE, TACTICS, type Reach, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
+  import Board from './Board.svelte';
+  import { back, game, resetSetup, save, startBattle, type SetupUnit } from './game.svelte.js';
+
+  let side: Side = $state('attacker');
+  let rosterName = $state(COMBATANTS[0].name);
+  const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
+  let custom = $state<{ name: string; level: number; role: Role; salvo: Reach | null; pace: boolean; fear: boolean; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', salvo: null, pace: false, fear: false, tactics: [] });
+  let selected = $state<number | null>(null);
+
+  const units = $derived(game.setup.units);
+  const board = $derived(game.setup.board!);
+  const bySide = (s: Side) => units.map((u, i) => ({ u, i })).filter(({ u }) => u.side === s);
+  const ready = $derived(bySide('attacker').length > 0 && bySide('defender').length > 0 && units.every((u) => u.square !== null));
+  const ambush = (u: SetupUnit) => (u.card.tactics ?? []).includes('ambush');
+  const deploySide = $derived(selected !== null && units[selected] ? units[selected].side : side);
+  const deployAmbush = $derived(selected !== null && units[selected] ? ambush(units[selected]) : false);
+  const highlight = $derived.by(() => {
+    const taken = new Set(units.map((u) => u.square));
+    const out = new Set<string>();
+    for (const rank of deployRanks(deploySide, deployAmbush)) {
+      for (let file = 0; file < SIZE; file++) {
+        const sq = { file, rank };
+        const n = notation(sq);
+        if (at(board, sq).terrain !== 'water' && !taken.has(n)) out.add(n);
+      }
+    }
+    return out;
+  });
+  const boardUnits = $derived(units.flatMap((u, i) => (u.square ? [{ id: String(i), name: u.card.name, side: u.side, square: u.square, active: selected === i }] : [])));
+  const selectedSquare = $derived(selected !== null ? units[selected]?.square ?? null : null);
+
+  const wallsTier = $derived(Math.max(-1, ...Object.values(board.walls).map((w) => w.tier)) + 1);
+
+  function add(card: UnitCard) {
+    units.push({ card: structuredClone($state.snapshot(card)), side, square: null, engines: [] });
+    selected = units.length - 1;
+    save();
+  }
+  function remove(i: number) {
+    units.splice(i, 1);
+    if (selected === i) selected = null;
+    else if (selected !== null && selected > i) selected -= 1;
+    save();
+  }
+  function unplace(i: number) { units[i].square = null; save(); }
+  function placeOn(n: string) {
+    if (selected === null || !units[selected] || !highlight.has(n)) return;
+    units[selected].square = n;
+    selected = units.findIndex((u) => u.square === null && u.side === units[selected!].side);
+    if (selected === -1) selected = null;
+    save();
+  }
+  function pickUnit(id: string) { selected = Number(id); }
+  const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', perception: 'Per', reach: 'Reach' };
+  let engineName = $state(ENGINES.find((e) => e.name === 'Catapult')?.name ?? ENGINES[0].name);
+  let engineTarget = $state(0);
+  function addEngine() {
+    const u = units[engineTarget];
+    if (!u) return;
+    u.engines.push(engineName);
+    save();
+  }
+  function removeEngine(u: SetupUnit, i: number) { u.engines.splice(i, 1); save(); }
+  function generate() {
+    const other: Side = side === 'attacker' ? 'defender' : 'attacker';
+    const opponentCards = bySide(other).map(({ u }) => $state.snapshot(u.card) as UnitCard);
+    const force = generateForce(opponentCards, seededRandom(Math.floor(Math.random() * 1e9)), { attacking: side === 'attacker', wallsTier });
+    for (let i = units.length - 1; i >= 0; i--) if (units[i].side === side) units.splice(i, 1);
+    for (const { card, engine } of force) units.push({ card: structuredClone(card), side, square: null, engines: engine ? [engine.name] : [] });
+    selected = units.findIndex((u) => u.side === side);
+    if (selected === -1) selected = null;
+    save();
+  }
+  const deployNote = (u: SetupUnit) => {
+    const ranks = deployRanks(u.side, ambush(u)).map((r) => r + 1);
+    return `ranks ${Math.min(...ranks)}–${Math.max(...ranks)}`;
+  };
+</script>
+
+{#snippet sheetLines(card: UnitCard)}
+  {@const sh = card.sheet}
+  <div class="muted stat">
+    {#if sh}
+      Sheet · AC {sh.ac} · HP {sh.hp} · Battle DC {sh.battleDc} · Salvo {sh.salvoDc === null ? '—' : `DC ${sh.salvoDc} (${sh.salvoFeet} ft)`} · Fort +{sh.fortitude} · Ref +{sh.reflex} · Will +{sh.will} · Per +{sh.perception} · Speed {sh.speed} ft{sh.fly ? ', fly' : ''}
+    {:else}
+      Sheet · none (generic card, level table)
+    {/if}
+  </div>
+  <div class="muted stat derived">
+    Battle ·
+    {#each derivation(card) as d (d.stat)}
+      <span title={d.from}>{STAT_LABEL[d.stat]} {d.value}</span> ·
+    {/each}
+    {paceReason(card)}
+  </div>
+{/snippet}
+
+<div class="grid2">
+  <section>
+    <h2>Add units</h2>
+    <div class="card">
+      <div class="row">
+        <label>Side <select bind:value={side}><option value="attacker">Attacker</option><option value="defender">Defender</option></select></label>
+      </div>
+      <div class="row" style="margin-top:.5rem">
+        <button onclick={generate}>Generate {side} force</button>
+      </div>
+      <p class="muted">Replaces the {side}'s units with a force matched to the other side.</p>
+      <h3>From the roster</h3>
+      <div class="row">
+        <select bind:value={rosterName}>
+          <optgroup label="Reignmaker troops">
+            {#each COMBATANTS as c (c.name)}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          </optgroup>
+          <optgroup label="Official Pathfinder troops">
+            {#each OFFICIAL as c (c.name)}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          </optgroup>
+          <optgroup label="Generic roster">
+            {#each ROSTER as c (c.name)}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          </optgroup>
+        </select>
+        <button onclick={() => add(library.find((c) => c.name === rosterName)!)}>Add</button>
+      </div>
+      <h3>Your own</h3>
+      <div class="row">
+        <input bind:value={custom.name} placeholder="Name" style="width:11rem">
+        <label>Level <input type="number" min="1" max="20" bind:value={custom.level} style="width:4.5rem"></label>
+        <select bind:value={custom.role}>{#each ROLES as r (r)}<option value={r}>{r}</option>{/each}</select>
+      </div>
+      <p class="muted">{ROLE_BLURBS[custom.role]}</p>
+      <div class="row">
+        <label>Salvo <select bind:value={custom.salvo}><option value={null}>none</option>{#each REACHES as r (r)}<option value={r}>{r}</option>{/each}</select></label>
+        <label><input type="checkbox" bind:checked={custom.pace}> Pace</label>
+        <label><input type="checkbox" bind:checked={custom.fear}> Fear</label>
+      </div>
+      <div class="row">
+        {#each TACTICS as t (t)}
+          <label class="muted"><input type="checkbox" checked={custom.tactics.includes(t)} onchange={(e) => { custom.tactics = e.currentTarget.checked ? [...custom.tactics, t] : custom.tactics.filter((x) => x !== t); }}>{t}</label>
+        {/each}
+      </div>
+      {@render sheetLines(custom)}
+      <button onclick={() => add({ ...custom, tactics: [...custom.tactics] })}>Add {custom.name}</button>
+    </div>
+
+    <h2>Siege engines</h2>
+    <div class="card">
+      <div class="row">
+        <select bind:value={engineName}>{#each ENGINES as e (e.name)}<option value={e.name}>{e.name} · L{e.level} {e.kind}{e.reach ? ' ' + e.reach : ''} +{e.launch}</option>{/each}</select>
+        <label>Attach to <select bind:value={engineTarget}>{#each units as u, i (i)}<option value={i}>{u.card.name} ({u.side})</option>{/each}</select></label>
+        <button disabled={units.length === 0} onclick={addEngine}>Add engine</button>
+      </div>
+      <p class="muted">A siege engine rides with the unit it is attached to and fires on that unit's activation.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Deployment</h2>
+    <p class="muted">Attackers deploy on ranks 1–3, defenders on 6–8. Ambush units may deploy one rank further in. Select a unit, then click a highlighted square.</p>
+    <Board {board} units={boardUnits} {highlight} selected={selectedSquare} onSquare={placeOn} onUnit={pickUnit} />
+
+    {#each ['attacker', 'defender'] as const as s (s)}
+      <h3 class={s === 'attacker' ? 'side-att' : 'side-def'}>{s === 'attacker' ? 'Attacker' : 'Defender'}</h3>
+      <div class="unitlist">
+        {#each bySide(s) as { u, i } (i)}
+          <div class="unitrow click" class:sel={selected === i} role="button" tabindex="0" onclick={() => (selected = i)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selected = i; } }}>
+            <div><strong>{u.card.name}</strong> <span class="muted">L{u.card.level} {u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(', ') : ''}</span><br>
+              {@render sheetLines(u.card)}
+              {#each u.engines as e, ei (ei)}
+                <div class="muted">⚙ {e} <button onclick={(ev) => { ev.stopPropagation(); removeEngine(u, ei); }} title="Remove engine" style="padding:0 .35rem">×</button></div>
+              {/each}
+            </div>
+            <span class="muted stat">{u.square ? `on ${u.square}` : `unplaced · ${deployNote(u)}`}</span>
+            <button disabled={!u.square} onclick={(ev) => { ev.stopPropagation(); unplace(i); }} title="Unplace">↩</button>
+            <button onclick={(ev) => { ev.stopPropagation(); remove(i); }} title="Remove">×</button>
+          </div>
+        {:else}
+          <p class="muted">No units yet.</p>
+        {/each}
+      </div>
+    {/each}
+    <div class="row" style="margin-top:1rem">
+      <button onclick={back}>Back</button>
+      <button class="primary" disabled={!ready} onclick={startBattle}>Begin the battle</button>
+      <button onclick={resetSetup}>Reset to the example</button>
+    </div>
+  </section>
+</div>
