@@ -1,0 +1,25 @@
+{
+  "name": "battlefield",
+  "version": "0.1.0",
+  "description": "A fast abstract battle game for armies: seven steps, two actions, four wounds.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Mark Pearce",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit -p tsconfig.engine.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@types/node": "^22.12.0",
+    "svelte": "^5.46.4",
+    "svelte-check": "^4.1.4",
+    "typescript": "^5.9.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.5"
+  }
+}

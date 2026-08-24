@@ -1,0 +1,78 @@
+import type { Reach, Role, Tactic, UnitStats } from './cards.js';
+import type { CheckResult } from './check.js';
+
+export type Side = 'attacker' | 'defender';
+export const SIDES: Side[] = ['attacker', 'defender'];
+export const STEPS = 7;
+export const LAST_ROUND = 6;
+export const MAX_WOUNDS = 4;
+export const ROUTED_AT = 3;
+
+export interface Unit {
+  id: string;
+  name: string;
+  side: Side;
+  level: number;
+  role: Role;
+  stats: UnitStats;
+  pace: boolean;
+  fear: boolean;
+  engine: boolean;
+  tactics: Tactic[];
+  step: number;
+  wounds: number;
+  shaken: number;
+  status: 'active' | 'destroyed' | 'left';
+  initiative: number;
+  braced: boolean;
+  exposed: boolean;
+  strikeUsed: boolean;
+  shieldBlockUsed: boolean;
+  routImmune: boolean;
+  feinted: boolean;
+  defendedBy: string | null;
+  suppressed: boolean;
+  medicineReceived: boolean;
+  woundedThisRound: boolean;
+}
+
+export interface Terrain { cover: boolean; rough: boolean; river: boolean; }
+
+export interface Walls { tier: number; boxes: number; remaining: number; }
+
+export type ActionKind =
+  | 'advance' | 'double-advance' | 'withdraw' | 'strike' | 'volley' | 'brace' | 'rally' | 'retreat' | 'pass'
+  | 'bombard' | 'cavalry-charge' | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire'
+  | 'defend-allies' | 'battlefield-medicine';
+
+export interface Action { kind: ActionKind; target?: string; }
+
+export interface ActionOption { kind: ActionKind; cost: number; targets: string[] | null; label: string; }
+
+export interface LogEntry {
+  round: number;
+  unit?: string;
+  text: string;
+  check?: CheckResult;
+}
+
+export type Phase = 'battle' | 'ended';
+
+export interface BattleState {
+  units: Unit[];
+  order: string[];
+  round: number;
+  activeIndex: number;
+  actionsLeft: number;
+  terrain: Terrain;
+  walls: Walls | null;
+  phase: Phase;
+  winner: Side | 'draw' | null;
+  endedBy: 'rout' | 'dusk' | null;
+  startingCount: Record<Side, number>;
+  halfChecked: Record<Side, boolean>;
+  log: LogEntry[];
+}
+
+export type Range = 'engaged' | 'close' | 'long' | 'extreme';
+export const REACH_RANK: Record<Reach, number> = { close: 1, long: 2, extreme: 3 };

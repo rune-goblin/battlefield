@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field Battles</title>
+<style>
+  :root { --ink:#1f1a17; --paper:#f8f4ec; --rule:#b9ab93; --accent:#7a2e1f; --muted:#6b5f52; --band:#efe7d8; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:17px/1.55 Georgia,"Iowan Old Style","Palatino Linotype",serif; }
+  main { max-width:52rem; margin:0 auto; padding:3rem 1.5rem 5rem; }
+  h1 { font-size:2.6rem; line-height:1.1; margin:0 0 .25rem; letter-spacing:-.01em; }
+  .sub { color:var(--muted); font-style:italic; margin:0 0 2.5rem; }
+  h2 { font-size:1.6rem; margin:3rem 0 .75rem; padding-bottom:.25rem; border-bottom:2px solid var(--rule); }
+  h3 { font-size:1.15rem; margin:1.75rem 0 .5rem; color:var(--accent); }
+  p { margin:.6rem 0; }
+  table { border-collapse:collapse; width:100%; margin:.75rem 0 1.25rem; font-size:.95rem; }
+  th, td { text-align:left; vertical-align:top; padding:.4rem .6rem; border-bottom:1px solid var(--rule); }
+  th { background:var(--band); font-weight:600; }
+  td:first-child { white-space:nowrap; font-weight:600; }
+  .wrap { overflow-x:auto; }
+  .key { background:var(--band); border-left:4px solid var(--accent); padding:.75rem 1rem; margin:1rem 0; }
+  .track { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85rem; white-space:pre; background:var(--band); padding:.75rem 1rem; overflow-x:auto; border-radius:4px; }
+  .example p { margin:.8rem 0; }
+  .example b { color:var(--accent); }
+  dl { margin:.5rem 0; } dt { font-weight:600; margin-top:.6rem; } dd { margin:0 0 0 1.25rem; }
+  ol, ul { padding-left:1.4rem; } li { margin:.25rem 0; }
+  .toc { columns:2; column-gap:2rem; font-size:.95rem; } .toc a { color:var(--ink); text-decoration:none; } .toc a:hover { text-decoration:underline; }
+  .ref { font-size:.9rem; } .ref th { background:var(--accent); color:var(--paper); }
+  figure { margin:1.25rem 0; } figure svg { width:100%; height:auto; display:block; } figcaption { font-size:.9rem; color:var(--muted); font-style:italic; margin-top:.35rem; }
+  .att { fill:#3a5f8f; } .def { fill:#8f3a2e; } @media (prefers-color-scheme: dark){ .att{fill:#6f9bd1;} .def{fill:#d9705c;} }
+  .lbl { font:600 13px Georgia,serif; fill:var(--ink); } .sm { font:12px Georgia,serif; fill:var(--muted); } .step { fill:var(--band); stroke:var(--rule); }
+  @media (max-width:40rem){ .toc{columns:1;} body{font-size:16px;} }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Field Battles</h1>
+<p class="sub">Rules for resolving a battle between armies in a single sitting.</p>
+
+<div class="key">
+<p><strong>In one paragraph.</strong> Each army is a unit on a straight line of seven steps between the two sides. On its turn a unit takes two actions: advance, fall back, strike, volley, brace or rally. Every roll is an ordinary d20 check using numbers already on the army's troop sheet. Hits deal wounds, one or two at a time; four wounds destroy a unit. Taking wounds forces morale checks; failing them makes a unit shaken, and a unit that is shaken three times routs. The battle ends when one side has nothing left standing, or at dusk after six rounds.</p>
+</div>
+
+<nav class="toc">
+<a href="#need">1. What you need</a><br>
+<a href="#card">2. The unit</a><br>
+<a href="#line">3. The battle line</a><br>
+<a href="#setup">4. Setting up</a><br>
+<a href="#round">5. The round</a><br>
+<a href="#actions">6. Actions</a><br>
+<a href="#wounds">7. Wounds</a><br>
+<a href="#morale">8. Morale</a><br>
+<a href="#ground">9. Ground and walls</a><br>
+<a href="#siege">10. Siege engines</a><br>
+<a href="#tactics">11. Trained tactics</a><br>
+<a href="#end">12. Ending the battle</a><br>
+<a href="#odds">13. Fighting against the odds</a><br>
+<a href="#ref">Quick reference</a><br>
+<a href="#example">Example of play</a>
+</nav>
+
+<h2 id="need">1. What you need</h2>
+<p>Each army's troop sheet, a d20, and something to mark seven steps in a row: a strip of paper, seven cards, or the battle board in the kingdom app. Each player commands the armies they lead. The GM commands every army of an enemy faction. A player whose armies are not present watches.</p>
+<p>A battle happens when armies of hostile factions end up in the same hex. The side that moved in is the <strong>attacker</strong>; the side already there is the <strong>defender</strong>. The defender's hex sets the ground (section 9).</p>
+
+<h2 id="card">2. The unit</h2>
+<p>An army in battle is a <strong>unit</strong>. You never invent new numbers for it; every value comes from its troop sheet.</p>
+<div class="wrap"><table>
+<tr><th>Battle value</th><th>Where it comes from</th><th>Line Infantry, level 6</th></tr>
+<tr><td>Strike bonus</td><td>The DC of the troop's <em>Battle</em> attack, minus 10</td><td>DC 21 → +11</td></tr>
+<tr><td>Volley bonus</td><td>The DC of the troop's <em>Salvo</em> attack, minus 10. No Salvo, no Volley.</td><td>DC 21 → +11</td></tr>
+<tr><td>Volley reach</td><td>The Salvo's range: up to 60 ft reaches <em>close</em>; up to 120 ft reaches <em>long</em>; more reaches <em>extreme</em></td><td>120 ft → long</td></tr>
+<tr><td>Defence</td><td>Armour Class, including any equipment or fortification bonus already on the sheet</td><td>24</td></tr>
+<tr><td>Will</td><td>Will save modifier; used for morale</td><td>+13</td></tr>
+<tr><td>Perception</td><td>Used for initiative</td><td>+13</td></tr>
+<tr><td>Pace</td><td>A unit with Speed 30 ft or more, or a fly speed, has Pace</td><td>20 ft → no</td></tr>
+<tr><td>Level</td><td>Sets the morale DC its enemies must beat</td><td>6</td></tr>
+<tr><td>Wounds</td><td>0 to 4, from current hit points (section 7)</td><td>0</td></tr>
+<tr><td>Shaken</td><td>0 to 3, from the army's demoralized value</td><td>0</td></tr>
+</table></div>
+<p>Level DCs are the standard table: level 3 is DC 18, level 6 is 22, level 7 is 23, level 8 is 24.</p>
+
+<h2 id="line">3. The battle line</h2>
+<p>The battlefield is a line of seven steps numbered 0 to 6. Step 0 is the attacker's edge; step 6 is the defender's edge. Every unit stands on one step. Any number of units may share a step.</p>
+<div class="track">    0       1       2       3       4       5       6
+ [edge]   [ ]     [ ]     [ ]     [ ]     [ ]   [edge]
+attacker ────────────────────────────────────── defender</div>
+
+<figure><svg viewBox="0 0 720 200" role="img" aria-label="The seven-step battle line with range bands">
+<rect class="step" x="44.0" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="85.71428571428572" y="32" text-anchor="middle">0</text><rect class="step" x="135.42857142857144" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="177.14285714285717" y="32" text-anchor="middle">1</text><rect class="step" x="226.85714285714286" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="268.57142857142856" y="32" text-anchor="middle">2</text><rect class="step" x="318.2857142857143" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="360.0" y="32" text-anchor="middle">3</text><rect class="step" x="409.7142857142857" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="451.42857142857144" y="32" text-anchor="middle">4</text><rect class="step" x="501.14285714285717" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="542.8571428571429" y="32" text-anchor="middle">5</text><rect class="step" x="592.5714285714286" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="634.2857142857142" y="32" text-anchor="middle">6</text>
+<circle class="att" cx="177.14285714285717" cy="62" r="11"/><text class="lbl" x="177.14285714285717" y="92" text-anchor="middle">Cavalry</text><circle class="att" cx="85.71428571428572" cy="62" r="11"/><text class="lbl" x="85.71428571428572" y="92" text-anchor="middle">Infantry</text><rect class="def" x="531.8571428571429" y="51" width="22" height="22" rx="3"/><text class="lbl" x="542.8571428571429" y="92" text-anchor="middle">Kobolds</text><rect class="def" x="623.2857142857142" y="51" width="22" height="22" rx="3"/><text class="lbl" x="634.2857142857142" y="92" text-anchor="middle">Trolls</text>
+<text class="sm" x="40" y="128">attacker's edge</text><text class="sm" x="680" y="128" text-anchor="end">defender's edge</text>
+<line x1="131" y1="150" x2="497" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#a)"/>
+<text class="sm" x="314" y="168" text-anchor="middle">Cavalry to Kobolds: 4 steps apart = extreme</text>
+<line x1="497" y1="185" x2="588" y2="185" stroke="var(--accent)" stroke-width="2"/>
+<text class="sm" x="543" y="199" text-anchor="middle">1 step = close</text>
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
+</svg><figcaption>Circles are the attacker's units, squares the defender's. Range is simply how many steps apart two units stand.</figcaption></figure>
+<p>The distance between two units is the number of steps between them, and that distance is their <strong>range</strong>:</p>
+<table>
+<tr><th>Steps apart</th><th>Range</th><th>Strike</th><th>Volley</th></tr>
+<tr><td>0</td><td>Engaged</td><td>Yes</td><td>No</td></tr>
+<tr><td>1</td><td>Close</td><td>No</td><td>Any Salvo</td></tr>
+<tr><td>2</td><td>Long</td><td>No</td><td>Salvo with long or extreme reach</td></tr>
+<tr><td>3 or more</td><td>Extreme</td><td>No</td><td>Salvo with extreme reach, or a siege engine, at −2</td></tr>
+</table>
+
+<figure><svg viewBox="0 0 720 150" role="img" aria-label="Two attacker units engaged with one defender unit on the same step">
+<rect class="step" x="44.0" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="85.71428571428572" y="32" text-anchor="middle">0</text><rect class="step" x="135.42857142857144" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="177.14285714285717" y="32" text-anchor="middle">1</text><rect class="step" x="226.85714285714286" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="268.57142857142856" y="32" text-anchor="middle">2</text><rect class="step" x="318.2857142857143" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="360.0" y="32" text-anchor="middle">3</text><rect class="step" x="409.7142857142857" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="451.42857142857144" y="32" text-anchor="middle">4</text><rect class="step" x="501.14285714285717" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="542.8571428571429" y="32" text-anchor="middle">5</text><rect class="step" x="592.5714285714286" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="634.2857142857142" y="32" text-anchor="middle">6</text>
+<circle class="att" cx="344.0" cy="62" r="11"/><text class="lbl" x="344.0" y="92" text-anchor="middle">Infantry</text><circle class="att" cx="376.0" cy="62" r="11"/><text class="lbl" x="376.0" y="92" text-anchor="middle">Cavalry</text><rect class="def" x="349.0" y="51" width="22" height="22" rx="3"/><text class="lbl" x="360.0" y="92" text-anchor="middle">Trolls</text>
+<text class="lbl" x="360" y="128" text-anchor="middle">Trolls engaged by two units: outflanked, −2 Defence</text>
+</svg><figcaption>Units of both sides on one step are engaged. Numbers on a step are what wear down a stronger unit.</figcaption></figure>
+<p>Units of both sides on the same step are <strong>engaged</strong> in melee. A unit engaged with two or more enemy units is <strong>outflanked</strong> and takes −2 to Defence.</p>
+
+<h2 id="setup">4. Setting up</h2>
+<ol>
+<li>The attacker places each unit on step 0 or 1. The defender places each unit on step 5 or 6. A unit with an ambush tactic may start one step further in.</li>
+<li>Note each unit's wounds and shaken from its sheet.</li>
+<li>Each unit rolls initiative: d20 + Perception. Units act in this order every round for the whole battle.</li>
+</ol>
+<p>The sides begin at extreme range, two advances apart, so the first round is about volleys and positioning.</p>
+
+<h2 id="round">5. The round</h2>
+<p>A round is an hour of battle. In initiative order, each unit that is not destroyed or routed takes <strong>two actions</strong>, then the next unit acts. When every unit has acted:</p>
+<ol>
+<li>Every unit that must make a rout check does so (section 8).</li>
+<li>If one side has no unit that is neither destroyed nor routed, the battle ends. If this was the sixth round, dusk ends it.</li>
+</ol>
+
+<h2 id="actions">6. Actions</h2>
+<p>Each action costs one of the unit's two actions unless stated.</p>
+<dl>
+<dt>Advance</dt><dd>Only while not engaged. Move one step toward the enemy edge. A unit with Pace on open ground may spend both actions to move two steps. Entering a step that holds enemies engages them.</dd>
+<dt>Withdraw</dt><dd>Move one step toward your own edge. If you are engaged when you start, this costs both actions and every enemy engaged with you may take one free Strike at you as you go (a success deals 1 wound; no critical).</dd>
+<dt>Strike</dt><dd>Only while engaged. Roll d20 + Strike bonus against the target's Defence. Critical success: 2 wounds. Success: 1 wound. Failure: nothing. Critical failure: you are <em>exposed</em>, −2 Defence until your next activation.</dd>
+<dt>Volley</dt><dd>Only while not engaged, at a target within your Volley reach. Roll d20 + Volley bonus against the target's Defence; at extreme range take −2. Firing at a target that is engaged with your own ally is −4. Critical success 2 wounds, success 1.</dd>
+<dt>Brace</dt><dd>+2 to Defence until your next activation. If an enemy Advances into your step while you are braced, you may take one free Strike at it (success deals 1 wound; no critical).</dd>
+<dt>Rally</dt><dd>Roll a Will save against your rout DC (section 8). Critical success: shaken −2. Success: shaken −1. Failure: nothing. Critical failure: shaken +1.</dd>
+<dt>Retreat (two actions)</dt><dd>Withdraw twice. The first step draws free Strikes as usual if you were engaged; the second does not. A unit that retreats past its own edge leaves the battle intact.</dd>
+</dl>
+<div class="key">
+<p><strong>One Strike per round.</strong> A unit may Strike once each round from any source, including free Strikes from Brace or from an enemy Withdrawing. A braced unit that uses its free Strike has spent its Strike for that round.</p>
+<p><strong>Bonuses do not stack.</strong> Brace, cover and fortification all give circumstance bonuses to Defence; use the highest.</p>
+</div>
+
+<h2 id="wounds">7. Wounds</h2>
+
+<figure><svg viewBox="0 0 720 120" role="img" aria-label="Wound ladder from fresh to destroyed">
+<g transform="translate(20,20)">
+<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">0–1</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
+<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 Weakened</text><text class="sm" x="240" y="62" text-anchor="middle">−2 to attacks</text><text class="sm" x="240" y="78" text-anchor="middle">reach shrinks</text>
+<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">3 Broken</text><text class="sm" x="420" y="62" text-anchor="middle">no Advance</text><text class="sm" x="420" y="78" text-anchor="middle">rout check every round</text>
+<rect x="540" y="0" width="120" height="40" rx="4" fill="var(--accent)"/><text class="lbl" x="600" y="25" text-anchor="middle" fill="var(--paper)" style="fill:var(--paper)">4 Destroyed</text><text class="sm" x="600" y="62" text-anchor="middle">removed</text>
+<path d="M120,20 L180,20 M300,20 L360,20 M480,20 L540,20" stroke="var(--rule)" stroke-width="2" marker-end="url(#a)"/>
+</g></svg><figcaption>A hit adds one wound, a critical hit two. Nothing is rolled for damage.</figcaption></figure>
+<p>Damage is never rolled. A hit deals one wound, a critical hit two. Each unit holds up to four:</p>
+<table>
+<tr><th>Wounds</th><th>Condition</th><th>Effect</th></tr>
+<tr><td>0–1</td><td>—</td><td>Fights normally</td></tr>
+<tr><td>2</td><td>Weakened</td><td>−2 to Strike and Volley; Volley reach shrinks by one band</td></tr>
+<tr><td>3</td><td>Broken</td><td>As Weakened; cannot Advance; makes a rout check every round</td></tr>
+<tr><td>4</td><td>Destroyed</td><td>Removed from the battle</td></tr>
+</table>
+<p>The level difference between attacker and target does the work that damage dice do elsewhere. A level-6 troop striking a level-2 troop hits on about 7 and above and criticals from 17; the reverse hits only from 17 and cannot critical without help.</p>
+<p>A unit that enters battle already hurt starts with wounds: 0 if above three-quarters of its hit points, 1 if above half, 2 if above a quarter, 3 if it has any left. After the battle, wounds are written back the same way.</p>
+
+<h2 id="morale">8. Morale</h2>
+<p>Every unit tracks <strong>shaken</strong> from 0 to 3. Each point is −1 to everything the unit rolls. At shaken 3 the unit is <strong>routed</strong>: on each of its activations it must Retreat, it cannot Strike or Volley, and it leaves the battle when it passes its own edge.</p>
+<h3>When to check</h3>
+<p>At the end of the round, a unit makes one rout check if any of these happened:</p>
+<ul>
+<li>it took a wound this round;</li>
+<li>it is Broken;</li>
+<li>half or more of its side's starting units are now destroyed or routed (checked once, the round it first happens).</li>
+</ul>
+<h3>The rout DC</h3>
+<p>The level DC of the highest-level enemy unit within close range of the checking unit. If no enemy is within close range, use the highest-level enemy on the field. Add 2 if that enemy has a fear aura or frightful presence. Subtract 2 if the checking unit is holding its own fortification.</p>
+<h3>The check</h3>
+<p>Roll a Will save against the rout DC. Critical success: this unit makes no further rout checks this battle. Success: nothing. Failure: shaken +1. Critical failure: shaken +2.</p>
+
+<h2 id="ground">9. Ground and walls</h2>
+<p>The defender's hex shapes the field:</p>
+<table>
+<tr><th>Terrain</th><th>Effect</th></tr>
+<tr><td>Forest, hills, settlement</td><td>Cover: the defender's units gain +1 Defence against Volleys</td></tr>
+<tr><td>Swamp, forest</td><td>Rough: no two-step Advance; no cavalry charge</td></tr>
+<tr><td>River on the attacker's approach</td><td>The attacker sets up on step 0 only, and its units cannot Withdraw or Retreat while engaged</td></tr>
+<tr><td>Mountains</td><td>Cover and rough</td></tr>
+</table>
+<h3>Fortifications</h3>
+<p>A fortified hex or settlement already gives its garrison Defence and save bonuses on the sheet. In addition the defender holds <strong>Walls</strong> with wound boxes equal to the fortification's tier plus one. While the Walls stand:</p>
+<ul>
+<li>attackers on step 5 count as engaged with step 6 but Strike at −2 (an assault);</li>
+<li>defenders on step 6 Strike attackers on step 5 normally, and Volley at +1 at any range;</li>
+<li>a siege engine may <strong>Bombard</strong>: a Volley against the Walls (Defence 10 + tier + the defender's level) whose wounds go to the Walls instead of a unit.</li>
+</ul>
+
+<figure><svg viewBox="0 0 720 170" role="img" aria-label="Attackers on step 5 assaulting a walled garrison on step 6">
+<rect class="step" x="44.0" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="85.71428571428572" y="32" text-anchor="middle">0</text><rect class="step" x="135.42857142857144" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="177.14285714285717" y="32" text-anchor="middle">1</text><rect class="step" x="226.85714285714286" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="268.57142857142856" y="32" text-anchor="middle">2</text><rect class="step" x="318.2857142857143" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="360.0" y="32" text-anchor="middle">3</text><rect class="step" x="409.7142857142857" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="451.42857142857144" y="32" text-anchor="middle">4</text><rect class="step" x="501.14285714285717" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="542.8571428571429" y="32" text-anchor="middle">5</text><rect class="step" x="592.5714285714286" y="40" width="83.42857142857143" height="44" rx="4"/><text class="sm" x="634.2857142857142" y="32" text-anchor="middle">6</text>
+<rect x="588" y="34" width="6" height="56" fill="var(--accent)"/><rect x="588" y="28" width="6" height="6" fill="var(--accent)"/><rect x="588" y="90" width="6" height="6" fill="var(--accent)"/>
+<circle class="att" cx="542.8571428571429" cy="62" r="11"/><text class="lbl" x="542.8571428571429" y="92" text-anchor="middle">Assault</text><rect class="def" x="623.2857142857142" y="51" width="22" height="22" rx="3"/><text class="lbl" x="634.2857142857142" y="92" text-anchor="middle">Garrison</text><circle class="att" cx="268.57142857142856" cy="62" r="11"/><text class="lbl" x="268.57142857142856" y="92" text-anchor="middle">Catapult</text>
+<text class="sm" x="540" y="128" text-anchor="middle">Strike at −2</text>
+<text class="sm" x="634" y="128" text-anchor="middle">Strike normally, Volley +1</text>
+<path d="M243,50 Q420,-10 585,40" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#a)"/>
+<text class="sm" x="400" y="158" text-anchor="middle">Bombard wounds the Walls (tier + 1 boxes). Breach them and the steps fight normally.</text>
+</svg><figcaption>Walls between steps 5 and 6. Attackers may assault across them at a penalty, or knock them down first.</figcaption></figure>
+<p>When the Walls' boxes are all marked, they are breached and steps 5 and 6 behave normally. Walls are repaired between turns, never during a battle.</p>
+
+<h2 id="siege">10. Siege engines</h2>
+<p>A siege engine travels with an army and acts on that army's activation. Firing it (a Volley or a Bombard) spends one of that army's two actions and uses the engine's launch DC minus 10 as its bonus. An engine reaches extreme range without penalty and cannot fire while its army is engaged. When an army is destroyed or routed, any enemy unit that ends the battle on its step captures its engines.</p>
+
+<h2 id="tactics">11. Trained tactics</h2>
+<p>An army that has trained a tactic gains its battle action. Untrained armies use only the actions in section 6.</p>
+<div class="wrap"><table>
+<tr><th>Tactic</th><th>Battle action</th></tr>
+<tr><td>Cavalry Charge</td><td>Two actions: Advance, then Strike at +2. Needs Pace and open ground.</td></tr>
+<tr><td>Reactive Attack</td><td>Reaction: Strike an enemy that Advances into your step. This is your Strike for the round.</td></tr>
+<tr><td>Raise Shields</td><td>Your Brace gives +3 instead of +2.</td></tr>
+<tr><td>Shield Block</td><td>Reaction, once per round: reduce one wound result by 1.</td></tr>
+<tr><td>Defend Allies</td><td>One action: an ally on your step is not outflanked until your next activation.</td></tr>
+<tr><td>Feint</td><td>One action while engaged: Strike bonus against the target's Will DC. Success: the target is outflanked until end of round. Critical failure: you are.</td></tr>
+<tr><td>Dirty Fighting</td><td>Strike an outflanked target; on a hit it also becomes shaken +1 unless it passes a DC 11 flat check.</td></tr>
+<tr><td>Demoralize</td><td>One action, target within close: d20 + level + Will modifier against the target's Will DC. Success shaken +1, critical +2, critical failure your own shaken +1.</td></tr>
+<tr><td>Covering Fire</td><td>Volley; on a hit the target also takes −2 to Strike until its next activation.</td></tr>
+<tr><td>False Retreat</td><td>Reaction when you Withdraw: the enemy that takes the free Strike at you becomes outflanked until end of round.</td></tr>
+<tr><td>Battlefield Medicine</td><td>Two actions, once per battle per target: remove 1 wound from an ally on your step.</td></tr>
+</table></div>
+<p>Passive tactics and doctrines that change a troop's Armour Class, saves or fear immunity apply on their own, because every roll reads the live sheet.</p>
+
+<h2 id="end">12. Ending the battle</h2>
+<p>The battle ends when one side has no unit still standing, or at the end of round six.</p>
+<h3>The winner</h3>
+<p>Units keep their wounds. The winning kingdom rolls a Warfare check. Critical success: heal 1 wound on every damaged unit and gain 1 Fame. Success: heal 1 wound on one unit. Failure: nothing. Critical failure: every unit becomes shaken +1.</p>
+<h3>The loser</h3>
+<p>Units keep their wounds and shaken. The losing kingdom rolls a Defense check. Critical success: one destroyed unit survives at 3 wounds. Success: nothing. Failure: +1 Unrest. Critical failure: +1d4 Unrest. Surviving units fall back one hex toward their nearest friendly settlement.</p>
+<h3>After dusk</h3>
+<p>If both sides still stand after six rounds, both withdraw to their edges, keep their wounds and shaken, and the hex remains contested.</p>
+<h3>Back on the kingdom map</h3>
+<p>Wounds become hit points (section 7). Shaken becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Destroyed units disband. Tend Wounded heals as usual.</p>
+
+<h2 id="odds">13. Fighting against the odds</h2>
+<p>There are no points. Four things decide an uneven fight:</p>
+<ul>
+<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive.</li>
+<li><strong>Numbers.</strong> Outflanking and repeated rout checks let three lesser units grind down one greater unit, at the cost of wounds on two of them.</li>
+<li><strong>Ground.</strong> Cover, rough terrain, rivers and Walls all favour the defender. A small garrison behind walls is a real obstacle.</li>
+<li><strong>Time.</strong> Six rounds and the half-side rout trigger reward a decisive attacker and punish a hesitant one.</li>
+</ul>
+<p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
+
+<h2 id="ref">Quick reference</h2>
+<div class="wrap"><table class="ref">
+<tr><th>Action</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
+<tr><td>Advance</td><td>1 (2 for two steps with Pace)</td><td>—</td><td>Not while engaged. Move one step forward; entering enemies engages</td></tr>
+<tr><td>Withdraw</td><td>1, or 2 if engaged</td><td>—</td><td>Move one step back; engaged enemies get a free Strike</td></tr>
+<tr><td>Strike</td><td>1, engaged, once per round</td><td>d20 + Strike vs Defence</td><td>Crit 2 wounds · hit 1 · crit fail: exposed −2</td></tr>
+<tr><td>Volley</td><td>1, not engaged, in reach</td><td>d20 + Volley vs Defence (−2 extreme, −4 into melee)</td><td>Crit 2 wounds · hit 1</td></tr>
+<tr><td>Brace</td><td>1</td><td>—</td><td>+2 Defence; free Strike at an enemy advancing in</td></tr>
+<tr><td>Rally</td><td>1</td><td>Will vs rout DC</td><td>Crit −2 shaken · success −1 · crit fail +1</td></tr>
+<tr><td>Retreat</td><td>2</td><td>—</td><td>Withdraw twice; leave past your edge</td></tr>
+</table></div>
+<div class="wrap"><table class="ref">
+<tr><th>Modifier</th><th>Value</th></tr>
+<tr><td>Outflanked (engaged by 2+)</td><td>−2 Defence</td></tr>
+<tr><td>Weakened (2 wounds)</td><td>−2 Strike and Volley; reach −1 band</td></tr>
+<tr><td>Broken (3 wounds)</td><td>As Weakened; no Advance; rout check every round</td></tr>
+<tr><td>Shaken</td><td>−1 per point to all rolls; 3 = routed</td></tr>
+<tr><td>Cover</td><td>+1 Defence vs Volley (defender)</td></tr>
+<tr><td>Walls standing</td><td>Assault at −2; garrison Volley +1</td></tr>
+<tr><td>Rout DC</td><td>Level DC of highest enemy within close (else on field); +2 fear; −2 own fort</td></tr>
+<tr><td>Rout check</td><td>Will save: crit = immune · fail +1 shaken · crit fail +2</td></tr>
+</table></div>
+
+<h2 id="example">Example of play</h2>
+<div class="example">
+<p>A forest hex: cover and rough ground. The attacker brings <b>Heavy Cavalry</b> (level 7, Defence 25, Strike +12, Will +14, Perception +14, Speed 40 so Pace) and <b>Line Infantry</b> (level 6, Defence 24, Strike +11, Volley +11 with long reach, Will +13, Perception +13). The defender has <b>Kobold Warriors</b> (level 3, Defence 18, Strike +7, Volley +7 with close reach, Will +9, Perception +9) and <b>Troll Marauders</b> (level 8, Defence 25, Strike +13, Will +11, Perception +15, Speed 30 so Pace).</p>
+<p>Setup: cavalry on step 1, infantry on step 0; kobolds on step 5, trolls on step 6. Initiative: infantry 25, trolls 22, cavalry 19, kobolds 14.</p>
+
+<p><b>Round 1.</b> The infantry's Salvo reaches long, but the kobolds are five steps away, so it Advances twice to step 2. The trolls Advance to step 5 beside the kobolds and Brace. The cavalry has Pace but the ground is rough, so it Advances once to step 2 and Braces. The kobolds' sling reaches only close and nothing is that near; they Brace. Nobody is wounded, so nobody checks morale.</p>
+
+<p><b>Round 2.</b> The infantry Advances to step 3, putting the kobolds two steps away at long range, and Volleys: +11 against Defence 18. The kobolds have cover (+1) and are braced (+2), but the bonuses do not stack, so the target is 20. The roll is 13, total 24: a hit, and the kobolds take 1 wound. The trolls Advance to step 4 and Brace. The cavalry Advances to step 3 and Braces. The kobolds step up to 4 beside the trolls and Brace. End of round: the kobolds were wounded, so they check. The nearest enemy within close range is the level-6 infantry, DC 22. Will +9, roll 10, total 19: failure. Kobolds shaken 1.</p>
+
+<p><b>Round 3.</b> The infantry Volleys the kobolds at close range: +11 against 20, roll 16, total 27, a hit. Kobolds at 2 wounds: Weakened. The infantry Braces. The trolls Advance into step 3, engaging both the infantry and the cavalry. Both are braced and each takes a free Strike: the infantry rolls 15 + 11 = 26 against 25, a hit, trolls 1 wound; the cavalry rolls 9 + 12 = 21, a miss. The trolls are engaged with two units, so they are outflanked. The trolls Strike the cavalry: +13 against Defence 25 + 2 for Brace = 27; roll 17, total 30, a hit, cavalry 1 wound. The trolls Brace. The cavalry's free Strike spent its Strike for the round; it Braces and has nothing useful for its second action. The kobolds are shaken 1 and Weakened; a Volley into the melee at +7 − 2 − 1 − 4 is pointless, so they Rally: Will +9 − 1 against DC 22, roll 14, total 22, success, shaken back to 0. They Brace. End of round: the trolls check against the level-7 cavalry, DC 23: Will +11, roll 12, total 23, success. The cavalry checks against the level-8 trolls, DC 24: Will +14, roll 5, total 19, failure, cavalry shaken 1.</p>
+
+<p><b>Round 4.</b> The infantry Strikes the trolls: +11 against 25 + 2 Brace − 2 outflanked = 25; roll 14, total 25, a hit. Trolls at 2 wounds, Weakened. Infantry Braces. The trolls Strike the infantry: +13 − 2 against 24 + 2 = 26; roll 18, total 29, a hit, infantry 1 wound. Trolls Brace. The cavalry Strikes the trolls: +12 − 1 against 25; roll 19, total 30, a hit. Trolls at 3 wounds: Broken. Cavalry Braces. The kobolds Volley the infantry inside the melee: +7 − 2 − 4 = +1 against 26. The roll is a natural 20, which lifts a failure to a success: infantry at 2 wounds, Weakened. Kobolds Brace. End of round: the trolls were wounded and are Broken, one check against DC 23: Will +11, roll 3, total 14, failure, trolls shaken 1. The infantry checks against DC 24: Will +13, roll 11, total 24, success.</p>
+
+<p><b>Round 5.</b> The infantry Strikes the trolls: +11 − 2 against 25 + 2 − 2 = 25; roll 17, total 26, a hit. Trolls at 4 wounds: destroyed. The infantry Braces. The cavalry Advances into step 4, engaging the kobolds; the braced kobolds take a free Strike at +7 − 2 against 25, roll 11, total 16, a miss. The cavalry Strikes: +12 − 1 against 18 + 2 = 20; roll 10, total 21, a hit. Kobolds at 3 wounds: Broken. The kobolds cannot Advance and have nothing to gain, so they Retreat. The cavalry's Strike is already spent, so the Withdraw draws no free Strike; the kobolds move to step 5, then 6. End of round: the kobolds were wounded, are Broken, and half their side is gone, one check. No enemy is within close range, so the DC is the highest enemy on the field, the cavalry's 23. Will +9, roll 9, total 18, failure, kobolds shaken 1.</p>
+
+<p><b>Round 6.</b> The kobolds Retreat past their edge and leave. The defender has no unit standing; the attacker wins.</p>
+
+<p><b>Afterwards.</b> The attacker's Warfare check succeeds and heals the cavalry to 0 wounds. The infantry keeps 2 wounds, half its hit points, and the cavalry keeps shaken 1. The trolls are gone. The kobolds limp home at 3 wounds and shaken 1, and the defender's Defense check fails: 1 Unrest.</p>
+</div>
+
+</main>
+</body>
+</html>

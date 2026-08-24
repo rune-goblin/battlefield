@@ -1,0 +1,32 @@
+# Battlefield
+
+A fast abstract battle game for armies. Seven steps, two actions, four wounds. Play it hot-seat in a browser, or on paper with a d20.
+
+- **Play:** `npm install && npm run dev`
+- **Rules:** [`public/rules.html`](public/rules.html), served at `/rules.html` in the app
+- **Design notes:** [`docs/design.md`](docs/design.md) — the reasoning, the sources, the open questions
+- **Adapters:** [`docs/adapters.md`](docs/adapters.md) — how a troop sheet or a kingdom feeds a battle and reads the result
+
+## The game in one paragraph
+
+Each army is a unit on a straight line of seven steps between the two sides. On its turn a unit takes two actions: advance, withdraw, strike, volley, brace or rally. Every roll is a d20 check against a DC using numbers derived from a unit's level and role. Hits deal wounds, one or two at a time; four wounds destroy a unit. Taking wounds forces morale checks; failing them makes a unit shaken, and a unit shaken three times routs. The battle ends when one side has nothing standing, or at dusk after six rounds.
+
+## Layout
+
+```
+src/engine   pure TypeScript rules: level tables, unit cards, checks, the battle state machine, a sample roster
+src/app      Svelte 5 hot-seat client: setup, board, action panel, log; state persists in localStorage
+src/tests    vitest specs for the engine
+public       the rules document
+docs         design notes and the adapter contract
+```
+
+`npm test` runs the engine specs. `npm run check` type-checks the app and compiles the engine with no DOM types to keep it portable.
+
+## Lineage
+
+The numbers follow the [Pathfinder Second Edition](https://paizo.com/pathfinder) creature tables and the Kingmaker war rules, so a published troop is a fully specified unit card. The engine has no dependency on [Foundry VTT](https://foundryvtt.com) or on [Reignmaker](https://github.com/motionproto/pf2e-reignmaker), the kingdom-management module this game was designed for; both attach through the contract in `docs/adapters.md`. Design influences: *Dragon Rampant* and *One Page Rules*.
+
+## License
+
+MIT. Pathfinder is a trademark of Paizo Inc.; this project uses the ORC-licensed rules content only.
