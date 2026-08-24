@@ -1,3 +1,4 @@
+import * as PIXI from 'pixi.js';
 import { at, gridOf, type Board, type Grid, type Point } from '../engine/index.js';
 import { BoardApp } from './BoardApp.js';
 import { BoardContainer } from './BoardContainer.js';
@@ -9,7 +10,7 @@ import { OverlayLayer } from './layers/OverlayLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
 import { TokenLayer } from './layers/TokenLayer.js';
 import type { TokenModel } from './Token.js';
-import type { BoardTheme, HighlightStyle } from './theme.js';
+import { currentTheme, type BoardTheme, type HighlightStyle } from './theme.js';
 
 export type { HighlightStyle } from './theme.js';
 export type { Brush } from './brush.js';
@@ -37,23 +38,45 @@ export interface BoardView {
   destroy(): void;
 }
 
-export interface CreateBoardViewOptions {
-  theme?: BoardTheme;
+export interface MountBoardOptions {
+  /** Where `BoardContainer` attaches, and the container `Interaction` pans/zooms. `BoardApp`
+   * passes its own pan/zoom container here; the Wave 6 Foundry-mount prototype passes a
+   * container it owns inside a stand-in "primary" container it does not. */
+  parent: PIXI.Container;
+  /** Receives the pointer/keyboard listeners `Interaction` adds and removes. This code never
+   * creates it — `BoardApp` passes the canvas it made, a host passes its own. */
+  canvas: HTMLCanvasElement;
+  /** Drives token move tweens and ring pulses off the host's own render loop. */
+  ticker: PIXI.Ticker;
+  /** Generates `TerrainLayer`'s procedural textures. `TerrainLayer` only ever calls
+   * `generateTexture`, so this takes the renderer directly rather than a whole
+   * `PIXI.Application` — a host supplies its own renderer, not a second one. */
+  renderer: PIXI.IRenderer;
+  /** The area `BoardContainer` fits itself into. `BoardApp` reads its own `app.screen`; a
+   * host reads whatever it considers the board's on-screen footprint. */
+  size(): { width: number; height: number };
+  theme: BoardTheme;
   /** Keyboard brush changes, so a palette can follow the canvas. Escape sends null. */
   onBrush?: (brush: Brush | null) => void;
 }
 
-export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElement, opts: CreateBoardViewOptions = {}): BoardView {
-  const boardApp = new BoardApp({ canvas, container, theme: opts.theme });
+/**
+ * Wires a `BoardContainer` and its layer stack into a `PIXI.Container` someone else owns, and
+ * drives it with `Interaction` — no `PIXI.Application`, canvas creation, or resize handling of
+ * its own. This is the seam `createBoardView` builds on below, and the one the Wave 6
+ * Foundry-mount prototype (`dev/foundry-mount/`) calls directly to prove the board can be
+ * driven without also constructing a second `PIXI.Application`. See `docs/board.md`.
+ */
+export function mountBoardView(opts: MountBoardOptions): BoardView {
   const boardContainer = new BoardContainer();
-  boardApp.viewport.addChild(boardContainer);
+  opts.parent.addChild(boardContainer);
 
   const layers = boardContainer.layers;
   const terrainLayer = new TerrainLayer(layers.createLayer('terrain', layers.getDefaultZIndex('terrain')));
   const edgeLayer = new EdgeLayer(layers.createLayer('edges', layers.getDefaultZIndex('edges')));
-  const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), boardApp.theme);
-  const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), boardApp.app.ticker, boardApp.theme);
-  const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), boardApp.viewport);
+  const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), opts.theme);
+  const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), opts.ticker, opts.theme);
+  const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), opts.parent);
 
   let currentBoard: Board | null = null;
   let geometry: { grid: Grid; size: number } | null = null;
@@ -63,7 +86,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     if (!currentBoard) return null;
     const grid = gridOf(currentBoard);
     const unit = grid.bounds(1);
-    const { width, height } = boardApp.app.screen;
+    const { width, height } = opts.size();
     const size = Math.max(1, Math.min((width * FIT_MARGIN) / unit.width, (height * FIT_MARGIN) / unit.height));
     return { grid, size };
   }
@@ -74,21 +97,21 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
       terrainLayer.clear();
       edgeLayer.clear();
       labelLayer.clear();
-      overlayLayer.setGeometry(null, 0, boardApp.theme);
-      tokenLayer.setGeometry(null, 0, boardApp.theme);
+      overlayLayer.setGeometry(null, 0, opts.theme);
+      tokenLayer.setGeometry(null, 0, opts.theme);
       return;
     }
     const { grid, size } = geometry;
     const bounds = grid.bounds(size);
-    const { width, height } = boardApp.app.screen;
+    const { width, height } = opts.size();
     boardContainer.position.set((width - bounds.width) / 2, (height - bounds.height) / 2);
 
-    terrainLayer.draw(boardApp.app, currentBoard, size, boardApp.theme);
-    edgeLayer.draw(currentBoard, size, boardApp.theme);
-    labelLayer.draw(grid, size, boardApp.theme);
+    terrainLayer.draw(opts.renderer, currentBoard, size, opts.theme);
+    edgeLayer.draw(currentBoard, size, opts.theme);
+    labelLayer.draw(grid, size, opts.theme);
     labelLayer.rescale();
-    overlayLayer.setGeometry(grid, size, boardApp.theme);
-    tokenLayer.setGeometry(grid, size, boardApp.theme);
+    overlayLayer.setGeometry(grid, size, opts.theme);
+    tokenLayer.setGeometry(grid, size, opts.theme);
   }
 
   /** Shift-click fill: the connected run of cells sharing the clicked cell's terrain. */
@@ -116,28 +139,20 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
   }
 
   const interaction = new Interaction({
-    canvas,
-    viewport: boardApp.viewport,
+    canvas: opts.canvas,
+    viewport: opts.parent,
     toLocal: (screen: Point) => boardContainer.toLocal(screen),
     geometry: () => geometry,
     tokens: () => tokenLayer.bounds(),
     region,
     emit,
     onHover: (cell, edge) => overlayLayer.setHover(cell, edge),
-    onPreview: (cells, edges, brush) => overlayLayer.setPaintPreview(cells, edges, brush ? brushColour(brush, boardApp.theme) : 0),
+    onPreview: (cells, edges, brush) => overlayLayer.setPaintPreview(cells, edges, brush ? brushColour(brush, opts.theme) : 0),
     onBrush: (brush) => opts.onBrush?.(brush),
     onClear: () => overlayLayer.setSelected(null),
     onViewport: () => labelLayer.rescale(),
     onDrag: (id, point) => tokenLayer.setDrag(id, point),
   });
-
-  // Pixi's own resizeTo only reacts to window resize (see ResizePlugin); a container that
-  // resizes for other reasons (flex layout, a sidebar toggling) needs its own observer.
-  const resizeObserver = new ResizeObserver(() => {
-    boardApp.resize();
-    redraw();
-  });
-  resizeObserver.observe(container);
 
   return {
     setBoard(board) {
@@ -167,7 +182,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     },
     cellAt(clientX, clientY) {
       if (!geometry) return null;
-      const rect = canvas.getBoundingClientRect();
+      const rect = opts.canvas.getBoundingClientRect();
       const local = boardContainer.toLocal({ x: clientX - rect.left, y: clientY - rect.top });
       const cell = geometry.grid.fromPoint(local, geometry.size);
       return cell ? geometry.grid.key(cell) : null;
@@ -175,16 +190,58 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     resetView() {
       interaction.resetView();
     },
+    // The host decides when the board's on-screen footprint changed and calls this; unlike
+    // `createBoardView`'s wrapper, there is no `PIXI.Application` here to resize first.
     resize() {
-      boardApp.resize();
       redraw();
     },
+    // Tears down only what this call created — `boardContainer`, its layers, and
+    // `Interaction`'s listeners on `opts.canvas`. `opts.parent`, `opts.canvas` and
+    // `opts.ticker` are the host's; it destroys them itself.
     destroy() {
-      resizeObserver.disconnect();
       interaction.destroy();
       terrainLayer.destroy();
       tokenLayer.destroy();
       boardContainer.destroy({ children: true });
+    },
+  };
+}
+
+export interface CreateBoardViewOptions {
+  theme?: BoardTheme;
+  /** Keyboard brush changes, so a palette can follow the canvas. Escape sends null. */
+  onBrush?: (brush: Brush | null) => void;
+}
+
+export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElement, opts: CreateBoardViewOptions = {}): BoardView {
+  const boardApp = new BoardApp({ canvas, container, theme: opts.theme });
+  const view = mountBoardView({
+    parent: boardApp.viewport,
+    canvas,
+    ticker: boardApp.app.ticker,
+    renderer: boardApp.app.renderer,
+    size: () => boardApp.app.screen,
+    theme: boardApp.theme,
+    onBrush: opts.onBrush,
+  });
+
+  // Pixi's own resizeTo only reacts to window resize (see ResizePlugin); a container that
+  // resizes for other reasons (flex layout, a sidebar toggling) needs its own observer.
+  const resizeObserver = new ResizeObserver(() => {
+    boardApp.resize();
+    view.resize();
+  });
+  resizeObserver.observe(container);
+
+  return {
+    ...view,
+    resize() {
+      boardApp.resize();
+      view.resize();
+    },
+    destroy() {
+      resizeObserver.disconnect();
+      view.destroy();
       boardApp.destroy();
     },
   };

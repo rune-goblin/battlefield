@@ -6,6 +6,7 @@ A fast abstract battle game for armies. Eight by eight, three actions, four woun
 - **Rules:** [`public/rules.html`](public/rules.html), served at `/rules.html` in the app
 - **Design notes:** [`docs/design.md`](docs/design.md) — the reasoning, the sources, the open questions
 - **Adapters:** [`docs/adapters.md`](docs/adapters.md) — how a troop sheet or a kingdom feeds a battle and reads the result
+- **The board:** [`docs/board.md`](docs/board.md) — the PIXI board's API, its grid abstraction (square and hex), and how to mount it somewhere else (Foundry, Reignmaker)
 
 ## The game in one paragraph
 
@@ -14,7 +15,9 @@ Each army is a unit on a chessboard: the attacker deploys on ranks 1–3, the de
 ## Layout
 
 ```
-src/engine   pure TypeScript rules: level tables, unit cards, checks, the battle state machine, a sample roster
+src/engine   pure TypeScript rules: level tables, unit cards, checks, the battle state machine, a sample
+             roster, and the Grid abstraction (square/hex) the board and the rules both read
+src/board    the PIXI board: layers, tokens, pointer interaction; pixi.js only, no Svelte — see docs/board.md
 src/app      Svelte 5 hot-seat client: setup, board, action panel, log; state persists in localStorage
 src/tests    vitest specs for the engine
 data/troops  the 38 Reignmaker troop actors; `npm run import:troops` regenerates src/engine/combatants.ts from them
@@ -23,9 +26,12 @@ scripts      import:official reads a local PF2e system checkout (PF2E_SOURCE=...
 public/art   game-piece art for every troop and siege engine, fetched from pf2e-trooper (Mark's
              own repo; art licence covered under "Art" below) by `npm run import:art`, which also
              writes src/engine/art.ts (card name -> path, falling back to Reignmaker's generic
-             infantry/cavalry tokens for hand-authored cards)
+             infantry/cavalry tokens for hand-authored cards) — 17 MB committed, and the same
+             amount added to `dist/` by a production build (webp doesn't gzip further)
 public       the rules document
-docs         design notes and the adapter contract
+docs         design notes, the adapter contract, and the board's API/mount doc
+dev/foundry-mount  a prototype page (`npx vite`, not part of the production build) proving the
+             board mounts into a stage this code doesn't own — see docs/board.md
 ```
 
 `npm test` runs the engine specs. `npm run check` type-checks the app and compiles the engine with no DOM types to keep it portable.
@@ -33,6 +39,8 @@ docs         design notes and the adapter contract
 ## Lineage
 
 The numbers follow the [Pathfinder Second Edition](https://paizo.com/pathfinder) creature tables and the Kingmaker war rules, so a published troop is a fully specified unit card. The engine has no dependency on [Foundry VTT](https://foundryvtt.com) or on [Reignmaker](https://github.com/motionproto/pf2e-reignmaker), the kingdom-management module this game was designed for; both attach through the contract in `docs/adapters.md`. Design influences: *Dragon Rampant* and *One Page Rules*.
+
+`src/board/` renders on `pixi.js@7.4.3`, pinned to Foundry v14's own bundled runtime so board code moves between this repo and a Reignmaker/Foundry module without a version port; a handful of pieces (`LayerManager`, `MapTextUtils`, the terrain palette, the token sprite-cache and paint-commit patterns) are lifted from Reignmaker's own map code. See `docs/board.md`.
 
 ## Art
 

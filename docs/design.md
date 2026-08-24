@@ -57,6 +57,8 @@ Deployment: attacker anywhere on ranks 1–3, defender anywhere on ranks 6–8, 
 
 The board is the geometry the rest hangs on. Squares carry terrain and elevation; edges carry barriers. Eight files give room for a refused flank, a reserve rank and a walled corner; three ranks of deployment a side give both players a front line and a reserve.
 
+The board can also generate as an 8×8 hex grid (pointy-top, odd-r) instead of square, chosen alongside the hex terrain; rank stays row, so deployment still reads ranks 1–3 and 6–8. Read "orthogonal" above as "adjacent" on hex — hexes have no diagonal, so the diagonal-neighbours-at-distance-2 clause is square-only, and Pace's second square continues the same cube direction rather than reflecting through a corner. Distance, engagement, outflanking, walls and cliffs all resolve through the same `Grid` interface unchanged, but hex geometry itself is more permissive than square: 18 cells sit within distance 2 of a given cell against square's 12, so Volley and Demoralize bands reach further across a hex board in practice; the two front deployment rows interlock at more points, widening the opening clash; and an unengaged Withdraw offers two homeward cells instead of one. These are properties of the grid, not rule changes made to fix them — whether the numeric bands above should move for hex play is a playtesting question, open in `docs/plans/pixi-board.todos.md`.
+
 ## Setting up a battle
 
 Four stages, in order, each on its own screen:

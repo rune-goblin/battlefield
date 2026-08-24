@@ -21,6 +21,8 @@
   td:first-child { white-space:nowrap; font-weight:600; }
   .wrap { overflow-x:auto; }
   .key { background:var(--band); border-left:4px solid var(--accent); padding:.75rem 1rem; margin:1rem 0; }
+  .aside { border:1px dashed var(--rule); padding:.75rem 1rem; margin:1.25rem 0; font-size:.95rem; }
+  .aside h4 { margin:0 0 .35rem; font-size:1rem; color:var(--accent); }
   .example p { margin:.8rem 0; }
   .example b { color:var(--accent); }
   dl { margin:.5rem 0; } dt { font-weight:600; margin-top:.6rem; } dd { margin:0 0 0 1.25rem; }
@@ -192,6 +194,11 @@
 <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
 </svg><figcaption>Circles are the attacker's units, squares the defender's. Distance is the count of orthogonal steps from one square to the other.</figcaption></figure>
 <p>Squares carry terrain and height; edges carry walls and cliffs. Eight files give room for a refused flank, a reserve rank and a walled corner.</p>
+
+<div class="aside">
+<h4>Hex variant</h4>
+<p>The battle board can also generate as an eight-by-eight grid of hexes instead of squares, chosen when you generate the battlefield. Deployment still holds to ranks 1 to 3 and 6 to 8. Read every "orthogonal" above as "adjacent": hexes have no diagonal, so the rule that diagonal neighbours stand at distance 2 and are never engaged is a square-board rule only — on hex every neighbour is adjacent, at distance 1, and engaged if nothing stands on the edge between them. Every other number on this page — Volley bands, wounds, morale, wall and cliff rules — carries over unchanged, but the hex grid itself is roomier: eighteen cells fall within distance 2 of a given cell against a square board's twelve, so Volley and Demoralize reach further across the board in practice; the front deployment ranks meet at more points, so the opening clash is wider; and a unit that Withdraws while unengaged has two cells that count as homeward instead of one. These are properties of the grid, not a rule change made to fix them — whether the numbers above should move for hex play is still being tested.</p>
+</div>
 
 <h2 id="setup">4. Setting up</h2>
 <p>Setup runs in four stages, each on its own screen in the app.</p>

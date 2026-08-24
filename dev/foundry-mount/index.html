@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry mount prototype — Battlefield</title>
+<style>
+  body { margin: 0; padding: 1.5rem; background: #11151c; color: #d8dbe2; font-family: system-ui, sans-serif; }
+  h1 { font-size: 1.1rem; margin: 0 0 0.5rem; }
+  p { max-width: 46rem; line-height: 1.5; font-size: 0.9rem; }
+  code { color: #d98b6e; }
+  #legend span { display: inline-block; margin-right: 1.2rem; }
+  #legend .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.35rem; border: 2px solid; vertical-align: -0.1rem; }
+  #stage { margin-top: 1rem; display: inline-block; }
+</style>
+</head>
+<body>
+<h1>Wave 6 — Foundry mount prototype</h1>
+<p>
+  This page owns a bare <code>PIXI.Application</code> that this board code did not create — a
+  stand-in for Foundry's own ambient one. A "primary" container plays the part of whatever
+  scene-level container Foundry nests its content under: it sits at 0.5&times; scale with an
+  offset, unrelated to the board. <code>BoardContainer</code> mounts inside it via
+  <code>mountBoardView</code> (see <code>src/board/index.ts</code>, <code>docs/board.md</code>),
+  driven from <code>battle-state.json</code> — not the app's own <code>BoardApp</code>/
+  <code>createBoardView</code>.
+</p>
+<div id="legend">
+  <span><i class="swatch" style="border-color:#445066"></i>the bare app's own canvas</span>
+  <span><i class="swatch" style="border-color:#d98b6e"></i>the stand-in "primary" container (0.5&times;, offset)</span>
+</div>
+<div id="stage"></div>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

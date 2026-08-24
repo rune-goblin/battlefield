@@ -523,3 +523,137 @@ matchup.
 
 No new rule questions this wave — Wave 5 is wiring, not new rule logic. The `docs/design.md`/
 `public/rules.html` hex sidebar remains Wave 6's, untouched here.
+
+## Wave 6 notes (2026-08-25)
+
+Judgment calls taken inside the wave:
+
+- **The actual portability gap, found as the plan predicted it would be.** Before this wave,
+  `BoardContainer` itself was already a plain `PIXI.Container` with no stage/DOM assumptions
+  (Wave 0 got that right), but the only code that wired a `BoardContainer` to its five layers
+  and to `Interaction` was `createBoardView`'s body, which also unconditionally built a
+  `BoardApp` (a `PIXI.Application`, a canvas, a `ResizeObserver`). There was no way to drive a
+  mounted board without paying for a second renderer. Fixed by extracting that wiring into a
+  new exported `mountBoardView(opts)` (`src/board/index.ts`), parameterized on `parent:
+  PIXI.Container`, `canvas: HTMLCanvasElement`, `ticker: PIXI.Ticker`, `renderer: PIXI.IRenderer`,
+  `size(): {width,height}` and `theme`; `createBoardView` is now a thin wrapper that builds a
+  `BoardApp` and calls `mountBoardView` with `parent: boardApp.viewport`. No layer or
+  `Interaction` needed to change — they already took every dependency as an injected argument,
+  never reached for a global.
+- **`TerrainLayer.draw`'s first parameter narrowed from `app: PIXI.Application` to `renderer:
+  PIXI.IRenderer`.** It was the one place anything in `src/board/` asked for a whole
+  `Application` when a renderer (`app.renderer.generateTexture`) was the actual dependency — a
+  host has a renderer, not a spare `Application`. This is the one non-mechanical code change
+  the wave made outside `index.ts` itself; everything else the mount page needed already existed.
+- **The mount page nests its own pan/zoom container (`boardViewport`) one level inside the
+  stand-in "primary" container**, rather than passing `primary` straight to `mountBoardView` as
+  `parent`. `Interaction` is the only writer of whatever container it's given as `viewport`
+  (wheel-zoom, drag-pan write directly onto it), so passing `primary` itself would mean this
+  demo's own pan/zoom rescales the container standing in for Foundry's scene root — surprising
+  for a real host to inherit. `mountBoardView` doesn't build this extra container itself
+  (`BoardApp` already owns an equivalent one for the in-app board, so `mountBoardView` just
+  takes whatever `parent` it's handed); the demo's own `main.ts` builds it, which is exactly
+  the point — nesting depth and who owns the pan/zoom container are host decisions, not
+  something `src/board/` needs an opinion on.
+- **Verified, not assumed: `Interaction`'s existing `toLocal: (screen) => boardContainer.toLocal(screen)`
+  needed no change at all** to work through the mount page's extra nesting (`stage → primary
+  (0.5×, offset) → boardViewport → BoardContainer`). `PIXI.Container.toLocal` walks the full
+  `worldTransform` chain back to the stage on every call, regardless of depth, so a `screen`
+  point (CSS pixels relative to the one real canvas, via `getBoundingClientRect`) resolves
+  correctly no matter how many ancestors sit in between or what their scale/offset is. Confirmed
+  interactively (scratchpad Playwright, not committed): hover, click and paint-drag inside the
+  mount page's shrunk/offset board all landed on the correct cell.
+- **`battle-state.json` is a hand-written snapshot, not a generated one used live.** Built once
+  with a throwaway `tsx` script calling the real `generateBoard`/`render` (hex, `hills`/`river`/
+  fort tier 1, seed 7), then hand-adjusted one token's cell off a water square; the script itself
+  is not committed, only its JSON output, matching how earlier waves' hand-built demo boards
+  were captured. Five tokens: two attacker units (one carrying a crewed engine, "Door Ram"),
+  two defender units, one abandoned engine standing alone — exercises `UnitTokenModel` and
+  `EngineTokenModel` and all four `TokenRing` states (`active`, `selected`, `highlighted`, and
+  `null`) in one static scene.
+- **`dev/` needs no `vite.config.ts` change to be served.** Vite's dev server transforms any
+  `.html` file under the project root on request, not only the one at `/` — confirmed by
+  `curl`ing `/dev/foundry-mount/` and `/dev/foundry-mount/index.html` against `npx vite`, both
+  200. It is equally excluded from `npx vite build` for the same reason in reverse: the default
+  production build only follows the root `index.html`'s own script graph, and nothing links
+  `dev/foundry-mount/index.html` into it, so it's never visited. Confirmed `dist/` is
+  byte-identical in file count/shape (`index.html`, one JS bundle, one CSS file) with `dev/`
+  present.
+- **The hex sidebar/paragraph settle the two debts exactly as flagged, without inventing new
+  numbers.** `docs/design.md` gets one paragraph in "The battlefield" section; `public/rules.html`
+  gets a dashed-border `.aside` box after section 3. Both: (1) say "orthogonal" reads as
+  "adjacent" on hex and the diagonal-distance-2 clause is square-only, (2) name the three
+  known geometry properties from Wave 1's notes (18 vs. 12 cells within distance 2; wider
+  opening contact from front-row interlock; two homeward cells on an unengaged Withdraw) as
+  properties of the grid, explicitly not rule changes, and point at this file for the open
+  question of whether the numeric bands should move for hex play. That question is *not*
+  resolved here — see "Reserved judgment calls" at the top of this file and Wave 1's notes,
+  both unchanged by this wave.
+- **`docs/board.md`** documents the `BoardView`/`Grid` interfaces as they actually ended up
+  (`setSelected` reads a cell key not a token id; `setBrush`/`cellAt` exist and aren't in the
+  plan's sketch; no `BoardEvent` members for brush/drag state, those are constructor-option
+  hooks instead), the layer list, the `mountBoardView` recipe, the Reignmaker lift-and-diff per
+  file, the `pixi.js@7.4.3` pin rationale, the PIXI v7 mask trap (Wave 2's note, restated where
+  a porter will actually look for it), and the `public/art/` size note the brief asked for.
+
+No new rule numbers changed and no new engine code — this wave touched `src/board/index.ts`,
+`src/board/layers/TerrainLayer.ts` (signature only), `dev/foundry-mount/`, `docs/board.md`,
+`docs/design.md`, `public/rules.html`, `README.md`. `npx vitest run` stayed at 79 (no PIXI
+tests, per prototype mode); `npx vite build` stayed clean and the same shape (single JS/CSS
+bundle) before and after. The existing in-app board was screenshotted again after the
+`mountBoardView` extraction to confirm `createBoardView`'s behaviour didn't move (scratchpad
+Playwright, not committed) — square board, Generate flow, renders identically to Wave 5.
+
+Open question carried forward, not resolved here (per the wave's own instruction — this is
+Mark's playtesting call, not an executor judgment call): whether Volley/Demoralize bands,
+deployment shape, or Withdraw's homeward count should change for hex, given the geometry
+Wave 1 and this wave both document. See "Reserved judgment calls" above.
+
+## Prototype-mode debt
+
+For whenever prototype mode ends and a hardening wave runs. `grep -rn "proto:" src` today:
+
+```
+src/board/BoardApp.ts:24:      // proto: cap at 2x so a 5K display doesn't blow the canvas budget; autoDensity keeps
+src/board/layers/LayerManager.ts:15:// proto: lifted verbatim from pf2e-reignmaker src/services/map/core/LayerManager.ts
+src/board/theme.ts:33:// proto: seeded from pf2e-reignmaker's TERRAIN_OVERLAY_COLORS (src/styles/colors.ts) —
+src/board/Token.ts:38:// proto: pf2e-trooper's *_strategy.webp renders put the miniature's own base ellipse about
+src/board/Token.ts:221:        // proto: a missing texture leaves the coloured base disc as the placeholder; no error UI.
+src/board/layers/MapTextUtils.ts:1:// proto: lifted from pf2e-reignmaker src/services/map/utils/MapTextUtils.ts (2026-08-24).
+src/board/layers/TerrainLayer.ts:121:    if (type === 'open') return null; // proto: open ground stays a flat fill, no overlay
+src/board/layers/OverlayLayer.ts:43:  // proto: Wave 2 has no tokens yet, so `id` is read as a cell key. A key that doesn't parse
+```
+
+(`dev/foundry-mount/main.ts` carries one more, outside `src/` and not part of the shipped app —
+its own bare `PIXI.Application` standing in for Foundry's ambient one.)
+
+What each one means for hardening, beyond the marker's own comment:
+
+- **`BoardApp.ts`'s resolution cap** — a real setting, not a shortcut to remove; revisit only
+  if a target device profile changes.
+- **`LayerManager.ts` and `MapTextUtils.ts`, "lifted verbatim"** — not a shortcut either, a
+  provenance note for backport parity; keep as-is unless Reignmaker's own files diverge and a
+  reconciliation pass is wanted.
+- **`theme.ts`'s seeded-not-designed palette** — `open`/`shallows`/`settlement` and the whole
+  light-mode variant have no Reignmaker source and were never run past anyone but the executor;
+  a hardening (or just a "does this look right") pass should look at them with fresh eyes.
+- **`Token.ts`'s `ART_ANCHOR_Y = 0.8`** — one tuned constant standing in for real per-image crop
+  data across 138 art files; likely fine forever, but the honest fix (if any image reads
+  wrong) is per-image anchor data, not a bigger constant.
+- **`Token.ts`'s silent art-load failure** — no error UI, no logged warning, just the
+  placeholder disc forever. Fine for a prototype; a hardening wave should decide whether a
+  missing texture should be visible to the GM (a console warning at minimum) before this ships
+  anywhere art might legitimately go missing (e.g. a custom card with a typo'd name).
+- **`TerrainLayer.ts`'s flat-fill-only `open` terrain** — deliberate (open ground needing no
+  texture), not likely to need revisiting, but grep will surface it, so it's listed.
+- **`OverlayLayer.ts`'s `setSelected` reading a cell key** — already tracked above and in
+  Wave 2/3's notes as a "doesn't need to change, just stop being the only thing it does" note,
+  not a defect; a hardening pass can leave it exactly as documented in `docs/board.md`.
+
+Beyond the grep: the plan's own "Prototype mode" section names one more thing a hardening wave
+owns that no `proto:` marker will surface, since it's an absence, not a shortcut —
+`describe.each` geometry sweeps and per-cell property tests for `Grid` (Wave 1 skipped these
+deliberately; only round-trip/neighbour-count smoke tests exist). `npm run check` was never
+gated on during any wave but ran clean (0 errors) when tried at the end of Wave 6, for what
+that's worth against six waves of un-gated drift — it doesn't cover `dev/`, which isn't in
+either tsconfig.

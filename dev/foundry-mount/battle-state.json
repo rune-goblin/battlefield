@@ -1,0 +1,378 @@
+{
+  "board": {
+    "spec": {
+      "base": "hills",
+      "feature": "river",
+      "construction": {
+        "kind": "fort",
+        "tier": 1
+      },
+      "grid": "hex",
+      "seed": 7
+    },
+    "grid": "hex",
+    "squares": [
+      [
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "forest",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "forest",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 1
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 1
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "shallows",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "water",
+          "elevation": 0
+        },
+        {
+          "terrain": "shallows",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "swamp",
+          "elevation": 0
+        },
+        {
+          "terrain": "swamp",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "forest",
+          "elevation": 0
+        },
+        {
+          "terrain": "forest",
+          "elevation": 0
+        },
+        {
+          "terrain": "settlement",
+          "elevation": 0
+        },
+        {
+          "terrain": "settlement",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        }
+      ],
+      [
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "settlement",
+          "elevation": 0
+        },
+        {
+          "terrain": "settlement",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        },
+        {
+          "terrain": "open",
+          "elevation": 0
+        }
+      ]
+    ],
+    "walls": {
+      "c6|c7": {
+        "tier": 1,
+        "boxes": 2,
+        "remaining": 2
+      },
+      "d6|d7": {
+        "tier": 1,
+        "boxes": 2,
+        "remaining": 2
+      },
+      "b8|c8": {
+        "tier": 1,
+        "boxes": 2,
+        "remaining": 2
+      },
+      "d8|e8": {
+        "tier": 1,
+        "boxes": 2,
+        "remaining": 2
+      },
+      "b7|c7": {
+        "tier": 1,
+        "boxes": 2,
+        "remaining": 2
+      }
+    }
+  },
+  "tokens": [
+    {
+      "kind": "unit",
+      "id": "u1",
+      "side": "attacker",
+      "name": "Line Infantry",
+      "role": "infantry",
+      "level": 2,
+      "cell": "b2",
+      "wounds": 0,
+      "shaken": 0,
+      "engine": null,
+      "ring": "active"
+    },
+    {
+      "kind": "unit",
+      "id": "u2",
+      "side": "attacker",
+      "name": "Heavy Cavalry",
+      "role": "cavalry",
+      "level": 3,
+      "cell": "c2",
+      "wounds": 1,
+      "shaken": 0,
+      "engine": "Door Ram",
+      "ring": null
+    },
+    {
+      "kind": "unit",
+      "id": "u3",
+      "side": "defender",
+      "name": "Line Infantry",
+      "role": "infantry",
+      "level": 2,
+      "cell": "f7",
+      "wounds": 2,
+      "shaken": 1,
+      "engine": null,
+      "ring": "selected"
+    },
+    {
+      "kind": "unit",
+      "id": "u4",
+      "side": "defender",
+      "name": "Heavy Cavalry",
+      "role": "cavalry",
+      "level": 3,
+      "cell": "g7",
+      "wounds": 0,
+      "shaken": 0,
+      "engine": null,
+      "ring": "highlighted"
+    },
+    {
+      "kind": "engine",
+      "id": "e1",
+      "side": "attacker",
+      "name": "Door Ram",
+      "cell": "d3",
+      "ring": null
+    }
+  ]
+}

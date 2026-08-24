@@ -45,7 +45,7 @@ export class TerrainLayer {
     this.container = container;
   }
 
-  draw(app: PIXI.Application, board: Board, size: number, theme: BoardTheme): void {
+  draw(renderer: PIXI.IRenderer, board: Board, size: number, theme: BoardTheme): void {
     this.clear();
     const grid = gridOf(board);
 
@@ -69,7 +69,7 @@ export class TerrainLayer {
       fill.name = `Terrain_${terrain}`;
       this.container.addChild(fill);
 
-      const texture = this.textureFor(app, terrain, theme);
+      const texture = this.textureFor(renderer, terrain, theme);
       if (texture) {
         const bounds = grid.bounds(size);
         const tiling = new PIXI.TilingSprite(texture, bounds.width, bounds.height);
@@ -117,7 +117,7 @@ export class TerrainLayer {
     this.container.addChild(hatch);
   }
 
-  private textureFor(app: PIXI.Application, type: SquareTerrain, theme: BoardTheme): PIXI.Texture | null {
+  private textureFor(renderer: PIXI.IRenderer, type: SquareTerrain, theme: BoardTheme): PIXI.Texture | null {
     if (type === 'open') return null; // proto: open ground stays a flat fill, no overlay
     const cached = this.textureCache.get(type);
     if (cached) return cached;
@@ -156,7 +156,7 @@ export class TerrainLayer {
         return null;
     }
 
-    const texture = app.renderer.generateTexture(g, { region: new PIXI.Rectangle(0, 0, TEXTURE_TILE, TEXTURE_TILE) });
+    const texture = renderer.generateTexture(g, { region: new PIXI.Rectangle(0, 0, TEXTURE_TILE, TEXTURE_TILE) });
     g.destroy();
     this.textureCache.set(type, texture);
     return texture;

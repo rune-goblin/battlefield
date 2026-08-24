@@ -1,0 +1,274 @@
+# The PIXI board
+
+`src/board/` renders the battlefield: an 8×8 square or hex grid, painted terrain, walls,
+tokens. It depends on `pixi.js` only — no Svelte, no DOM beyond a canvas element and whatever
+container it is given. `src/app/PixiBoard.svelte` is the only Svelte wrapper; every stage
+(board, paint, place, battle) uses it. This doc describes the API as it actually ended up —
+several names differ from `docs/plans/pixi-board.md`'s aspirational sketch, noted inline — plus
+the mount recipe for embedding the board somewhere this code doesn't own the stage (Foundry,
+Reignmaker), what Wave 6 had to change to make that true, and what was lifted from
+`pf2e-reignmaker` and what changed on the way in.
+
+## `BoardView`
+
+The one surface Svelte (or any other host) touches — stages never reach into layers directly.
+Built by `createBoardView(canvas, container, opts)` in `src/board/index.ts`:
+
+```ts
+interface BoardView {
+  setBoard(board: Board | null): void;
+  setTokens(tokens: TokenModel[]): void;
+  setHighlight(cells: string[], style: HighlightStyle): void;   // 'deploy' | 'move' | 'attack'
+  setSelected(id: string | null): void;                          // a cell key, not a token id — see below
+  setMode(mode: BoardMode): void;                                 // 'view' | 'paint' | 'place' | 'battle'
+  setBrush(brush: Brush | null): void;                            // paint mode only
+  on<T extends BoardEventType>(event: T, handler: (e: BoardEventOf<T>) => void): () => void;
+  cellAt(clientX: number, clientY: number): string | null;       // native DragEvent -> cell key
+  resetView(): void;                                              // undo pan/zoom
+  resize(): void;
+  destroy(): void;
+}
+```
+
+Differences from the plan's sketch, and why:
+
+- **`setSelected(id)` takes a cell key, not a token id.** It predates `TokenLayer` (Wave 2);
+  by the time tokens existed (Wave 4) the selection ring had moved onto the token itself
+  (`Token`'s `ring` field), so nothing needed `setSelected` to mean "token" instead. It still
+  reads a cell key today — Battle/Place never call it with anything else.
+- **`setBrush` and `cellAt` are real methods**, not in the plan's sketch at all. `setBrush`
+  is how a stage's palette drives paint mode; `cellAt` is how a native HTML5 `DragEvent`
+  (a sidebar tray item, in Place) resolves to a cell without going through `Interaction`,
+  which only sees pointer events already inside the canvas.
+- **No `BoardEvent` members for brush or drag state.** The plan's `BoardEvent` union is fixed
+  and deliberately narrow (`hover`, `cell`, `edge`, `token`, `paint`, `drop`); keyboard brush
+  changes and board-internal token drags reach the host through two constructor options
+  instead — `onBrush(brush)` (`CreateBoardViewOptions.onBrush`, wired to `Interaction`'s own
+  keyboard handling) and an internal `onDrag(id, point)` hook `Interaction` uses to drive
+  `TokenLayer`'s lift/follow visuals directly, never surfaced to Svelte at all.
+- **`resetView`** exists because Wave 3 added real pan/zoom; the plan didn't anticipate it
+  needing an explicit reset (double-click empty space calls the same thing).
+
+`HighlightStyle` is `'deploy' | 'move' | 'attack'`, fixed at three; there is no side parameter,
+so a "your side's deploy zone" wash is the caller's job (pass only that side's cells).
+
+## The `Grid` interface
+
+`src/engine/grid.ts`, pure math, no PIXI, tested in `src/tests/`. Both `squareGrid` and
+`hexGrid` (pointy-top, odd-r offset) implement it; `gridFor(kind)` / `gridOf(board)` resolve
+which one a given `Board` uses.
+
+```ts
+interface Grid {
+  kind: 'square' | 'hex';
+  cells(): Cell[];
+  key(c: Cell): string;                    // 'e4' on both grids
+  parse(text: string): Cell;
+  inBounds(c: Cell): boolean;
+  neighbours(c: Cell): Cell[];              // 4 on square, up to 6 on hex
+  distance(a: Cell, b: Cell): number;       // Manhattan on square, cube on hex
+  edgeKey(a: Cell, b: Cell): string;        // sorted pair, e.g. 'e4|e5'
+  rank(c: Cell): number;
+  homeward(c: Cell, side: 'attacker' | 'defender'): Cell[];
+  beyond(from: Cell, through: Cell): Cell | null;   // Pace's second square/cell
+  center(c: Cell, size: number): Point;
+  vertices(c: Cell, size: number): Point[];
+  fromPoint(p: Point, size: number): Cell | null;
+  edgeSegment(a: Cell, b: Cell, size: number): [Point, Point];
+  bounds(size: number): { width: number; height: number };
+}
+```
+
+`beyond` is the one addition against the plan's sketch: it wasn't listed, but `battle.ts`'s
+Pace step and `Interaction`'s stroke-direction logic both need "the cell one step past this
+one, continuing the same line," which is a reflection on square and a cube-direction step on
+hex — different enough per grid that it earns its own method rather than being reimplemented
+at each call site.
+
+## Layers and pieces
+
+```
+src/board/BoardApp.ts          owns PIXI.Application, canvas, resize, theme — the in-app board only
+src/board/BoardContainer.ts    a plain PIXI.Container + LayerManager; mountable anywhere
+src/board/layers/LayerManager.ts   lifted from Reignmaker; terrain/edges/overlay/tokens/labels z-order
+src/board/layers/TerrainLayer.ts   cell fills, procedural texture overlays, elevation, slope hatching
+src/board/layers/EdgeLayer.ts      walls, breached walls, cliffs
+src/board/layers/OverlayLayer.ts   hover, selection, highlight washes, paint preview
+src/board/layers/TokenLayer.ts     Token sprites, sprite-cache diff, per-tick animation
+src/board/layers/LabelLayer.ts     a–h / 1–8, MapTextUtils lifted, zoom-invariant scale
+src/board/Token.ts              one battlefield piece: base disc, art, badge, pips, rings
+src/board/Interaction.ts        pointer state machine on the host canvas -> BoardEvents
+src/board/hit.ts                pixel -> cell | edge | token
+src/board/brush.ts              paint-mode brush type and its derived colours/erase forms
+src/board/theme.ts              light/dark palettes
+src/board/art.ts                BASE_URL-prefixed art paths (src/engine/art.ts stays Vite-free)
+src/board/index.ts              createBoardView / mountBoardView (the mount seam, see below)
+```
+
+`src/app/PixiBoard.svelte` is the only file outside `src/board/` that imports it; every stage
+passes it `board`, `tokens`, `mode`, `brush`, `highlight`, `selected` as props and gets
+`BoardEvent`s back as Svelte event callbacks.
+
+## Mounting: `createBoardView` vs. `mountBoardView`
+
+`createBoardView(canvas, container, opts)` is what the app uses: it owns a `PIXI.Application`
+(so it needs a canvas element to render into and a container element to `resizeTo`), a
+`ResizeObserver` on that container, and the DOM pointer/keyboard listeners `Interaction` adds
+to the canvas. That bundle is the wrong seam for a host that already owns its own
+`PIXI.Application` — Foundry has exactly one, for the whole page — because using
+`createBoardView` there would mean constructing a *second* `Application`/canvas nested inside
+the first, which defeats the point of "the container makes no assumptions about owning the
+stage."
+
+`mountBoardView(opts)` is the lower seam `createBoardView` is built on, and the one a host
+calls directly:
+
+```ts
+function mountBoardView(opts: {
+  parent: PIXI.Container;    // where BoardContainer attaches, and what Interaction pans/zooms
+  canvas: HTMLCanvasElement; // receives the pointer/keyboard listeners; not created here
+  ticker: PIXI.Ticker;       // drives token tweens/ring pulses off the host's render loop
+  renderer: PIXI.IRenderer;  // generates TerrainLayer's procedural textures
+  size(): { width: number; height: number };  // the area BoardContainer fits itself into
+  theme: BoardTheme;
+  onBrush?: (brush: Brush | null) => void;
+}): BoardView;
+```
+
+It constructs a `BoardContainer`, adds it to `opts.parent`, wires the five layers and
+`Interaction` to it, and returns the same `BoardView` shape — but its `destroy()` only tears
+down what it created (`BoardContainer`, its layers, `Interaction`'s listeners on `opts.canvas`)
+and never touches `opts.parent`, `opts.canvas`, `opts.ticker` or `opts.renderer`, since the
+host owns those. `createBoardView` is now a thin wrapper: build a `BoardApp`, call
+`mountBoardView` with `parent: boardApp.viewport`, and layer a `ResizeObserver` and
+`boardApp.destroy()` on top.
+
+### What Wave 6 had to change to make this true
+
+Before this wave, `mountBoardView` didn't exist — `createBoardView` did all of the above
+inline, and nothing else in `src/board/` assembled a `BoardContainer` + layers + `Interaction`
+without also `new PIXI.Application(...)`-ing a canvas first. That was the actual portability
+gap: `BoardContainer` itself was already a plain `PIXI.Container` (Wave 0 got that right from
+the start), but there was no public seam to *drive* one without paying for a whole second
+renderer. Extracting `mountBoardView` from `createBoardView`'s body — parameterizing
+`boardApp.viewport` → `parent`, `boardApp.app.screen` → `size()`, `boardApp.app.ticker` →
+`ticker`, `boardApp.theme` → `theme` — is the whole fix; every layer and `Interaction` already
+took injected dependencies (`toLocal`, `viewport`, `canvas`) rather than reaching for a global,
+so nothing inside them needed to change.
+
+One more thing did: `TerrainLayer.draw`'s first parameter was `app: PIXI.Application`, used for
+exactly one call, `app.renderer.generateTexture(...)`. A host doesn't have — and shouldn't be
+asked for — a second `PIXI.Application`; it has a renderer. Narrowed the parameter to
+`renderer: PIXI.IRenderer`, the actual dependency, so `mountBoardView` (and any future caller)
+supplies a renderer, not an `Application`. Nothing else in `src/board/` took an `Application`
+directly.
+
+### The mount recipe (`dev/foundry-mount/`)
+
+`dev/foundry-mount/main.ts` is the prototype this wave asks for: it builds its own
+`PIXI.Application` (standing in for Foundry's ambient one — a real port passes
+`canvas.app.view` / `canvas.app.renderer` instead of constructing a second `Application`), adds
+a `primary` container at 0.5× scale with a fixed offset (standing in for whatever scene-level
+container Foundry nests its content under), nests one more container (`boardViewport`) inside
+that for `Interaction`'s own pan/zoom so a wheel-zoom in the demo doesn't rescale the host's
+`primary` container, and calls `mountBoardView({ parent: boardViewport, canvas: app.view,
+ticker: app.ticker, renderer: app.renderer, size: () => ({ width: 800, height: 800 }), theme })`.
+It then fetches `battle-state.json` (a `{ board, tokens }` snapshot — a hand-built hex board and
+five tokens including one crewed engine and one abandoned engine) and calls `setBoard`/
+`setTokens`/`setHighlight`. Pointer hover/click/paint all work unmodified through this nesting,
+because `Interaction`'s `toLocal` is `(screen) => boardContainer.toLocal(screen)` — a PIXI
+`Container.toLocal` call walks the full `worldTransform` chain back to the stage regardless of
+how many containers sit in between, so a `screen` point in CSS pixels relative to the one real
+canvas resolves correctly no matter how deep `BoardContainer` is nested or what its ancestors'
+scale/offset are. That is the "injected `EventTarget` and `toLocal`" portability claim the plan
+names, made concrete.
+
+Screenshot: `docs/plans/pixi-board-shots/wave6-foundry-mount.png`. Reachable at
+`npx vite` → `/dev/foundry-mount/` — Vite's dev server transforms any `.html` file under the
+project root, not only the one at `/`, so no `vite.config.ts` change was needed to serve it.
+It is equally unreachable from `npx vite build`'s output on purpose and for the same reason:
+the default production build only follows the root `index.html`'s own script graph, and
+`dev/foundry-mount/index.html` isn't linked from anywhere in it, so it's simply never visited
+during a build. Verified: `dist/` after a build is unchanged (`index.html`, one JS bundle, one
+CSS file) whether `dev/` exists or not.
+
+## Interaction
+
+`Interaction.ts`'s constructor takes a `canvas: HTMLCanvasElement` for its `pointer*`/`wheel`/
+`dblclick`/`contextmenu`/`keydown`/`keyup` listeners, a `viewport: PIXI.Container` it is the
+only writer of (pan/zoom), and `toLocal(screen): Point`. It never touches
+`PIXI.InteractionManager`/`EventSystem` on the stage — deliberately, since Foundry owns the
+stage's own interaction system for its scene, and a board that only asks for "some canvas
+element to listen on" and "a function that maps a screen point to board-local coordinates"
+ports across without needing to know anything about what else is listening on that same canvas.
+
+## Lifted from Reignmaker, and what changed
+
+Surveyed `pf2e-reignmaker`'s `src/services/map` (~15.8k lines, all against the ambient global
+`PIXI`, v7.4.3). What actually got lifted, and the edit each one needed:
+
+- **`LayerManager.ts`** (`core/LayerManager.ts`) — lifted essentially verbatim. Added the
+  `import * as PIXI from 'pixi.js'` line Reignmaker doesn't need (ambient global there), and
+  swapped its Foundry kingdom-map `LayerId`/`MapLayer` types (which carry icon-path exports
+  that don't apply to a battle board) for a pair scoped to this board's five layers. Everything
+  else — the singleton `createLayer`, `clearLayerContent`/`clearLayer`, z-index handling — is
+  unedited, kept for backport parity.
+- **`MapTextUtils.ts`** (`utils/MapTextUtils.ts`) — lifted `createMapText` and its zoom-
+  invariant scaling. The one seam Reignmaker's survey note flagged (`canvas.stage.scale.x`)
+  now reads a `PIXI.Container`'s own `.scale.x` instead — in-app that's `BoardApp.viewport`,
+  in the mount page it's whatever container `Interaction` pans/zooms — so the same function
+  works whether or not a `canvas` global exists. Dropped `getHexCenter` (Foundry's
+  `canvas.grid` API; this board resolves centres through `Grid.center` instead) and the dead
+  `updateTextScale`. Added one preset (`coordinateLabel`) Reignmaker has no equivalent for.
+- **Terrain palette** (`src/styles/colors.ts`'s `TERRAIN_OVERLAY_COLORS`) — only
+  `forest`/`swamp`/`water` map onto Reignmaker hexes with the same name; this board's other
+  three terrains (`open`/`shallows`/`settlement`) have no Reignmaker counterpart, so those
+  three (and the light-mode variant — Foundry's canvas is always dark, this app isn't) are
+  original, tuned to sit next to the rest. Alpha is dropped: Reignmaker's overlay is
+  translucent over a base map image; this board's fills are opaque, since there's no base map
+  underneath them.
+- **Sprite-cache diff pattern** (`renderers/FogOfWarRenderer.ts`) — `TokenLayer`'s
+  `renderAll()` follows the same shape (diff wanted-ids against cached sprites; destroy what's
+  gone, create what's new, redraw the rest in place), but the cache itself is an *instance*
+  field, not Reignmaker's module-scoped `Map` — Reignmaker has exactly one Foundry canvas ever;
+  this app can and does mount more than one `BoardView` at once (see the wave screenshots), and
+  a shared cache would let two boards' tokens collide on id.
+- **Commit-on-pointerup paint pattern** (`editors/TerrainEditorHandlers.ts`) — the shape (queue
+  a stroke's cells/edges in a preview layer while dragging, commit once on pointerup) is
+  `Interaction`'s `Stroke`/`extend`/`onPointerUp` handling; the preview layer is
+  `OverlayLayer.setPaintPreview`. Reignmaker's version edits a Foundry scene flag directly on
+  commit; this one emits a `paint` `BoardEvent` and lets the caller (the Paint stage) own the
+  store write, since there's no Foundry document to write to here.
+
+Foundry-bound and deliberately **not** lifted: Reignmaker's token layer (its armies are Foundry
+Tokens, a different object model entirely), `EditorModeService` (listens on `canvas.stage`,
+the exact pattern this board avoids), scene controls.
+
+## `pixi.js@7.4.3`, and the mask trap it led to
+
+Pinned to `7.4.3` to match Foundry v14's bundled runtime exactly (its `foundry-pf2e` types
+declare that version), so Reignmaker code lifted here runs unedited, and code written here
+moves back into a real Foundry module without a v7→v8 port. A version bump is a separate,
+deliberate plan, not something to drift into.
+
+One cost of v7 specifically: `PIXI.DisplayObject`'s `mask` setter sets `renderable = false` on
+whatever object it's handed
+(`@pixi/display/lib/DisplayObject.mjs:352`), unconditionally. `TerrainLayer`'s procedural
+texture overlays are a `TilingSprite` masked to a cell's shape; the first attempt used the
+cell's own fill `Graphics` as that mask, on the theory that a shape already being drawn could
+double as its own clip. Every textured terrain rendered colourless — the fill had gone
+invisible, not just "used as a stencil." A `DisplayObject` in PIXI v7 cannot be both a visible
+child and a mask at once. The fix is a *second* `Graphics` of the same polygon, added to the
+layer but used only as the mask, never drawn for its own sake
+(`src/board/layers/TerrainLayer.ts`'s `shapeOf`, called twice per textured terrain type). Worth
+knowing before reusing this pattern in v8, where masking is reworked.
+
+## Sizing `public/art/`
+
+`public/art/` is 136 fetched `pf2e-trooper` strategy sprites plus 2 Reignmaker fallback tokens,
+17 MB committed. `npx vite build`'s `dist/` grows by the same amount — webp doesn't gzip
+further, so it's not a build-time cost, just a repo- and deploy-size one. Anyone vendoring
+`src/board/` elsewhere without this art directory needs their own `src/engine/art.ts`-shaped
+map and image set; the board code itself has no hard dependency on any particular art — a
+missing texture just leaves a token's coloured base disc as the permanent placeholder (see
+`Token.updateArt`'s `.catch(() => {})`).
