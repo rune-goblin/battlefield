@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COMBATANTS } from '../engine/combatants.js';
+import { OFFICIAL } from '../engine/official.js';
 import { deriveStats } from '../engine/cards.js';
 
 describe('combatants', () => {
@@ -15,5 +16,21 @@ describe('combatants', () => {
   it('keeps the worked-example numbers', () => {
     const s = deriveStats(COMBATANTS.find((c) => c.name === 'Line Infantry')!);
     expect(s).toMatchObject({ strike: 11, volley: 11, reach: 'long', defence: 24, will: 13 });
+  });
+});
+
+describe('official troops', () => {
+  it('imports a broad selection with usable cards', () => {
+    expect(OFFICIAL.length).toBeGreaterThanOrEqual(30);
+    expect(new Set(OFFICIAL.map((c) => c.role)).size).toBe(7);
+    for (const c of OFFICIAL) {
+      const s = deriveStats(c);
+      expect(s.defence, c.name).toBeGreaterThan(10);
+      expect(c.role === 'siege' ? s.strike === null : s.strike! > 0, c.name).toBe(true);
+    }
+  });
+  it('keeps official names distinct from the Reignmaker set', () => {
+    const rm = new Set(COMBATANTS.map((c) => c.name));
+    expect(OFFICIAL.filter((c) => rm.has(c.name))).toEqual([]);
   });
 });

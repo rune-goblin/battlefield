@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { COMBATANTS, deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
+  import { COMBATANTS, OFFICIAL, deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
   import { game, resetSetup, saveSetup, startBattle, type SetupUnit } from './game.svelte.js';
 
   let side: Side = $state('attacker');
   let rosterName = $state(COMBATANTS[0].name);
-  const library = [...COMBATANTS, ...ROSTER];
+  const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
   let custom = $state<{ name: string; level: number; role: Role; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', tactics: [] });
 
   const zone = (s: Side, card: UnitCard) => deployZone(s, game.setup.terrain, (card.tactics ?? []).includes('ambush'));
@@ -55,6 +55,9 @@
         <select bind:value={rosterName}>
           <optgroup label="Reignmaker troops">
             {#each COMBATANTS as c}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          </optgroup>
+          <optgroup label="Official Pathfinder troops">
+            {#each OFFICIAL as c}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
           </optgroup>
           <optgroup label="Generic roster">
             {#each ROSTER as c}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}

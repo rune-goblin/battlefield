@@ -12,7 +12,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit -p tsconfig.engine.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "import:troops": "node scripts/import-troops.mjs"
+    "import:troops": "node scripts/import-troops.mjs",
+    "import:official": "node scripts/import-official.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
