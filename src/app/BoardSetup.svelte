@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { FEATURES, HEX_TERRAINS } from '../engine/index.js';
-  import Board from './Board.svelte';
+  import { FEATURES, HEX_TERRAINS, type GridKind } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { game, generate, next, rerollSeed, save } from './game.svelte.js';
 
-  let pixiPreview = $state(false);
+  const GRIDS: GridKind[] = ['square', 'hex'];
 
   const spec = $derived(game.setup.spec);
   const fortTier = $derived(spec.construction?.tier ?? -1);
@@ -18,6 +17,11 @@
 <div class="card">
   <div class="row">
     <label>Hex <select bind:value={game.setup.spec.base} onchange={save}>{#each HEX_TERRAINS as t (t)}<option value={t}>{t}</option>{/each}</select></label>
+    <label>Grid
+      <select value={spec.grid ?? 'square'} onchange={(e) => { game.setup.spec.grid = e.currentTarget.value as GridKind; generate(); }}>
+        {#each GRIDS as g (g)}<option value={g}>{g}</option>{/each}
+      </select>
+    </label>
     <label>Feature <select bind:value={game.setup.spec.feature} onchange={save}>{#each FEATURES as f (f)}<option value={f}>{f}</option>{/each}</select></label>
     <label>Construction
       <select value={fortTier} onchange={(e) => setConstruction(Number(e.currentTarget.value))}>
@@ -35,11 +39,7 @@
 </div>
 
 {#if game.setup.board}
-  <label class="row" style="margin:.5rem 0"><input type="checkbox" bind:checked={pixiPreview}> Pixi preview</label>
-  <div class:grid2={pixiPreview}>
-    <Board board={game.setup.board} />
-    {#if pixiPreview}<PixiBoard board={game.setup.board} />{/if}
-  </div>
+  <PixiBoard board={game.setup.board} />
 {:else}
   <p class="muted">No board yet. Generate one.</p>
 {/if}

@@ -18,8 +18,9 @@ export class OverlayLayer {
 
   private readonly highlights = new Map<HighlightStyle, Set<string>>();
   private hoverCell: string | null = null;
+  private hoverEdge: string | null = null;
   private selectedCell: string | null = null;
-  private paintPreview: { cells: string[]; colour: number } | null = null;
+  private paintPreview: { cells: string[]; edges: string[]; colour: number } | null = null;
 
   constructor(container: PIXI.Container, theme: BoardTheme) {
     this.container = container;
@@ -47,15 +48,17 @@ export class OverlayLayer {
     this.redraw();
   }
 
-  /** For Wave 3's Interaction: the hovered cell, redrawn at pointer-move rate. */
-  setHover(cell: string | null): void {
+  /** The hovered cell and, under an edge brush, the edge a click would take. */
+  setHover(cell: string | null, edge: string | null = null): void {
+    if (cell === this.hoverCell && edge === this.hoverEdge) return;
     this.hoverCell = cell;
+    this.hoverEdge = edge;
     this.redraw();
   }
 
-  /** For Wave 3's drag-paint: the pending stroke, before it commits on pointerup. */
-  setPaintPreview(cells: string[], colour: number): void {
-    this.paintPreview = cells.length ? { cells, colour } : null;
+  /** The pending drag-paint stroke, before it commits on pointerup. */
+  setPaintPreview(cells: string[], edges: string[], colour: number): void {
+    this.paintPreview = cells.length || edges.length ? { cells, edges, colour } : null;
     this.redraw();
   }
 
@@ -73,9 +76,11 @@ export class OverlayLayer {
 
     if (this.paintPreview) {
       for (const key of this.paintPreview.cells) this.fillCell(g, key, this.paintPreview.colour, 0.5);
+      for (const key of this.paintPreview.edges) this.strokeEdge(g, key, this.paintPreview.colour, 0.85, 6);
     }
 
     if (this.hoverCell) this.strokeCell(g, this.hoverCell, this.theme.overlay.hover, 0.6, 2);
+    if (this.hoverEdge) this.strokeEdge(g, this.hoverEdge, this.theme.overlay.selected, 0.9, 5);
     if (this.selectedCell) this.strokeCell(g, this.selectedCell, this.theme.overlay.selected, 1, 3);
 
     this.container.addChild(g);
@@ -85,6 +90,15 @@ export class OverlayLayer {
     const cell = this.grid!.parse(key);
     if (!this.grid!.inBounds(cell)) return;
     g.beginFill(colour, alpha).drawPolygon(this.grid!.vertices(cell, this.size)).endFill();
+  }
+
+  private strokeEdge(g: PIXI.Graphics, key: string, colour: number, alpha: number, width: number): void {
+    const [aKey, bKey] = key.split('|');
+    const a = this.grid!.parse(aKey);
+    const b = this.grid!.parse(bKey);
+    if (!this.grid!.inBounds(a) || !this.grid!.inBounds(b)) return;
+    const [p, q] = this.grid!.edgeSegment(a, b, this.size);
+    g.lineStyle(width, colour, alpha).moveTo(p.x, p.y).lineTo(q.x, q.y);
   }
 
   private strokeCell(g: PIXI.Graphics, key: string, colour: number, alpha: number, width: number): void {

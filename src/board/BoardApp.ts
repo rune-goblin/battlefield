@@ -11,6 +11,7 @@ export interface BoardAppOptions {
 // containers with no knowledge of the renderer, canvas element or resize wiring.
 export class BoardApp {
   readonly app: PIXI.Application;
+  private readonly viewportContainer = new PIXI.Container();
   private themeValue: BoardTheme;
 
   constructor({ canvas, container, theme }: BoardAppOptions) {
@@ -26,6 +27,9 @@ export class BoardApp {
       autoDensity: true,
     });
     this.app.stage.sortableChildren = true;
+    this.viewportContainer.name = 'Viewport';
+    this.viewportContainer.sortableChildren = true;
+    this.app.stage.addChild(this.viewportContainer);
   }
 
   get stage(): PIXI.Container {
@@ -36,11 +40,10 @@ export class BoardApp {
     return this.themeValue;
   }
 
-  // proto: stand-in for Wave 3's real pan/zoom viewport container. Today it's just the stage
-  // (scale always 1), but pointing zoom-invariant text (LabelLayer) at `viewport.scale` now
-  // means Wave 3 only has to swap this getter, not every caller.
+  // Pan and zoom live here, between the stage and the board, so Interaction moves one
+  // container and every layer inherits the transform. `Interaction` is its only writer.
   get viewport(): PIXI.Container {
-    return this.app.stage;
+    return this.viewportContainer;
   }
 
   setTheme(theme: BoardTheme): void {

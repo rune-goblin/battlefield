@@ -38,6 +38,12 @@ export class LabelLayer {
     }
   }
 
+  /** Keep the labels a constant on-screen size as the viewport zooms. */
+  rescale(): void {
+    const inverse = 1 / Math.max(0.3, this.viewport.scale.x || 1);
+    for (const child of this.container.children) child.scale.set(inverse);
+  }
+
   clear(): void {
     this.container.removeChildren().forEach((c) => c.destroy());
   }

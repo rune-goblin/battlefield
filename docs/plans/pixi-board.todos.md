@@ -201,3 +201,78 @@ Judgment calls taken inside the wave:
   because that combination naturally produces a cliff (a ridge peak at elevation 2 sits beside
   the river at elevation 0) alongside forest/water/shallows/settlement variety, with no
   elevation hand-editing needed.
+
+## Wave 3 notes (2026-08-24)
+
+Judgment calls taken inside the wave:
+
+- Erase is a brush kind, not a flag. The plan fixes the `BoardEvent` union, and its `paint`
+  member carries only `{cells, edges, brush}`, so the brush has to describe the whole
+  operation. `Brush` is `terrain | elevation | wall | wall-clear | erase`, and a right-drag
+  emits `eraseForm(brush)` (open / elevation 0 / wall-clear). The stage applies `event.brush`,
+  never its own palette state, so a right-drag needs no special case there.
+- Keyboard brush changes reach the palette through `createBoardView`'s `onBrush` option, not
+  a new `BoardEvent` member — the union stays exactly as the plan fixes it. `Esc` sends
+  `onBrush(null)` and an `onClear()` that drops the overlay selection.
+- `X` (erase) is a cell brush only, so it never removes a wall; wall removal is a right-drag
+  with a wall brush or the palette's "remove wall" (`wall-clear`). Making `erase` an edge
+  brush too would have made every erase stroke near a boundary eat walls by accident.
+- A wall stroke takes the nearest edge whether or not it is inside the band: the band is a
+  hit-priority rule (cell vs edge), and with a wall brush the cell is never the target.
+  On top of that a stroke prefers edges parallel to its travel (|cos| ≥ 0.45 against the drag
+  vector, falling back to the plain nearest for a click). Without that filter, the first
+  capture run showed a straight drag down the b|c boundary also laying `b4|b5`, because the
+  pointer passes exactly through the corner where the perpendicular edge is nearest. 0.45
+  keeps a hex's 60° edges, which its zigzag row boundaries need.
+- Double-click refits only when no brush is set. In paint mode every cell is a paint target,
+  so "empty space" does not exist there and a refit would fight the painter; `Esc` clears the
+  brush and then double-click refits.
+- Pan and zoom move the board under a stationary pointer, so `viewportChanged()` recomputes
+  the hover as well as rescaling the labels. Verified: after wheel-zoom, middle-drag pan and a
+  double-click refit, the board screenshot is pixel-identical to the pre-zoom one.
+- `BoardApp.viewport` is now a real container between the stage and `BoardContainer` (Wave 2
+  left it aliased to the stage). `Interaction` is its only writer. `MapTextUtils` applies the
+  inverse scale at creation only, so `LabelLayer.rescale()` reapplies it on every zoom.
+- Token hit-testing is live but token *rendering* is not: `createBoardView` takes a
+  `tokenBounds` provider (discs in board-local coordinates) that Wave 4's TokenLayer fills in;
+  `setTokens` stays a stub. The `press → drag → drop` path and the `drop` event work today;
+  the lift visuals (scale 1.08, shadow, tween-back) are Wave 4's.
+- `OverlayLayer.setHover` and `setPaintPreview` gained an edge argument, since walls are edges
+  and the plan asks the overlay to show "the nearest edge in wall brush". The hovered edge
+  draws in the selection colour, a pending stroke's edges in the brush colour.
+- Shift-click fill is a `region(cell)` callback passed in from `index.ts` (flood fill over
+  `grid.neighbours` by terrain), so `Interaction` never holds a `Board`.
+- The paint stage keeps five whole-board snapshots for undo rather than inverse strokes:
+  `$state.snapshot` is already a deep plain copy, an 8×8 board is tiny, and one assignment
+  per stroke is the "one store write" the plan asks for.
+- The grid dropdown regenerates on change. `Board.grid` is baked in at generation, so letting
+  the spec and the drawn board disagree would be a lie; regenerating is one click's work.
+- `Board.svelte` is gone from the board and paint stages; Place and Battle still use it until
+  Waves 4–5 replace them.
+- The one PIXI-free piece of this wave (`hit.ts`) got a small `describe.each` test on both
+  grids, since the band rule (0.18 of a cell *and* closer than the centre) is a rule this wave
+  invented and nothing else records it. No tests for `Interaction` or the layers.
+- Gate artifact is `docs/plans/pixi-board-shots/wave3-paint.png`, a six-panel composite rather
+  than a GIF: drag stroke (painted with the keyboard's `2` brush), a tier-2 wall dragged up an
+  edge band, a right-drag erase, a shift-click region fill, and a hex board taking a water
+  stroke and a tier-3 wall. Playwright drove the real app; the harness lives in the session
+  scratchpad, not the repo.
+
+Verified by dumping localStorage during the capture run:
+
+- Hex renders, paints and takes walls through the renderer for the first time: the hex run
+  ended with `grid: 'hex'`, 8 water cells from one drag, and a tier-3 wall on `e3|e4` (a
+  row-boundary edge, i.e. one of the 60° ones).
+- A three-cell wall drag on square lays exactly `b4|c4 b5|c5 b6|c6`.
+- The keyboard brush reaches the palette: pressing `2` on the focused canvas leaves
+  "2 · forest" as the active palette button.
+
+Open questions raised here:
+
+- Zoom is capped at 2.5× against a board that already fits the container, so zooming in is
+  only useful for inspecting one corner. If the board ever gets bigger than 8×8, revisit.
+- `setSelected` still reads its id as a cell key (Wave 2's note). `Esc` clears it through
+  `onClear`, which is the only writer of it from inside `src/board/`.
+- Touch: `pointer*` listeners mean a finger drags-paints, but there is no pinch-zoom and
+  `touch-action: none` on the canvas kills page scrolling over the board. Mobile is a
+  non-goal, but that is the trade as it stands.

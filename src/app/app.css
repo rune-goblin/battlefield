@@ -88,6 +88,7 @@ table.stats td:first-child { color:var(--muted); }
 .sq .chip .pip { width:7px; height:7px; }
 .sq .chip.clickable { cursor:pointer; }
 .palette { display:flex; gap:.4rem; flex-wrap:wrap; margin:.5rem 0; }
+kbd { font:inherit; font-size:.85em; border:1px solid var(--rule); border-radius:4px; padding:0 .25em; background:var(--band); }
 .palette button.on { background:var(--accent); color:var(--paper); border-color:var(--accent); }
 .unitrow.sel { outline:2px solid var(--accent); }
 .unitrow.click { cursor:pointer; }
