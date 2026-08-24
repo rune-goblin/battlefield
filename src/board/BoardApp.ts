@@ -36,6 +36,13 @@ export class BoardApp {
     return this.themeValue;
   }
 
+  // proto: stand-in for Wave 3's real pan/zoom viewport container. Today it's just the stage
+  // (scale always 1), but pointing zoom-invariant text (LabelLayer) at `viewport.scale` now
+  // means Wave 3 only has to swap this getter, not every caller.
+  get viewport(): PIXI.Container {
+    return this.app.stage;
+  }
+
   setTheme(theme: BoardTheme): void {
     this.themeValue = theme;
     this.app.renderer.background.color = theme.background;

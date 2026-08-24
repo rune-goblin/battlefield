@@ -1,5 +1,7 @@
 import type { SquareTerrain } from '../engine/index.js';
 
+export type HighlightStyle = 'deploy' | 'move' | 'attack';
+
 export interface BoardTheme {
   mode: 'light' | 'dark';
   background: number;
@@ -10,6 +12,11 @@ export interface BoardTheme {
   attacker: number;
   defender: number;
   terrain: Record<SquareTerrain, number>;
+  overlay: {
+    hover: number;
+    selected: number;
+    highlight: Record<HighlightStyle, number>;
+  };
 }
 
 // proto: seeded from pf2e-reignmaker's TERRAIN_OVERLAY_COLORS (src/styles/colors.ts) —
@@ -36,6 +43,11 @@ const LIGHT: BoardTheme = {
     water: 0x6f9fc4,
     settlement: 0xc2bcb2,
   },
+  overlay: {
+    hover: 0x1f1a17,
+    selected: 0xb4611f,
+    highlight: { deploy: 0xc9a227, move: 0x3f7d4f, attack: 0xb23b3b },
+  },
 };
 
 const DARK: BoardTheme = {
@@ -54,6 +66,11 @@ const DARK: BoardTheme = {
     shallows: 0x37535f,
     water: 0x2f5476,
     settlement: 0x4a4744,
+  },
+  overlay: {
+    hover: 0xe8e1d5,
+    selected: 0xd98b6e,
+    highlight: { deploy: 0xe8c34a, move: 0x5fbf7f, attack: 0xe0685a },
   },
 };
 

@@ -29,7 +29,6 @@ export type LayerId =
   | 'overlay'    // hover, selection, highlight sets, paint preview
   | 'tokens'     // unit and engine sprites
   | 'labels'     // coordinate labels
-  | 'grid'       // proto: Wave 0 stub grid lines; folds into terrain in Wave 2
   | string;      // custom layer IDs
 
 /**
@@ -229,8 +228,6 @@ export class LayerManager {
         return 30; // Units and engines
       case 'labels':
         return 40; // Coordinate labels on top
-      case 'grid':
-        return 0; // proto: Wave 0 stub shares terrain's z-index
       default:
         return 0; // Default z-index
     }

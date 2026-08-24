@@ -146,3 +146,57 @@ the Place stage, or `src/app/`.
   resolves to a truthy path and every `ENGINES` entry resolves to a non-null one.
 - Added `"import:art": "node scripts/import-art.mjs"` to `package.json` alongside the other
   three `import:*` scripts, matching their naming.
+
+## Wave 2 notes (2026-08-24)
+
+Judgment calls taken inside the wave:
+
+- Terrain texture cache key is the terrain type alone, not type+size: each procedural texture
+  (tree dots, reed strokes, ripple lines, cobbles) is generated once at a fixed 32 px tile via
+  `generateTexture`, then tiled with a `TilingSprite` regardless of the board's current cell
+  size — matches the plan's "cached per type" literally and means a window resize never
+  regenerates a texture, only rescales how many tiles show per cell.
+- The texture overlay for a terrain type reuses that type's own flat-fill `Graphics` as the
+  `TilingSprite`'s mask, instead of a second per-cell clip path — a `DisplayObject` can be both
+  a normally-rendered child and another object's mask at once (confirmed against PixiJS v7's
+  own docs: "a mask of an object must be in the subtree of its parent", which a sibling
+  satisfies). `TerrainLayer.clear()` nulls every child's `.mask` before destroying, since
+  destroy order would otherwise leave a `TilingSprite` pointing at an already-destroyed fill.
+- Elevation slope hatching (`TerrainLayer`) only draws for a single-level drop (`diff === 1`);
+  a 2+ drop renders as a cliff instead (`EdgeLayer`), and an edge already carrying a wall bar
+  skips hatching entirely so the two treatments never stack on the same edge.
+- Breached walls: the plan's literal "broken bar at 40% alpha" (i.e., the same stone-grey as a
+  standing wall, just fainter) was visually indistinguishable from open terrain in testing —
+  verified with pixel-targeted Playwright crops before and after. Switched to `theme.accent`
+  (a warm hue distinct from the cool wall-grey) at 0.75 alpha, still drawn as the two-segment
+  broken bar. Flagging in case a reviewer wants the literal grey-at-low-alpha look restored for
+  a reason not visible from testing alone.
+- `setSelected(id)` is read as a cell key (`grid.parse`) rather than a token id: Wave 2 has no
+  tokens, and this keeps the method meaningful now. An id that doesn't parse to an in-bounds
+  cell — a future token id, say — just draws nothing; once TokenLayer (Wave 4) exists the
+  token itself can carry the selection ring instead, so this doesn't need to change later, just
+  stop being the only thing `setSelected` does.
+- "Deploy wash" (Terrain rendering section) is described as "translucent side-coloured", but
+  `setHighlight(cells, style)` carries no side parameter and the plan lists exactly three
+  styles. Implemented `deploy` as one fixed neutral-gold colour; the caller (the Place stage,
+  Wave 4/5) is expected to pass only the currently-placing side's cells. Making the wash itself
+  side-coloured would mean extending `HighlightStyle` or the method signature — flagging for
+  whoever wires Place rather than deciding it here.
+- Removed the Wave 0 `'grid'` `LayerId` stub and its `getDefaultZIndex` case, per that wave's
+  own note that it "folds into terrain in Wave 2".
+- Added `BoardApp.viewport`, a stand-in for Wave 3's real pan/zoom container (today just
+  `get viewport() { return this.app.stage }`, scale always 1) so `LabelLayer`'s zoom-invariant
+  text has a seam to read now; Wave 3 only needs to change what the getter returns, not every
+  caller.
+- `MapTextUtils` lift dropped `getHexCenter` (Foundry's `canvas.grid` API — this board resolves
+  centres through `Grid.center` instead) and `updateTextScale` (dead code in Reignmaker too,
+  never called outside that file). Added a `coordinateLabel` text style since Reignmaker has no
+  chessboard-style label preset to lift.
+- Screenshot gate: reused Wave 0's Playwright + cached-Chromium approach, but through a
+  throwaway Vite entry (`dev/_wave2-preview/`, deleted before commit) that calls
+  `createBoardView` directly, since nothing in the app wires `setHighlight`/`setSelected` yet
+  (that's Waves 3–5). The demo board is `{ base: 'mountains', feature: 'river', construction:
+  { kind: 'fort', tier: 2 }, seed: 25 }` with one wall's `remaining` set to 0 by hand — chosen
+  because that combination naturally produces a cliff (a ridge peak at elevation 2 sits beside
+  the river at elevation 0) alongside forest/water/shallows/settlement variety, with no
+  elevation hand-editing needed.
