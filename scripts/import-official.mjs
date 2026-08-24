@@ -74,7 +74,7 @@ const cards = SELECTION.map(([path, role]) => {
     fear: d.items.some((it) => /frightful presence/i.test(it.name)),
     source: d.system.details.publication?.title ?? '',
     overrides: {
-      strike: role === 'siege' ? null : (melee.length ? Math.max(...melee.flatMap((a) => dcs(a.text))) : battleDc) - 10,
+      strike: role === 'siege' ? null : (melee.length ? Math.min(...melee.flatMap((a) => dcs(a.text))) : battleDc) - 10,
       volley: salvoDc === null ? null : salvoDc - 10,
       reach,
       defence: s.attributes.ac.value,
