@@ -132,8 +132,11 @@ export class Interaction {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
+  // Edges compete for hits in view mode (wall inspection) and battle mode (wall-target
+  // actions like a ram/bombard); paint mode only cares about edges under an edge brush, since
+  // otherwise every cell near a boundary would fight the terrain brush for the click.
   private edgesLive(): boolean {
-    return isEdgeBrush(this.brush) || this.mode === 'view';
+    return isEdgeBrush(this.brush) || this.mode === 'view' || this.mode === 'battle';
   }
 
   private hitAt(screen: Point): Hit | null {
@@ -354,7 +357,7 @@ export class Interaction {
     if (!cell) return this.setHover(null, null);
 
     let edge: string | null = null;
-    if (isEdgeBrush(this.brush) || this.mode === 'view') {
+    if (isEdgeBrush(this.brush) || this.mode === 'view' || this.mode === 'battle') {
       const candidate = nearestEdge(point, cell, geometry.grid, geometry.size);
       // With a wall brush the nearest edge is always what a click paints, so always show it.
       if (candidate && (isEdgeBrush(this.brush) || candidate.inBand)) edge = candidate.key;

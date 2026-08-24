@@ -22,6 +22,7 @@ export interface BoardTheme {
     ringActive: number;
     ringSelected: number;
     ringHighlight: number;
+    ringFlash: number;
     pipFilled: number;
     pipEmpty: number;
     badgeFill: number;
@@ -62,7 +63,8 @@ const LIGHT: BoardTheme = {
     routed: 0xb9ab93,
     ringActive: 0xb4611f,
     ringSelected: 0x1f1a17,
-    ringHighlight: 0x3f7d4f,
+    ringHighlight: 0xb23b3b,
+    ringFlash: 0xf2c744,
     pipFilled: 0x1f1a17,
     pipEmpty: 0xf8f4ec,
     badgeFill: 0xf8f4ec,
@@ -96,7 +98,8 @@ const DARK: BoardTheme = {
     routed: 0x8c8378,
     ringActive: 0xd98b6e,
     ringSelected: 0xe8e1d5,
-    ringHighlight: 0x5fbf7f,
+    ringHighlight: 0xe0685a,
+    ringFlash: 0xffe066,
     pipFilled: 0xe8e1d5,
     pipEmpty: 0x2a2520,
     badgeFill: 0x1d1a17,

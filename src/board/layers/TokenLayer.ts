@@ -19,9 +19,10 @@ export class TokenLayer {
   private readonly cache = new Map<string, Token>();
   private draggingId: string | null = null;
 
+  // Wave 5 needs every token ticked regardless of drag state: a move tween or a free-strike
+  // flash can be running on some other token while one is being dragged.
   private readonly tick = (): void => {
-    if (this.draggingId) this.cache.get(this.draggingId)?.pulse();
-    else for (const token of this.cache.values()) token.pulse();
+    for (const token of this.cache.values()) token.tick();
   };
 
   constructor(container: PIXI.Container, ticker: PIXI.Ticker, theme: BoardTheme) {

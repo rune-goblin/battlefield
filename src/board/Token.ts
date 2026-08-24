@@ -3,7 +3,7 @@ import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } fr
 import { engineArtUrl, troopArtUrl } from './art.js';
 import type { BoardTheme } from './theme.js';
 
-export type TokenRing = 'active' | 'selected' | 'highlighted';
+export type TokenRing = 'active' | 'selected' | 'highlighted' | 'flash';
 
 export interface UnitTokenModel {
   kind: 'unit';
@@ -43,6 +43,8 @@ const ART_ANCHOR_Y = 0.8;
 const RING_GAP = 0.06;
 const LIFT_SCALE = 1.08;
 const PULSE_PERIOD_MS = 1400;
+const FLASH_PERIOD_MS = 260;
+const MOVE_TWEEN_MS = 200;
 
 // A shared filter instance: desaturate() only ever sets the same fixed matrix, so every
 // broken token can point at the one instance instead of allocating its own.
@@ -86,6 +88,12 @@ export class Token extends PIXI.Container {
   private readonly ring = new PIXI.Graphics();
   private ringKind: TokenRing | null = null;
   private pulseStart = 0;
+
+  // Wave 5: a battle move tweens from wherever the token is actually sitting (which may
+  // itself be mid-tween from the previous move) to the new cell's centre. `lastCell` is null
+  // until the first `place()`, so mounting never tweens in from the origin.
+  private lastCell: string | null = null;
+  private tween: { from: Point; to: Point; start: number } | null = null;
 
   constructor(id: string) {
     super();
@@ -161,16 +169,30 @@ export class Token extends PIXI.Container {
     if (this.model) this.place(this.model, grid, size);
   }
 
-  /** Advances the active-ring pulse. Cheap no-op unless this token is currently `ring: 'active'`. */
-  pulse(): void {
-    if (this.ringKind !== 'active') return;
-    this.ring.alpha = this.pulseAlpha();
+  /** Advances the move tween and the ring's pulse/flash animation. Called every tick; a
+   * cheap no-op unless this token has one or the other running. */
+  tick(): void {
+    if (this.tween) {
+      const t = Math.min(1, (performance.now() - this.tween.start) / MOVE_TWEEN_MS);
+      const eased = 1 - (1 - t) ** 3; // ease-out cubic
+      const { from, to } = this.tween;
+      this.position.set(from.x + (to.x - from.x) * eased, from.y + (to.y - from.y) * eased);
+      if (t >= 1) this.tween = null;
+    }
+    if (this.ringKind === 'active') this.ring.alpha = this.pulseAlpha();
+    else if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
   }
 
   private place(model: TokenModel, grid: Grid, size: number): void {
     const cell = grid.parse(model.cell);
-    const c = grid.center(cell, size);
-    this.position.set(c.x, c.y);
+    const target = grid.center(cell, size);
+    if (this.lastCell !== null && this.lastCell !== model.cell) {
+      this.tween = { from: { x: this.x, y: this.y }, to: target, start: performance.now() };
+    } else {
+      this.position.set(target.x, target.y);
+      this.tween = null;
+    }
+    this.lastCell = model.cell;
   }
 
   private drawBase(model: TokenModel, size: number, theme: BoardTheme, routed: boolean): void {
@@ -327,14 +349,17 @@ export class Token extends PIXI.Container {
     this.ringKind = kind;
     this.ring.clear();
     this.ring.visible = !!kind;
-    if (!kind) return;
+    if (!kind) { this.pulseStart = 0; return; }
     const r = (size * TOKEN_DISC_RATIO) / 2 + size * RING_GAP;
-    const colour = kind === 'active' ? theme.token.ringActive : kind === 'selected' ? theme.token.ringSelected : theme.token.ringHighlight;
-    const width = kind === 'selected' ? size * 0.06 : size * 0.045;
+    const colour = kind === 'active' ? theme.token.ringActive
+      : kind === 'flash' ? theme.token.ringFlash
+      : kind === 'selected' ? theme.token.ringSelected
+      : theme.token.ringHighlight;
+    const width = kind === 'selected' ? size * 0.06 : kind === 'flash' ? size * 0.07 : size * 0.045;
     this.ring.lineStyle(width, colour, 1).drawCircle(0, 0, r);
-    if (kind === 'active') {
+    if (kind === 'active' || kind === 'flash') {
       this.pulseStart ||= performance.now();
-      this.ring.alpha = this.pulseAlpha();
+      this.ring.alpha = kind === 'active' ? this.pulseAlpha() : this.flashAlpha();
     } else {
       this.pulseStart = 0;
       this.ring.alpha = kind === 'highlighted' ? 0.8 : 1;
@@ -344,5 +369,13 @@ export class Token extends PIXI.Container {
   private pulseAlpha(): number {
     const t = ((performance.now() - this.pulseStart) % PULSE_PERIOD_MS) / PULSE_PERIOD_MS;
     return 0.55 + 0.35 * Math.sin(t * Math.PI * 2);
+  }
+
+  /** A fast, hard blink — distinct from the slow `active` breathing pulse — for a free
+   * strike's instant. The caller (Battle.svelte) owns the duration and clears `ring` itself;
+   * this just animates for as long as `ring` stays `'flash'`. */
+  private flashAlpha(): number {
+    const t = ((performance.now() - this.pulseStart) % FLASH_PERIOD_MS) / FLASH_PERIOD_MS;
+    return 0.35 + 0.65 * Math.abs(Math.sin(t * Math.PI * 2));
   }
 }

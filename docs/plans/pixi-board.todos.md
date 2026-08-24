@@ -395,3 +395,131 @@ Open questions raised here:
 - Pulsing `active` rings and the `routed` grey-base-plus-arrow treatment are implemented but
   unexercised by anything in this wave (Place has no wounds/shaken/active unit) — first real
   look at them is whenever Wave 5 wires a live `Unit[]` through.
+
+## Wave 5 notes (2026-08-25)
+
+Judgment calls taken inside the wave:
+
+- **`Board.svelte`: deleted.** After this wave nothing imports it — Battle.svelte was its last
+  consumer (Board/Paint stages moved to Pixi in Wave 3, Place in Wave 4). The reserved question
+  was "delete, or keep as a text fallback for screen readers and print"; nobody proposed an
+  actual consumer for a fallback (no print stylesheet, no a11y text view exists anywhere else
+  in the app), so keeping it would mean a dead file with no caller, which is worse than deleting
+  it — a real fallback is a feature to design, not a leftover component to keep warm. Deleted,
+  and removed its now-dead CSS from `app.css` (`.boardwrap`/`.ranks`/`.files`/`.grid`/`.sq`/`.sq
+  .chip`/`.sq .wall`/`.sq .cliff`/`.sq .handle`, plus the unscoped `.chip`/`.pips`/`.pip`/
+  `.walls` rules that only it used — confirmed by grep, nothing else referenced any of them).
+  If a text/print fallback is ever wanted, it should be designed against the Pixi board's own
+  state (`BoardView`-shaped), not resurrected from the old DOM component, which read `Board`
+  and a bespoke `BoardUnit[]` shape that no longer matches how Battle/Place model tokens.
+- **Hover → highlight mapping.** Only the *hovered* action row highlights anything — no default
+  "show every possible move" wash the old DOM board didn't have either, come to think of it (the
+  old code's default was the union of all square-kind targets, always on). Dropped that default
+  deliberately: with up to three movement rows (`Advance`, `Advance into slow ground`,
+  `Withdraw`) plus `Retreat` all unioned together, the always-on version was busy and didn't
+  read as "this option does this." One row hovered → one target set shown. `targetKind: 'square'`
+  rows (advance/withdraw/retreat) call `setHighlight(cells, 'move')` — there's no square-kind
+  action in this engine that's offensive, so `'move'` covers all of them; `'attack'` is unused
+  by `setHighlight` in Battle. `targetKind: 'unit'` rows set the matching tokens'
+  `ring: 'highlighted'` instead (composite `cavalry-charge` targets like `"e4>u3"` are split to
+  the unit id first). `targetKind: 'wall'` rows (`engine-bombard`) get **no** visual highlight —
+  `BoardView.setHighlight` is cell-keyed only per the plan's fixed interface (`grid.parse` on an
+  edge key like `"e4|e5"` would just fail to resolve), and extending the interface for one
+  action kind felt like more surface than this wave should add. The click still works (see
+  below); a hovered wall row just doesn't light anything up first. Flagging for whoever revisits
+  `OverlayLayer`/`BoardView` next — an edge-highlight set is the natural extension if this turns
+  out to matter in play (siege engines are rare enough in a given battle that it may not).
+- **`ring: 'highlighted'` recoloured** from green (`0x3f7d4f`/`0x5fbf7f`, matching the `move`
+  cell wash) to the same red as the `attack` cell wash (`0xb23b3b`/`0xe0685a`), since in Battle
+  every token that gets `'highlighted'` is a unit-kind action's target — offensive in all but
+  two rows (`defend-allies`, `battlefield-medicine`) — and green read as "you can move here"
+  when hovering, say, `Strike`.
+- **Free strikes flash the striker's ring** — new `TokenRing` member `'flash'`
+  (`src/board/Token.ts`), a fast hard blink (260 ms cycle, thicker line) in a new theme colour
+  (`token.ringFlash`, warm yellow) distinct from the slow `active` breathing pulse and the
+  steady `highlighted`/`selected` rings. `battle.ts`'s `LogEntry` doesn't flag a strike as free
+  vs. chosen, so detection is a regex over the three label phrases `resolveStrike`'s
+  `reactionsOnEntry`/`reactionsOnLeaving` callers use (`"reacts and strikes"`, `"strikes from
+  its brace at"`, `"strikes the withdrawing"`) against the log entries `act()` appended for that
+  one `takeAction` call (`Battle.svelte`'s `go()` diffs `game.battle!.log` before/after). This
+  is a real coupling from display code to `battle.ts`'s exact wording — flagging rather than
+  fixing, since the alternative (an engine change to return which units struck for free) is
+  more than this wiring wave should touch; a future wave could have `act()` return that list
+  directly. **Not captured in the gate screenshot** — the required panel list didn't ask for it,
+  and reliably timing a screenshot inside a 700 ms window against real (non-seeded) dice felt
+  like more capture-tooling effort than the "couple of attempts" budget allows. Verify in play:
+  any `Withdraw`/`Retreat` while engaged provokes every engaged enemy's free strike
+  (`reactionsOnLeaving` has no tactic/brace gate, unlike entry), so it's easy to trigger by hand.
+- **Move tween** lives on `Token` itself (`place()` diffs the model's `cell` against the token's
+  own last-drawn cell; a change starts a 200 ms ease-out-cubic tween from wherever the token is
+  *actually* sitting right now — which may itself be mid-tween — to the new centre; no change
+  or a first mount snaps straight there). `TokenLayer`'s per-tick callback now calls `token.tick()`
+  on every cached token every frame instead of skipping all but the dragged one — needed since a
+  tween or a flash can be running on a token that isn't the one being dragged, and the old
+  drag-only gate would have frozen everything else's animation mid-drag. Side effect, not
+  Wave-5-scoped but free: Place's own token-drop "snap" (Wave 4's `endDrag` re-place) now
+  animates too, since it's the same `place()` path — a dropped/moved token in Place eases into
+  its cell instead of jumping. Not asked for, not a regression either; left as-is.
+- **Abandoned/captured engines as standalone tokens**: `Battle.svelte`'s `tokens` derivation
+  emits an `EngineTokenModel` for every `u.engines` entry with `status !== 'crewed'`, id
+  `` `${u.id}:engine:${i}` ``, on the engine's own `cell` (its state's `square`, frozen at the
+  square it was abandoned on). Side colour is the *original owning unit's* side — `EngineState`
+  records `status: 'crewed' | 'abandoned' | 'captured'` but not *who* captured it (only
+  `captureEngines()`'s local `captor` variable, used for the log line, is thrown away), so
+  there's no side to recolour a captured engine to without an engine change. Flagging as a
+  small, honest gap: a captured siege engine still shows its original owner's colour.
+- **Board-click execution** (`Battle.svelte`'s `onCell`/`onToken`/`onEdge`) resolves the same
+  way the pre-existing select-based click already did: search the hovered/focused row first (so
+  hovering the intended row disambiguates when two rows could share a target), then fall back to
+  every available option. This is a deliberate continuation of the original DOM board's
+  behaviour, not a new design — clicking the board and picking from the row's `<select>` are two
+  paths to the same `go(option, target)`, so both stayed.
+- **`Interaction.edgesLive()`/hover fixed to also cover `'battle'` mode**
+  (`src/board/Interaction.ts`): it previously only competed edges against cells in `'view'` mode
+  or under an edge brush, so a wall was never hit-testable in `'battle'` mode at all — clicking
+  near a wall would always resolve to the cell behind it, which would have made `engine-bombard`
+  impossible to trigger by clicking the board (only the list button would have worked). This is
+  a real fix needed for the plan's explicit "clicking a highlighted cell, token or **edge**
+  performs the action," not a style choice.
+- **Dragging a token in Battle mode is inert, not implemented.** `mode === 'battle'` already lets
+  `Interaction` start a token press/drag (shared code with `place`, from Wave 3/4), so a player
+  who drags instead of clicking sees the token lift, follow the pointer, and snap back on
+  release — `TokenLayer`/`Token.endDrag`'s existing rejection-snapback (Wave 4) handles this for
+  free, since Battle never calls `setTokens` off a `'drop'` event (no `ondrop` handler is wired).
+  The plan's Battle scope says "clicking ... performs the action," not dragging, so this wasn't
+  built out; flagging in case drag-to-move reads as more natural than click-a-list-target once
+  Mark plays with it.
+- **Active unit's live status** (`braced`/`exposed`/`suppressed`/`outflanked`) is no longer
+  visible via a hover tooltip — the old DOM board's chip had a `title` attribute; Pixi canvas
+  tokens have none, and the plan's Token spec doesn't define a tooltip-carrying state. Added a
+  `Status` row to the active-unit panel instead (same four flags the old `tags()` helper
+  computed, minus wounds/broken/routed/pace/fear, which are now visible on the token itself via
+  pips/desaturation/the routed arrow, or are static card traits already shown via `Tactics`).
+  This covers the *active* unit only — a non-active unit's braced/exposed/suppressed state has
+  no display anywhere now (previously visible by hovering its board chip). Flagging as a known
+  reduction, not fixed: a hover-driven DOM tooltip keyed off `BoardView`'s `hover` event would
+  restore it but felt like scope beyond "wire the battle stage."
+- **`cavalry-charge`'s implied destination square isn't separately highlighted** on hover — its
+  `ActionOption.targets` are composite `"square>unitId"` strings (`targetKind: 'unit'`), so
+  hovering the row highlights the enemy token like any other unit-kind action, but the square
+  the charge passes through has no cell wash. `ActionOption` doesn't expose that square as a
+  distinct target to highlight separately without inventing a new shape for one action kind.
+
+Screenshot gate: `docs/plans/pixi-board-shots/wave5-battle.png`, a four-panel composite (built
+the same Playwright + cached-Chromium way as Waves 0/2/3/4, harness in the session scratchpad,
+not committed) — the app's own default setup (4 troops, `plains`/`none`, seed 1, verified
+water-free at the default deploy squares on both grids by a throwaway vitest probe, not
+committed) driven through the real UI (Generate → Next → Next → Begin the battle) rather than
+hand-seeded `BattleState` JSON, since `createBattle()`'s derived stats/initiative/order aren't
+simple to hand-author correctly. Panels: (1) the active unit's pulsing ring on a fresh square
+battle; (2) hovering "Advance" washing its four neighbours green; (3) after clicking the actual
+board cell (coordinates computed from `SquareGrid`'s own `center`/`bounds` formulas against the
+canvas's bounding rect — the same math `fromPoint` uses, run in reverse) — the unit's token
+sitting on its new square, tween complete; (4) a fresh hex battle, same default setup, showing
+hexagonal cells, the active ring, both sides' units and a water hex. Initiative is real
+(unseeded) dice, so which of the four units is active differs between the two panels/runs — not
+controlled for, since the panels only need to prove the mechanism works, not depict a specific
+matchup.
+
+No new rule questions this wave — Wave 5 is wiring, not new rule logic. The `docs/design.md`/
+`public/rules.html` hex sidebar remains Wave 6's, untouched here.

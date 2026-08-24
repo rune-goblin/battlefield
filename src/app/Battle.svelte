@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { activeUnit, availableActions, engagedEnemies, isBroken, isOutflanked, isRouted, isWeakened, notation, reachOf, routDc, unit, type ActionOption, type Unit } from '../engine/index.js';
-  import Board from './Board.svelte';
+  import { activeUnit, availableActions, engagedEnemies, isOutflanked, isRouted, notation, reachOf, routDc, unit, type ActionOption } from '../engine/index.js';
+  import type { BoardEventOf, EngineTokenModel, TokenModel, UnitTokenModel } from '../board/index.js';
+  import PixiBoard from './PixiBoard.svelte';
   import { backToSetup, game, takeAction, undo } from './game.svelte.js';
 
   const b = $derived(game.battle!);
@@ -9,31 +10,81 @@
   let chosen = $state<Record<string, string>>({});
   let focused = $state<string | null>(null);
 
-  const tags = (u: Unit) => [
-    isRouted(u) ? 'routed' : isBroken(u) ? 'broken' : isWeakened(u) ? 'weakened' : '',
-    u.braced ? 'braced' : '', u.exposed ? 'exposed' : '', u.suppressed ? 'suppressed' : '',
-    b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
-    u.pace ? 'pace' : '', u.fear ? 'fear' : '',
-  ].filter(Boolean).join(' · ');
-  const crewed = (u: Unit) => u.engines.filter((e) => e.status === 'crewed').map((e) => e.name);
-  const boardUnits = $derived(b.units.filter((u) => u.status === 'active').map((u) => ({
-    id: u.id, name: u.name, side: u.side, square: notation(u.square), wounds: u.wounds, shaken: u.shaken, active: active?.id === u.id,
-    tags: [`${u.name} · L${u.level} ${u.role}`, tags(u), crewed(u).length ? '⚙ ' + crewed(u).join(', ') : ''].filter(Boolean).join(' · '),
-  })));
+  // battle.ts logs a free strike like any other strike, with no flag marking it as one; these
+  // three label phrases (from `resolveStrike`'s `reactionsOnEntry`/`reactionsOnLeaving`
+  // callers) are the only channel to find one without changing the engine this wave.
+  const FREE_STRIKE_RE = /reacts and strikes|strikes from its brace at|strikes the withdrawing/;
+  const FLASH_MS = 700;
+  let flashing = $state<string[]>([]);
+  let flashTimers: ReturnType<typeof setTimeout>[] = [];
+  function flash(id: string) {
+    flashing = [...flashing, id];
+    flashTimers.push(setTimeout(() => { flashing = flashing.filter((x) => x !== id); }, FLASH_MS));
+  }
+  $effect(() => () => { for (const t of flashTimers) clearTimeout(t); });
+  const flashSet = $derived(new Set(flashing));
 
   const key = (o: ActionOption) => o.engine === undefined ? o.kind : `${o.kind}:${o.engine}`;
-  const squareOptions = $derived(options.filter((o) => o.targetKind === 'square'));
-  const focusedOption = $derived(squareOptions.find((o) => key(o) === focused) ?? null);
-  const highlight = $derived(new Set(focusedOption ? focusedOption.targets ?? [] : squareOptions.flatMap((o) => o.targets ?? [])));
+  const focusedOption = $derived(options.find((o) => key(o) === focused) ?? null);
+  const highlightCells = $derived(focusedOption?.targetKind === 'square' ? focusedOption.targets ?? [] : []);
+  const unitIdOf = (t: string) => (t.includes('>') ? t.split('>')[1] : t);
+  const highlightedUnitIds = $derived(new Set(focusedOption?.targetKind === 'unit' ? (focusedOption.targets ?? []).map(unitIdOf) : []));
+
+  const tokens = $derived.by<TokenModel[]>(() => [
+    ...b.units.filter((u) => u.status === 'active').map((u): UnitTokenModel => ({
+      kind: 'unit',
+      id: u.id,
+      side: u.side,
+      name: u.name,
+      role: u.role,
+      level: u.level,
+      cell: notation(u.square),
+      wounds: u.wounds,
+      shaken: u.shaken,
+      engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
+      ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : highlightedUnitIds.has(u.id) ? 'highlighted' : null,
+    })),
+    // Abandoned and captured engines stand alone on the square they were left.
+    ...b.units.flatMap((u) => u.engines
+      .filter((e) => e.status !== 'crewed')
+      .map((e, i): EngineTokenModel => ({ kind: 'engine', id: `${u.id}:engine:${i}`, side: u.side, name: e.name, cell: notation(e.square), ring: null }))),
+  ]);
+
   function go(o: ActionOption, target?: string) {
+    const before = game.battle!.log.length;
     takeAction({ kind: o.kind, engine: o.engine, target: target ?? (o.targets ? (chosen[key(o)] ?? o.targets[0]) : undefined) });
+    for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
     focused = null;
   }
-  function onSquare(n: string) {
-    const o = focusedOption?.targets?.includes(n) ? focusedOption : squareOptions.find((x) => x.targets?.includes(n));
-    if (o) go(o, n);
+
+  // A second path onto the same options the action list already offers: the focused row
+  // (if it matches) wins, so hovering the intended row disambiguates a square/unit two rows
+  // share; otherwise every option is searched, same as picking straight from the list.
+  function findOption(kind: 'square' | 'unit' | 'wall', matches: (t: string) => boolean): { option: ActionOption; target: string } | null {
+    if (focusedOption?.targetKind === kind) {
+      const t = focusedOption.targets?.find(matches);
+      if (t) return { option: focusedOption, target: t };
+    }
+    for (const o of options) {
+      if (o.targetKind !== kind) continue;
+      const t = o.targets?.find(matches);
+      if (t) return { option: o, target: t };
+    }
+    return null;
   }
-  const abandoned = $derived(b.units.flatMap((u) => u.engines.filter((e) => e.status !== 'crewed').map((e) => ({ ...e, owner: u.name }))));
+  function onCell(e: BoardEventOf<'cell'>) {
+    const m = findOption('square', (t) => t === e.cell);
+    if (m) go(m.option, m.target);
+  }
+  function onToken(e: BoardEventOf<'token'>) {
+    const m = findOption('unit', (t) => unitIdOf(t) === e.id);
+    if (m) go(m.option, m.target);
+  }
+  function onEdge(e: BoardEventOf<'edge'>) {
+    const m = findOption('wall', (t) => t === e.edge);
+    if (m) go(m.option, m.target);
+  }
+
   const name = (id: string) => unit(b, id).name;
   const targetLabel = (o: ActionOption, t: string) => {
     if (o.targetKind === 'unit') {
@@ -46,6 +97,10 @@
     }
     return t;
   };
+  const status = (u: NonNullable<typeof active>) => [
+    u.braced ? 'braced' : '', u.exposed ? 'exposed' : '', u.suppressed ? 'suppressed' : '',
+    b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
+  ].filter(Boolean).join(' · ');
   const spec = $derived(`${b.board.spec.base}${b.board.spec.feature && b.board.spec.feature !== 'none' ? ' · ' + b.board.spec.feature : ''}`);
   const cls = (e: { degree: string } | undefined) => !e ? '' : e.degree === 'critical-success' ? 'crit' : e.degree.includes('fail') ? 'fail' : '';
   let logEl = $state<HTMLDivElement>();
@@ -62,8 +117,17 @@
 
 <div class="grid2">
   <section>
-    <Board board={b.board} units={boardUnits} {highlight} selected={active ? notation(active.square) : null} onSquare={b.phase === 'battle' ? onSquare : undefined} />
-    <p class="muted">Squares are wounds, circles are shaken. Attackers are blue and move up the board, defenders red and move down. Click an outlined square to move there.{#if abandoned.length} Abandoned engines: {abandoned.map((e) => `${e.name} on ${notation(e.square)}${e.status === 'captured' ? ' (captured)' : ''}`).join('; ')}.{/if}</p>
+    <PixiBoard
+      board={b.board}
+      {tokens}
+      mode="battle"
+      highlight={highlightCells}
+      highlightStyle="move"
+      oncell={active ? onCell : undefined}
+      ontoken={active ? onToken : undefined}
+      onedge={active ? onEdge : undefined}
+    />
+    <p class="muted">Squares are wounds, circles are shaken; a pulsing ring marks the active unit. Attackers are blue and move up the board, defenders red and move down. Hover an action below to see its targets highlighted on the board, then click a highlighted square, unit or wall — or use the list. A lone siege icon is an abandoned or captured engine.</p>
   </section>
   <section>
     {#if b.phase === 'ended'}
@@ -84,13 +148,14 @@
           <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will} vs rout DC {routDc(b, active)}</td></tr>
           <tr><td>Engaged with</td><td colspan="3">{engagedEnemies(b, active).map((e) => `${e.name} (${notation(e.square)})`).join(', ') || 'nobody'}</td></tr>
           {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
+          {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
         </tbody></table>
         <div class="actions">
           {#each options as o (key(o))}
             <div class="action" role="group"
-              onmouseenter={() => { if (o.targetKind === 'square') focused = key(o); }}
+              onmouseenter={() => { if (o.targets) focused = key(o); }}
               onmouseleave={() => { if (focused === key(o)) focused = null; }}
-              onfocusin={() => { if (o.targetKind === 'square') focused = key(o); }}
+              onfocusin={() => { if (o.targets) focused = key(o); }}
             >
               <button onclick={() => go(o)}>{o.label}</button>
               <span class="cost">{o.cost} action{o.cost === 1 ? '' : 's'}</span>
