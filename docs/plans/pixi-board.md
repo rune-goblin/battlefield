@@ -188,8 +188,6 @@ overrides every gate and test instruction below until it is switched off here:
   it gets the interaction in front of Mark sooner; leave a `// proto:` marker so the shortcut
   is findable later with `grep -rn "proto:" src`.
 - Commits: one per wave is fine, subject `pixi-board Wave N (proto)`.
-- Models: Sonnet for every wave, including 1 and 3. Escalate to Opus only after a wave
-  fails twice.
 
 When prototype mode ends, the sections below are the definition of done: a hardening wave
 runs `grep -rn "proto:"`, fills in tests for whatever survived, and restores the gates.

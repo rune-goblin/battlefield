@@ -9,7 +9,6 @@ We are exploring the board and its rules, not shipping. Until this section is re
 - Gate work on `npx vite build` and a screenshot, not on the full check/test/review cycle.
 - Decide judgment calls yourself and note them in `docs/plans/*.todos.md`.
 - Shortcuts are fine; mark them `// proto:` so they can be found later.
-- Prefer Sonnet-class effort; escalate only after something fails twice.
 
 ## Layout
 
