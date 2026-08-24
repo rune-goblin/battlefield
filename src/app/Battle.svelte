@@ -16,9 +16,11 @@
     u.pace ? 'pace' : '', u.fear ? 'fear' : '',
   ].filter(Boolean).join(' · ');
 
+  const key = (o: ActionOption) => o.engine === undefined ? o.kind : `${o.kind}:${o.engine}`;
   function go(o: ActionOption) {
-    takeAction({ kind: o.kind, target: o.targets ? (chosen[o.kind] ?? o.targets[0]) : undefined });
+    takeAction({ kind: o.kind, engine: o.engine, target: o.targets ? (chosen[key(o)] ?? o.targets[0]) : undefined });
   }
+  const abandoned = $derived(b.units.flatMap((u) => u.engines.filter((e) => e.status !== 'crewed').map((e) => ({ ...e, owner: u.name }))));
   const name = (id: string) => unit(b, id).name;
   const cls = (e: { degree: string } | undefined) => !e ? '' : e.degree === 'critical-success' ? 'crit' : e.degree.includes('fail') ? 'fail' : '';
   let logEl = $state<HTMLDivElement>();
@@ -43,13 +45,13 @@
           <span class="name">{u.name}</span>
           <span class="pips">{#each [1,2,3,4] as n}<span class="pip" class:on={u.wounds >= n}></span>{/each}</span>
           <span class="pips">{#each [1,2,3] as n}<span class="pip shaken" class:on={u.shaken >= n}></span>{/each}</span>
-          <div class="tags">L{u.level} {u.role}{tags(u) ? ' · ' + tags(u) : ''}</div>
+          <div class="tags">L{u.level} {u.role}{tags(u) ? ' · ' + tags(u) : ''}{u.engines.filter((e) => e.status === 'crewed').length ? ' · ⚙ ' + u.engines.filter((e) => e.status === 'crewed').map((e) => e.name).join(', ') : ''}</div>
         </div>
       {/each}
     </div>
   {/each}
 </div>
-<p class="muted">Squares are wounds, circles are shaken. Attackers are blue, defenders red. Attackers move right, defenders move left.</p>
+<p class="muted">Squares are wounds, circles are shaken. Attackers are blue, defenders red. Attackers move right, defenders move left.{#if abandoned.length} Abandoned engines: {abandoned.map((e) => `${e.name} on step ${e.step}${e.status === 'captured' ? ' (captured)' : ''}`).join('; ')}.{/if}</p>
 
 <div class="grid2">
   <section>
@@ -73,12 +75,12 @@
           {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
         </tbody></table>
         <div class="actions">
-          {#each options as o (o.kind)}
+          {#each options as o (key(o))}
             <div class="action">
               <button onclick={() => go(o)}>{o.label}</button>
               <span class="cost">{o.cost} action{o.cost === 1 ? '' : 's'}</span>
               {#if o.targets}
-                <select bind:value={chosen[o.kind]}>
+                <select bind:value={chosen[key(o)]}>
                   {#each o.targets as t}<option value={t}>{name(t)}</option>{/each}
                 </select>
               {/if}

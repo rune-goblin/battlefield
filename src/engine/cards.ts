@@ -83,3 +83,14 @@ export function cardTraits(card: UnitCard) {
     tactics: card.tactics ?? p.tactics,
   };
 }
+
+export type EngineKind = 'artillery' | 'ram';
+
+export interface SiegeEngineCard {
+  name: string;
+  level: number;
+  kind: EngineKind;
+  launch: number;
+  reach: Reach | null;
+  defence: number;
+}

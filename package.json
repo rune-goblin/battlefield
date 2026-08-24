@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "import:troops": "node scripts/import-troops.mjs",
-    "import:official": "node scripts/import-official.mjs"
+    "import:official": "node scripts/import-official.mjs",
+    "import:engines": "node scripts/import-engines.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",

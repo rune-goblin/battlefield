@@ -1,8 +1,8 @@
 import {
-  act, COMBATANTS, createBattle, randomRng, type Action, type BattleState, type Side, type Terrain, type UnitCard,
+  act, COMBATANTS, createBattle, ENGINES, randomRng, type Action, type BattleState, type Side, type Terrain, type UnitCard,
 } from '../engine/index.js';
 
-export interface SetupUnit { card: UnitCard; side: Side; step: number; }
+export interface SetupUnit { card: UnitCard; side: Side; step: number; engines?: string[]; }
 
 export interface Setup { units: SetupUnit[]; terrain: Terrain; wallsTier: number; }
 
@@ -45,7 +45,11 @@ function persist() {
 
 export function startBattle() {
   game.battle = createBattle(
-    { units: game.setup.units, terrain: game.setup.terrain, wallsTier: game.setup.wallsTier || undefined },
+    {
+      units: game.setup.units.map((u) => ({ ...u, engines: (u.engines ?? []).map((n) => ENGINES.find((e) => e.name === n)!).filter(Boolean) })),
+      terrain: game.setup.terrain,
+      wallsTier: game.setup.wallsTier || undefined,
+    },
     randomRng,
   );
   game.history = [];

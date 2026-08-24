@@ -1,4 +1,4 @@
-import { cardTraits, deriveStats, type UnitCard } from './cards.js';
+import { cardTraits, deriveStats, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import type { Rng } from './rng.js';
 import {
@@ -7,7 +7,7 @@ import {
 } from './types.js';
 import { levelDc } from './tables.js';
 
-export interface Deployment { card: UnitCard; side: Side; step: number; }
+export interface Deployment { card: UnitCard; side: Side; step: number; engines?: SiegeEngineCard[]; }
 
 export interface BattleSetup { units: Deployment[]; terrain: Terrain; wallsTier?: number; }
 
@@ -33,6 +33,7 @@ export function createBattle(setup: BattleSetup, rng: Rng): BattleState {
     return {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role, stats,
       pace: traits.pace, fear: traits.fear, engine: traits.engine, tactics: traits.tactics,
+      engines: (d.engines ?? []).map((e) => ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', step: d.step })),
       step: d.step, wounds: d.card.wounds ?? 0, shaken: d.card.shaken ?? 0, status: 'active',
       initiative: 0, braced: false, exposed: false, strikeUsed: false, shieldBlockUsed: false,
       routImmune: false, feinted: false, defendedBy: null, suppressed: false, medicineReceived: false,
@@ -167,7 +168,16 @@ function applyWounds(state: BattleState, target: Unit, n: number, source: string
   target.woundedThisRound = true;
   const state_ = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${state_ ? ` — ${state_}` : ''}.`);
-  if (target.wounds >= MAX_WOUNDS) target.status = 'destroyed';
+  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); }
+}
+
+function abandonEngines(state: BattleState, u: Unit) {
+  for (const e of u.engines) {
+    if (e.status !== 'crewed') continue;
+    e.status = 'abandoned';
+    e.step = u.step;
+    log(state, u, `${u.name} abandons its ${e.name} on step ${e.step}.`);
+  }
 }
 
 function addShaken(state: BattleState, u: Unit, n: number, why: string) {
@@ -175,6 +185,7 @@ function addShaken(state: BattleState, u: Unit, n: number, why: string) {
   u.shaken = Math.max(0, Math.min(ROUTED_AT, u.shaken + n));
   const routed = u.shaken >= ROUTED_AT ? ' — routed' : '';
   log(state, u, `${u.name} is shaken ${u.shaken} (${n > 0 ? '+' : ''}${n}, ${why})${routed}.`);
+  if (u.shaken >= ROUTED_AT) abandonEngines(state, u);
 }
 
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: { bonus?: number; free?: boolean; label: string }) {
@@ -269,6 +280,18 @@ export function availableActions(state: BattleState): ActionOption[] {
   if (has('covering-fire')) add('covering-fire', 1, volleyTargets, 'Covering fire');
   if (has('defend-allies')) add('defend-allies', 1, allies.map((a) => a.id), 'Defend an ally');
   if (has('battlefield-medicine')) add('battlefield-medicine', 2, allies.filter((a) => a.wounds > 0 && !a.medicineReceived).map((a) => a.id), 'Battlefield medicine');
+  u.engines.forEach((e, i) => {
+    if (e.status !== 'crewed' || e.fired) return;
+    if (e.kind === 'artillery' && !engaged.length) {
+      const reachRank = e.reach ? REACH_RANK[e.reach] : 0;
+      const targets = enemies.filter((t) => rangeRank(rangeBetween(state, u, t)) <= reachRank).map((t) => t.id);
+      if (targets.length && left >= 1) opts.push({ kind: 'fire-engine', cost: 1, targets, label: `Fire ${e.name}`, engine: i });
+    }
+    if (wallsStand(state) && u.side === 'attacker' && left >= 1) {
+      const canBombard = e.kind === 'artillery' ? !engaged.length : u.step === STEPS - 2;
+      if (canBombard) opts.push({ kind: 'engine-bombard', cost: 1, targets: null, label: `${e.kind === 'ram' ? 'Ram' : 'Bombard'} the walls with ${e.name}`, engine: i });
+    }
+  });
   add('pass', left, null, 'End activation');
   return opts;
 }
@@ -277,7 +300,7 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const state = clone(input);
   const u = activeUnit(state);
   if (!u) throw new Error('battle is over');
-  const opt = availableActions(state).find((o) => o.kind === action.kind);
+  const opt = availableActions(state).find((o) => o.kind === action.kind && (o.engine === undefined || o.engine === action.engine));
   if (!opt) throw new Error(`${action.kind} is not available`);
   if (opt.targets && (!action.target || !opt.targets.includes(action.target))) throw new Error(`${action.kind} needs a valid target`);
   const target = action.target ? unit(state, action.target) : null;
@@ -331,6 +354,29 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
       const dc = 10 + walls.tier + Math.max(0, ...state.units.filter((d) => d.side === 'defender' && d.status === 'active').map((d) => d.level));
       const c = check(rng, (u.stats.volley ?? 0) - (isWeakened(u) ? 2 : 0) - u.shaken, dc);
       log(state, u, `${u.name} bombards the walls: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+      if (hits) {
+        walls.remaining = Math.max(0, walls.remaining - hits);
+        log(state, u, walls.remaining ? `The walls hold ${walls.remaining}/${walls.boxes}.` : 'The walls are breached.');
+      }
+      break;
+    }
+    case 'fire-engine': {
+      const e = u.engines[action.engine!];
+      e.fired = true;
+      const c = check(rng, e.launch - u.shaken - (isWeakened(u) ? 2 : 0), defenceOf(state, target!, true));
+      log(state, u, `${u.name} fires its ${e.name} at ${target!.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      if (c.degree === 'critical-success') applyWounds(state, target!, 2, e.name);
+      else if (c.degree === 'success') applyWounds(state, target!, 1, e.name);
+      break;
+    }
+    case 'engine-bombard': {
+      const e = u.engines[action.engine!];
+      e.fired = true;
+      const walls = state.walls!;
+      const dc = 10 + walls.tier + Math.max(0, ...state.units.filter((d) => d.side === 'defender' && d.status === 'active').map((d) => d.level));
+      const c = check(rng, e.launch + (e.kind === 'ram' ? 2 : 0) - u.shaken - (isWeakened(u) ? 2 : 0), dc);
+      log(state, u, `${u.name} ${e.kind === 'ram' ? 'rams' : 'bombards'} the walls with its ${e.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
       if (hits) {
         walls.remaining = Math.max(0, walls.remaining - hits);
@@ -461,6 +507,7 @@ function endRound(state: BattleState, rng: Rng) {
     u.feinted = false;
     u.strikeUsed = false;
     u.shieldBlockUsed = false;
+    for (const e of u.engines) e.fired = false;
   }
   const a = standing(state, 'attacker').length;
   const d = standing(state, 'defender').length;
@@ -469,6 +516,7 @@ function endRound(state: BattleState, rng: Rng) {
     state.endedBy = 'rout';
     state.winner = a === 0 && d === 0 ? 'draw' : a === 0 ? 'defender' : 'attacker';
     log(state, null, state.winner === 'draw' ? 'Both armies are spent. The field is empty.' : `The ${state.winner} holds the field.`);
+    captureEngines(state);
     return;
   }
   if (state.round >= LAST_ROUND) {
@@ -482,4 +530,17 @@ function endRound(state: BattleState, rng: Rng) {
   state.activeIndex = -1;
   log(state, null, `Round ${state.round} begins.`);
   nextActivation(state, rng);
+}
+
+function captureEngines(state: BattleState) {
+  for (const u of state.units) {
+    for (const e of u.engines) {
+      if (e.status !== 'abandoned') continue;
+      const captor = state.units.find((c) => c.side !== u.side && isStanding(c) && c.step === e.step);
+      if (captor) {
+        e.status = 'captured';
+        log(state, captor, `${captor.name} captures the ${e.name}.`);
+      }
+    }
+  }
 }

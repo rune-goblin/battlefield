@@ -1,4 +1,4 @@
-import type { Reach, Role, Tactic, UnitStats } from './cards.js';
+import type { EngineKind, Reach, Role, Tactic, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
 
 export type Side = 'attacker' | 'defender';
@@ -7,6 +7,16 @@ export const STEPS = 7;
 export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 export const ROUTED_AT = 3;
+
+export interface EngineState {
+  name: string;
+  kind: EngineKind;
+  launch: number;
+  reach: Reach | null;
+  fired: boolean;
+  status: 'crewed' | 'abandoned' | 'captured';
+  step: number;
+}
 
 export interface Unit {
   id: string;
@@ -19,6 +29,7 @@ export interface Unit {
   fear: boolean;
   engine: boolean;
   tactics: Tactic[];
+  engines: EngineState[];
   step: number;
   wounds: number;
   shaken: number;
@@ -43,11 +54,11 @@ export interface Walls { tier: number; boxes: number; remaining: number; }
 export type ActionKind =
   | 'advance' | 'double-advance' | 'withdraw' | 'strike' | 'volley' | 'brace' | 'rally' | 'retreat' | 'pass'
   | 'bombard' | 'cavalry-charge' | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire'
-  | 'defend-allies' | 'battlefield-medicine';
+  | 'defend-allies' | 'battlefield-medicine' | 'fire-engine' | 'engine-bombard';
 
-export interface Action { kind: ActionKind; target?: string; }
+export interface Action { kind: ActionKind; target?: string; engine?: number; }
 
-export interface ActionOption { kind: ActionKind; cost: number; targets: string[] | null; label: string; }
+export interface ActionOption { kind: ActionKind; cost: number; targets: string[] | null; label: string; engine?: number; }
 
 export interface LogEntry {
   round: number;

@@ -14,7 +14,7 @@ Battlefield is playable on its own. Integrations attach at two seams in `src/eng
 |---|---|
 | Pathfinder 2e troop actor | `strike = Battle DC − 10`, `volley = Salvo DC − 10`, reach from the Salvo template distance (≤60 close, ≤120 long, else extreme), `defence = AC`, `will`, `perception`, `pace = Speed ≥ 30 or fly`, `fear` from a frightful presence or fear aura, `wounds` from HP thresholds (¾, ½, ¼), `shaken` from a demoralized counter. |
 | Foundry VTT | Same as above through the actor document; post each `LogEntry.check` as a chat card. |
-| Reignmaker | An `Army` record's linked actor gives the card; `ledBy` gives the side; the defender's hex gives `terrain`; the hex fortification tier gives `wallsTier`; siege engines with `trainArmyId` become `role: 'siege'` cards on the same side. |
+| Reignmaker | An `Army` record's linked actor gives the card; `ledBy` gives the side; the defender's hex gives `terrain`; the hex fortification tier gives `wallsTier`; a `SiegeEngine` with `trainArmyId` becomes a `SiegeEngineCard` in that army's `Deployment.engines` (Trooper's siege vehicles map by name onto `ENGINES`). |
 
 ## Output: `BattleState`
 
@@ -22,7 +22,7 @@ After `phase === 'ended'`, each `Unit` carries `wounds`, `shaken`, `status` (`ac
 
 - wounds → hit points (`max`, `⌊¾⌋`, `⌊½⌋`, `⌊¼⌋`, `0`);
 - shaken → demoralized, keeping the higher value;
-- `destroyed` → disband; the enemy on that step captures its engines;
+- `destroyed` → disband; each `EngineState` with `status: 'captured'` changes owner to the capturing side, `abandoned` ones are lost;
 - the loser's surviving units fall back one hex.
 
 ## Randomness

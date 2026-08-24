@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { COMBATANTS, OFFICIAL, deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
+  import { COMBATANTS, ENGINES, OFFICIAL, deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
   import { game, resetSetup, saveSetup, startBattle, type SetupUnit } from './game.svelte.js';
 
   let side: Side = $state('attacker');
@@ -25,6 +25,9 @@
   const bySide = (s: Side) => game.setup.units.map((u, i) => ({ u, i })).filter(({ u }) => u.side === s);
   const ready = $derived(bySide('attacker').length > 0 && bySide('defender').length > 0);
   const preview = $derived(deriveStats(custom));
+  let engineName = $state(ENGINES.find((e) => e.name === 'Catapult')?.name ?? ENGINES[0].name);
+  function addEngine(u: SetupUnit) { (u.engines ??= []).push(engineName); saveSetup(); }
+  function removeEngine(u: SetupUnit, i: number) { u.engines!.splice(i, 1); saveSetup(); }
 </script>
 
 <div class="grid2">
@@ -94,7 +97,11 @@
           {@const st = deriveStats(u.card)}
           <div class="unitrow">
             <div><strong>{u.card.name}</strong> <span class="muted">L{u.card.level} {u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(', ') : ''}</span><br>
-              <span class="muted stat">Strike {st.strike === null ? '—' : '+' + st.strike} · Volley {st.volley === null ? '—' : '+' + st.volley + ' ' + st.reach} · Def {st.defence} · Will +{st.will}</span></div>
+              <span class="muted stat">Strike {st.strike === null ? '—' : '+' + st.strike} · Volley {st.volley === null ? '—' : '+' + st.volley + ' ' + st.reach} · Def {st.defence} · Will +{st.will}</span>
+              {#each u.engines ?? [] as e, ei}
+                <div class="muted">⚙ {e} <button onclick={() => removeEngine(u, ei)} title="Remove engine" style="padding:0 .35rem">×</button></div>
+              {/each}
+              <div class="row" style="margin-top:.25rem"><select bind:value={engineName} style="font-size:.85rem">{#each ENGINES as e}<option value={e.name}>{e.name} · L{e.level} {e.kind}{e.reach ? ' ' + e.reach : ''} +{e.launch}</option>{/each}</select><button style="font-size:.85rem" onclick={() => addEngine(u)}>Add engine</button></div></div>
             <label class="muted">step <select bind:value={u.step} onchange={saveSetup}>{#each zone(u.side, u.card) as z}<option value={z}>{z}</option>{/each}</select></label>
             <button onclick={() => remove(i)} title="Remove">×</button>
           </div>
@@ -107,6 +114,6 @@
       <button class="primary" disabled={!ready} onclick={startBattle}>Begin the battle</button>
       <button onclick={resetSetup}>Reset to the example</button>
     </div>
-    <p class="muted">Attackers set up on steps 0–1, defenders on 5–6. Ambush units may start one step further in. Initiative is rolled once at the start.</p>
+    <p class="muted">Attackers set up on steps 0–1, defenders on 5–6. Ambush units may start one step further in. Initiative is rolled once at the start. A siege engine rides with the unit it is added to and fires on that unit's activation.</p>
   </section>
 </div>
