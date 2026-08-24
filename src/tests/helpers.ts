@@ -1,8 +1,9 @@
-import { SIZE, type Board, type SquareTerrain } from '../engine/board.js';
+import { SIZE, type Board, type GridKind, type SquareTerrain } from '../engine/board.js';
 
-export function openBoard(): Board {
+export function openBoard(grid: GridKind = 'square'): Board {
   return {
-    spec: { base: 'plains', seed: 0 },
+    spec: { base: 'plains', grid, seed: 0 },
+    grid,
     squares: Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => ({ terrain: 'open' as SquareTerrain, elevation: 0 }))),
     walls: {},
   };

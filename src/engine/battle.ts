@@ -1,5 +1,5 @@
 import {
-  at, barrierBetween, deployRanks, distance as squareDistance, edgeKey, inBounds, neighbours, notation, parse, SIZE,
+  at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
   type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, type SiegeEngineCard, type UnitCard } from './cards.js';
@@ -19,12 +19,14 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 export const otherSide = (s: Side): Side => (s === 'attacker' ? 'defender' : 'attacker');
 export const homeRank = (s: Side) => (s === 'attacker' ? 0 : SIZE - 1);
-const homeward = (s: Side) => (s === 'attacker' ? -1 : 1);
 
 export const sameSquare = (a: Square, b: Square) => a.file === b.file && a.rank === b.rank;
 
+const grid = (state: BattleState) => gridOf(state.board);
+const dist = (state: BattleState, a: Square, b: Square) => grid(state).distance(a, b);
+
 export function canDeploy(board: Board, side: Side, ambush: boolean, sq: Square): boolean {
-  return inBounds(sq) && deployRanks(side, ambush).includes(sq.rank) && at(board, sq).terrain !== 'water';
+  return gridOf(board).inBounds(sq) && deployRanks(side, ambush).includes(sq.rank) && at(board, sq).terrain !== 'water';
 }
 
 export function createBattle(setup: BattleSetup, rng: Rng): BattleState {
@@ -91,7 +93,7 @@ const elevation = (state: BattleState, u: Unit) => square(state, u).elevation;
 
 export function isEngaged(state: BattleState, a: Unit, b: Unit): boolean {
   if (a.side === b.side || a.status !== 'active' || b.status !== 'active') return false;
-  if (squareDistance(a.square, b.square) !== 1) return false;
+  if (dist(state, a.square, b.square) !== 1) return false;
   return barrierBetween(state.board, a.square, b.square)?.kind !== 'cliff';
 }
 
@@ -105,7 +107,7 @@ export const wallBetween = (state: BattleState, a: Unit, b: Unit): Wall | null =
 
 export function rangeBetween(state: BattleState, a: Unit, b: Unit): Range {
   if (isEngaged(state, a, b)) return 'engaged';
-  const d = squareDistance(a.square, b.square);
+  const d = dist(state, a.square, b.square);
   return d <= 2 ? 'close' : d === 3 ? 'long' : 'extreme';
 }
 
@@ -117,7 +119,7 @@ export function isOutflanked(state: BattleState, u: Unit): boolean {
 // Walls belong to the defender: a defender beside a standing segment is garrisoned.
 export function standingWalls(state: BattleState, u: Unit): Wall[] {
   if (u.side !== 'defender') return [];
-  return neighbours(u.square)
+  return grid(state).neighbours(u.square)
     .map((n) => state.board.walls[edgeKey(u.square, n)])
     .filter((w): w is Wall => !!w && w.remaining > 0);
 }
@@ -148,7 +150,7 @@ export function reachOf(state: BattleState, u: Unit): number {
 const rangeRank = (r: Range) => (r === 'close' ? 1 : r === 'long' ? 2 : r === 'extreme' ? 3 : 0);
 
 function volleyRank(state: BattleState, u: Unit, target: Unit): number {
-  const d = squareDistance(u.square, target.square);
+  const d = dist(state, u.square, target.square);
   const rank = d <= 2 ? 1 : d === 3 ? 2 : 3;
   return elevation(state, u) > elevation(state, target) ? rank - 1 : rank;
 }
@@ -269,7 +271,7 @@ function reactionsOnLeaving(state: BattleState, rng: Rng, mover: Unit) {
 }
 
 const enterable = (state: BattleState, from: Square, to: Square) =>
-  inBounds(to) && at(state.board, to).terrain !== 'water' && !unitAt(state, to) && barrierBetween(state.board, from, to) === null;
+  grid(state).inBounds(to) && at(state.board, to).terrain !== 'water' && !unitAt(state, to) && barrierBetween(state.board, from, to) === null;
 
 const slow = (state: BattleState, sq: Square) => ['swamp', 'shallows'].includes(at(state.board, sq).terrain);
 const uphill = (state: BattleState, from: Square, to: Square) => at(state.board, to).elevation > at(state.board, from).elevation;
@@ -277,29 +279,30 @@ const fast = (state: BattleState, from: Square, to: Square) =>
   ['open', 'settlement'].includes(at(state.board, to).terrain) && !uphill(state, from, to);
 
 const adjacentEnemy = (state: BattleState, u: Unit, sq: Square) =>
-  state.units.some((e) => e.side !== u.side && e.status === 'active' && squareDistance(e.square, sq) === 1 && barrierBetween(state.board, e.square, sq)?.kind !== 'cliff');
+  state.units.some((e) => e.side !== u.side && e.status === 'active' && dist(state, e.square, sq) === 1 && barrierBetween(state.board, e.square, sq)?.kind !== 'cliff');
 
 // Squares one Advance away: every enterable neighbour; for Pace units on fast, level ground,
-// two squares in a straight line as long as the first does not already engage an enemy.
+// a second cell continuing in the same direction, as long as the first does not already
+// engage an enemy.
 export function advanceTargets(state: BattleState, u: Unit): { square: Square; cost: number }[] {
+  const g = grid(state);
   const out: { square: Square; cost: number }[] = [];
-  for (const n of neighbours(u.square)) {
+  for (const n of g.neighbours(u.square)) {
     if (!enterable(state, u.square, n)) continue;
     out.push({ square: n, cost: slow(state, n) ? 2 : 1 });
     if (!u.pace || !fast(state, u.square, n) || adjacentEnemy(state, u, n)) continue;
-    const beyond = { file: n.file + (n.file - u.square.file), rank: n.rank + (n.rank - u.square.rank) };
-    if (enterable(state, n, beyond) && fast(state, n, beyond)) out.push({ square: beyond, cost: 1 });
+    const beyond = g.beyond(u.square, n);
+    if (beyond && enterable(state, n, beyond) && fast(state, n, beyond)) out.push({ square: beyond, cost: 1 });
   }
   return out;
 }
 
 export function withdrawTargets(state: BattleState, u: Unit): Square[] {
+  const g = grid(state);
   const engaged = engagedEnemies(state, u);
-  return neighbours(u.square).filter((n) => {
-    if (!enterable(state, u.square, n)) return false;
-    if (engaged.length) return engaged.every((e) => squareDistance(e.square, n) > 1);
-    return (n.rank - u.square.rank) * homeward(u.side) > 0;
-  });
+  const options = engaged.length ? g.neighbours(u.square) : g.homeward(u.square, u.side);
+  return options.filter((n) => enterable(state, u.square, n)
+    && engaged.every((e) => g.distance(e.square, n) > 1));
 }
 
 const sq = (s: string) => parse(s);
@@ -326,7 +329,7 @@ function retreat(state: BattleState, rng: Rng, u: Unit, chosen: Square | null) {
   }
   moveTo(state, u, first);
   if (u.square.rank === homeRank(u.side)) { leaveField(state, u); return; }
-  const second = neighbours(u.square).find((n) => (n.rank - u.square.rank) * homeward(u.side) > 0 && enterable(state, u.square, n) && !adjacentEnemy(state, u, n))
+  const second = grid(state).homeward(u.square, u.side).find((n) => enterable(state, u.square, n) && !adjacentEnemy(state, u, n))
     ?? withdrawTargets(state, u).find((n) => !adjacentEnemy(state, u, n));
   if (second) moveTo(state, u, second);
   log(state, u, `${u.name} retreats to ${notation(u.square)}.`);
@@ -341,7 +344,7 @@ export function availableActions(state: BattleState): ActionOption[] {
   const left = state.actionsLeft;
   const engaged = engagedEnemies(state, u);
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
-  const adjacentAllies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active' && squareDistance(a.square, u.square) === 1);
+  const adjacentAllies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) === 1);
   const opts: ActionOption[] = [];
   const add = (kind: ActionKind, cost: number, targetKind: TargetKind | null, targets: string[] | null, label: string, engine?: number) => {
     if (cost <= left && (targets === null || targets.length)) opts.push({ kind, cost, targetKind, targets, label, engine });
@@ -369,8 +372,8 @@ export function availableActions(state: BattleState): ActionOption[] {
   const has = (t: string) => u.tactics.includes(t as never);
   if (has('cavalry-charge') && u.pace && advances.length && u.attacks === 0) {
     const charges = advances
-      .filter((a) => a.cost === 1 && fast(state, u.square, a.square) && squareDistance(a.square, u.square) === 1)
-      .flatMap((a) => enemies.filter((e) => squareDistance(e.square, a.square) === 1 && barrierBetween(state.board, e.square, a.square) === null).map((e) => `${notation(a.square)}>${e.id}`));
+      .filter((a) => a.cost === 1 && fast(state, u.square, a.square) && dist(state, a.square, u.square) === 1)
+      .flatMap((a) => enemies.filter((e) => dist(state, e.square, a.square) === 1 && barrierBetween(state.board, e.square, a.square) === null).map((e) => `${notation(a.square)}>${e.id}`));
     add('cavalry-charge', 2, 'unit', [...new Set(charges)], 'Cavalry charge');
   }
   if (has('feint')) add('feint', 1, 'unit', engaged.map((e) => e.id), 'Feint');
@@ -613,7 +616,7 @@ function captureEngines(state: BattleState) {
   for (const u of state.units) {
     for (const e of u.engines) {
       if (e.status !== 'abandoned') continue;
-      const captor = state.units.find((c) => c.side !== u.side && isStanding(c) && squareDistance(c.square, e.square) <= 1);
+      const captor = state.units.find((c) => c.side !== u.side && isStanding(c) && dist(state, c.square, e.square) <= 1);
       if (captor) {
         e.status = 'captured';
         log(state, captor, `${captor.name} captures the ${e.name}.`);

@@ -1,7 +1,7 @@
+import { allSquares, edgeKey, gridFor, inBounds, notation, parse, SIZE, FILES, type Grid, type GridKind, type Square } from './grid.js';
 import { seededRandom, type Random } from './rng.js';
 
-export const SIZE = 8;
-export const FILES = 'abcdefgh';
+export * from './grid.js';
 
 export type HexTerrain = 'plains' | 'forest' | 'hills' | 'mountains' | 'swamp' | 'desert';
 export const HEX_TERRAINS: HexTerrain[] = ['plains', 'forest', 'hills', 'mountains', 'swamp', 'desert'];
@@ -17,54 +17,34 @@ export interface BoardSpec {
   base: HexTerrain;
   feature?: Feature;
   construction?: Construction | null;
+  grid?: GridKind;
   seed: number;
 }
 
-export interface Square { file: number; rank: number; }
 export interface SquareState { terrain: SquareTerrain; elevation: number; }
 export interface Wall { tier: number; boxes: number; remaining: number; }
 
 export interface Board {
   spec: BoardSpec;
+  grid: GridKind;
   squares: SquareState[][];
   walls: Record<string, Wall>;
 }
 
-export function notation(sq: Square): string { return `${FILES[sq.file]}${sq.rank + 1}`; }
-export function parse(text: string): Square { return { file: FILES.indexOf(text[0]), rank: Number(text.slice(1)) - 1 }; }
-export function inBounds(sq: Square): boolean { return sq.file >= 0 && sq.file < SIZE && sq.rank >= 0 && sq.rank < SIZE; }
+// Boards are JSON in localStorage and in cloned battle states, so they carry the kind, not the
+// Grid itself.
+export function gridOf(board: Board): Grid { return gridFor(board.grid); }
+
 export function at(board: Board, sq: Square): SquareState { return board.squares[sq.rank][sq.file]; }
-
-export function edgeKey(a: Square, b: Square): string {
-  const [x, y] = [notation(a), notation(b)].sort();
-  return `${x}|${y}`;
-}
-
-export function neighbours(sq: Square): Square[] {
-  return [
-    { file: sq.file + 1, rank: sq.rank }, { file: sq.file - 1, rank: sq.rank },
-    { file: sq.file, rank: sq.rank + 1 }, { file: sq.file, rank: sq.rank - 1 },
-  ].filter(inBounds);
-}
-
-export function distance(a: Square, b: Square): number {
-  return Math.abs(a.file - b.file) + Math.abs(a.rank - b.rank);
-}
 
 export type Barrier = { kind: 'wall'; wall: Wall } | { kind: 'cliff' } | null;
 
 export function barrierBetween(board: Board, a: Square, b: Square): Barrier {
-  if (distance(a, b) !== 1) return null;
+  if (gridOf(board).distance(a, b) !== 1) return null;
   const wall = board.walls[edgeKey(a, b)];
   if (wall && wall.remaining > 0) return { kind: 'wall', wall };
   if (Math.abs(at(board, a).elevation - at(board, b).elevation) >= 2) return { kind: 'cliff' };
   return null;
-}
-
-export function allSquares(): Square[] {
-  const out: Square[] = [];
-  for (let rank = 0; rank < SIZE; rank++) for (let file = 0; file < SIZE; file++) out.push({ file, rank });
-  return out;
 }
 
 interface Density {
@@ -102,16 +82,17 @@ function pick<T>(rnd: Random, items: T[]): T { return items[Math.floor(rnd() * i
 function emptyBoard(spec: BoardSpec): Board {
   const squares = Array.from({ length: SIZE }, () =>
     Array.from({ length: SIZE }, (): SquareState => ({ terrain: 'open', elevation: 0 })));
-  return { spec, squares, walls: {} };
+  return { spec, grid: spec.grid ?? 'square', squares, walls: {} };
 }
 
 function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: number, allowed: (sq: Square) => boolean): void {
+  const grid = gridOf(board);
   const candidates = allSquares().filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
   if (!candidates.length) return;
   const patch: Square[] = [pick(rnd, candidates)];
   at(board, patch[0]).terrain = terrain;
   while (patch.length < size) {
-    const frontier = patch.flatMap(neighbours).filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
+    const frontier = patch.flatMap(sq => grid.neighbours(sq)).filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
     if (!frontier.length) return;
     const next = pick(rnd, frontier);
     at(board, next).terrain = terrain;
@@ -175,7 +156,7 @@ function layLake(board: Board, rnd: Random): void {
     for (let r = 0; r < height; r++) lake.push({ file: file0 + dir * depth, rank: rank0 + r });
   }
   for (const sq of lake) { at(board, sq).terrain = 'water'; at(board, sq).elevation = 0; }
-  const shore = lake.flatMap(neighbours).filter(sq => at(board, sq).terrain === 'open');
+  const shore = lake.flatMap(sq => gridOf(board).neighbours(sq)).filter(sq => at(board, sq).terrain === 'open');
   const marsh = between(rnd, [1, 3]);
   for (let i = 0; i < marsh && shore.length; i++) at(board, pick(rnd, shore)).terrain = 'shallows';
 }
@@ -194,7 +175,7 @@ function layFort(board: Board, rnd: Random, tier: number): void {
   for (const sq of block) { at(board, sq).terrain = 'settlement'; at(board, sq).elevation = 0; }
   const inside = new Set(block.map(notation));
   const front = block.filter(sq => sq.rank === SIZE - depth).map(sq => edgeKey(sq, { file: sq.file, rank: sq.rank - 1 }));
-  const flanks = block.flatMap(sq => neighbours(sq)
+  const flanks = block.flatMap(sq => gridOf(board).neighbours(sq)
     .filter(n => n.rank === sq.rank && !inside.has(notation(n)))
     .map(n => edgeKey(sq, n)));
   const edges = [...front, ...flanks].slice(0, budget);
@@ -228,8 +209,12 @@ export function count(board: Board, terrain: SquareTerrain): number {
 export function render(board: Board): string {
   const glyph: Record<SquareTerrain, string> = { open: '.', forest: 'T', swamp: '~', shallows: '=', water: 'W', settlement: '#' };
   const rows: string[] = [];
+  // Odd rows of an odd-r hex board sit half a cell to the right; the shared edge between two
+  // rows lands halfway between the two indents.
+  const indent = board.grid === 'hex' ? (rank: number) => (rank % 2 ? '  ' : '') : () => '';
+  const underIndent = board.grid === 'hex' ? ' ' : '';
   for (let rank = SIZE - 1; rank >= 0; rank--) {
-    let row = `${rank + 1} `;
+    let row = `${rank + 1} ` + indent(rank);
     for (let file = 0; file < SIZE; file++) {
       const s = board.squares[rank][file];
       row += glyph[s.terrain] + (s.elevation > 0 ? String(s.elevation) : ' ');
@@ -238,7 +223,7 @@ export function render(board: Board): string {
     }
     rows.push(row);
     if (rank > 0) {
-      let under = '  ';
+      let under = '  ' + underIndent;
       for (let file = 0; file < SIZE; file++) {
         under += board.walls[edgeKey({ file, rank }, { file, rank: rank - 1 })] ? '-- ' : '   ';
       }
