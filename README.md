@@ -20,6 +20,10 @@ src/tests    vitest specs for the engine
 data/troops  the 38 Reignmaker troop actors; `npm run import:troops` regenerates src/engine/combatants.ts from them
 data/siege-weapons  pf2e-trooper's 59 siege weapons; `npm run import:engines` regenerates src/engine/engines.ts
 scripts      import:official reads a local PF2e system checkout (PF2E_SOURCE=.../packs/pf2e) and regenerates src/engine/official.ts, numbers only
+public/art   game-piece art for every troop and siege engine, fetched from pf2e-trooper (Mark's
+             own repo; art licence covered under "Art" below) by `npm run import:art`, which also
+             writes src/engine/art.ts (card name -> path, falling back to Reignmaker's generic
+             infantry/cavalry tokens for hand-authored cards)
 public       the rules document
 docs         design notes and the adapter contract
 ```
@@ -29,6 +33,10 @@ docs         design notes and the adapter contract
 ## Lineage
 
 The numbers follow the [Pathfinder Second Edition](https://paizo.com/pathfinder) creature tables and the Kingmaker war rules, so a published troop is a fully specified unit card. The engine has no dependency on [Foundry VTT](https://foundryvtt.com) or on [Reignmaker](https://github.com/motionproto/pf2e-reignmaker), the kingdom-management module this game was designed for; both attach through the contract in `docs/adapters.md`. Design influences: *Dragon Rampant* and *One Page Rules*.
+
+## Art
+
+Game-piece art under `public/art/` comes from [`rune-goblin/pf2e-trooper`](https://github.com/rune-goblin/pf2e-trooper), Mark's own module; its `LICENSE` covers the module's code (MIT) and is silent on the art in `assets/`, which is his own generated work, so it is committed here rather than fetched at build time. The two generic fallback tokens (`army-infantry.webp`, `army-cavalry.webp`) come from [`pf2e-reignmaker`](https://github.com/motionproto/pf2e-reignmaker), also Mark's.
 
 ## License
 
