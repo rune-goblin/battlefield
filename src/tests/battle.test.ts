@@ -8,8 +8,8 @@ import type { BattleState } from '../engine/types.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
-const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'skirmisher', tactics: [] };
-const trolls: UnitCard = { name: 'Trolls', level: 8, role: 'monster', fear: false, tactics: [] };
+const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 'close', tactics: [] };
+const trolls: UnitCard = { name: 'Trolls', level: 8, role: 'infantry', pace: true, tactics: [] };
 const open = { cover: false, rough: false, river: false };
 
 function battle(rolls: number[], extra: Partial<Parameters<typeof createBattle>[0]> = {}) {

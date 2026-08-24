@@ -17,10 +17,13 @@ describe('deriveStats', () => {
     const s = deriveStats({ name: 'x', level: 6, role: 'infantry' });
     expect(s).toEqual({ strike: 11, volley: null, reach: null, defence: 24, will: 17, perception: 14 });
   });
-  it('lets a card override any number', () => {
-    const s = deriveStats({ name: 'x', level: 6, role: 'infantry', overrides: { will: 13, volley: 11, reach: 'long' } });
-    expect(s.will).toBe(13);
+  it('a salvo reach gives infantry a volley', () => {
+    const s = deriveStats({ name: 'x', level: 6, role: 'infantry', salvo: 'long' });
     expect(s.volley).toBe(11);
     expect(s.reach).toBe('long');
+  });
+  it('lets a card override any number', () => {
+    const s = deriveStats({ name: 'x', level: 6, role: 'infantry', overrides: { will: 13 } });
+    expect(s.will).toBe(13);
   });
 });

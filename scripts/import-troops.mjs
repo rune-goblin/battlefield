@@ -10,13 +10,8 @@ const reachOf = (html) => {
   return Number.isNaN(ft) ? null : ft <= 60 ? 'close' : ft <= 120 ? 'long' : 'extreme';
 };
 
-function role(d, traits) {
-  const armyType = d.flags?.['pf2e-reignmaker']?.creatureData?.armyType;
-  if (traits.some((t) => ['giant', 'dragon'].includes(t))) return 'monster';
-  if (armyType === 'cavalry') return 'cavalry';
-  if (/archer|bombardier/i.test(d.name)) return 'archers';
-  if (/scout|skirmisher|raider|irregular|swashbuckler/i.test(d.name)) return 'skirmisher';
-  return 'infantry';
+function role(d) {
+  return d.flags?.['pf2e-reignmaker']?.creatureData?.armyType === 'cavalry' ? 'cavalry' : 'infantry';
 }
 
 const cards = files.map((f) => {
@@ -34,7 +29,7 @@ const cards = files.map((f) => {
     slug: f.replace(/\.json$/, ''),
     name: d.name,
     level: s.details.level.value,
-    role: role(d, traits),
+    role: role(d),
     pace: fly || s.attributes.speed.value >= 30,
     fear: false,
     tactics: [],
@@ -52,7 +47,7 @@ const cards = files.map((f) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', pace: ${c.pace}, fear: false, tactics: [], overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, tactics: [], overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/combatants.ts', import.meta.url),

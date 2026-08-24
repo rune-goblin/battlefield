@@ -6,45 +6,45 @@ import { join } from 'node:path';
 const root = process.env.PF2E_SOURCE ?? join(import.meta.dirname, '../../pf2e-reignmaker/_pf2e-source/packs/pf2e');
 
 const SELECTION = [
-  ['pfs-season-5-bestiary/quests/mercenary-squad', 'skirmisher'],
-  ['pathfinder-npc-core/military/conscript-squad', 'levy'],
-  ['battlecry-bestiary/goblin-rabble', 'levy'],
+  ['pfs-season-5-bestiary/quests/mercenary-squad', 'infantry'],
+  ['pathfinder-npc-core/military/conscript-squad', 'infantry'],
+  ['battlecry-bestiary/goblin-rabble', 'infantry'],
   ['battlecry-bestiary/mitflit-vermin-cavalry', 'cavalry'],
   ['pathfinder-monster-core-2/shambler-troop', 'infantry'],
   ['pathfinder-npc-core/official/city-guard-squadron', 'infantry'],
   ['battlecry-bestiary/orc-raiding-party', 'infantry'],
-  ['pathfinder-monster-core-2/velociraptor-pack', 'monster'],
-  ['battlecry-bestiary/apprentice-magician-clique', 'archers'],
+  ['pathfinder-monster-core-2/velociraptor-pack', 'infantry'],
+  ['battlecry-bestiary/apprentice-magician-clique', 'infantry'],
   ['pathfinder-npc-core/military/phalanx-formation', 'infantry'],
   ['pathfinder-npc-core/ancestry-npcs/hobgoblin/hobgoblin-battalion', 'infantry'],
   ['battlecry-bestiary/qadiran-camel-corps', 'cavalry'],
-  ['battlecry-bestiary/scamp-inferno', 'monster'],
-  ['battlecry-bestiary/gnome-cannon-corps', 'siege'],
-  ['pathfinder-npc-core/criminal/bandit-gang', 'skirmisher'],
-  ['triumph-of-the-tusk-bestiary/book-2-hoof-cinder-and-storm/aurochs-herd', 'monster'],
+  ['battlecry-bestiary/scamp-inferno', 'infantry'],
+  ['battlecry-bestiary/gnome-cannon-corps', 'infantry'],
+  ['pathfinder-npc-core/criminal/bandit-gang', 'infantry'],
+  ['triumph-of-the-tusk-bestiary/book-2-hoof-cinder-and-storm/aurochs-herd', 'infantry'],
   ['pathfinder-npc-core/military/hellknight-cavalry-brigade', 'cavalry'],
-  ['pathfinder-npc-core/ancestry-npcs/elf/woodland-scouts', 'archers'],
-  ['battlecry-bestiary/hell-hound-pack', 'monster'],
-  ['pathfinder-monster-core-2/ghostly-mob', 'monster'],
+  ['pathfinder-npc-core/ancestry-npcs/elf/woodland-scouts', 'infantry'],
+  ['battlecry-bestiary/hell-hound-pack', 'infantry'],
+  ['pathfinder-monster-core-2/ghostly-mob', 'infantry'],
   ['battlecry-bestiary/hobgoblin-veteran-regiment', 'infantry'],
-  ['battlecry-bestiary/gargoyle-wing', 'monster'],
+  ['battlecry-bestiary/gargoyle-wing', 'infantry'],
   ['battlecry-bestiary/wight-battalion', 'infantry'],
-  ['battlecry-bestiary/dwarf-longshot-squad', 'archers'],
-  ['battlecry-bestiary/redcap-brigade', 'skirmisher'],
+  ['battlecry-bestiary/dwarf-longshot-squad', 'infantry'],
+  ['battlecry-bestiary/redcap-brigade', 'infantry'],
   ['battlecry-bestiary/viking-guard', 'infantry'],
   ['battlecry-bestiary/clockwork-infantry', 'infantry'],
-  ['battlecry-bestiary/archer-regiment', 'archers'],
-  ['battlecry-bestiary/angelic-chorus', 'monster'],
+  ['battlecry-bestiary/archer-regiment', 'infantry'],
+  ['battlecry-bestiary/angelic-chorus', 'infantry'],
   ['battlecry-bestiary/first-class-infantry', 'infantry'],
-  ['battlecry-bestiary/drake-flight', 'monster'],
+  ['battlecry-bestiary/drake-flight', 'infantry'],
   ['pathfinder-bestiary-3/terra-cotta-garrison', 'infantry'],
   ['battlecry-bestiary/xulgath-dinosaur-cavalry', 'cavalry'],
-  ['battlecry-bestiary/monk-cadre', 'skirmisher'],
+  ['battlecry-bestiary/monk-cadre', 'infantry'],
   ['prey-for-death-bestiary/einherji-host', 'infantry'],
   ['battlecry-bestiary/archon-bastion', 'infantry'],
-  ['prey-for-death-bestiary/valkyrie-tempest', 'monster'],
-  ['battlecry-bestiary/lich-legion', 'monster'],
-  ['hells-destiny-bestiary/angelic-host', 'monster'],
+  ['prey-for-death-bestiary/valkyrie-tempest', 'infantry'],
+  ['battlecry-bestiary/lich-legion', 'infantry'],
+  ['hells-destiny-bestiary/angelic-host', 'infantry'],
 ];
 
 const strip = (html) => (html ?? '').replace(/<[^>]+>/g, ' ');
@@ -74,7 +74,7 @@ const cards = SELECTION.map(([path, role]) => {
     fear: d.items.some((it) => /frightful presence/i.test(it.name)),
     source: d.system.details.publication?.title ?? '',
     overrides: {
-      strike: role === 'siege' ? null : (melee.length ? Math.min(...melee.flatMap((a) => dcs(a.text))) : battleDc) - 10,
+      strike: (melee.length ? Math.min(...melee.flatMap((a) => dcs(a.text))) : battleDc) - 10,
       volley: salvoDc === null ? null : salvoDc - 10,
       reach,
       defence: s.attributes.ac.value,
@@ -86,7 +86,8 @@ const cards = SELECTION.map(([path, role]) => {
 
 const body = cards.map((c) => {
   const o = c.overrides;
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', pace: ${c.pace}, fear: ${c.fear}, tactics: [], overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${o.reach ? `'${o.reach}'` : 'null'}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
+  const reach = o.reach ? `'${o.reach}'` : 'null';
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, tactics: [], overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/official.ts', import.meta.url),

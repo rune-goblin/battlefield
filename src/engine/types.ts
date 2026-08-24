@@ -27,7 +27,6 @@ export interface Unit {
   stats: UnitStats;
   pace: boolean;
   fear: boolean;
-  engine: boolean;
   tactics: Tactic[];
   engines: EngineState[];
   step: number;
@@ -53,7 +52,7 @@ export interface Walls { tier: number; boxes: number; remaining: number; }
 
 export type ActionKind =
   | 'advance' | 'double-advance' | 'withdraw' | 'strike' | 'volley' | 'brace' | 'rally' | 'retreat' | 'pass'
-  | 'bombard' | 'cavalry-charge' | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire'
+  | 'cavalry-charge' | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire'
   | 'defend-allies' | 'battlefield-medicine' | 'fire-engine' | 'engine-bombard';
 
 export interface Action { kind: ActionKind; target?: string; engine?: number; }

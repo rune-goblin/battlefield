@@ -5,7 +5,7 @@ import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
-const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'skirmisher', tactics: [] };
+const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 'close', tactics: [] };
 const open = { cover: false, rough: false, river: false };
 const engine = (name: string) => ENGINES.find((e) => e.name === name)!;
 

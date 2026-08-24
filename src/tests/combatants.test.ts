@@ -22,11 +22,11 @@ describe('combatants', () => {
 describe('official troops', () => {
   it('imports a broad selection with usable cards', () => {
     expect(OFFICIAL.length).toBeGreaterThanOrEqual(30);
-    expect(new Set(OFFICIAL.map((c) => c.role)).size).toBe(7);
+    expect(new Set(OFFICIAL.map((c) => c.role))).toEqual(new Set(['infantry', 'cavalry']));
     for (const c of OFFICIAL) {
       const s = deriveStats(c);
       expect(s.defence, c.name).toBeGreaterThan(10);
-      expect(c.role === 'siege' ? s.strike === null : s.strike! > 0, c.name).toBe(true);
+      expect(s.strike!, c.name).toBeGreaterThan(0);
     }
   });
   it('keeps official names distinct from the Reignmaker set', () => {

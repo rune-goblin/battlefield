@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { COMBATANTS, ENGINES, OFFICIAL, deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
+  import { COMBATANTS, ENGINES, OFFICIAL, deriveStats, deployZone, REACHES, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Reach, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
   import { game, resetSetup, saveSetup, startBattle, type SetupUnit } from './game.svelte.js';
 
   let side: Side = $state('attacker');
   let rosterName = $state(COMBATANTS[0].name);
   const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
-  let custom = $state<{ name: string; level: number; role: Role; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', tactics: [] });
+  let custom = $state<{ name: string; level: number; role: Role; salvo: Reach | null; pace: boolean; fear: boolean; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', salvo: null, pace: false, fear: false, tactics: [] });
 
   const zone = (s: Side, card: UnitCard) => deployZone(s, game.setup.terrain, (card.tactics ?? []).includes('ambush'));
 
@@ -75,6 +75,11 @@
         <select bind:value={custom.role}>{#each ROLES as r}<option value={r}>{r}</option>{/each}</select>
       </div>
       <p class="muted">{ROLE_BLURBS[custom.role]}</p>
+      <div class="row">
+        <label>Salvo <select bind:value={custom.salvo}><option value={null}>none</option>{#each REACHES as r}<option value={r}>{r}</option>{/each}</select></label>
+        <label><input type="checkbox" bind:checked={custom.pace}> Pace</label>
+        <label><input type="checkbox" bind:checked={custom.fear}> Fear</label>
+      </div>
       <div class="row">
         {#each TACTICS as t}
           <label class="muted"><input type="checkbox" checked={custom.tactics.includes(t)} onchange={(e) => { custom.tactics = (e.currentTarget as HTMLInputElement).checked ? [...custom.tactics, t] : custom.tactics.filter((x) => x !== t); }}>{t}</label>

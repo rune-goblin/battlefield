@@ -32,7 +32,7 @@ export function createBattle(setup: BattleSetup, rng: Rng): BattleState {
     const stats = deriveStats(d.card);
     return {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role, stats,
-      pace: traits.pace, fear: traits.fear, engine: traits.engine, tactics: traits.tactics,
+      pace: traits.pace, fear: traits.fear, tactics: traits.tactics,
       engines: (d.engines ?? []).map((e) => ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', step: d.step })),
       step: d.step, wounds: d.card.wounds ?? 0, shaken: d.card.shaken ?? 0, status: 'active',
       initiative: 0, braced: false, exposed: false, strikeUsed: false, shieldBlockUsed: false,
@@ -135,7 +135,7 @@ export function volleyModifier(state: BattleState, u: Unit, target: Unit): numbe
   let m = u.stats.volley ?? 0;
   if (isWeakened(u)) m -= 2;
   m -= u.shaken;
-  if (rangeBetween(state, u, target) === 'extreme' && !u.engine) m -= 2;
+  if (rangeBetween(state, u, target) === 'extreme') m -= 2;
   if (state.units.some((a) => a.side === u.side && a.id !== u.id && isEngaged(state, target, a))) m -= 4;
   if (garrisoned(state, u)) m += 1;
   return m;
@@ -268,7 +268,6 @@ export function availableActions(state: BattleState): ActionOption[] {
   if (u.stats.strike !== null && !u.strikeUsed) add('strike', 1, engaged.map((e) => e.id), 'Strike');
   const volleyTargets = engaged.length || u.stats.volley === null ? [] : enemies.filter((e) => rangeRank(rangeBetween(state, u, e)) <= reachOf(u)).map((e) => e.id);
   add('volley', 1, volleyTargets, 'Volley');
-  if (u.engine && wallsStand(state) && !engaged.length && u.side === 'attacker') add('bombard', 1, null, 'Bombard the walls');
   add('brace', 1, null, 'Brace');
   if (u.shaken > 0) add('rally', 1, null, 'Rally');
   const has = (t: string) => u.tactics.includes(t as never);
@@ -346,18 +345,6 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
       if (succeeded(c.degree) && target!.status === 'active') {
         target!.suppressed = true;
         log(state, u, `${target!.name} is suppressed (−2 to Strike) until its next activation.`);
-      }
-      break;
-    }
-    case 'bombard': {
-      const walls = state.walls!;
-      const dc = 10 + walls.tier + Math.max(0, ...state.units.filter((d) => d.side === 'defender' && d.status === 'active').map((d) => d.level));
-      const c = check(rng, (u.stats.volley ?? 0) - (isWeakened(u) ? 2 : 0) - u.shaken, dc);
-      log(state, u, `${u.name} bombards the walls: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-      const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
-      if (hits) {
-        walls.remaining = Math.max(0, walls.remaining - hits);
-        log(state, u, walls.remaining ? `The walls hold ${walls.remaining}/${walls.boxes}.` : 'The walls are breached.');
       }
       break;
     }

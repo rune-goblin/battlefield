@@ -9,7 +9,7 @@ A fast abstract battle game for armies. Seven steps, two actions, four wounds. P
 
 ## The game in one paragraph
 
-Each army is a unit on a straight line of seven steps between the two sides. On its turn a unit takes two actions: advance, withdraw, strike, volley, brace or rally. Every roll is a d20 check against a DC using numbers derived from a unit's level and role. Hits deal wounds, one or two at a time; four wounds destroy a unit. Taking wounds forces morale checks; failing them makes a unit shaken, and a unit shaken three times routs. The battle ends when one side has nothing standing, or at dusk after six rounds.
+Each army is a unit on a straight line of seven steps between the two sides. On its turn a unit takes two actions: advance, withdraw, strike, volley, brace or rally. Every roll is a d20 check against a DC using numbers derived from a unit's level and type (infantry or cavalry; siege engines ride with a unit). Hits deal wounds, one or two at a time; four wounds destroy a unit. Taking wounds forces morale checks; failing them makes a unit shaken, and a unit shaken three times routs. The battle ends when one side has nothing standing, or at dusk after six rounds.
 
 ## Layout
 

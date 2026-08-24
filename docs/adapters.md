@@ -5,10 +5,10 @@ Battlefield is playable on its own. Integrations attach at two seams in `src/eng
 ## Input: `UnitCard`
 
 ```ts
-{ name, level, role, pace?, fear?, tactics?, wounds?, shaken?, overrides?: Partial<UnitStats> }
+{ name, level, role: 'infantry' | 'cavalry', salvo?: 'close' | 'long' | 'extreme', pace?, fear?, tactics?, wounds?, shaken?, overrides?: Partial<UnitStats> }
 ```
 
-`deriveStats(card)` fills Strike, Volley, reach, Defence, Will and Perception from the PF2e level tables for the role. An adapter that has real numbers passes them in `overrides`; a fully overridden card is a troop sheet.
+Roles match the skirmish rules: infantry and cavalry, with siege engines as a separate class (`SiegeEngineCard`, attached to a unit). `deriveStats(card)` fills Strike, Volley (when `salvo` is set), reach, Defence, Will and Perception from the PF2e level tables for the role. An adapter that has real numbers passes them in `overrides`; a fully overridden card is a troop sheet.
 
 | Source | Mapping |
 |---|---|
