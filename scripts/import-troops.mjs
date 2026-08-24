@@ -10,12 +10,12 @@ const reachOf = (html) => {
   return Number.isNaN(ft) ? null : ft <= 60 ? 'close' : ft <= 120 ? 'long' : 'extreme';
 };
 
-function role(d, traits, salvoReach) {
+function role(d, traits) {
   const armyType = d.flags?.['pf2e-reignmaker']?.creatureData?.armyType;
+  if (traits.some((t) => ['giant', 'dragon'].includes(t))) return 'monster';
   if (armyType === 'cavalry') return 'cavalry';
-  if (traits.some((t) => ['giant', 'dragon', 'beast'].includes(t))) return 'monster';
-  if (salvoReach && salvoReach !== 'close') return 'archers';
-  if (salvoReach === 'close') return 'skirmisher';
+  if (/archer|bombardier/i.test(d.name)) return 'archers';
+  if (/scout|skirmisher|raider|irregular|swashbuckler/i.test(d.name)) return 'skirmisher';
   return 'infantry';
 }
 
@@ -34,7 +34,7 @@ const cards = files.map((f) => {
     slug: f.replace(/\.json$/, ''),
     name: d.name,
     level: s.details.level.value,
-    role: role(d, traits, reach),
+    role: role(d, traits),
     pace: fly || s.attributes.speed.value >= 30,
     fear: false,
     tactics: [],
