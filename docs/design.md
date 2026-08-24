@@ -228,7 +228,7 @@ What the transcript shows: volleys matter before contact; Brace is the default s
 
 ## Standalone game
 
-The rules ship as a standalone web game at `github.com/rune-goblin/battlefield`: a pure TypeScript engine with level-and-role unit cards plus a Svelte hot-seat app. Foundry, PF2e and Reignmaker adapters are deferred; the engine's `UnitCard` input and `BattleState` output are the seam.
+The rules ship as a standalone web game at `github.com/rune-goblin/battlefield`: a pure TypeScript engine with unit cards (level, type infantry or cavalry, optional Salvo reach, Pace and Fear) plus a Svelte hot-seat app; siege engines are a separate class that rides with a unit. Foundry, PF2e and Reignmaker adapters are deferred; the engine's `UnitCard` input and `BattleState` output are the seam.
 
 ## Open questions
 
