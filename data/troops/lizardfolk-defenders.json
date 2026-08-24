@@ -1,0 +1,1248 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.WZRHV2WU0SkpbtJI"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 1,
+        "baseStats": {
+          "ac": 16,
+          "cha": 0,
+          "con": 3,
+          "dex": 2,
+          "fortitude": 8,
+          "hp": 21,
+          "int": -1,
+          "perception": 7,
+          "reflex": 7,
+          "skills": {
+            "acrobatics": 5,
+            "athletics": 6,
+            "stealth": 5
+          },
+          "str": 3,
+          "strikeAttackBonus": 8,
+          "strikeDamage": "1d6 + 3",
+          "strikeDamageAverage": 6.5,
+          "will": 5,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0.16666666666666666,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.5,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.5,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Lizardfolk Defender (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 1,
+        "baseStats": {
+          "ac": 16,
+          "cha": 0,
+          "con": 3,
+          "dex": 2,
+          "fortitude": 8,
+          "hp": 21,
+          "int": -1,
+          "perception": 7,
+          "reflex": 7,
+          "skills": {
+            "acrobatics": 5,
+            "athletics": 6,
+            "stealth": 5
+          },
+          "str": 3,
+          "strikeAttackBonus": 8,
+          "strikeDamage": "1d6 + 3",
+          "strikeDamageAverage": 6.5,
+          "will": 5,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0.16666666666666666,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.5,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.5,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "lizardfolk-defenders",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/lizardfolk-defenders/lizardfolk-defenders_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/lizardfolk-defenders/lizardfolk-defenders_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Amphibious",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop ignores difficult terrain caused by swamp or water. While fighting in swamp or water terrain, it gains a +2 circumstance bonus on Athletics and Stealth checks and a +2 circumstance bonus to its Battle DC.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "domain": "all",
+            "key": "RollOption",
+            "label": "In Swamp/Water Terrain",
+            "option": "swamp-or-water-terrain",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "swamp-or-water-terrain"
+            ],
+            "selector": "athletics",
+            "slug": "amphibious-athletics",
+            "type": "circumstance",
+            "value": 2
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "swamp-or-water-terrain"
+            ],
+            "selector": "stealth",
+            "slug": "amphibious-stealth",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Deep Breath",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A lizardfolk defender can hold their breath for 15 minutes.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[bludgeoning]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:19|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(3d6+2)[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d6+2)[bludgeoning]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7222222222222221,
+                "damageType": "bludgeoning",
+                "originalValue": "1d6+1",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7222222222222222,
+                "damageType": "bludgeoning",
+                "originalValue": "3d6+2",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.6666666666666666,
+                "damageType": "bludgeoning",
+                "originalValue": "4d6+2",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Flail Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:19|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(3d6+2)[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d6+2)[bludgeoning]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Foragers",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop forages and hunts to sustain itself indefinitely, costing the kingdom no food. It still draws its pay like any other army.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[3d6[piercing]|options:area-damage] damage with a @Check[reflex|dc:19|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7058823529411765,
+                "damageType": "piercing",
+                "originalValue": "3d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "30",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Javelin Volley [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[3d6[piercing]|options:area-damage] damage with a @Check[reflex|dc:19|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Trigger</strong> A creature within 5 feet of the lizardfolk defenders uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The lizardfolk lash out with their flails. The triggering creature takes @Damage[({0})[bludgeoning]] damage (@Check[reflex|dc:{1}|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "originalDescription": "<p><strong>Trigger</strong> A creature within 5 feet of the lizardfolk defenders uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The lizardfolk lash out with their flails. The triggering creature takes @Damage[(2d6+5)[bludgeoning]] damage (@Check[reflex|dc:19|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0.16666666666666666,
+                "damageType": "bludgeoning",
+                "originalValue": "2d6+5",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Reactive Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature within 5 feet of the lizardfolk defenders uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The lizardfolk lash out with their flails. The triggering creature takes @Damage[(2d6+5)[bludgeoning]] damage (@Check[reflex|dc:19|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "reactive-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.m4HQ2o5aPxjXf2kY"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Shield Block",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.ShieldBlock]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "shield-block",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Terrain Advantage",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Non-lizardfolk creatures that are in difficult terrain or are in water and lack a swim Speed are @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Off-Guard} to the lizardfolk defender.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "terrain-advantage",
+            "toggleable": true
+          },
+          {
+            "key": "EphemeralEffect",
+            "predicate": [
+              "terrain-advantage",
+              {
+                "not": "target:trait:lizardfolk"
+              }
+            ],
+            "selectors": [
+              "strike-attack-roll",
+              "spell-attack-roll",
+              "strike-damage",
+              "attack-spell-damage"
+            ],
+            "uuid": "Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 52 (3 segments), 26 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.ezVp13Uw8cWW08Da"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/shield/round-wooden-boss-steel-yellow-blue.webp",
+      "name": "Wooden Shield",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 2,
+        "baseItem": "wooden-shield",
+        "bulk": {
+          "value": 1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Though they come in a variety of shapes and sizes, the protection offered by wooden shields comes from the stoutness of their materials. While wooden shields are less expensive than steel shields, they break more easily.</p><table class=\"pf2e remaster\"><thead><tr><th>Hardness</th><th>HP</th><th>BT</th></tr></thead><tbody><tr><td>3</td><td>12</td><td>6</td></tr></tbody></table>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "grade": null,
+        "hardness": 3,
+        "hp": {
+          "max": 12,
+          "value": 12
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "reinforcing": 0
+        },
+        "size": "med",
+        "slug": "wooden-shield",
+        "specific": null,
+        "speedPenalty": 0,
+        "subitems": [],
+        "traits": {
+          "integrated": null,
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "shield"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.t5FbyZtRL4qV0V7k"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/maces/flail-ball-grey.webp",
+      "name": "Flail",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "flail",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 1
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "bludgeoning",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This weapon consists of a wooden handle attached to a spiked ball or cylinder by a chain, rope, or strap of leather.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "flail",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 8
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "flail",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "disarm",
+            "sweep",
+            "trip"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.JNt7GmLCCVz5BiEI"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/javelin.webp",
+      "name": "Javelin",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "javelin",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This thin spear is well balanced for throwing but is not designed for melee use.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "dart",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 3,
+        "range": 30,
+        "reload": {
+          "value": "-"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "javelin",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "thrown"
+          ]
+        },
+        "usage": {
+          "canBeAmmo": false,
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Lizardfolk Defenders",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Lizardfolk Defenders",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/lizardfolk-defenders/lizardfolk-defenders_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 4
+      },
+      "dex": {
+        "mod": 3
+      },
+      "int": {
+        "mod": 2
+      },
+      "str": {
+        "mod": 4
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "(18 with shield raised)",
+        "value": 22
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 78,
+        "temp": 0,
+        "value": 78
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [
+          {
+            "type": "swim",
+            "value": 15
+          }
+        ],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "type": "splash-damage",
+          "value": 2
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "draconic",
+          "iruxi",
+          "common"
+        ]
+      },
+      "level": {
+        "value": 5
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Lizardfolk warriors who hold the wetlands the way stone holds a hill. The swamp feeds them, so no supply line tethers them, and they never tire of waiting. Invaders fight the defenders, the mud, and the fever all at once.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 12,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 13
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 12
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 10
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 11
+      },
+      "athletics": {
+        "base": 12
+      },
+      "stealth": {
+        "base": 11
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "humanoid",
+        "lizardfolk",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

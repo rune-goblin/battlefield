@@ -1,0 +1,898 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.bZRZahVaMyzTbJ4u"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 0,
+        "baseStats": {
+          "ac": 14,
+          "cha": 0,
+          "con": 3,
+          "dex": 1,
+          "fortitude": 7,
+          "hp": 18,
+          "int": 0,
+          "perception": 6,
+          "reflex": 5,
+          "skills": {
+            "athletics": 5,
+            "farming-lore": 6,
+            "nature": 4,
+            "survival": 4
+          },
+          "str": 3,
+          "strikeAttackBonus": 6,
+          "strikeDamage": "1d6 + 3",
+          "strikeDamageAverage": 6.5,
+          "will": 4,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.6666666666666666,
+            "dex": 0.16666666666666666,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.7777777777777777,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.41666666666666663,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "farming-lore"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Farmer (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 0,
+        "baseStats": {
+          "ac": 14,
+          "cha": 0,
+          "con": 3,
+          "dex": 1,
+          "fortitude": 7,
+          "hp": 18,
+          "int": 0,
+          "perception": 6,
+          "reflex": 5,
+          "skills": {
+            "athletics": 5,
+            "farming-lore": 6,
+            "nature": 4,
+            "survival": 4
+          },
+          "str": 3,
+          "strikeAttackBonus": 6,
+          "strikeDamage": "1d6 + 3",
+          "strikeDamageAverage": 6.5,
+          "will": 4,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.6666666666666666,
+            "dex": 0.16666666666666666,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.7777777777777777,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.41666666666666663,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "farming-lore"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "peasant-militia",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/peasant-militia/peasant-militia_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/peasant-militia/peasant-militia_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Requirements</strong> The farmer's last action was a successful pitchfork Strike</p><hr><p><strong>Effect</strong> The farmer moves the creature they hit with their pitchfork up to 5 feet, and the target falls @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}. The target can attempt a @Check[reflex|dc:{0}] save to avoid falling prone and avoids being moved altogether on a critical success.</p>",
+            "originalDescription": "<p><strong>Requirements</strong> The farmer's last action was a successful pitchfork Strike</p><hr><p><strong>Effect</strong> The farmer moves the creature they hit with their pitchfork up to 5 feet, and the target falls @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}. The target can attempt a @Check[reflex|dc:13] save to avoid falling prone and avoids being moved altogether on a critical success.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 0,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "13",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Pitch Bale",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> The farmer's last action was a successful pitchfork Strike</p><hr><p><strong>Effect</strong> The farmer moves the creature they hit with their pitchfork up to 5 feet, and the target falls @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}. The target can attempt a @Check[reflex|dc:19] save to avoid falling prone and avoids being moved altogether on a critical success.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:19|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(3d6+2)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d6+2)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7222222222222221,
+                "damageType": "piercing",
+                "originalValue": "1d6+1",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7222222222222222,
+                "damageType": "piercing",
+                "originalValue": "3d6+2",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "4d6+2",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "10",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Pitchfork Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:19|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(3d6+2)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d6+2)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 62 (3 segments), 31 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.4tIVTg9wj56RrveA"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/chest/breastplate-banded-simple-leather-brown.webp",
+      "name": "Work Clothes (Functions as Leather Armor)",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 1,
+        "baseItem": "leather-armor",
+        "bulk": {
+          "value": 1
+        },
+        "category": "light",
+        "checkPenalty": -1,
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>A mix of flexible and molded boiled leather, a suit of this type of armor provides some protection with maximum flexibility.</p>"
+        },
+        "dexCap": 4,
+        "equipped": {
+          "carryType": "worn",
+          "inSlot": true,
+          "invested": null
+        },
+        "grade": null,
+        "group": "leather",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "resilient": 0
+        },
+        "size": "med",
+        "slug": "leather-armor",
+        "speedPenalty": 0,
+        "strength": 0,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "armor"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.L9ZV076913otGtiB"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/consumables/other-consumables/apple.webp",
+      "name": "Apple",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 4
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "quantity": 4,
+        "rules": [],
+        "size": "med",
+        "slug": "rations",
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "equipment"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Farming Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 13
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.FJrsDoaIXksVjld9"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/specific-magic-weapons/fighters-fork.webp",
+      "name": "Pitchfork",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "trident",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 1
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This three-pronged, spear-like weapon typically has a 4-foot shaft. Like a spear, it can be wielded with one hand or thrown.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "spear",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "trident",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "reach"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Peasant Militia",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Peasant Militia",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/peasant-militia/peasant-militia_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 5
+      },
+      "dex": {
+        "mod": 3
+      },
+      "int": {
+        "mod": 2
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 20
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 93,
+        "temp": 0,
+        "value": 93
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 5
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Farmhands mustered with scythes, mattocks, and whatever the armory could spare. They are not soldiers, and they know it. But they have dug, hauled, and harvested through every season of their lives, and that kind of endurance counts for more in a campaign than recruiters admit.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 12,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 13
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 11
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 10
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 12
+      },
+      "nature": {
+        "base": 11
+      },
+      "survival": {
+        "base": 11
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

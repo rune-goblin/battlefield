@@ -1,0 +1,1197 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.Koz2GhqliCU5sIJl"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 1,
+        "baseStats": {
+          "ac": 14,
+          "cha": 0,
+          "con": 1,
+          "dex": 1,
+          "fortitude": 8,
+          "hp": 22,
+          "int": 3,
+          "perception": 5,
+          "reflex": 6,
+          "skills": {
+            "athletics": 7,
+            "crafting": 16,
+            "engineering-lore": 16,
+            "thievery": 6
+          },
+          "str": 4,
+          "strikeAttackBonus": 7,
+          "strikeDamage": "1d6 + 4",
+          "strikeDamageAverage": 7.5,
+          "will": 3,
+          "wis": 0
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0.3333333333333333,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.3333333333333333,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.41666666666666663,
+            "will": 0.125
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 1,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "thievery"
+            },
+            {
+              "benchmark": 1,
+              "skill": "engineering-lore"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Mechanic (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 1,
+        "baseStats": {
+          "ac": 14,
+          "cha": 0,
+          "con": 1,
+          "dex": 1,
+          "fortitude": 8,
+          "hp": 22,
+          "int": 3,
+          "perception": 5,
+          "reflex": 6,
+          "skills": {
+            "athletics": 7,
+            "crafting": 16,
+            "engineering-lore": 16,
+            "thievery": 6
+          },
+          "str": 4,
+          "strikeAttackBonus": 7,
+          "strikeDamage": "1d6 + 4",
+          "strikeDamageAverage": 7.5,
+          "will": 3,
+          "wis": 0
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0.3333333333333333,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.3333333333333333,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.41666666666666663,
+            "will": 0.125
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 1,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "thievery"
+            },
+            {
+              "benchmark": 1,
+              "skill": "engineering-lore"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "engineering-corps",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/engineering-corps/engineering-corps_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/engineering-corps/engineering-corps_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[2d10[piercing]|options:area-damage] damage with a @Check[reflex|dc:21|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5838779956427016,
+                "damageType": "piercing",
+                "originalValue": "2d10",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "100",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Arbalest Volley [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[2d10[piercing]|options:area-damage] damage with a @Check[reflex|dc:21|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[bludgeoning]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d6[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d6+1)[bludgeoning]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5185185185185183,
+                "damageType": "bludgeoning",
+                "originalValue": "1d6+1",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.711111111111111,
+                "damageType": "bludgeoning",
+                "originalValue": "4d6",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.7,
+                "damageType": "bludgeoning",
+                "originalValue": "5d6+1",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Heavy Wrench Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d6[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d6+1)[bludgeoning]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Mechanical Repair",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The mechanic is trained in Crafting, but a master in Crafting for mechanical devices, siege weapons, and vehicles. They can Repair in 1 minute instead of 10 minutes.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "mechanical-repair",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Mechanical Specialist",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>For encounters involving mechanical repair, the mechanic is an 8th-level challenge.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The mechanic pushes a mechanical device, siege weapon, or vehicle pasts its regular limits with a temporary upgrade chosen from the list below. An item can have only one risky upgrade at a time. If an item has an upgrade at the start of the mechanic's turn, the mechanic must attempt a @Check[flat|dc:5]. (These flat checks continue even if the mechanic is dead or otherwise can't take turns.) On a failure, the item explodes, dealing damage equal to the item's level to all adjacent creatures and ending the upgrade.</p><ul><li><strong>Overheat Weapons</strong> If the item would deal damage, it deals an additional 1d6 fire damage. This increases to 2d6 if the item is 8th level or higher.</li><li><strong>Pressured Plating</strong> The item gains a +3 status bonus to its Hardness and gains temporary Hit Points equal to double its level that last for 10 minutes.</li><li><strong>Propelled Boost</strong> If the item has a Speed, the item gains a +15-foot status bonus to Speed.</li></ul>",
+            "originalDescription": "<p>The mechanic pushes a mechanical device, siege weapon, or vehicle pasts its regular limits with a temporary upgrade chosen from the list below. An item can have only one risky upgrade at a time. If an item has an upgrade at the start of the mechanic's turn, the mechanic must attempt a @Check[flat|dc:5]. (These flat checks continue even if the mechanic is dead or otherwise can't take turns.) On a failure, the item explodes, dealing damage equal to the item's level to all adjacent creatures and ending the upgrade.</p><ul><li><strong>Overheat Weapons</strong> If the item would deal damage, it deals an additional 1d6 fire damage. This increases to 2d6 if the item is 8th level or higher.</li><li><strong>Pressured Plating</strong> The item gains a +3 status bonus to its Hardness and gains temporary Hit Points equal to double its level that last for 10 minutes.</li><li><strong>Propelled Boost</strong> If the item has a Speed, the item gains a +15-foot status bonus to Speed.</li></ul>",
+            "scalableValues": []
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Risky Upgrade",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The mechanic pushes a mechanical device, siege weapon, or vehicle pasts its regular limits with a temporary upgrade chosen from the list below. An item can have only one risky upgrade at a time. If an item has an upgrade at the start of the mechanic's turn, the mechanic must attempt a @Check[flat|dc:5]. (These flat checks continue even if the mechanic is dead or otherwise can't take turns.) On a failure, the item explodes, dealing damage equal to the item's level to all adjacent creatures and ending the upgrade.</p><ul><li><strong>Overheat Weapons</strong> If the item would deal damage, it deals an additional 1d6 fire damage. This increases to 2d6 if the item is 8th level or higher.</li><li><strong>Pressured Plating</strong> The item gains a +3 status bonus to its Hardness and gains temporary Hit Points equal to double its level that last for 10 minutes.</li><li><strong>Propelled Boost</strong> If the item has a Speed, the item gains a +15-foot status bonus to Speed.</li></ul>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 66 (3 segments), 33 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.AITVZmakiu3RgfKo"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/bolts.webp",
+      "name": "Bolts",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": "bolts",
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "craftableAs": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Shorter than traditional arrows but similar in construction, bolts are the ammunition used by crossbows.</p>"
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "per": 10,
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 20,
+        "rules": [],
+        "size": "med",
+        "slug": "bolts",
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "consumable"
+          ]
+        },
+        "uses": {
+          "autoDestroy": true,
+          "max": 1,
+          "value": 1
+        }
+      },
+      "type": "ammo"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.vLGDUFrg4yGzpTQX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/tools/smithing/anvil.webp",
+      "name": "Repair Toolkit",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": null,
+        "bulk": {
+          "value": 1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>A repair kit allows you to perform simple repairs while traveling. It contains a portable anvil, tongs, woodworking tools, a whetstone, and oils for conditioning leather and wood. You can use a repair kit to Repair items using the Crafting skill. You can draw and replace a worn repair toolkit as part of the action that uses it.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "size": "med",
+        "slug": "repair-toolkit",
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        }
+      },
+      "type": "equipment"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Engineering Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 18
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.K3qNqWRvBhnlwE3Q"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/crossbows/crossbow-purple.webp",
+      "name": "Arbalest",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": {
+          "baseType": "bolts",
+          "builtIn": false,
+          "capacity": 1
+        },
+        "baseItem": "arbalest",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 2
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d10",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This large and well-made crossbow requires some training to use effectively, but it's assembled with a cutting-edge firing mechanism that maximizes its speed, power, and accuracy.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "crossbow",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 8
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": 110,
+        "reload": {
+          "value": "1"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "arbalest",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "backstabber"
+          ]
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.9iDqOLNFKxiTcFKE"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/tools/hand/wrench-iron-grey.webp",
+      "name": "Heavy Wrench (Functions as a Mace)",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "mace",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "bludgeoning",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>With a stout haft and a heavy metal head, a mace is sturdy and allows its wielder to deliver powerful blows and dent armor.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "inSlot": false,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "club",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "mace",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "shove"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Engineering Corps",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Engineering Corps",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/engineering-corps/engineering-corps_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 2
+      },
+      "dex": {
+        "mod": 2
+      },
+      "int": {
+        "mod": 4
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 2
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 22
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 99,
+        "temp": 0,
+        "value": 99
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "type": "splash-damage",
+          "value": 2
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 6
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Mechanics, craftsmen, and smiths who keep an army's engines, siege weapons, and vehicles running. They carry hammers and shovels more often than swords and shields. No commander wants them in a melee; no commander holds a siege without them.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 12,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 13
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 10
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 15,
+        "special": []
+      },
+      "crafting": {
+        "base": 18,
+        "special": [
+          {
+            "base": 18,
+            "label": "when repairing mechanical devices"
+          }
+        ]
+      },
+      "thievery": {
+        "base": 13,
+        "special": []
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

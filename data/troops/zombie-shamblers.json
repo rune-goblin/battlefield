@@ -1,0 +1,632 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core-2.Actor.WQYzPF4cN4msA8lw"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 18,
+          "cha": -2,
+          "con": 3,
+          "dex": 0,
+          "fortitude": 11,
+          "hp": 90,
+          "int": -5,
+          "perception": 7,
+          "reflex": 8,
+          "skills": {},
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 9,
+          "wis": 1
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0,
+          "hp": 1,
+          "perception": 0.125,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.25,
+            "will": 0.3333333333333333
+          },
+          "skills": [],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Shambler Troop (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 18,
+          "cha": -2,
+          "con": 3,
+          "dex": 0,
+          "fortitude": 11,
+          "hp": 90,
+          "int": -5,
+          "perception": 7,
+          "reflex": 8,
+          "skills": {},
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 9,
+          "wis": 1
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0,
+          "hp": 1,
+          "perception": 0.125,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.25,
+            "will": 0.3333333333333333
+          },
+          "skills": [],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "zombie-shamblers",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/zombie-shamblers/zombie-shamblers_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/zombie-shamblers/zombie-shamblers_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Grave Tide",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The shambler troop is less organized than most troops. It can move into other creatures' spaces, and other creatures can move into its spaces. Its spaces are difficult terrain to other creatures.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">2</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The shamblers lash out at any enemies in their squares or within a @Template[type:emanation|distance:{3}] (@Check[reflex|dc:{2}|basic] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[bludgeoning]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">2</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The shamblers lash out at any enemies in their squares or within a @Template[type:emanation|distance:5] (@Check[reflex|dc:18|basic] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(2d6+5)[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+9)[bludgeoning]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.8333333333333333,
+                "damageType": "bludgeoning",
+                "originalValue": "2d6+5",
+                "troopLine": 2,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.8333333333333333,
+                "damageType": "bludgeoning",
+                "originalValue": "2d6+9",
+                "troopLine": 3,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Shambling Onslaught [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">2</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The shamblers lash out at any enemies in their squares or within a @Template[type:emanation|distance:5] (@Check[reflex|dc:18|basic] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(2d6+5)[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+9)[bludgeoning]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round",
+          "value": 1
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Slow",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>A shambler troop is permanently @UUID[Compendium.pf2e.conditionitems.Item.xYTAsEpcJE1Ccni3]{Slowed 1} and can't use reactions.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 60 (3 segments), 30 (2 segments)</p><hr><p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-movement",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.TTCw5NusiSSkJU1x"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Void Healing",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.NegativeHealing]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [
+          {
+            "key": "ActiveEffectLike",
+            "mode": "override",
+            "path": "system.attributes.hp.negativeHealing",
+            "value": true
+          }
+        ],
+        "slug": "void-healing",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Zombie Shamblers",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Zombie Shamblers",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/zombie-shamblers/zombie-shamblers_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": -2
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 0
+      },
+      "int": {
+        "mod": -5
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 1
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 18
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "void healing; Thresholds 60 (3 segments), 30 (2 segments)",
+        "max": 90,
+        "temp": 0,
+        "value": 90
+      },
+      "immunities": [
+        {
+          "type": "bleed"
+        },
+        {
+          "type": "death-effects"
+        },
+        {
+          "type": "disease"
+        },
+        {
+          "type": "mental"
+        },
+        {
+          "type": "paralyzed"
+        },
+        {
+          "type": "poison"
+        },
+        {
+          "type": "unconscious"
+        }
+      ],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 20
+      },
+      "weaknesses": [
+        {
+          "exceptions": [],
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "exceptions": [],
+          "type": "slashing",
+          "value": 5
+        },
+        {
+          "exceptions": [],
+          "type": "splash-damage",
+          "value": 5
+        },
+        {
+          "exceptions": [],
+          "type": "vitality",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": []
+      },
+      "level": {
+        "value": 4
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>A shuffling mass of the risen dead moving with dull, singular purpose. It neither hurries nor halts. Terror is wasted on it, arrows little better, and every soldier it pulls down stands back up on the wrong side.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core 2"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 7,
+      "senses": [
+        {
+          "type": "darkvision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 11
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 8
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 9
+      }
+    },
+    "skills": {},
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "mindless",
+        "troop",
+        "undead",
+        "unholy",
+        "zombie"
+      ]
+    }
+  },
+  "type": "npc"
+}

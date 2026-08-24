@@ -17,6 +17,7 @@ Each army is a unit on a straight line of seven steps between the two sides. On 
 src/engine   pure TypeScript rules: level tables, unit cards, checks, the battle state machine, a sample roster
 src/app      Svelte 5 hot-seat client: setup, board, action panel, log; state persists in localStorage
 src/tests    vitest specs for the engine
+data/troops  the 38 Reignmaker troop actors; `npm run import:troops` regenerates src/engine/combatants.ts from them
 public       the rules document
 docs         design notes and the adapter contract
 ```

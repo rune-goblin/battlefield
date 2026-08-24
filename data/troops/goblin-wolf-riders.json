@@ -1,0 +1,735 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.BN5Lb6IsQ9Wyu3rL"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 1,
+        "baseStats": {
+          "ac": 15,
+          "cha": -2,
+          "con": 1,
+          "dex": 4,
+          "fortitude": 6,
+          "hp": 24,
+          "int": -4,
+          "perception": 7,
+          "reflex": 9,
+          "skills": {
+            "acrobatics": 7,
+            "athletics": 6,
+            "stealth": 7,
+            "survival": 7
+          },
+          "str": 2,
+          "strikeAttackBonus": 9,
+          "strikeDamage": "1d6 + 2",
+          "strikeDamageAverage": 5.5,
+          "will": 5,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0,
+            "str": 0.16666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.6666666666666666,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.6666666666666666,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Wolf (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 1,
+        "baseStats": {
+          "ac": 15,
+          "cha": -2,
+          "con": 1,
+          "dex": 4,
+          "fortitude": 6,
+          "hp": 24,
+          "int": -4,
+          "perception": 7,
+          "reflex": 9,
+          "skills": {
+            "acrobatics": 7,
+            "athletics": 6,
+            "stealth": 7,
+            "survival": 7
+          },
+          "str": 2,
+          "strikeAttackBonus": 9,
+          "strikeDamage": "1d6 + 2",
+          "strikeDamageAverage": 5.5,
+          "will": 5,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0,
+            "str": 0.16666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.6666666666666666,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.6666666666666666,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "goblin-wolf-riders",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/goblin-wolf-riders/goblin-wolf-riders_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/goblin-wolf-riders/goblin-wolf-riders_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d6[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d6+1)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5185185185185183,
+                "damageType": "piercing",
+                "originalValue": "1d6+1",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.711111111111111,
+                "damageType": "piercing",
+                "originalValue": "4d6",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.7,
+                "damageType": "piercing",
+                "originalValue": "5d6+1",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Biting [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d6[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d6+1)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The wolves surge forward with their riders low over their necks. The troop Strides up to double its Speed. Each enemy in a @Template[type:emanation|distance:5] at the end of that movement takes @Damage[({0})[piercing]|options:area-damage] damage (@Check[reflex|dc:{1}|basic|options:area-effect] save). A creature that critically fails its save is also knocked @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>",
+            "originalDescription": "<p>The wolves surge forward with their riders low over their necks. The troop Strides up to double its Speed. Each enemy in a @Template[type:emanation|distance:5] at the end of that movement takes @Damage[(2d6+7)[piercing]|options:area-damage] damage (@Check[reflex|dc:21|basic|options:area-effect] save). A creature that critically fails its save is also knocked @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.2222222222222222,
+                "damageType": "piercing",
+                "originalValue": "2d6+7",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Cavalry Charge",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The wolves surge forward with their riders low over their necks. The troop Strides up to double its Speed. Each enemy in a @Template[type:emanation|distance:5] at the end of that movement takes @Damage[(2d6+7)[piercing]|options:area-damage] damage (@Check[reflex|dc:21|basic|options:area-effect] save). A creature that critically fails its save is also knocked @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "cavalry-charge",
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack",
+            "move"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.BCLvAx4Pz4MLa2pu"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Knockdown",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.Knockdown]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "knockdown",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Mounted Troop",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Effects that target only animals or only humanoids might not work on the troop, subject to the GM's discretion.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Pack Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The wolf's Strikes deal 1d4 extra damage to creatures within reach of at least two of the wolf's allies.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [
+          {
+            "domain": "damage",
+            "key": "RollOption",
+            "option": "pack-attack",
+            "toggleable": true
+          },
+          {
+            "diceNumber": 1,
+            "dieSize": "d4",
+            "key": "DamageDice",
+            "predicate": [
+              "pack-attack"
+            ],
+            "selector": "strike-damage"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 66 (3 segments), 33 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Goblin Wolf Riders",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Goblin Wolf Riders",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/goblin-wolf-riders/goblin-wolf-riders_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 2
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 2
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 23
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 99,
+        "temp": 0,
+        "value": 99
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 35
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": []
+      },
+      "level": {
+        "value": 6
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Goblins mounted on snapping, half-wild wolves: a partnership built on shared appetite. They swirl around slower troops, dart in to stab and bite, and scatter before any counterblow lands. Catching them is the hard part. Surviving their attention is the other.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 14,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "low-light-vision"
+        },
+        {
+          "acuity": "imprecise",
+          "range": 30,
+          "type": "scent"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 13
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 16
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 12
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 15
+      },
+      "athletics": {
+        "base": 13
+      },
+      "stealth": {
+        "base": 15
+      },
+      "survival": {
+        "base": 15
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "animal",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

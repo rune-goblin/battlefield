@@ -1,0 +1,827 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.IYEVUYP6fXJCleTQ"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 8,
+        "baseStats": {
+          "ac": 27,
+          "cha": 2,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 12,
+          "hp": 120,
+          "int": 1,
+          "perception": 18,
+          "reflex": 18,
+          "skills": {
+            "acrobatics": 16,
+            "athletics": 15,
+            "medicine": 14,
+            "nature": 16,
+            "stealth": 18,
+            "survival": 16
+          },
+          "str": 3,
+          "will": 16,
+          "wis": 4
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 0,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.3333333333333333,
+          "perception": 0.6666666666666666,
+          "saves": {
+            "fortitude": 0.125,
+            "reflex": 0.6666666666666666,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "medicine"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.75,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 8,
+        "baseStats": {
+          "ac": 27,
+          "cha": 2,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 12,
+          "hp": 120,
+          "int": 1,
+          "perception": 18,
+          "reflex": 18,
+          "skills": {
+            "acrobatics": 16,
+            "athletics": 15,
+            "medicine": 14,
+            "nature": 16,
+            "stealth": 18,
+            "survival": 16
+          },
+          "str": 3,
+          "will": 16,
+          "wis": 4
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 0,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.3333333333333333,
+          "perception": 0.6666666666666666,
+          "saves": {
+            "fortitude": 0.125,
+            "reflex": 0.6666666666666666,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "medicine"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.75,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "basic-skirmishers",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/basic-skirmishers/basic-skirmishers_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/basic-skirmishers/basic-skirmishers_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Among the Trees",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> Every square the woodland scouts occupy is in forest terrain</p><hr><p><strong>Effect</strong> The woodland scouts disperse among the trees. They @UUID[Compendium.pf2e.actionspf2e.Item.ust1jJSCZQUhBZIz]{Take Cover} and then use that cover to [[/act hide]], attempting a Stealth check.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Forest Passage",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Woodland scouts ignore any difficult terrain caused by plants and fungi, such as bushes, vines, and undergrowth.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The scouts engage in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[slashing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The scouts engage in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:24|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d8+3)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d8+6)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d8+9)[slashing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.9876543209876543,
+                "damageType": "slashing",
+                "originalValue": "1d8+3",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.5,
+                "damageType": "slashing",
+                "originalValue": "2d8+6",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.6944444444444444,
+                "damageType": "slashing",
+                "originalValue": "3d8+9",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.16666666666666666,
+                "checkType": "reflex",
+                "originalValue": "24",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Harried Attack [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The scouts engage in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:24|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d8+3)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d8+6)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d8+9)[slashing]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "harried-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The scouts draw or reload their longbows, then send forth a flurry of arrows. This barrage is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. If the scouts are @UUID[Compendium.pf2e.conditionitems.Item.iU0fEDdBp3rXpTMC]{Hidden} or undetected, this deals an additional 2d6 precision damage. When the troop is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The scouts draw or reload their longbows, then send forth a flurry of arrows. This barrage is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[3d8[piercing]|options:area-damage] damage with a @Check[reflex|dc:24|basic|options:area-effect] save. If the scouts are @UUID[Compendium.pf2e.conditionitems.Item.iU0fEDdBp3rXpTMC]{Hidden} or undetected, this deals an additional 2d6 precision damage. When the troop is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.5980392156862746,
+                "damageType": "piercing",
+                "originalValue": "3d8",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.16666666666666666,
+                "checkType": "reflex",
+                "originalValue": "24",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 or fewer segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "100",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Longbow Barrage [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The scouts draw or reload their longbows, then send forth a flurry of arrows. This barrage is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[3d8[piercing]|options:area-damage] damage with a @Check[reflex|dc:24|basic|options:area-effect] save. If the scouts are @UUID[Compendium.pf2e.conditionitems.Item.iU0fEDdBp3rXpTMC]{Hidden} or undetected, this deals an additional 2d6 precision damage. When the troop is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "longbow-barrage",
+            "toggleable": true
+          },
+          {
+            "category": "precision",
+            "diceNumber": 2,
+            "dieSize": "d6",
+            "key": "DamageDice",
+            "predicate": [
+              "longbow-barrage",
+              "item:slug:longbow-barrage"
+            ],
+            "selector": "inline-damage"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Stealthy Formation",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>If the scouts become @UUID[Compendium.pf2e.conditionitems.Item.iU0fEDdBp3rXpTMC]{Hidden} or @UUID[Compendium.pf2e.conditionitems.Item.VRSef5y1LmL2Hkjf]{Undetected}, they remain so until they take a hostile action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.EawOw47nHueUPnYc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 80 (3 segments), 40 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.MXI6zwrvbQNIv7ji"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Whenever a troop moves, you move one of its segments and the other segments follow behind it. At the end of the movement, you can group the other segments adjacent to the one you moved as you see fit, provided none of them moves farther than the moving segment. If you choose not to move the troop any distance, you can instead reshape the position of all the segments as long as one stays in place.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Forest Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 17
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    }
+  ],
+  "name": "Skirmishers",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 20,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": true,
+    "movementAction": null,
+    "name": "Skirmishers",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/basic-skirmishers/basic-skirmishers_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 0
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 1
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 27
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "(4 segments); Thresholds 80 (3 segments), 40 (2 segments)",
+        "max": 120,
+        "temp": 0,
+        "value": 120
+      },
+      "speed": {
+        "details": "forest passage, troop movement",
+        "otherSpeeds": [],
+        "value": 30
+      },
+      "weaknesses": [
+        {
+          "exceptions": [],
+          "type": "area-damage",
+          "value": 8
+        },
+        {
+          "exceptions": [],
+          "type": "splash-damage",
+          "value": 8
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "elven",
+          "fey"
+        ]
+      },
+      "level": {
+        "value": 8
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Fighters raised in the deep woods who treat terrain as a weapon. They strike from cover, fade between the trees, and reappear where the enemy least wants them. Armies that follow them into the forest seldom come out in good order.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 18,
+      "senses": [
+        {
+          "type": "low-light-vision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 12
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 18
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 16
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 16,
+        "special": []
+      },
+      "athletics": {
+        "base": 15,
+        "special": []
+      },
+      "medicine": {
+        "base": 14,
+        "special": []
+      },
+      "nature": {
+        "base": 16,
+        "special": []
+      },
+      "stealth": {
+        "base": 18,
+        "special": [
+          {
+            "base": 19,
+            "label": "in forests",
+            "predicate": [
+              "terrain:forest"
+            ]
+          }
+        ]
+      },
+      "survival": {
+        "base": 16,
+        "special": []
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "elf",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

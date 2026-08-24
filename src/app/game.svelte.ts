@@ -1,5 +1,5 @@
 import {
-  act, createBattle, randomRng, ROSTER, type Action, type BattleState, type Side, type Terrain, type UnitCard,
+  act, COMBATANTS, createBattle, randomRng, type Action, type BattleState, type Side, type Terrain, type UnitCard,
 } from '../engine/index.js';
 
 export interface SetupUnit { card: UnitCard; side: Side; step: number; }
@@ -9,7 +9,7 @@ export interface Setup { units: SetupUnit[]; terrain: Terrain; wallsTier: number
 const KEY = 'battlefield.v1';
 
 function defaultSetup(): Setup {
-  const pick = (name: string) => ROSTER.find((c) => c.name === name)!;
+  const pick = (name: string) => COMBATANTS.find((c) => c.name === name)!;
   return {
     units: [
       { card: pick('Line Infantry'), side: 'attacker', step: 0 },

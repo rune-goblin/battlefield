@@ -1,0 +1,792 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.AFWmiIBJ7ypgydQD"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 3,
+        "baseStats": {
+          "ac": 18,
+          "cha": -2,
+          "con": 4,
+          "dex": 3,
+          "fortitude": 11,
+          "hp": 50,
+          "int": -4,
+          "perception": 10,
+          "reflex": 8,
+          "skills": {
+            "acrobatics": 8,
+            "athletics": 10,
+            "stealth": 8,
+            "survival": 10
+          },
+          "str": 5,
+          "strikeAttackBonus": 12,
+          "strikeDamage": "1d10 + 5",
+          "strikeDamageAverage": 10.5,
+          "will": 8,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.6666666666666666,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 1,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.6666666666666666,
+          "perception": 0.5833333333333334,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.41666666666666663,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Dire Wolf (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 3,
+        "baseStats": {
+          "ac": 18,
+          "cha": -2,
+          "con": 4,
+          "dex": 3,
+          "fortitude": 11,
+          "hp": 50,
+          "int": -4,
+          "perception": 10,
+          "reflex": 8,
+          "skills": {
+            "acrobatics": 8,
+            "athletics": 10,
+            "stealth": 8,
+            "survival": 10
+          },
+          "str": 5,
+          "strikeAttackBonus": 12,
+          "strikeDamage": "1d10 + 5",
+          "strikeDamageAverage": 10.5,
+          "will": 8,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.6666666666666666,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 1,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.6666666666666666,
+          "perception": 0.5833333333333334,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.41666666666666663,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "dire-wolves",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/dire-wolves/dire-wolves_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/dire-wolves/dire-wolves_portrait.webp",
+  "items": [
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.nZMQh4AaBr291TUf"
+      },
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>@Check[reflex|dc:{0}]</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Buck]</p>",
+            "originalDescription": "<p>@Check[reflex|dc:20]</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Buck]</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 3,
+                "benchmark": 0.5,
+                "checkType": "reflex",
+                "originalValue": "20",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Buck",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Check[reflex|dc:26]</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Buck]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "buck",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[{0}[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[{2}[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:23|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[1d10[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[3d10[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[4d10[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.5308641975308641,
+                "damageType": "piercing",
+                "originalValue": "1d10",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "3d10",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "4d10",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "10",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Gnashing Teeth [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:23|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[1d10[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[3d10[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[4d10[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.Tkd8sH4pwFIPzqTr"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Grab",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.Grab]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "grab",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.BCLvAx4Pz4MLa2pu"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Knockdown",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.Knockdown]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "knockdown",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Pack Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The dire wolf's Strikes deal 1d6 extra damage to creatures within reach of at least two of the wolf's allies.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [
+          {
+            "domain": "damage",
+            "key": "RollOption",
+            "option": "pack-attack",
+            "toggleable": true
+          },
+          {
+            "diceNumber": 1,
+            "dieSize": "d6",
+            "key": "DamageDice",
+            "predicate": [
+              "pack-attack"
+            ],
+            "selector": "strike-damage"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 92 (3 segments), 46 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Requirements</strong> The dire wolf has a creature @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed} or @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Restrained} in its jaws</p>\n<hr>\n<p><strong>Effect</strong> The dire wolf fiercely shakes the creature with its teeth, dealing @Damage[({0})[piercing]] damage with a @Check[fortitude|dc:{1}|basic] save.</p>",
+            "originalDescription": "<p><strong>Requirements</strong> The dire wolf has a creature @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed} or @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Restrained} in its jaws</p>\n<hr>\n<p><strong>Effect</strong> The dire wolf fiercely shakes the creature with its teeth, dealing @Damage[(1d10+2)[piercing]] damage with a @Check[fortitude|dc:20|basic] save.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 3,
+                "benchmark": 0,
+                "damageType": "piercing",
+                "originalValue": "1d10+2",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 3,
+                "benchmark": 0.5,
+                "checkType": "fortitude",
+                "originalValue": "20",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Worry",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> The dire wolf has a creature @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed} or @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Restrained} in its jaws</p>\n<hr>\n<p><strong>Effect</strong> The dire wolf fiercely shakes the creature with its teeth, dealing @Damage[(2d10+3)[piercing]] damage with a @Check[fortitude|dc:26|basic] save.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack"
+          ]
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Dire Wolves",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Dire Wolves",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/dire-wolves/dire-wolves_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 3
+      },
+      "con": {
+        "mod": 6
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 3
+      },
+      "str": {
+        "mod": 7
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 26
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 139,
+        "temp": 0,
+        "value": 139
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 35
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 8
+        },
+        {
+          "type": "splash-damage",
+          "value": 8
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": []
+      },
+      "level": {
+        "value": 8
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>A hunting pack of wolves grown to the size of horses, with tempers soured to match. Unlike their lesser cousins they do not fear people. They eat them. A column under their attention loses sentries first, then stragglers, then its nerve.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 17,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "low-light-vision"
+        },
+        {
+          "acuity": "imprecise",
+          "range": 30,
+          "type": "scent"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 18
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 15
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 15
+      },
+      "athletics": {
+        "base": 18
+      },
+      "stealth": {
+        "base": 15
+      },
+      "survival": {
+        "base": 18
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "animal",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

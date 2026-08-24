@@ -1,0 +1,752 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.VotlWUsFKdOrHWF6"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 20,
+          "cha": 3,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 8,
+          "hp": 40,
+          "int": -2,
+          "perception": 10,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 10,
+            "stealth": 14
+          },
+          "str": -5,
+          "strikeAttackBonus": 15,
+          "strikeDamage": "2d6 + 3",
+          "strikeDamageAverage": 10,
+          "will": 12,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0.3333333333333333,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5833333333333334
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.8888888888888888,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.8333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Shadow (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 20,
+          "cha": 3,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 8,
+          "hp": 40,
+          "int": -2,
+          "perception": 10,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 10,
+            "stealth": 14
+          },
+          "str": -5,
+          "strikeAttackBonus": 15,
+          "strikeDamage": "2d6 + 3",
+          "strikeDamageAverage": 10,
+          "will": 12,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0.3333333333333333,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5833333333333334
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.8888888888888888,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.8333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "shadow-host",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/shadow-host/shadow-host_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/shadow-host/shadow-host_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Light Vulnerability",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Attacks against the shadow are treated as magical if made by a creature who is in magical light or with an object that is in magical light (such as from the @UUID[Compendium.pf2e.spells-srd.Item.WBmvzNDfpwka3qT4]{Light} spell).</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[void]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[void]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[{2}[void]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:25|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+3)[void]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(5d6+1)[void]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[7d6[void]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6707818930041151,
+                "damageType": "void",
+                "originalValue": "1d6+3",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.7037037037037037,
+                "damageType": "void",
+                "originalValue": "5d6+1",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6944444444444444,
+                "damageType": "void",
+                "originalValue": "7d6",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "25",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Shadow Hand Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:25|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+3)[void]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(5d6+1)[void]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[7d6[void]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Shadow Spawn",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>When a creature's shadow is pulled free by Steal Shadow, it becomes a shadow spawn under the command of the shadow that created it. This @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.clzHAfegb9Rn6DOe]{Shadow Spawn} doesn't have Steal Shadow and is perpetually and incurably @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Clumsy 2}.</p>\n<p>If the creature the shadow spawn was pulled from dies, the shadow spawn becomes a full-fledged, autonomous shadow. If the creature recovers from its enfeeblement, its shadow returns to it and the shadow spawn is extinguished.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Slink in Shadows",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The shadow can @UUID[Compendium.pf2e.actionspf2e.Item.XMcnh4cSI32tljXa]{Hide} or end its @UUID[Compendium.pf2e.actionspf2e.Item.VMozDqMMuK5kpoX4]{Sneak} in a creature's or object's shadow.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Steal Shadow",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> The shadow hit a living creature with a shadow hand Strike on its previous action</p>\n<hr>\n<p><strong>Effect</strong> The shadow pulls at the target's shadow, making the creature @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Enfeebled 1}. This is cumulative with other enfeebled conditions from shadows, to a maximum of @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Enfeebled 4}. If this increases a creature's enfeebled value to 3 or more, the target's shadow is separated from its body (see shadow spawn). The enfeebled value from Steal Shadow decreases by 1 every hour.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "divine"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 74 (3 segments), 37 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.TTCw5NusiSSkJU1x"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Void Healing",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.NegativeHealing]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [
+          {
+            "key": "ActiveEffectLike",
+            "mode": "override",
+            "path": "system.attributes.hp.negativeHealing",
+            "value": true
+          }
+        ],
+        "slug": "void-healing",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Shadow Host",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Shadow Host",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/shadow-host/shadow-host_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 4
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 3
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 27
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "void healing",
+        "max": 112,
+        "temp": 0,
+        "value": 112
+      },
+      "immunities": [
+        {
+          "type": "death-effects"
+        },
+        {
+          "type": "disease"
+        },
+        {
+          "type": "paralyzed"
+        },
+        {
+          "type": "poison"
+        },
+        {
+          "type": "precision"
+        },
+        {
+          "type": "unconscious"
+        },
+        {
+          "type": "bleed"
+        }
+      ],
+      "resistances": [
+        {
+          "doubleVs": [
+            "non-magical"
+          ],
+          "exceptions": [
+            "force",
+            "ghost-touch",
+            "vitality",
+            "spirit"
+          ],
+          "type": "all-damage",
+          "value": 8
+        }
+      ],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [
+          {
+            "type": "fly",
+            "value": 30
+          }
+        ],
+        "value": 0
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 10
+        },
+        {
+          "type": "splash-damage",
+          "value": 10
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "necril"
+        ]
+      },
+      "level": {
+        "value": 9
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Undead shadows that pour over walls like spilled ink and drink the strength of the living. Torchlight holds them at bay; nothing holds them long. Sentries watching for movement miss them entirely: darkness does not move so much as arrive.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 17,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "darkvision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 21
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 19
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 18
+      },
+      "stealth": {
+        "base": 22
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "incorporeal",
+        "troop",
+        "undead",
+        "unholy"
+      ]
+    }
+  },
+  "type": "npc"
+}

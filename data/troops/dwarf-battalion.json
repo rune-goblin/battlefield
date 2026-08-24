@@ -1,0 +1,990 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.xnHaTClGCleGFoLP"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 6,
+        "baseStats": {
+          "ac": 22,
+          "cha": -1,
+          "con": 4,
+          "dex": 1,
+          "fortitude": 16,
+          "hp": 105,
+          "int": 0,
+          "perception": 13,
+          "reflex": 11,
+          "skills": {
+            "athletics": 15,
+            "survival": 13,
+            "warfare-lore": 11
+          },
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 13,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.25,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "warfare-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Dwarf Battalion (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 6,
+        "baseStats": {
+          "ac": 22,
+          "cha": -1,
+          "con": 4,
+          "dex": 1,
+          "fortitude": 16,
+          "hp": 105,
+          "int": 0,
+          "perception": 13,
+          "reflex": 11,
+          "skills": {
+            "athletics": 15,
+            "survival": 13,
+            "warfare-lore": 11
+          },
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 13,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.25,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "warfare-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "dwarf-battalion",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/dwarf-battalion/dwarf-battalion_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/dwarf-battalion/dwarf-battalion_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The dwarf battalion draws alchemical bombs, then hurls them at distant foes. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[@item.flags.system.rulesSelections.bombingBarrage]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. The damage is either acid, fire, or electricity damage, depending on which type of bombs the battalion used. When the dwarf battalion is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The dwarf battalion draws alchemical bombs, then hurls them at distant foes. This volley is a @Template[type:burst|distance:10] within 60 feet that deals @Damage[3d6[@item.flags.system.rulesSelections.bombingBarrage]|options:area-damage] damage with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage is either acid, fire, or electricity damage, depending on which type of bombs the battalion used. When the dwarf battalion is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.49673202614379086,
+                "originalValue": "3d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 or fewer segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "60",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Bombing Barrage [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The dwarf battalion draws alchemical bombs, then hurls them at distant foes. This volley is a @Template[type:burst|distance:10] within 60 feet that deals @Damage[3d6[@item.flags.system.rulesSelections.bombingBarrage]|options:area-damage] damage with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage is either acid, fire, or electricity damage, depending on which type of bombs the battalion used. When the dwarf battalion is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "alwaysActive": true,
+            "key": "RollOption",
+            "option": "bombing-barrage",
+            "suboptions": [
+              {
+                "label": "PF2E.TraitAcid",
+                "value": "acid"
+              },
+              {
+                "label": "PF2E.TraitElectricity",
+                "value": "electricity"
+              },
+              {
+                "label": "PF2E.TraitFire",
+                "value": "fire"
+              }
+            ],
+            "toggleable": true
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The dwarf battalion unleashes a storm of warhammer blows against each enemy in a @Template[type:emanation|distance:{4}] (@Check[reflex|dc:{3}|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[{0}[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[bludgeoning]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The dwarf battalion unleashes a storm of warhammer blows against each enemy in a @Template[type:emanation|distance:5] (@Check[reflex|dc:21|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d8[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d8+5)[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d8+5)[bludgeoning]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5185185185185183,
+                "damageType": "bludgeoning",
+                "originalValue": "1d8",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.711111111111111,
+                "damageType": "bludgeoning",
+                "originalValue": "2d8+5",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.7,
+                "damageType": "bludgeoning",
+                "originalValue": "3d8+5",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Coordinated Pummel [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The dwarf battalion unleashes a storm of warhammer blows against each enemy in a @Template[type:emanation|distance:5] (@Check[reflex|dc:21|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d8[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d8+5)[bludgeoning]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d8+5)[bludgeoning]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Dwarven Doughtiness",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Dwarves are often calm and collected in the face of imminent danger. At the end of the battalion's turn, reduce its @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened} condition by 2 instead of 1.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The battalion joins together to sing a traditional song of battle. Each enemy in a @Template[type:emanation|distance:{1}] must succeed at a @Check[will|dc:{0}|options:inflicts:frightened] save or be @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 1} (or @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 2} on a critical failure). Each enemy is then temporarily immune for 10 minutes.</p>",
+            "originalDescription": "<p>The battalion joins together to sing a traditional song of battle. Each enemy in a @Template[type:emanation|distance:30] must succeed at a @Check[will|dc:23|options:inflicts:frightened] save or be @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 1} (or @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 2} on a critical failure). Each enemy is then temporarily immune for 10 minutes.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.3333333333333333,
+                "checkType": "will",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "30",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Dwarven War Song",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The battalion joins together to sing a traditional song of battle. Each enemy in a @Template[type:emanation|distance:30] must succeed at a @Check[will|dc:23|options:inflicts:frightened] save or be @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 1} (or @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 2} on a critical failure). Each enemy is then temporarily immune for 10 minutes.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "auditory",
+            "concentrate",
+            "emotion",
+            "fear",
+            "mental"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Raise Shields",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The battalion raises their steel shields, gaining a +2 circumstance bonus to AC and Reflex saves until the start of their next turn. This bonus increases to +3 against physical ranged attacks.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "selfEffect": {
+          "name": "Effect: Shields Up!",
+          "uuid": "Compendium.pf2e.bestiary-effects.Item.EkXmCnn0wdTgzLoM"
+        },
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Trigger</strong> A creature within 5 feet of the dwarf battalion uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The dwarves answer with their warhammers. The triggering creature takes @Damage[({0})[bludgeoning]] damage (@Check[reflex|dc:{1}|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "originalDescription": "<p><strong>Trigger</strong> A creature within 5 feet of the dwarf battalion uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The dwarves answer with their warhammers. The triggering creature takes @Damage[(2d8+5)[bludgeoning]] damage (@Check[reflex|dc:21|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.2222222222222222,
+                "damageType": "bludgeoning",
+                "originalValue": "2d8+5",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Reactive Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature within 5 feet of the dwarf battalion uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The dwarves answer with their warhammers. The triggering creature takes @Damage[(2d8+5)[bludgeoning]] damage (@Check[reflex|dc:21|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "reactive-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.m4HQ2o5aPxjXf2kY"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Shield Block",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.ShieldBlock]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "shield-block",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Shields Up!",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The battalion raises their steel shields. It gains a +2 circumstance bonus to AC and Reflex saves until the start of its next turn.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "selfEffect": {
+          "name": "Effect: Shields Up!",
+          "uuid": "Compendium.pf2e.bestiary-effects.Item.EkXmCnn0wdTgzLoM"
+        },
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.EawOw47nHueUPnYc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 70 (3 segments), 35 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.MXI6zwrvbQNIv7ji"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Whenever a troop moves, you move one of its segments and the other segments follow behind it. At the end of the movement, you can group the other segments adjacent to the one you moved as you see fit, provided none of them moves farther than the moving segment. If you choose not to move the troop any distance, you can instead reshape the position of all the segments as long as one stays in place.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Warfare Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 11
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    }
+  ],
+  "name": "Dwarf Battalion",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Dwarf Battalion",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/dwarf-battalion/dwarf-battalion_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": -1
+      },
+      "con": {
+        "mod": 4
+      },
+      "dex": {
+        "mod": 1
+      },
+      "int": {
+        "mod": 0
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 22
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "(4 segments); Thresholds 70 (3 segments), 35 (2 segments)",
+        "max": 105,
+        "temp": 0,
+        "value": 105
+      },
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [],
+        "value": 20
+      },
+      "weaknesses": [
+        {
+          "exceptions": [],
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "exceptions": [],
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "dwarven"
+        ]
+      },
+      "level": {
+        "value": 6
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Dwarven regulars who fight the way they forge: patiently, precisely, and to last. Their shield wall advances one deliberate step at a time and gives back nothing. Enemies who plan on breaking it have misjudged both the wall and the dwarves.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 13,
+      "senses": [
+        {
+          "type": "darkvision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 16
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 11
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 13
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 15
+      },
+      "survival": {
+        "base": 13
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "dwarf",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

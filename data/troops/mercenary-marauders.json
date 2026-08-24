@@ -1,0 +1,843 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.battlecry-bestiary.Actor.9wgj9Jiej236yjBW"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 8,
+        "baseStats": {
+          "ac": 26,
+          "cha": 1,
+          "con": 3,
+          "dex": 6,
+          "fortitude": 15,
+          "hp": 135,
+          "int": 0,
+          "perception": 16,
+          "reflex": 19,
+          "skills": {
+            "athletics": 18,
+            "intimidation": 16,
+            "stealth": 14
+          },
+          "str": 4,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 15,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.75,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Charau-ka Shrieker Crew (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 8,
+        "baseStats": {
+          "ac": 26,
+          "cha": 1,
+          "con": 3,
+          "dex": 6,
+          "fortitude": 15,
+          "hp": 135,
+          "int": 0,
+          "perception": 16,
+          "reflex": 19,
+          "skills": {
+            "athletics": 18,
+            "intimidation": 16,
+            "stealth": 14
+          },
+          "str": 4,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 15,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.75,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "mercenary-marauders",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/mercenary-marauders/mercenary-marauders_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/mercenary-marauders/mercenary-marauders_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Ambush",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop excels at surprise attacks. If the troop acts before all enemies in the first round of combat, it gains a +2 status bonus to its Battle DC for its first Battle or Salvo attack that round. The troop can attempt a Stealth check for initiative.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Covering Fire",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop looses a suppressing stream of shots. Choose one enemy within the range of the troop's Salvo attack; that enemy attempts a Reflex save against the troop's Battle DC. The penalty is a status penalty and applies to the target's attack rolls and, if the target is a troop, to its Battle and Salvo DCs; any Speed penalty is also a status penalty. Both last until the start of the troop's next turn.</p><p><strong>Critical Success</strong> The target is unaffected.</p><p><strong>Success</strong> The target takes a -1 penalty.</p><p><strong>Failure</strong> The target takes a -2 penalty and a -5-foot penalty to its Speeds.</p><p><strong>Critical Failure</strong> The target takes a -3 penalty and a -10-foot penalty to its Speeds.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>With fierce war-howls, the marauders charge forward. The troop Strides twice. If they move at least 10 feet, the marauders deal @Damage[({0})[slashing]|options:area-damage] damage (@Check[reflex|dc:{1}|basic|options:area-effect] save) to each enemy in a @Template[type:emanation|distance:{2}] at the end of the troop's movement. Each target who fails this save is also @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round.</p>",
+            "originalDescription": "<p>With fierce war-howls, the marauders charge forward. The troop Strides twice. If they move at least 10 feet, the marauders deal @Damage[(3d6+13)[slashing]|options:area-damage] damage (@Check[reflex|dc:23|basic|options:area-effect] save) to each enemy in a @Template[type:emanation|distance:5] at the end of the troop's movement. Each target who fails this save is also @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.75,
+                "damageType": "slashing",
+                "originalValue": "3d6+13",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Howling Charge",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>With fierce war-howls, the marauders charge forward. The troop Strides twice. If they move at least 10 feet, the marauders deal @Damage[(9d6-1)[slashing]|options:area-damage] damage (@Check[reflex|dc:27|basic|options:area-effect] save) to each enemy in a @Template[type:emanation|distance:5] at the end of the troop's movement. Each target who fails this save is also @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "howling-charge",
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "auditory"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The marauders engage in a coordinated kukri attack against each enemy in a @Template[type:emanation|distance:{4}] (@Check[reflex|dc:{3}|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[slashing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The marauders engage in a coordinated kukri attack against each enemy in a @Template[type:emanation|distance:5] (@Check[reflex|dc:23|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d6+2)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+10)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+13)[slashing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.5308641975308641,
+                "damageType": "slashing",
+                "originalValue": "1d6+2",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.7037037037037037,
+                "damageType": "slashing",
+                "originalValue": "2d6+10",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.75,
+                "damageType": "slashing",
+                "originalValue": "3d6+13",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Kukri Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The marauders engage in a coordinated kukri attack against each enemy in a @Template[type:emanation|distance:5] (@Check[reflex|dc:27|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(2d6)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(6d6+1)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(8d6+2)[slashing]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "kukri-flurry",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Low-Light Vision",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop can see in dim light as though it were bright light.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The marauders loose a flight of shortbow arrows as a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage (@Check[reflex|dc:{1}|basic|options:area-effect] save). The range increases by 15 feet if the marauders are above their targets. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The marauders loose a flight of shortbow arrows as a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 60 feet that deals @Damage[5d4[piercing]|options:area-damage] damage (@Check[reflex|dc:23|basic|options:area-effect] save). The range increases by 15 feet if the marauders are above their targets. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.46732026143790856,
+                "damageType": "piercing",
+                "originalValue": "5d4",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "30",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Shortbow Volley [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The marauders loose a flight of shortbow arrows as a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 60 feet that deals @Damage[4d4+6[piercing]|options:area-damage] damage (@Check[reflex|dc:27|basic|options:area-effect] save). The range increases by 15 feet if the marauders are above their targets. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "shortbow-volley",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 130 (3 segments), 65 (2 segments)</p>\n<hr>\n<p><strong>HP</strong> 135 (4 segments); <strong>Thresholds</strong> 90 (3 segments), 45 (2 segments)</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-movement",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Mercenary Marauders",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Mercenary Marauders",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/mercenary-marauders/mercenary-marauders_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 3
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 7
+      },
+      "int": {
+        "mod": 3
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 30
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "135 (4 segments); Thresholds 90 (3 segments), 45 (2 segments)",
+        "max": 195,
+        "temp": 0,
+        "value": 195
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [
+          {
+            "type": "climb",
+            "value": 25
+          }
+        ],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 10
+        },
+        {
+          "type": "splash-damage",
+          "value": 10
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 11
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Hard-bitten sellswords fighting with kukri and shortbow, better suited to harrying flanks and burning supply trains than standing in the line. Their contracts are exact about payment and silent about loyalty. They earn their fee, and stop the moment it stops.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Battlecry!"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 21,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "darkvision"
+        },
+        {
+          "acuity": "imprecise",
+          "range": 30,
+          "type": "scent"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 20
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 24
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 20
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 23
+      },
+      "intimidation": {
+        "base": 21
+      },
+      "stealth": {
+        "base": 19
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

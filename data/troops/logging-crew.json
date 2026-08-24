@@ -1,0 +1,703 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.wardens-of-wildwood-bestiary.Actor.pO47dwHY2ulSpg7F"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 18,
+          "cha": 1,
+          "con": 2,
+          "dex": 2,
+          "fortitude": 12,
+          "hp": 60,
+          "int": 1,
+          "perception": 7,
+          "reflex": 9,
+          "skills": {
+            "acrobatics": 9,
+            "athletics": 12,
+            "lumber-lore": 10,
+            "nature": 8,
+            "survival": 10
+          },
+          "str": 3,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 10,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0
+          },
+          "ac": 0,
+          "hp": 0.5,
+          "perception": 0.125,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.3333333333333333,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "lumber-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Besieged Logging Crew (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 18,
+          "cha": 1,
+          "con": 2,
+          "dex": 2,
+          "fortitude": 12,
+          "hp": 60,
+          "int": 1,
+          "perception": 7,
+          "reflex": 9,
+          "skills": {
+            "acrobatics": 9,
+            "athletics": 12,
+            "lumber-lore": 10,
+            "nature": 8,
+            "survival": 10
+          },
+          "str": 3,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 10,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0
+          },
+          "ac": 0,
+          "hp": 0.5,
+          "perception": 0.125,
+          "saves": {
+            "fortitude": 0.5833333333333334,
+            "reflex": 0.3333333333333333,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "lumber-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "logging-crew",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/logging-crew/logging-crew_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/logging-crew/logging-crew_portrait.webp",
+  "items": [
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The loggers draw their hatchets, then launch a ranged attack in the form of a volley. This volley is a @Template[burst|distance:{2}] within {4} feet that deals @Damage[{0}[slashing]|options:area-damage] damage (@Check[reflex|dc:{1}|basic|options:area-effect] save). When the crew is reduced to 8 or fewer squares, this area decreases to a @Template[burst|distance:{3}].</p>",
+            "originalDescription": "<p>The loggers draw their hatchets, then launch a ranged attack in the form of a volley. This volley is a @Template[burst|distance:10] within 120 feet that deals @Damage[3d6[slashing]|options:area-damage] damage (@Check[reflex|dc:18|basic|options:area-effect] save). When the crew is reduced to 8 or fewer squares, this area decreases to a @Template[burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.8725490196078431,
+                "damageType": "slashing",
+                "originalValue": "3d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (8 or fewer squares)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "120",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Hurl Axes [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The loggers draw their hatchets, then launch a ranged attack in the form of a volley. This volley is a @Template[burst|distance:10] within 120 feet that deals @Damage[3d6[slashing]|options:area-damage] damage (@Check[reflex|dc:18|basic|options:area-effect] save). When the crew is reduced to 8 or fewer squares, this area decreases to a @Template[burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p>\n<hr>\n<p><strong>Effect</strong> The loggers engage in a coordinated axe attack against each enemy within 10 feet, with a @Check[reflex|dc:{3}|basic] save. The damage depends on the number of actions expended.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[{0}[slashing]] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[slashing]] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[slashing]] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p>\n<hr>\n<p><strong>Effect</strong> The loggers engage in a coordinated axe attack against each enemy within 10 feet, with a @Check[reflex|dc:19|basic] save. The damage depends on the number of actions expended.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d10[slashing]] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(3d6+7)[slashing]] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+10)[slashing]] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 1,
+                "damageType": "slashing",
+                "originalValue": "1d10",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 1,
+                "damageType": "slashing",
+                "originalValue": "3d6+7",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 1,
+                "damageType": "slashing",
+                "originalValue": "3d6+10",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.16666666666666666,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Tandem Chop [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p>\n<hr>\n<p><strong>Effect</strong> The loggers engage in a coordinated axe attack against each enemy within 10 feet, with a @Check[reflex|dc:19|basic] save. The damage depends on the number of actions expended.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d10[slashing]] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(3d6+7)[slashing]] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+10)[slashing]] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.RJbI07QSiYp0SF9A"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 40 (3 segments), 20 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Whenever the loggers Stride, they first Form Up as a free action to condense into a 20-foot-by-20-foot area (minus any missing squares), then move up to their Speed. This works just like a Gargantuan creature moving; for instance, if any square of the logging crew enters difficult terrain, the extra movement cost applies to all the loggers.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Lumber Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 10
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    }
+  ],
+  "name": "Logging Crew",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Logging Crew",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/logging-crew/logging-crew_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 1
+      },
+      "con": {
+        "mod": 2
+      },
+      "dex": {
+        "mod": 2
+      },
+      "int": {
+        "mod": 1
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 2
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 18
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "Thresholds 40 (3 segments), 20 (2 segments);",
+        "max": 60,
+        "temp": 0,
+        "value": 60
+      },
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "exceptions": [],
+          "type": "area-damage",
+          "value": 10
+        },
+        {
+          "exceptions": [],
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "fey"
+        ]
+      },
+      "level": {
+        "value": 4
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Axemen and teamsters mustered from the timber camps, still smelling of pitch and sawdust. They drop a stand of trees (or a palisade) with the same unhurried strokes. Rough material for an army, but material that already knows how to swing.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder #201: Pactbreaker"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 7,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 12
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 9
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 10
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 9
+      },
+      "athletics": {
+        "base": 12
+      },
+      "nature": {
+        "base": 8
+      },
+      "survival": {
+        "base": 10
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

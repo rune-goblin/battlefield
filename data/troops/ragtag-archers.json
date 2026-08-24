@@ -1,0 +1,1290 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.fpwpA2JmpbwREa5a"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 2,
+        "baseStats": {
+          "ac": 17,
+          "cha": 0,
+          "con": 1,
+          "dex": 4,
+          "fortitude": 7,
+          "hp": 30,
+          "int": 0,
+          "perception": 11,
+          "reflex": 10,
+          "skills": {
+            "acrobatics": 8,
+            "athletics": 6,
+            "intimidation": 4,
+            "legal-lore": 4
+          },
+          "str": 2,
+          "strikeAttackBonus": 10,
+          "strikeDamage": "1d6 + 4",
+          "strikeDamageAverage": 7.5,
+          "will": 7,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0,
+            "str": 0.16666666666666666,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.75,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.6666666666666666,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0,
+              "skill": "legal-lore"
+            }
+          ],
+          "strikeAttack": 0.5,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Archer Sentry (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 2,
+        "baseStats": {
+          "ac": 17,
+          "cha": 0,
+          "con": 1,
+          "dex": 4,
+          "fortitude": 7,
+          "hp": 30,
+          "int": 0,
+          "perception": 11,
+          "reflex": 10,
+          "skills": {
+            "acrobatics": 8,
+            "athletics": 6,
+            "intimidation": 4,
+            "legal-lore": 4
+          },
+          "str": 2,
+          "strikeAttackBonus": 10,
+          "strikeDamage": "1d6 + 4",
+          "strikeDamageAverage": 7.5,
+          "will": 7,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0,
+            "str": 0.16666666666666666,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.75,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.6666666666666666,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0,
+              "skill": "legal-lore"
+            }
+          ],
+          "strikeAttack": 0.5,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "ragtag-archers",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/ragtag-archers/ragtag-archers_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/ragtag-archers/ragtag-archers_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Covering Fire",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop looses a suppressing stream of shots. Choose one enemy within the range of the troop's Salvo attack; that enemy attempts a Reflex save against the troop's Battle DC. The penalty is a status penalty and applies to the target's attack rolls and, if the target is a troop, to its Battle and Salvo DCs; any Speed penalty is also a status penalty. Both last until the start of the troop's next turn.</p><p><strong>Critical Success</strong> The target is unaffected.</p><p><strong>Success</strong> The target takes a -1 penalty.</p><p><strong>Failure</strong> The target takes a -2 penalty and a -5-foot penalty to its Speeds.</p><p><strong>Critical Failure</strong> The target takes a -3 penalty and a -10-foot penalty to its Speeds.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Increased Ammunition",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop carries extra ammunition and supplies. They do not run out of ammunition during tactical encounters and can sustain prolonged engagements without resupply.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[({0})[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[(2d8+2)[piercing]|options:area-damage] damage with a @Check[reflex|dc:21|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5838779956427016,
+                "damageType": "piercing",
+                "originalValue": "2d8+2",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "100",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Longbow Volley [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[(2d8+2)[piercing]|options:area-damage] damage with a @Check[reflex|dc:21|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Sentry's Aim",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The archer sentry aims carefully and fires. They make a ranged weapon Strike with a +1 circumstance bonus.</p>\n<p>The Strike ignores the @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W]{Concealed} condition, lesser @UUID[Compendium.pf2e.other-effects.Item.I9lfZUiCwMiGogVi]{cover}, and standard cover, and reduces greater cover to standard cover.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "sentrys-aim",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "sentrys-aim"
+            ],
+            "selector": "ranged-strike-attack-roll",
+            "type": "circumstance",
+            "value": 1
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "concentrate"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d6[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d6+1)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5185185185185183,
+                "damageType": "piercing",
+                "originalValue": "1d6+1",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.711111111111111,
+                "damageType": "piercing",
+                "originalValue": "4d6",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.7,
+                "damageType": "piercing",
+                "originalValue": "5d6+1",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Shortsword Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:21|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d6[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d6+1)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 63 (3 segments), 31 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.w2ENw2VMPcsbif8g"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/ammunition/arrows-broadhead-white.webp",
+      "name": "Arrows",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": "arrows",
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "craftableAs": null,
+        "description": {
+          "gm": "",
+          "value": "<p>These projectiles are the ammunition for bows. The shaft of an arrow is made of wood. It is stabilized in flight by fletching at one end and bears a metal head on the other.</p>"
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "per": 10,
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 100,
+        "rules": [],
+        "size": "med",
+        "slug": "arrows",
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "consumable"
+          ]
+        },
+        "uses": {
+          "autoDestroy": true,
+          "max": 1,
+          "value": 1
+        }
+      },
+      "type": "ammo"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.4tIVTg9wj56RrveA"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/chest/breastplate-banded-simple-leather-brown.webp",
+      "name": "Leather Armor",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 1,
+        "baseItem": "leather-armor",
+        "bulk": {
+          "value": 1
+        },
+        "category": "light",
+        "checkPenalty": -1,
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>A mix of flexible and molded boiled leather, a suit of this type of armor provides some protection with maximum flexibility.</p>"
+        },
+        "dexCap": 4,
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "inSlot": true,
+          "invested": null
+        },
+        "grade": null,
+        "group": "leather",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "resilient": 0
+        },
+        "size": "med",
+        "slug": "leather-armor",
+        "speedPenalty": 0,
+        "strength": 0,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "armor"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.USHK6XQRwmq17xKh"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/tools/instruments/whistle-copper.webp",
+      "name": "Signal Whistle",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": null,
+        "bulk": {
+          "value": 0
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>When sounded, a signal whistle can be heard clearly up to half a mile away across open terrain.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "cp": 8
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "size": "med",
+        "slug": "signal-whistle",
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "equipment"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Legal Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 9
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.dUC8Fsa6FZtVikS3"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/bows/longbow-recurve-brown.webp",
+      "name": "Composite Longbow",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": {
+          "baseType": "arrows",
+          "builtIn": false,
+          "capacity": null
+        },
+        "baseItem": "composite-longbow",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 2
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d8",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This projectile weapon is made from horn, wood, and sinew laminated together to increase the power of its pull and the force of its projectile. Like all longbows, its great size also increases the bow's range and power. You must use two hands to fire it, and it cannot be used while mounted. Any time an ability is specifically restricted to a longbow, such as a god's favored weapon, it also applies to composite longbows unless otherwise stated.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "bow",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 1
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 20
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": 100,
+        "reload": {
+          "value": "0"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "composite-longbow",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "deadly-d10",
+            "propulsive",
+            "volley-30"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-plus-hands"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.7tKkkF8eZ4iCLJtp"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/swords/sword-guard-purple.webp",
+      "name": "Shortsword",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "shortsword",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>These blades come in a variety of shapes and styles, but they are typically 2 feet long.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "sword",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 9
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "shortsword",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "agile",
+            "finesse",
+            "versatile-s"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Ragtag Archers",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Ragtag Archers",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/ragtag-archers/ragtag-archers_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 2
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 2
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 23
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 95,
+        "temp": 0,
+        "value": 95
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "type": "splash-damage",
+          "value": 2
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 6
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Hunters and poachers who traded deer for soldiers and find the new quarry slower. They loose from cover, move, and loose again, bleeding an enemy through country it cannot control. No one drilled them; the wilderness already had.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 17,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 13
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 16
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 13
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 15
+      },
+      "athletics": {
+        "base": 12
+      },
+      "intimidation": {
+        "base": 9
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

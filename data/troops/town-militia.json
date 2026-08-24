@@ -1,0 +1,893 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.jAdRgBHut1h1et10"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 5,
+        "baseStats": {
+          "ac": 22,
+          "cha": 2,
+          "con": 3,
+          "dex": 0,
+          "fortitude": 14,
+          "hp": 75,
+          "int": 0,
+          "perception": 12,
+          "reflex": 9,
+          "skills": {
+            "athletics": 14,
+            "intimidation": 11,
+            "settlement-lore": 9
+          },
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.16666666666666666,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.25,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.7777777777777777,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.08333333333333333,
+              "skill": "settlement-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "City Guard Squadron (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 5,
+        "baseStats": {
+          "ac": 22,
+          "cha": 2,
+          "con": 3,
+          "dex": 0,
+          "fortitude": 14,
+          "hp": 75,
+          "int": 0,
+          "perception": 12,
+          "reflex": 9,
+          "skills": {
+            "athletics": 14,
+            "intimidation": 11,
+            "settlement-lore": 9
+          },
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.16666666666666666,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.25,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.7777777777777777,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.08333333333333333,
+              "skill": "settlement-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "town-militia",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/town-militia/town-militia_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/town-militia/town-militia_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "City Passage",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>City guards ignore difficult terrain caused by crowds or from movement through narrow spaces such as alleyways.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Hold the Line",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop is trained to stand firm against terror. They gain a +2 circumstance bonus on saves against fear effects and reduce the value of any frightened condition they gain by 1 (minimum 0).</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "fear"
+            ],
+            "selector": "saving-throw",
+            "slug": "hold-the-line-fear",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Seek Quarry",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>City guards can spend 1 minute to designate a single creature for whom they have a physical description as their quarry. They gain a +2 circumstance bonus to Perception checks against their quarry.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "domain": "perception",
+            "key": "RollOption",
+            "option": "seek-quarry",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "seek-quarry"
+            ],
+            "selector": "perception",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The city guards draw or reload their crossbows, then launch a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the city guards are reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The city guards draw or reload their crossbows, then launch a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 120 feet that deals @Damage[2d8[piercing]|options:area-damage] damage with a @Check[reflex|dc:19|basic|options:area-effect] save. When the city guards are reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0.4575163398692811,
+                "damageType": "piercing",
+                "originalValue": "2d8",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 or fewer segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "120",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Shoot Crossbows! [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The city guards draw or reload their crossbows, then launch a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 120 feet that deals @Damage[2d8+3[piercing]|options:area-damage] damage with a @Check[reflex|dc:22|basic|options:area-effect] save. When the city guards are reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round.</p><hr><p><strong>Effect</strong> The city guards engage in a coordinated melee attack against each enemy within @Template[emanation|distance:{4}]{10 feet}, with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[{0}[untyped]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[untyped]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[untyped]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round.</p><hr><p><strong>Effect</strong> The city guards engage in a coordinated melee attack against each enemy within @Template[emanation|distance:10]{10 feet}, with a @Check[reflex|dc:19|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d10[untyped]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(1d10+7)[untyped]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(1d10+10)[untyped]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 1,
+                "damageType": "untyped",
+                "originalValue": "1d10",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7222222222222222,
+                "damageType": "untyped",
+                "originalValue": "1d10+7",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.6111111111111112,
+                "damageType": "untyped",
+                "originalValue": "1d10+10",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "10",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Suppress Resistance [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round.</p><hr><p><strong>Effect</strong> The city guards engage in a coordinated melee attack against each enemy within @Template[emanation|distance:10]{10 feet}, with a @Check[reflex|dc:22|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d10+2[untyped]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(3d10)[untyped]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d10+4)[untyped]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round",
+          "value": 1
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "alwaysActive": true,
+            "key": "RollOption",
+            "option": "lower-halberds",
+            "suboptions": [
+              {
+                "label": "PF2E.TraitPiercing",
+                "value": "piercing"
+              },
+              {
+                "label": "PF2E.TraitSlashing",
+                "value": "slashing"
+              }
+            ],
+            "toggleable": true,
+            "value": true
+          },
+          {
+            "key": "DamageAlteration",
+            "mode": "override",
+            "property": "damage-type",
+            "selectors": [
+              "{item|id}-inline-damage"
+            ],
+            "value": "{item|flags.system.rulesSelections.lowerHalberds}"
+          }
+        ],
+        "slug": "suppress-resistance",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Toughened Soldiers",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop is particularly hardy. They gain +10 maximum Hit Points, plus +2 for each level above 1st.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "ActiveEffectLike",
+            "mode": "add",
+            "path": "system.attributes.hp.max",
+            "value": "10 + (@actor.level - 1) * 2"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.EawOw47nHueUPnYc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 76 (3 segments), 38 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.MXI6zwrvbQNIv7ji"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Whenever a troop moves, you move one of its segments and the other segments follow behind it. At the end of the movement, you can group the other segments adjacent to the one you moved as you see fit, provided none of them moves farther than the moving segment. If you choose not to move the troop any distance, you can instead reshape the position of all the segments as long as one stays in place.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Settlement Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 12
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    }
+  ],
+  "name": "Town Militia",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Town Militia",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/town-militia/town-militia_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 2
+      },
+      "int": {
+        "mod": 2
+      },
+      "str": {
+        "mod": 6
+      },
+      "wis": {
+        "mod": 2
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 25
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "troop defenses",
+        "max": 115,
+        "temp": 0,
+        "value": 115
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "city passage, troop movement",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 6
+        },
+        {
+          "type": "splash-damage",
+          "value": 6
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 7
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Watchmen, apprentices, and shopkeepers mustered to defend the only place they have ever lived. They maneuver poorly and march worse. But behind their own walls, with their families watching from the windows, they do not run.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 15,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 17
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 12
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 14
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 18
+      },
+      "intimidation": {
+        "base": 14
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

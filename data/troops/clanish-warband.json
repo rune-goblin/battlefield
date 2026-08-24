@@ -1,0 +1,882 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.battlecry-bestiary.Actor.pC7oMxW93OArImq9"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 5,
+        "baseStats": {
+          "ac": 21,
+          "cha": 1,
+          "con": 4,
+          "dex": 4,
+          "fortitude": 10,
+          "hp": 75,
+          "int": 0,
+          "perception": 15,
+          "reflex": 15,
+          "skills": {
+            "athletics": 13,
+            "intimidation": 12
+          },
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 12,
+          "wis": 1
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.75,
+          "saves": {
+            "fortitude": 0.3333333333333333,
+            "reflex": 0.75,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Orc Raiding Party (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 5,
+        "baseStats": {
+          "ac": 21,
+          "cha": 1,
+          "con": 4,
+          "dex": 4,
+          "fortitude": 10,
+          "hp": 75,
+          "int": 0,
+          "perception": 15,
+          "reflex": 15,
+          "skills": {
+            "athletics": 13,
+            "intimidation": 12
+          },
+          "str": 5,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 12,
+          "wis": 1
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.75,
+          "saves": {
+            "fortitude": 0.3333333333333333,
+            "reflex": 0.75,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "clanish-warband",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/clanish-warband/clanish-warband_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/clanish-warband/clanish-warband_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Frequency</strong> once per 10 minutes</p><hr><p><strong>Effect</strong> The orc raiders exploit a gap in enemy lines. The orc raiding party Strides twice; it can pass through spaces of Medium or smaller creatures but can't end its movement in them. All enemies whose spaces the orc raiding party passed through or were adjacent to at any point during their movement take @Damage[({0})[piercing]] damage (@Check[reflex|dc:{1}|basic|options:area-effect,forced-movement] save). A creature who critically fails this save is also pushed 5 feet away from the orc raiding party. Break Through damages each creature only once.</p>",
+            "originalDescription": "<p><strong>Frequency</strong> once per 10 minutes</p><hr><p><strong>Effect</strong> The orc raiders exploit a gap in enemy lines. The orc raiding party Strides twice; it can pass through spaces of Medium or smaller creatures but can't end its movement in them. All enemies whose spaces the orc raiding party passed through or were adjacent to at any point during their movement take @Damage[(1d6+2)[piercing]] damage (@Check[reflex|dc:19|basic|options:area-effect,forced-movement] save). A creature who critically fails this save is also pushed 5 feet away from the orc raiding party. Break Through damages each creature only once.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "damageType": "piercing",
+                "originalValue": "1d6+2",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/ThreeActions.webp",
+      "name": "Break Through",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 3
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Frequency</strong> once per 10 minutes</p><hr><p><strong>Effect</strong> The orc raiders exploit a gap in enemy lines. The orc raiding party Strides twice; it can pass through spaces of Medium or smaller creatures but can't end its movement in them. All enemies whose spaces the orc raiding party passed through or were adjacent to at any point during their movement take @Damage[(3d6-1)[piercing]] damage (@Check[reflex|dc:26|basic|options:area-effect,forced-movement] save). A creature who critically fails this save is also pushed 5 feet away from the orc raiding party. Break Through damages each creature only once.</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "PT10M"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The orc raiding party is about to lose a segment due to passing a Hit Point threshold</p><hr><p><strong>Effect</strong> The dying orc raiders lash out as they fall. Each enemy in a @Template[type:emanation|distance:{2}] takes @Damage[({0})[piercing]|options:area-damage] damage (@Check[reflex|dc:{1}|basic|options:area-effect] save); this occurs before the raiding party loses a segment.</p>",
+            "originalDescription": "<p>The orc raiding party is about to lose a segment due to passing a Hit Point threshold</p><hr><p><strong>Effect</strong> The dying orc raiders lash out as they fall. Each enemy in a @Template[type:emanation|distance:5] takes @Damage[(1d6+2)[piercing]|options:area-damage] damage (@Check[reflex|dc:19|basic|options:area-effect] save); this occurs before the raiding party loses a segment.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "damageType": "piercing",
+                "originalValue": "1d6+2",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Ferocious Fall",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The orc raiding party is about to lose a segment due to passing a Hit Point threshold</p><hr><p><strong>Effect</strong> The dying orc raiders lash out as they fall. Each enemy in a @Template[type:emanation|distance:5] takes @Damage[(3d6-1)[piercing]|options:area-damage] damage (@Check[reflex|dc:26|basic|options:area-effect] save); this occurs before the raiding party loses a segment.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Foragers",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop forages and hunts to sustain itself indefinitely, costing the kingdom no food. It still draws its pay like any other army.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The orc raiders launch a multitude of javelins at foes in a deadly volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the orc raiding party is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The orc raiders launch a multitude of javelins at foes in a deadly volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[3d6[piercing]|options:area-damage] damage with a @Check[reflex|dc:19|basic|options:area-effect] save. When the orc raiding party is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7058823529411765,
+                "damageType": "piercing",
+                "originalValue": "3d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 or fewer segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "30",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Iron Rain [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The orc raiders launch a multitude of javelins at foes in a deadly volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[5d6[piercing]|options:area-damage] damage with a @Check[reflex|dc:26|basic|options:area-effect] save. When the orc raiding party is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "No Escape",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> An enemy the troop is engaged with attempts to move away from it.</p><p><strong>Effect</strong> The troop keeps pace with the retreating foe, moving up to its Speed and following the enemy so that it stays in reach throughout that enemy's movement, until the enemy stops moving or the troop has moved its full Speed. The troop can Burrow, Climb, Fly, or Swim instead of Striding if it has the corresponding movement type.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The orc raiders batter all enemies in a @Template[type:emanation|distance:{4}] with coordinated knuckle dagger strikes (@Check[reflex|dc:{3}|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The orc raiders batter all enemies in a @Template[type:emanation|distance:5] with coordinated knuckle dagger strikes (@Check[reflex|dc:19|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d6+2)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+5)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+7)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 5,
+                "benchmark": 1,
+                "damageType": "piercing",
+                "originalValue": "1d6+2",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "2d6+5",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0.7916666666666666,
+                "damageType": "piercing",
+                "originalValue": "3d6+7",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "19",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 5,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Rip Them Up [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The orc raiders batter all enemies in a @Template[type:emanation|distance:5] with coordinated knuckle dagger strikes (@Check[reflex|dc:26|basic|options:area-effect] save). The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(2d6+2)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(5d6+3)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(8d6+2)[piercing]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Toughened Soldiers",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop is particularly hardy. They gain +10 maximum Hit Points, plus +2 for each level above 1st.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "ActiveEffectLike",
+            "mode": "add",
+            "path": "system.attributes.hp.max",
+            "value": "10 + (@actor.level - 1) * 2"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 116 (3 segments), 58 (2 segments)</p>\n<hr>\n<p><strong>HP</strong> 75 (4 segments); <strong>Thresholds</strong> 50 (3 segments), 25 (2 segments)</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-movement",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Clanish Warband",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Clanish Warband",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/clanish-warband/clanish-warband_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 3
+      },
+      "con": {
+        "mod": 5
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 3
+      },
+      "str": {
+        "mod": 7
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 29
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "(4 segments); Thresholds 50 (3 segments), 25 (2 segments)",
+        "max": 175,
+        "temp": 0,
+        "value": 175
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 9
+        },
+        {
+          "type": "splash-damage",
+          "value": 9
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "orcish"
+        ]
+      },
+      "level": {
+        "value": 10
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Clan warriors bound by blood-oath and old grudges. They feed themselves from the land, march without a baggage train, and pursue a beaten enemy with a patience that borders on cruelty. Surrender is the only reliable way to stop them.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Battlecry!"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 22,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 17
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 22
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 19
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 22
+      },
+      "intimidation": {
+        "base": 19
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "humanoid",
+        "orc",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

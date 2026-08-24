@@ -1,0 +1,647 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.1x0BdpVQLX7o3rrA"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 7,
+        "baseStats": {
+          "ac": 23,
+          "cha": -2,
+          "con": 4,
+          "dex": 0,
+          "fortitude": 18,
+          "hp": 130,
+          "int": -4,
+          "perception": 13,
+          "reflex": 11,
+          "skills": {
+            "athletics": 17,
+            "survival": 15
+          },
+          "str": 7,
+          "strikeAttackBonus": 16,
+          "strikeDamage": "3d8 + 9",
+          "strikeDamageAverage": 22.5,
+          "will": 13,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 1,
+            "wis": 0
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.3333333333333333,
+          "saves": {
+            "fortitude": 0.75,
+            "reflex": 0.125,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Elephant (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 7,
+        "baseStats": {
+          "ac": 23,
+          "cha": -2,
+          "con": 4,
+          "dex": 0,
+          "fortitude": 18,
+          "hp": 130,
+          "int": -4,
+          "perception": 13,
+          "reflex": 11,
+          "skills": {
+            "athletics": 17,
+            "survival": 15
+          },
+          "str": 7,
+          "strikeAttackBonus": 16,
+          "strikeDamage": "3d8 + 9",
+          "strikeDamageAverage": 22.5,
+          "will": 13,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 1,
+            "wis": 0
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.3333333333333333,
+          "saves": {
+            "fortitude": 0.75,
+            "reflex": 0.125,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "mammoth-riders",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/mammoth-riders/mammoth-riders_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/mammoth-riders/mammoth-riders_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Grabbing Trunk",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A Medium or smaller creature hit by the elephant's trunk is @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed}. If the elephant moves, it can bring the Grabbed creature along with it.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "grabbing-trunk",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Mounted Troop",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Effects that target only animals or only humanoids might not work on the troop, subject to the GM's discretion.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.UNah0bxXxkcZjxO3"
+      },
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>Large or smaller, foot, @Check[reflex|dc:{0}|basic]</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>",
+            "originalDescription": "<p>Large or smaller, foot, @Check[reflex|dc:24|basic]</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.3333333333333333,
+                "checkType": "reflex",
+                "originalValue": "24",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/ThreeActions.webp",
+      "name": "Trample",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 3
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Large or smaller, foot, @Check[reflex|dc:31|basic]</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "trample",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 146 (3 segments), 73 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:29|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d8+4)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[5d8[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(6d8+3)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 12,
+                "benchmark": 0.7283950617283949,
+                "damageType": "piercing",
+                "originalValue": "1d8+4",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "5d8",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "6d8+3",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "29",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "10",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Tusk Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:29|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d8+4)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[5d8[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(6d8+3)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Mammoth Riders",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Mammoth Riders",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/mammoth-riders/mammoth-riders_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 4
+      },
+      "con": {
+        "mod": 5
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 4
+      },
+      "str": {
+        "mod": 8
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 31
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 219,
+        "temp": 0,
+        "value": 219
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 40
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 10
+        },
+        {
+          "type": "splash-damage",
+          "value": 10
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": []
+      },
+      "level": {
+        "value": 12
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>War-trained mammoths and the riders who guide them into the thick of battle. Where the line advances, shield walls splinter, gates fold, and whatever keeps its footing meets the tusks. Survivors speak mostly of the sound.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 20,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "low-light-vision"
+        },
+        {
+          "acuity": "imprecise",
+          "range": 30,
+          "type": "scent"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 25
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 18
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 20
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 25
+      },
+      "survival": {
+        "base": 22
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "animal",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

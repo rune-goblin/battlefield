@@ -1,0 +1,1315 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-bestiary.Actor.l05LjJTXvFS4tYTE"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 3,
+        "baseStats": {
+          "ac": 20,
+          "cha": 1,
+          "con": 1,
+          "dex": 2,
+          "fortitude": 8,
+          "hp": 40,
+          "int": 0,
+          "perception": 9,
+          "reflex": 9,
+          "skills": {
+            "athletics": 11,
+            "diplomacy": 6,
+            "intimidation": 6,
+            "nature": 7,
+            "survival": 7
+          },
+          "str": 4,
+          "strikeAttackBonus": 9,
+          "strikeDamage": "1d10 + 4",
+          "strikeDamageAverage": 9.5,
+          "will": 9,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.16666666666666666,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.7777777777777777,
+          "hp": 0.3333333333333333,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.5,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.7777777777777777,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.08333333333333333,
+              "skill": "diplomacy"
+            },
+            {
+              "benchmark": 0.08333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.16666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Centaur (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 3,
+        "baseStats": {
+          "ac": 20,
+          "cha": 1,
+          "con": 1,
+          "dex": 2,
+          "fortitude": 8,
+          "hp": 40,
+          "int": 0,
+          "perception": 9,
+          "reflex": 9,
+          "skills": {
+            "athletics": 11,
+            "diplomacy": 6,
+            "intimidation": 6,
+            "nature": 7,
+            "survival": 7
+          },
+          "str": 4,
+          "strikeAttackBonus": 9,
+          "strikeDamage": "1d10 + 4",
+          "strikeDamageAverage": 9.5,
+          "will": 9,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.16666666666666666,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.7777777777777777,
+          "hp": 0.3333333333333333,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.41666666666666663,
+            "reflex": 0.5,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.7777777777777777,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.08333333333333333,
+              "skill": "diplomacy"
+            },
+            {
+              "benchmark": 0.08333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.16666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0.16666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "centaur-scouts",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/centaur-scouts/centaur-scouts_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/centaur-scouts/centaur-scouts_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Aggressive Mounts",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The mounts trample anything they can knock down. Creatures that are Medium or smaller, and troops without mounts, take a -1 status penalty to their saves against the troop's Battle attack; this penalty increases to -2 at 15th level.</p><p>The mounts are hard to rein in: the troop takes a -1 status penalty on Reflex saves against area effects and on Will saves against mental effects. Both penalties end at 10th level.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Brave",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop holds its nerve. It gains a +2 circumstance bonus on saves against fear effects and on any save or check made to avoid becoming routed.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "fear"
+            ],
+            "selector": "saving-throw",
+            "slug": "brave-fear",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Darkvision",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop can see in darkness and dim light just as well as in bright light.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Foragers",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop forages and hunts to sustain itself indefinitely, costing the kingdom no food. It still draws its pay like any other army.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.m4HQ2o5aPxjXf2kY"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Shield Block",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.ShieldBlock]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary"
+        },
+        "rules": [],
+        "slug": "shield-block",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[{0}[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[{2}[bludgeoning]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:23|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[1d10[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[3d10[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[4d10[bludgeoning]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.5308641975308641,
+                "damageType": "bludgeoning",
+                "originalValue": "1d10",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.6666666666666666,
+                "damageType": "bludgeoning",
+                "originalValue": "3d10",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0.6666666666666666,
+                "damageType": "bludgeoning",
+                "originalValue": "4d10",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Spear Charge [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:23|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[1d10[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[3d10[bludgeoning]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[4d10[bludgeoning]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[4d6[piercing]|options:area-damage] damage with a @Check[reflex|dc:23|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 8,
+                "benchmark": 0.6633986928104576,
+                "damageType": "piercing",
+                "originalValue": "4d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "23",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 8,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "30",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Spear Volley [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[4d6[piercing]|options:area-damage] damage with a @Check[reflex|dc:23|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.UNah0bxXxkcZjxO3"
+      },
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>Medium or smaller, hoof, @Check[reflex|dc:{0}|basic] save</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>",
+            "originalDescription": "<p>Medium or smaller, hoof, @Check[reflex|dc:18|basic] save</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 3,
+                "benchmark": 0.16666666666666666,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/ThreeActions.webp",
+      "name": "Trample",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 3
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Medium or smaller, hoof, @Check[reflex|dc:24|basic] save</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary"
+        },
+        "rules": [],
+        "slug": "trample",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 70 (3 segments), 35 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.r0ifJfoz8aqf0mwk"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/chest/breastplate-collared-steel.webp",
+      "name": "Breastplate",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 4,
+        "baseItem": "breastplate",
+        "bulk": {
+          "value": 2
+        },
+        "category": "medium",
+        "checkPenalty": -2,
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Though referred to as a breastplate, this type of armor consists of several pieces of plate or half-plate armor that protect the torso, chest, neck, and sometimes the hips and lower legs. It strategically grants some of the protection of plate while allowing greater flexibility and speed.</p>"
+        },
+        "dexCap": 1,
+        "equipped": {
+          "carryType": "worn",
+          "inSlot": true,
+          "invested": null
+        },
+        "grade": null,
+        "group": "plate",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 8
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Core Rulebook"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "resilient": 0
+        },
+        "size": "lg",
+        "slug": "breastplate",
+        "speedPenalty": -5,
+        "strength": 3,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "armor"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.Yr9yCuJiAlFh3QEB"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/shield/heater-steel-boss-red.webp",
+      "name": "Steel Shield",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 2,
+        "baseItem": "steel-shield",
+        "bulk": {
+          "value": 1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Like wooden shields, steel shields come in a variety of shapes and sizes. Though more expensive than wooden shields, they are much more durable.</p>\n<table class=\"pf2e\">\n<thead>\n<tr>\n<th>Hardness</th>\n<th>HP</th>\n<th>BT</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>5</td>\n<td>20</td>\n<td>10</td>\n</tr>\n</tbody>\n</table>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "grade": null,
+        "hardness": 5,
+        "hp": {
+          "max": 20,
+          "value": 20
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Core Rulebook"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "reinforcing": 0
+        },
+        "size": "lg",
+        "slug": "steel-shield",
+        "specific": null,
+        "speedPenalty": 0,
+        "subitems": [],
+        "traits": {
+          "integrated": null,
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "shield"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.LJdbVTOZog39EEbi"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/longsword.webp",
+      "name": "Longsword",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "longsword",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 1
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "slashing",
+          "dice": 1,
+          "die": "d8",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>Longswords can be one-edged or two-edged swords. Their blades are heavy and they're between 3 and 4 feet in length.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "sword",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Core Rulebook"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "lg",
+        "slug": "longsword",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "versatile-p"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.tOhoGvmCMw4JpWcS"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/spear.webp",
+      "name": "Spear",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "spear",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>A long metal shaft ending with a metal spike, a spear can be used one-handed as a melee weapon and can be thrown.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "spear",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Core Rulebook"
+        },
+        "quantity": 3,
+        "range": null,
+        "reload": {
+          "value": "-"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "lg",
+        "slug": "spear",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "thrown-20"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Centaur Scouts",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Centaur Scouts",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/centaur-scouts/centaur-scouts_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 3
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 3
+      },
+      "str": {
+        "mod": 6
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "22 with shield raised",
+        "value": 28
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 105,
+        "temp": 0,
+        "value": 105
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 40
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 8
+        },
+        {
+          "type": "splash-damage",
+          "value": 4
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "elven",
+          "fey"
+        ]
+      },
+      "level": {
+        "value": 8
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Centaur outriders, horse and rider in one. They range for weeks beyond the army's reach, living off the land and returning with reports no other scout would survive to deliver. When they must fight, they strike like cavalry and think like rangers.</p>",
+      "publication": {
+        "authors": "",
+        "license": "OGL",
+        "remaster": true,
+        "title": "Pathfinder Bestiary"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 16,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "darkvision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 16
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 16
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 19
+      },
+      "diplomacy": {
+        "base": 13
+      },
+      "intimidation": {
+        "base": 13
+      },
+      "nature": {
+        "base": 14
+      },
+      "survival": {
+        "base": 14
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "beast",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

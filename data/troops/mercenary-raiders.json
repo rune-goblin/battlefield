@@ -1,0 +1,960 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.nN1fOQT8FDgbmQdx"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 9,
+        "baseStats": {
+          "ac": 26,
+          "cha": 1,
+          "con": 3,
+          "dex": 2,
+          "fortitude": 18,
+          "hp": 180,
+          "int": -1,
+          "perception": 17,
+          "reflex": 17,
+          "skills": {
+            "athletics": 19,
+            "intimidation": 18,
+            "military-lore": 14,
+            "society": 14,
+            "survival": 15,
+            "thievery": 19
+          },
+          "str": 4,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 15,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.41666666666666663,
+            "will": 0.25
+          },
+          "skills": [
+            {
+              "benchmark": 0.5,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "society"
+            },
+            {
+              "benchmark": 0.1111111111111111,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "thievery"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "military-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Mercenary Band (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 9,
+        "baseStats": {
+          "ac": 26,
+          "cha": 1,
+          "con": 3,
+          "dex": 2,
+          "fortitude": 18,
+          "hp": 180,
+          "int": -1,
+          "perception": 17,
+          "reflex": 17,
+          "skills": {
+            "athletics": 19,
+            "intimidation": 18,
+            "military-lore": 14,
+            "society": 14,
+            "survival": 15,
+            "thievery": 19
+          },
+          "str": 4,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 15,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0,
+            "str": 0.3333333333333333,
+            "wis": 0
+          },
+          "ac": 0.16666666666666666,
+          "hp": 0.6666666666666666,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.41666666666666663,
+            "will": 0.25
+          },
+          "skills": [
+            {
+              "benchmark": 0.5,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "society"
+            },
+            {
+              "benchmark": 0.1111111111111111,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "thievery"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "military-lore"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "mercenary-raiders",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/mercenary-raiders/mercenary-raiders_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/mercenary-raiders/mercenary-raiders_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Dirty Fighting",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop fights dirty: hamstringing, gouging, and cutting from behind. A creature that fails its save against the troop's Battle attack is also frightened 1, or frightened 2 if it critically fails.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Feint",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop feints to create an opening. Attempt a Deception check against the target's Perception DC.</p><p><strong>Critical Success</strong> The target takes a -2 circumstance penalty to its saves against the troop's Battle and Salvo attacks until the start of the troop's next turn.</p><p><strong>Success</strong> The target takes a -2 circumstance penalty to its save against the troop's next Battle or Salvo attack this turn.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The mercenary band engages in a coordinated attack with its wide array of melee weapons against each enemy in a @Template[type:emanation|distance:{10}] with a @Check[reflex|dc:{9}|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[bludgeoning]|options:area-damage], @Damage[({1})[piercing]|options:area-damage]{piercing}, or @Damage[({2})[slashing]|options:area-damage]{slashing}</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({3})[bludgeoning]|options:area-damage], @Damage[({4})[piercing]|options:area-damage]{piercing}, or @Damage[({5})[slashing]|options:area-damage]{slashing}</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({6})[bludgeoning]|options:area-damage], @Damage[({7})[piercing]|options:area-damage]{piercing}, or @Damage[({8})[slashing]|options:area-damage]{slashing}</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The mercenary band engages in a coordinated attack with its wide array of melee weapons against each enemy in a @Template[type:emanation|distance:5] with a @Check[reflex|dc:25|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d8+2)[bludgeoning]|options:area-damage], @Damage[(1d8+2)[piercing]|options:area-damage]{piercing}, or @Damage[(1d8+2)[slashing]|options:area-damage]{slashing}</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(3d8+4)[bludgeoning]|options:area-damage], @Damage[(3d8+4)[piercing]|options:area-damage]{piercing}, or @Damage[(3d8+4)[slashing]|options:area-damage]{slashing}</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(4d8+6)[bludgeoning]|options:area-damage], @Damage[(4d8+6)[piercing]|options:area-damage]{piercing}, or @Damage[(4d8+6)[slashing]|options:area-damage]{slashing}</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6707818930041151,
+                "damageType": "bludgeoning",
+                "originalValue": "1d8+2",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6707818930041151,
+                "damageType": "piercing",
+                "originalValue": "1d8+2",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6707818930041151,
+                "damageType": "slashing",
+                "originalValue": "1d8+2",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6111111111111112,
+                "damageType": "bludgeoning",
+                "originalValue": "3d8+4",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6111111111111112,
+                "damageType": "piercing",
+                "originalValue": "3d8+4",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6111111111111112,
+                "damageType": "slashing",
+                "originalValue": "3d8+4",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6666666666666666,
+                "damageType": "bludgeoning",
+                "originalValue": "4d8+6",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "4d8+6",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6666666666666666,
+                "damageType": "slashing",
+                "originalValue": "4d8+6",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "25",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Let 'em Have It! [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The mercenary band engages in a coordinated attack with its wide array of melee weapons against each enemy in a @Template[type:emanation|distance:5] with a @Check[reflex|dc:29|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d8+4)[bludgeoning]|options:area-damage], @Damage[(1d8+4)[piercing]|options:area-damage]{piercing}, or @Damage[(1d8+4)[slashing]|options:area-damage]{slashing}</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(4d8+4)[bludgeoning]|options:area-damage], @Damage[(4d8+4)[piercing]|options:area-damage]{piercing}, or @Damage[(4d8+4)[slashing]|options:area-damage]{slashing}</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(6d8+3)[bludgeoning]|options:area-damage], @Damage[(6d8+3)[piercing]|options:area-damage]{piercing}, or @Damage[(6d8+3)[slashing]|options:area-damage]{slashing}</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Trigger</strong> A creature within 5 feet of the mercenary raiders uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The mercenaries strike back with a flurry of weapons. The triggering creature takes @Damage[({0})[slashing]] damage (@Check[reflex|dc:{1}|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "originalDescription": "<p><strong>Trigger</strong> A creature within 5 feet of the mercenary raiders uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The mercenaries strike back with a flurry of weapons. The triggering creature takes @Damage[(3d8+4)[slashing]] damage (@Check[reflex|dc:25|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0.125,
+                "damageType": "slashing",
+                "originalValue": "3d8+4",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "25",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Reactive Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature within 5 feet of the mercenary raiders uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The mercenaries strike back with a flurry of weapons. The triggering creature takes @Damage[(3d8+4)[slashing]] damage (@Check[reflex|dc:25|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "reactive-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The mercenary band draws or reloads their bows, crossbows, and slings, then launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{3}] within {5} feet that deals @Damage[({0})[piercing]|options:area-damage] or @Damage[({1})[bludgeoning]|options:area-damage]{bludgeoning} damage with a @Check[reflex|dc:{2}|basic|options:area-effect] save. When the mercenary band is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:{4}].</p>",
+            "originalDescription": "<p>The mercenary band draws or reloads their bows, crossbows, and slings, then launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 120 feet that deals @Damage[(2d8+4)[piercing]|options:area-damage] or @Damage[(2d8+4)[bludgeoning]|options:area-damage]{bludgeoning} damage with a @Check[reflex|dc:25|basic|options:area-effect] save. When the mercenary band is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0.3660130718954248,
+                "damageType": "piercing",
+                "originalValue": "2d8+4",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.3660130718954248,
+                "damageType": "bludgeoning",
+                "originalValue": "2d8+4",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "25",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 or fewer segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "120",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Ready... Fire! [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The mercenary band draws or reloads their bows, crossbows, and slings, then launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 120 feet that deals @Damage[(3d8+3)[piercing]|options:area-damage] or @Damage[(3d8+3)[bludgeoning]|options:area-damage]{bludgeoning} damage with a @Check[reflex|dc:29|basic|options:area-effect] save. When the mercenary band is reduced to 2 or fewer segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Spoils of War",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> The band's last action was Let 'em Have It and at least one creature failed its save</p><hr><p><strong>Effect</strong> The mercenary band attempts to [[/act steal]] one object from each enemy that failed its save, even if the enemy is in combat or on guard.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.EawOw47nHueUPnYc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 146 (3 segments), 73 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.MXI6zwrvbQNIv7ji"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Whenever a troop moves, you move one of its segments and the other segments follow behind it. At the end of the movement, you can group the other segments adjacent to the one you moved as you see fit, provided none of them moves farther than the moving segment. If you choose not to move the troop any distance, you can instead reshape the position of all the segments as long as one stays in place.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Military Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 18
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    }
+  ],
+  "name": "Mercenary Raiders",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Mercenary Raiders",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/mercenary-raiders/mercenary-raiders_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 4
+      },
+      "con": {
+        "mod": 4
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 4
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 31
+      },
+      "adjustment": null,
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 219,
+        "temp": 0,
+        "value": 219
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 13
+        },
+        {
+          "type": "splash-damage",
+          "value": 13
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 12
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Veteran freelances who have fought in every kind of war, and on several sides of some. They trade volleys at range, close when it profits them, and read a battlefield the way a merchant reads a ledger. Adaptability is their trade, and they are never short of buyers.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 21,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 22
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 21
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 19
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 24
+      },
+      "intimidation": {
+        "base": 22
+      },
+      "society": {
+        "base": 18
+      },
+      "survival": {
+        "base": 19
+      },
+      "thievery": {
+        "base": 24
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

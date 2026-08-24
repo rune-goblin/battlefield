@@ -1,0 +1,1001 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-npc-core.Actor.sEbc0YrpxVZ9kn1W"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 7,
+        "baseStats": {
+          "ac": 24,
+          "cha": 3,
+          "con": 2,
+          "dex": 5,
+          "fortitude": 15,
+          "hp": 120,
+          "int": 1,
+          "perception": 15,
+          "reflex": 16,
+          "skills": {
+            "athletics": 16,
+            "deception": 14,
+            "intimidation": 16,
+            "stealth": 17,
+            "survival": 11,
+            "thievery": 16
+          },
+          "str": 3,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 13,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0.16666666666666666,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0.16666666666666666,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.6666666666666666,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.5833333333333334,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.5,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "deception"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "thievery"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Bandit Gang (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 7,
+        "baseStats": {
+          "ac": 24,
+          "cha": 3,
+          "con": 2,
+          "dex": 5,
+          "fortitude": 15,
+          "hp": 120,
+          "int": 1,
+          "perception": 15,
+          "reflex": 16,
+          "skills": {
+            "athletics": 16,
+            "deception": 14,
+            "intimidation": 16,
+            "stealth": 17,
+            "survival": 11,
+            "thievery": 16
+          },
+          "str": 3,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 13,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0.16666666666666666,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0.16666666666666666,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.6666666666666666,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.5833333333333334,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.5,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "deception"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0,
+              "skill": "survival"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "thievery"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "bandit-irregulars",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/bandit-irregulars/bandit-irregulars_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/bandit-irregulars/bandit-irregulars_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Dirty Fighting",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop fights dirty: hamstringing, gouging, and cutting from behind. A creature that fails its save against the troop's Battle attack is also frightened 1, or frightened 2 if it critically fails.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "attack"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Forest Passage",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The bandit gang ignores any difficult terrain caused by plants, such as bushes, vines, and undergrowth.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The bandits draw or reload their slings, then launch a volley of sling bullets. This is a @Template[burst|distance:{2}] within {4} feet that deals @Damage[({0})[bludgeoning]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 or fewer segments, this area decreases to a @Template[burst|distance:{3}].</p>",
+            "originalDescription": "<p>The bandits draw or reload their slings, then launch a volley of sling bullets. This is a @Template[burst|distance:10] within 50 feet that deals @Damage[(2d6+4)[bludgeoning]|options:area-damage] damage with a @Check[reflex|dc:22|basic|options:area-effect] save. When the troop is reduced to 2 or fewer segments, this area decreases to a @Template[burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.3616557734204795,
+                "damageType": "bludgeoning",
+                "originalValue": "2d6+4",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "22",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 or fewer segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "50",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Launch Slings! [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The bandits draw or reload their slings, then launch a volley of sling bullets. This is a @Template[burst|distance:10] within 50 feet that deals @Damage[(2d6+4)[bludgeoning]|options:area-damage] damage with a @Check[reflex|dc:22|basic|options:area-effect] save. When the troop is reduced to 2 or fewer segments, this area decreases to a @Template[burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Lie in Wait",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop can spend 10 minutes preparing the ground before combat to gain a +2 circumstance bonus to their initiative roll.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "lie-in-wait",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "lie-in-wait"
+            ],
+            "selector": "initiative",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "exploration"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The bandits make a coordinated attack with their axes against each enemy in a @Template[emanation|distance:{4}] with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[slashing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The bandits make a coordinated attack with their axes against each enemy in a @Template[emanation|distance:5] with a @Check[reflex|dc:22|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d6+3)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+9)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+9)[slashing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.9382716049382716,
+                "damageType": "slashing",
+                "originalValue": "1d6+3",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0.7555555555555555,
+                "damageType": "slashing",
+                "originalValue": "2d6+9",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0.6111111111111112,
+                "damageType": "slashing",
+                "originalValue": "3d6+9",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "22",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Ragged Charge [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The bandits make a coordinated attack with their axes against each enemy in a @Template[emanation|distance:5] with a @Check[reflex|dc:22|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d6+3)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+9)[slashing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+9)[slashing]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "ragged-charge",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Trigger</strong> A creature within 5 feet of the bandit irregulars uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The bandits slash at the triggering creature. The triggering creature takes @Damage[({0})[slashing]] damage (@Check[reflex|dc:{1}|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "originalDescription": "<p><strong>Trigger</strong> A creature within 5 feet of the bandit irregulars uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The bandits slash at the triggering creature. The triggering creature takes @Damage[(2d6+9)[slashing]] damage (@Check[reflex|dc:22|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.25,
+                "damageType": "slashing",
+                "originalValue": "2d6+9",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "22",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Reactive Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature within 5 feet of the bandit irregulars uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The bandits slash at the triggering creature. The triggering creature takes @Damage[(2d6+9)[slashing]] damage (@Check[reflex|dc:22|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "reactive-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Stand and Deliver!",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop attempts to [[/act demoralize]] up to 4 creatures.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Sudden Ambush",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>When the troop rolls initiative using Deception or Stealth, they can use Stand and Deliver! as a free action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "Note",
+            "predicate": [
+              {
+                "or": [
+                  "check:statistic:base:deception",
+                  "check:statistic:base:stealth"
+                ]
+              }
+            ],
+            "selector": "initiative",
+            "text": "{item|description}",
+            "title": "{item|name}",
+            "visibility": "owner"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.RJbI07QSiYp0SF9A"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 80 (3 segments), 40 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>Whenever a troop moves, you move one of its segments and the other segments follow behind it. At the end of the movement, you can group the other segments adjacent to the one you moved as you see fit, provided none of them moves farther than the moving segment. If you choose not to move the troop any distance, you can instead reshape the position of all the segments as long as one stays in place.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Unpredictable Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop moves about in a haphazard mob, so ranged Strikes against it take a -2 circumstance penalty and the troop gains a +2 circumstance bonus on its saves against Salvo attacks.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Bandit Irregulars",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Bandit Irregulars",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/bandit-irregulars/bandit-irregulars_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 3
+      },
+      "con": {
+        "mod": 2
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 1
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 2
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 24
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "Thresholds 80 (3 segments), 40 (2 segments)",
+        "max": 120,
+        "temp": 0,
+        "value": 120
+      },
+      "speed": {
+        "details": "forest passage, troop movement",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "exceptions": [],
+          "type": "area-damage",
+          "value": 8
+        },
+        {
+          "exceptions": [],
+          "type": "splash-damage",
+          "value": 8
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": [
+          "common"
+        ]
+      },
+      "level": {
+        "value": 7
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Outlaws and turncoat sellswords fighting under whichever banner pays. They keep no formation, and it serves them: arrows find little purchase in a mob that never stands still. Neither does courage. Break their nerve and the company melts into the hills.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder NPC Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 15,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 16
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 13
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 16
+      },
+      "deception": {
+        "base": 14
+      },
+      "intimidation": {
+        "base": 16
+      },
+      "stealth": {
+        "base": 17
+      },
+      "survival": {
+        "base": 11
+      },
+      "thievery": {
+        "base": 16
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

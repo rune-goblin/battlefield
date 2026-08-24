@@ -1,0 +1,603 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.battlecry-bestiary.Actor.imbJcEAt1tVfQ3CO"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 6,
+        "baseStats": {
+          "ac": 23,
+          "cha": -2,
+          "con": 3,
+          "dex": 4,
+          "fortitude": 14,
+          "hp": 90,
+          "int": -4,
+          "perception": 17,
+          "reflex": 17,
+          "skills": {
+            "acrobatics": 15,
+            "athletics": 15,
+            "stealth": 13,
+            "survival": 15
+          },
+          "str": 2,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 4
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.16666666666666666,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 0,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.3333333333333333,
+          "perception": 0.75,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.75,
+            "will": 0.25
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Wolf Pack (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 6,
+        "baseStats": {
+          "ac": 23,
+          "cha": -2,
+          "con": 3,
+          "dex": 4,
+          "fortitude": 14,
+          "hp": 90,
+          "int": -4,
+          "perception": 17,
+          "reflex": 17,
+          "skills": {
+            "acrobatics": 15,
+            "athletics": 15,
+            "stealth": 13,
+            "survival": 15
+          },
+          "str": 2,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 4
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.16666666666666666,
+            "dex": 0.3333333333333333,
+            "int": 0,
+            "str": 0,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.3333333333333333,
+          "perception": 0.75,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.75,
+            "will": 0.25
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "wolf-pack",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/wolf-pack/wolf-pack_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/wolf-pack/wolf-pack_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The wolf pack focuses all their efforts on biting a single adjacent foe, who takes @Damage[({0})[piercing]] damage (@Check[reflex|dc:{1}|basic] save). If the creature fails this saving throw, the wolf pack can immediately attempt an Athletics check to [[/act trip]] the creature.</p>",
+            "originalDescription": "<p>The wolf pack focuses all their efforts on biting a single adjacent foe, who takes @Damage[(4d6+8)[piercing]] damage (@Check[reflex|dc:21|basic] save). If the creature fails this saving throw, the wolf pack can immediately attempt an Athletics check to [[/act trip]] the creature.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.9333333333333333,
+                "damageType": "piercing",
+                "originalValue": "4d6+8",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Harry Prey",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The wolf pack focuses all their efforts on biting a single adjacent foe, who takes @Damage[(4d6+8)[piercing]] damage (@Check[reflex|dc:21|basic] save). If the creature fails this saving throw, the wolf pack can immediately attempt an Athletics check to [[/act trip]] the creature.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><hr><p>The wolves work together to fell their opponents. Each enemy within a @Template[type:emanation|distance:{4}] attempts a @Check[reflex|dc:{3}|basic|options:area-effect] save. A creature who is @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone} is @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Clumsy 2} for this attack. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><hr><p>The wolves work together to fell their opponents. Each enemy within a @Template[type:emanation|distance:5] attempts a @Check[reflex|dc:21|basic|options:area-effect] save. A creature who is @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone} is @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Clumsy 2} for this attack. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+7)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(2d6+11)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 6,
+                "benchmark": 0.5185185185185183,
+                "damageType": "piercing",
+                "originalValue": "1d6+1",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.711111111111111,
+                "damageType": "piercing",
+                "originalValue": "2d6+7",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "2d6+11",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "21",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 6,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Snap and Bite [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><hr><p>The wolves work together to fell their opponents. Each enemy within a @Template[type:emanation|distance:5] attempts a @Check[reflex|dc:21|basic|options:area-effect] save. A creature who is @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone} is @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Clumsy 2} for this attack. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[(1d6+1)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+7)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(2d6+11)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "snap-and-bite",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>HP</strong> 90 (4 segments); <strong>Thresholds</strong> 60 (3 segments), 30 (2 segments)</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-movement",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Wolf Pack",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Wolf Pack",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/wolf-pack/wolf-pack_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": -2
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": -4
+      },
+      "str": {
+        "mod": 2
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 23
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "(4 segments); Thresholds 60 (3 segments), 30 (2 segments)",
+        "max": 90,
+        "temp": 0,
+        "value": 90
+      },
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [],
+        "value": 35
+      },
+      "weaknesses": [
+        {
+          "exceptions": [],
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "exceptions": [],
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": []
+      },
+      "level": {
+        "value": 6
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>A pack that hunts as one creature with many eyes. The wolves flow around a marching column, turn it, and pull it apart as they would a herd, each animal holding its place in the design. Some run wild beside woodland allies; some answer a huntsman's whistle; all of them strike as one.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Battlecry!"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 17,
+      "senses": [
+        {
+          "type": "low-light-vision"
+        },
+        {
+          "acuity": "imprecise",
+          "range": 30,
+          "type": "scent"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 14
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 17
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 11
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 15
+      },
+      "athletics": {
+        "base": 15
+      },
+      "stealth": {
+        "base": 13
+      },
+      "survival": {
+        "base": 15
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "animal",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

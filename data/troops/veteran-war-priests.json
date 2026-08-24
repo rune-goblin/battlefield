@@ -1,0 +1,3746 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.prey-for-death-bestiary.Actor.cdLWZaBUpy8N1xcV"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 12,
+        "baseStats": {
+          "ac": 32,
+          "cha": 3,
+          "con": 3,
+          "dex": 1,
+          "fortitude": 22,
+          "hp": 212,
+          "int": 0,
+          "perception": 23,
+          "reflex": 20,
+          "skills": {
+            "athletics": 22,
+            "crafting": 18,
+            "intimidation": 21,
+            "religion": 23,
+            "warfare-lore": 18
+          },
+          "spellAttack": 24,
+          "spellDC": 32,
+          "str": 4,
+          "strikeAttackBonus": 23,
+          "strikeDamage": "2d12 + 7",
+          "strikeDamageAverage": 20,
+          "will": 24,
+          "wis": 5
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0,
+            "str": 0,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.375,
+          "perception": 0.5833333333333334,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.3333333333333333,
+            "will": 0.6666666666666666
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.4444444444444444,
+              "skill": "religion"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "warfare-lore"
+            }
+          ],
+          "spellAttack": 0,
+          "spellDC": 0,
+          "spellFont": "heal",
+          "spellProgression": "fullPrepared",
+          "spellSlotOverrides": {
+            "6": 7
+          },
+          "spellTradition": "divine",
+          "spellcastingLevelOffset": -5,
+          "strikeAttack": 0.25,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Gorumite Warpriest (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 12,
+        "baseStats": {
+          "ac": 32,
+          "cha": 3,
+          "con": 3,
+          "dex": 1,
+          "fortitude": 22,
+          "hp": 212,
+          "int": 0,
+          "perception": 23,
+          "reflex": 20,
+          "skills": {
+            "athletics": 22,
+            "crafting": 18,
+            "intimidation": 21,
+            "religion": 23,
+            "warfare-lore": 18
+          },
+          "spellAttack": 24,
+          "spellDC": 32,
+          "str": 4,
+          "strikeAttackBonus": 23,
+          "strikeDamage": "2d12 + 7",
+          "strikeDamageAverage": 20,
+          "will": 24,
+          "wis": 5
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0,
+            "int": 0,
+            "str": 0,
+            "wis": 0.3333333333333333
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.375,
+          "perception": 0.5833333333333334,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.3333333333333333,
+            "will": 0.6666666666666666
+          },
+          "skills": [
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.4444444444444444,
+              "skill": "religion"
+            },
+            {
+              "benchmark": 0.05555555555555555,
+              "skill": "warfare-lore"
+            }
+          ],
+          "spellAttack": 0,
+          "spellDC": 0,
+          "spellFont": "heal",
+          "spellProgression": "fullPrepared",
+          "spellSlotOverrides": {
+            "6": 7
+          },
+          "spellTradition": "divine",
+          "spellcastingLevelOffset": -5,
+          "strikeAttack": 0.25,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "veteran-war-priests",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/veteran-war-priests/veteran-war-priests_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/veteran-war-priests/veteran-war-priests_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Consecrated",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>As long as the @UUID[Compendium.pf2e.spells-srd.Item.Dbd5W6G8U2vzWolN]{Consecrate} ritual effects persist in your capital, a war priest gains a +1 status bonus to attack rolls, skill checks, saving throws, and Perception checks; these bonuses are not calculated into the stat block.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "self:deity:slug:gorum"
+          }
+        ],
+        "slug": "consecrated",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/action.svg",
+      "name": "Fervent Casting",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Frequency</strong> once per day</p><hr><p><strong>Effect</strong> The war priest loudly proclaims the glory of battle. The next divine spell they cast takes one fewer action (minimum of one), but must only target the warpriest. If the spell affects an area or multiple targets, such as bless, it only affects the warpriest, even if it lasts more than one round.</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "day"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "fervent-casting",
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "auditory",
+            "divine",
+            "spellshape"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[slashing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:35|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d12+4)[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(4d12+3)[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d12+6)[slashing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 17,
+                "benchmark": 0.6913580246913579,
+                "damageType": "slashing",
+                "originalValue": "1d12+4",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 17,
+                "benchmark": 0.6851851851851851,
+                "damageType": "slashing",
+                "originalValue": "4d12+3",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 17,
+                "benchmark": 0.6805555555555555,
+                "damageType": "slashing",
+                "originalValue": "5d12+6",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 17,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "35",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 17,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Greatsword Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:35|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d12+4)[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(4d12+3)[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d12+6)[slashing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 208 (3 segments), 104 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Spellcasting",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[pf2e-creature-crispr.troop.spellcasting.description]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "itemType": "spell",
+            "key": "ItemAlteration",
+            "mode": "add",
+            "predicate": [
+              "item:area:type:burst",
+              "item:duration:0",
+              {
+                "gte": [
+                  "item:area:size",
+                  10
+                ]
+              }
+            ],
+            "property": "area-size",
+            "value": 5
+          },
+          {
+            "itemType": "spell",
+            "key": "ItemAlteration",
+            "mode": "add",
+            "predicate": [
+              "item:duration:0",
+              {
+                "or": [
+                  "item:area:type:cone",
+                  "item:area:type:line"
+                ]
+              },
+              {
+                "lte": [
+                  "item:area:size",
+                  15
+                ]
+              }
+            ],
+            "priority": 110,
+            "property": "area-size",
+            "value": 5
+          },
+          {
+            "itemType": "spell",
+            "key": "ItemAlteration",
+            "mode": "add",
+            "predicate": [
+              "item:duration:0",
+              {
+                "or": [
+                  "item:area:type:cone",
+                  "item:area:type:line"
+                ]
+              },
+              {
+                "gt": [
+                  "item:area:size",
+                  15
+                ]
+              }
+            ],
+            "priority": 100,
+            "property": "area-size",
+            "value": 10
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.r0ifJfoz8aqf0mwk"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/chest/breastplate-collared-steel.webp",
+      "name": "Breastplate",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 4,
+        "baseItem": "breastplate",
+        "bulk": {
+          "value": 2
+        },
+        "category": "medium",
+        "checkPenalty": -2,
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Though referred to as a breastplate, this type of armor consists of several pieces of plate or @UUID[Compendium.pf2e.equipment-srd.Item.pRoikbRo5HFW6YUB]{Half Plate} armor that protect the torso, chest, neck, and sometimes the hips and lower legs. It strategically grants some of the protection of plate while allowing greater flexibility and speed.</p>"
+        },
+        "dexCap": 1,
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "grade": null,
+        "group": "plate",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 8
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "potency": 1,
+          "property": [],
+          "resilient": 1
+        },
+        "size": "med",
+        "slug": "breastplate",
+        "speedPenalty": -5,
+        "strength": 3,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "armor"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.plplsXJsqrdqNQVI"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/commodities/treasure/brooch-jeweled-green.webp",
+      "name": "Iron Religious Symbol",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>This piece of wood or silver is emblazoned with an image representing a deity. Some divine spellcasters, such as clerics, can use a religious symbol of their deity to use certain abilities and cast some spells. A religious symbol can be worn on the body on a chain or pin, or can be held.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "has-religious-symbol",
+            "requiresEquipped": false
+          }
+        ],
+        "size": "med",
+        "slug": "religious-symbol-wooden",
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "other"
+        }
+      },
+      "type": "equipment"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "icons/sundries/misc/key-ornate-iron-black.webp",
+      "name": "Key",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": null,
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "<p>Universal key</p>",
+          "value": ""
+        },
+        "equipped": {
+          "carryType": "worn",
+          "invested": null
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {}
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "quantity": 1,
+        "rules": [],
+        "size": "med",
+        "slug": null,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "equipment"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/default-icons/lore.svg",
+      "name": "Warfare Lore",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "mod": {
+          "value": 25
+        },
+        "proficient": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "lore"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.UGJzJRJDoonfWqqI"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/control/buff-strength-muscle-damage.webp",
+      "name": "Athletic Rush",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Your body fills with physical power and skill. You gain a +10-foot status bonus to Speed and a +2 status bonus to Athletics checks. As a part of Casting this Spell, you can use a Stride, Leap, Climb, or Swim action. The spell's bonuses apply during that action.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.57lnrCzGUcNUBP2O]{Spell Effect: Athletic Rush}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 round"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "wXBWq5iLAaOywTBh"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "athletic-rush",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "1"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "uncommon",
+          "traditions": [],
+          "value": [
+            "cleric",
+            "focus",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.XSujb7EsSwKl19Uu"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/bless.webp",
+      "name": "Bless",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "type": "emanation",
+          "value": 15
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": true,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Blessings from beyond help your companions strike true. You and your allies gain a +1 status bonus to attack rolls while within the emanation. Once per round on subsequent turns, you can Sustain the spell to increase the emanation's radius by 10 feet.</p>\n<p>Bless can counteract @UUID[Compendium.pf2e.spells-srd.Item.7ZinJNzxq0XF0oMx]{Bane}.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.Gqy7K6FnbLtwGpud]{Spell Effect: Bless}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 minute"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "bless",
+        "target": {
+          "value": "you and allies in the area"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "aura",
+            "concentrate",
+            "manipulate",
+            "mental"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.jj5d830iUi2ZlQfs"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/holy/barrier-shield-winged-blue.webp",
+      "name": "Blessed Boundary",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "type": "burst",
+          "value": 60
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "rQT6Is4xVcbWJIAt": {
+            "applyMod": false,
+            "category": null,
+            "formula": "7d8",
+            "kinds": [
+              "damage"
+            ],
+            "materials": [],
+            "type": "force"
+          }
+        },
+        "defense": {
+          "save": {
+            "basic": true,
+            "statistic": "reflex"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>Manifestations of divine force appear in the hundreds, swirling in a massive, protective sphere. These typically look like spiky fragments, but often take on an appearance themed to the deity of the caster. The sphere is hollow, with the manifestations forming a shell 2 inches deep on the outer edge. You can choose to make the burst smaller, in 5-foot increments, when you cast it. The shell provides cover and can intersect solid terrain without affecting it. The shell deals 7d8 force damage to each creature who intersects with the shell when the sphere's created, or who attempts to move through the shell. The creature also takes the damage at the end of its turn, but only if it didn't already take damage from the shell that turn. The effects are determined by a creature's Reflex save.</p>\n<hr>\n<p><strong>Critical Success</strong> The creature is unaffected.</p>\n<p><strong>Success</strong> The creature takes half damage.</p>\n<p><strong>Failure</strong> The creature takes full damage, is pushed up to 10 feet in the direction of your choice, and ends its movement.</p>\n<p><strong>Critical Failure</strong> The creature takes double damage, is pushed up to 20 feet in the direction of your choice, and ends its movement.</p>\n<hr>\n<p><strong>Heightened (+1)</strong> The damage increases by 1d8.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 minute"
+        },
+        "heightening": {
+          "area": 0,
+          "damage": {
+            "rQT6Is4xVcbWJIAt": "1d8"
+          },
+          "interval": 1,
+          "type": "interval"
+        },
+        "level": {
+          "value": 6
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "blessed-boundary",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "3"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine"
+          ],
+          "value": [
+            "concentrate",
+            "force",
+            "manipulate",
+            "sanctified"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.VosLNn2M8S7JH67D"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/skills/wounds/injury-eyes-blood-red.webp",
+      "name": "Blindness",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": {
+          "save": {
+            "basic": false,
+            "statistic": "fortitude"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>You blind the target. The effect is determined by the target's Fortitude save. The target then becomes temporarily immune for 1 minute.</p>\n<hr>\n<p><strong>Critical Success</strong> The target is unaffected.</p>\n<p><strong>Success</strong> The target is @UUID[Compendium.pf2e.conditionitems.Item.XgEqL1kFApUbl5Z2]{Blinded} until its next turn begins.</p>\n<p><strong>Failure</strong> The target is Blinded for 1 minute.</p>\n<p><strong>Critical Failure</strong> The target is Blinded permanently.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 3
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "blindness",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "incapacitation",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.Hnc7eGi7vyZenAIm"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/life/heart-shadow-red.webp",
+      "name": "Breath of Life",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "0": {
+            "applyMod": false,
+            "category": null,
+            "formula": "5d8",
+            "kinds": [
+              "healing"
+            ],
+            "materials": [],
+            "type": "untyped"
+          }
+        },
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A living creature within range would die.</p>\n<hr>\n<p>Your blessing revives a creature at the moment of its death. You prevent the target from dying and restore 5d8 Hit Points to the target. You can't use breath of life if the triggering effect was a death effect or an effect that leaves no remains, such as @UUID[Compendium.pf2e.spells-srd.Item.r7ihOgKv19eJQnik]{Disintegrate}</p>\n<hr>\n<p><strong>Heightened (+2)</strong> The healing increases by 1d8.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "heightening": {
+          "damage": {
+            "0": "1d8"
+          },
+          "interval": 1,
+          "type": "interval"
+        },
+        "level": {
+          "value": 5
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "60 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "breath-of-life",
+        "target": {
+          "value": "the triggering creature"
+        },
+        "time": {
+          "value": "reaction"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine"
+          ],
+          "value": [
+            "concentrate",
+            "healing",
+            "vitality"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.SUKaxVZW2TlM8lu0"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/consumables/fruit/berry-clustered-white.webp",
+      "name": "Cleanse Affliction",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": true,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Gentle restorative magic pushes back the effects of toxins and more complex maladies. Choose an affliction on the target, such as a curse, disease, or poison. If it has advanced past stage one, reduce the stage by one. This reduction can be applied only once to a given case of an affliction, with the case ending when it's completely cured. Although the reduction can't occur again, heightened versions of this spell attempt to counteract with each casting.</p>\n<hr>\n<p><strong>Heightened (3rd)</strong> Attempt to counteract the affliction if it is a disease or poison.</p>\n<p><strong>Heightened (4th)</strong> Attempt to counteract the affliction if it is a curse, disease, or poison.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "cleanse-affliction",
+        "target": {
+          "value": "1 willing creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "healing",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.EfFMLVbmkBWmzoLF"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/detect-alignment.webp",
+      "name": "Clear Mind",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": true,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You drive mental contamination from the target's mind. Attempt to counteract an effect of your choice imposing one of these conditions on the target: @UUID[Compendium.pf2e.conditionitems.Item.sDPxOjQ9kx2RZE8D]{Fleeing}, @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened}, and @UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Stupefied}. If you failed to counteract the effect but you would have if its counteract rank were 2 lower, instead suppress the effect until the beginning of your next turn. The effect's duration doesn't elapse while it's suppressed. This spell can't counteract or suppress conditions that are part of curses, diseases, or a natural state of the target.</p><hr><p><strong>Heightened (4th)</strong> Add @UUID[Compendium.pf2e.conditionitems.Item.yblD8fOR1J8rDwEQ]{Confused}, @UUID[Compendium.pf2e.conditionitems.Item.9qGBRpbX9NEwtAAr]{Controlled}, and @UUID[Compendium.pf2e.conditionitems.Item.xYTAsEpcJE1Ccni3]{Slowed} to the list of conditions.</p>\n<p><strong>Heightened (6th)</strong> As 4th rank, plus add @UUID[Compendium.pf2e.conditionitems.Item.3uh1r86TzbQvosxv]{Doomed}.</p>\n<p><strong>Heightened (8th)</strong> As 4th rank, plus add doomed and @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Stunned}.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "clear-mind",
+        "target": {
+          "value": "1 willing creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "healing",
+            "manipulate",
+            "mental"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.pZTqGY1MLRjgKasV"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/darkvision.webp",
+      "name": "Darkvision",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You grant yourself supernatural sight in areas of darkness. You gain Darkvision.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.IXS15IQXYCZ8vsmX]{Spell Effect: Darkvision}</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.inNfTmtWpsxeGBI9]{Spell Effect: Darkvision (24 hours)}</p>\n<hr>\n<p><strong>Heightened (3rd)</strong> The spell's range is touch and it targets 1 willing creature.</p>\n<p><strong>Heightened (5th)</strong> The spell's range is touch and it targets 1 willing creature. The duration is until the next time you make your daily preparations.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 hour"
+        },
+        "heightening": {
+          "levels": {
+            "3": {
+              "range": {
+                "value": "touch"
+              },
+              "target": {
+                "value": "1 willing creature"
+              }
+            }
+          },
+          "type": "fixed"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "darkvision",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.4gBIw4IDrSfFHik4"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/daze.webp",
+      "name": "Daze",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "0": {
+            "applyMod": false,
+            "category": null,
+            "formula": "1d6",
+            "kinds": [
+              "damage"
+            ],
+            "materials": [],
+            "type": "mental"
+          }
+        },
+        "defense": {
+          "save": {
+            "basic": true,
+            "statistic": "will"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>You push into the target's mind and daze it with a mental jolt. The jolt deals 1d6 mental damage, with a basic Will save. If the target critically fails the save, it is also @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Stunned 1}.</p>\n<hr>\n<p><strong>Heightened (+2)</strong> The damage increases by 1d6.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 round"
+        },
+        "heightening": {
+          "damage": {
+            "0": "1d6"
+          },
+          "interval": 2,
+          "type": "interval"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "60 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "daze",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "manipulate",
+            "mental",
+            "nonlethal"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/dispel-magic.webp",
+      "name": "Dispel Magic",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": true,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You unravel the magic behind a spell or effect. Attempt a counteract check against the target. If you successfully counteract a magic item, the item becomes a mundane item of its type for 10 minutes. This doesn't change the item's non-magical properties. If the target is an artifact or similar item, you automatically fail.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "dispel-magic",
+        "target": {
+          "value": "1 spell effect or unattended magic item"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.hVU9msO9yGkxKZ3J"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/light/projectile-beam-yellow.webp",
+      "name": "Divine Wrath",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "type": "burst",
+          "value": 20
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "0": {
+            "applyMod": false,
+            "category": null,
+            "formula": "4d10",
+            "kinds": [
+              "damage"
+            ],
+            "materials": [],
+            "type": "spirit"
+          }
+        },
+        "defense": {
+          "save": {
+            "basic": false,
+            "statistic": "fortitude"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>You channel the fury of divinity against your foes. You deal 4d10 spirit damage to enemies in the area, depending on their Fortitude save.</p>\n<hr>\n<p><strong>Critical Success</strong> The creature is unaffected.</p>\n<p><strong>Success</strong> The creature takes half damage.</p>\n<p><strong>Failure</strong> The creature takes full damage and is @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Sickened 1}.</p>\n<p><strong>Critical Failure</strong> The creature takes full damage and is @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Sickened 2}; while it's sickened, it's also @UUID[Compendium.pf2e.conditionitems.Item.xYTAsEpcJE1Ccni3]{Slowed 1}.</p>\n<hr>\n<p><strong>Heightened (+1)</strong> The damage increases by 1d10.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "heightening": {
+          "damage": {
+            "0": "1d10"
+          },
+          "interval": 1,
+          "type": "interval"
+        },
+        "level": {
+          "value": 4
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "overlays": {},
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "divine-wrath",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate",
+            "sanctified",
+            "spirit"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.eG1fBodYwolaXK98"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/enduring-might.webp",
+      "name": "Enduring Might",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> An attack or effect would deal damage to you.</p>\n<hr>\n<p>Your own might mingles with divine power to protect you from harm. You gain resistance equal to 8 plus your Strength modifier against all damage from the triggering attack or effect.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.ZHVtJKnur9PAF5TO]{Spell Effect: Enduring Might}</p>\n<hr>\n<p><strong>Heightened (+1)</strong> The resistance increases by 2.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 4
+        },
+        "location": {
+          "value": "wXBWq5iLAaOywTBh"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "enduring-might",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "reaction"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "uncommon",
+          "traditions": [],
+          "value": [
+            "cleric",
+            "focus",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.J7Y7tl0bbdz7TcCc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/ray-of-enfeeblement.webp",
+      "name": "Enfeeble",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": {
+          "save": {
+            "basic": false,
+            "statistic": "fortitude"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>You sap the target's strength, depending on its Fortitude save.</p>\n<hr>\n<p><strong>Critical Success</strong> The target is unaffected.</p>\n<p><strong>Success</strong> The target is @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Enfeebled 1} until the start of your next turn.</p>\n<p><strong>Failure</strong> The target is @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Enfeebled 2} for 1 minute.</p>\n<p><strong>Critical Failure</strong> The target is @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Enfeebled 3} for 1 minute.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "varies"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "enfeeble",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.A2JfEKe6BZcTG1S8"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/creatures/mammals/bats-movement-flying-black.webp",
+      "name": "Fly",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The target can soar through the air, gaining a fly Speed equal to its Speed or 20 feet, whichever is greater.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.MuRBCiZn5IKeaoxi]{Spell Effect: Fly}</p>\n<hr>\n<p><strong>Heightened (7th)</strong> The duration increases to 1 hour.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "5 minutes"
+        },
+        "level": {
+          "value": 4
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "fly",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.RA7VKcen3p56rVyZ"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/forbidding-ward.webp",
+      "name": "Forbidding Ward",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You ward an ally against the attacks and hostile spells from the target enemy. The target ally gains a +1 status bonus to Armor Class and saving throws against the target enemy's attacks, spells, and other effects.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.ctMxYPGEpstvhW9C]{Spell Effect: Forbidding Ward}</p>\n<hr>\n<p><strong>Heightened (6th)</strong> The status bonus increases to +2.</p>"
+        },
+        "duration": {
+          "sustained": true,
+          "value": "1 minute"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "forbidding-ward",
+        "target": {
+          "value": "1 ally and 1 enemy"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.izcxFQFwf3woCnFs"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/guidance.webp",
+      "name": "Guidance",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You ask for the guidance of supernatural entities, granting the target a +1 status bonus to one attack roll, Perception check, saving throw, or skill check the target attempts before the duration ends. The target chooses which roll to use the bonus on before rolling. If the target uses the bonus, the spell ends. Either way, the target is then temporarily immune for 1 hour.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.3qHKBDF7lrHw8jFK]{Spell Effect: Guidance}</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.3LyOkV25p7wA181H]{Effect: Guidance Immunity}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "until the start of your next turn"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "guidance",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "1"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.wdA52JJnsuQWeyqz"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/harm.webp",
+      "name": "Harm",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "0": {
+            "applyMod": false,
+            "category": null,
+            "formula": "1d8",
+            "kinds": [
+              "damage",
+              "healing"
+            ],
+            "materials": [],
+            "type": "void"
+          }
+        },
+        "defense": {
+          "save": {
+            "basic": true,
+            "statistic": "fortitude"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>You channel void energy to harm the living or heal the undead. If the target is a living creature, you deal 1d8 void damage to it, and it gets a basic Fortitude save. If the target is a willing undead creature, you restore that amount of Hit Points. The number of actions you spend when Casting this Spell determines its targets, range, area, and other parameters.</p>\n<p><span class=\"action-glyph\">1</span> The spell has a range of touch.</p>\n<p><span class=\"action-glyph\">2</span> (concentrate) The spell has a range of 30 feet. If you're healing an undead creature, increase the Hit Points restored by 8.</p>\n<p><span class=\"action-glyph\">3</span> (concentrate) You disperse void energy in a @Template[emanation|distance:30]. This targets all living and undead creatures in the area.</p>\n<hr>\n<p><strong>Heightened (+1)</strong> The amount of healing or damage increases by 1d8, and the extra healing for the 2-action version increases by 8.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "heightening": {
+          "damage": {
+            "0": "1d8"
+          },
+          "interval": 1,
+          "type": "interval"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "overlays": {
+          "4gyp3qlsv5ywdyjq": {
+            "_id": "4gyp3qlsv5ywdyjq",
+            "name": "Harm (vs. Undead)",
+            "overlayType": "override",
+            "sort": 3,
+            "system": {
+              "damage": {
+                "0": {
+                  "formula": "1d8+8",
+                  "kinds": [
+                    "healing"
+                  ]
+                }
+              },
+              "defense": null,
+              "heightening": {
+                "damage": {
+                  "0": "1d8+8"
+                }
+              },
+              "range": {
+                "value": "30 feet"
+              },
+              "target": {
+                "value": "1 willing undead creature"
+              },
+              "time": {
+                "value": "2"
+              },
+              "traits": {
+                "value": [
+                  "concentrate",
+                  "manipulate",
+                  "void"
+                ]
+              }
+            }
+          },
+          "pq7cxntbz4s8g5ik": {
+            "_id": "pq7cxntbz4s8g5ik",
+            "overlayType": "override",
+            "sort": 1,
+            "system": {
+              "range": {
+                "value": "touch"
+              },
+              "time": {
+                "value": "1"
+              }
+            }
+          },
+          "rvhoa43rqqqp8izn": {
+            "_id": "rvhoa43rqqqp8izn",
+            "overlayType": "override",
+            "sort": 4,
+            "system": {
+              "area": {
+                "type": "emanation",
+                "value": 30
+              },
+              "range": {
+                "value": ""
+              },
+              "target": {
+                "value": "all living and undead creatures"
+              },
+              "time": {
+                "value": "3"
+              },
+              "traits": {
+                "value": [
+                  "concentrate",
+                  "manipulate",
+                  "void"
+                ]
+              }
+            }
+          },
+          "z04svm1cvfcxtplb": {
+            "_id": "z04svm1cvfcxtplb",
+            "name": "Harm (vs. Living)",
+            "overlayType": "override",
+            "sort": 2,
+            "system": {
+              "damage": {
+                "0": {
+                  "kinds": [
+                    "damage"
+                  ]
+                }
+              },
+              "range": {
+                "value": "30 feet"
+              },
+              "target": {
+                "value": "1 living creature"
+              },
+              "time": {
+                "value": "2"
+              },
+              "traits": {
+                "value": [
+                  "concentrate",
+                  "manipulate",
+                  "void"
+                ]
+              }
+            }
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "varies"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "harm",
+        "target": {
+          "value": "1 living creature or 1 willing undead creature"
+        },
+        "time": {
+          "value": "1 to 3"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine"
+          ],
+          "value": [
+            "manipulate",
+            "void"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.rfZpqmj0AIIdkVIs"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/life/cross-worn-green.webp",
+      "name": "Heal",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "0": {
+            "applyMod": false,
+            "category": null,
+            "formula": "1d8",
+            "kinds": [
+              "damage",
+              "healing"
+            ],
+            "materials": [],
+            "type": "vitality"
+          }
+        },
+        "defense": {
+          "save": {
+            "basic": true,
+            "statistic": "fortitude"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>You channel vital energy to heal the living or damage the undead. If the target is a willing living creature, you restore 1d8 Hit Points. If the target is undead, you deal that amount of vitality damage to it, and it gets a basic Fortitude save. The number of actions you spend when Casting this Spell determines its targets, range, area, and other parameters.</p>\n<p><span class=\"action-glyph\">1</span> The spell has a range of touch.</p>\n<p><span class=\"action-glyph\">2</span> (concentrate) The spell has a range of 30 feet. If you're healing a living creature, increase the Hit Points restored by 8.</p>\n<p><span class=\"action-glyph\">3</span> (concentrate) You disperse vital energy in a @Template[emanation|distance:30]. This targets all living and undead creatures in the burst.</p>\n<hr>\n<p><strong>Heightened (+1)</strong> The amount of healing or damage increases by 1d8, and the extra healing for the 2-action version increases by 8.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "heightening": {
+          "damage": {
+            "0": "1d8"
+          },
+          "interval": 1,
+          "type": "interval"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "overlays": {
+          "37gy7l19tik74o4s": {
+            "_id": "37gy7l19tik74o4s",
+            "name": "Heal (vs. Living)",
+            "overlayType": "override",
+            "sort": 2,
+            "system": {
+              "damage": {
+                "0": {
+                  "formula": "1d8+8",
+                  "kinds": [
+                    "healing"
+                  ]
+                }
+              },
+              "defense": null,
+              "heightening": {
+                "damage": {
+                  "0": "1d8+8"
+                }
+              },
+              "range": {
+                "value": "30 feet"
+              },
+              "time": {
+                "value": "2"
+              },
+              "traits": {
+                "value": [
+                  "concentrate",
+                  "healing",
+                  "manipulate",
+                  "vitality"
+                ]
+              }
+            }
+          },
+          "7qdtetowq348s9oc": {
+            "_id": "7qdtetowq348s9oc",
+            "overlayType": "override",
+            "sort": 1,
+            "system": {
+              "range": {
+                "value": "touch"
+              },
+              "time": {
+                "value": "1"
+              }
+            }
+          },
+          "7vbvdrv2cl87sqta": {
+            "_id": "7vbvdrv2cl87sqta",
+            "overlayType": "override",
+            "sort": 4,
+            "system": {
+              "area": {
+                "type": "emanation",
+                "value": 30
+              },
+              "range": {
+                "value": ""
+              },
+              "target": {
+                "value": "all living and undead creatures"
+              },
+              "time": {
+                "value": "3"
+              },
+              "traits": {
+                "value": [
+                  "concentrate",
+                  "healing",
+                  "manipulate",
+                  "vitality"
+                ]
+              }
+            }
+          },
+          "lfxcoz2d3f8j2zq1": {
+            "_id": "lfxcoz2d3f8j2zq1",
+            "name": "Heal (vs. Undead)",
+            "overlayType": "override",
+            "sort": 3,
+            "system": {
+              "damage": {
+                "0": {
+                  "kinds": [
+                    "damage"
+                  ]
+                }
+              },
+              "range": {
+                "value": "30 feet"
+              },
+              "target": {
+                "value": "1 undead"
+              },
+              "time": {
+                "value": "2"
+              },
+              "traits": {
+                "value": [
+                  "concentrate",
+                  "healing",
+                  "manipulate",
+                  "vitality"
+                ]
+              }
+            }
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "varies"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "heal",
+        "target": {
+          "value": "1 willing living creature or 1 undead"
+        },
+        "time": {
+          "value": "1 to 3"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "primal"
+          ],
+          "value": [
+            "healing",
+            "manipulate",
+            "vitality"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.KqvqNAfGIE5a9wSv"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/life/ankh-gold-blue.webp",
+      "name": "Heroism",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You unlock the target's inner heroism, granting it a +1 status bonus to attack rolls, Perception checks, saving throws, and skill checks.</p>\n<hr>\n<p><strong>Heightened (6th)</strong> The status bonus increases to +2.</p>\n<p><strong>Heightened (9th)</strong> The status bonus increases to +3.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.l9HRQggofFGIxEse]{Spell Effect: Heroism}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "10 minutes"
+        },
+        "level": {
+          "value": 3
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "heroism",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate",
+            "mental"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.dINQzhqGmIsqGMUY"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/mending.webp",
+      "name": "Mending",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You repair the target item. You restore 5 Hit Points per spell rank to the target, potentially removing the @UUID[Compendium.pf2e.conditionitems.Item.6dNUvdb1dhToNDj3]{Broken} condition if this repairs it past the item's Broken Threshold. You can't replace lost pieces or repair an object that's been completely destroyed.</p>\n<hr>\n<p><strong>Heightened (2nd)</strong> You can target a non-magical object of 1 Bulk or less.</p>\n<p><strong>Heightened (3rd)</strong> You can target a non-magical object of 2 Bulk or less, or a magical object of 1 Bulk or less.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "heightening": {
+          "levels": {
+            "2": {
+              "target": {
+                "value": "non-magical object of 1 Bulk or less"
+              }
+            },
+            "3": {
+              "target": {
+                "value": "non-magical object of 2 Bulk or less, or a magical object of 1 Bulk or less"
+              }
+            }
+          },
+          "type": "fixed"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "mending",
+        "target": {
+          "value": "non-magical object of light Bulk or less"
+        },
+        "time": {
+          "value": "10 minutes"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.wzLkNU3AAqOSKFPR"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/fire/orb-vortex.webp",
+      "name": "Noise Blast",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "type": "burst",
+          "value": 10
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {
+          "0": {
+            "applyMod": false,
+            "category": null,
+            "formula": "2d10",
+            "kinds": [
+              "damage"
+            ],
+            "materials": [],
+            "type": "sonic"
+          }
+        },
+        "defense": {
+          "save": {
+            "basic": false,
+            "statistic": "fortitude"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>A cacophonous noise blasts out, dealing 2d10 sonic damage. Each creature must attempt a Fortitude save.</p>\n<hr>\n<p><strong>Critical Success</strong> The creature is unaffected.</p>\n<p><strong>Success</strong> The creature takes half damage.</p>\n<p><strong>Failure</strong> The creature takes full damage and is @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round.</p>\n<p><strong>Critical Failure</strong> The creature takes double damage, is deafened for 1 minute, and is @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Stunned 1}.</p>\n<hr>\n<p><strong>Heightened (+1)</strong> The damage increases by 1d10.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "heightening": {
+          "damage": {
+            "0": "1d10"
+          },
+          "interval": 1,
+          "type": "interval"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "noise-blast",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate",
+            "sonic"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.jwK43yKsHTkJQvQ9"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/see-invisibility.webp",
+      "name": "See the Unseen",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Your gaze pierces through illusions and finds @UUID[Compendium.pf2e.conditionitems.Item.zJxUflt9np0q4yML]{Invisible} creatures and spirits. You can see invisible creatures as though they weren't invisible, although their features are blurred, making them @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W]{Concealed} and difficult to identify. You can also see incorporeal creatures, like ghosts, phased through an object from within 10 feet of an object's surface as blurry shapes seen through those objects. Subtler clues also grant you a +2 status bonus to checks you make to disbelieve illusions.</p>\n<hr>\n<p><strong>Heightened (5th)</strong> This spell has a duration of 8 hours.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.T5bk6UH7yuYog1Fp]{Spell Effect: See the Unseen}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "10 minutes"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "see-the-unseen",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate",
+            "revelation"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.d7Lwx6KAs47MtF0q"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/shield-other.webp",
+      "name": "Share Life",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You forge a temporary link between the target's life essence and your own. The target takes half damage from all effects that deal Hit Point damage, and you take the remainder of the damage. When you take damage through this link, you don't apply any resistances, weaknesses, or other abilities you have to that damage; you simply take that amount of damage. The spell ends if the target is ever more than 30 feet away from you. If either you or the target is reduced to 0 Hit Points, any damage from this spell is resolved and then the spell ends.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "10 minutes"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "share-life",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.TVKNbcgTee19PXZR"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/shield.webp",
+      "name": "Shield",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You raise a magical shield of force. This counts as using the Raise a Shield action, giving you a +1 circumstance bonus to AC until the start of your next turn, but it doesn't require a hand to use.</p>\n<p>While the spell is in effect, you can use the @UUID[Compendium.pf2e.feats-srd.Item.jM72TjJ965jocBV8]{Shield Block} reaction with your magic shield. The shield has Hardness 5. You can use the spell's reaction to reduce damage from any spell or magical effect, even if it doesn't deal physical damage. After you use Shield Block, the spell ends and you can't cast it again for 10 minutes.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.Jemq5UknGdMO7b73]{Spell Effect: Shield}</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.QF6RDlCoTvkVHRo4]{Effect: Shield Immunity}</p>\n<hr>\n<p><strong>Heightened (+2)</strong> The shield's Hardness increases by 5.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "until the start of your next turn"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "shield",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "1"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "force"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.SnjhtQYexDtNDdEg"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/control/debuff-energy-hold-yellow.webp",
+      "name": "Stabilize",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Life energy shuts death's door. The target loses the @UUID[Compendium.pf2e.conditionitems.Item.yZRUzMqrMmfLu0V1]{Dying} condition, though it remains @UUID[Compendium.pf2e.conditionitems.Item.fBnFDH2MTzgFijKf]{Unconscious} at 0 Hit Points.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "stabilize",
+        "target": {
+          "value": "1 dying creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "divine",
+            "primal"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "healing",
+            "manipulate",
+            "vitality"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.aqRYNoSvxsVfqglH"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/feet/boots-leather-laced-brown.webp",
+      "name": "Unfettered Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You repel effects that would hinder a creature or slow its movement. While under this spell's effect, the target ignores effects that would give them a circumstance penalty to Speed. When they attempt to @UUID[Compendium.pf2e.actionspf2e.Item.SkZAQRkLLkmBQNB9]{Escape} an effect that has them @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Immobilized}, @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed}, or @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Restrained}, they automatically succeed unless the effect is magical and of a higher rank than the <em>unfettered movement</em> spell.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.CdAyAiMGESvgNQtz]{Spell Effect: Unfettered Movement}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "10 minutes"
+        },
+        "level": {
+          "value": 4
+        },
+        "location": {
+          "value": "2pojqHJ4G1kPosCy"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "unfettered-movement",
+        "target": {
+          "value": "1 creature touched"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "spellBenchmarks": {
+            "attackBenchmark": 0.5,
+            "dcBenchmark": 0.5
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/default-icons/spellcastingEntry.svg",
+      "name": "Cleric Domain Spells",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ability": {
+          "value": "cha"
+        },
+        "autoHeightenLevel": {
+          "value": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "prepared": {
+          "value": "focus"
+        },
+        "proficiency": {
+          "value": 1
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "showSlotlessLevels": {
+          "value": true
+        },
+        "slots": {
+          "slot0": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot1": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot10": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot11": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot2": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot3": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot4": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot5": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot6": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot7": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot8": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot9": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          }
+        },
+        "slug": null,
+        "spelldc": {
+          "dc": 32,
+          "value": 24
+        },
+        "tradition": {
+          "value": "divine"
+        },
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "spellcastingEntry"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "spellBenchmarks": {
+            "attackBenchmark": 0.5,
+            "dcBenchmark": 0.5,
+            "primary": true
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/default-icons/spellcastingEntry.svg",
+      "name": "Divine Prepared Spells",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ability": {
+          "value": "cha"
+        },
+        "autoHeightenLevel": {
+          "value": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "prepared": {
+          "flexible": false,
+          "value": "prepared"
+        },
+        "proficiency": {
+          "value": 1
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "showSlotlessLevels": {
+          "value": true
+        },
+        "slots": {
+          "slot0": {
+            "max": 5,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "XEFE0WD4jt71yCv1"
+              },
+              {
+                "expended": false,
+                "id": "ZC18bgtB80b82PNP"
+              },
+              {
+                "expended": false,
+                "id": "lloYst8Xnl8fp7mz"
+              },
+              {
+                "expended": false,
+                "id": "5RlWgGhNlrAMott0"
+              },
+              {
+                "expended": false,
+                "id": "XsKuZzB52awlCZJt"
+              }
+            ],
+            "value": 5
+          },
+          "slot1": {
+            "max": 3,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "YpcqqGzF19Hfe6qR"
+              },
+              {
+                "expended": false,
+                "id": "LUArsTstTPkNvPSA"
+              },
+              {
+                "expended": false,
+                "id": "Tv3OVPbEtmkuFA0u"
+              }
+            ],
+            "value": 3
+          },
+          "slot10": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot11": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot2": {
+            "max": 3,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "lRLnu8l3FA8RgGIz"
+              },
+              {
+                "expended": false,
+                "id": "bT1xxuqO3qr86rJy"
+              },
+              {
+                "expended": false,
+                "id": "LMlm6DXmK26FupEz"
+              }
+            ],
+            "value": 3
+          },
+          "slot3": {
+            "max": 3,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "PPkTNxk75APEqDrf"
+              },
+              {
+                "expended": false,
+                "id": "AHmqjTxWJqUxYc0t"
+              },
+              {
+                "expended": false,
+                "id": "Mn5uzpVfhLJhlDBi"
+              }
+            ],
+            "value": 3
+          },
+          "slot4": {
+            "max": 3,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "wIygWl8k7z9yUIv9"
+              },
+              {
+                "expended": false,
+                "id": "e4L1eutd260Eas0B"
+              },
+              {
+                "expended": false,
+                "id": "un1KtTghHz83PvTO"
+              }
+            ],
+            "value": 3
+          },
+          "slot5": {
+            "max": 3,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "HAc0Wizw3rhKFekE"
+              },
+              {
+                "expended": false,
+                "id": "Gbcma6NF41SVNwKI"
+              },
+              {
+                "expended": false,
+                "id": "aIcvycyHJxtfTeeU"
+              }
+            ],
+            "value": 3
+          },
+          "slot6": {
+            "max": 7,
+            "prepared": [
+              {
+                "expended": false,
+                "id": "CxcMDsEEBUAMP70e"
+              },
+              {
+                "expended": false,
+                "id": "X4h3ufeoqQw113F3"
+              },
+              {
+                "expended": false,
+                "id": "ay4ZWjGPGdgCMb8J"
+              },
+              {
+                "expended": false,
+                "id": "ay4ZWjGPGdgCMb8J"
+              },
+              {
+                "expended": false,
+                "id": "ay4ZWjGPGdgCMb8J"
+              },
+              {
+                "expended": false,
+                "id": "ay4ZWjGPGdgCMb8J"
+              },
+              {
+                "expended": false,
+                "id": "oWCX4dgzqhelGtlD"
+              }
+            ],
+            "value": 7
+          },
+          "slot7": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot8": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot9": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          }
+        },
+        "slug": null,
+        "spelldc": {
+          "dc": 35,
+          "value": 27
+        },
+        "tradition": {
+          "value": "divine"
+        },
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "spellcastingEntry"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.UX71GkWBL9g41VwM"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/swords/greatsword-crossguard-silver.webp",
+      "name": "Greatsword",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "greatsword",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 2
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "slashing",
+          "dice": 1,
+          "die": "d12",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This immense two-handed sword is nearly as tall as its wielder. Its lower blade is often somewhat dulled to allow it to be gripped for extra leverage in close-quarter fights.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "sword",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 1,
+          "property": [],
+          "striking": 1
+        },
+        "size": "med",
+        "slug": "greatsword",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "versatile-p"
+          ]
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Veteran War Priests",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Veteran War Priests",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/veteran-war-priests/veteran-war-priests_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 5
+      },
+      "con": {
+        "mod": 5
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 5
+      },
+      "str": {
+        "mod": 5
+      },
+      "wis": {
+        "mod": 6
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 39
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 312,
+        "temp": 0,
+        "value": 312
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 15
+        },
+        {
+          "type": "splash-damage",
+          "value": 8
+        }
+      ]
+    },
+    "details": {
+      "blurb": "Human cleric",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "skald"
+        ]
+      },
+      "level": {
+        "value": 17
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Clerics who have guided the faithful through campaigns and bloodshed. They march in the line, mace in one hand and blessing in the other, closing wounds and cursing foes. Soldiers stand firmer in their company: someone is minding both flesh and soul.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Adventure: Prey for Death"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 30,
+      "senses": [],
+      "vision": true
+    },
+    "resources": {
+      "focus": {
+        "max": 2,
+        "value": 2
+      }
+    },
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 29
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 27
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 31
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 30
+      },
+      "crafting": {
+        "base": 25
+      },
+      "intimidation": {
+        "base": 29
+      },
+      "religion": {
+        "base": 31
+      }
+    },
+    "traits": {
+      "rarity": "uncommon",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "human",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

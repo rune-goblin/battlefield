@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
+  import { COMBATANTS, deriveStats, deployZone, ROLES, ROLE_BLURBS, ROSTER, TACTICS, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
   import { game, resetSetup, saveSetup, startBattle, type SetupUnit } from './game.svelte.js';
 
   let side: Side = $state('attacker');
-  let rosterName = $state(ROSTER[0].name);
+  let rosterName = $state(COMBATANTS[0].name);
+  const library = [...COMBATANTS, ...ROSTER];
   let custom = $state<{ name: string; level: number; role: Role; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', tactics: [] });
 
   const zone = (s: Side, card: UnitCard) => deployZone(s, game.setup.terrain, (card.tactics ?? []).includes('ambush'));
@@ -52,9 +53,14 @@
       <h3>From the roster</h3>
       <div class="row">
         <select bind:value={rosterName}>
-          {#each ROSTER as c}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          <optgroup label="Reignmaker troops">
+            {#each COMBATANTS as c}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          </optgroup>
+          <optgroup label="Generic roster">
+            {#each ROSTER as c}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
+          </optgroup>
         </select>
-        <button onclick={() => add(ROSTER.find((c) => c.name === rosterName)!)}>Add</button>
+        <button onclick={() => add(library.find((c) => c.name === rosterName)!)}>Add</button>
       </div>
       <h3>Your own</h3>
       <div class="row">

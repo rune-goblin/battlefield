@@ -1,0 +1,962 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.5iqkL9Me5164H7NY"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 6,
+        "baseStats": {
+          "ac": 24,
+          "cha": 0,
+          "con": 4,
+          "dex": 2,
+          "fortitude": 16,
+          "hp": 95,
+          "int": -2,
+          "perception": 13,
+          "reflex": 12,
+          "skills": {
+            "acrobatics": 14,
+            "athletics": 15,
+            "stealth": 12
+          },
+          "str": 5,
+          "strikeAttackBonus": 17,
+          "strikeDamage": "2d12 + 5",
+          "strikeDamageAverage": 18,
+          "will": 13,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.5,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.3333333333333333,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.5,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Wyvern (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 6,
+        "baseStats": {
+          "ac": 24,
+          "cha": 0,
+          "con": 4,
+          "dex": 2,
+          "fortitude": 16,
+          "hp": 95,
+          "int": -2,
+          "perception": 13,
+          "reflex": 12,
+          "skills": {
+            "acrobatics": 14,
+            "athletics": 15,
+            "stealth": 12
+          },
+          "str": 5,
+          "strikeAttackBonus": 17,
+          "strikeDamage": "2d12 + 5",
+          "strikeDamageAverage": 18,
+          "will": 13,
+          "wis": 3
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.3333333333333333,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0.16666666666666666
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.5,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.6666666666666666,
+            "reflex": 0.3333333333333333,
+            "will": 0.41666666666666663
+          },
+          "skills": [
+            {
+              "benchmark": 0.5,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "wyvern-flight",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/wyvern-flight/wyvern-flight_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/wyvern-flight/wyvern-flight_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Darkvision",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop can see in darkness and dim light just as well as in bright light.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Flight",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop has a fly Speed and ignores all ground-based difficult terrain. Enemies that lack the ability to fly suffer a -2 circumstance penalty on melee Strikes against this troop, and the troop gains a +2 circumstance bonus on its saves against the Battle attacks of troops that cannot fly.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "BaseSpeed",
+            "selector": "fly",
+            "value": "@actor.system.movement.speeds.land.value"
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.Tkd8sH4pwFIPzqTr"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Grab",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.Grab]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "grab",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:29|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d12+2)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(3d12+3)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d12+4)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 12,
+                "benchmark": 0.7283950617283949,
+                "damageType": "piercing",
+                "originalValue": "1d12+2",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "3d12+3",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "4d12+4",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "29",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Lance Charge [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:29|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d12+2)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(3d12+3)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d12+4)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The wyvern Flies up to their fly Speed and must both move forward at least 20 feet and descend at least 10 feet. If they end the movement within melee reach of at least one enemy their size or smaller, that enemy takes @Damage[{0}[piercing]] damage (@Check[reflex|dc:{1}|basic] save). If the enemy fails its save, the wyvern can, as a free action, either automatically Grab it or knock it @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>",
+            "originalDescription": "<p>The wyvern Flies up to their fly Speed and must both move forward at least 20 feet and descend at least 10 feet. If they end the movement within melee reach of at least one enemy their size or smaller, that enemy takes @Damage[4d12[piercing]] damage (@Check[reflex|dc:29|basic] save). If the enemy fails its save, the wyvern can, as a free action, either automatically Grab it or knock it @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 12,
+                "benchmark": 0.39999999999999997,
+                "damageType": "piercing",
+                "originalValue": "4d12",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "29",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Powerful Dive",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The wyvern Flies up to their fly Speed and must both move forward at least 20 feet and descend at least 10 feet. If they end the movement within melee reach of at least one enemy their size or smaller, that enemy takes @Damage[4d12[piercing]] damage (@Check[reflex|dc:29|basic] save). If the enemy fails its save, the wyvern can, as a free action, either automatically Grab it or knock it @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "move"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Punishing Momentum",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> The wyvern @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed} a creature this turn using Powerful Dive</p>\n<hr>\n<p><strong>Effect</strong> The wyvern can Fly at half Speed while holding the creature in their claws, carrying that creature along with them and dropping it at the end of their movement. Alternatively, the wyvern can Strike the creature with their stinger with a +2 circumstance bonus.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [
+          {
+            "domain": "attack-roll",
+            "key": "RollOption",
+            "option": "punishing-momentum",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "punishing-momentum"
+            ],
+            "selector": "stinger-attack",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Trigger</strong> A creature within the wyvern flight's reach uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The wyverns snap at the triggering creature with fangs and stings. The triggering creature takes @Damage[({0})[piercing]] damage (@Check[reflex|dc:{1}|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "originalDescription": "<p><strong>Trigger</strong> A creature within the wyvern flight's reach uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The wyverns snap at the triggering creature with fangs and stings. The triggering creature takes @Damage[(4d12)[piercing]] damage (@Check[reflex|dc:29|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 12,
+                "benchmark": 0.39999999999999997,
+                "damageType": "piercing",
+                "originalValue": "4d12",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 12,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "29",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Reactive Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature within the wyvern flight's reach uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The wyverns snap at the triggering creature with fangs and stings. The triggering creature takes @Damage[(4d12)[piercing]] damage (@Check[reflex|dc:29|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "reactive-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Savage",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Grabbed} or @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Restrained} by the wyvern critically fails a skill check to @UUID[Compendium.pf2e.actionspf2e.Item.SkZAQRkLLkmBQNB9]{Escape}</p>\n<hr>\n<p><strong>Effect</strong> The wyvern makes a stinger Strike against the triggering creature.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 143 (3 segments), 71 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>A creature that fails its save against the troop's Battle attack is exposed to wyvern venom: it takes @Damage[{0}[persistent,poison]] damage and is enfeebled 1 for as long as the persistent damage continues.</p>",
+            "originalDescription": "<p>A creature that fails its save against the troop's Battle attack is exposed to wyvern venom: it takes @Damage[2d8[persistent,poison]] damage and is enfeebled 1 for as long as the persistent damage continues.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 12,
+                "benchmark": 0.5,
+                "damageType": "poison",
+                "originalValue": "2d8",
+                "type": "persistent"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Wyvern Venom",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A creature that fails its save against the troop's Battle attack is exposed to wyvern venom: it takes @Damage[2d8[persistent,poison]] damage and is enfeebled 1 for as long as the persistent damage continues.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": "wyvern-venom",
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "poison"
+          ]
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Wyvern Flight",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Wyvern Flight",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/wyvern-flight/wyvern-flight_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 4
+      },
+      "con": {
+        "mod": 5
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 4
+      },
+      "str": {
+        "mod": 7
+      },
+      "wis": {
+        "mod": 5
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 33
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 215,
+        "temp": 0,
+        "value": 215
+      },
+      "immunities": [
+        {
+          "type": "paralyzed"
+        },
+        {
+          "type": "sleep"
+        }
+      ],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [
+          {
+            "type": "fly",
+            "value": 60
+          }
+        ],
+        "value": 20
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 10
+        },
+        {
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "draconic"
+        ]
+      },
+      "level": {
+        "value": 12
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Death rained from above: wyverns stooping out of the sun onto marching ranks, all tearing claws and lethal venom. Their handlers hold them with steady nerves and stronger chains, and loose them where the fighting is thickest. No formation holds when the sky itself attacks.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 21,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "darkvision"
+        },
+        {
+          "acuity": "imprecise",
+          "range": 30,
+          "type": "scent"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 24
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 20
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 21
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 24
+      },
+      "athletics": {
+        "base": 25
+      },
+      "stealth": {
+        "base": 21
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "dragon",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

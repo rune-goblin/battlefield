@@ -1,0 +1,1099 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.893mp411SdYren3H"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 9,
+        "baseStats": {
+          "ac": 29,
+          "cha": 0,
+          "con": 5,
+          "dex": 0,
+          "fortitude": 23,
+          "hp": 150,
+          "int": 0,
+          "perception": 17,
+          "reflex": 16,
+          "skills": {
+            "athletics": 23,
+            "crafting": 18,
+            "intimidation": 18,
+            "nature": 17,
+            "stealth": 17
+          },
+          "str": 6,
+          "strikeAttackBonus": 21,
+          "strikeDamage": "2d12 + 12",
+          "strikeDamageAverage": 25,
+          "will": 16,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.5,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.7777777777777777,
+          "hp": 0.3333333333333333,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 1,
+            "reflex": 0.3333333333333333,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 1,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Frost Giant (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 9,
+        "baseStats": {
+          "ac": 29,
+          "cha": 0,
+          "con": 5,
+          "dex": 0,
+          "fortitude": 23,
+          "hp": 150,
+          "int": 0,
+          "perception": 17,
+          "reflex": 16,
+          "skills": {
+            "athletics": 23,
+            "crafting": 18,
+            "intimidation": 18,
+            "nature": 17,
+            "stealth": 17
+          },
+          "str": 6,
+          "strikeAttackBonus": 21,
+          "strikeDamage": "2d12 + 12",
+          "strikeDamageAverage": 25,
+          "will": 16,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0.5,
+            "dex": 0,
+            "int": 0,
+            "str": 0.6666666666666666,
+            "wis": 0
+          },
+          "ac": 0.7777777777777777,
+          "hp": 0.3333333333333333,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 1,
+            "reflex": 0.3333333333333333,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 1,
+              "skill": "athletics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "intimidation"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "stealth"
+            }
+          ],
+          "strikeAttack": 0.6666666666666666,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "frost-giant-warriors",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/frost-giant-warriors/frost-giant-warriors_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/frost-giant-warriors/frost-giant-warriors_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The frost giant breathes out a @Template[cone|distance:{3}] of freezing moisture that quickly condenses into ice, dealing @Damage[{0}[cold]|options:area-damage] damage. Each creature in the cone must attempt a @Check[reflex|dc:{2}|basic|options:area-effect] save. A creature that fails its save is also @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Immobilized} and takes @Damage[{1}[cold]] damage at the end of each of its turns until it gets free ([[/act escape dc=28]]).</p>\n<p>The giant can't use Chill Breath again for [[/gmr 1d4 #Recharge Chill Breath]]{1d4 rounds}.</p>",
+            "originalDescription": "<p>The frost giant breathes out a @Template[cone|distance:15] of freezing moisture that quickly condenses into ice, dealing @Damage[4d6[cold]|options:area-damage] damage. Each creature in the cone must attempt a @Check[reflex|dc:28|basic|options:area-effect] save. A creature that fails its save is also @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Immobilized} and takes @Damage[2d6[cold]] damage at the end of each of its turns until it gets free ([[/act escape dc=28]]).</p>\n<p>The giant can't use Chill Breath again for [[/gmr 1d4 #Recharge Chill Breath]]{1d4 rounds}.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "damageType": "cold",
+                "originalValue": "4d6",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "damageType": "cold",
+                "originalValue": "2d6",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.5,
+                "checkType": "reflex",
+                "originalValue": "28",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Cone length",
+                "originalValue": "15",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Chill Breath",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The frost giant breathes out a @Template[cone|distance:15] of freezing moisture that quickly condenses into ice, dealing @Damage[6d6[cold]|options:area-damage] damage. Each creature in the cone must attempt a @Check[reflex|dc:34|basic|options:area-effect] save. A creature that fails its save is also @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Immobilized} and takes @Damage[3d6[cold]] damage at the end of each of its turns until it gets free ([[/act escape dc=28]]).</p>\n<p>The giant can't use Chill Breath again for [[/gmr 1d4 #Recharge Chill Breath]]{1d4 rounds}.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "cold",
+            "primal"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[{1}[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[slashing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:31|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d12+3)[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d12[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d12+2)[slashing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 14,
+                "benchmark": 0.710562414266118,
+                "damageType": "slashing",
+                "originalValue": "1d12+3",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0.691358024691358,
+                "damageType": "slashing",
+                "originalValue": "4d12",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0.6851851851851851,
+                "damageType": "slashing",
+                "originalValue": "5d12+2",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "31",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "10",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Greataxe Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:10], with a @Check[reflex|dc:31|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d12+3)[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[4d12[slashing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(5d12+2)[slashing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Ice Stride",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A frost giant isn't impeded by difficult terrain caused by snow or ice, nor do they need to attempt Acrobatics checks to keep from falling on slippery ice.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[({0})[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 120 feet that deals @Damage[(4d8+4)[piercing]|options:area-damage] damage with a @Check[reflex|dc:31|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 14,
+                "benchmark": 0.6855482933914308,
+                "damageType": "piercing",
+                "originalValue": "4d8+4",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "31",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "120",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Icicle Volley [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 120 feet that deals @Damage[(4d8+4)[piercing]|options:area-damage] damage with a @Check[reflex|dc:31|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Trigger</strong> A creature within the frost giant warriors' reach uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The giants' greataxes sweep out. The triggering creature takes @Damage[({0})[slashing]] damage (@Check[reflex|dc:{1}|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "originalDescription": "<p><strong>Trigger</strong> A creature within the frost giant warriors' reach uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The giants' greataxes sweep out. The triggering creature takes @Damage[(4d12)[slashing]] damage (@Check[reflex|dc:31|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 14,
+                "benchmark": 0.19999999999999998,
+                "damageType": "slashing",
+                "originalValue": "4d12",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 14,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "31",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Reactive Attack",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> A creature within the frost giant warriors' reach uses a manipulate action or a move action, makes a ranged attack, or leaves a square during a move action it's using</p><hr><p><strong>Effect</strong> The giants' greataxes sweep out. The triggering creature takes @Damage[(4d12)[slashing]] damage (@Check[reflex|dc:31|basic] save). If the creature critically fails its saving throw and the trigger was a manipulate action, the troop disrupts that action.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": "reactive-attack",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 130 (3 segments), 65 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Wide Swing",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The frost giant makes a single greataxe Strike and compares the attack roll result to the ACs of up to two foes within their reach. This counts as two attacks for the frost giant's multiple attack penalty.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.r0ifJfoz8aqf0mwk"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/chest/breastplate-collared-steel.webp",
+      "name": "Breastplate",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 4,
+        "baseItem": "breastplate",
+        "bulk": {
+          "value": 2
+        },
+        "category": "medium",
+        "checkPenalty": -2,
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Though referred to as a breastplate, this type of armor consists of several pieces of plate or @UUID[Compendium.pf2e.equipment-srd.Item.pRoikbRo5HFW6YUB]{Half Plate} armor that protect the torso, chest, neck, and sometimes the hips and lower legs. It strategically grants some of the protection of plate while allowing greater flexibility and speed.</p>"
+        },
+        "dexCap": 1,
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "inSlot": true,
+          "invested": null
+        },
+        "grade": null,
+        "group": "plate",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 8
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "resilient": 0
+        },
+        "size": "lg",
+        "slug": "breastplate",
+        "speedPenalty": -5,
+        "strength": 3,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "armor"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.8COlYvHe6hKCXY8x"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/axes/axe-double-engraved.webp",
+      "name": "Greataxe",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "greataxe",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 2
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "slashing",
+          "dice": 1,
+          "die": "d12",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This large battle axe is too heavy to wield with only one hand. Many greataxes incorporate two blades, and they are often \"bearded,\" having a hook at the bottom to increase the strength of their chopping power.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 2,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "axe",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 2
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 1,
+          "property": [],
+          "striking": 1
+        },
+        "size": "lg",
+        "slug": "greataxe",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "sweep"
+          ]
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Frost Giant Warriors",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Frost Giant Warriors",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/frost-giant-warriors/frost-giant-warriors_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 4
+      },
+      "con": {
+        "mod": 7
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 4
+      },
+      "str": {
+        "mod": 8
+      },
+      "wis": {
+        "mod": 4
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 37
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 195,
+        "temp": 0,
+        "value": 195
+      },
+      "immunities": [
+        {
+          "type": "cold"
+        }
+      ],
+      "resistances": [],
+      "speed": {
+        "details": "ice stride",
+        "otherSpeeds": [],
+        "value": 30
+      },
+      "weaknesses": [
+        {
+          "type": "fire",
+          "value": 14
+        },
+        {
+          "type": "area-damage",
+          "value": 15
+        },
+        {
+          "type": "splash-damage",
+          "value": 8
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "jotun"
+        ]
+      },
+      "level": {
+        "value": 14
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>A raiding party of frost giants, each one fifteen feet of scarred blue flesh, cold steel mail, and a weapon the length of a dining table. They fight for plunder and for standing among their own, and they fear little that lives. Walls slow them; they do not stop them.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 24,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "low-light-vision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 30
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 23
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 23
+      }
+    },
+    "skills": {
+      "athletics": {
+        "base": 31
+      },
+      "crafting": {
+        "base": 25
+      },
+      "intimidation": {
+        "base": 25
+      },
+      "nature": {
+        "base": 24
+      },
+      "stealth": {
+        "base": 24,
+        "special": [
+          {
+            "base": 29,
+            "label": "in snow",
+            "predicate": [
+              "terrain:snow"
+            ]
+          }
+        ]
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "cold",
+        "giant",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

@@ -5,3 +5,4 @@ export * from './check.js';
 export * from './types.js';
 export * from './battle.js';
 export * from './roster.js';
+export * from './combatants.js';

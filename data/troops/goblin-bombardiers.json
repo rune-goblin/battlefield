@@ -1,0 +1,1694 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.C1gYuDSwTkTIkAcC"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 21,
+          "cha": 1,
+          "con": 2,
+          "dex": 4,
+          "fortitude": 11,
+          "hp": 60,
+          "int": 4,
+          "perception": 10,
+          "reflex": 13,
+          "skills": {
+            "acrobatics": 9,
+            "crafting": 12,
+            "deception": 7,
+            "society": 10,
+            "stealth": 12,
+            "thievery": 9
+          },
+          "str": 0,
+          "strikeAttackBonus": 12,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 9,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0.5,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.5,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.6666666666666666,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0,
+              "skill": "deception"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "society"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "thievery"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Ratfolk Grenadier (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 21,
+          "cha": 1,
+          "con": 2,
+          "dex": 4,
+          "fortitude": 11,
+          "hp": 60,
+          "int": 4,
+          "perception": 10,
+          "reflex": 13,
+          "skills": {
+            "acrobatics": 9,
+            "crafting": 12,
+            "deception": 7,
+            "society": 10,
+            "stealth": 12,
+            "thievery": 9
+          },
+          "str": 0,
+          "strikeAttackBonus": 12,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 9,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0.5,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.6666666666666666,
+          "hp": 0.5,
+          "perception": 0.41666666666666663,
+          "saves": {
+            "fortitude": 0.5,
+            "reflex": 0.6666666666666666,
+            "will": 0.3333333333333333
+          },
+          "skills": [
+            {
+              "benchmark": 0.25,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0,
+              "skill": "deception"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "society"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.25,
+              "skill": "thievery"
+            }
+          ],
+          "strikeAttack": 0.3333333333333333,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "goblin-bombardiers",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/goblin-bombardiers/goblin-bombardiers_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/goblin-bombardiers/goblin-bombardiers_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Alchemical Grenades",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The grenadier carries 6 alchemical grenades that deal either acid, cold, or fire damage plus 2 persistent damage and 2 splash damage of the same type (typically two of each). The grenadier replenishes these each day using scavenged materials.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[({0})[acid]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[(3d6+2)[acid]|options:area-damage] damage with a @Check[reflex|dc:22|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.6230936819172113,
+                "damageType": "acid",
+                "originalValue": "3d6+2",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "22",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "30",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Bomb Barrage [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 30 feet that deals @Damage[(3d6+2)[acid]|options:area-damage] damage with a @Check[reflex|dc:22|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop's incendiary weapons ignite targets even in a melee scrum. A creature that critically fails its save against the troop's Battle attack takes @Damage[{0}[persistent,fire]] damage.</p>",
+            "originalDescription": "<p>The troop's incendiary weapons ignite targets even in a melee scrum. A creature that critically fails its save against the troop's Battle attack takes @Damage[2d6[persistent,fire]] damage.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.5,
+                "damageType": "fire",
+                "originalValue": "2d6",
+                "type": "persistent"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Burning Weaponry",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop's incendiary weapons ignite targets even in a melee scrum. A creature that critically fails its save against the troop's Battle attack takes @Damage[2d6[persistent,fire]] damage.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "fire"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Cheek Pouches",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A ratfolk grenadier has stretchy cheek pouches that can store up to 1 cubic foot of objects (though no more than 4 light items). The ratfolk can remove or store an item using the Interact action. As long as the ratfolk has at least one object in their cheek pouches, their speech is noticeably difficult to understand.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Darkvision",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop can see in darkness and dim light just as well as in bright light.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Explosive Defeat",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>When the troop is reduced to 0 Hit Points, its alchemical engine detonates. Each creature adjacent to the troop must attempt a basic Reflex save against the troop's Battle DC, taking the troop's two-segment Battle damage on a failure (doubled on a critical failure). If the troop is later restored above 0 Hit Points, its alchemical engine rebuilds automatically.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "fire"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[{0}[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:22|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[2d4[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(4d4+5)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d4+10)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 7,
+                "benchmark": 0.5020576131687242,
+                "damageType": "piercing",
+                "originalValue": "2d4",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "4d4+5",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "4d4+10",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "22",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 7,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Ferocious Fangs [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:22|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[2d4[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(4d4+5)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[(4d4+10)[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Quick Grenadier",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The ratfolk grenadier draws an alchemical grenade with an Interact action and throws it as a ranged Strike.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/FreeAction.webp",
+      "name": "Quick Stow",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "free"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Frequency</strong> once per round</p>\n<hr>\n<p><strong>Effect</strong> The ratfolk grenadier stores one held item of light or negligible Bulk in its cheek pouches.</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round",
+          "value": 1
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Swarming",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A ratfolk grenadier can end its movement in the same square as an ally that also has this ability. Only two such creatures can share the same space.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 76 (3 segments), 38 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.AITVZmakiu3RgfKo"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/bolts.webp",
+      "name": "Bolts",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": "bolts",
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "craftableAs": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Shorter than traditional arrows but similar in construction, bolts are the ammunition used by crossbows.</p>"
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "per": 10,
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 20,
+        "rules": [],
+        "size": "med",
+        "slug": "bolts",
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "consumable"
+          ]
+        },
+        "uses": {
+          "autoDestroy": true,
+          "max": 1,
+          "value": 1
+        }
+      },
+      "type": "ammo"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.ewQZ0VeL38v3qFnN"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/equipment/chest/breastplate-layered-leather-studded-brown.webp",
+      "name": "Studded Leather Armor",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "acBonus": 2,
+        "baseItem": "studded-leather-armor",
+        "bulk": {
+          "value": 1
+        },
+        "category": "light",
+        "checkPenalty": -1,
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>This leather armor is reinforced with metal studs and sometimes small metal plates, providing most of the flexibility of leather armor with more robust protection.</p>"
+        },
+        "dexCap": 3,
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "inSlot": true,
+          "invested": null,
+          "slot": ""
+        },
+        "grade": null,
+        "group": "leather",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 3
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "resilient": 0
+        },
+        "size": "med",
+        "slug": "studded-leather-armor",
+        "speedPenalty": 0,
+        "strength": 1,
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        }
+      },
+      "type": "armor"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.4ftXXUCBHcf4b0MH"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/tools/laboratory/vials-blue-pink.webp",
+      "name": "Alchemist's Toolkit",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": null,
+        "bulk": {
+          "value": 1
+        },
+        "containerId": null,
+        "description": {
+          "gm": "",
+          "value": "<p>This mobile collection of vials and chemicals can be used for simple alchemical tasks. If you wear your alchemist's toolkit, you can draw and replace it as part of the action that uses it.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 2,
+          "invested": null,
+          "slot": ""
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 3
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "rules": [],
+        "size": "med",
+        "slug": "alchemists-toolkit",
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "held-in-two-hands"
+        }
+      },
+      "type": "equipment"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/alchemical-items/alchemical-bombs/acid-flask.webp",
+      "name": "Alchemical Grenade (Acid)",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "alchemical-bomb",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "acid",
+          "dice": 2,
+          "die": "d6",
+          "persistent": {
+            "faces": null,
+            "number": 2,
+            "type": "acid"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>The grenadier carries 6 alchemical grenades that deal either acid, cold, or fire damage plus 2 persistent damage and 2 splash damage of the same type (typically two of each). The grenadier replenishes these each day using scavenged materials.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "bomb",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {}
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "quantity": 2,
+        "range": 20,
+        "reload": {
+          "value": "-"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": null,
+        "specific": null,
+        "splashDamage": {
+          "value": 2
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "splash"
+          ]
+        },
+        "usage": {
+          "canBeAmmo": false,
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/alchemical-items/alchemical-bombs/bottled-lightning.webp",
+      "name": "Alchemical Grenade (Cold)",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "alchemical-bomb",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "cold",
+          "dice": 2,
+          "die": "d6",
+          "persistent": {
+            "faces": null,
+            "number": 2,
+            "type": "cold"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>The grenadier carries 6 alchemical grenades that deal either acid, cold, or fire damage plus 2 persistent damage and 2 splash damage of the same type (typically two of each). The grenadier replenishes these each day using scavenged materials.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "bomb",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {}
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "quantity": 2,
+        "range": 20,
+        "reload": {
+          "value": "-"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": null,
+        "specific": null,
+        "splashDamage": {
+          "value": 2
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "splash"
+          ]
+        },
+        "usage": {
+          "canBeAmmo": false,
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/alchemical-items/alchemical-bombs/bottled-sunlight.webp",
+      "name": "Alchemical Grenade (Fire)",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "alchemical-bomb",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "fire",
+          "dice": 2,
+          "die": "d6",
+          "persistent": {
+            "faces": null,
+            "number": 2,
+            "type": "fire"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>The grenadier carries 6 alchemical grenades that deal either acid, cold, or fire damage plus 2 persistent damage and 2 splash damage of the same type (typically two of each). The grenadier replenishes these each day using scavenged materials.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "bomb",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {}
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "quantity": 2,
+        "range": 20,
+        "reload": {
+          "value": "-"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": null,
+        "specific": null,
+        "splashDamage": {
+          "value": 2
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "splash"
+          ]
+        },
+        "usage": {
+          "canBeAmmo": false,
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.XyA6PKV46aNlLXOd"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/equipment/weapons/hand-crossbow.webp",
+      "name": "Hand Crossbow",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": {
+          "baseType": "bolts",
+          "builtIn": false,
+          "capacity": 1
+        },
+        "baseItem": "hand-crossbow",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "simple",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>Sometimes referred to as an alley bow by rogues or ruffians, this small crossbow fires small bolts that are sometimes used to deliver poison to the target. It's small enough to be shot one-handed, but it still requires two hands to load.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null,
+          "slot": ""
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "crossbow",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 3
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": 60,
+        "reload": {
+          "value": "1"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "hand-crossbow",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": []
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Goblin Bombardiers",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Goblin Bombardiers",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/goblin-bombardiers/goblin-bombardiers_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 2
+      },
+      "dex": {
+        "mod": 5
+      },
+      "int": {
+        "mod": 5
+      },
+      "str": {
+        "mod": 2
+      },
+      "wis": {
+        "mod": 2
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 25
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 115,
+        "temp": 0,
+        "value": 115
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 8
+        },
+        {
+          "type": "splash-damage",
+          "value": 4
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "goblin"
+        ]
+      },
+      "level": {
+        "value": 7
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Goblin alchemists with satchels full of bombs and no instinct for self-preservation. They lob fire, acid, and worse into packed formations and cackle at the results. Losses among their own ranks are, by goblin reckoning, part of the show.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 14,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "darkvision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 17
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 13
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 14
+      },
+      "crafting": {
+        "base": 17
+      },
+      "deception": {
+        "base": 11
+      },
+      "society": {
+        "base": 15
+      },
+      "stealth": {
+        "base": 17
+      },
+      "thievery": {
+        "base": 14
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "goblin",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

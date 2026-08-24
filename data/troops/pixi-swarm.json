@@ -1,0 +1,1946 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.pathfinder-monster-core.Actor.Ehtm5k9iBYTvSUcZ"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 23,
+          "cha": 3,
+          "con": 1,
+          "dex": 5,
+          "fortitude": 8,
+          "hp": 40,
+          "int": 3,
+          "perception": 12,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 13,
+            "deception": 11,
+            "nature": 10,
+            "stealth": 11
+          },
+          "spellAttack": 13,
+          "spellDC": 21,
+          "str": -1,
+          "strikeAttackBonus": 13,
+          "strikeDamage": "1d6 + 4",
+          "strikeDamageAverage": 7.5,
+          "will": 12,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0.3333333333333333,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0.3333333333333333,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.8888888888888888,
+          "hp": 0,
+          "perception": 0.5833333333333334,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5833333333333334
+          },
+          "skills": [
+            {
+              "benchmark": 0.7777777777777777,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "deception"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "stealth"
+            }
+          ],
+          "spellAttack": 0,
+          "spellDC": 0,
+          "spellProgression": "innate",
+          "spellTradition": "primal",
+          "spellcastingLevelOffset": -5,
+          "strikeAttack": 0.5,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Pixie (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "cavalry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 23,
+          "cha": 3,
+          "con": 1,
+          "dex": 5,
+          "fortitude": 8,
+          "hp": 40,
+          "int": 3,
+          "perception": 12,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 13,
+            "deception": 11,
+            "nature": 10,
+            "stealth": 11
+          },
+          "spellAttack": 13,
+          "spellDC": 21,
+          "str": -1,
+          "strikeAttackBonus": 13,
+          "strikeDamage": "1d6 + 4",
+          "strikeDamageAverage": 7.5,
+          "will": 12,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0.3333333333333333,
+            "con": 0,
+            "dex": 0.6666666666666666,
+            "int": 0.3333333333333333,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.8888888888888888,
+          "hp": 0,
+          "perception": 0.5833333333333334,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5833333333333334
+          },
+          "skills": [
+            {
+              "benchmark": 0.7777777777777777,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "deception"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "nature"
+            },
+            {
+              "benchmark": 0.5,
+              "skill": "stealth"
+            }
+          ],
+          "spellAttack": 0,
+          "spellDC": 0,
+          "spellProgression": "innate",
+          "spellTradition": "primal",
+          "spellcastingLevelOffset": -5,
+          "strikeAttack": 0.5,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "generated",
+        "slug": "pixi-swarm",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/cavalry/pixi-swarm/pixi-swarm_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/cavalry/pixi-swarm/pixi-swarm_portrait.webp",
+  "items": [
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.kquBnQ0kObZztnBc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "+1 Status to All Saves vs. Magic",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "item:magical"
+            ],
+            "selector": "saving-throw",
+            "type": "status",
+            "value": 1
+          }
+        ],
+        "slug": "1-status-to-all-saves-vs-magic",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[({0})[piercing]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[(3d8+2)[piercing]|options:area-damage] damage with a @Check[reflex|dc:25|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6840958605664489,
+                "damageType": "piercing",
+                "originalValue": "3d8+2",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "25",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "100",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Rain of Arrows [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>The troop launches a ranged attack in the form of a volley. This volley is a @Template[type:burst|distance:10] within 100 feet that deals @Damage[(3d8+2)[piercing]|options:area-damage] damage with a @Check[reflex|dc:25|basic|options:area-effect] save. When the troop is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[({0})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[{2}[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:25|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+3)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(5d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[7d6[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6707818930041151,
+                "damageType": "piercing",
+                "originalValue": "1d6+3",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.7037037037037037,
+                "damageType": "piercing",
+                "originalValue": "5d6+1",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0.6944444444444444,
+                "damageType": "piercing",
+                "originalValue": "7d6",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "25",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 9,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Shortsword Flurry [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p><p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The troop engages in a coordinated melee attack against each enemy in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:25|basic|options:area-effect] save. The damage depends on the number of actions.</p><p><span class=\"action-glyph\">1</span> @Damage[(1d6+3)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">2</span> @Damage[(5d6+1)[piercing]|options:area-damage] damage</p><p><span class=\"action-glyph\">3</span> @Damage[7d6[piercing]|options:area-damage] damage</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The pixie sprinkles pixie dust onto one of their arrows. If the pixie hits a creature with that arrow before the pixie's next turn, the arrow inflicts one of the following special effects of the pixie's choice instead of dealing damage. Each effect depends on the target's @Check[will|dc:{1}] save. On a critical hit, the target gets a result one degree worse than it rolled.</p>\n<ul>\n<li><strong>Charm</strong> (emotion, incapacitation, mental) The arrow has the effect of a @UUID[Compendium.pf2e.spells-srd.Item.vLA0q0WOK2YPuJs6]{Charm} spell, except the target doesn't gain a bonus to its save if the only hostile act was the pixie firing its bow, and the pixie can choose to direct the target's adoration toward another creature rather than itself.</li>\n<li><strong>Memory Loss</strong> (mental) On a failed Will save, the target loses the last 5 minutes of its memory.</li>\n<li><strong>Sleep</strong> (incapacitation, mental, sleep) The target suffers the effects of a 3rd-rank @UUID[Compendium.pf2e.spells-srd.Item.o4lRVTwSxnOOn5vl]{Sleep} spell.</li>\n<li><strong>Subdual</strong> (mental, nonlethal) The target takes @Damage[{0}[mental]] damage, depending on its basic Will save.\n\n</li>\n</ul>",
+            "originalDescription": "<p>The pixie sprinkles pixie dust onto one of their arrows. If the pixie hits a creature with that arrow before the pixie's next turn, the arrow inflicts one of the following special effects of the pixie's choice instead of dealing damage. Each effect depends on the target's @Check[will|dc:21] save. On a critical hit, the target gets a result one degree worse than it rolled.</p>\n<ul>\n<li><strong>Charm</strong> (emotion, incapacitation, mental) The arrow has the effect of a @UUID[Compendium.pf2e.spells-srd.Item.vLA0q0WOK2YPuJs6]{Charm} spell, except the target doesn't gain a bonus to its save if the only hostile act was the pixie firing its bow, and the pixie can choose to direct the target's adoration toward another creature rather than itself.</li>\n<li><strong>Memory Loss</strong> (mental) On a failed Will save, the target loses the last 5 minutes of its memory.</li>\n<li><strong>Sleep</strong> (incapacitation, mental, sleep) The target suffers the effects of a 3rd-rank @UUID[Compendium.pf2e.spells-srd.Item.o4lRVTwSxnOOn5vl]{Sleep} spell.</li>\n<li><strong>Subdual</strong> (mental, nonlethal) The target takes @Damage[4d6[mental]] damage, depending on its basic Will save.\n\n</li>\n</ul>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.6666666666666666,
+                "damageType": "mental",
+                "originalValue": "4d6",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.5,
+                "checkType": "will",
+                "originalValue": "21",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Sprinkle Pixie Dust",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The pixie sprinkles pixie dust onto one of their arrows. If the pixie hits a creature with that arrow before the pixie's next turn, the arrow inflicts one of the following special effects of the pixie's choice instead of dealing damage. Each effect depends on the target's @Check[will|dc:28] save. On a critical hit, the target gets a result one degree worse than it rolled.</p>\n<ul>\n<li><strong>Charm</strong> (emotion, incapacitation, mental) The arrow has the effect of a @UUID[Compendium.pf2e.spells-srd.Item.vLA0q0WOK2YPuJs6]{Charm} spell, except the target doesn't gain a bonus to its save if the only hostile act was the pixie firing its bow, and the pixie can choose to direct the target's adoration toward another creature rather than itself.</li>\n<li><strong>Memory Loss</strong> (mental) On a failed Will save, the target loses the last 5 minutes of its memory.</li>\n<li><strong>Sleep</strong> (incapacitation, mental, sleep) The target suffers the effects of a 3rd-rank @UUID[Compendium.pf2e.spells-srd.Item.o4lRVTwSxnOOn5vl]{Sleep} spell.</li>\n<li><strong>Subdual</strong> (mental, nonlethal) The target takes @Damage[7d6[mental]] damage, depending on its basic Will save.\n\n</li>\n</ul>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "manipulate",
+            "primal"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 74 (3 segments), 37 (2 segments)</p>\n<hr>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Spellcasting",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": null,
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[pf2e-creature-crispr.troop.spellcasting.description]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "itemType": "spell",
+            "key": "ItemAlteration",
+            "mode": "add",
+            "predicate": [
+              "item:area:type:burst",
+              "item:duration:0",
+              {
+                "gte": [
+                  "item:area:size",
+                  10
+                ]
+              }
+            ],
+            "property": "area-size",
+            "value": 5
+          },
+          {
+            "itemType": "spell",
+            "key": "ItemAlteration",
+            "mode": "add",
+            "predicate": [
+              "item:duration:0",
+              {
+                "or": [
+                  "item:area:type:cone",
+                  "item:area:type:line"
+                ]
+              },
+              {
+                "lte": [
+                  "item:area:size",
+                  15
+                ]
+              }
+            ],
+            "priority": 110,
+            "property": "area-size",
+            "value": 5
+          },
+          {
+            "itemType": "spell",
+            "key": "ItemAlteration",
+            "mode": "add",
+            "predicate": [
+              "item:duration:0",
+              {
+                "or": [
+                  "item:area:type:cone",
+                  "item:area:type:line"
+                ]
+              },
+              {
+                "gt": [
+                  "item:area:size",
+                  15
+                ]
+              }
+            ],
+            "priority": 100,
+            "property": "area-size",
+            "value": 10
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.w2ENw2VMPcsbif8g"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/ammunition/arrows-broadhead-white.webp",
+      "name": "Arrows",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "baseItem": "arrows",
+        "bulk": {
+          "value": 0.1
+        },
+        "containerId": null,
+        "craftableAs": null,
+        "description": {
+          "gm": "",
+          "value": "<p>These projectiles are the ammunition for bows. The shaft of an arrow is made of wood. It is stabilized in flight by fletching at one end and bears a metal head on the other.</p>"
+        },
+        "equipped": {
+          "carryType": "worn"
+        },
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "per": 10,
+          "value": {
+            "sp": 1
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 60,
+        "rules": [],
+        "size": "med",
+        "slug": "arrows",
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "consumable"
+          ]
+        },
+        "uses": {
+          "autoDestroy": true,
+          "max": 1,
+          "value": 1
+        }
+      },
+      "type": "ammo"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.gpzpAAAJ1Lza2JVl"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/detect-magic.webp",
+      "name": "Detect Magic",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "type": "emanation",
+          "value": 30
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You send out a pulse that registers the presence of magic. You receive no information beyond the presence or absence of magic. You can choose to ignore magic you're fully aware of, such as the magic items and ongoing spells of you and your allies. You detect illusion magic only if that magic's effect has a lower rank than the rank of your <em>detect magic</em> spell. However, items that have an illusion aura but aren't deceptive in appearance (such as an @UUID[Compendium.pf2e.equipment-srd.Item.bikFUFRLwfdvX2x2]{Invisibility Potion}) typically are detected normally.</p>\n<hr>\n<p><strong>Heightened (3rd)</strong> You learn the rank or level of the most powerful magical effect the spell detects, as determined by the GM.</p>\n<p><strong>Heightened (4th)</strong> As 3rd rank, but you also pinpoint the source of the highest-rank magic. Like for an imprecise sense, you don't learn the exact location, but can narrow down the source to within a 5-foot cube (or the nearest if larger than that).</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "detect-magic",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "detection",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/dispel-magic.webp",
+      "name": "Dispel Magic",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": true,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You unravel the magic behind a spell or effect. Attempt a counteract check against the target. If you successfully counteract a magic item, the item becomes a mundane item of its type for 10 minutes. This doesn't change the item's non-magical properties. If the target is an artifact or similar item, you automatically fail.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": ""
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "heightenedLevel": 3,
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "dispel-magic",
+        "target": {
+          "value": "1 spell effect or unattended magic item"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.J6vNvrUT3b1hx2iA"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/magic/nature/root-vines-grow-brown.webp",
+      "name": "Entangling Flora",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "details": "all squares in a 20-foot-radius burst that contain plants",
+          "type": "burst",
+          "value": 20
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": {
+          "save": {
+            "basic": false,
+            "statistic": "reflex"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>Plants and fungi burst out or quickly grow, entangling creatures. All surfaces in the area are difficult terrain. Each round that a creature starts its turn in the area, it must attempt a Reflex save. On a failure, it takes a –10-foot circumstance penalty to its Speeds until it leaves the area, and on a critical failure, it's also @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Immobilized} for 1 round. Creatures can attempt to @UUID[Compendium.pf2e.actionspf2e.Item.SkZAQRkLLkmBQNB9]{Escape} to remove these effects.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.rjM25qfw5BKj9h97]{Spell Effect: Entangling Flora}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 minute"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "heightenedLevel": 2,
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "entangling-flora",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "manipulate",
+            "plant",
+            "wood"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.0zU8CPejjQFnhZFI"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/ghost-sound.webp",
+      "name": "Figment",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You create a simple illusory sound or vision. A sound adds the auditory trait to the spell and the sound can't include intelligible words or elaborate music. A vision adds the visual trait, can be no larger than a 5-foot cube, and is clearly crude and undetailed if viewed from within 15 feet. When you Cast or Sustain the Spell, you can attempt to @UUID[Compendium.pf2e.actionspf2e.Item.GkmbTGfg8KcgynOA]{Create a Diversion} with the illusion, gaining a +2 circumstance bonus to your Deception check. If the attempt fails against a creature, that creature disbelieves the <em>figment</em>.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.2Hg3a06gZCSnUgSA]{Spell Effect: Figment}</p>"
+        },
+        "duration": {
+          "sustained": true,
+          "value": ""
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "figment",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "occult"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "illusion",
+            "manipulate",
+            "subtle"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.i35dpZFI7jZcRoBo"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/illusory-disguise.webp",
+      "name": "Illusory Disguise",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You create an illusion that causes the target to appear as another creature of the same body shape, and with roughly similar height (within 6 inches) and weight (within 50 pounds). The disguise is typically good enough to hide their identity, but not to impersonate a specific individual. The spell changes their appearance and voice, but not mannerisms. You can change the appearance of its clothing and worn items, such as making its armor look like a dress. Held items are unaffected, and any worn item removed from the creature returns to its true appearance.</p>\n<p>Casting <em>illusory disguise</em> counts as setting up a disguise for the @UUID[Compendium.pf2e.actionspf2e.Item.AJstokjdG6iDjVjE]{Impersonate} use of Deception; it ignores any circumstance penalties the target might take for disguising itself as a dissimilar creature, gives a +4 status bonus to Deception checks to prevent others from seeing through the disguise, and lets the target add its level to such Deception checks even if untrained. You can Dismiss this spell.</p>\n<hr>\n<p><strong>Heightened (3rd)</strong> The target can appear as any creature of the same size, even a specific individual. You must have seen an individual to replicate its appearance, and must have heard its voice to replicate its voice.</p>\n<p><strong>Heightened (4th)</strong> You can target up to 10 willing creatures. If you target multiple creatures, you can choose a different disguise for each target, but none can impersonate a specific individual. You can Dismiss each disguise individually or all collectively.</p>\n<p><strong>Heightened (7th)</strong> As 4th, but you can choose disguises that impersonate specific individuals. You must have seen an individual to replicate its appearance, and must have heard its voice to replicate its voice.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.3Ktyd5F9lOPo4myk]{Spell Effect: Illusory Disguise}</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "1 hour"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "heightenedLevel": 1,
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "30 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "illusory-disguise",
+        "target": {
+          "value": "1 willing creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "occult"
+          ],
+          "value": [
+            "concentrate",
+            "illusion",
+            "manipulate",
+            "visual"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.XXqE1eY3w3z6xJCB"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/creatures/magical/construct-stone-earth-gray.webp",
+      "name": "Invisibility (At Will, Self Only)",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>Illusions bend light around the target, rendering it @UUID[Compendium.pf2e.conditionitems.Item.zJxUflt9np0q4yML]{Invisible}. This makes it @UUID[Compendium.pf2e.conditionitems.Item.VRSef5y1LmL2Hkjf]{Undetected} to all creatures, though the creatures can attempt to find the target, making it @UUID[Compendium.pf2e.conditionitems.Item.iU0fEDdBp3rXpTMC]{Hidden} to them instead. If the target uses a hostile action, the spell ends after that hostile action is completed.</p>\n<hr>\n<p><strong>Heightened (4th)</strong> The spell lasts 1 minute, but it doesn't end if the target uses a hostile action.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "10 minutes"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "heightenedLevel": 4,
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "touch"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "invisibility",
+        "target": {
+          "value": "1 creature"
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "occult"
+          ],
+          "value": [
+            "illusion",
+            "manipulate",
+            "subtle"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.WBmvzNDfpwka3qT4"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/light.webp",
+      "name": "Light",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You create an orb of light that sheds bright light in a 20-foot radius (and dim light for the next 20 feet) in a color you choose. If you create the light in the same space as a willing creature, you can attach the light to the creature, causing it to float near that creature as it moves. You can Sustain the spell to move the light up to 60 feet; you can attach or detach it from a creature as part of this movement.</p>\n<p>You can Dismiss the spell. If you Cast the Spell while you already have four <em>light</em> spells active, you must choose one of the existing spells to end.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.cVVZXNbV0nElVOPZ]{Spell Effect: Light}</p>\n<hr>\n<p><strong>Heightened (4th)</strong> The orb sheds light in a 60-foot radius (and dim light for the next 60 feet).</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "until your next daily preparations"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "light",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "light",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.0qaqksrGGDj74HXE"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/glitterdust.webp",
+      "name": "Revealing Light",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": {
+          "type": "burst",
+          "value": 10
+        },
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": {
+          "save": {
+            "basic": false,
+            "statistic": "reflex"
+          }
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>A wave of magical light washes over the area. You choose the appearance of the light, such as colorful, heatless flames or sparkling motes. A creature affected by <em>revealing light</em> is @UUID[Compendium.pf2e.conditionitems.Item.TkIyaNPgTZFBCCuh]{Dazzled}. If the creature was @UUID[Compendium.pf2e.conditionitems.Item.zJxUflt9np0q4yML]{Invisible}, it becomes @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W]{Concealed} instead. If the creature was already concealed for any other reason, it is no longer concealed.</p>\n<hr>\n<p><strong>Critical Success</strong> The target is unaffected.</p>\n<p><strong>Success</strong> The light affects the creature for 2 rounds.</p>\n<p><strong>Failure</strong> The light affects the creature for 1 minute.</p>\n<p><strong>Critical Failure</strong> The light affects the creature for 10 minutes.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "varies"
+        },
+        "level": {
+          "value": 2
+        },
+        "location": {
+          "heightenedLevel": 2,
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": "120 feet"
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "revealing-light",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "2"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult",
+            "primal"
+          ],
+          "value": [
+            "concentrate",
+            "light",
+            "manipulate"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.spells-srd.Item.TVKNbcgTee19PXZR"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/spells/shield.webp",
+      "name": "Shield",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "area": null,
+        "cost": {
+          "value": ""
+        },
+        "counteraction": false,
+        "damage": {},
+        "defense": null,
+        "description": {
+          "gm": "",
+          "value": "<p>You raise a magical shield of force. This counts as using the Raise a Shield action, giving you a +1 circumstance bonus to AC until the start of your next turn, but it doesn't require a hand to use.</p>\n<p>While the spell is in effect, you can use the @UUID[Compendium.pf2e.feats-srd.Item.jM72TjJ965jocBV8]{Shield Block} reaction with your magic shield. The shield has Hardness 5. You can use the spell's reaction to reduce damage from any spell or magical effect, even if it doesn't deal physical damage. After you use Shield Block, the spell ends and you can't cast it again for 10 minutes.</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.Jemq5UknGdMO7b73]{Spell Effect: Shield}</p>\n<p>@UUID[Compendium.pf2e.spell-effects.Item.QF6RDlCoTvkVHRo4]{Effect: Shield Immunity}</p>\n<hr>\n<p><strong>Heightened (+2)</strong> The shield's Hardness increases by 5.</p>"
+        },
+        "duration": {
+          "sustained": false,
+          "value": "until the start of your next turn"
+        },
+        "level": {
+          "value": 1
+        },
+        "location": {
+          "value": "hFpiEAg9uOUfaval"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "range": {
+          "value": ""
+        },
+        "requirements": "",
+        "rules": [],
+        "slug": "shield",
+        "target": {
+          "value": ""
+        },
+        "time": {
+          "value": "1"
+        },
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "traditions": [
+            "arcane",
+            "divine",
+            "occult"
+          ],
+          "value": [
+            "cantrip",
+            "concentrate",
+            "force"
+          ]
+        }
+      },
+      "type": "spell"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "spellBenchmarks": {
+            "attackBenchmark": 0.5,
+            "dcBenchmark": 0.5,
+            "primary": true
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/default-icons/spellcastingEntry.svg",
+      "name": "Primal Innate Spells",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ability": {
+          "value": "cha"
+        },
+        "autoHeightenLevel": {
+          "value": null
+        },
+        "description": {
+          "gm": "",
+          "value": ""
+        },
+        "prepared": {
+          "flexible": false,
+          "value": "innate"
+        },
+        "proficiency": {
+          "value": 0
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Monster Core"
+        },
+        "rules": [],
+        "showSlotlessLevels": {
+          "value": true
+        },
+        "slots": {
+          "slot0": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot1": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot10": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot11": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot2": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot3": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot4": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot5": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot6": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot7": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot8": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          },
+          "slot9": {
+            "max": 0,
+            "prepared": [],
+            "value": 0
+          }
+        },
+        "slug": null,
+        "spelldc": {
+          "dc": 25,
+          "mod": 0,
+          "value": 17
+        },
+        "tradition": {
+          "value": "primal"
+        },
+        "traits": {
+          "otherTags": []
+        }
+      },
+      "type": "spellcastingEntry"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.MVAWttmT0QDa7LsV"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/bows/longbow-recurve-leather-brown.webp",
+      "name": "Longbow",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": {
+          "baseType": "arrows",
+          "builtIn": false,
+          "capacity": null
+        },
+        "baseItem": "longbow",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 2
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d8",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>This 5-foot-tall bow, usually made of a single piece of elm, hickory, or yew, has a powerful draw and is excellent at propelling arrows with great force and at an extreme distance. You must use two hands to fire a longbow, and it can't be used while mounted.</p>"
+        },
+        "equipped": {
+          "carryType": "worn",
+          "handsHeld": 0,
+          "invested": null
+        },
+        "expend": 1,
+        "grade": null,
+        "group": "bow",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "gp": 6
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": 100,
+        "reload": {
+          "value": "0"
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "longbow",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "deadly-d10",
+            "volley-30"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-plus-hands"
+        }
+      },
+      "type": "weapon"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.equipment-srd.Item.7tKkkF8eZ4iCLJtp"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "icons/weapons/swords/sword-guard-purple.webp",
+      "name": "Shortsword",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "ammo": null,
+        "baseItem": "shortsword",
+        "bonus": {
+          "value": 0
+        },
+        "bonusDamage": {
+          "value": 0
+        },
+        "bulk": {
+          "value": 0.1
+        },
+        "category": "martial",
+        "containerId": null,
+        "damage": {
+          "damageType": "piercing",
+          "dice": 1,
+          "die": "d6",
+          "persistent": null
+        },
+        "description": {
+          "gm": "",
+          "value": "<p>These blades come in a variety of shapes and styles, but they are typically 2 feet long.</p>"
+        },
+        "equipped": {
+          "carryType": "held",
+          "handsHeld": 1,
+          "invested": null
+        },
+        "expend": null,
+        "grade": null,
+        "group": "sword",
+        "hardness": 0,
+        "hp": {
+          "max": 0,
+          "value": 0
+        },
+        "identification": {
+          "status": "identified",
+          "unidentified": {
+            "data": {
+              "description": {
+                "value": ""
+              }
+            },
+            "img": "",
+            "name": ""
+          }
+        },
+        "level": {
+          "value": 0
+        },
+        "material": {
+          "grade": null,
+          "type": null
+        },
+        "price": {
+          "value": {
+            "sp": 9
+          }
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Player Core"
+        },
+        "quantity": 1,
+        "range": null,
+        "reload": {
+          "value": null
+        },
+        "rules": [],
+        "runes": {
+          "potency": 0,
+          "property": [],
+          "striking": 0
+        },
+        "size": "med",
+        "slug": "shortsword",
+        "specific": null,
+        "splashDamage": {
+          "value": 0
+        },
+        "subitems": [],
+        "traits": {
+          "otherTags": [],
+          "rarity": "common",
+          "value": [
+            "agile",
+            "finesse",
+            "versatile-s"
+          ]
+        },
+        "usage": {
+          "value": "held-in-one-hand"
+        }
+      },
+      "type": "weapon"
+    }
+  ],
+  "name": "Pixie Swarm",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Pixie Swarm",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/cavalry/pixi-swarm/pixi-swarm_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 4
+      },
+      "con": {
+        "mod": 3
+      },
+      "dex": {
+        "mod": 6
+      },
+      "int": {
+        "mod": 4
+      },
+      "str": {
+        "mod": 3
+      },
+      "wis": {
+        "mod": 3
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 30
+      },
+      "allSaves": {
+        "value": "+1 status to all saves vs. magic"
+      },
+      "hp": {
+        "details": "",
+        "max": 112,
+        "temp": 0,
+        "value": 112
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "",
+        "otherSpeeds": [
+          {
+            "type": "fly",
+            "value": 45
+          }
+        ],
+        "value": 15
+      },
+      "weaknesses": [
+        {
+          "type": "cold-iron",
+          "value": 8
+        },
+        {
+          "type": "area-damage",
+          "value": 10
+        },
+        {
+          "type": "splash-damage",
+          "value": 10
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "fey"
+        ]
+      },
+      "level": {
+        "value": 9
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>A glittering cloud of pixies armed with bows and, worse, with dust. The arrows sting; the dust drops veterans into snoring heaps mid-charge. They fight wars the way they do everything: delighted, distractible, and impossible to pin down.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Monster Core"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 19,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "low-light-vision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {
+      "focus": {
+        "max": 1,
+        "value": 1
+      }
+    },
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 15
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 21
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 19
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 21
+      },
+      "deception": {
+        "base": 19
+      },
+      "nature": {
+        "base": 18
+      },
+      "stealth": {
+        "base": 19
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "fey",
+        "sprite",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

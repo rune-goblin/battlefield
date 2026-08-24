@@ -1,0 +1,794 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.lost-omens-bestiary.Actor.kMro0cyhzzOvXvyc"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 20,
+          "cha": 2,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 8,
+          "hp": 60,
+          "int": 2,
+          "perception": 11,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 12,
+            "crafting": 10,
+            "stealth": 12,
+            "survival": 10
+          },
+          "str": 1,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Brastlewark Sapper Squad (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 20,
+          "cha": 2,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 8,
+          "hp": 60,
+          "int": 2,
+          "perception": 11,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 12,
+            "crafting": 10,
+            "stealth": 12,
+            "survival": 10
+          },
+          "str": 1,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "stealth"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "sapper-squad",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/sapper-squad/sapper-squad_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/sapper-squad/sapper-squad_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Demolition Expertise",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>A sapper squad's offensive abilities ignore the first 5 points of Hardness when deployed against inanimate objects or structures.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Excavation",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>While Burrowing, the sapper squad can position its segments into a 20-foot-wide straight line to leave a 20-foot-wide tunnel behind them that can be safely traversed by other creatures. Unless shored up by a crew of skilled laborers, the tunnel collapses after 10 minutes.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The squad bombards a @Template[type:burst|distance:10] within 30 feet with satchel charges, dealing @Damage[{0}[fire],{1}[bludgeoning]|options:area-damage]{2d6 fire damage and 1d6 bludgeoning damage} to all creatures in the area (@Check[reflex|dc:{2}|basic] save). On a critical failure, a creature is also @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round. When the squad is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "originalDescription": "<p>The squad bombards a @Template[type:burst|distance:10] within 30 feet with satchel charges, dealing @Damage[2d6[fire],1d6[bludgeoning]|options:area-damage]{2d6 fire damage and 1d6 bludgeoning damage} to all creatures in the area (@Check[reflex|dc:18|basic] save). On a critical failure, a creature is also @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round. When the squad is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.22004357298474952,
+                "damageType": "fire",
+                "originalValue": "2d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "damageType": "bludgeoning",
+                "originalValue": "1d6",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Fire in the Hole! [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The squad bombards a @Template[type:burst|distance:10] within 30 feet with satchel charges, dealing @Damage[2d6[fire],1d6[bludgeoning]|options:area-damage]{2d6 fire damage and 1d6 bludgeoning damage} to all creatures in the area (@Check[reflex|dc:18|basic] save). On a critical failure, a creature is also @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Deafened} for 1 round. When the squad is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The sapper squad strikes with their picks against enemies in a @Template[type:emanation|distance:{4}] with a @Check[reflex|dc:{3}|basic] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[{0}[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The sapper squad strikes with their picks against enemies in a @Template[type:emanation|distance:5] with a @Check[reflex|dc:18|basic] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d6[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+4)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(2d6+7)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.493827160493827,
+                "damageType": "piercing",
+                "originalValue": "1d6",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.7222222222222222,
+                "damageType": "piercing",
+                "originalValue": "2d6+4",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "2d6+7",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Pick Assault [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The sapper squad strikes with their picks against enemies in a @Template[type:emanation|distance:5] with a @Check[reflex|dc:18|basic] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d6[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+4)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(2d6+7)[piercing]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.EawOw47nHueUPnYc"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.MXI6zwrvbQNIv7ji"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-movement",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><strong>Requirements</strong> The sapper squad is underground</p><hr><p><strong>Effect</strong> The sappers deploy explosive charges to displace the earth above them. The surface area within 15 feet directly above the sappers' spaces becomes difficult terrain until the start of their next turn. Any creature already in the area takes @Damage[{0}[bludgeoning]] damage (@Check[reflex|dc:{1}|basic] save). On a critical failure, the creature also falls @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>",
+            "originalDescription": "<p><strong>Requirements</strong> The sapper squad is underground</p><hr><p><strong>Effect</strong> The sappers deploy explosive charges to displace the earth above them. The surface area within 15 feet directly above the sappers' spaces becomes difficult terrain until the start of their next turn. Any creature already in the area takes @Damage[1d6[bludgeoning]] damage (@Check[reflex|dc:18|basic] save). On a critical failure, the creature also falls @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "damageType": "bludgeoning",
+                "originalValue": "1d6",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/ThreeActions.webp",
+      "name": "Undermine",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 3
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Requirements</strong> The sapper squad is underground</p><hr><p><strong>Effect</strong> The sappers deploy explosive charges to displace the earth above them. The surface area within 15 feet directly above the sappers' spaces becomes difficult terrain until the start of their next turn. Any creature already in the area takes @Damage[1d6[bludgeoning]] damage (@Check[reflex|dc:18|basic] save). On a critical failure, the creature also falls @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Prone}.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Sapper Squad",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Sapper Squad",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/sapper-squad/sapper-squad_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 2
+      },
+      "con": {
+        "mod": 0
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 2
+      },
+      "str": {
+        "mod": 1
+      },
+      "wis": {
+        "mod": 2
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 20
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "",
+        "max": 60,
+        "temp": 0,
+        "value": 60
+      },
+      "speed": {
+        "details": "excavation, troop movement",
+        "otherSpeeds": [
+          {
+            "type": "burrow",
+            "value": 5
+          }
+        ],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 5
+        },
+        {
+          "type": "splash-damage",
+          "value": 5
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "gnomish"
+        ]
+      },
+      "level": {
+        "value": 4
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>Diggers and sappers schooled in alchemical demolition and eager for field experience. They tunnel beneath walls, pack the shoring with explosives, and take notes on the collapse. To them a fortification is an interesting problem with one known solution.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Lost Omens Hellfire Dispatches"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 11,
+      "senses": [
+        {
+          "type": "low-light-vision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 8
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 14
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 11
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 12
+      },
+      "crafting": {
+        "base": 10
+      },
+      "stealth": {
+        "base": 12
+      },
+      "survival": {
+        "base": 10
+      }
+    },
+    "traits": {
+      "rarity": "uncommon",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "gnome",
+        "humanoid",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}

@@ -1,0 +1,859 @@
+{
+  "_stats": {
+    "compendiumSource": "Compendium.pf2e.battlecry-bestiary.Actor.X5UZZ6b6sq5JVJN9"
+  },
+  "effects": [],
+  "flags": {
+    "pf2e-creature-crispr": {
+      "creatureData": {
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 20,
+          "cha": 2,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 8,
+          "hp": 60,
+          "int": 0,
+          "perception": 11,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 12,
+            "crafting": 10,
+            "survival": 10
+          },
+          "str": 1,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "importedFrom": "Kobold Trap Squad (Compendium)",
+        "updatedAt": 0
+      }
+    },
+    "pf2e-reignmaker": {
+      "creatureData": {
+        "armyType": "infantry",
+        "baseLevel": 4,
+        "baseStats": {
+          "ac": 20,
+          "cha": 2,
+          "con": 0,
+          "dex": 4,
+          "fortitude": 8,
+          "hp": 60,
+          "int": 0,
+          "perception": 11,
+          "reflex": 14,
+          "skills": {
+            "acrobatics": 12,
+            "crafting": 10,
+            "survival": 10
+          },
+          "str": 1,
+          "strikeAttackBonus": 0,
+          "strikeDamage": "1d4",
+          "strikeDamageAverage": 2.5,
+          "will": 11,
+          "wis": 2
+        },
+        "benchmarks": {
+          "abilities": {
+            "cha": 0,
+            "con": 0,
+            "dex": 0.5,
+            "int": 0,
+            "str": 0,
+            "wis": 0
+          },
+          "ac": 0.3333333333333333,
+          "hp": 0.5,
+          "perception": 0.5,
+          "saves": {
+            "fortitude": 0.25,
+            "reflex": 0.75,
+            "will": 0.5
+          },
+          "skills": [
+            {
+              "benchmark": 0.6666666666666666,
+              "skill": "acrobatics"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "crafting"
+            },
+            {
+              "benchmark": 0.3333333333333333,
+              "skill": "survival"
+            }
+          ],
+          "strikeAttack": 0,
+          "strikeDamage": 0.5
+        },
+        "createdAt": 0,
+        "isTroop": true,
+        "origin": "official",
+        "slug": "kobold-warriors",
+        "strategyTokenImage": "modules/pf2e-trooper/assets/troops/infantry/kobold-warriors/kobold-warriors_strategy.webp",
+        "troopSize": "gargantuan",
+        "updatedAt": 0
+      }
+    }
+  },
+  "img": "modules/pf2e-trooper/assets/troops/infantry/kobold-warriors/kobold-warriors_portrait.webp",
+  "items": [
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Reaction.webp",
+      "name": "Accustomed to Panic",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "reaction"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Trigger</strong> The troop would become frightened or increase its frightened condition while it is not routed.</p><p><strong>Effect</strong> The troop channels its panic into energy. It ignores that increase to its frightened condition and gains a +1 bonus to its next skill check or saving throw, or to its Battle DC for its next Battle or Salvo attack.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Darkvision",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>The troop can see in darkness and dim light just as well as in bright light.</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "_stats": {
+        "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.OvqohW9YuahnFaiX"
+      },
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Form Up",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "interaction",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.FormUp]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": "Pathfinder Bestiary 3"
+        },
+        "rules": [],
+        "slug": "form-up",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/OneAction.webp",
+      "name": "Group Scamper",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The kobolds Stride up to their Speed plus 5 feet and gain a +2 circumstance bonus to AC against reactions triggered by this movement. If they end this movement with at least 1 segment adjacent to any enemy, the squad is @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Off-Guard} until the beginning of its next turn.</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [
+          {
+            "key": "RollOption",
+            "option": "group-scamper",
+            "toggleable": true
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "group-scamper"
+            ],
+            "selector": "land-speed",
+            "value": 5
+          },
+          {
+            "key": "FlatModifier",
+            "predicate": [
+              "group-scamper"
+            ],
+            "selector": "ac",
+            "type": "circumstance",
+            "value": 2
+          }
+        ],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The kobolds hastily prepare a handful of rudimentary traps in their vicinity until the beginning of their next turn. The next creature who moves adjacent to the trap squad triggers a trap and must attempt a @Check[reflex|dc:{2}] save. On a failure, the creature takes @Damage[{0}[persistent,bleed]] damage (@Damage[{1}[persistent,bleed]] damage on a critical failure). A creature taking persistent bleed damage from Hasty Traps takes a –5-foot enhancement penalty to its Speed. This occurs to as many creatures as the kobold trap squad has segments when it performed the action, but a single creature can trigger only one trap per turn.</p>\n<p>@UUID[Compendium.pf2e.bestiary-effects.Item.JUo3BTRaRHkL9ZBC]{Effect: Hasty Traps}</p>",
+            "originalDescription": "<p>The kobolds hastily prepare a handful of rudimentary traps in their vicinity until the beginning of their next turn. The next creature who moves adjacent to the trap squad triggers a trap and must attempt a @Check[reflex|dc:18] save. On a failure, the creature takes @Damage[1d4[persistent,bleed]] damage (@Damage[2d4[persistent,bleed]] damage on a critical failure). A creature taking persistent bleed damage from Hasty Traps takes a –5-foot enhancement penalty to its Speed. This occurs to as many creatures as the kobold trap squad has segments when it performed the action, but a single creature can trigger only one trap per turn.</p>\n<p>@UUID[Compendium.pf2e.bestiary-effects.Item.JUo3BTRaRHkL9ZBC]{Effect: Hasty Traps}</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "damageType": "bleed",
+                "originalValue": "1d4",
+                "type": "persistent"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.6,
+                "damageType": "bleed",
+                "originalValue": "2d4",
+                "type": "persistent"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Hasty Traps",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The kobolds hastily prepare a handful of rudimentary traps in their vicinity until the beginning of their next turn. The next creature who moves adjacent to the trap squad triggers a trap and must attempt a @Check[reflex|dc:17] save. On a failure, the creature takes @Damage[1d4[persistent,bleed]] damage (@Damage[2d4[persistent,bleed]] damage on a critical failure). A creature taking persistent bleed damage from Hasty Traps takes a –5-foot enhancement penalty to its Speed. This occurs to as many creatures as the kobold trap squad has segments when it performed the action, but a single creature can trigger only one trap per turn.</p>\n<p>@UUID[Compendium.pf2e.bestiary-effects.Item.JUo3BTRaRHkL9ZBC]{Effect: Hasty Traps}</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder Battlecry!"
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": [
+            "manipulate"
+          ]
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p>The kobolds draw their slings, then launch a ranged barrage of stones. This barrage is a @Template[type:burst|distance:{2}] within {4} feet that deals @Damage[{0}[bludgeoning]|options:area-damage] damage with a @Check[reflex|dc:{1}|basic|options:area-effect] save. When the squad is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:{3}].</p>",
+            "originalDescription": "<p>The kobolds draw their slings, then launch a ranged barrage of stones. This barrage is a @Template[type:burst|distance:10] within 50 feet that deals @Damage[3d4[bludgeoning]|options:area-damage] damage with a @Check[reflex|dc:18|basic|options:area-effect] save. When the squad is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.3071895424836602,
+                "damageType": "bludgeoning",
+                "originalValue": "3d4",
+                "troopLine": "salvo",
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius",
+                "originalValue": "10",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Burst radius (2 segments)",
+                "originalValue": "5",
+                "type": "distance"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Range",
+                "originalValue": "50",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/TwoActions.webp",
+      "name": "Sling Barrage [Salvo]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 2
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p>The kobolds draw their slings, then launch a ranged barrage of stones. This barrage is a @Template[type:burst|distance:10] within 50 feet that deals @Damage[2d4+1[bludgeoning]|options:area-damage] damage with a @Check[reflex|dc:17|basic|options:area-effect] save. When the squad is reduced to 2 segments, this area decreases to a @Template[type:burst|distance:5].</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {
+        "pf2e-creature-crispr": {
+          "abilityBenchmarks": {
+            "descriptionTemplate": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The kobold trap squad engages in a coordinated melee attack against all enemies in a @Template[type:emanation|distance:{4}], with a @Check[reflex|dc:{3}|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[{0}[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[({1})[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[({2})[piercing]|options:area-damage] damage</p>",
+            "originalDescription": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The kobold trap squad engages in a coordinated melee attack against all enemies in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:18|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d6[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+4)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(2d6+7)[piercing]|options:area-damage] damage</p>",
+            "scalableValues": [
+              {
+                "baseLevel": 4,
+                "benchmark": 0.493827160493827,
+                "damageType": "piercing",
+                "originalValue": "1d6",
+                "troopLine": 1,
+                "troopLineActions": 1,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.7222222222222222,
+                "damageType": "piercing",
+                "originalValue": "2d6+4",
+                "troopLine": 2,
+                "troopLineActions": 2,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0.6666666666666666,
+                "damageType": "piercing",
+                "originalValue": "2d6+7",
+                "troopLine": 3,
+                "troopLineActions": 3,
+                "type": "damage"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "checkType": "reflex",
+                "originalValue": "18",
+                "type": "dc"
+              },
+              {
+                "baseLevel": 4,
+                "benchmark": 0,
+                "distanceLabel": "Emanation radius",
+                "originalValue": "5",
+                "type": "distance"
+              }
+            ]
+          }
+        }
+      },
+      "img": "systems/pf2e/icons/actions/OneThreeActions.webp",
+      "name": "Spear Jabs [Battle]",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "action"
+        },
+        "actions": {
+          "value": 1
+        },
+        "category": "offensive",
+        "description": {
+          "gm": "",
+          "value": "<p><span class=\"action-glyph\">1</span> to <span class=\"action-glyph\">3</span></p>\n<p><strong>Frequency</strong> once per round</p><hr><p><strong>Effect</strong> The kobold trap squad engages in a coordinated melee attack against all enemies in a @Template[type:emanation|distance:5], with a @Check[reflex|dc:17|basic|options:area-effect] save. The damage depends on the number of actions.</p>\n<p><span class=\"action-glyph\">1</span> @Damage[1d6[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">2</span> @Damage[(2d6+2)[piercing]|options:area-damage] damage</p>\n<p><span class=\"action-glyph\">3</span> @Damage[(3d6+1)[piercing]|options:area-damage] damage</p>"
+        },
+        "frequency": {
+          "max": 1,
+          "per": "round"
+        },
+        "publication": {
+          "authors": "",
+          "license": "OGL",
+          "remaster": false,
+          "title": ""
+        },
+        "rules": [],
+        "slug": null,
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Defenses",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p><strong>Thresholds</strong> 30 (3 segments), 15 (2 segments)</p>\n<hr>\n<p><strong>HP</strong> 60 (4 segments); <strong>Thresholds</strong> 40 (3 segments), 20 (2 segments)</p>\n<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopDefenses]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-defenses",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    },
+    {
+      "effects": [],
+      "flags": {},
+      "img": "systems/pf2e/icons/actions/Passive.webp",
+      "name": "Troop Movement",
+      "system": {
+        "_migration": {
+          "previous": null,
+          "version": null
+        },
+        "actionType": {
+          "value": "passive"
+        },
+        "actions": {
+          "value": null
+        },
+        "category": "defensive",
+        "description": {
+          "gm": "",
+          "value": "<p>@Localize[PF2E.NPC.Abilities.Glossary.TroopMovement]</p>"
+        },
+        "publication": {
+          "authors": "",
+          "license": "ORC",
+          "remaster": true,
+          "title": "Pathfinder NPC Core"
+        },
+        "rules": [],
+        "slug": "troop-movement",
+        "traits": {
+          "otherTags": [],
+          "value": []
+        }
+      },
+      "type": "action"
+    }
+  ],
+  "name": "Kobold Warriors",
+  "prototypeToken": {
+    "actorLink": true,
+    "alpha": 1,
+    "appendNumber": false,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "depth": 1,
+    "detectionModes": {},
+    "displayBars": 0,
+    "displayName": 30,
+    "disposition": -1,
+    "flags": {
+      "pf2e": {
+        "autoscale": false,
+        "linkToActorSize": true
+      }
+    },
+    "height": 4,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "animation": {
+        "intensity": 5,
+        "reverse": false,
+        "speed": 5,
+        "type": null
+      },
+      "attenuation": 0.5,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "contrast": 0,
+      "darkness": {
+        "max": 1,
+        "min": 0
+      },
+      "dim": 0,
+      "luminosity": 0.5,
+      "negative": false,
+      "priority": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "lockRotation": false,
+    "movementAction": null,
+    "name": "Kobold Warriors",
+    "occludable": {
+      "radius": 0
+    },
+    "prependAdjective": false,
+    "randomImg": false,
+    "ring": {
+      "colors": {
+        "background": null,
+        "ring": null
+      },
+      "effects": 1,
+      "enabled": false,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "rotation": 0,
+    "sight": {
+      "angle": 360,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "color": null,
+      "contrast": 0,
+      "enabled": false,
+      "range": 0,
+      "saturation": 0,
+      "visionMode": "basic"
+    },
+    "texture": {
+      "alphaThreshold": 0.75,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "src": "modules/pf2e-trooper/assets/troops/infantry/kobold-warriors/kobold-warriors_token.webp",
+      "tint": "#ffffff"
+    },
+    "turnMarker": {
+      "animation": null,
+      "disposition": false,
+      "mode": 1,
+      "src": null
+    },
+    "width": 4
+  },
+  "system": {
+    "_migration": {
+      "previous": null,
+      "version": null
+    },
+    "abilities": {
+      "cha": {
+        "mod": 1
+      },
+      "con": {
+        "mod": 1
+      },
+      "dex": {
+        "mod": 4
+      },
+      "int": {
+        "mod": 1
+      },
+      "str": {
+        "mod": 1
+      },
+      "wis": {
+        "mod": 1
+      }
+    },
+    "attributes": {
+      "ac": {
+        "details": "",
+        "value": 18
+      },
+      "allSaves": {
+        "value": ""
+      },
+      "hp": {
+        "details": "(4 segments); Thresholds 40 (3 segments), 20 (2 segments)",
+        "max": 45,
+        "temp": 0,
+        "value": 45
+      },
+      "immunities": [],
+      "resistances": [],
+      "speed": {
+        "details": "troop movement",
+        "otherSpeeds": [],
+        "value": 25
+      },
+      "weaknesses": [
+        {
+          "type": "area-damage",
+          "value": 4
+        },
+        {
+          "type": "splash-damage",
+          "value": 4
+        }
+      ]
+    },
+    "details": {
+      "blurb": "",
+      "creatureType": "creature",
+      "languages": {
+        "details": "",
+        "value": [
+          "common",
+          "sakvroth"
+        ]
+      },
+      "level": {
+        "value": 3
+      },
+      "privateNotes": "",
+      "publicNotes": "<p>A scrambling kobold band that attacks with cunning. They fight with traps, tunnels, and superior numbers, and they retreat the moment a fight turns fair. An enemy who calls them craven has usually just stepped where the kobolds intended.</p>",
+      "publication": {
+        "authors": "",
+        "license": "ORC",
+        "remaster": true,
+        "title": "Pathfinder Battlecry!"
+      }
+    },
+    "initiative": {
+      "statistic": "perception"
+    },
+    "perception": {
+      "details": "",
+      "mod": 9,
+      "senses": [
+        {
+          "acuity": "precise",
+          "type": "darkvision"
+        }
+      ],
+      "vision": true
+    },
+    "resources": {},
+    "saves": {
+      "fortitude": {
+        "saveDetail": "",
+        "value": 6
+      },
+      "reflex": {
+        "saveDetail": "",
+        "value": 12
+      },
+      "will": {
+        "saveDetail": "",
+        "value": 9
+      }
+    },
+    "skills": {
+      "acrobatics": {
+        "base": 10
+      },
+      "crafting": {
+        "base": 9
+      },
+      "survival": {
+        "base": 9
+      }
+    },
+    "traits": {
+      "rarity": "common",
+      "size": {
+        "value": "grg"
+      },
+      "value": [
+        "humanoid",
+        "kobold",
+        "troop"
+      ]
+    }
+  },
+  "type": "npc"
+}
