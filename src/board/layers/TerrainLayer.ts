@@ -33,8 +33,9 @@ function drawHatch(g: PIXI.Graphics, a: Point, b: Point, lowerCenter: Point, ink
  * Cell fills, procedural texture overlays, elevation tint and slope hatching. One
  * `PIXI.Graphics` per terrain type present on the board, grouped the way Reignmaker's
  * `renderTerrainOverlay` groups hexes by type before drawing (services/map/renderers/
- * TerrainRenderer.ts) — cheaper than one Graphics per cell, and the texture overlay for a
- * type reuses that same fill Graphics as its mask instead of tracking per-cell clip paths.
+ * TerrainRenderer.ts) — cheaper than one Graphics per cell. A textured type gets a second
+ * Graphics of the same shape to mask its overlay, since PIXI stops rendering whatever it is
+ * handed as a mask.
  */
 export class TerrainLayer {
   private readonly container: PIXI.Container;
@@ -55,12 +56,17 @@ export class TerrainLayer {
       if (list) list.push(sq); else byTerrain.set(terrain, [sq]);
     }
 
+    const shapeOf = (squares: Square[], colour: number): PIXI.Graphics => {
+      const g = new PIXI.Graphics();
+      g.beginFill(colour, 1);
+      for (const sq of squares) g.drawPolygon(grid.vertices(sq, size));
+      g.endFill();
+      return g;
+    };
+
     for (const [terrain, squares] of byTerrain) {
-      const fill = new PIXI.Graphics();
+      const fill = shapeOf(squares, theme.terrain[terrain]);
       fill.name = `Terrain_${terrain}`;
-      fill.beginFill(theme.terrain[terrain], 1);
-      for (const sq of squares) fill.drawPolygon(grid.vertices(sq, size));
-      fill.endFill();
       this.container.addChild(fill);
 
       const texture = this.textureFor(app, terrain, theme);
@@ -68,10 +74,12 @@ export class TerrainLayer {
         const bounds = grid.bounds(size);
         const tiling = new PIXI.TilingSprite(texture, bounds.width, bounds.height);
         tiling.name = `Terrain_${terrain}_texture`;
-        // Reuses `fill`'s shape as the mask: it is already exactly the union of this
-        // terrain's cells, rendered normally *and* referenced here — PIXI masks don't
-        // require the mask object to be exclusively a mask.
-        tiling.mask = fill;
+        // A second Graphics of the same shape: PIXI's mask setter sets renderable=false on
+        // whatever it is given, so masking with `fill` itself would erase the terrain colour.
+        const clip = shapeOf(squares, 0xffffff);
+        clip.name = `Terrain_${terrain}_clip`;
+        this.container.addChild(clip);
+        tiling.mask = clip;
         this.container.addChild(tiling);
       }
     }

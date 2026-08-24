@@ -156,12 +156,13 @@ Judgment calls taken inside the wave:
   `generateTexture`, then tiled with a `TilingSprite` regardless of the board's current cell
   size — matches the plan's "cached per type" literally and means a window resize never
   regenerates a texture, only rescales how many tiles show per cell.
-- The texture overlay for a terrain type reuses that type's own flat-fill `Graphics` as the
-  `TilingSprite`'s mask, instead of a second per-cell clip path — a `DisplayObject` can be both
-  a normally-rendered child and another object's mask at once (confirmed against PixiJS v7's
-  own docs: "a mask of an object must be in the subtree of its parent", which a sibling
-  satisfies). `TerrainLayer.clear()` nulls every child's `.mask` before destroying, since
-  destroy order would otherwise leave a `TilingSprite` pointing at an already-destroyed fill.
+- The texture overlay for a terrain type is masked by a *second* `Graphics` of the same shape,
+  not by the type's own flat fill. Reusing the fill was tried first and rendered every textured
+  terrain colourless: PIXI v7's `mask` setter sets `renderable = false` on whatever it is handed
+  (`@pixi/display/lib/DisplayObject.mjs:352`), so a fill used as a mask stops drawing. A
+  `DisplayObject` cannot be both a visible child and a mask. `TerrainLayer.clear()` nulls every
+  child's `.mask` before destroying, since destroy order would otherwise leave a `TilingSprite`
+  pointing at an already-destroyed clip.
 - Elevation slope hatching (`TerrainLayer`) only draws for a single-level drop (`diff === 1`);
   a 2+ drop renders as a cliff instead (`EdgeLayer`), and an edge already carrying a wall bar
   skips hatching entirely so the two treatments never stack on the same edge.
