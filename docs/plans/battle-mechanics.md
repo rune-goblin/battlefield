@@ -485,12 +485,13 @@ Withdraw costs one action. For **each enemy in contact**, roll the withdrawing u
 
 | Degree | Result | Old rung |
 |---|---|---|
-| Critical success | Clean away. | — |
-| Success | Clean away. | Fighting retreat |
-| Failure | That enemy takes a free strike. | Break off |
-| Critical failure | Free strike, and 1 disorder. | Scatter |
+| Critical success | Away clean, and cannot be followed. | — |
+| Success | Away clean, no damage. | Fighting retreat |
+| Failure | You still move away, but that enemy takes a free strike. | Break off |
+| Critical failure | **You do not break contact.** Free strike, and 1 disorder. | Scatter |
 
-The rung names survive as outcomes, which is what they always described.
+The rung names survive as outcomes, which is what they always described. Only a critical
+failure leaves the unit stuck — a plain failure still gets it out, just bloodied.
 
 Extra actions buy **+2 each to the Escape check** — three actions is +4 — or distance, the
 player allocating between them as everywhere else.
@@ -506,5 +507,18 @@ who is holding you, not on a fixed troop property. The old ladder treated withdr
 levy and from a dragon as identical. The check also moves agency to the withdrawing player,
 where Withdraw previously just triggered enemy free strikes.
 
-`no-retreat` (6 troops) still has to mean something: either a penalty to the Escape check or
-no Withdraw at all.
+### No Retreat means the holder follows
+
+`no-retreat` (6 troops in the corpus) is not a restriction on its owner. It is an ability the
+**holding** troop has: when an enemy withdraws from it, it may **follow**.
+
+- The follow is one free Move — a single action's worth of that troop's Speed, paid through
+  the normal terrain costs — taken immediately, to re-establish contact.
+- Following deals no damage. It only maintains contact.
+- **The movement delta decides it.** If the withdrawing unit went further than the follower's
+  one move can cover, contact is not re-established. A faster unit outruns a `no-retreat`
+  holder; a slower one does not.
+
+This is why a critical success is worth having: it is the one result that cannot be followed.
+It also settles a gap the previous wave flagged, where a critical success on a push was
+indistinguishable from a plain success.
