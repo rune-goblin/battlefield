@@ -124,14 +124,14 @@ stands and braces takes Guard.
 
 Cast's rungs are scope — self, adjacent, anywhere in sight. The *kinds* of spell are the
 menu, and a caster's profile says which kinds it knows and how far up each it reaches. A
-hedge-priest Mends at Minor only; an archmage Blasts at Grand.
+hedge-priest Mends at Minor only; an archmage Blasts at Grand.	
 
 | Spell | Effect |
 |---|---|
 | **Blast** | Magical attack; ignores cover |
 | **Ward** | +2 Defence until the target's next activation |
 | **Mend** | Remove one wound |
-| **Bless** | The target's next action climbs one rung free |
+| **Enhance** | The target's next action climbs one rung free |
 | **Compel** | The target may not reach above its grade on its next activation |
 
 ## Morale as disorder
@@ -198,3 +198,44 @@ order, not from a randomised sequence.
   marked and the reachable one flagged as a gamble.
 - Hovering a rung highlights its targets; clicking a highlighted cell or token resolves.
 - Gate: one screenshot on hex.
+
+## Level mismatch
+
+Measured across the 162 troop-trait creatures in the PF2e corpus:
+
+```
+median AC        = 13.9 + 1.48 x level
+median attack DC = 12.1 + 1.43 x level      (strike bonus = DC - 10)
+```
+
+The two lines are parallel, so an even matchup always needs about 12+ on the d20 whatever the
+level — a level-3 mirror plays like a level-18 mirror. Expected wounds per attack, 4 wounds
+destroying a unit:
+
+| attacker | vs L2 | vs L6 | vs L10 | vs L14 | vs L18 |
+|---|---|---|---|---|---|
+| L2 | 0.51 | 0.21 | 0.05 | 0.05 | 0.00 |
+| L6 | 0.99 | 0.50 | 0.20 | 0.05 | 0.05 |
+| L10 | 1.53 | 0.97 | 0.49 | 0.19 | 0.05 |
+| L14 | 1.82 | 1.52 | 0.95 | 0.48 | 0.18 |
+| L18 | 2.00 | 1.81 | 1.51 | 0.93 | 0.47 |
+
+A level-2 unit attacking a level-14 needs 29.6, so only the natural-20 degree bump lands:
+0.05 wounds per attack. The reverse needs −5.3 and so crits on everything but a natural 1,
+destroying the target in about two attacks. No special rule is needed at either extreme; the
+natural-20 and natural-1 degree shifts do the work.
+
+**Decision (Mark, 2026-08-25): the ±4 band is inherited from Pathfinder and accepted, not
+fixed.** The same gap is unplayable in skirmish, and PF2e's encounter-building rules price it
+the same way — a creature four levels below party level costs 10 XP against 160 for one four
+levels above. Do not add compensating rules to make far-below-level units relevant.
+
+The consequence to take instead: `src/engine/force.ts` should match forces on PF2e's
+encounter XP table rather than its current home-grown rule (same unit count ±1, levels within
+three of the average, total level within a tenth). The XP table is the measurable version and
+already encodes the band.
+
+Note also that one action per activation lowers throughput: an even fight is 0.50 wounds per
+attack, so eight attacks to destroy a unit against six activations in a six-round battle.
+**Morale is therefore the primary kill mechanism and wounds are secondary** — units rout
+before they are annihilated. Confirm in play.
