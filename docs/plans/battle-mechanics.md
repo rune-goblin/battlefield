@@ -239,3 +239,61 @@ Note also that one action per activation lowers throughput: an even fight is 0.5
 attack, so eight attacks to destroy a unit against six activations in a six-round battle.
 **Morale is therefore the primary kill mechanism and wounds are secondary** — units rout
 before they are annihilated. Confirm in play.
+
+
+## Movement points and the three actions
+
+Decision (Mark, 2026-08-25): a unit is awarded movement by its troop stats and spends it on
+terrain. Rungs do not cost actions; that was too blunt.
+
+This restores PF2e's economy exactly, so nothing needs converting:
+
+- **Three actions per activation.** Move, Move, Move, or Move, Shoot, Guard, and so on.
+- **A Move action spends up to the troop's Speed**, in feet. Taking Move twice buys a second
+  Speed's worth. This is Stride, unchanged.
+- **One board cell is 10 feet.** A 25 ft troop covers two open cells per Move; a 40 ft
+  cavalry troop covers four.
+
+### Terrain costs
+
+Lifted from Reignmaker's `PathfindingService` (`travel` normal 1 / difficult 2 /
+greater-difficult 3, roads and settlements reducing by one, water blocked at the edge with
+explicit crossing cells) and expressed in feet so it reads as PF2e:
+
+| Entering | Cost |
+|---|---|
+| Open | 10 ft |
+| Settlement | 10 ft — a road, so never worse than open |
+| Forest, shallows | 20 ft — difficult |
+| Swamp | 30 ft — greater difficult |
+| One elevation level up | +10 ft |
+| Water | impassable |
+| Across a wall or cliff edge | impassable; a breached wall is a crossing |
+
+Flying ignores terrain cost and edge blocking, exactly as Reignmaker's flying units do.
+
+### The ladders after this change
+
+Move's ladder collapses into the action economy and disappears as a separate concept —
+Advance *is* one Stride, March *is* spending two or three, Charge *is* Stride plus a melee.
+The remaining ladders are unaffected: Shoot, Fight, Guard, Withdraw, Rally and Cast still
+have three rungs each, and reaching above your grade still rolls.
+
+This is a net simplification. Movement was the one ladder whose rungs were really about
+distance rather than intensity, which is why it kept fighting the design.
+
+## Interaction
+
+Progressive disclosure. The panel never lists every rung of every type at once.
+
+1. **Click a unit.** The panel shows its stat line, three action pips, and a short row of the
+   action *types* available in this situation — not their rungs.
+2. **Click a type.** Its ladder opens: the granted rung free, the reachable rung flagged as a
+   gamble with its DC and what a failure costs, higher rungs locked with a reason.
+3. **Or drag the unit.** A path traces from cell to cell as the pointer moves, accumulating
+   terrain cost. The board shows the running total in feet and how many actions the drag will
+   consume; cells beyond the third action's reach are unreachable and the path stops. Release
+   to move. Dragging onto an enemy is a Charge, which costs the movement plus the attack.
+
+The drag is the primary verb for movement, so movement rarely touches the menu at all. The
+menu is for the things where pushing your luck matters.
