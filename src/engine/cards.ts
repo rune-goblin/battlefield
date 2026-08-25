@@ -4,6 +4,11 @@ export type Role = 'infantry' | 'cavalry';
 
 export type Reach = 'close' | 'long' | 'extreme';
 
+// Structural signals an importer reads straight off a statblock: recurring action names that
+// differentiate troops where the level tables do not. AC and attack DC are essentially f(level)
+// across all 162 published troops, so they carry no grade information; these do.
+export type Signal = 'mounted' | 'melee-drill' | 'shielded' | 'formation' | 'magic-ward' | 'no-retreat';
+
 export type Tactic =
   | 'cavalry-charge' | 'reactive-attack' | 'raise-shields' | 'shield-block' | 'defend-allies'
   | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire' | 'false-retreat' | 'battlefield-medicine' | 'ambush';
@@ -39,9 +44,11 @@ export interface UnitCard {
   salvo?: Reach | null;
   pace?: boolean;
   fear?: boolean;
+  caster?: boolean;
+  signals?: Signal[];
   tactics?: Tactic[];
   wounds?: number;
-  shaken?: number;
+  disorder?: number;
   overrides?: Partial<UnitStats>;
 }
 
@@ -72,8 +79,17 @@ export function cardTraits(card: UnitCard) {
   return {
     pace: card.pace ?? p.pace,
     fear: card.fear ?? false,
+    caster: card.caster ?? false,
+    signals: card.signals ?? [],
     tactics: card.tactics ?? p.tactics,
   };
+}
+
+// A flying troop's land Speed says nothing about how far it moves; treat it as pace.
+export function speedOf(card: UnitCard): number {
+  const sh = card.sheet;
+  if (!sh) return cardTraits(card).pace ? 35 : 25;
+  return sh.fly ? Math.max(sh.speed, 30) : sh.speed;
 }
 
 export type EngineKind = 'artillery' | 'ram';

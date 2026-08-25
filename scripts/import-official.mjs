@@ -2,6 +2,7 @@
 // Usage: PF2E_SOURCE=/path/to/pf2e/packs/pf2e node scripts/import-official.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { actionsOf, bandOf, casterOf, rangeOf, signalsOf, strip } from './troop-signals.mjs';
 
 const root = process.env.PF2E_SOURCE ?? join(import.meta.dirname, '../../pf2e-reignmaker/_pf2e-source/packs/pf2e');
 
@@ -47,24 +48,20 @@ const SELECTION = [
   ['hells-destiny-bestiary/angelic-host', 'infantry'],
 ];
 
-const strip = (html) => (html ?? '').replace(/<[^>]+>/g, ' ');
 const dcs = (t) => [...t.matchAll(/@Check\[reflex\|dc:(\d+)/g)].map((m) => Number(m[1]));
-const hasTemplate = (t, kinds) => kinds.some((k) => t.includes(`@Template[type:${k}`));
-const feet = (t) => Number(/within (\d+) feet/.exec(t)?.[1] ?? NaN);
 
 const cards = SELECTION.map(([path, role]) => {
   const d = JSON.parse(readFileSync(join(root, `${path}.json`), 'utf8'));
   const s = d.system;
-  const actions = d.items.filter((it) => it.type === 'action').map((it) => ({ name: it.name, text: strip(it.system.description.value) }));
-  const isRanged = (a) => !Number.isNaN(feet(a.text)) || hasTemplate(a.text, ['burst', 'cone', 'line']);
-  const melee = actions.filter((a) => dcs(a.text).length && !isRanged(a));
-  const ranged = actions.filter((a) => isRanged(a) && !Number.isNaN(feet(a.text)));
+  const actions = actionsOf(d);
+  const melee = actions.filter((a) => dcs(a.text).length && rangeOf(a.text) === null);
+  const ranged = actions.filter((a) => rangeOf(a.text) !== null);
   const battleDc = Math.max(...melee.flatMap((a) => dcs(a.text)), ...ranged.flatMap((a) => dcs(a.text)));
   if (!Number.isFinite(battleDc)) throw new Error(`${path}: no DC found`);
-  const salvo = ranged.sort((a, b) => feet(b.text) - feet(a.text))[0];
+  const salvo = ranged.sort((a, b) => rangeOf(b.text) - rangeOf(a.text))[0];
   const salvoDc = salvo ? (dcs(salvo.text)[0] ?? battleDc) : null;
-  const ft = salvo ? feet(salvo.text) : NaN;
-  const reach = salvo ? (ft <= 60 ? 'close' : ft <= 120 ? 'long' : 'extreme') : null;
+  const ft = salvo ? rangeOf(salvo.text) : null;
+  const reach = bandOf(ft);
   const fly = (s.attributes.speed.otherSpeeds ?? []).some((o) => o.type === 'fly');
   return {
     name: d.name,
@@ -72,13 +69,15 @@ const cards = SELECTION.map(([path, role]) => {
     role,
     pace: fly || s.attributes.speed.value >= 30,
     fear: d.items.some((it) => /frightful presence/i.test(it.name)),
+    caster: casterOf(d, actions),
+    signals: signalsOf(actions),
     source: d.system.details.publication?.title ?? '',
     sheet: {
       ac: s.attributes.ac.value,
       hp: s.attributes.hp.max,
       battleDc,
       salvoDc,
-      salvoFeet: salvo ? ft : null,
+      salvoFeet: ft,
       fortitude: s.saves.fortitude.value,
       reflex: s.saves.reflex.value,
       will: s.saves.will.value,
@@ -100,7 +99,7 @@ const cards = SELECTION.map(([path, role]) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, caster: ${c.caster}, signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/official.ts', import.meta.url),

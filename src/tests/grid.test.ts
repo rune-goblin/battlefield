@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { act, activeUnit, availableActions, createBattle, isOutflanked, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, isOutflanked, unit } from '../engine/battle.js';
 import { allSquares, hexGrid, notation, parse, squareGrid, type Grid } from '../engine/grid.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import type { BattleState } from '../engine/types.js';
+import type { LadderType } from '../engine/ladders.js';
 
 const at = (grid: Grid, key: string) => grid.neighbours(parse(key)).map(notation).sort();
 
@@ -61,8 +62,7 @@ const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 
 const trolls: UnitCard = { name: 'Trolls', level: 8, role: 'infantry', tactics: [] };
 
 function hexBattle() {
-  const rng = scriptedRng([20, 15, 15, 1, 10, 10, 10, 10]);
-  const state = createBattle({
+  return createBattle({
     units: [
       { card: infantry, side: 'attacker', square: 'c2' },
       { card: cavalry, side: 'attacker', square: 'e2' },
@@ -70,31 +70,31 @@ function hexBattle() {
       { card: trolls, side: 'defender', square: 'e7' },
     ],
     board: openBoard('hex'),
-  }, rng);
-  return { state, rng };
+  });
 }
 
-const option = (state: BattleState, kind: string) => availableActions(state).find((o) => o.kind === kind);
+const offer = (state: BattleState, type: LadderType, id?: string) =>
+  availableActions(state, id).find((o) => o.type === type)!;
+const targets = (state: BattleState, type: LadderType, rung: 1 | 2 | 3, id?: string) =>
+  offer(state, type, id).rungs[rung - 1].targets.map((t) => t.id);
 
 describe('battle on hex', () => {
-  it('advances into six neighbours and Pace reaches the cell beyond', () => {
-    const { state, rng } = hexBattle();
-    expect(option(state, 'advance')!.targets).toEqual(expect.arrayContaining(['b2', 'd2', 'c1', 'd1', 'c3', 'd3']));
-    const s = act(act(state, { kind: 'advance', target: 'd1' }, rng), { kind: 'pass' }, rng);
-    expect(unit(s, 'u0').square).toEqual(parse('d1'));
-    expect(activeUnit(s)!.id).toBe('u1');
-    expect(option(s, 'advance')!.targets).toContain('d4');
+  it('advances into six neighbours and marches past them', () => {
+    const state = hexBattle();
+    expect(targets(state, 'move', 1, 'u0')).toEqual(expect.arrayContaining(['b2', 'c1', 'c3', 'd1', 'd2', 'd3']));
+    expect(targets(state, 'move', 2, 'u0')).toContain('c4');
   });
   it('engages across a square diagonal and outflanks from two of the six', () => {
-    const { state } = hexBattle();
+    const state = hexBattle();
     unit(state, 'u2').square = parse('d1');
-    expect(option(state, 'strike')!.targets).toEqual(['u2']);
+    expect(targets(state, 'fight', 1, 'u0')).toEqual(['u2']);
     unit(state, 'u3').square = parse('c3');
     expect(isOutflanked(state, unit(state, 'u0'))).toBe(true);
   });
-  it('retreats homeward by rows', () => {
-    const { state, rng } = hexBattle();
-    const s = act(state, { kind: 'retreat', target: 'c1' }, rng);
+  it('sends a routed unit homeward by rows and off its own edge', () => {
+    const state = hexBattle();
+    unit(state, 'u0').disorder = unit(state, 'u0').quality;
+    const s = act(state, { type: 'withdraw', rung: 1, target: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').status).toBe('left');
   });
 });

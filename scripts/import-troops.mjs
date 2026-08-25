@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { actionsOf, casterOf, signalsOf } from './troop-signals.mjs';
 
 const dir = new URL('../data/troops/', import.meta.url);
 const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
@@ -24,7 +25,7 @@ const cards = files.map((f) => {
   if (Number.isNaN(battleDc)) throw new Error(`${f}: no Battle DC`);
   const salvoDc = salvo ? dc(salvo.system.description.value) : NaN;
   const reach = salvo ? reachOf(salvo.system.description.value) : null;
-  const traits = s.traits?.value ?? [];
+  const actions = actionsOf(d);
   const fly = (s.attributes.speed.otherSpeeds ?? []).some((o) => o.type === 'fly');
   return {
     slug: f.replace(/\.json$/, ''),
@@ -33,6 +34,8 @@ const cards = files.map((f) => {
     role: role(d),
     pace: fly || s.attributes.speed.value >= 30,
     fear: false,
+    caster: casterOf(d, actions),
+    signals: signalsOf(actions),
     tactics: [],
     sheet: {
       ac: s.attributes.ac.value,
@@ -61,7 +64,7 @@ const cards = files.map((f) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, caster: ${c.caster}, signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/combatants.ts', import.meta.url),

@@ -5,6 +5,7 @@ import { ENGINES } from '../engine/engines.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import { openBoard } from './helpers.js';
+import type { BattleState } from '../engine/types.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', tactics: [] };
@@ -19,8 +20,11 @@ function battle(engines: string[], wallTier?: number) {
       { card: kobolds, side: 'defender', square: 'c7' },
     ],
     board,
-  }, scriptedRng([20, 1]));
+  });
 }
+
+const offer = (state: BattleState, type: 'shoot' | 'fight', id = 'u0') =>
+  availableActions(state, id).find((o) => o.type === type)!;
 
 describe('siege engines', () => {
   it('imports all 59 Trooper weapons with launch bonuses', () => {
@@ -28,40 +32,64 @@ describe('siege engines', () => {
     expect(engine('Catapult')).toMatchObject({ kind: 'artillery', launch: 12, reach: 'extreme' });
     expect(engine('Battering Ram').kind).toBe('ram');
   });
-  it('a catapult fires at extreme range without penalty, once per round', () => {
+
+  // A crewed engine replaces the unit's own shooting profile, grade and all: the catapult's
+  // extreme reach grants Barrage outright, while the ballista's long reach must reach for it.
+  it('a catapult shoots at extreme range with no roll to reach it, once per round', () => {
     const s0 = battle(['Catapult']);
-    const fire = availableActions(s0).find((o) => o.kind === 'fire-engine')!;
-    expect(fire.targets).toEqual(['u1']);
-    const s1 = act(s0, { kind: 'fire-engine', engine: 0, target: 'u1' }, scriptedRng([10]));
+    const shoot = offer(s0, 'shoot');
+    expect(shoot.granted).toBe(3);
+    expect(shoot.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
+    expect(shoot.rungs[0].targets).toEqual([]);
+    const s1 = act(s0, { type: 'shoot', rung: 3, target: 'u1' }, scriptedRng([10]));
     expect(unit(s1, 'u1').wounds).toBe(1);
-    expect(availableActions(s1).some((o) => o.kind === 'fire-engine')).toBe(false);
+    expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(engine('Catapult').launch);
+    expect(unit(s1, 'u0').engines[0].fired).toBe(true);
   });
-  it('a ballista cannot reach extreme range', () => {
-    expect(availableActions(battle(['Ballista'])).some((o) => o.kind === 'fire-engine')).toBe(false);
+
+  it('a ballista is granted only the long band and must reach for the rest', () => {
+    const s0 = battle(['Ballista']);
+    const shoot = offer(s0, 'shoot');
+    expect(shoot.granted).toBe(2);
+    expect(shoot.rungs[1].targets).toEqual([]);
+    expect(shoot.rungs[2].access).toBe('reach');
   });
-  it('a ram only works against a wall it stands beside and gets +2', () => {
+
+  it('a ram only works against a wall it stands beside, and adds +2', () => {
     const s0 = battle(['Battering Ram'], 2);
-    expect(availableActions(s0).some((o) => o.kind === 'engine-bombard')).toBe(false);
+    expect(availableActions(s0, 'u0').some((o) => o.type === 'fight')).toBe(false);
+    unit(s0, 'u0').square = parse('c5');
+    expect(offer(s0, 'fight')).toBeUndefined();
     unit(s0, 'u0').square = parse('c6');
     const key = edgeKey(parse('c6'), parse('c7'));
-    expect(availableActions(s0).find((o) => o.kind === 'engine-bombard')!.targets).toEqual([key]);
-    const s1 = act(s0, { kind: 'engine-bombard', engine: 0, target: key }, scriptedRng([10]));
-    expect(s1.log.at(-2)!.check!.modifier).toBe(engine('Battering Ram').launch + 2);
+    expect(offer(s0, 'fight').rungs[0].targets.map((t) => t.id)).toContain(key);
+    const s1 = act(s0, { type: 'fight', rung: 1, target: key }, scriptedRng([10]));
+    expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(unit(s0, 'u0').stats.strike! + 2);
     expect(s1.board.walls[key].remaining).toBe(2);
   });
-  it('a catapult bombards a wall from anywhere', () => {
+
+  it('a catapult bombards a wall from anywhere in its band', () => {
     const s0 = battle(['Catapult'], 1);
-    expect(availableActions(s0).find((o) => o.kind === 'engine-bombard')!.targets).toHaveLength(1);
+    const key = edgeKey(parse('c6'), parse('c7'));
+    expect(offer(s0, 'shoot').rungs[2].targets.map((t) => t.id)).toContain(key);
+    const s1 = act(s0, { type: 'shoot', rung: 3, target: key }, scriptedRng([20]));
+    expect(s1.board.walls[key].remaining).toBe(0);
   });
+
   it('a routed unit abandons its engine and an adjacent enemy captures it when the battle ends', () => {
     const s0 = battle(['Catapult']);
     const u0 = unit(s0, 'u0');
-    u0.shaken = 3;
+    u0.disorder = u0.quality;
     u0.engines[0].status = 'abandoned';
     u0.engines[0].square = parse('c2');
     unit(s0, 'u1').square = parse('c3');
     let s = s0;
-    while (s.phase === 'battle') s = act(s, { kind: 'pass' }, scriptedRng([1]));
+    while (s.phase === 'battle') {
+      const u = activeUnit(s)!;
+      s = availableActions(s, u.id).some((o) => o.type === 'guard')
+        ? act(s, { type: 'guard', rung: 1, unit: u.id }, scriptedRng([10]))
+        : act(s, { type: 'withdraw', rung: 1, unit: u.id }, scriptedRng([1]));
+    }
     expect(activeUnit(s)).toBeNull();
     expect(unit(s, 'u0').engines[0].status).toBe('captured');
   });

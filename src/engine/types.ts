@@ -1,14 +1,14 @@
 import type { Board, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
+import type { Grade, Grades, LadderType, RungId, SpellId } from './ladders.js';
 
 export type Side = 'attacker' | 'defender';
 export const SIDES: Side[] = ['attacker', 'defender'];
 export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
+/** The disorder a troop of ordinary discipline absorbs before it routs; `Unit.quality` varies it. */
 export const ROUTED_AT = 3;
-export const ACTIONS_PER_TURN = 3;
-export const MAP_STEP = 5;
 
 export interface EngineState {
   name: string;
@@ -28,43 +28,63 @@ export interface Unit {
   role: Role;
   stats: UnitStats;
   pace: boolean;
+  speed: number;
   fear: boolean;
   tactics: Tactic[];
+  grades: Grades;
+  spells: SpellId[];
+  quality: number;
   engines: EngineState[];
   square: Square;
   wounds: number;
-  shaken: number;
+  disorder: number;
   status: 'active' | 'destroyed' | 'left';
-  initiative: number;
-  braced: boolean;
+  guard: { defence: number; aura: number } | null;
+  rooted: boolean;
   exposed: boolean;
-  reactionUsed: boolean;
-  attacks: number;
-  shieldBlockUsed: boolean;
-  routImmune: boolean;
-  feinted: boolean;
-  defendedBy: string | null;
-  suppressed: boolean;
-  medicineReceived: boolean;
-  woundedThisRound: boolean;
+  warded: boolean;
+  blessed: boolean;
+  compelled: boolean;
 }
 
-export type ActionKind =
-  | 'advance' | 'withdraw' | 'strike' | 'volley' | 'brace' | 'rally' | 'retreat' | 'pass'
-  | 'cavalry-charge' | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire'
-  | 'defend-allies' | 'battlefield-medicine' | 'fire-engine' | 'engine-bombard';
+export interface Action {
+  type: LadderType;
+  rung: Grade;
+  target?: string;
+  /** Advance only: an enemy to shoot at −2 from the cell you advance into. */
+  shoot?: string;
+  spell?: SpellId;
+  /** Which unit activates. Defaults to `activeUnit(state)`. */
+  unit?: string;
+}
 
-export type TargetKind = 'unit' | 'square' | 'wall';
+export type TargetKind = 'cell' | 'unit' | 'wall';
 
-export interface Action { kind: ActionKind; target?: string; engine?: number; }
+export interface RungTarget { kind: TargetKind; id: string; label: string }
 
-export interface ActionOption {
-  kind: ActionKind;
-  cost: number;
-  targetKind: TargetKind | null;
-  targets: string[] | null;
+export interface RungOption {
+  rung: RungId;
+  index: Grade;
   label: string;
-  engine?: number;
+  detail: string;
+  /** `free` needs no roll, `reach` is the gamble, `locked` is out of reach this activation. */
+  access: 'free' | 'reach' | 'locked';
+  legal: boolean;
+  reason: string | null;
+  needsTarget: boolean;
+  targets: RungTarget[];
+}
+
+export interface ActionOffer {
+  type: LadderType;
+  spell: SpellId | null;
+  label: string;
+  detail: string;
+  granted: Grade;
+  reachable: Grade | null;
+  reachDc: number | null;
+  reachModifier: number;
+  rungs: [RungOption, RungOption, RungOption];
 }
 
 export interface LogEntry {
@@ -78,10 +98,13 @@ export type Phase = 'battle' | 'ended';
 
 export interface BattleState {
   units: Unit[];
+  /** Deployment order. Activation order is alternating, not fixed. */
   order: string[];
   round: number;
-  activeIndex: number;
-  actionsLeft: number;
+  pending: Side;
+  active: string | null;
+  activated: string[];
+  lastSide: Side | null;
   board: Board;
   phase: Phase;
   winner: Side | 'draw' | null;
