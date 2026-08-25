@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, notation, OFFICIAL, paceReason, seededRandom, REACHES, ROLES, ROLE_BLURBS, ROSTER, SIZE, TACTICS, type Reach, type Role, type Side, type Tactic, type UnitCard } from '../engine/index.js';
+  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, notation, OFFICIAL, paceReason, seededRandom, ROSTER, SIZE, type Side, type UnitCard } from '../engine/index.js';
   import type { BoardEventOf, TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { back, game, resetSetup, save, startBattle, type SetupUnit } from './game.svelte.js';
@@ -7,7 +7,6 @@
   let side: Side = $state('attacker');
   let rosterName = $state(COMBATANTS[0].name);
   const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
-  let custom = $state<{ name: string; level: number; role: Role; salvo: Reach | null; pace: boolean; fear: boolean; tactics: Tactic[] }>({ name: 'New Unit', level: 5, role: 'infantry', salvo: null, pace: false, fear: false, tactics: [] });
   let selected = $state<number | null>(null);
   // Set on a tray item's dragstart, read back from DataTransfer on drop — dragstart is the
   // only point a native drag gives Svelte a hook, so it also drives the live deploy-wash
@@ -183,25 +182,6 @@
         </select>
         <button onclick={() => add(library.find((c) => c.name === rosterName)!)}>Add</button>
       </div>
-      <h3>Your own</h3>
-      <div class="row">
-        <input bind:value={custom.name} placeholder="Name" style="width:11rem">
-        <label>Level <input type="number" min="1" max="20" bind:value={custom.level} style="width:4.5rem"></label>
-        <select bind:value={custom.role}>{#each ROLES as r (r)}<option value={r}>{r}</option>{/each}</select>
-      </div>
-      <p class="muted">{ROLE_BLURBS[custom.role]}</p>
-      <div class="row">
-        <label>Salvo <select bind:value={custom.salvo}><option value={null}>none</option>{#each REACHES as r (r)}<option value={r}>{r}</option>{/each}</select></label>
-        <label><input type="checkbox" bind:checked={custom.pace}> Pace</label>
-        <label><input type="checkbox" bind:checked={custom.fear}> Fear</label>
-      </div>
-      <div class="row">
-        {#each TACTICS as t (t)}
-          <label class="muted"><input type="checkbox" checked={custom.tactics.includes(t)} onchange={(e) => { custom.tactics = e.currentTarget.checked ? [...custom.tactics, t] : custom.tactics.filter((x) => x !== t); }}>{t}</label>
-        {/each}
-      </div>
-      {@render sheetLines(custom)}
-      <button onclick={() => add({ ...custom, tactics: [...custom.tactics] })}>Add {custom.name}</button>
     </div>
 
     <h2>Siege engines</h2>

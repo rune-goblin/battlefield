@@ -1,18 +1,12 @@
 import { armourClass, areaDc, perceptionBonus, saveBonus, type Tier } from './tables.js';
 
 export type Role = 'infantry' | 'cavalry';
-export const ROLES: Role[] = ['infantry', 'cavalry'];
 
 export type Reach = 'close' | 'long' | 'extreme';
-export const REACHES: Reach[] = ['close', 'long', 'extreme'];
 
 export type Tactic =
   | 'cavalry-charge' | 'reactive-attack' | 'raise-shields' | 'shield-block' | 'defend-allies'
   | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire' | 'false-retreat' | 'battlefield-medicine' | 'ambush';
-export const TACTICS: Tactic[] = [
-  'cavalry-charge', 'reactive-attack', 'raise-shields', 'shield-block', 'defend-allies',
-  'feint', 'dirty-fighting', 'demoralize', 'covering-fire', 'false-retreat', 'battlefield-medicine', 'ambush',
-];
 
 export interface UnitStats {
   strike: number | null;
@@ -56,11 +50,6 @@ interface RoleProfile { defence: Tier; strike: Tier; volley: Tier; will: Tier; p
 export const ROLE_PROFILES: Record<Role, RoleProfile> = {
   infantry: { defence: 'high', strike: 'moderate', volley: 'moderate', will: 'high', perception: 'moderate', pace: false, tactics: ['raise-shields'] },
   cavalry: { defence: 'high', strike: 'high', volley: 'moderate', will: 'moderate', perception: 'high', pace: true, tactics: ['cavalry-charge'] },
-};
-
-export const ROLE_BLURBS: Record<Role, string> = {
-  infantry: 'Foot troops. Tough and steady; give it a Salvo reach to make archers or skirmishers.',
-  cavalry: 'Mounted or fast-moving troops. Hits hard, has Pace, charges across open ground.',
 };
 
 export function deriveStats(card: UnitCard): UnitStats {
