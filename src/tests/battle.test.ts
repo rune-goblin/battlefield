@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, activatable, activeUnit, availableActions, createBattle, defenceOf, isOutflanked, isRouted,
-  moveTargets, rangeBetween, select, shootModifier, strikeModifier, unit,
+  act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, defenceOf,
+  endActivation, isOutflanked, isRouted, moveReach, movePath, rangeBetween, select, shootModifier,
+  strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -36,11 +37,15 @@ const offer = (state: BattleState, type: LadderType, id?: string) =>
 const targets = (o: ActionOffer, rung: Grade) => o.rungs[rung - 1].targets.map((t) => t.id);
 const guardOn = (state: BattleState, id: string, rng = scriptedRng([10])) =>
   act(state, { type: 'guard', rung: 1, unit: id }, rng);
-// A routed unit is offered nothing but Withdraw, so burning its activation takes both.
-const burn = (state: BattleState, id: string) =>
-  availableActions(state, id).some((o) => o.type === 'guard')
+const moves = (state: BattleState, id: string) => moveReach(state, unit(state, id));
+// A routed unit is offered nothing but Withdraw, so burning its activation takes both. One
+// action leaves two unspent, so the activation is ended by hand unless the action ended it.
+const burn = (state: BattleState, id: string) => {
+  const s = availableActions(state, id).some((o) => o.type === 'guard')
     ? guardOn(state, id)
     : act(state, { type: 'withdraw', rung: 1, unit: id }, scriptedRng([10]));
+  return s.phase === 'battle' && s.active === id ? endActivation(s) : s;
+};
 
 describe('deployment', () => {
   it('rejects a unit outside its three deployment ranks, on water, or on a taken square', () => {
@@ -92,24 +97,48 @@ describe('alternating activation', () => {
     const { state } = battle([]);
     expect(activatable(state, 'attacker').map((u) => u.id)).toEqual(['u0', 'u1']);
     expect(activeUnit(select(state, 'u1'))!.id).toBe('u1');
-    const s = guardOn(select(state, 'u1'), 'u1');
+    const s = burn(select(state, 'u1'), 'u1');
     expect(s.activated).toEqual(['u1']);
     expect(activeUnit(s)!.side).toBe('defender');
   });
 
-  it('runs one action per activation and starts a new round when everyone has acted', () => {
+  it('gives each activation three actions and hands over when they are spent', () => {
+    const { state } = battle([]);
+    let s = guardOn(state, 'u0');
+    expect(unit(s, 'u0').actions).toBe(2);
+    expect(activation(s)!.actions).toBe(2);
+    expect(activeUnit(s)!.id).toBe('u0');
+    expect(() => guardOn(s, 'u1')).toThrow(/already under way/);
+    s = guardOn(guardOn(s, 'u0'), 'u0');
+    expect(s.activated).toEqual(['u0']);
+    expect(unit(s, 'u0').actions).toBe(3);
+    expect(activeUnit(s)!.side).toBe('defender');
+  });
+
+  it('lets a unit stop with actions unspent', () => {
+    const { state } = battle([]);
+    const s = endActivation(guardOn(state, 'u0'));
+    expect(s.activated).toEqual(['u0']);
+    expect(activeUnit(s)!.side).toBe('defender');
+  });
+
+  it('starts a new round when everyone has acted', () => {
     let s = battle([]).state;
-    for (let i = 0; i < 4; i++) s = guardOn(s, activeUnit(s)!.id);
+    for (let i = 0; i < 4; i++) s = burn(s, activeUnit(s)!.id);
     expect(s.round).toBe(2);
     expect(s.activated).toEqual([]);
   });
 });
 
 describe('the menu is filtered by situation', () => {
-  it('offers Move, Shoot and Guard in the open', () => {
+  it('offers Shoot and Guard in the open, and movement outside the menu', () => {
     const { state } = battle([]);
-    expect(types(state, 'u2')).toEqual(['move', 'shoot', 'guard']);
-    expect(types(state, 'u0')).toEqual(['move', 'guard']);
+    expect(types(state, 'u2')).toEqual(['shoot', 'guard']);
+    expect(types(state, 'u0')).toEqual(['guard']);
+    const a = activation(state, 'u0')!;
+    expect(a.actions).toBe(3);
+    expect(a.speed).toBe(25);
+    expect(a.moves.size).toBeGreaterThan(0);
   });
   it('offers Fight, Guard and Withdraw in contact, and Rally once disordered', () => {
     const { state } = battle([]);
@@ -156,7 +185,7 @@ describe('reaching above your grade', () => {
   it('success lands on the rung reached for', () => {
     const s = reachGuard(5);
     expect(unit(s, 'u0').guard).toEqual({ defence: 3, aura: 0 });
-    expect(unit(s, 'u0').rooted).toBe(true);
+    expect(unit(s, 'u0').rooted).toBe(2);
   });
 
   it('failure falls back to the granted rung and still acts', () => {
@@ -179,55 +208,109 @@ describe('reaching above your grade', () => {
     expect(g.rungs.map((r) => r.access)).toEqual(['free', 'free', 'free']);
   });
 
-  it('a rooted unit may not move on its next activation', () => {
+  it('a unit that digs in may not move for the rest of this activation or the next', () => {
     const { state } = battle([]);
     let s = act(state, { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([5]));
-    for (const id of ['u2', 'u1', 'u3']) s = guardOn(s, id);
-    expect(offer(s, 'move', 'u0').rungs.every((r) => r.reason === 'rooted')).toBe(true);
+    expect(moves(s, 'u0').size).toBe(0);
+    s = endActivation(s);
+    for (const id of ['u2', 'u1', 'u3']) s = burn(s, id);
+    expect(moves(s, 'u0').size).toBe(0);
+    expect(moves(endActivation(s), 'u0').size).toBeGreaterThan(0);
   });
 });
 
-describe('movement', () => {
-  it('Advance steps one cell, March goes further, and Pace adds one more', () => {
+describe('movement points', () => {
+  it('one Move action spends Speed and stops short of what it cannot afford', () => {
     const { state } = battle([]);
-    const m = offer(state, 'move', 'u0');
-    expect(targets(m, 1)).toEqual(['b2', 'c1', 'c3', 'd2']);
-    expect(targets(m, 2)).toContain('c4');
-    expect(targets(m, 2)).not.toContain('c5');
-    expect(targets(offer(state, 'move', 'u1'), 2)).toContain('e5');
+    expect(unit(state, 'u0').speed).toBe(25);
+    unit(state, 'u0').actions = 1;
+    const m = moves(state, 'u0');
+    expect(m.get('c3')).toMatchObject({ feet: 10, actions: 1 });
+    expect(m.get('c4')).toMatchObject({ feet: 20, actions: 1 });
+    expect(m.has('c5')).toBe(false);
   });
-  it('water, walls and cliffs are not crossed', () => {
+
+  it('a second Move action buys another Speed, and the five feet left over carry', () => {
+    const { state } = battle([]);
+    const s = act(state, { type: 'move', to: 'c4', unit: 'u0' }, scriptedRng([10]));
+    const u = unit(s, 'u0');
+    expect(u.square).toEqual(parse('c4'));
+    expect(u.actions).toBe(2);
+    expect(u.feet).toBe(5);
+    expect(moveReach(s, u).get('f4')).toMatchObject({ feet: 30, actions: 1 });
+    expect(movePath(moveReach(s, u), 'f4')).toEqual(['c4', 'd4', 'e4', 'f4']);
+  });
+
+  it('spends the terrain table in feet', () => {
+    const board = openBoard();
+    board.squares[2][2].terrain = 'forest';
+    board.squares[3][2].terrain = 'swamp';
+    board.squares[1][3].elevation = 1;
+    const { state } = battle([], board);
+    const m = moves(state, 'u0');
+    expect(m.get('c3')!.feet).toBe(20);
+    expect(m.get('d2')!.feet).toBe(20);
+    expect(m.get('c4')!.feet).toBe(50);
+  });
+
+  it('will not cross water, a standing wall or a cliff, but a breach is a crossing', () => {
     const board = openBoard();
     board.squares[2][2].terrain = 'water';
     board.walls[edgeKey(parse('c2'), parse('d2'))] = { tier: 1, boxes: 2, remaining: 2 };
     board.squares[1][1].elevation = 2;
     const { state } = battle([], board);
-    expect(targets(offer(state, 'move', 'u0'), 1)).toEqual(['c1']);
+    unit(state, 'u0').actions = 1;
+    expect([...moves(state, 'u0').keys()].sort()).toEqual(['b1', 'c1', 'd1']);
+    state.board.walls[edgeKey(parse('c2'), parse('d2'))].remaining = 0;
+    expect(moves(state, 'u0').get('d2')).toMatchObject({ feet: 10 });
   });
-  it('slow ground costs two points, so only a March enters it', () => {
+
+  it('a flier ignores terrain and every blocked edge', () => {
     const board = openBoard();
-    board.squares[2][2].terrain = 'swamp';
+    board.squares[2][2].terrain = 'water';
+    board.walls[edgeKey(parse('c2'), parse('d2'))] = { tier: 1, boxes: 2, remaining: 2 };
+    board.squares[1][1].elevation = 2;
     const { state } = battle([], board);
-    const m = offer(state, 'move', 'u0');
-    expect(targets(m, 1)).not.toContain('c3');
-    expect(targets(m, 2)).toContain('c3');
+    const u = unit(state, 'u0');
+    u.flying = true;
+    u.actions = 1;
+    expect([...moves(state, 'u0').keys()].sort()).toContain('c3');
+    expect(moves(state, 'u0').get('d2')).toMatchObject({ feet: 10 });
+    expect(moves(state, 'u0').get('b2')).toMatchObject({ feet: 10 });
   });
-  it('Charge closes to contact and fights, and a failed reach marches instead', () => {
+
+  it('a unit in contact leaves by withdrawing, not by striding', () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c3');
+    expect(moves(state, 'u0').size).toBe(0);
+    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([]);
+  });
+
+  it('a Charge costs the movement plus one, and the melee is a Fight rung', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c4');
-    const m = offer(state, 'move', 'u0');
-    expect(targets(m, 3)).toEqual(['u2']);
-    const hit = act(state, { type: 'move', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([15, 10, 1]));
-    expect(unit(hit, 'u0').square).toEqual(parse('c3'));
-    expect(unit(hit, 'u2').wounds).toBe(1);
-    const short = act(state, { type: 'move', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([4]));
-    expect(unit(short, 'u0').square).toEqual(parse('c3'));
-    expect(unit(short, 'u2').wounds).toBe(0);
+    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c3', feet: 10, actions: 1 }]);
+    const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 1]));
+    expect(unit(s, 'u0').square).toEqual(parse('c3'));
+    expect(unit(s, 'u0').actions).toBe(1);
+    expect(unit(s, 'u2').wounds).toBeGreaterThanOrEqual(1);
   });
+
+  it('three actions cover a stride and then a charge, and no more', () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c6');
+    let s = act(state, { type: 'move', to: 'c4', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(s, 'u0').actions).toBe(2);
+    s = act(s, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 10]));
+    expect(unit(s, 'u0').square).toEqual(parse('c5'));
+    expect(s.activated).toEqual(['u0']);
+    expect(s.pending).toBe('defender');
+  });
+
   it('a Move takes no free strikes; only a Withdraw does', () => {
     const { state } = battle([10]);
     place(state, 'u2', 'c4');
-    const s = act(state, { type: 'move', rung: 1, target: 'c3', unit: 'u0' }, scriptedRng([20]));
+    const s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([20]));
     expect(unit(s, 'u0').wounds).toBe(0);
   });
 });
@@ -254,6 +337,24 @@ describe('shooting', () => {
     expect(shootModifier(state, k, unit(state, 'u0'))).toBe(k.stats.volley! + 1);
     place(state, 'u3', 'd4');
     expect(shootModifier(state, k, unit(state, 'u0'))).toBe(k.stats.volley! + 1 - 4);
+  });
+  it('caps the top band on hex, where a ring is true range', () => {
+    const hex = battle([], openBoard('hex')).state;
+    place(hex, 'u0', 'c2');
+    const bandAt = (cell: string) => {
+      place(hex, 'u2', cell);
+      return rangeBetween(hex, unit(hex, 'u0'), unit(hex, 'u2'));
+    };
+    expect(bandAt('c4')).toBe('close');
+    expect(bandAt('c5')).toBe('long');
+    expect(bandAt('c7')).toBe('extreme');
+    expect(bandAt('c8')).toBe('beyond');
+    expect(targets(offer(hex, 'shoot', 'u2'), 3)).toEqual([]);
+    // Manhattan distance already over-counts a square diagonal, so square keeps no cap.
+    const sq = battle([], openBoard('square')).state;
+    place(sq, 'u0', 'a1');
+    place(sq, 'u2', 'h8');
+    expect(rangeBetween(sq, unit(sq, 'u0'), unit(sq, 'u2'))).toBe('extreme');
   });
   it('Barrage ignores cover', () => {
     const board = openBoard();
@@ -336,10 +437,10 @@ describe('disorder', () => {
   it('a wounding shot disorders the target, and Rally clears it', () => {
     const { state } = battle([]);
     place(state, 'u0', 'c5');
-    const hit = act(guardOn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20]));
+    const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20]));
     expect(unit(hit, 'u0').wounds).toBe(2);
     expect(unit(hit, 'u0').disorder).toBe(1);
-    const rallied = act(hit, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    const rallied = act(endActivation(hit), { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
     expect(unit(rallied, 'u0').disorder).toBe(0);
   });
   it('disorder is −1 to everything', () => {
@@ -362,14 +463,14 @@ describe('disorder', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c8');
     unit(state, 'u2').disorder = unit(state, 'u2').quality;
-    const s = act(guardOn(state, 'u0'), { type: 'withdraw', rung: 1, unit: 'u2' }, scriptedRng([10]));
+    const s = act(burn(state, 'u0'), { type: 'withdraw', rung: 1, unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
   });
   it('fear disorders whoever comes to grips with it', () => {
     const { state } = battle([]);
     unit(state, 'u2').fear = true;
     place(state, 'u2', 'c4');
-    const s = act(state, { type: 'move', rung: 1, target: 'c3', unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').disorder).toBe(1);
   });
 });
@@ -393,20 +494,21 @@ describe('the battle ends', () => {
 });
 
 describe.each(['square', 'hex'] as const)('a full round on %s', (kind) => {
-  it('activates every unit once and comes back round', () => {
+  it('activates every unit once, striding and guarding, and comes back round', () => {
     const { state } = battle([], openBoard(kind));
     const seen: string[] = [];
     let s = state;
     while (s.round === 1 && s.phase === 'battle') {
       const u = activeUnit(s)!;
       seen.push(u.id);
-      const move = offer(s, 'move', u.id);
-      s = move && move.rungs[1].targets.length
-        ? act(s, { type: 'move', rung: 2, target: move.rungs[1].targets[0].id, unit: u.id }, scriptedRng([10]))
-        : guardOn(s, u.id);
+      const a = activation(s, u.id)!;
+      const cell = [...a.moves].filter(([, m]) => m.actions === 1).map(([k]) => k).sort()[0];
+      let next = cell ? act(s, { type: 'move', to: cell, unit: u.id }, scriptedRng([10])) : s;
+      if (next.phase === 'battle' && next.active === u.id) next = guardOn(next, u.id);
+      s = next.phase === 'battle' && next.active === u.id ? endActivation(next) : next;
     }
     expect(seen.sort()).toEqual(['u0', 'u1', 'u2', 'u3']);
     expect(s.round).toBe(2);
-    expect(moveTargets(s, unit(s, 'u0'), 1).size).toBeGreaterThan(0);
+    expect(activation(s)!.moves.size).toBeGreaterThan(0);
   });
 });

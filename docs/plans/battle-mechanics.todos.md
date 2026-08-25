@@ -184,3 +184,146 @@ disorder), and a locked rung's `reason` text.
   shape as the pre-Wave-1 UI), not per-target buttons — a March's reachable-cell list can run
   to dozens of entries on a hex board, too many to lay out as buttons. Hovering the rung and
   clicking the highlighted board cell/token is the primary path either way.
+
+## Movement and actions notes
+
+Wave 3. `src/engine/path.ts` is new; `battle.ts` runs three actions per activation and spends
+movement in feet; Move's ladder is gone from `LADDERS`.
+
+### `path.ts` — the ported model
+
+Reignmaker's `PathfindingService` shape without its nav-grid rasterisation, its Foundry
+`canvas` dependency or its 100k-iteration guard. Its naive `frontier.sort()` per pass is kept
+verbatim: 64 cells never make a heap worth the loss of legibility.
+
+```ts
+stepFeet(board, from, to, flying?): number          // Infinity when blocked
+reachable(board, start, { budget, flying?, occupied? }): Map<cell, { feet, from }>
+pathTo(reach, to): string[]                          // start cell first, [] when unreachable
+feetTo(reach, to): number
+CELL_FEET = 10, CLIMB_FEET = 10, TERRAIN_FEET
+```
+
+Rasterisation existed to let a unit enter a hex from the non-river side of geometry drawn
+across a scene. This board puts walls and cliffs on explicit edges (`a2|a3`), which is exact
+where rasterisation approximates, so `barrierBetween` carries the whole edge model — and a
+breached wall (`remaining === 0`) is already a crossing with no special case.
+
+### Terrain costs, as implemented
+
+| Entering | Feet |
+|---|---|
+| Open, settlement | 10 |
+| Forest, shallows | 20 |
+| Swamp | 30 |
+| Water | impassable |
+| Each elevation level climbed | +10 |
+| Across a standing wall or a cliff | impassable |
+| Across a breached wall | the terrain cost alone |
+
+Flying returns 10 ft for any in-bounds neighbour and skips `barrierBetween` entirely, so a
+flier crosses water, walls and cliffs at open-ground price.
+
+### The reachability surface the UI wave binds to
+
+`activation(state, unitId?)` is the whole surface for one unit:
+
+```ts
+{ unit, actions, feet, speed, offers: ActionOffer[], moves: Map<cell, MoveReach>, charges: ChargeOption[] }
+MoveReach  = { feet, actions, from }
+ChargeOption = { unit, cell, feet, actions }   // actions is the movement, before the melee's one
+```
+
+`movePath(moves, cell)` reconstructs the drag preview, start cell first. `moveReach(state, u)`
+and `chargeTargets(state, u)` are exported separately for direct use. `ActionOffer` gained
+`cost` (1 for all six ladders); `RungOption` / `RungTarget` are otherwise untouched.
+`endActivation(state, unitId?)` is the end-activation control the doc's interaction section
+asks for, and doubles as the pass.
+
+### Judgment calls
+
+- **Movement pools across the activation.** A Move action adds Speed feet to a pool that
+  survives to the next action of the same activation and is lost at its end. PF2e loses the
+  remainder of each Stride, which would make a 30 ft swamp cell permanently unenterable by a
+  25 ft troop and would make "how many actions does this cell cost" depend on route
+  segmentation rather than total cost. Pooling gives `ceil((feet − banked) / speed)` exactly,
+  which is what the drag preview needs. Tunable: switch to per-Stride remainders if pooling
+  reads as too generous.
+- **Every ladder rung costs one action, and may be repeated.** The doc's "Move, Move, Move, or
+  Move, Shoot, Guard" implies a flat price and no multiple-attack penalty was reintroduced.
+  This triples attack throughput against the one-action economy the level-mismatch table was
+  computed under — see the rule questions.
+- **Charge is a compound, not a rung.** `{ type: 'charge', target }` pathfinds to the cheapest
+  cell touching the enemy, spends that movement, then spends one more action on a Fight rung —
+  the unit's granted rung by default, or `rung` to reach for a higher one. It is therefore
+  exactly equivalent to Move-then-Fight and carries no bonus of its own, which is what the old
+  "Charge carries no attack bonus" note said. It exists as a verb so a drag onto an enemy is
+  one gesture, and so `chargeTargets` can tell the UI where contact is affordable.
+- **`Unit.rooted` is a countdown, not a flag.** Digging in sets 2 and `finish` decrements, so
+  the root covers the rest of the activation that dug in and the whole of the next one. A
+  boolean cleared at the start of an activation would have been cleared by the same
+  activation that set it once an activation is three actions long.
+- **`Unit.flying` is new**, read off `sheet.fly`. `speedOf` already turns a fly speed into feet
+  and is the only movement stat; `flying` is the bypass flag, not a second speed.
+- **A unit in contact has no `moves` and no `charges`.** Leaving contact is the Withdraw
+  ladder, which prices it. Withdraw still moves exactly one cell and ignores movement points.
+- **`mounted` and `cavalry-charge` no longer feed any grade.** They fed Move 3, and Move has no
+  grades now; speed carries it instead (cavalry 35 ft against infantry 25). Both are still
+  emitted by the importers and by `ROLE_PROFILES`, now inert. Candidate: let them raise
+  Withdraw, since horsemen break off well — not done, as the doc grants no such rule.
+- **A Move takes no free strikes**, unchanged. Striding *into* contact is free; leaving is not.
+
+### Shooting bands on hex — the new numbers, tunable
+
+```
+square: close ≤ 2, long ≤ 3, extreme unbounded     (unchanged)
+hex:    close ≤ 2, long ≤ 3, extreme ≤ 5, beyond 5 nothing shoots
+```
+
+Hex distance is true range where square's Manhattan distance over-counts every diagonal, so
+the same threshold covers far more ground: within distance 3 a hex shooter sees 37 cells
+against square's 25, unclipped. Head-on reach is identical on both grids, though — three rows
+is distance 3 either way — so the two lower thresholds stand: `close ≤ 2` still forces a
+shooter
+to advance one row before it can Loose at the enemy front line, and `long ≤ 3` still reaches
+that line exactly. What is genuinely new on hex is the width of the fan, which no threshold
+narrows, so the retune caps the top band instead. At 5 cells a Barrage still covers the whole
+contested middle, and reaches the defender's back rank straight ahead from the attacker's own
+front line — but no longer from the attacker's home rank (7 on hex), and not onto the far
+zone's flanks at all (6 and up). `Range` gained a `'beyond'` member for this; `rangeRank`
+scores it 4, so it fails every band test.
+
+Note the scale mismatch this exposes: one cell is now 10 ft, so PF2e's own bands (`salvoFeet`
+≤ 60 close, ≤ 120 long) would be 6 and 12 cells — most of an 8-cell board. The board's bands
+stay compressed abstractions rather than literal reach. `BANDS` in `types.ts` is the one place
+to retune.
+
+### What the UI wave must fix first
+
+- **A saved battle in `localStorage` will not load.** `Unit` gained `actions`, `feet`,
+  `flying`, `rooted` changed from boolean to number, and `BattleState` gained `begun`. A state
+  saved before this wave deserialises with `actions: undefined` and breaks on the first
+  action. Bump `KEY` in `src/app/game.svelte.ts` (`battlefield.v2` → `v3`) or migrate. Left
+  alone here because this wave may not touch `src/app/`.
+- **Movement has no UI.** `availableActions` no longer offers a Move type, so `Battle.svelte`'s
+  panel cannot move a unit at all; the drag in the doc's interaction section is the fix.
+  `styleFor`'s `offer.type === 'move'` branch is dead.
+- **There is no end-activation button**, so a unit must spend all three actions before the turn
+  passes. `endActivation(state, unitId)` is the call.
+- **Undo is now per action**, not per activation, because `takeAction` pushes history on every
+  `act`. That may be what is wanted; decide in the UI wave.
+
+### Rule questions for play
+
+- Three attacks per activation. The level-mismatch table was computed at one attack per
+  activation and concluded "morale is the primary kill mechanism"; at three, an even fight
+  destroys a unit in under three activations. Should attack ladders (Shoot, Fight, Cast) be
+  once per activation, SAGA-style, with Move and Guard repeatable? Or does MAP come back?
+- Rally now costs one third of an activation instead of a whole one, so clearing all disorder
+  is cheap and disorder may stop being the tempo weapon it was designed as.
+- A charge that finds nobody — the target routed or the reach was miscounted — still spends the
+  movement and refunds the melee action. Should it cost the full price anyway?
+- Should Withdraw spend movement points rather than moving exactly one cell? A fighting retreat
+  by cavalry moving one cell reads oddly next to a 40 ft Stride.
+- Flying costs 10 ft a cell over everything, including water it could not land on. Should a
+  flier be forbidden from ending a move over water?

@@ -10,4 +10,5 @@ export * from './combatants.js';
 export * from './official.js';
 export * from './engines.js';
 export * from './board.js';
+export * from './path.js';
 export * from './force.js';

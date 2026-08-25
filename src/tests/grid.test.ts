@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, isOutflanked, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, isOutflanked, moveReach, unit } from '../engine/battle.js';
 import { allSquares, hexGrid, notation, parse, squareGrid, type Grid } from '../engine/grid.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
@@ -79,10 +79,14 @@ const targets = (state: BattleState, type: LadderType, rung: 1 | 2 | 3, id?: str
   offer(state, type, id).rungs[rung - 1].targets.map((t) => t.id);
 
 describe('battle on hex', () => {
-  it('advances into six neighbours and marches past them', () => {
+  it('strides into six neighbours for ten feet each, and further for a second action', () => {
     const state = hexBattle();
-    expect(targets(state, 'move', 1, 'u0')).toEqual(expect.arrayContaining(['b2', 'c1', 'c3', 'd1', 'd2', 'd3']));
-    expect(targets(state, 'move', 2, 'u0')).toContain('c4');
+    const moves = moveReach(state, unit(state, 'u0'));
+    for (const cell of ['b2', 'c1', 'c3', 'd1', 'd2', 'd3']) {
+      expect(moves.get(cell), cell).toMatchObject({ feet: 10, actions: 1 });
+    }
+    expect(moves.get('c4')).toMatchObject({ feet: 20, actions: 1 });
+    expect(moves.get('c5')).toMatchObject({ feet: 30, actions: 2 });
   });
   it('engages across a square diagonal and outflanks from two of the six', () => {
     const state = hexBattle();

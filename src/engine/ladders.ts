@@ -1,14 +1,15 @@
 import { cardTraits, deriveStats, speedOf, type Reach, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
 import { saveBonus, type Tier } from './tables.js';
 
-export type LadderType = 'move' | 'shoot' | 'fight' | 'guard' | 'withdraw' | 'rally' | 'cast';
-export const LADDER_TYPES: LadderType[] = ['move', 'shoot', 'fight', 'guard', 'withdraw', 'rally', 'cast'];
+// Movement has no ladder: a Move action spends the troop's Speed in feet, and taking it twice
+// or three times is what March and Charge used to name.
+export type LadderType = 'shoot' | 'fight' | 'guard' | 'withdraw' | 'rally' | 'cast';
+export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'withdraw', 'rally', 'cast'];
 
 export type Grade = 1 | 2 | 3;
 export type Grades = Record<LadderType, Grade>;
 
 export type RungId =
-  | 'advance' | 'march' | 'charge'
   | 'loose' | 'volley' | 'barrage'
   | 'strike' | 'press' | 'overrun'
   | 'brace' | 'dig-in' | 'shieldwall'
@@ -16,7 +17,6 @@ export type RungId =
   | 'steady' | 'rally' | 'inspire'
   | 'minor' | 'major' | 'grand';
 
-export interface MoveEffect { cells: number; usesPace: boolean; contact: 'allowed' | 'required'; shoot: number | null }
 export interface ShootEffect { band: 1 | 2 | 3; ignoresCover: boolean }
 export interface FightEffect { bonus: number; disorderOnMiss: number; takeGround: boolean }
 export interface GuardEffect { defence: number; rooted: boolean; aura: number }
@@ -33,7 +33,6 @@ export interface Rung {
   detail: string;
   /** Added to the level DC when a unit reaches for this rung. Rung 1 is never reached for. */
   reachDc: number;
-  move?: MoveEffect;
   shoot?: ShootEffect;
   fight?: FightEffect;
   guard?: GuardEffect;
@@ -45,11 +44,6 @@ export interface Rung {
 const CLEAR_ALL = 99;
 
 export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
-  move: [
-    { id: 'advance', verb: 'advances', type: 'move', index: 1, label: 'Advance', detail: 'One cell. You may shoot at −2.', reachDc: 0, move: { cells: 1, usesPace: false, contact: 'allowed', shoot: -2 } },
-    { id: 'march', verb: 'marches', type: 'move', index: 2, label: 'March', detail: 'Full pace.', reachDc: 0, move: { cells: 2, usesPace: true, contact: 'allowed', shoot: null } },
-    { id: 'charge', verb: 'charges', type: 'move', index: 3, label: 'Charge', detail: 'Full pace into contact, and a melee.', reachDc: 2, move: { cells: 2, usesPace: true, contact: 'required', shoot: null } },
-  ],
   shoot: [
     { id: 'loose', verb: 'looses', type: 'shoot', index: 1, label: 'Loose', detail: 'Close band.', reachDc: 0, shoot: { band: 1, ignoresCover: false } },
     { id: 'volley', verb: 'volleys', type: 'shoot', index: 2, label: 'Volley', detail: 'Long band.', reachDc: 0, shoot: { band: 2, ignoresCover: false } },
@@ -138,7 +132,6 @@ const cap = (n: number): Grade => Math.max(1, Math.min(3, n)) as Grade;
 // A tactic is a hand-authored hint that a statblock's numbers do not carry. Every grade below
 // is already decided without one.
 const TACTIC_GRADE: Partial<Record<Tactic, [LadderType, Grade]>> = {
-  'cavalry-charge': ['move', 3],
   'ambush': ['withdraw', 3],
   'false-retreat': ['withdraw', 3],
   'covering-fire': ['shoot', 3],
@@ -162,7 +155,6 @@ export function gradesFor(card: UnitCard): Grades {
   const alert = atLeast(perceptionBand(stats, l), 'high');
 
   const grades: Grades = {
-    move: speed === 0 ? 1 : has('mounted') ? 3 : pace,
     shoot: stats.reach === null ? 1 : REACH_GRADE[stats.reach],
     fight: stats.strike === null ? 1 : has('melee-drill') || fear ? 3 : 2,
     guard: cap(1 + (has('formation') ? 1 : 0) + (has('shielded') || has('magic-ward') ? 1 : 0)),
