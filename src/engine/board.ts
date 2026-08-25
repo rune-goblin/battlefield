@@ -82,7 +82,7 @@ function pick<T>(rnd: Random, items: T[]): T { return items[Math.floor(rnd() * i
 function emptyBoard(spec: BoardSpec): Board {
   const squares = Array.from({ length: SIZE }, () =>
     Array.from({ length: SIZE }, (): SquareState => ({ terrain: 'open', elevation: 0 })));
-  return { spec, grid: spec.grid ?? 'square', squares, walls: {} };
+  return { spec, grid: spec.grid ?? 'hex', squares, walls: {} };
 }
 
 function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: number, allowed: (sq: Square) => boolean): void {

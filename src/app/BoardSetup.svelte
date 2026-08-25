@@ -3,7 +3,7 @@
   import PixiBoard from './PixiBoard.svelte';
   import { game, generate, next, rerollSeed, save } from './game.svelte.js';
 
-  const GRIDS: GridKind[] = ['square', 'hex'];
+  const GRIDS: GridKind[] = ['hex', 'square'];
 
   const spec = $derived(game.setup.spec);
   const fortTier = $derived(spec.construction?.tier ?? -1);
@@ -18,7 +18,7 @@
   <div class="row">
     <label>Hex <select bind:value={game.setup.spec.base} onchange={save}>{#each HEX_TERRAINS as t (t)}<option value={t}>{t}</option>{/each}</select></label>
     <label>Grid
-      <select value={spec.grid ?? 'square'} onchange={(e) => { game.setup.spec.grid = e.currentTarget.value as GridKind; generate(); }}>
+      <select value={spec.grid ?? 'hex'} onchange={(e) => { game.setup.spec.grid = e.currentTarget.value as GridKind; generate(); }}>
         {#each GRIDS as g (g)}<option value={g}>{g}</option>{/each}
       </select>
     </label>

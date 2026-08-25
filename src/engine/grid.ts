@@ -182,4 +182,4 @@ export interface Grid {
 export const squareGrid: Grid = new SquareGrid();
 export const hexGrid: Grid = new HexGrid();
 
-export const gridFor = (kind: GridKind | undefined): Grid => (kind === 'hex' ? hexGrid : squareGrid);
+export const gridFor = (kind: GridKind | undefined): Grid => (kind === 'square' ? squareGrid : hexGrid);

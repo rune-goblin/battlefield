@@ -297,3 +297,46 @@ Progressive disclosure. The panel never lists every rung of every type at once.
 
 The drag is the primary verb for movement, so movement rarely touches the menu at all. The
 menu is for the things where pushing your luck matters.
+
+
+## Hex is the primary grid
+
+Decision (Mark, 2026-08-25): hex is the default and the reference grid. It removes the
+diagonal questions entirely — no "orthogonal", no "diagonal neighbours are distance 2", both
+of which were square-only patches on rules meant to read as "adjacent". It also separates the
+battle layer visually from skirmish play, which happens on squares.
+
+Square survives as an option in the grid dropdown, but it is no longer the case the rules are
+written against. `BoardSpec.grid` now defaults to `'hex'`, as does `gridFor()` for an
+unspecified kind, and the dropdown lists hex first.
+
+Two consequences follow, both previously recorded as square-first concerns and now inverted:
+
+- Shooting bands must be tuned for hex, where 18 cells sit within distance 2 against square's
+  12. The band numbers in the rules were set on square and reach much further on hex.
+- `docs/design.md` and `public/rules.html` are square-first with a hex sidebar. They need
+  rewriting hex-first, with square demoted to the variant note.
+
+## Pathing
+
+Mark asked whether Reignmaker's pathing could be used as a service or ported. Neither
+literally: **port the model, not the code.**
+
+`PathfindingService.getReachableHexes` is Dijkstra over a *sub-cell navigation grid* — 8×8
+nav cells rasterised inside every hex — charging terrain cost only when entering a new hex.
+That rasterisation exists to solve a problem this project does not have: rivers drawn as
+arbitrary geometry across a Foundry scene, where a unit must be able to enter a hex from the
+non-river side. It is also a stateful Svelte service bound to Foundry's `canvas`, so it
+cannot be consumed as a service from here.
+
+This board has 64 cells and puts walls and cliffs on explicit *edges* (`a2|a3`), which is
+exact where rasterisation is an approximation. So `src/engine/path.ts` takes:
+
+- the algorithm shape — Dijkstra with a cost-ordered frontier returning
+  `Map<cellKey, costInFeet>`, plus path reconstruction for the drag preview;
+- the cost model — travel classes, the settlement/road discount, blocked edges with explicit
+  crossings for breached walls, and the flying bypass;
+
+and drops the nav-grid rasterisation, the Foundry canvas dependency and the 100k-iteration
+guard, none of which earn their place at 64 cells. Reignmaker's naive `frontier.sort()` per
+iteration is fine at this size and is kept for legibility.
