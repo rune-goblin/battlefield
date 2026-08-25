@@ -26,6 +26,7 @@
   // stay visible without a click (Mark: "it shows status based on interaction").
   type MoveBand = 1 | 2 | 3 | 'push';
   let hoveredBand = $state<MoveBand | null>(null);
+  let moveOpen = $state(true);
 
   // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
@@ -47,7 +48,7 @@
 
   // A new unit closes whatever ladder was open and drops any in-flight drag preview — both
   // are per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; openType = null; drag = null; hoveredBand = null; });
+  $effect(() => { void active?.id; openType = null; drag = null; hoveredBand = null; moveOpen = true; });
 
   const focusedEntry = $derived.by<{ offer: ActionOffer; opt: RungOption } | null>(() => {
     if (!focused || !openOffer) return null;
@@ -342,11 +343,19 @@
         </tbody></table>
       </div>
 
-      <!-- Move is drag-driven and visible without a click — its bands are the same ones the
-           board washes on selection, and this row tracks a live drag both ways. -->
+      <!-- Move opens with the selection rather than staying pinned: its bands are the same
+           ones the board washes, and the rows track a live drag both ways. -->
       {#if act}
         <div class="card move-card">
-          <h3>Move <span class="muted">— drag the token, or read the bands</span></h3>
+          <button
+            class="move-head"
+            aria-expanded={moveOpen}
+            onclick={() => { moveOpen = !moveOpen; if (!moveOpen) hoveredBand = null; }}
+          >
+            <h3>Move</h3>
+            <span class="muted">{moveOpen ? '— drag the token, or read the bands' : `— ${moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable`}</span>
+          </button>
+          {#if moveOpen}
           <div class="move-rows">
             {#each ([1, 2, 3] as const) as n (n)}
               <div
@@ -377,6 +386,7 @@
               </span>
             </div>
           </div>
+          {/if}
         </div>
       {/if}
 
@@ -494,7 +504,12 @@
   .action-pips .pip { width: .65rem; height: .65rem; }
   .end-activation { margin-left: auto; }
 
-  .move-card h3 { margin: 0 0 .4rem; }
+  .move-card h3 { margin: 0; font-size: inherit; }
+  .move-head {
+    display: flex; align-items: baseline; gap: .4rem; width: 100%;
+    margin: 0 0 .4rem; padding: 0; border: 0; background: none;
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
   .move-rows { display: flex; flex-direction: column; gap: .25rem; }
   .move-row {
     display: flex; justify-content: space-between; align-items: baseline; gap: .5rem;
