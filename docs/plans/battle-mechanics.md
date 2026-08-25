@@ -472,3 +472,39 @@ the unit out in good order *and* well away, which is what a fighting retreat sho
 |---|---|
 | Guard | +2 Defence, or +2 to push |
 | Withdraw | further distance, or +2 to push |
+
+
+## Withdraw becomes an Escape check
+
+Decision (Mark, 2026-08-26): withdrawing without being hit takes a check against the enemy
+holding you, not a grade. Withdraw's three-rung ladder collapses into the four degrees of one
+roll, the same way Move's ladder collapsed into the action economy.
+
+Withdraw costs one action. For **each enemy in contact**, roll the withdrawing unit's
+**Reflex against that enemy's attack DC** (their `strike` + 10):
+
+| Degree | Result | Old rung |
+|---|---|---|
+| Critical success | Clean away. | — |
+| Success | Clean away. | Fighting retreat |
+| Failure | That enemy takes a free strike. | Break off |
+| Critical failure | Free strike, and 1 disorder. | Scatter |
+
+The rung names survive as outcomes, which is what they always described.
+
+Extra actions buy **+2 each to the Escape check** — three actions is +4 — or distance, the
+player allocating between them as everywhere else.
+
+**Reflex, settled with data.** Within-level spread across all 162 troops: AC 3.2 (flat and
+useless), Will 5.1, Fortitude 5.4, Reflex **5.6** — the widest of any defensive stat, and
+level-6 troops run 11 to 17. It is already imported for every troop, so nothing is invented;
+Athletics is not published usably on troop statblocks and would have to be derived.
+`UnitStats` must expose `reflex`, which it does not yet.
+
+**The Withdraw grade leaves the derivation.** Breaking contact is situational — it depends on
+who is holding you, not on a fixed troop property. The old ladder treated withdrawing from a
+levy and from a dragon as identical. The check also moves agency to the withdrawing player,
+where Withdraw previously just triggered enemy free strikes.
+
+`no-retreat` (6 troops) still has to mean something: either a penalty to the Escape check or
+no Withdraw at all.
