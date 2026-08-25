@@ -423,3 +423,27 @@ in the game rather than the least.
 
 A unit six levels below its target still manages 0.25 wounds a turn at full commitment
 against 0.00 at one action — better, still hopeless. The +-4 band survives.
+
+
+### The rule generalised
+
+Decision (Mark, 2026-08-26): the same principle runs across every type, with Move the one
+exception that also buys quantity.
+
+> **An action after the first buys +2, spent on that act's own roll or on its push check.
+> Move may instead spend it on another Speed's worth of movement — usually the better buy.**
+
+| Type | An extra action buys |
+|---|---|
+| **Move** | *Typically*: another Speed's worth of ground. *Or*: +2, to push further than you can afford, or to reach a different movement type — charging home, or breaking off cleanly. |
+| **Fight** | +2 to the attack roll, or +2 to push from Strike toward Press or Overrun. |
+| **Shoot** | +2 to the shot, or +2 to push from Loose toward Volley or Barrage. |
+| **Cast** | +2 to the casting roll, or +2 to push the spell's scope from Minor toward Major or Grand. |
+| **Guard** | +2 to push from Brace toward Dig in or Shieldwall. Guard has no roll of its own. |
+| **Rally** | +2 to the Quality check, or +2 to push from Steady toward Rally or Inspire. |
+| **Withdraw** | +2 to push from Scatter toward Break off or Fighting retreat — so committing actions is how you leave in good order rather than coming apart. |
+
+Move buys quantity because distance genuinely scales; a second attack was exactly the thing
+that broke the pacing, so nothing else does. Withdraw is the clearest expression of the rule:
+a unit that spends its whole activation getting out leaves in formation, and one that spends
+a single action scatters.
