@@ -376,3 +376,50 @@ when the pointer is in the push band: the DC, and where a failure leaves you.
 This restores meaning to `mounted` and `cavalry-charge`, which the movement wave left inert
 after Move's grade was removed: both now grant a bonus to the push check, so cavalry gamble
 on a long move more reliably than infantry.
+
+
+## Actions buy weight, not repetition
+
+Decision (Mark, 2026-08-26): spending more actions on an attack does not buy another attack.
+It buys a bonus.
+
+This settles the throughput problem three actions introduced. Three attacks with no multiple
+attack penalty was 1.50 wounds a turn on an even matchup — a unit dead in under three rounds,
+with wounds outrunning morale and reversing the character the disorder track was designed for.
+
+**A unit attacks once per activation. Each further action spent on that attack buys +2,
+which the player allocates to either the attack roll or the push check.**
+
+| Actions | Bonus | Wounds/turn | Turns to destroy |
+|---|---|---|---|
+| 1 | +0 | 0.50 | 8.0 |
+| 2 | +2 | 0.60 | 6.7 |
+| 3 | +4 | 0.80 | 5.0 |
+
+Full commitment is 1.6x a single action — worth doing, and far from the 3x that broke the
+pacing. Five turns to destroy against six activations in a battle keeps morale the primary
+kill mechanism, which is what the design wants.
+
++2 is the system's one magic number: it is already Press's bonus, the push bonus for mounted
+troops, Brace, and Outflanked. Nothing new to remember.
+
+### The two dials
+
+Spending an action on the attack roll makes your current rung more reliable. Spending it on
+the push check makes a *higher* rung more likely. So a Fight-2 troop with three actions
+chooses between Press at +4, or reaching for Overrun at +4 on the reach check and settling
+for Press if it misses. That is a live decision every time, and it is the same choice the
+ladders pose everywhere else — take the sure thing, or climb.
+
+### It also fixes the dead rung
+
+Fight grade 1 has no population: every troop grades 2 or 3, so Strike was content no player
+would ever see. Separating *rung access* (grade) from *action cost* fixes that without
+touching the derivation. Strike becomes the one-action attack you take when you also want to
+move; Press and Overrun are what you buy by committing. Rung 1 is now the most common attack
+in the game rather than the least.
+
+### Mismatch is unaffected
+
+A unit six levels below its target still manages 0.25 wounds a turn at full commitment
+against 0.00 at one action — better, still hopeless. The +-4 band survives.
