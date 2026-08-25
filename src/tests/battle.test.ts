@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, defenceOf,
-  endActivation, isOutflanked, isRouted, moveReach, movePath, rangeBetween, select, shootModifier,
-  strikeModifier, unit,
+  endActivation, isOutflanked, isRouted, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
+  pushReach, rangeBetween, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -312,6 +312,86 @@ describe('movement points', () => {
     place(state, 'u2', 'c4');
     const s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([20]));
     expect(unit(s, 'u0').wounds).toBe(0);
+  });
+});
+
+describe('the push band', () => {
+  it('is bounded to one action\'s worth of movement beyond what the unit can afford', () => {
+    const { state } = battle([]);
+    const u = unit(state, 'u0');
+    const affordable = moveReach(state, u);
+    const budget = movementBudget(u);
+    const push = pushReach(state, u);
+    expect(push.size).toBeGreaterThan(0);
+    for (const [cell, p] of push) {
+      expect(affordable.has(cell)).toBe(false);
+      expect(p.feet).toBeGreaterThan(budget);
+      expect(p.feet).toBeLessThanOrEqual(budget + u.speed);
+      // A failed reach must have somewhere affordable to land.
+      expect(affordable.has(p.fallback)).toBe(true);
+    }
+  });
+
+  it('critical success reaches the cell, spending every action and no disorder', () => {
+    const { state } = battle([]);
+    const [cell] = [...pushReach(state, unit(state, 'u0')).keys()];
+    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([20]));
+    expect(unit(s, 'u0').square).toEqual(parse(cell));
+    expect(unit(s, 'u0').disorder).toBe(0);
+    // Spent every action left, win or lose, so the activation always ends here.
+    expect(s.activated).toEqual(['u0']);
+    expect(s.pending).toBe('defender');
+  });
+
+  it('success reaches the cell', () => {
+    const { state } = battle([]);
+    const [cell] = [...pushReach(state, unit(state, 'u0')).keys()];
+    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([10]));
+    expect(unit(s, 'u0').square).toEqual(parse(cell));
+    expect(unit(s, 'u0').disorder).toBe(0);
+  });
+
+  it('failure stops at the furthest affordable cell along the route, no disorder', () => {
+    const { state } = battle([]);
+    const push = pushReach(state, unit(state, 'u0'));
+    const [cell] = [...push.keys()];
+    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([4]));
+    expect(unit(s, 'u0').square).toEqual(parse(push.get(cell)!.fallback));
+    expect(unit(s, 'u0').disorder).toBe(0);
+  });
+
+  it('critical failure stops at the fallback and gains 1 disorder', () => {
+    const { state } = battle([]);
+    const push = pushReach(state, unit(state, 'u0'));
+    const [cell] = [...push.keys()];
+    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([1]));
+    expect(unit(s, 'u0').square).toEqual(parse(push.get(cell)!.fallback));
+    expect(unit(s, 'u0').disorder).toBe(1);
+  });
+
+  it('mounted and cavalry-charge grant a bonus that helps a push succeed', () => {
+    const plain = unit(battle([]).state, 'u0');
+    expect(pushModifierFor(plain)).toBe(plain.stats.will);
+
+    const mountedCard: UnitCard = { name: 'Dragoons', level: 6, role: 'infantry', tactics: [], signals: ['mounted'] };
+    const chargerCard: UnitCard = { name: 'Charger', level: 6, role: 'cavalry', tactics: ['cavalry-charge'] };
+    for (const card of [mountedCard, chargerCard]) {
+      const s0 = createBattle({ units: [{ card, side: 'attacker', square: 'c2' }], board: openBoard() }, scriptedRng([10]));
+      const u = unit(s0, 'u0');
+      expect(pushModifierFor(u)).toBe(u.stats.will + PUSH_BONUS);
+    }
+
+    // Wired end to end: a roll that fails a plain infantry's push (mod 17 vs DC 22 → 21,
+    // failure) succeeds once the +2 bonus applies (23, success).
+    const infState = battle([]).state;
+    const [infCell] = [...pushReach(infState, unit(infState, 'u0')).keys()];
+    const infResult = act(infState, { type: 'push', to: infCell, unit: 'u0' }, scriptedRng([4]));
+    expect(unit(infResult, 'u0').square).not.toEqual(parse(infCell));
+
+    const mState = createBattle({ units: [{ card: mountedCard, side: 'attacker', square: 'c2' }], board: openBoard() }, scriptedRng([10]));
+    const [mCell] = [...pushReach(mState, unit(mState, 'u0')).keys()];
+    const mResult = act(mState, { type: 'push', to: mCell, unit: 'u0' }, scriptedRng([4]));
+    expect(unit(mResult, 'u0').square).toEqual(parse(mCell));
   });
 });
 

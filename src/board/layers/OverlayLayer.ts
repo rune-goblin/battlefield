@@ -4,7 +4,7 @@ import type { BoardTheme, HighlightStyle } from '../theme.js';
 
 export type { HighlightStyle } from '../theme.js';
 
-const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar', 'move', 'attack'];
+const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'push', 'attack'];
 
 /**
  * Hover cell, selection ring, the three highlight-style washes, and a paint preview — all

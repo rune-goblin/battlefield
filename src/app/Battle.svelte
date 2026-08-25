@@ -1,7 +1,8 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
-    reachOf, rungOf, SPELLS, type ActionOffer, type Grade, type LadderType, type MoveReach, type RungOption, type Unit,
+    pushDcFor, pushModifierFor, pushPath, reachOf, rungOf, SPELLS,
+    type ActionOffer, type Grade, type LadderType, type MoveReach, type RungOption, type Unit,
   } from '../engine/index.js';
   import { troopArtUrl, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
@@ -20,6 +21,11 @@
   // Progressive disclosure: the type row is always short; clicking one opens its ladder.
   let openType = $state<string | null>(null);
   let boardRef = $state<PixiBoard>();
+
+  // Move's own row, hovered independently of the type row — Move is drag-driven and its bands
+  // stay visible without a click (Mark: "it shows status based on interaction").
+  type MoveBand = 1 | 2 | 3 | 'push';
+  let hoveredBand = $state<MoveBand | null>(null);
 
   // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
@@ -41,7 +47,7 @@
 
   // A new unit closes whatever ladder was open and drops any in-flight drag preview — both
   // are per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; openType = null; drag = null; });
+  $effect(() => { void active?.id; openType = null; drag = null; hoveredBand = null; });
 
   const focusedEntry = $derived.by<{ offer: ActionOffer; opt: RungOption } | null>(() => {
     if (!focused || !openOffer) return null;
@@ -68,7 +74,9 @@
   // drawing an illegal one (see `onBoardDrag`).
   interface MovePreview { kind: 'move'; cell: string; feet: number; actions: number; path: string[]; near: string[]; far: string[] }
   interface ChargePreview { kind: 'charge'; cell: string; enemy: string; feet: number; actions: number; path: string[] }
-  let drag = $state<MovePreview | ChargePreview | null>(null);
+  // Beyond every action the unit has — the DC and fallback are the bargain the HUD/panel read.
+  interface PushPreview { kind: 'push'; cell: string; feet: number; fallback: string; dc: number; modifier: number; path: string[] }
+  let drag = $state<MovePreview | ChargePreview | PushPreview | null>(null);
 
   function classify(moves: Map<string, MoveReach>, path: string[]): { near: string[]; far: string[] } {
     const near: string[] = [];
@@ -95,9 +103,15 @@
       return;
     }
     const m = act.moves.get(e.cell);
-    if (!m) return; // stall — out of reach, occupied, or the unit's own cell
-    const path = movePath(act.moves, e.cell);
-    drag = { kind: 'move', cell: e.cell, feet: m.feet, actions: m.actions, path, ...classify(act.moves, path) };
+    if (m) {
+      const path = movePath(act.moves, e.cell);
+      drag = { kind: 'move', cell: e.cell, feet: m.feet, actions: m.actions, path, ...classify(act.moves, path) };
+      return;
+    }
+    const p = act.push.get(e.cell);
+    if (!p) return; // stall — out of reach entirely, occupied, or the unit's own cell
+    const path = pushPath(act.moves, act.push, e.cell);
+    drag = { kind: 'push', cell: e.cell, feet: p.feet, fallback: p.fallback, dc: pushDcFor(active), modifier: pushModifierFor(active), path };
   }
 
   function onBoardDrop(e: BoardEventOf<'drop'>) {
@@ -108,7 +122,8 @@
       if (act.charges.some((c) => c.unit === enemy.id)) takeAction({ type: 'charge', target: enemy.id });
       return;
     }
-    if (act.moves.has(e.cell)) takeAction({ type: 'move', to: e.cell });
+    if (act.moves.has(e.cell)) { takeAction({ type: 'move', to: e.cell }); return; }
+    if (act.push.has(e.cell)) takeAction({ type: 'push', to: e.cell });
     // An illegal drop is a no-op: state never changes, so `tokens` never changes, so
     // `TokenLayer` just snaps the token back to where it actually is.
   }
@@ -116,6 +131,7 @@
   const dragHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
     if (!drag) return [];
     if (drag.kind === 'charge') return [{ style: 'attack', cells: drag.path.slice(1) }];
+    if (drag.kind === 'push') return [{ style: 'push', cells: drag.path.slice(1) }];
     return [{ style: 'move', cells: drag.near }, { style: 'moveFar', cells: drag.far }];
   });
   const dragPath = $derived(drag?.path ?? []);
@@ -124,9 +140,34 @@
     const enemy = drag.enemy;
     return b.units.find((u) => u.id === enemy)?.name ?? enemy;
   });
+  // Which Move row the live drag distance falls into, so the panel tracks the drag.
+  const dragBand = $derived.by<MoveBand | null>(() => {
+    if (!drag) return null;
+    if (drag.kind === 'push') return 'push';
+    if (drag.kind === 'move') return Math.min(3, drag.actions) as 1 | 2 | 3;
+    return null;
+  });
+
+  // Move's four bands, grouped straight off the engine's own `moves`/`push` maps — no pathing
+  // recomputed here, just the `actions` each already carries.
+  const moveBands = $derived.by<Record<1 | 2 | 3, string[]> & { push: string[] }>(() => {
+    const bands: Record<1 | 2 | 3, string[]> = { 1: [], 2: [], 3: [] };
+    if (act) for (const [cell, m] of act.moves) bands[Math.min(3, m.actions) as 1 | 2 | 3].push(cell);
+    return { ...bands, push: act ? [...act.push.keys()] : [] };
+  });
+  const bandStyle = (n: MoveBand): HighlightStyle => (n === 'push' ? 'push' : n === 1 ? 'move' : n === 2 ? 'moveFar' : 'moveFar3');
+
+  // The standing wash: every band, the moment a unit is selected, before any drag. Hovering a
+  // Move row narrows the wash to just that band; a live drag takes over entirely.
+  const standingHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
+    if (!active || !act || drag) return [];
+    if (hoveredBand) return [{ style: bandStyle(hoveredBand), cells: moveBands[hoveredBand] }];
+    return ([1, 2, 3, 'push'] as const).map((n) => ({ style: bandStyle(n), cells: moveBands[n] }));
+  });
 
   const highlights = $derived<{ style: HighlightStyle; cells: string[] }[]>([
     { style: focusedStyle, cells: focusedCells },
+    ...standingHighlights,
     ...dragHighlights,
   ]);
 
@@ -239,6 +280,8 @@
       <div class="drag-hud">
         {#if drag.kind === 'charge'}
           <strong>Charge {dragEnemyName}</strong> — {drag.feet} ft · {drag.actions} action{drag.actions === 1 ? '' : 's'} (incl. melee)
+        {:else if drag.kind === 'push'}
+          <strong>Push to {drag.cell}</strong> — DC {drag.dc} · fail and you stop at {drag.fallback}
         {:else}
           <strong>Move to {drag.cell}</strong> — {drag.feet} ft · {drag.actions} action{drag.actions === 1 ? '' : 's'}
         {/if}
@@ -299,6 +342,44 @@
         </tbody></table>
       </div>
 
+      <!-- Move is drag-driven and visible without a click — its bands are the same ones the
+           board washes on selection, and this row tracks a live drag both ways. -->
+      {#if act}
+        <div class="card move-card">
+          <h3>Move <span class="muted">— drag the token, or read the bands</span></h3>
+          <div class="move-rows">
+            {#each ([1, 2, 3] as const) as n (n)}
+              <div
+                class="move-row band-{n}"
+                class:current={dragBand === n}
+                role="group"
+                onmouseenter={() => { hoveredBand = n; }}
+                onmouseleave={() => { if (hoveredBand === n) hoveredBand = null; }}
+              >
+                <span class="move-row-label">{n} action{n > 1 ? 's' : ''}</span>
+                <span class="muted">{moveBands[n].length} cell{moveBands[n].length === 1 ? '' : 's'} reachable</span>
+              </div>
+            {/each}
+            <div
+              class="move-row band-push"
+              class:current={dragBand === 'push'}
+              role="group"
+              onmouseenter={() => { hoveredBand = 'push'; }}
+              onmouseleave={() => { if (hoveredBand === 'push') hoveredBand = null; }}
+            >
+              <span class="move-row-label">Push</span>
+              <span class="muted">
+                {#if drag?.kind === 'push'}
+                  DC {drag.dc} · fail and you stop at {drag.fallback}
+                {:else}
+                  DC {pushDcFor(active)} · a fail stops you at the furthest cell you can afford
+                {/if}
+              </span>
+            </div>
+          </div>
+        </div>
+      {/if}
+
       <!-- Progressive disclosure: this row never shows a rung, only the types on offer.
            Clicking one opens its ladder below; clicking it again closes it. -->
       <div class="type-row">
@@ -307,7 +388,7 @@
             {offer.label}
           </button>
         {:else}
-          <p class="muted">Nothing to do here but move — drag the token on the board, or end the activation.</p>
+          <p class="muted">Nothing else to do here — end the activation.</p>
         {/each}
       </div>
 
@@ -412,6 +493,19 @@
   .action-pips { align-items: center; gap: .3rem; margin: .3rem 0 .1rem; }
   .action-pips .pip { width: .65rem; height: .65rem; }
   .end-activation { margin-left: auto; }
+
+  .move-card h3 { margin: 0 0 .4rem; }
+  .move-rows { display: flex; flex-direction: column; gap: .25rem; }
+  .move-row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: .5rem;
+    padding: .3rem .55rem; border-radius: 6px; border-left: 4px solid transparent; background: var(--band);
+  }
+  .move-row.band-1 { border-left-color: var(--good); }
+  .move-row.band-2 { border-left-color: var(--warn); }
+  .move-row.band-3 { border-left-color: var(--warn2); }
+  .move-row.band-push { border-left-color: var(--bad); }
+  .move-row.current { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .move-row-label { font-weight: 600; font-size: .85rem; white-space: nowrap; }
 
   .type-row { display: flex; flex-wrap: wrap; gap: .35rem; }
   .type-chip {

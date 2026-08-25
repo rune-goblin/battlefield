@@ -1,9 +1,11 @@
 :root {
   --ink:#1f1a17; --paper:#f8f4ec; --rule:#b9ab93; --accent:#7a2e1f; --muted:#6b5f52; --band:#efe7d8; --card:#fffdf8;
   --att:#3a5f8f; --def:#8f3a2e; --good:#3b6e3b; --bad:#9a3a2a;
+  /* The move-band amber, one shade per extra action — matches the board's 'moveFar'/'moveFar3'. */
+  --warn:#d9a441; --warn2:#a1490c;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; --card:#23201c; --att:#6f9bd1; --def:#d9705c; --good:#7fb77f; --bad:#e08a78; }
+  :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; --card:#23201c; --att:#6f9bd1; --def:#d9705c; --good:#7fb77f; --bad:#e08a78; --warn:#e0a75c; --warn2:#cf6a1f; }
 }
 * { box-sizing:border-box; }
 html, body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 Georgia,"Iowan Old Style","Palatino Linotype",serif; }

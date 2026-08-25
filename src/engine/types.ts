@@ -34,6 +34,10 @@ export interface Unit {
   speed: number;
   /** A flier ignores terrain cost and blocked edges. */
   flying: boolean;
+  /** Read off the 'mounted' signal (Mounted Troop / First-class Charge). Feeds the push
+   * bonus alongside the cavalry-charge tactic — both went inert when Move's grade was
+   * dropped; see "Move bands notes" in the todos. */
+  mounted: boolean;
   fear: boolean;
   tactics: Tactic[];
   grades: Grades;
@@ -73,7 +77,11 @@ export interface MoveAction extends Acts { type: 'move'; to: string }
 /** Move into contact and fight: the movement's actions, plus one for the melee. */
 export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade }
 
-export type Action = RungAction | MoveAction | ChargeAction;
+/** Reach for a cell beyond every action the unit has — a Quality check against the level DC.
+ * Success lands on `to`; failure lands on `PushReach.fallback` instead. */
+export interface PushAction extends Acts { type: 'push'; to: string }
+
+export type Action = RungAction | MoveAction | ChargeAction | PushAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -125,6 +133,19 @@ export interface ChargeOption {
   actions: number;
 }
 
+/** A cell beyond every action the unit has — reachable only by gambling a Quality check.
+ * Bounded to one further action's worth of movement past `MoveReach`'s own budget. */
+export interface PushReach {
+  /** Feet from where the unit stands. */
+  feet: number;
+  /** The cell this one was reached from, for path reconstruction; may itself be another push
+   * cell, an affordable `MoveReach` cell, or the unit's own square. */
+  from: string | null;
+  /** Where a failed reach actually lands: the furthest cell along this same route the unit
+   * could pay for outright. */
+  fallback: string;
+}
+
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */
 export interface Activation {
   unit: string;
@@ -135,6 +156,8 @@ export interface Activation {
   speed: number;
   offers: ActionOffer[];
   moves: Map<string, MoveReach>;
+  /** Beyond every affordable cell — a reach, not a Stride. See `pushReach`. */
+  push: Map<string, PushReach>;
   charges: ChargeOption[];
 }
 

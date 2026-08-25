@@ -1,9 +1,11 @@
 import type { SquareTerrain } from '../engine/index.js';
 
-// 'moveFar' is 'move' at lower intensity — the drag preview colours a path cell one or the
-// other depending on whether it costs the unit's next Move action or a later one.
-export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar';
-export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar'];
+// The standing move-band wash (selecting a unit, before any drag): 'move' is the free band
+// (one action), 'moveFar'/'moveFar3' are the costed band at two and three actions — one shade
+// per extra action — and 'push' is beyond every action the unit has, reachable only by
+// gambling a check. The drag preview reuses 'move'/'moveFar' for its near/far path cells.
+export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3' | 'push';
+export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3', 'push'];
 
 export interface BoardTheme {
   mode: 'light' | 'dark';
@@ -60,7 +62,7 @@ const LIGHT: BoardTheme = {
   overlay: {
     hover: 0x1f1a17,
     selected: 0xb4611f,
-    highlight: { deploy: 0xc9a227, move: 0x3f7d4f, attack: 0xb23b3b, moveFar: 0xd9a441 },
+    highlight: { deploy: 0xc9a227, move: 0x3f7d4f, attack: 0xb23b3b, moveFar: 0xd9a441, moveFar3: 0xa1490c, push: 0xc22f1f },
   },
   token: {
     routed: 0xb9ab93,
@@ -95,7 +97,7 @@ const DARK: BoardTheme = {
   overlay: {
     hover: 0xe8e1d5,
     selected: 0xd98b6e,
-    highlight: { deploy: 0xe8c34a, move: 0x5fbf7f, attack: 0xe0685a, moveFar: 0xe0a75c },
+    highlight: { deploy: 0xe8c34a, move: 0x5fbf7f, attack: 0xe0685a, moveFar: 0xe0a75c, moveFar3: 0xcf6a1f, push: 0xe8503f },
   },
   token: {
     routed: 0x8c8378,

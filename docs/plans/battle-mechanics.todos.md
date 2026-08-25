@@ -396,3 +396,128 @@ members (`setDragPath`, `setDraggable`) and a new `'drag'` `BoardEvent` on `Inte
   polyline from the unit's cell through a green ("near," one action) run into an amber ("far,"
   two actions) cell where the token now sits, the HUD reading "Move to c6 — 40 ft · 2 actions,"
   and the collapsed panel's type row (`Shoot`, `Guard`) un-expanded in the same frame.
+
+## Move bands notes
+
+Wave 4 (move bands + push). Reverses the previous wave's "path-only, no standing wash" call per
+"The move ladder lives in the drag" in the doc, and folds in a mid-wave correction from Mark:
+the ladders stay in the right panel, and Move comes back as a visible, always-open panel entry
+whose four rows are the same bands the board washes — not a click-to-open type chip like the
+other ladders.
+
+### The push engine surface
+
+`src/engine/battle.ts` gains, alongside the existing `moveReach`/`movePath`:
+
+```ts
+pushReach(state, u): Map<string, PushReach>          // PushReach = { feet, from, fallback }
+pushPath(moves, push, to): string[]                   // start cell first, mirrors movePath
+pushDcFor(u): number                                   // levelDc(u.level) — no rung modifier
+pushModifierFor(u): number                             // reachModifier(u) + PUSH_BONUS if mounted/cavalry-charge
+PUSH_BONUS = 2                                          // tunable
+```
+
+`pushReach` is a second `reachable()` pass at `movementBudget(u) + u.speed` (one further
+action's worth, per the doc's bound), with everything `moveReach` already covers subtracted
+out. `PushReach.fallback` is precomputed per cell by walking `pathTo` back to the start and
+keeping the last cell that's in the affordable `moves` map — so `doPush` never has to search.
+`activation()` now returns `push` alongside `moves`/`charges`. `Action` gained `PushAction =
+{ type: 'push'; to: string }`.
+
+**Move was deliberately *not* added back to `LadderType`/`availableActions`/`ActionOffer`.**
+That shape is grade-based (`free`/`reach`/`locked` against a 1–3 grade), and Move's bands are
+action-count bands with a fourth, ungraded "beyond your grade entirely" rung — forcing it back
+in would resurrect exactly the "Move's ladder collapses into the action economy" concept the
+design doc retired. Instead `Battle.svelte` builds the four-row Move panel straight off
+`act.moves`/`act.push`/`act.actions` — grouping already-computed `MoveReach.actions`, never
+recomputing pathing. If a future wave wants Move's rows to carry `RungOption`-style target
+lists too, that's the point to revisit this call.
+
+### Push's degrees, and why crit success and success read the same
+
+Doc text: "Reuse the existing `reachFor()` machinery... the degree handling must match the
+other ladders exactly." `reachFor`'s crit-success case is "the rung above the one reached for,
+capped at the top of the ladder" — when the reach was already for rung 3, that caps right back
+down to rung 3, so crit and plain success are already indistinguishable *for a top-grade unit*
+elsewhere in the system (Overrun, Barrage, Shieldwall...). Push has no rung above the cell you
+dragged to (the doc caps it at one further action's movement, explicitly to forbid an
+unbounded gamble), so the same collapse happens by construction: crit success and success both
+just land on the cell, no disorder either way. `doPush` (`battle.ts`) doesn't special-case this
+— it's what naturally falls out of `reached = degree === 'success' || 'critical-success'`.
+
+**Push always spends every action the unit has left, win or lose — a judgment call.** "Beyond
+every action the unit has" is read as a cost, not just a distance description: attempting a
+push commits the whole remaining activation, so a push is always the last thing a unit does
+that turn (`s.activated` includes it immediately). The alternative — spending only the
+fallback cell's actual action cost on a failure, leaving actions unspent — was considered and
+rejected: it would make failing *cheaper* than a plain March to the same fallback cell would
+have been (since you'd also get the option to try), which reads as a free option rather than a
+gamble. Tunable if play finds the all-or-nothing framing too harsh.
+
+**`pushDcFor` is the flat level DC, no reach-DC modifier.** The doc says "a Quality check
+against the level DC," full stop, unlike the other ladders' rung-3 reaches which add the
+rung's `reachDc` (+2). Push has no `Rung` to carry a modifier on, and inventing one unstated
+felt like tuning by accident rather than by decision — if push reads too easy in play, add a
+flat modifier here rather than reusing a `Rung.reachDc` that doesn't semantically apply.
+
+### The mounted/cavalry-charge bonus
+
+`PUSH_BONUS = 2`, applied to the check's modifier (not the DC), when `u.mounted ||
+u.tactics.includes('cavalry-charge')`. Picked to match the +2 this system already reuses
+everywhere a rung's hardest step needs a bump (Press, Overrun, Shieldwall, Barrage's
+ignores-cover). **`Unit` gained a `mounted: boolean` field**, set at `createBattle` time from
+`cardTraits(card).signals.includes('mounted')` — the `mounted` *signal* (detected off "Mounted
+Troop"/"First-class Charge" action text by the importer) previously never survived onto `Unit`
+at all, only `tactics` did. This is the second half of "restores meaning to `mounted` and
+`cavalry-charge`, which the movement wave left inert" — `cavalry-charge` is a tactic already on
+`Unit.tactics`, `mounted` needed its own field.
+
+### The standing wash and the Move panel's live status
+
+- **Hovering a Move row narrows the standing wash to just that band, rather than adding a
+  second visual layer on top of it.** The wash is already showing all four bands the moment a
+  unit is selected (the wave's core ask); "hovering a row lights the corresponding band" reads
+  most usefully as *isolating* that band for a clearer look, not repainting cells that are
+  already painted. `Battle.svelte`'s `standingHighlights` swaps between "all four bands" and
+  "just `moveBands[hoveredBand]`" depending on `hoveredBand`.
+- **A live drag suppresses the standing wash entirely** (`standingHighlights` returns `[]`
+  once `drag` is set) in favour of the traced-path near/far/push colouring the previous wave
+  already built — the path is the more specific, more relevant answer once a drag is under
+  way, and painting both at once would double up the same colours confusingly.
+- **The "other ladders" live-unaffordability note is a non-finding, recorded rather than
+  silently skipped.** Every non-Move rung costs a flat 1 action (`ActionOffer.cost`), and
+  `availableActions` is only ever non-empty while the unit still has actions (the activation
+  ends via `finish()` the moment `u.actions <= 0`), so there's no state where an offered rung
+  is currently unaffordable — legality is already binary. Nothing needed changing; flagged in
+  case a future variable-cost rung reopens this.
+- **Two new `HighlightStyle`s, `moveFar3` and `push`** (`src/board/theme.ts`), plus two new
+  `--warn`/`--warn2` CSS custom properties (`src/app/app.css`) so the Move panel's row colours
+  match the board exactly. First-pass colours (a muted maroon push, a subtle burnt-orange
+  `moveFar3`) were nearly invisible once blended at the shared 0.35 highlight alpha over pale
+  terrain — confirmed by screenshotting and cropping in close, not by eyeballing the full
+  board. Retuned to more saturated hex values (push: light `0xc22f1f`, dark `0xe8503f`;
+  `moveFar3`: light `0xa1490c`, dark `0xcf6a1f`) until a corner crop showed all three bands
+  clearly apart. `OverlayLayer`'s shared 0.35 alpha constant was deliberately left alone —
+  changing it would have also restyled `deploy`/`attack`, out of this wave's scope.
+
+### The screenshot
+
+`docs/plans/battle-shots/wave4-bands.png` is a two-panel composite, both hex, both the default
+setup (Line Infantry at c2, 20 ft speed):
+
+- **Left** — Line Infantry selected, no drag in progress: a green one-action band hugging c2,
+  a tan two/three-action band covering most of the open middle, and a rose push band along the
+  h-file at the board's far edge — all three visible with nothing dragged or clicked beyond
+  the unit auto-selecting on battle start.
+- **Right** — mid-drag toward g8 (hex-distance 7, 70 ft, inside Line Infantry's 61–80 ft push
+  band), HUD reading "Push to g8 — DC 22 · fail and you stop at g7," with the push-coloured
+  polyline running the whole route.
+
+Driven with the same Playwright + chromium-1234 harness recorded in the wave 3 notes; the
+harness script was not committed. One snag worth recording: `.locator(...).innerText()` on an
+element that may not exist (`.drag-hud`, only rendered `{#if drag}`) uses Playwright's default
+30 s auto-wait before rejecting — a first attempt that probed several candidate drag targets in
+a loop each with an unguarded `.innerText().catch(...)` took several minutes doing nothing but
+timing out. Pass an explicit short `{ timeout }` on any such probe, or compute the target cell
+in advance (as the final script does, via the same cube-distance formula `grid.ts` uses)
+instead of searching for one live.

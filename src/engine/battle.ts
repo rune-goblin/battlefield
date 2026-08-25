@@ -3,7 +3,7 @@ import {
   type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { reachable, stepFeet } from './path.js';
+import { pathTo, reachable, stepFeet } from './path.js';
 import { check, type CheckResult, type Degree } from './check.js';
 import {
   clearsAll, gradesFor, LADDERS, qualityFor, rungOf, spellsFor, SPELLS,
@@ -14,8 +14,8 @@ import { levelDc } from './tables.js';
 import {
   ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK,
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
-  type ChargeOption, type EngineState, type MoveAction, type MoveReach, type Range,
-  type RungAction, type RungOption, type RungTarget, type Side, type Unit,
+  type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PushAction,
+  type PushReach, type Range, type RungAction, type RungOption, type RungTarget, type Side, type Unit,
 } from './types.js';
 
 export interface Deployment { card: UnitCard; side: Side; square: string; engines?: SiegeEngineCard[]; }
@@ -48,7 +48,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: traits.pace, fear: traits.fear, tactics: traits.tactics,
       grades: gradesFor(d.card), spells: spellsFor(d.card), quality: qualityFor(d.card),
-      speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
+      speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false, mounted: traits.signals.includes('mounted'),
       actions: ACTIONS_PER_ACTIVATION, feet: 0,
       engines: (d.engines ?? []).map((e) => ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed' as const, square: sq })),
       square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
@@ -229,6 +229,17 @@ export function reachDcFor(u: Unit, type: LadderType, rung: Grade): number {
 
 export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
 
+/** Cavalry gamble on a long move more reliably than infantry. Tunable: matches the +2 this
+ * system already uses for a rung's hardest step (Press, Overrun, Barrage's cover ignore...). */
+export const PUSH_BONUS = 2;
+
+/** A push is a Quality check against the level DC, same as every other reach — no rung to add
+ * a modifier, so the DC is the level DC alone. */
+export const pushDcFor = (u: Unit) => levelDc(u.level);
+
+export const pushModifierFor = (u: Unit) =>
+  reachModifier(u) + (u.mounted || u.tactics.includes('cavalry-charge') ? PUSH_BONUS : 0);
+
 const log = (state: BattleState, u: Unit | null, text: string, c?: CheckResult) =>
   state.log.push({ round: state.round, unit: u?.id, text, check: c });
 
@@ -369,6 +380,43 @@ export function movePath(moves: Map<string, MoveReach>, to: string): string[] {
   while (key !== null && moves.has(key)) { out.unshift(key); key = moves.get(key)!.from; }
   if (key !== null) out.unshift(key);
   return out;
+}
+
+/**
+ * Beyond every affordable cell: one further action's worth of movement, bounded so a drag can
+ * never propose an unbounded gamble. A second `reachable` pass at the larger budget, with
+ * whatever `moveReach` already covers subtracted out — two Dijkstra passes over 64 cells is
+ * cheap, and it keeps `moveReach` as the one place "affordable" is decided.
+ */
+export function pushReach(state: BattleState, u: Unit): Map<string, PushReach> {
+  const out = new Map<string, PushReach>();
+  if (u.speed === 0 || u.rooted > 0 || u.actions <= 0 || u.status !== 'active') return out;
+  if (engagedEnemies(state, u).length) return out;
+  const affordable = moveReach(state, u);
+  const reach = reachable(state.board, u.square, {
+    budget: movementBudget(u) + u.speed, flying: u.flying, occupied: occupiedBy(state, u),
+  });
+  const home = notation(u.square);
+  for (const [key, entry] of reach) {
+    if (key === home || affordable.has(key)) continue;
+    // A failed reach stops at the furthest cell along this same route the unit could actually
+    // afford — the last affordable cell on the path back to the start.
+    let fallback = home;
+    for (const cell of pathTo(reach, key)) if (affordable.has(cell)) fallback = cell;
+    out.set(key, { feet: entry.feet, from: entry.from, fallback });
+  }
+  return out;
+}
+
+/** The route to a push destination, the unit's own cell first — the push band's `from` chain,
+ * finished off with `movePath` once it crosses back into affordable ground. */
+export function pushPath(moves: Map<string, MoveReach>, push: Map<string, PushReach>, to: string): string[] {
+  if (!push.has(to)) return movePath(moves, to);
+  const out: string[] = [];
+  let key: string | null = to;
+  while (key !== null && push.has(key)) { out.unshift(key); key = push.get(key)!.from; }
+  if (key === null) return out;
+  return moves.has(key) ? [...movePath(moves, key), ...out] : [key, ...out];
 }
 
 const touching = (state: BattleState, sq: Square, e: Unit) =>
@@ -660,6 +708,7 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
     unit: u.id, actions: u.actions, feet: u.feet, speed: u.speed,
     offers: availableActions(state, u.id),
     moves: moveReach(state, u),
+    push: pushReach(state, u),
     charges: chargeTargets(state, u),
   };
 }
@@ -759,6 +808,28 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   return option.actions + 1;
 }
 
+// Reaching beyond every action the unit has: the same four degrees as `reachFor`, applied to a
+// destination instead of a rung. Always spends every action left — that is what "beyond every
+// action the unit has" means as a cost, win or lose — so the activation always ends here.
+function doPush(state: BattleState, rng: Rng, u: Unit, action: PushAction): number {
+  const push = pushReach(state, u).get(action.to);
+  if (!push) throw new Error(`${u.name} cannot push to ${action.to}`);
+  const spent = u.actions;
+  const c = check(rng, pushModifierFor(u), pushDcFor(u));
+  log(state, u, `${u.name} pushes for ${action.to}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  const reached = c.degree === 'success' || c.degree === 'critical-success';
+  const dest = reached ? action.to : push.fallback;
+  if (dest !== notation(u.square)) {
+    moveTo(state, u, parse(dest));
+    log(state, u, `${u.name} ${reached ? 'forces the ground and reaches' : 'falls short and stops at'} ${dest}.`);
+    fearOnContact(state, u);
+  } else {
+    log(state, u, `${u.name} cannot force the ground and holds.`);
+  }
+  if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a botched push');
+  return spent;
+}
+
 export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const state = clone(input);
   if (state.phase !== 'battle') throw new Error('battle is over');
@@ -770,8 +841,9 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u);
   const spent = action.type === 'move' ? doStride(state, u, action)
-    : action.type === 'charge' ? doCharge(state, rng, u, action)
-      : doRung(state, rng, u, action);
+    : action.type === 'push' ? doPush(state, rng, u, action)
+      : action.type === 'charge' ? doCharge(state, rng, u, action)
+        : doRung(state, rng, u, action);
   u.actions -= spent;
   if (u.actions <= 0 || u.status !== 'active') finish(state, u);
   return state;
