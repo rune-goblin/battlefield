@@ -33,6 +33,9 @@ export interface BoardView {
   /** Screen point (e.g. from a native `DragEvent`) to a cell key, for drag-drop from outside
    * the canvas — a DOM tray item dropped onto the board. */
   cellAt(clientX: number, clientY: number): string | null;
+  /** Pans (without rezooming) so `cell` sits in the middle of the viewport. A no-op if the
+   * cell is off-board or there is no board yet. */
+  centerOn(cell: string): void;
   resetView(): void;
   resize(): void;
   destroy(): void;
@@ -187,6 +190,21 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const cell = geometry.grid.fromPoint(local, geometry.size);
       return cell ? geometry.grid.key(cell) : null;
     },
+    // Pans `opts.parent` (the pan/zoom container `boardContainer` sits in) so the cell's
+    // centre lands under the viewport's screen centre, at whatever zoom is already set.
+    centerOn(cell) {
+      if (!currentBoard || !geometry) return;
+      const c = geometry.grid.parse(cell);
+      if (!geometry.grid.inBounds(c)) return;
+      const local = geometry.grid.center(c, geometry.size);
+      const { width, height } = opts.size();
+      const scale = opts.parent.scale.x;
+      opts.parent.position.set(
+        width / 2 - scale * (boardContainer.position.x + local.x),
+        height / 2 - scale * (boardContainer.position.y + local.y),
+      );
+      labelLayer.rescale();
+    },
     resetView() {
       interaction.resetView();
     },
@@ -249,6 +267,10 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
 
 export { BoardApp } from './BoardApp.js';
 export { BoardContainer } from './BoardContainer.js';
+// proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
+// DOM) that Token.ts also calls for the same art. Re-deriving the BASE_URL-prefixing here
+// would just duplicate it; see "Wave 2 notes" in the todos.
+export { engineArtUrl, troopArtUrl } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, lightTheme, prefersDark, type BoardTheme } from './theme.js';

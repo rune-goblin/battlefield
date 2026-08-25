@@ -127,3 +127,60 @@ old `ROUTED_AT`), moderate 4, high 5, extreme 6, below-low 2.
 - The importer detects `no-retreat` but nothing reads it except Withdraw. `Trample` currently
   counts as melee drill; it might belong to Move.
 - `README.md` still describes three actions, MAP and shaken. The docs wave owns it.
+
+## Wave 2 notes
+
+Full-screen battle. `src/app/Battle.svelte` is a fixed, full-viewport CSS grid (top bar / board
+/ bottom strip / right panel) rather than the old in-column `.grid2`; `App.svelte` hides the
+stage bar during battle and otherwise leaves the topbar in the DOM — `Battle`'s own
+`position: fixed` overlay covers it regardless, so nothing needed removing there. The action
+menu renders directly off `availableActions`: one block per `ActionOffer` (so casters already
+get one row per spell, for free, from the surface), three `RungOption` rows each showing
+`access` as a Free/Reach — gamble/Locked badge, the reach rung's DC, modifier, and all four
+degree outcomes (crit → the rung above, fail → falls back, crit-fail → falls back + 1
+disorder), and a locked rung's `reason` text.
+
+### Judgment calls
+
+- **"An end-activation control"** is read as the existing `Undo` button. Every legal rung,
+  including Guard's free no-target Brace, is always available to the active unit — the engine
+  has no pass/skip verb, so `act()` ending the activation is an inherent side effect of
+  resolving any rung, not a separate step the UI gates. Undo is the only control in the surface
+  that operates on an activation boundary (it rewinds the last completed one), so it fills that
+  slot in the top bar. Flag if something more specific was meant.
+- **"The player's units" (bottom strip)** is read as `b.pending`'s units only — hot-seat, so
+  "the player" is whoever is about to activate. The strip swaps sides each activation rather
+  than showing both rosters at once.
+- **Wall targets have no board highlight.** `BoardView.setHighlight` only paints cells
+  (`OverlayLayer.fillCell` calls `grid.parse` on the id, which a wall key like `a2|a3` doesn't
+  parse as). Cell- and unit-kind `RungTarget`s highlight (a cell wash or a token ring); a
+  wall-kind target still resolves correctly on an `edge` click, it's just not previewed on
+  hover. A `centerOn`-style addition to `BoardView` would need a matching edge-highlight method
+  to close this; didn't add one since no wall-fight scenario came up in the smoke-tested hex
+  battle. `src/board/index.ts`, `OverlayLayer.ts`.
+- **`BoardView.centerOn(cell)` is new** (`src/board/index.ts`), added to satisfy "clicking
+  selects and centres" — panning `opts.parent` so the cell's centre lands under the viewport's
+  screen centre at the current zoom, mirroring how `resetView`'s pan/zoom reset already works.
+  Not in the wave 1 surface list since it's a board-view addition, not an engine one; still
+  routed entirely through `BoardView`, so the "Svelte only touches BoardView" invariant holds.
+- **`troopArtUrl`/`engineArtUrl` are now exported from `src/board/index.ts`** so
+  `Battle.svelte` can draw unit-card portraits in the bottom strip. They're pure path-builders
+  (no PIXI, no layer state) that `Token.ts` already called the same way; re-deriving the
+  `BASE_URL` prefix logic in `src/app` instead would just duplicate it. If this is judged too
+  loose a reading of "BoardView is the only surface Svelte touches," revert to duplicating the
+  helper in `src/app` instead.
+- **Move rung 1's optional bonus shot is not exposed.** `Action.shoot` (Advance-and-shoot at
+  −2) has no UI this wave — Advance always resolves as a plain move. The rung itself, and every
+  other rung, works; this is a scope cut, not a bug. `src/app/Battle.svelte`.
+- **`UnitTokenModel.shaken` → `disorder`, plus a new `quality: number` field**
+  (`src/board/Token.ts`), since routing is per-unit Quality (2–6) now, not the old fixed
+  `ROUTED_AT = 3`. The disorder pip row on a token/card is `quality` pips long, so an elite
+  unit visibly absorbs more before it routs. `types.ts`'s `ROUTED_AT` constant is now unused
+  (only `Token.ts` read it) — left in place since it's harmless and out of this wave's engine
+  scope; a later wave can drop it.
+- **`routDc` alias removed** from `src/engine/battle.ts` per the wave's cleanup item; the panel
+  now calls `levelDc(active.level)` directly.
+- Target pickers for `needsTarget`/optional-target rungs use a `<select>` + "Go" button (same
+  shape as the pre-Wave-1 UI), not per-target buttons — a March's reachable-cell list can run
+  to dozens of entries on a hex board, too many to lay out as buttons. Hovering the rung and
+  clicking the highlighted board cell/token is the primary path either way.

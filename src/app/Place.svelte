@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, notation, OFFICIAL, paceReason, seededRandom, ROSTER, SIZE, type Side, type UnitCard } from '../engine/index.js';
+  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, notation, OFFICIAL, paceReason, qualityFor, seededRandom, ROSTER, SIZE, type Side, type UnitCard } from '../engine/index.js';
   import type { BoardEventOf, TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { back, game, resetSetup, save, startBattle, type SetupUnit } from './game.svelte.js';
@@ -51,7 +51,8 @@
         level: u.card.level,
         cell: u.square,
         wounds: 0,
-        shaken: 0,
+        disorder: 0,
+        quality: qualityFor(u.card),
         engine: u.engines[0] ?? null,
         ring: selected === i ? 'selected' : null,
       }];

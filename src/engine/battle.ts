@@ -220,9 +220,6 @@ export function reachDcFor(u: Unit, type: LadderType, rung: Grade): number {
 
 export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
 
-// proto: Battle.svelte still imports routDc for its stat panel; Wave 2 replaces that panel.
-export const routDc = (state: BattleState, u: Unit) => levelDc(u.level);
-
 const log = (state: BattleState, u: Unit | null, text: string, c?: CheckResult) =>
   state.log.push({ round: state.round, unit: u?.id, text, check: c });
 

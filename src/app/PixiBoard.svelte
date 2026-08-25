@@ -11,6 +11,8 @@
     highlight?: string[];
     highlightStyle?: HighlightStyle;
     selected?: string | null;
+    /** Full-bleed: fills its container instead of sitting in a capped, square-ish column. */
+    fill?: boolean;
     onhover?: (event: BoardEventOf<'hover'>) => void;
     oncell?: (event: BoardEventOf<'cell'>) => void;
     onedge?: (event: BoardEventOf<'edge'>) => void;
@@ -22,13 +24,15 @@
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlight = [], highlightStyle = 'deploy', selected = null,
+    board, tokens = [], mode = 'view', brush = null, highlight = [], highlightStyle = 'deploy', selected = null, fill = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, onbrush, ontraydrop,
   }: Props = $props();
 
   let container: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let view: BoardView | undefined;
+
+  export function centerOn(cell: string) { view?.centerOn(cell); }
 
   onMount(() => {
     view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });
@@ -54,7 +58,7 @@
   $effect(() => { view?.setSelected(selected); });
 </script>
 
-<div class="pixiboard" bind:this={container}>
+<div class="pixiboard" class:fill bind:this={container}>
   <!-- Interaction listens on this element, so it has to take focus for the brush keys; the
        same element is the tray's drop target, since it already has an interactive role. -->
   <canvas
@@ -68,6 +72,7 @@
 
 <style>
   .pixiboard { width: 100%; max-width: 40rem; aspect-ratio: 1; margin: 0.75rem 0; }
+  .pixiboard.fill { width: 100%; height: 100%; max-width: none; aspect-ratio: auto; margin: 0; }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>

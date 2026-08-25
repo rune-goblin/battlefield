@@ -15,7 +15,9 @@
     <div><h1>Battlefield</h1><div class="muted">Eight by eight, three actions, four wounds.</div></div>
     <nav><a href="rules.html" target="_blank" rel="noopener">Rules</a><a href="https://github.com/rune-goblin/battlefield" target="_blank" rel="noopener">Source</a></nav>
   </div>
-  <div class="stagebar">{#each STAGES as s (s.id)}<span class:on={game.stage === s.id}>{s.label}</span>{/each}</div>
+  {#if game.stage !== 'battle'}
+    <div class="stagebar">{#each STAGES as s (s.id)}<span class:on={game.stage === s.id}>{s.label}</span>{/each}</div>
+  {/if}
   {#if game.stage === 'battle' && game.battle}
     <Battle />
   {:else if game.stage === 'place' && game.setup.board}

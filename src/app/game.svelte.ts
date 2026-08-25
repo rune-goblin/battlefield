@@ -1,5 +1,5 @@
 import {
-  act, at, COMBATANTS, createBattle, ENGINES, generateBoard, parse, randomRng,
+  act, at, COMBATANTS, createBattle, ENGINES, generateBoard, parse, randomRng, select,
   type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
 } from '../engine/index.js';
 
@@ -96,6 +96,15 @@ export function takeAction(action: Action) {
   if (!game.battle) return;
   game.history = [...game.history.slice(-30), game.battle];
   game.battle = act(game.battle, action, randomRng);
+  save();
+}
+
+// Choosing which of the pending side's units acts next is not an activation itself — no
+// history entry, so Undo still rewinds to the last completed activation, not to a mid-pick
+// selection.
+export function selectUnit(id: string) {
+  if (!game.battle) return;
+  game.battle = select(game.battle, id);
   save();
 }
 

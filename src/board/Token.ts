@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
+import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
 import { engineArtUrl, troopArtUrl } from './art.js';
 import type { BoardTheme } from './theme.js';
 
@@ -14,7 +14,10 @@ export interface UnitTokenModel {
   level: number;
   cell: string;
   wounds: number;
-  shaken: number;
+  disorder: number;
+  /** Disorder a unit absorbs before it routs; varies per unit (Quality), so the rout
+   * threshold and the disorder-pip count both read off it rather than a fixed constant. */
+  quality: number;
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
   ring: TokenRing | null;
@@ -73,7 +76,7 @@ export class Token extends PIXI.Container {
   private dragging = false;
 
   private readonly base = new PIXI.Graphics();
-  private readonly decor = new PIXI.Graphics(); // badge backing, wound/shaken pips, chip frame
+  private readonly decor = new PIXI.Graphics(); // badge backing, wound/disorder pips, chip frame
   private art: PIXI.Sprite | null = null;
   private artPath: string | null = null;
   private artGeneration = 0;
@@ -114,9 +117,9 @@ export class Token extends PIXI.Container {
     if (!this.dragging) this.place(model, grid, size);
 
     const wounds = model.kind === 'unit' ? model.wounds : 0;
-    const shaken = model.kind === 'unit' ? model.shaken : 0;
+    const disorder = model.kind === 'unit' ? model.disorder : 0;
     const broken = model.kind === 'unit' && wounds >= MAX_WOUNDS - 1;
-    const routed = model.kind === 'unit' && shaken >= ROUTED_AT;
+    const routed = model.kind === 'unit' && disorder >= model.quality;
 
     this.drawBase(model, size, theme, routed);
     this.updateArt(model, size);
@@ -251,14 +254,14 @@ export class Token extends PIXI.Container {
         .endFill();
     }
 
-    const shakenY = woundY + size * 0.15;
+    const disorderY = woundY + size * 0.15;
     const pipR = size * 0.05;
-    for (let i = 0; i < ROUTED_AT; i++) {
-      const filled = i < model.shaken;
+    for (let i = 0; i < model.quality; i++) {
+      const filled = i < model.disorder;
       this.decor
         .lineStyle(1, theme.rule, 1)
         .beginFill(filled ? theme.token.pipFilled : theme.token.pipEmpty, 1)
-        .drawCircle(startX + i * step, shakenY, pipR)
+        .drawCircle(startX + i * step, disorderY, pipR)
         .endFill();
     }
 
