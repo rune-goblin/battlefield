@@ -340,3 +340,39 @@ exact where rasterisation is an approximation. So `src/engine/path.ts` takes:
 and drops the nav-grid rasterisation, the Foundry canvas dependency and the 100k-iteration
 guard, none of which earn their place at 64 cells. Reignmaker's naive `frontier.sort()` per
 iteration is fine at this size and is kept for legibility.
+
+
+## The move ladder lives in the drag
+
+Decision (Mark, 2026-08-25): selecting a unit shows its movement ladder on the board
+immediately — no clicking a type first. The rungs are distances, and the drag walks them.
+
+This reverses the previous wave's judgment call, which painted reachable/far colouring only
+along the traced path. The bands are now a standing wash from the moment a unit is selected.
+
+| Band | Meaning | Shown |
+|---|---|---|
+| Free | Reachable with one action | Green |
+| Costed | Reachable, but spends two or three actions | Amber, one shade per extra action |
+| **Push** | Beyond every action the unit has | Red, with the roll it will trigger |
+
+Dragging into the push band is reaching above your grade, and it resolves with the same four
+degrees every other ladder uses:
+
+| Degree | Result |
+|---|---|
+| Critical success | Reach the cell; the push costs no disorder and no extra action. |
+| Success | Reach the cell. |
+| Failure | Stop at the furthest cell the unit could actually afford along that path. |
+| Critical failure | Stop there, and gain 1 disorder. |
+
+The check is Quality against the level DC, as elsewhere. The push is worth one further
+action's movement beyond the unit's remaining actions — no more, so a drag can never propose
+an unbounded gamble.
+
+The HUD chip that already reads "Move to c6 — 40 ft · 2 actions" reads the bargain instead
+when the pointer is in the push band: the DC, and where a failure leaves you.
+
+This restores meaning to `mounted` and `cavalry-charge`, which the movement wave left inert
+after Move's grade was removed: both now grant a bonus to the push check, so cavalry gamble
+on a long move more reliably than infantry.
