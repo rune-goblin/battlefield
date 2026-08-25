@@ -327,3 +327,72 @@ to retune.
   by cavalry moving one cell reads oddly next to a 40 ft Stride.
 - Flying costs 10 ft a cell over everything, including water it could not land on. Should a
   flier be forbidden from ending a move over water?
+
+## Drag interaction notes
+
+Wave 3 (interaction). `src/app/game.svelte.ts`'s `KEY` is now `battlefield.v3`; a saved
+`battlefield.v2` state is simply never read, not migrated — confirmed by seeding one and
+reloading (no throw, no console error), see "Judgment calls" below for how that was verified.
+`Battle.svelte`'s right panel is now progressive-disclosure (a type-row of chips, one ladder
+open at a time); dragging a token is the only way to move, wired through new `BoardView`
+members (`setDragPath`, `setDraggable`) and a new `'drag'` `BoardEvent` on `Interaction`.
+
+### Judgment calls
+
+- **Only the active unit's own token can start a drag, in battle mode.** `Interaction` gained
+  `setDraggable(id)`; a press on any other token in battle mode never escalates past
+  `CLICK_SLOP`, so it still resolves as a plain click (a target pick) on release, it just can't
+  be picked up. This means pressing a *different* one of the player's own un-activated units
+  (without first clicking it in the bottom strip) is a silent no-op rather than an implicit
+  select-then-drag — click it in the strip first. Place mode is unchanged (any token drags, as
+  before); this only gates battle mode.
+- **The drag "must stop" rule is read as "the preview freezes," not "the preview clips to the
+  nearest reachable cell along the ray."** `onBoardDrag` only updates `drag` when the hovered
+  cell is a key in `activation().moves` (or a legal `charges` target); a cell beyond reach, or
+  occupied, or the unit's own square, just leaves the last valid preview on screen rather than
+  computing a nearest-reachable substitute. Cheap and correct (never draws an illegal path) but
+  means dragging fast past the edge of reach can leave the preview looking stale for a moment
+  until the pointer re-enters a reachable cell. Actually resolving the move still reads the
+  real drop cell fresh against `activation().moves`/`.charges`, not the stale preview, so a
+  stale-looking preview can never cause a wrong move.
+- **"Reachable-this-action vs. reachable-with-more-actions" is painted on the traced path
+  only, not as a standing move-range wash shown the moment a unit is selected.** Colouring the
+  whole `moves` map (dozens of cells on hex) before any drag starts was cut as scope for this
+  wave — the doc's wording ("Board support... for" the drag) reads as being in service of the
+  drag preview, and the path itself is a small, legible run of cells, unlike the full reach set.
+  `moveFar` (new `HighlightStyle`, `src/board/theme.ts`) is applied only to path cells whose
+  `MoveReach.actions > 1`; if a persistent range wash is wanted later, the plumbing (per-style
+  highlight groups on `PixiBoard`) already supports adding it as a third group.
+- **The destination cell's own highlight is usually invisible** — `TokenLayer` draws above
+  `OverlayLayer` (z-index 30 vs 20, pre-existing), and the dragged token sprite sits exactly on
+  the destination cell while dragging, so its fill is hidden under the token. Judged
+  acceptable: the token itself *is* the clearest possible marker for "here," and the polyline
+  plus the HUD's cell name still name it explicitly.
+- **A charge preview uses a single `attack`-styled run for the whole path**, not a near/far
+  split — the movement cost is incidental to a charge (the point is contact plus the melee
+  action), so one color reads as "this drag is aggressive" without the movement nuance a plain
+  Move needs.
+- **The `highlights` prop replaced `highlight`/`highlightStyle` on `PixiBoard`** (now
+  `{ style, cells }[]`, one call to `BoardView.setHighlight` per known `HighlightStyle` every
+  effect run) so the rung-hover wash and the drag-path wash can't race-clobber each other by
+  writing the same style from two independent `$effect`s. `Place.svelte` updated to the new
+  shape; no other caller existed.
+- **A board click only resolves a rung of the currently *open* type.** Wave 2's `findMatch`
+  searched every legal rung across every offer as a fallback ("same as clicking straight off
+  the panel," when the panel showed every offer at once). With progressive disclosure that
+  fallback would let a click resolve a rung the player was never shown — e.g. clicking an enemy
+  token could fire a Strike nobody had opened the Fight ladder for — so `findMatch` now only
+  searches `openOffer`'s rungs. Hovering a highlighted target still wins over a same-cell/unit
+  match on a different (impossible, now, since there's only ever one open offer) rung.
+- **Verified by driving the real UI with Playwright** (chromium + the GL args already recorded
+  in this repo's tooling notes), not by unit test — per `CLAUDE.md`'s prototype-mode rule
+  against PIXI unit tests. Confirmed live: a stale `battlefield.v2` save present at load time
+  produces no console error or thrown exception (the app just lands on the board-setup stage,
+  since `v2` is never read); the drag HUD read the exact feet/action numbers computed
+  independently via `activation()` in a throwaway engine test first (`c5` from `c2` at 20 ft
+  speed: 30 ft, 2 actions; `c6`: 40 ft, 2 actions), confirming the UI never recomputes the
+  numbers it shows. The throwaway test and its Playwright driver script were not committed.
+- **`docs/plans/battle-shots/wave3-drag.png`** shows a hex board mid-drag: a bent orange
+  polyline from the unit's cell through a green ("near," one action) run into an amber ("far,"
+  two actions) cell where the token now sits, the HUD reading "Move to c6 — 40 ft · 2 actions,"
+  and the collapsed panel's type row (`Shoot`, `Guard`) un-expanded in the same frame.

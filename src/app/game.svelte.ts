@@ -1,5 +1,5 @@
 import {
-  act, at, COMBATANTS, createBattle, ENGINES, generateBoard, parse, randomRng, select,
+  act, at, COMBATANTS, createBattle, endActivation as endActivationEngine, ENGINES, generateBoard, parse, randomRng, select,
   type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
 } from '../engine/index.js';
 
@@ -7,7 +7,9 @@ export type Stage = 'board' | 'paint' | 'place' | 'battle';
 export interface SetupUnit { card: UnitCard; side: Side; square: string | null; engines: string[] }
 export interface Setup { spec: BoardSpec; board: Board | null; units: SetupUnit[] }
 
-const KEY = 'battlefield.v2';
+// v2 -> v3: Unit gained actions/feet/flying, rooted went boolean -> number, and BattleState
+// gained begun. A v2 save deserialises with actions: undefined and throws on the first action.
+const KEY = 'battlefield.v3';
 const STAGES: Stage[] = ['board', 'paint', 'place', 'battle'];
 
 const randomSeed = () => Math.floor(Math.random() * 1e9);
@@ -105,6 +107,15 @@ export function takeAction(action: Action) {
 export function selectUnit(id: string) {
   if (!game.battle) return;
   game.battle = select(game.battle, id);
+  save();
+}
+
+/** Stop the active unit's activation with actions unspent — also the pass, since a unit that
+ * has done nothing may end too. */
+export function endActivation() {
+  if (!game.battle) return;
+  game.history = [...game.history.slice(-30), game.battle];
+  game.battle = endActivationEngine(game.battle);
   save();
 }
 

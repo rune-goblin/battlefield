@@ -11,7 +11,10 @@ export type BoardEvent =
   | { type: 'edge'; edge: string }
   | { type: 'token'; id: string }
   | { type: 'paint'; cells: string[]; edges: string[]; brush: Brush }
-  | { type: 'drop'; id: string; cell: string };
+  | { type: 'drop'; id: string; cell: string }
+  /** Fires on every pointer move while a token drag is live; `cell` is null off-grid or on
+   * release/cancel, which the drag-preview consumer reads as "clear". */
+  | { type: 'drag'; id: string; cell: string | null };
 
 export type BoardEventType = BoardEvent['type'];
 export type BoardEventOf<T extends BoardEventType> = Extract<BoardEvent, { type: T }>;
@@ -67,6 +70,9 @@ export class Interaction {
   private readonly o: InteractionOptions;
   private mode: BoardMode = 'view';
   private brush: Brush | null = null;
+  /** In battle mode, the only token a press may escalate into a drag; unset in every other
+   * mode, where any token already presses into a drag (place mode's reposition). */
+  private draggableId: string | null = null;
   private gesture: Gesture = { kind: 'none' };
   private origin: Point = { x: 0, y: 0 };
   private lastScreen: Point = { x: 0, y: 0 };
@@ -97,6 +103,10 @@ export class Interaction {
     this.mode = mode;
     this.cancel();
     this.applyCursor();
+  }
+
+  setDraggable(id: string | null): void {
+    this.draggableId = id;
   }
 
   setBrush(brush: Brush | null): void {
@@ -173,7 +183,10 @@ export class Interaction {
 
     const hit = this.hitAt(screen);
     if (hit?.kind === 'token' && (this.mode === 'place' || this.mode === 'battle')) {
-      this.gesture = { kind: 'press', token: hit.id };
+      // Battle mode drags only the active unit's own token; every other token still presses
+      // (so a plain click still resolves as a target on release) but never escalates to drag.
+      const draggable = this.mode === 'place' || hit.id === this.draggableId;
+      this.gesture = { kind: 'press', token: draggable ? hit.id : null };
       return;
     }
     if (this.mode === 'paint' && this.brush) {
@@ -206,7 +219,13 @@ export class Interaction {
     } else if (this.gesture.kind === 'press' && this.gesture.token && moved > CLICK_SLOP) {
       this.gesture = { kind: 'drag', token: this.gesture.token };
     }
-    if (this.gesture.kind === 'drag') this.o.onDrag(this.gesture.token, this.o.toLocal(screen));
+    if (this.gesture.kind === 'drag') {
+      const local = this.o.toLocal(screen);
+      this.o.onDrag(this.gesture.token, local);
+      const geometry = this.o.geometry();
+      const cell = geometry ? geometry.grid.fromPoint(local, geometry.size) : null;
+      this.o.emit({ type: 'drag', id: this.gesture.token, cell: cell ? geometry!.grid.key(cell) : null });
+    }
     this.updateHover(screen);
   };
 
@@ -233,6 +252,7 @@ export class Interaction {
       const cell = geometry?.grid.fromPoint(this.o.toLocal(screen), geometry.size);
       if (geometry && cell) this.o.emit({ type: 'drop', id: gesture.token, cell: geometry.grid.key(cell) });
       this.o.onDrag(gesture.token, null);
+      this.o.emit({ type: 'drag', id: gesture.token, cell: null });
       return;
     }
 
@@ -385,7 +405,10 @@ export class Interaction {
     const gesture = this.gesture;
     this.gesture = { kind: 'none' };
     this.o.onPreview([], [], null);
-    if (gesture.kind === 'drag') this.o.onDrag(gesture.token, null);
+    if (gesture.kind === 'drag') {
+      this.o.onDrag(gesture.token, null);
+      this.o.emit({ type: 'drag', id: gesture.token, cell: null });
+    }
     this.applyCursor();
   }
 }

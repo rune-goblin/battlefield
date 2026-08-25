@@ -26,7 +26,13 @@ export interface BoardView {
   setBoard(board: Board | null): void;
   setTokens(tokens: TokenModel[]): void;
   setHighlight(cells: string[], style: HighlightStyle): void;
+  /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
+   * wash. Empty clears it. */
+  setDragPath(cells: string[]): void;
   setSelected(id: string | null): void;
+  /** The one token a press may escalate into a drag in battle mode; place mode ignores this
+   * and always allows any token to drag. */
+  setDraggable(id: string | null): void;
   setMode(mode: BoardMode): void;
   setBrush(brush: Brush | null): void;
   on<T extends BoardEventType>(event: T, handler: (event: BoardEventOf<T>) => void): () => void;
@@ -168,8 +174,14 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     setHighlight(cells, style) {
       overlayLayer.setHighlight(cells, style);
     },
+    setDragPath(cells) {
+      overlayLayer.setDragPath(cells);
+    },
     setSelected(id) {
       overlayLayer.setSelected(id);
+    },
+    setDraggable(id) {
+      interaction.setDraggable(id);
     },
     setMode(mode) {
       interaction.setMode(mode);
@@ -273,4 +285,4 @@ export { BoardContainer } from './BoardContainer.js';
 export { engineArtUrl, troopArtUrl } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
-export { currentTheme, darkTheme, lightTheme, prefersDark, type BoardTheme } from './theme.js';
+export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';

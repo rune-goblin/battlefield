@@ -199,7 +199,7 @@
   <section>
     <h2>Deployment</h2>
     <p class="muted">Attackers deploy on ranks 1–3, defenders on 6–8. Ambush units may deploy one rank further in. Drag an unplaced unit onto a highlighted square, or select one below and click a square. Drag a placed token to move it.</p>
-    <PixiBoard {board} {tokens} mode="place" highlight={highlightCells} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop} />
+    <PixiBoard {board} {tokens} mode="place" highlights={[{ style: 'deploy', cells: highlightCells }]} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop} />
 
     {#each ['attacker', 'defender'] as const as s (s)}
       <h3 class={s === 'attacker' ? 'side-att' : 'side-def'}>{s === 'attacker' ? 'Attacker' : 'Defender'}</h3>

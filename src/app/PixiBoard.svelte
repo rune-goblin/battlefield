@@ -1,16 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { createBoardView, type BoardEventOf, type BoardMode, type BoardView, type Brush, type HighlightStyle, type TokenModel } from '../board/index.js';
+  import {
+    createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
+    type HighlightStyle, type TokenModel,
+  } from '../board/index.js';
   import type { Board } from '../engine/index.js';
+
+  interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
   interface Props {
     board: Board | null;
     tokens?: TokenModel[];
     mode?: BoardMode;
     brush?: Brush | null;
-    highlight?: string[];
-    highlightStyle?: HighlightStyle;
+    /** One cell set per style; a style missing from the list is cleared. */
+    highlights?: HighlightGroup[];
+    /** The token-drag path trace, unit's own cell first — see `BoardView.setDragPath`. */
+    dragPath?: string[];
     selected?: string | null;
+    /** In battle mode, the only token a press may pick up. Place mode ignores this. */
+    draggable?: string | null;
     /** Full-bleed: fills its container instead of sitting in a capped, square-ish column. */
     fill?: boolean;
     onhover?: (event: BoardEventOf<'hover'>) => void;
@@ -19,13 +28,14 @@
     ontoken?: (event: BoardEventOf<'token'>) => void;
     onpaint?: (event: BoardEventOf<'paint'>) => void;
     ondrop?: (event: BoardEventOf<'drop'>) => void;
+    ondrag?: (event: BoardEventOf<'drag'>) => void;
     onbrush?: (brush: Brush | null) => void;
     /** A native drag (e.g. a tray item) released over the canvas; `cell` is null outside the grid. */
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlight = [], highlightStyle = 'deploy', selected = null, fill = false,
-    onhover, oncell, onedge, ontoken, onpaint, ondrop, onbrush, ontraydrop,
+    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], selected = null, draggable = null, fill = false,
+    onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
   }: Props = $props();
 
   let container: HTMLDivElement;
@@ -43,6 +53,7 @@
       view.on('token', (e) => ontoken?.(e)),
       view.on('paint', (e) => onpaint?.(e)),
       view.on('drop', (e) => ondrop?.(e)),
+      view.on('drag', (e) => ondrag?.(e)),
     ];
     return () => {
       for (const unsubscribe of off) unsubscribe();
@@ -54,8 +65,17 @@
   $effect(() => { view?.setTokens(tokens); });
   $effect(() => { view?.setMode(mode); });
   $effect(() => { view?.setBrush(brush); });
-  $effect(() => { view?.setHighlight(highlight, highlightStyle); });
+  // One `setHighlight` call per known style, in a single effect: two independent effects
+  // each clearing-then-setting the same style can race and clobber each other's wash.
+  $effect(() => {
+    if (!view) return;
+    const byStyle = new Map(HIGHLIGHT_STYLES.map((s) => [s, [] as string[]]));
+    for (const g of highlights) byStyle.set(g.style, g.cells);
+    for (const [style, cells] of byStyle) view.setHighlight(cells, style);
+  });
+  $effect(() => { view?.setDragPath(dragPath); });
   $effect(() => { view?.setSelected(selected); });
+  $effect(() => { view?.setDraggable(draggable); });
 </script>
 
 <div class="pixiboard" class:fill bind:this={container}>

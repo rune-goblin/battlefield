@@ -1,6 +1,9 @@
 import type { SquareTerrain } from '../engine/index.js';
 
-export type HighlightStyle = 'deploy' | 'move' | 'attack';
+// 'moveFar' is 'move' at lower intensity — the drag preview colours a path cell one or the
+// other depending on whether it costs the unit's next Move action or a later one.
+export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar';
+export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar'];
 
 export interface BoardTheme {
   mode: 'light' | 'dark';
@@ -57,7 +60,7 @@ const LIGHT: BoardTheme = {
   overlay: {
     hover: 0x1f1a17,
     selected: 0xb4611f,
-    highlight: { deploy: 0xc9a227, move: 0x3f7d4f, attack: 0xb23b3b },
+    highlight: { deploy: 0xc9a227, move: 0x3f7d4f, attack: 0xb23b3b, moveFar: 0xd9a441 },
   },
   token: {
     routed: 0xb9ab93,
@@ -92,7 +95,7 @@ const DARK: BoardTheme = {
   overlay: {
     hover: 0xe8e1d5,
     selected: 0xd98b6e,
-    highlight: { deploy: 0xe8c34a, move: 0x5fbf7f, attack: 0xe0685a },
+    highlight: { deploy: 0xe8c34a, move: 0x5fbf7f, attack: 0xe0685a, moveFar: 0xe0a75c },
   },
   token: {
     routed: 0x8c8378,
