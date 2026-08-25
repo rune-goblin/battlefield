@@ -79,16 +79,23 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
 export const rungOf = (type: LadderType, index: Grade): Rung => LADDERS[type][index - 1];
 export const clearsAll = (n: number) => n >= CLEAR_ALL;
 
+/** Which types have a roll of their own for a committed action to weight. Guard sets a number
+ * outright and Withdraw only provokes the enemy's strikes, so on those two a committed action
+ * can only feed the push check. */
+export const OWN_ROLL: Record<LadderType, boolean> = {
+  shoot: true, fight: true, guard: false, withdraw: false, rally: true, cast: true,
+};
+
 export type SpellId = 'blast' | 'ward' | 'mend' | 'bless' | 'compel';
 
-export interface Spell { id: SpellId; label: string; detail: string; at: 'enemy' | 'ally' }
+export interface Spell { id: SpellId; label: string; detail: string; at: 'enemy' | 'ally'; rolls: boolean }
 
 export const SPELLS: Record<SpellId, Spell> = {
-  blast: { id: 'blast', label: 'Blast', detail: 'A magical attack that ignores cover.', at: 'enemy' },
-  ward: { id: 'ward', label: 'Ward', detail: '+2 Defence until the target acts.', at: 'ally' },
-  mend: { id: 'mend', label: 'Mend', detail: 'Remove one wound.', at: 'ally' },
-  bless: { id: 'bless', label: 'Bless', detail: "The target's next action climbs one rung free.", at: 'ally' },
-  compel: { id: 'compel', label: 'Compel', detail: 'The target may not reach above its grade on its next activation.', at: 'enemy' },
+  blast: { id: 'blast', label: 'Blast', detail: 'A magical attack that ignores cover.', at: 'enemy', rolls: true },
+  ward: { id: 'ward', label: 'Ward', detail: '+2 Defence until the target acts.', at: 'ally', rolls: false },
+  mend: { id: 'mend', label: 'Mend', detail: 'Remove one wound.', at: 'ally', rolls: false },
+  bless: { id: 'bless', label: 'Bless', detail: "The target's next action climbs one rung free.", at: 'ally', rolls: false },
+  compel: { id: 'compel', label: 'Compel', detail: 'The target may not reach above its grade on its next activation.', at: 'enemy', rolls: false },
 };
 
 // Grades come from the statblock, never from a curated list. Two measurements over all 162

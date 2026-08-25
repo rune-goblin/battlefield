@@ -9,6 +9,9 @@ export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 /** PF2e's economy, unchanged: Move, Move, Move, or Move, Shoot, Guard. */
 export const ACTIONS_PER_ACTIVATION = 3;
+/** What one action after the first is worth. The system's single increment: Press, Brace,
+ * Outflanked and the mounted push bonus are all the same number. */
+export const ACTION_BONUS = 2;
 /** The disorder a troop of ordinary discipline absorbs before it routs; `Unit.quality` varies it. */
 export const ROUTED_AT = 3;
 
@@ -45,6 +48,8 @@ export interface Unit {
   quality: number;
   /** Actions left in this activation; back to three between activations. */
   actions: number;
+  /** A unit attacks once per activation. Further actions buy weight, never a second attack. */
+  attacked: boolean;
   /** Movement banked by Move actions already taken and not yet spent, in feet. */
   feet: number;
   engines: EngineState[];
@@ -64,18 +69,32 @@ export interface Unit {
 /** Which unit acts. Defaults to `activeUnit(state)`. */
 interface Acts { unit?: string }
 
+/**
+ * How the player allocates the actions committed beyond the one the act itself costs. Each
+ * point is one action and is worth `ACTION_BONUS` where it lands, so
+ * `roll + push + cost === actions committed`.
+ */
+export interface Spend {
+  /** Fed to the act's own roll — the attack, the shot, the casting, Rally's check. */
+  roll: number;
+  /** Fed to the push check that climbs to a rung above the unit's grade. */
+  push: number;
+}
+
 export interface RungAction extends Acts {
   type: LadderType;
   rung: Grade;
   target?: string;
   spell?: SpellId;
+  spend?: Partial<Spend>;
 }
 
 /** Stride to `to`, spending as many Move actions as the route costs. */
 export interface MoveAction extends Acts { type: 'move'; to: string }
 
-/** Move into contact and fight: the movement's actions, plus one for the melee. */
-export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade }
+/** Move into contact and fight: the movement's actions, plus one for the melee, plus whatever
+ * the melee is weighted with. */
+export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade; spend?: Partial<Spend> }
 
 /** Reach for a cell beyond every action the unit has — a Quality check against the level DC.
  * Success lands on `to`; failure lands on `PushReach.fallback` instead. */
@@ -100,10 +119,24 @@ export interface RungOption {
   targets: RungTarget[];
 }
 
+/** What the two dials will take, and what each action put on one is worth. */
+export interface SpendDials {
+  /** Actions this offer can absorb beyond the one it costs. */
+  extra: number;
+  /** What one of them buys, wherever it lands. */
+  step: number;
+  /** The act has a roll of its own. Guard sets a number and Withdraw only provokes the
+   * enemy's strikes, so neither does. */
+  roll: boolean;
+  /** There is a rung above the granted one and a check standing between. */
+  push: boolean;
+}
+
 export interface ActionOffer {
   type: LadderType;
-  /** Actions this offer spends. */
+  /** Actions the act itself costs, before anything the dials take. */
   cost: number;
+  dials: SpendDials;
   spell: SpellId | null;
   label: string;
   detail: string;
@@ -150,6 +183,8 @@ export interface PushReach {
 export interface Activation {
   unit: string;
   actions: number;
+  /** True once this activation's one attack is spent. */
+  attacked: boolean;
   /** Unspent movement, in feet. */
   feet: number;
   /** Feet a single Move action buys. */

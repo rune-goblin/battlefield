@@ -521,3 +521,119 @@ a loop each with an unguarded `.innerText().catch(...)` took several minutes doi
 timing out. Pass an explicit short `{ timeout }` on any such probe, or compute the target cell
 in advance (as the final script does, via the same cube-distance formula `grid.ts` uses)
 instead of searching for one live.
+
+## Actions buy weight notes
+
+Wave 5. Three actions with no multiple-attack penalty gave three attacks an activation — 1.50
+wounds a turn on an even matchup. `src/engine/battle.ts` now allows one attack an activation
+and lets further actions buy +2 each, allocated by the player.
+
+### The action shape
+
+`RungAction` and `ChargeAction` gained `spend?: Partial<Spend>`, where
+
+```ts
+interface Spend { roll: number; push: number }   // src/engine/types.ts
+```
+
+Each point on either dial is one further action, so `cost + roll + push` is what the
+activation pays, and `ACTION_BONUS = 2` is what each buys where it lands. `cost` is always 1:
+`{ type: 'fight', rung: 3, target: 'u2', spend: { push: 2 } }` is a three-action commitment
+reaching for Overrun with +4 on the reach check.
+
+`ActionOffer` gained the matching surface for the UI wave to bind:
+
+```ts
+dials: { extra: number; step: number; roll: boolean; push: boolean }
+```
+
+`extra` is `u.actions - 1`, `step` is `ACTION_BONUS`, `roll` says the act has a roll of its own
+(`OWN_ROLL` in `ladders.ts`, plus `Spell.rolls` so only Blast takes the dial among the five
+spells), and `push` says a rung above the granted one is on offer with a check standing between.
+Per-rung, the push dial bites exactly where `RungOption.access === 'reach'`; `commit()` refuses
+a push allocation on any other rung, a roll allocation on a type with no roll, and any total
+past the actions left.
+
+`Unit.attacked` and `Activation.attacked` are new. `begin()` and `finish()` clear it.
+
+### Where each type spends
+
+| Type | Roll dial | Push dial |
+|---|---|---|
+| Fight | the strike, on top of the rung's own bonus | the reach from Strike toward Press or Overrun |
+| Shoot | the shot, including an engine's bombardment | the reach toward Volley or Barrage |
+| Cast | Blast's attack roll only | the reach on the spell's scope |
+| Guard | — | the reach toward Dig in or Shieldwall |
+| Withdraw | — | the reach toward Break off or Fighting retreat |
+| Rally | a Quality check that clears further (see below) | the reach toward Rally or Inspire |
+| Move | distance, by default — a Stride still buys a Speed's worth per action | `pushModifierFor(u, committed)` weights the push check by `(committed - 1) * 2` |
+
+### Judgment calls
+
+- **Rung access stays grade-gated and every act still costs one action.** The wave brief reads
+  "a Fight-2 troop can choose Strike for one action, Press for two, or reach for Overrun with
+  three", which could be read as rung index being a minimum action cost. The doc's own
+  arithmetic rules that out: "a Fight-2 troop with three actions chooses between Press at +4,
+  or reaching for Overrun at +4 on the reach check" only comes out at +4 if the extras are
+  counted from the *first* action, i.e. `3 - 1 = 2` extras at +2 each, on a flat cost of one.
+  The wounds table (+0/+2/+4 for 1/2/3 actions) says the same. So "Press for two" is read as
+  the natural commitment, not a price, and the test asserts exactly that trio.
+- **Fight rung 1's population is the move-then-strike case, not a cheaper price.** With one
+  attack an activation, a unit that Strides twice has one action left and takes Strike at +0;
+  Press at +0 costs a point of disorder on a miss, so the safe rung is a real choice when
+  nothing is left to weight it with. It is thinner than "Press costs more" would have been —
+  flag if rung 1 still reads dead in play.
+- **A Blast spends the activation's one attack.** The brief says "a unit may Fight or Shoot
+  once", but a caster left free to Blast three times reopens the exact hole this wave closes,
+  and the doc's own line is "a unit attacks once per activation". `isAttack()` therefore covers
+  Fight, Shoot and Cast/Blast. Attacking a wall counts too — it rolls an attack.
+- **Rally's own roll had to be invented.** The doc's generalised table gives Rally "+2 to the
+  Quality check", but wave 1 decided "Rally does not roll — the rungs clear disorder outright;
+  the gamble is the reach", so there was no check for the dial to feed. Committed actions now
+  buy a Quality check against the level DC *on top of* the rung's clear, which can only add:
+  success clears one further point, a critical success two, failure nothing. No new failure
+  mode, so the wave-1 call survives. It only bites on Steady — Rally and Inspire already clear
+  everything — which makes the push dial the better buy at rung 1, mirroring Move. Revisit if
+  Mark meant the reach check all along, in which case Rally's roll dial should just be dropped.
+- **A push's weight comes from the actions it spends, not from a dial.** `doPush` already spent
+  every remaining action win or lose (wave 4's call), so `pushModifierFor(u, committed)` reads
+  the commitment straight off that: three actions is +4, one is +0. No `spend` field on
+  `PushAction`, and the push band is still bounded at one further Speed — the choice the doc
+  poses is Stride (certain ground) against push (gamble, weighted by what you commit), not a
+  slider inside the push.
+- **`Battle.svelte`'s push HUD is now understated.** It calls `pushModifierFor(active)`, which
+  defaults `committed` to 1, so the modifier it shows omits the commitment bonus the resolution
+  applies. Left alone deliberately — `src/app/` is the next wave's, and the signature is
+  back-compatible so the build stays clean.
+- **A charge that finds nobody refunds the actions committed to the melee**, returning only the
+  movement's cost. There is nothing to weight, so charging the fear-routed or the already-dead
+  does not also burn the dials.
+
+### Tests
+
+120 before, 132 after. Twelve added under `actions buy weight, not repetition` in
+`src/tests/battle.test.ts`, covering one attack an activation (including the shot and the
+Blast), +2 per action on the roll and on the push check independently, the 0.50/0.60/0.80
+wounds-a-turn table measured over all twenty faces of the d20, both dials refused where they
+have nowhere to land, a three-action commitment on each of Fight, Shoot, Cast, Guard, Rally and
+Withdraw, the Scatter-against-Fighting-retreat contrast, Move still buying ground with a Strike
+affordable after it, and the Fight-2 troop's Strike/Press/Overrun trio.
+
+Four existing tests changed, all in `the push band`, all for the same reason: the commitment
+bonus now turns their scripted rolls into successes. Three of them (`failure stops at the
+furthest affordable cell`, `critical failure stops at the fallback`, `mounted and
+cavalry-charge grant a bonus`) were written against a bare `mod 17 vs DC 22`, so they now run
+through a new `oneActionLeft` helper — two Guards, since `act()` refills the activation to three
+actions and a test cannot simply assign `u.actions`. A fourth, `every action after the first
+weights the push check`, is new and asserts the same roll failing on one action and landing on
+three. No coverage was deleted.
+
+### Rule questions for play
+
+- Rally's roll dial is dead weight at rungs 2 and 3, which already clear everything. Should
+  Inspire's ally clause be what the check buys instead?
+- Guard and Withdraw can only spend on the push, so a grade-3 unit of either has nowhere to put
+  a second or third action at all. Is standing there with two unspent actions the right feel,
+  or should a top-grade Guard buy something?
+- Overrun still inherits Press's +2 (a wave-1 call). Stacked with two committed actions that is
+  +6 on the strike, which is the biggest single number a unit can put on a roll.

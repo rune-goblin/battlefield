@@ -8,6 +8,7 @@ import { edgeKey, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
+import { ACTION_BONUS } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
 import type { Grade, LadderType } from '../engine/ladders.js';
 
@@ -38,6 +39,9 @@ const targets = (o: ActionOffer, rung: Grade) => o.rungs[rung - 1].targets.map((
 const guardOn = (state: BattleState, id: string, rng = scriptedRng([10])) =>
   act(state, { type: 'guard', rung: 1, unit: id }, rng);
 const moves = (state: BattleState, id: string) => moveReach(state, unit(state, id));
+// An activation always refills to three actions, so spending two on Guard is the only way to
+// reach a push with a single action behind it.
+const oneActionLeft = (state: BattleState, id: string) => guardOn(guardOn(state, id), id);
 // A routed unit is offered nothing but Withdraw, so burning its activation takes both. One
 // action leaves two unspent, so the activation is ended by hand unless the action ended it.
 const burn = (state: BattleState, id: string) => {
@@ -352,7 +356,7 @@ describe('the push band', () => {
   });
 
   it('failure stops at the furthest affordable cell along the route, no disorder', () => {
-    const { state } = battle([]);
+    const state = oneActionLeft(battle([]).state, 'u0');
     const push = pushReach(state, unit(state, 'u0'));
     const [cell] = [...push.keys()];
     const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([4]));
@@ -361,7 +365,7 @@ describe('the push band', () => {
   });
 
   it('critical failure stops at the fallback and gains 1 disorder', () => {
-    const { state } = battle([]);
+    const state = oneActionLeft(battle([]).state, 'u0');
     const push = pushReach(state, unit(state, 'u0'));
     const [cell] = [...push.keys()];
     const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([1]));
@@ -381,17 +385,211 @@ describe('the push band', () => {
       expect(pushModifierFor(u)).toBe(u.stats.will + PUSH_BONUS);
     }
 
-    // Wired end to end: a roll that fails a plain infantry's push (mod 17 vs DC 22 → 21,
-    // failure) succeeds once the +2 bonus applies (23, success).
-    const infState = battle([]).state;
+    // Wired end to end on a one-action push, so the commitment bonus is zero and the mount is
+    // the only thing in play: mod 17 vs DC 22 rolls 21 and fails, 23 with the bonus and lands.
+    const infState = oneActionLeft(battle([]).state, 'u0');
     const [infCell] = [...pushReach(infState, unit(infState, 'u0')).keys()];
     const infResult = act(infState, { type: 'push', to: infCell, unit: 'u0' }, scriptedRng([4]));
     expect(unit(infResult, 'u0').square).not.toEqual(parse(infCell));
 
-    const mState = createBattle({ units: [{ card: mountedCard, side: 'attacker', square: 'c2' }], board: openBoard() }, scriptedRng([10]));
+    const mState = oneActionLeft(createBattle({ units: [{ card: mountedCard, side: 'attacker', square: 'c2' }], board: openBoard() }, scriptedRng([10])), 'u0');
     const [mCell] = [...pushReach(mState, unit(mState, 'u0')).keys()];
     const mResult = act(mState, { type: 'push', to: mCell, unit: 'u0' }, scriptedRng([4]));
     expect(unit(mResult, 'u0').square).toEqual(parse(mCell));
+  });
+
+  it('every action after the first weights the push check', () => {
+    expect(pushModifierFor(unit(battle([]).state, 'u0'), 3)).toBe(17 + 2 * ACTION_BONUS);
+
+    const one = oneActionLeft(battle([]).state, 'u0');
+    const [oneCell] = [...pushReach(one, unit(one, 'u0')).keys()];
+    expect(unit(act(one, { type: 'push', to: oneCell, unit: 'u0' }, scriptedRng([4])), 'u0').square)
+      .not.toEqual(parse(oneCell));
+
+    // The same roll, with all three actions behind it: 4 + 17 + 4 = 25 against DC 22.
+    const all = battle([]).state;
+    const [allCell] = [...pushReach(all, unit(all, 'u0')).keys()];
+    expect(unit(act(all, { type: 'push', to: allCell, unit: 'u0' }, scriptedRng([4])), 'u0').square)
+      .toEqual(parse(allCell));
+  });
+});
+
+describe('actions buy weight, not repetition', () => {
+  // Level-6 infantry: strike +11, Will +17, level DC 22, Fight 2 / Guard 1 / Withdraw 2.
+  const engaged = () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c3');
+    return state;
+  };
+  const strikeMod = (s: BattleState) => s.log.find((e) => e.check)!.check!.modifier;
+
+  it('gives a unit one attack an activation, however many actions are left', () => {
+    const s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    expect(unit(s, 'u0').actions).toBe(2);
+    expect(unit(s, 'u0').attacked).toBe(true);
+    expect(offer(s, 'fight', 'u0').rungs.map((r) => r.legal)).toEqual([false, false, false]);
+    expect(offer(s, 'fight', 'u0').rungs[0].reason).toBe('already attacked this activation');
+    expect(() => act(s, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))
+      .toThrow(/already attacked/);
+    // Everything that is not an attack is still on offer.
+    expect(offer(s, 'guard', 'u0').rungs[0].legal).toBe(true);
+  });
+
+  it('spends the same one attack on a shot or a blast', () => {
+    const { state } = battle([]);
+    place(state, 'u0', 'c5');
+    const shot = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    expect(offer(shot, 'shoot', 'u2').rungs[0].legal).toBe(false);
+
+    const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
+    const p0 = createBattle({
+      units: [{ card: priest, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
+      board: openBoard(),
+    });
+    place(p0, 'u1', 'c3');
+    const blasted = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(blasted, 'u0').attacked).toBe(true);
+    expect(offer(blasted, 'fight', 'u0').rungs[0].legal).toBe(false);
+  });
+
+  it('puts each action after the first on the roll as +2', () => {
+    for (const extra of [0, 1, 2]) {
+      const s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: extra } }, scriptedRng([10, 5]));
+      expect(strikeMod(s)).toBe(11 + extra * ACTION_BONUS);
+      expect(unit(s, 'u0').actions).toBe(s.activated.includes('u0') ? 3 : 2 - extra);
+    }
+  });
+
+  it('puts each action after the first on the push check instead', () => {
+    // Guard 1 reaching for Dig in: DC 22 against Will +17, so a 2 needs the full commitment.
+    const brace = { defence: 2, aura: 0 };
+    const digIn = { defence: 3, aura: 0 };
+    const reach = (push: number) =>
+      unit(act(engaged(), { type: 'guard', rung: 2, unit: 'u0', spend: { push } }, scriptedRng([2])), 'u0').guard;
+    expect(reach(0)).toEqual(brace);
+    expect(reach(1)).toEqual(brace);
+    expect(reach(2)).toEqual(digIn);
+  });
+
+  it('takes 0.50, 0.60 and 0.80 wounds a turn on one, two and three actions in an even matchup', () => {
+    const rate = (extra: number) => {
+      let wounds = 0;
+      for (let roll = 1; roll <= 20; roll++) {
+        const s0 = engaged();
+        // The published medians run parallel, so an even matchup needs 12+ at any level.
+        unit(s0, 'u2').stats.defence = strikeModifier(s0, unit(s0, 'u0'), unit(s0, 'u2')) + 12;
+        const s = act(s0, { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: extra } }, scriptedRng([roll, 1]));
+        wounds += unit(s, 'u2').wounds;
+      }
+      return wounds / 20;
+    };
+    expect([rate(0), rate(1), rate(2)]).toEqual([0.5, 0.6, 0.8]);
+  });
+
+  it('refuses a roll dial on Guard and Withdraw, which have no roll of their own', () => {
+    for (const type of ['guard', 'withdraw'] as const) {
+      expect(offer(engaged(), type, 'u0').dials).toMatchObject({ roll: false, push: true, extra: 2, step: 2 });
+      expect(() => act(engaged(), { type, rung: 1, unit: 'u0', spend: { roll: 1 } }, scriptedRng([10])))
+        .toThrow(/no roll of its own/);
+    }
+    expect(offer(engaged(), 'fight', 'u0').dials).toMatchObject({ roll: true, push: true });
+  });
+
+  it('refuses more actions than the unit has, and a push dial on a rung it is granted', () => {
+    expect(() => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: 3 } }, scriptedRng([10, 5])))
+      .toThrow(/only 3 actions/);
+    expect(() => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { push: 1 } }, scriptedRng([10, 5])))
+      .toThrow(/needs no push check/);
+  });
+
+  it('lets every type absorb a full three-action commitment', () => {
+    const ends = (s: BattleState) => { expect(s.activated).toContain('u0'); return s; };
+
+    ends(act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10, 5])));
+    ends(act(engaged(), { type: 'guard', rung: 2, unit: 'u0', spend: { push: 2 } }, scriptedRng([2])));
+    ends(act(engaged(), { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0', spend: { push: 2 } }, scriptedRng([4])));
+
+    const start = battle([]).state;
+    place(start, 'u0', 'c5');
+    const shooter = burn(start, 'u1');
+    const shot = act(shooter, { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    expect(strikeMod(shot)).toBe(7);
+    expect(unit(shot, 'u2').actions).toBe(2);
+    const heavy = act(shooter, { type: 'shoot', rung: 1, target: 'u0', unit: 'u2', spend: { roll: 2 } }, scriptedRng([10]));
+    expect(strikeMod(heavy)).toBe(7 + 2 * ACTION_BONUS);
+    expect(heavy.activated).toContain('u2');
+
+    // Rally clears its rung outright; the committed actions buy a Quality check that can only add.
+    const shaken = engaged();
+    unit(shaken, 'u0').disorder = 3;
+    const steady = act(shaken, { type: 'rally', rung: 1, unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
+    ends(steady);
+    expect(unit(steady, 'u0').disorder).toBe(1);
+    expect(unit(act(shaken, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10])), 'u0').disorder).toBe(2);
+
+    const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
+    const p0 = createBattle({
+      units: [{ card: priest, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
+      board: openBoard(),
+    });
+    place(p0, 'u1', 'c3');
+    const cast = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
+    expect(cast.activated).toContain('u0');
+    expect(strikeMod(cast)).toBe(unit(p0, 'u0').stats.will + 2 * ACTION_BONUS);
+  });
+
+  it('leaves in good order on a full commitment and comes apart on a single action', () => {
+    const cornered = () => {
+      const { state } = battle([]);
+      place(state, 'u2', 'c3');
+      place(state, 'u3', 'b2');
+      return state;
+    };
+    const scattered = act(cornered(), { type: 'withdraw', rung: 1, target: 'c1', unit: 'u0' }, scriptedRng([20, 20]));
+    expect(unit(scattered, 'u0').wounds).toBe(2);
+    expect(unit(scattered, 'u0').disorder).toBe(3);
+
+    // Withdraw 2 reaching for a Fighting retreat: DC 24, so 4 + 17 falls back to Break off and
+    // one free strike, while 4 + 17 + 4 leaves the field clean.
+    const halfway = act(cornered(), { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0' }, scriptedRng([4, 20]));
+    expect(unit(halfway, 'u0').wounds).toBe(1);
+    const clean = act(cornered(), { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0', spend: { push: 2 } }, scriptedRng([4, 20]));
+    expect(unit(clean, 'u0').wounds).toBe(0);
+    expect(unit(clean, 'u0').disorder).toBe(0);
+    expect(unit(clean, 'u0').square).toEqual(parse('c1'));
+  });
+
+  it('leaves Move buying ground, and a Strike affordable after it', () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c5');
+    let s = act(state, { type: 'move', to: 'c4', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(s, 'u0').actions).toBe(2);
+    expect(unit(s, 'u0').feet).toBe(5);
+    expect(unit(s, 'u0').attacked).toBe(false);
+    s = act(s, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    expect(strikeMod(s)).toBe(11);
+    expect(unit(s, 'u0').actions).toBe(1);
+  });
+
+  it('lets a Fight-2 troop Strike for one action, Press for two, or reach Overrun with three', () => {
+    const fight = offer(engaged(), 'fight', 'u0');
+    expect(fight.granted).toBe(2);
+    expect(fight.rungs.map((r) => r.access)).toEqual(['free', 'free', 'reach']);
+    expect(fight.cost).toBe(1);
+    expect(fight.dials.extra).toBe(2);
+
+    const strike = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    expect(strikeMod(strike)).toBe(11);
+    expect(unit(strike, 'u0').actions).toBe(2);
+
+    const press = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0', spend: { roll: 1 } }, scriptedRng([10, 5]));
+    expect(strikeMod(press)).toBe(11 + 2 + ACTION_BONUS);
+    expect(unit(press, 'u0').actions).toBe(1);
+
+    // Overrun is DC 24 against Will +17: a 4 needs both spare actions on the push check.
+    const overrun = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0', spend: { push: 2 } }, scriptedRng([4, 20, 5]));
+    expect(overrun.log.some((e) => e.text.includes('overruns'))).toBe(true);
+    expect(overrun.activated).toContain('u0');
   });
 });
 
