@@ -447,3 +447,28 @@ Move buys quantity because distance genuinely scales; a second attack was exactl
 that broke the pacing, so nothing else does. Withdraw is the clearest expression of the rule:
 a unit that spends its whole activation getting out leaves in formation, and one that spends
 a single action scatters.
+
+
+### Guard and Withdraw at grade 3
+
+Decision (Mark, 2026-08-26): a shieldwall troop committing three actions to Guard must get
+something for them. At grade 3 the push dial is closed, so both types need a second dial.
+
+**Guard buys Defence.** +2 per extra action, on top of the rung's own bonus. Three actions on
+a Shieldwall is +6 Defence, taking an even attack from needing 12 to needing 18 — a unit that
+spends its whole activation holding ground is very hard to shift for a round, which is the
+point of the order.
+
+It raises **Defence**, not a saving throw. The battle reads exactly two defensive numbers,
+Defence and Will, and Defence is the one attacks roll against; Brace already adds to it, so
+committing actions extends a lever that exists rather than introducing an axis. Fortitude and
+Reflex are imported onto the troop sheet and sit unused — the door is open if typed attacks
+(a Blast against Reflex, Fear against Will) are ever wanted, but that is a separate design.
+
+**Withdraw buys distance**, like Move, since a withdrawal is movement. A full commitment gets
+the unit out in good order *and* well away, which is what a fighting retreat should mean.
+
+| Type | Extra action buys |
+|---|---|
+| Guard | +2 Defence, or +2 to push |
+| Withdraw | further distance, or +2 to push |
