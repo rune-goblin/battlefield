@@ -4,7 +4,7 @@ import {
   endActivation, isOutflanked, isRouted, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
   pushReach, rangeBetween, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
-import { edgeKey, parse } from '../engine/board.js';
+import { edgeKey, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
@@ -42,12 +42,13 @@ const moves = (state: BattleState, id: string) => moveReach(state, unit(state, i
 // An activation always refills to three actions, so spending two on Guard is the only way to
 // reach a push with a single action behind it.
 const oneActionLeft = (state: BattleState, id: string) => guardOn(guardOn(state, id), id);
-// A routed unit is offered nothing but Withdraw, so burning its activation takes both. One
-// action leaves two unspent, so the activation is ended by hand unless the action ended it.
+// A routed unit is offered no ladder at all, only the withdrawal, so burning its activation
+// takes both. One action leaves two unspent, so the activation is ended by hand unless the
+// action ended it.
 const burn = (state: BattleState, id: string) => {
   const s = availableActions(state, id).some((o) => o.type === 'guard')
     ? guardOn(state, id)
-    : act(state, { type: 'withdraw', rung: 1, unit: id }, scriptedRng([10]));
+    : act(state, { type: 'withdraw', unit: id }, scriptedRng([10]));
   return s.phase === 'battle' && s.active === id ? endActivation(s) : s;
 };
 
@@ -144,12 +145,15 @@ describe('the menu is filtered by situation', () => {
     expect(a.speed).toBe(25);
     expect(a.moves.size).toBeGreaterThan(0);
   });
-  it('offers Fight, Guard and Withdraw in contact, and Rally once disordered', () => {
+  it('offers Fight and Guard in contact, Rally once disordered, and the withdrawal alongside', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
-    expect(types(state, 'u0')).toEqual(['fight', 'guard', 'withdraw']);
+    expect(types(state, 'u0')).toEqual(['fight', 'guard']);
+    expect(activation(state, 'u0')!.withdraw).not.toBeNull();
     unit(state, 'u0').disorder = 1;
-    expect(types(state, 'u0')).toEqual(['fight', 'guard', 'withdraw', 'rally']);
+    expect(types(state, 'u0')).toEqual(['fight', 'guard', 'rally']);
+    // Out of contact and steady, there is nothing to break from.
+    expect(activation(state, 'u1')!.withdraw).toBeNull();
   });
   it('offers a caster one row per spell it knows', () => {
     const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
@@ -415,7 +419,7 @@ describe('the push band', () => {
 });
 
 describe('actions buy weight, not repetition', () => {
-  // Level-6 infantry: strike +11, Will +17, level DC 22, Fight 2 / Guard 1 / Withdraw 2.
+  // Level-6 infantry: strike +11, Will +17, Reflex +14, level DC 22, Fight 2 / Guard 1.
   const engaged = () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
@@ -486,13 +490,14 @@ describe('actions buy weight, not repetition', () => {
     expect([rate(0), rate(1), rate(2)]).toEqual([0.5, 0.6, 0.8]);
   });
 
-  it('refuses a roll dial on Guard and Withdraw, which have no roll of their own', () => {
-    for (const type of ['guard', 'withdraw'] as const) {
-      expect(offer(engaged(), type, 'u0').dials).toMatchObject({ roll: false, push: true, extra: 2, step: 2 });
-      expect(() => act(engaged(), { type, rung: 1, unit: 'u0', spend: { roll: 1 } }, scriptedRng([10])))
-        .toThrow(/no roll of its own/);
-    }
-    expect(offer(engaged(), 'fight', 'u0').dials).toMatchObject({ roll: true, push: true });
+  it('refuses a roll dial on Guard, which has no roll of its own', () => {
+    expect(offer(engaged(), 'guard', 'u0').dials)
+      .toMatchObject({ roll: false, push: true, defence: true, distance: false, extra: 2, step: 2 });
+    expect(() => act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { roll: 1 } }, scriptedRng([10])))
+      .toThrow(/no roll of its own/);
+    expect(offer(engaged(), 'fight', 'u0').dials).toMatchObject({ roll: true, push: true, defence: false });
+    expect(() => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { defence: 1 } }, scriptedRng([10, 5])))
+      .toThrow(/no Defence to raise/);
   });
 
   it('refuses more actions than the unit has, and a push dial on a rung it is granted', () => {
@@ -507,7 +512,7 @@ describe('actions buy weight, not repetition', () => {
 
     ends(act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10, 5])));
     ends(act(engaged(), { type: 'guard', rung: 2, unit: 'u0', spend: { push: 2 } }, scriptedRng([2])));
-    ends(act(engaged(), { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0', spend: { push: 2 } }, scriptedRng([4])));
+    ends(act(engaged(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([4])));
 
     const start = battle([]).state;
     place(start, 'u0', 'c5');
@@ -538,25 +543,15 @@ describe('actions buy weight, not repetition', () => {
     expect(strikeMod(cast)).toBe(unit(p0, 'u0').stats.will + 2 * ACTION_BONUS);
   });
 
-  it('leaves in good order on a full commitment and comes apart on a single action', () => {
-    const cornered = () => {
-      const { state } = battle([]);
-      place(state, 'u2', 'c3');
-      place(state, 'u3', 'b2');
-      return state;
-    };
-    const scattered = act(cornered(), { type: 'withdraw', rung: 1, target: 'c1', unit: 'u0' }, scriptedRng([20, 20]));
-    expect(unit(scattered, 'u0').wounds).toBe(2);
-    expect(unit(scattered, 'u0').disorder).toBe(3);
-
-    // Withdraw 2 reaching for a Fighting retreat: DC 24, so 4 + 17 falls back to Break off and
-    // one free strike, while 4 + 17 + 4 leaves the field clean.
-    const halfway = act(cornered(), { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0' }, scriptedRng([4, 20]));
-    expect(unit(halfway, 'u0').wounds).toBe(1);
-    const clean = act(cornered(), { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0', spend: { push: 2 } }, scriptedRng([4, 20]));
-    expect(unit(clean, 'u0').wounds).toBe(0);
-    expect(unit(clean, 'u0').disorder).toBe(0);
-    expect(unit(clean, 'u0').square).toEqual(parse('c1'));
+  it('buys Defence on Guard, +2 an action on top of the rung', () => {
+    const brace = (defence: number) =>
+      unit(act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence } }, scriptedRng([10])), 'u0').guard;
+    expect(brace(0)).toEqual({ defence: 2, aura: 0 });
+    expect(brace(1)).toEqual({ defence: 4, aura: 0 });
+    expect(brace(2)).toEqual({ defence: 6, aura: 0 });
+    // It raises Defence itself, so it is what the next attack rolls against.
+    const held = act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence: 2 } }, scriptedRng([10]));
+    expect(defenceOf(held, unit(held, 'u0'), null, false)).toBe(unit(held, 'u0').stats.defence + 6);
   });
 
   it('leaves Move buying ground, and a Strike affordable after it', () => {
@@ -687,27 +682,147 @@ describe('melee is one exchange', () => {
 });
 
 describe('withdrawal', () => {
-  it('Scatter draws every free strike and a point of disorder; a fighting retreat draws none', () => {
+  // Level-6 infantry escapes on Reflex +14. Kobolds hold at DC 17 (strike +7 + 10), so 3–12
+  // succeeds, 13+ crits, 2 fails and a natural 1 crit-fails. Trolls hold at DC 23.
+  const held = (holders: Record<string, string> = { u2: 'c3' }) => {
     const { state } = battle([]);
-    place(state, 'u2', 'c3');
-    place(state, 'u3', 'b2');
-    const messy = act(state, { type: 'withdraw', rung: 1, target: 'c1', unit: 'u0' }, scriptedRng([20, 20]));
-    expect(unit(messy, 'u0').wounds).toBe(2);
-    // One point for each free strike that wounded, and one for the Scatter itself.
-    expect(unit(messy, 'u0').disorder).toBe(3);
-    unit(state, 'u0').grades.withdraw = 3;
-    const clean = act(state, { type: 'withdraw', rung: 3, target: 'c1', unit: 'u0' }, scriptedRng([20]));
-    expect(unit(clean, 'u0').wounds).toBe(0);
-    expect(unit(clean, 'u0').square).toEqual(parse('c1'));
+    for (const [id, sq] of Object.entries(holders)) place(state, id, sq);
+    return state;
+  };
+  const wounds = (s: BattleState, id = 'u0') => unit(s, id).wounds;
+  const where = (s: BattleState, id = 'u0') => notation(unit(s, id).square);
+
+  it('rolls Reflex against each holder\'s own attack DC', () => {
+    const w = activation(held(), 'u0')!.withdraw!;
+    expect(w.cost).toBe(1);
+    expect(w.modifier).toBe(14);
+    expect(w.escapes).toEqual([{ unit: 'u2', name: 'Kobolds', dc: 17, follows: false }]);
+    // Disorder is −1 to everything, the escape included.
+    const shaken = held();
+    unit(shaken, 'u0').disorder = 2;
+    expect(activation(shaken, 'u0')!.withdraw!.modifier).toBe(12);
   });
-  it('Scatter is always available, even with nowhere to go', () => {
+
+  it('resolves the four degrees: away clean, struck, or held where it stands', () => {
+    const away = act(held(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([5]));
+    expect(wounds(away)).toBe(0);
+    expect(where(away)).toBe('c1');
+
+    const struck = act(held(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([2, 20]));
+    expect(wounds(struck)).toBe(1);
+    expect(where(struck)).toBe('c1');
+    expect(unit(struck, 'u0').disorder).toBe(1);
+
+    // A critical failure is the one degree that does not break contact at all.
+    const pinned = act(held(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([1, 20]));
+    expect(where(pinned)).toBe('c2');
+    expect(wounds(pinned)).toBe(1);
+    expect(unit(pinned, 'u0').disorder).toBe(2);
+  });
+
+  it('rolls once per holder, so two enemies are two checks', () => {
+    const two = held({ u2: 'c3', u3: 'b2' });
+    expect(activation(two, 'u0')!.withdraw!.escapes.map((e) => e.dc)).toEqual([17, 23]);
+    // Kobolds fail (2, struck), Trolls succeed (10) — one strike, not two.
+    const s = act(two, { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([2, 20, 10]));
+    expect(wounds(s)).toBe(1);
+    expect(where(s)).toBe('c1');
+  });
+
+  it('puts each action after the first on the escape check as +2', () => {
+    // 8 + 14 = 22 misses the Trolls' DC 23; the same roll with two more actions makes it.
+    const two = () => held({ u3: 'c3' });
+    const bare = act(two(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([8, 20]));
+    expect(wounds(bare)).toBe(1);
+    const heavy = act(two(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([8, 20]));
+    expect(wounds(heavy)).toBe(0);
+    expect(heavy.activated).toContain('u0');
+  });
+
+  it('buys distance with the other dial, and refuses a cell further than it bought', () => {
+    const one = activation(held(), 'u0')!.withdraw!;
+    // Two spare actions at 25 ft each, so the far cells are on offer up front.
+    expect(one.dials).toMatchObject({ roll: true, push: false, defence: false, distance: true, extra: 2 });
+    expect(one.targets.map((t) => t.id)).toContain('c5');
+    expect(() => act(held(), { type: 'withdraw', to: 'c5', unit: 'u0' }, scriptedRng([5])))
+      .toThrow(/further than 0 committed actions/);
+    const far = act(held(), { type: 'withdraw', to: 'c5', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
+    expect(where(far)).toBe('c5');
+  });
+
+  it('refuses an allocation past the actions left, on either dial', () => {
+    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 3 } }, scriptedRng([5])))
+      .toThrow(/only 3 actions/);
+    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2, distance: 1 } }, scriptedRng([5])))
+      .toThrow(/only 3 actions/);
+    expect(() => act(held(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence: 3 } }, scriptedRng([10])))
+      .toThrow(/only 3 actions/);
+    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { push: 1 } }, scriptedRng([5])))
+      .toThrow(/needs no push check/);
+  });
+
+  it('consults no grade — the check is the holder, not the troop\'s profile', () => {
+    expect(activation(held(), 'u0')!.withdraw).not.toHaveProperty('granted');
+    expect(unit(held(), 'u0').grades).not.toHaveProperty('withdraw');
+    expect(types(held(), 'u0')).not.toContain('withdraw');
+  });
+
+  it('is offered even with nowhere to go, so a cornered unit is never stuck', () => {
     const { state } = battle([]);
     place(state, 'u0', 'a1');
     place(state, 'u1', 'a2');
     place(state, 'u2', 'b1');
-    const w = offer(state, 'withdraw', 'u0');
-    expect(targets(w, 1)).toEqual([]);
-    expect(w.rungs[0].legal).toBe(true);
+    const w = activation(state, 'u0')!.withdraw!;
+    expect(w.escapes).toHaveLength(1);
+    expect(w.targets).toEqual([]);
+    const s = act(state, { type: 'withdraw', unit: 'u0' }, scriptedRng([5]));
+    expect(notation(unit(s, 'u0').square)).toBe('a1');
+  });
+});
+
+describe('no retreat', () => {
+  // Line Infantry carries the 'no-retreat' signal and walks 20 ft; the levy it holds walks 25.
+  const line: UnitCard = {
+    name: 'Line', level: 6, role: 'infantry', signals: ['no-retreat'], tactics: [],
+    sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false },
+  };
+  const chased = (runner: UnitCard = infantry) => {
+    const state = createBattle({
+      units: [{ card: runner, side: 'attacker', square: 'c2' }, { card: line, side: 'defender', square: 'c7' }],
+      board: openBoard(),
+    });
+    place(state, 'u1', 'c3');
+    return state;
+  };
+
+  it('follows a withdrawal it can reach, and deals no damage doing it', () => {
+    const s = act(chased(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([5]));
+    expect(notation(unit(s, 'u0').square)).toBe('c1');
+    expect(notation(unit(s, 'u1').square)).toBe('c2');
+    expect(unit(s, 'u0').wounds).toBe(0);
+    expect(unit(s, 'u0').disorder).toBe(0);
+  });
+
+  it('cannot follow a unit that outruns its single move', () => {
+    // Two committed actions carry the infantry 50 ft, out to e5. The Line's one move covers
+    // 20, which puts no cell adjacent to e5 inside its reach.
+    const s = act(chased(), { type: 'withdraw', to: 'e5', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
+    expect(notation(unit(s, 'u0').square)).toBe('e5');
+    expect(notation(unit(s, 'u1').square)).toBe('c3');
+  });
+
+  it('is shaken off outright by a critical success', () => {
+    // Reflex +14 against the Line's DC 21 crits on 17 or better.
+    const s = act(chased(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([17]));
+    expect(notation(unit(s, 'u0').square)).toBe('c1');
+    expect(notation(unit(s, 'u1').square)).toBe('c3');
+  });
+
+  it('follows a failed escape too, on top of the free strike', () => {
+    // 1 + 14 crit-fails, which pins the unit, so there is nothing to follow.
+    const pinned = act(chased(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([1, 20]));
+    expect(notation(unit(pinned, 'u0').square)).toBe('c2');
+    expect(unit(pinned, 'u0').wounds).toBe(1);
   });
 });
 
@@ -735,13 +850,14 @@ describe('disorder', () => {
     expect(k.quality).toBe(5);
     k.disorder = k.quality;
     expect(isRouted(k)).toBe(true);
-    expect(types(state, 'u2')).toEqual(['withdraw']);
+    expect(types(state, 'u2')).toEqual([]);
+    expect(activation(state, 'u2')!.withdraw).not.toBeNull();
   });
   it('a routed unit leaves the field at its own edge', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c8');
     unit(state, 'u2').disorder = unit(state, 'u2').quality;
-    const s = act(burn(state, 'u0'), { type: 'withdraw', rung: 1, unit: 'u2' }, scriptedRng([10]));
+    const s = act(burn(state, 'u0'), { type: 'withdraw', unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
   });
   it('fear disorders whoever comes to grips with it', () => {

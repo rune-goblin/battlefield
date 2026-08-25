@@ -26,7 +26,7 @@ describe('grade derivation', () => {
     const rabble = troop('Goblin Rabble');
     expect(rabble.tactics).toEqual([]);
     expect(rabble.signals).toEqual([]);
-    expect(gradesFor(rabble)).toEqual({ shoot: 1, fight: 2, guard: 1, withdraw: 2, rally: 1, cast: 1 });
+    expect(gradesFor(rabble)).toEqual({ shoot: 1, fight: 2, guard: 1, rally: 1, cast: 1 });
   });
 
   it('carries movement as Speed in feet, not as a grade', () => {
@@ -39,14 +39,14 @@ describe('grade derivation', () => {
 
   it('a levy is granted the bottom rung of everything but its own two feet', () => {
     const levy = troop('Peasant Levy');
-    expect(gradesFor(levy)).toEqual({ shoot: 1, fight: 2, guard: 1, withdraw: 2, rally: 1, cast: 1 });
+    expect(gradesFor(levy)).toEqual({ shoot: 1, fight: 2, guard: 1, rally: 1, cast: 1 });
     expect(qualityFor(levy)).toBe(3);
   });
 
   it('an elite earns its threes', () => {
     const einherjar = troop('Einherji Host');
     expect(einherjar.signals).toEqual(expect.arrayContaining(['melee-drill', 'shielded', 'formation']));
-    expect(gradesFor(einherjar)).toMatchObject({ fight: 3, guard: 3, withdraw: 3 });
+    expect(gradesFor(einherjar)).toMatchObject({ fight: 3, guard: 3 });
   });
 
   it('reads the shooting grade off the ranged band', () => {
@@ -72,7 +72,6 @@ describe('grade derivation', () => {
 
   it('lets a hand-authored tactic raise a grade the numbers do not reach', () => {
     expect(gradesFor(troop('Shield Wall')).guard).toBe(3);
-    expect(gradesFor(troop('Light Horse')).withdraw).toBe(3);
     expect(gradesFor(troop('Peasant Levy')).guard).toBe(1);
     expect(gradesFor({ ...troop('Peasant Levy'), tactics: ['raise-shields'] }).guard).toBe(3);
   });

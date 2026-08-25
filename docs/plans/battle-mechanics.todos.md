@@ -637,3 +637,136 @@ three. No coverage was deleted.
   or should a top-grade Guard buy something?
 - Overrun still inherits Press's +2 (a wave-1 call). Stacked with two committed actions that is
   +6 on the strike, which is the biggest single number a unit can put on a roll.
+
+## Dials notes
+
+Wave 5b. Guard gained a Defence dial, Withdraw was rebuilt as an opposed check and left the
+ladders entirely, and both dial sets were surfaced in `Battle.svelte`. 132 tests before, 142
+after.
+
+### The `Spend` shape
+
+```ts
+interface Spend { roll: number; push: number; defence: number; distance: number }
+type Dial = keyof Spend;                       // DIALS, in that order
+interface SpendDials { extra: number; step: number; roll: boolean; push: boolean; defence: boolean; distance: boolean }
+```
+
+Two new fields rather than an overloaded `roll`, per the brief, and `SpendDials` gained the
+matching booleans so the UI iterates `DIALS` and asks each offer which of them it takes. Guard
+offers Defence and push; Withdraw offers the Escape check and distance; nothing offers all four.
+`commit()` refuses every dial the offer does not carry, and any total past the actions left.
+
+### Guard's Defence dial
+
+`perform`'s guard case writes `eff.defence + spend.defence * ACTION_BONUS` straight into
+`u.guard.defence`, so a three-action Shieldwall is +7 (the rung's own +3 plus +4) and a
+three-action Brace is +6. It therefore flows through `defenceOf`'s existing "circumstance
+bonuses never stack, the highest applies" max, which means a heavily committed Guard also
+swallows any aura or Ward — correct, since they are the same kind of bonus. It lasts exactly as
+long as the rung did: `begin()` clears `u.guard` when the unit next activates.
+
+### Withdraw is no longer a ladder
+
+Per Mark's mid-wave redesign. `LadderType` is now five entries and `Grades` five keys; Withdraw
+follows Move's wave-4 precedent of living outside `availableActions`/`ActionOffer` entirely,
+with its own `WithdrawOffer` on `Activation.withdraw` and its own `WithdrawAction`.
+
+- **The check**: `escapeModifier(u) = u.stats.reflex - u.disorder`, plus `+2` per action on the
+  roll dial, against `escapeDcFor(holder) = holder.stats.strike + 10` — the holder's own attack
+  DC. One check per holder, resolved in deployment order, each with its own free strike, all
+  before any movement.
+- **A holder with no melee strike cannot hold.** `holdersOf` filters `stats.strike === null`, so
+  no check is rolled against it and it takes no free strike. Otherwise its DC would be a flat 10
+  and its "strike" a +0 roll, which is noise rather than a rule.
+- **A critical failure against any one holder cancels the whole movement.** "You do not break
+  contact" read as the unit not moving at all, not as staying in contact with that one enemy.
+  Two holders, one crit failure, means the unit is pinned however well the other check went.
+- **Removed from derivation**: `gradesFor` lost its `withdraw` line, `TACTIC_GRADE` lost
+  `ambush` and `false-retreat` (both bumped Withdraw to 3), and `speedGrade`/`perceptionBand`
+  were deleted because the withdraw grade was their only consumer. **`ambush` still drives scout
+  deployment** through `canDeploy`, so it is not inert; **`false-retreat` now does nothing at
+  all** — flag it for a new home or deletion.
+
+### `no-retreat` is a hold on others
+
+Mark's correction: it is not a restriction on its owner. A `no-retreat` holder follows a
+withdrawal that was not a critical success — one free Move of its own Speed through `path.ts`'s
+ordinary terrain costs, dealing no damage.
+
+- **The follow resolves after the withdrawer has moved**, so the follower paths to a cell
+  *touching wherever the withdrawal ended*, not toward where it was going. It takes the cheapest
+  such cell, ties broken by notation. If no cell adjacent to the destination is inside one move,
+  contact is not re-established — which is what makes the movement delta the deciding rule, and
+  what the distance dial buys.
+- **A `no-retreat` troop may follow more than one withdrawal in a round.** Nothing tracks a
+  budget. In practice it is self-limiting: following the first withdrawer usually breaks contact
+  with the second, and `follow` skips a holder it is already engaged with. Tunable if two
+  enemies peeling off a single anchor reads wrong.
+- A follower that is routed, rooted or has Speed 0 does not follow. Rooted is the deliberate
+  one: a troop that dug in chose to hold ground.
+- `Unit.noRetreat` is a third ad-hoc signal field beside `mounted`. **If a fourth is ever
+  wanted, lift `signals` onto `Unit` wholesale** rather than adding another boolean.
+
+### Reflex on `UnitStats`
+
+`reflex: card.sheet?.reflex ?? saveBonus(l, p.reflex)`, with `RoleProfile` tiers infantry
+`moderate` and cavalry `high` — cavalry is the nimbler of the two. **This is the only stat
+`deriveStats` reads off the sheet directly**; every other sheeted stat arrives through
+`card.overrides`, which the two importers write. Doing it this way avoided regenerating
+`combatants.ts` and `official.ts` for one number, but it is an inconsistency worth closing next
+time either importer is touched. `derivation()` gained a Reflex row in both branches, so
+`Place.svelte`'s preview line cites it.
+
+### Withdraw's target set
+
+The free cell is a neighbour, as before. Committed distance opens up everything a `reachable()`
+pass at `distance * speed` covers. Cells that break contact with every current holder win; when
+none do, the rest are offered instead, so a cornered unit is never stuck (the old "Scatter is
+always available" floor, kept). Sorted nearest-first, so a `WithdrawAction` with no `to` steps
+one cell rather than sprinting to a corner. A routed unit out of contact still runs homeward
+only, distance dial or not.
+
+### The panel
+
+- **The allocation is stored per rung**, plus one entry for the withdrawal, so the push dial can
+  be offered only on the rung a reach check actually stands in front of. A single per-offer
+  allocation would have had to silently drop the push points when the player pressed Go on a
+  granted rung.
+- **Allocations are trimmed on read** against the offer's current `extra` rather than tracked as
+  actions drain, and cleared outright after any action. The panel can therefore never propose
+  more than the unit still has.
+- Each dial row reads what one action buys ("+2 to the attack roll", "+2 to the reach check",
+  "+2 Defence", "one more Speed's worth (20 ft)") with the running sum on the right. Below it a
+  row of chips reads the result: `Press +6 on the attack roll` · `Reach DC 24 · d20+15` ·
+  `Defence +6` · `Escape Kobold Warriors: d20+14 vs DC 17` · `Runs up to 40 ft` ·
+  `Costs 3 of 3 actions`.
+- The Withdraw card sits between Move and the type row, open by default, listing one line per
+  holder with its DC and the live modifier, and tagging a `no-retreat` holder as one that
+  follows. Its target cells wash the board while the card is open — no conflict with the Move
+  bands, which are empty whenever a unit is in contact — and a board click on one withdraws.
+- **Wave 4's understated push HUD is fixed**: `pushModifierFor(active, act.actions)`, since
+  `doPush` commits every action left.
+
+### The screenshot
+
+`docs/plans/battle-shots/wave5-dials.png`, hex, Line Infantry at c2 held by Kobold Warriors at
+c3. The Withdraw card shows the Escape check at DC 17 against d20+14 with one action on distance
+(`Runs up to 40 ft`, `Costs 2 of 3 actions`); the open Fight ladder shows all three rungs with
+their dials, Press carrying two actions on the roll for `Press +6 on the attack roll` and
+Overrun carrying one on the push for `Reach DC 24 · d20+15`. Harness: the wave-3 Playwright
+recipe, with the battle state written straight into `battlefield.v3` rather than driven through
+setup. The generator script was deleted before committing.
+
+### Rule questions for play
+
+- The Escape DC is the holder's attack DC unmodified — no bump for outflanking the withdrawer,
+  no reduction for a weakened or disordered holder. Deliberately flat for now.
+- Withdraw's two dials compete for the same actions, and against a dangerous holder the escape
+  bonus is almost always the better buy. Watch whether distance ever gets picked outside a
+  deliberate outrun of a `no-retreat` troop.
+- Guard's Defence dial and its push dial compete the same way, and at grade 3 the push dial is
+  closed, which is exactly the case the doc opened this wave to fix. At grade 1 a Brace with two
+  actions on Defence (+6) beats reaching for Dig in (+3), so the push dial may be the dead one
+  now. Measure before tuning.
+- Rally's roll dial is still dead weight at rungs 2 and 3 (carried over from the last wave).

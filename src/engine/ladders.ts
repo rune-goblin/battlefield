@@ -1,10 +1,12 @@
-import { cardTraits, deriveStats, speedOf, type Reach, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
+import { cardTraits, deriveStats, type Reach, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
 import { saveBonus, type Tier } from './tables.js';
 
-// Movement has no ladder: a Move action spends the troop's Speed in feet, and taking it twice
-// or three times is what March and Charge used to name.
-export type LadderType = 'shoot' | 'fight' | 'guard' | 'withdraw' | 'rally' | 'cast';
-export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'withdraw', 'rally', 'cast'];
+// Two types have no ladder. A Move action spends the troop's Speed in feet, and taking it
+// twice or three times is what March and Charge used to name. A Withdraw rolls the escaping
+// unit's Reflex against whoever is holding it, and the four degrees say what Scatter, Break
+// off and Fighting retreat used to name — see `doWithdraw` in `battle.ts`.
+export type LadderType = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
+export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
 export type Grade = 1 | 2 | 3;
 export type Grades = Record<LadderType, Grade>;
@@ -13,14 +15,12 @@ export type RungId =
   | 'loose' | 'volley' | 'barrage'
   | 'strike' | 'press' | 'overrun'
   | 'brace' | 'dig-in' | 'shieldwall'
-  | 'scatter' | 'break-off' | 'fighting-retreat'
   | 'steady' | 'rally' | 'inspire'
   | 'minor' | 'major' | 'grand';
 
 export interface ShootEffect { band: 1 | 2 | 3; ignoresCover: boolean }
 export interface FightEffect { bonus: number; disorderOnMiss: number; takeGround: boolean }
 export interface GuardEffect { defence: number; rooted: boolean; aura: number }
-export interface WithdrawEffect { freeStrikes: 'all' | 'one' | 'none'; disorder: number }
 export interface RallyEffect { clear: number; ally: boolean }
 export interface CastEffect { scope: number }
 
@@ -36,7 +36,6 @@ export interface Rung {
   shoot?: ShootEffect;
   fight?: FightEffect;
   guard?: GuardEffect;
-  withdraw?: WithdrawEffect;
   rally?: RallyEffect;
   cast?: CastEffect;
 }
@@ -59,11 +58,6 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
     { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: '+3 Defence, rooted next activation.', reachDc: 0, guard: { defence: 3, rooted: true, aura: 0 } },
     { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: '+3 Defence, and +1 to adjacent allies.', reachDc: 2, guard: { defence: 3, rooted: false, aura: 1 } },
   ],
-  withdraw: [
-    { id: 'scatter', verb: 'scatters', type: 'withdraw', index: 1, label: 'Scatter', detail: 'Every enemy in contact strikes free, and you gain 1 disorder.', reachDc: 0, withdraw: { freeStrikes: 'all', disorder: 1 } },
-    { id: 'break-off', verb: 'breaks off', type: 'withdraw', index: 2, label: 'Break off', detail: 'One enemy in contact strikes free.', reachDc: 0, withdraw: { freeStrikes: 'one', disorder: 0 } },
-    { id: 'fighting-retreat', verb: 'retreats in good order', type: 'withdraw', index: 3, label: 'Fighting retreat', detail: 'You leave in good order.', reachDc: 2, withdraw: { freeStrikes: 'none', disorder: 0 } },
-  ],
   rally: [
     { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Clear 1 disorder.', reachDc: 0, rally: { clear: 1, ally: false } },
     { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Clear all disorder.', reachDc: 0, rally: { clear: CLEAR_ALL, ally: false } },
@@ -80,10 +74,9 @@ export const rungOf = (type: LadderType, index: Grade): Rung => LADDERS[type][in
 export const clearsAll = (n: number) => n >= CLEAR_ALL;
 
 /** Which types have a roll of their own for a committed action to weight. Guard sets a number
- * outright and Withdraw only provokes the enemy's strikes, so on those two a committed action
- * can only feed the push check. */
+ * outright, so a committed action there feeds the push check or Defence instead. */
 export const OWN_ROLL: Record<LadderType, boolean> = {
-  shoot: true, fight: true, guard: false, withdraw: false, rally: true, cast: true,
+  shoot: true, fight: true, guard: false, rally: true, cast: true,
 };
 
 export type SpellId = 'blast' | 'ward' | 'mend' | 'bless' | 'compel';
@@ -117,18 +110,12 @@ const RANK: Record<Band, number> = { below: -1, low: 0, moderate: 1, high: 2, ex
 const atLeast = (band: Band, t: Tier) => RANK[band] >= RANK[t];
 
 export const willBand = (stats: UnitStats, level: number): Band => tierOf(stats.will, level, saveBonus);
-export const perceptionBand = (stats: UnitStats, level: number): Band => tierOf(stats.perception, level, saveBonus);
 
 /** How much disorder a unit absorbs before it routs. Discipline is its Will band. */
 const QUALITY: Record<Band, number> = { below: 2, low: 3, moderate: 4, high: 5, extreme: 6 };
 
 export function qualityFor(card: UnitCard): number {
   return QUALITY[willBand(deriveStats(card), card.level)];
-}
-
-/** Speed bands: 99 of 162 troops walk 25 ft, so the tails are where the grade lives. */
-export function speedGrade(speed: number): Grade {
-  return speed >= 40 ? 3 : speed >= 25 ? 2 : 1;
 }
 
 const REACH_GRADE: Record<Reach, Grade> = { close: 1, long: 2, extreme: 3 };
@@ -139,8 +126,6 @@ const cap = (n: number): Grade => Math.max(1, Math.min(3, n)) as Grade;
 // A tactic is a hand-authored hint that a statblock's numbers do not carry. Every grade below
 // is already decided without one.
 const TACTIC_GRADE: Partial<Record<Tactic, [LadderType, Grade]>> = {
-  'ambush': ['withdraw', 3],
-  'false-retreat': ['withdraw', 3],
   'covering-fire': ['shoot', 3],
   'reactive-attack': ['fight', 3],
   'dirty-fighting': ['fight', 3],
@@ -156,16 +141,12 @@ export function gradesFor(card: UnitCard): Grades {
   const { fear, tactics, caster, signals } = cardTraits(card);
   const l = card.level;
   const has = (s: Signal) => signals.includes(s);
-  const speed = speedOf(card);
-  const pace = speedGrade(speed);
   const willB = willBand(stats, l);
-  const alert = atLeast(perceptionBand(stats, l), 'high');
 
   const grades: Grades = {
     shoot: stats.reach === null ? 1 : REACH_GRADE[stats.reach],
     fight: stats.strike === null ? 1 : has('melee-drill') || fear ? 3 : 2,
     guard: cap(1 + (has('formation') ? 1 : 0) + (has('shielded') || has('magic-ward') ? 1 : 0)),
-    withdraw: has('no-retreat') || speed === 0 ? 1 : cap(pace + (alert ? 1 : 0)),
     rally: atLeast(willB, 'high') ? 3 : atLeast(willB, 'moderate') ? 2 : 1,
     cast: caster ? (l >= 15 ? 3 : l >= 8 ? 2 : 1) : 1,
   };

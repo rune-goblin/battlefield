@@ -4,7 +4,7 @@ import {
 } from './board.js';
 import { cardTraits, deriveStats, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { pathTo, reachable, stepFeet } from './path.js';
-import { check, type CheckResult, type Degree } from './check.js';
+import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   clearsAll, gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, spellsFor, SPELLS,
   type Grade, type LadderType, type Rung, type SpellId,
@@ -16,7 +16,7 @@ import {
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
   type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PushAction,
   type PushReach, type Range, type RungAction, type RungOption, type RungTarget, type Side,
-  type Spend, type Unit,
+  type Dial, type Spend, type SpendDials, type Unit, type WithdrawAction, type WithdrawOffer,
 } from './types.js';
 
 export interface Deployment { card: UnitCard; side: Side; square: string; engines?: SiegeEngineCard[]; }
@@ -49,7 +49,8 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: traits.pace, fear: traits.fear, tactics: traits.tactics,
       grades: gradesFor(d.card), spells: spellsFor(d.card), quality: qualityFor(d.card),
-      speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false, mounted: traits.signals.includes('mounted'),
+      speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
+      mounted: traits.signals.includes('mounted'), noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e) => ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed' as const, square: sq })),
       square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
@@ -452,13 +453,48 @@ export function chargeTargets(state: BattleState, u: Unit): ChargeOption[] {
   return out;
 }
 
-export function withdrawTargets(state: BattleState, u: Unit, clean: boolean): Square[] {
+/**
+ * Where a withdrawal may end. One cell is free; `feet` of committed distance opens up every
+ * cell a Stride of that budget would reach. Cells that break contact win, but a cornered unit
+ * is offered the rest rather than being stuck.
+ */
+export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[] {
   const g = grid(state);
   const engaged = engagedEnemies(state, u);
-  const options = isRouted(u) && !engaged.length ? g.homeward(u.square, u.side) : g.neighbours(u.square);
-  const open = options.filter((n) => enterable(state, u, u.square, n));
-  return clean ? open.filter((n) => engaged.every((e) => g.distance(e.square, n) > 1)) : open;
+  const routing = isRouted(u) && !engaged.length;
+  const step = homewardStep(u);
+  const cells = new Set((routing ? g.homeward(u.square, u.side) : g.neighbours(u.square))
+    .filter((n) => enterable(state, u, u.square, n))
+    .map(notation));
+  if (feet > 0 && u.speed > 0) {
+    const reach = reachable(state.board, u.square, { budget: feet, flying: u.flying, occupied: occupiedBy(state, u) });
+    for (const key of reach.keys()) {
+      const sq = parse(key);
+      if (sameSquare(sq, u.square)) continue;
+      // A routed unit runs for its own edge and nowhere else.
+      if (routing && Math.sign(sq.rank - u.square.rank) !== step) continue;
+      cells.add(key);
+    }
+  }
+  // Nearest first, so the cell a caller gets by naming none is a step away rather than a sprint.
+  const all = [...cells].map(parse)
+    .sort((a, c) => g.distance(u.square, a) - g.distance(u.square, c) || notation(a).localeCompare(notation(c)));
+  const clear = all.filter((n) => engaged.every((e) => g.distance(e.square, n) > 1));
+  return clear.length ? clear : all;
 }
+
+const homewardStep = (u: Unit) => Math.sign(homeRank(u.side) - u.square.rank) || -1;
+
+/** The DC to break from a holder: its attack DC, which is its strike bonus plus ten. */
+export const escapeDcFor = (holder: Unit) => (holder.stats.strike ?? 0) + 10;
+
+/** Reflex is the widest-spreading defensive stat on a troop sheet (5.6 points within a level
+ * against AC's 3.2), so it is the one that tells troops apart. */
+export const escapeModifier = (u: Unit, weight = 0) => u.stats.reflex - u.disorder + weight;
+
+/** Enemies that can actually hold a unit. One with no melee strike cannot. */
+export const holdersOf = (state: BattleState, u: Unit) =>
+  engagedEnemies(state, u).filter((e) => e.stats.strike !== null);
 
 function moveTo(state: BattleState, u: Unit, to: Square) {
   u.square = to;
@@ -509,8 +545,6 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
     }
     case 'guard':
       return { needsTarget: false, targets: [] };
-    case 'withdraw':
-      return { needsTarget: false, targets: withdrawTargets(state, u, rung.withdraw!.freeStrikes !== 'all').map((s) => cellTarget(notation(s))) };
     case 'rally': {
       if (!rung.rally!.ally) return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
@@ -565,6 +599,8 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: SpellId 
       step: ACTION_BONUS,
       roll: s ? s.rolls : OWN_ROLL[type],
       push: rolls,
+      defence: type === 'guard',
+      distance: false,
     },
     label: s ? s.label : type[0].toUpperCase() + type.slice(1),
     detail: s ? s.detail : LADDERS[type][granted - 1].detail,
@@ -579,22 +615,28 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: SpellId 
  * Read an allocation of committed actions, or refuse one that has nowhere to land. Each point
  * is one further action, so `cost + roll + push` is what the activation pays.
  */
-function commit(u: Unit, offer: ActionOffer, opt: RungOption, spend?: Partial<Spend>): Spend {
-  const roll = Math.max(0, Math.trunc(spend?.roll ?? 0));
-  const push = Math.max(0, Math.trunc(spend?.push ?? 0));
-  if (offer.cost + roll + push > u.actions) throw new Error(`${u.name} has only ${u.actions} action${u.actions === 1 ? '' : 's'} to commit`);
-  if (roll && !offer.dials.roll) throw new Error(`${offer.label} has no roll of its own to weight`);
-  if (push && opt.access !== 'reach') throw new Error(`${opt.label} needs no push check`);
-  return { roll, push };
+function commit(u: Unit, label: string, dials: SpendDials, cost: number, spend: Partial<Spend> | undefined, pushable: boolean): Spend {
+  const read = (d: Dial) => Math.max(0, Math.trunc(spend?.[d] ?? 0));
+  const out: Spend = { roll: read('roll'), push: read('push'), defence: read('defence'), distance: read('distance') };
+  const total = cost + out.roll + out.push + out.defence + out.distance;
+  if (total > u.actions) throw new Error(`${u.name} has only ${u.actions} action${u.actions === 1 ? '' : 's'} to commit`);
+  if (out.roll && !dials.roll) throw new Error(`${label} has no roll of its own to weight`);
+  if (out.defence && !dials.defence) throw new Error(`${label} sets no Defence to raise`);
+  if (out.distance && !dials.distance) throw new Error(`${label} buys no ground`);
+  if (out.push && !pushable) throw new Error(`${label} needs no push check`);
+  return out;
 }
+
+export const spent = (s: Spend) => s.roll + s.push + s.defence + s.distance;
 
 // The menu is filtered by situation, so it is never long.
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  if (isRouted(u)) return [offerFor(state, u, 'withdraw', null)];
+  // A routed unit is offered nothing but the withdrawal, which is no longer a ladder.
+  if (isRouted(u)) return [];
   const contact = engagedEnemies(state, u).length > 0;
-  const types: LadderType[] = contact ? ['fight', 'guard', 'withdraw'] : ['shoot', 'guard'];
+  const types: LadderType[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
   // A wall is a thing to fight even when nobody defends it.
   if (!contact && u.side === 'attacker' && wallKeys(state).some((k) => bordersWall(u, k))) types.push('fight');
   if (u.disorder > 0) types.push('rally');
@@ -622,26 +664,67 @@ function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wante
   return granted;
 }
 
-function doWithdraw(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: RungAction) {
-  const eff = rung.withdraw!;
-  const engaged = engagedEnemies(state, u);
-  const strikers = eff.freeStrikes === 'all' ? engaged
-    : eff.freeStrikes === 'one' ? engaged.slice().sort((a, b) => b.level - a.level || a.id.localeCompare(b.id)).slice(0, 1)
-      : [];
-  for (const e of strikers) {
+interface Escape { holder: Unit; degree: Degree }
+
+/**
+ * Breaking contact. One Escape check per holder — the withdrawing unit's Reflex against that
+ * enemy's own attack DC — and the four degrees are what Scatter, Break off and Fighting
+ * retreat used to name. A critical failure is the one that pins the unit where it stands.
+ */
+function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction, spend: Spend) {
+  const weight = spend.roll * ACTION_BONUS;
+  const escapes: Escape[] = [];
+  let pinned = false;
+  for (const holder of holdersOf(state, u)) {
     if (u.status !== 'active') break;
-    resolveStrike(state, rng, e, u, { free: true, label: 'strikes the withdrawing' });
+    const c = check(rng, escapeModifier(u, weight), escapeDcFor(holder));
+    log(state, u, `${u.name} breaks from ${holder.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+    escapes.push({ holder, degree: c.degree });
+    if (succeeded(c.degree)) continue;
+    resolveStrike(state, rng, holder, u, { free: true, label: 'strikes the withdrawing' });
+    if (c.degree !== 'critical-failure' || u.status !== 'active') continue;
+    addDisorder(state, u, 1, `${holder.name}'s grip`);
+    pinned = true;
   }
-  if (eff.disorder) addDisorder(state, u, eff.disorder, rung.label.toLowerCase());
   if (u.status !== 'active') return;
-  const clean = eff.freeStrikes !== 'all';
-  const options = withdrawTargets(state, u, clean);
-  const chosen = action.target ? options.find((s) => notation(s) === action.target) ?? null : options[0] ?? null;
+  if (pinned) {
+    log(state, u, `${u.name} cannot break contact and stays where it stands.`);
+    return;
+  }
+  const options = withdrawTargets(state, u, spend.distance * u.speed);
+  const chosen = action.to ? options.find((sq) => notation(sq) === action.to) ?? null : options[0] ?? null;
   if (chosen) {
     moveTo(state, u, chosen);
-    log(state, u, `${u.name} ${rung.verb} to ${notation(chosen)}.`);
+    log(state, u, `${u.name} withdraws to ${notation(chosen)}.`);
   } else log(state, u, `${u.name} has nowhere to go and holds where it stands.`);
+  follow(state, u, escapes);
   if (isRouted(u) && u.square.rank === homeRank(u.side)) leaveField(state, u);
+}
+
+/**
+ * A `no-retreat` holder gives chase: one free Move of its own Speed, through the ordinary
+ * terrain costs, to a cell touching wherever the withdrawal ended. It deals no damage — it
+ * only keeps contact, so outrunning it is the only way clear. A critical success on the
+ * Escape check shakes it off outright.
+ */
+function follow(state: BattleState, u: Unit, escapes: Escape[]) {
+  for (const { holder, degree } of escapes) {
+    if (degree === 'critical-success' || u.status !== 'active') continue;
+    if (!holder.noRetreat || !isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
+    if (isEngaged(state, holder, u)) continue;
+    const reach = reachable(state.board, holder.square, {
+      budget: holder.speed, flying: holder.flying, occupied: occupiedBy(state, holder),
+    });
+    let best: { cell: string; feet: number } | null = null;
+    for (const [cell, entry] of reach) {
+      if (cell === notation(holder.square) || !touching(state, parse(cell), u)) continue;
+      if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) best = { cell, feet: entry.feet };
+    }
+    if (!best) { log(state, holder, `${holder.name} cannot follow ${u.name}.`); continue; }
+    moveTo(state, holder, parse(best.cell));
+    log(state, holder, `${holder.name} gives no retreat and follows ${u.name} to ${best.cell}.`);
+    fearOnContact(state, holder);
+  }
 }
 
 function doCast(state: BattleState, rng: Rng, u: Unit, rung: Rung, spell: SpellId, action: RungAction, weight = 0) {
@@ -679,7 +762,8 @@ function doCast(state: BattleState, rng: Rng, u: Unit, rung: Rung, spell: SpellI
   }
 }
 
-function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung: Rung, action: RungAction, weight = 0) {
+function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung: Rung, action: RungAction, spend: Spend) {
+  const weight = spend.roll * ACTION_BONUS;
   switch (rung.type) {
     case 'shoot': {
       const band = rung.shoot!.band;
@@ -713,15 +797,15 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
     }
     case 'guard': {
       const eff = rung.guard!;
-      u.guard = { defence: eff.defence, aura: eff.aura };
+      // Committed actions raise Defence itself, the number every attack already rolls against,
+      // rather than opening a saving throw the battle does not otherwise use.
+      const defence = eff.defence + spend.defence * ACTION_BONUS;
+      u.guard = { defence, aura: eff.aura };
       // Two: this activation, which digging in has already spent, and the next one.
       if (eff.rooted) u.rooted = 2;
-      log(state, u, `${u.name} ${rung.verb}: +${eff.defence} Defence${eff.aura ? `, +${eff.aura} to adjacent allies` : ''}${eff.rooted ? ', rooted next activation' : ''}.`);
+      log(state, u, `${u.name} ${rung.verb}: +${defence} Defence${eff.aura ? `, +${eff.aura} to adjacent allies` : ''}${eff.rooted ? ', rooted next activation' : ''}.`);
       break;
     }
-    case 'withdraw':
-      doWithdraw(state, rng, u, rung, action);
-      break;
     case 'rally': {
       const eff = rung.rally!;
       const n = clearsAll(eff.clear) ? u.quality : eff.clear;
@@ -753,6 +837,7 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
   return {
     unit: u.id, actions: u.actions, attacked: u.attacked, feet: u.feet, speed: u.speed,
     offers: availableActions(state, u.id),
+    withdraw: withdrawOffer(state, u.id),
     moves: moveReach(state, u),
     push: pushReach(state, u),
     charges: chargeTargets(state, u),
@@ -812,12 +897,41 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
   if (opt.needsTarget && !opt.targets.some((t) => t.id === action.target)) {
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
-  const spend = commit(u, offer, opt, action.spend);
+  const spend = commit(u, offer.label, offer.dials, offer.cost, action.spend, opt.access === 'reach');
   const blessed = u.blessed;
   u.blessed = false;
   const reached = reachFor(state, rng, u, offer.type, action.rung, blessed, spend.push * ACTION_BONUS);
-  perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend.roll * ACTION_BONUS);
-  return offer.cost + spend.roll + spend.push;
+  perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend);
+  return offer.cost + spent(spend);
+}
+
+/** Withdraw is offered in contact, and to a routed unit whichever way it faces. */
+export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffer | null {
+  const u = unitId ? unit(state, unitId) : activeUnit(state);
+  if (!u || state.phase !== 'battle' || u.status !== 'active') return null;
+  const holders = holdersOf(state, u);
+  if (!holders.length && !isRouted(u)) return null;
+  const extra = Math.max(0, u.actions - BASE_COST);
+  const distance = u.speed > 0 && u.rooted === 0;
+  return {
+    cost: BASE_COST,
+    dials: { extra, step: ACTION_BONUS, roll: holders.length > 0, push: false, defence: false, distance },
+    modifier: escapeModifier(u),
+    escapes: holders.map((e) => ({ unit: e.id, name: e.name, dc: escapeDcFor(e), follows: e.noRetreat })),
+    targets: withdrawTargets(state, u, distance ? extra * u.speed : 0).map((sq) => cellTarget(notation(sq))),
+  };
+}
+
+function doWithdrawAction(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction): number {
+  const offer = withdrawOffer(state, u.id);
+  if (!offer) throw new Error(`${u.name} has nothing to withdraw from`);
+  const spend = commit(u, 'Withdraw', offer.dials, offer.cost, action.spend, false);
+  if (action.to && !offer.targets.some((t) => t.id === action.to)) throw new Error(`${u.name} cannot withdraw to ${action.to}`);
+  if (action.to && !withdrawTargets(state, u, spend.distance * u.speed).some((sq) => notation(sq) === action.to)) {
+    throw new Error(`${action.to} is further than ${spend.distance} committed action${spend.distance === 1 ? '' : 's'} carries ${u.name}`);
+  }
+  doWithdraw(state, rng, u, action, spend);
+  return offer.cost + spent(spend);
 }
 
 const spendMovement = (u: Unit, m: { feet: number; actions: number }) => {
@@ -894,11 +1008,12 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   }
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u);
-  const spent = action.type === 'move' ? doStride(state, u, action)
+  const cost = action.type === 'move' ? doStride(state, u, action)
     : action.type === 'push' ? doPush(state, rng, u, action)
-      : action.type === 'charge' ? doCharge(state, rng, u, action)
-        : doRung(state, rng, u, action);
-  u.actions -= spent;
+      : action.type === 'withdraw' ? doWithdrawAction(state, rng, u, action)
+        : action.type === 'charge' ? doCharge(state, rng, u, action)
+          : doRung(state, rng, u, action);
+  u.actions -= cost;
   if (u.actions <= 0 || u.status !== 'active') finish(state, u);
   return state;
 }

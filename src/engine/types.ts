@@ -41,6 +41,9 @@ export interface Unit {
    * bonus alongside the cavalry-charge tactic — both went inert when Move's grade was
    * dropped; see "Move bands notes" in the todos. */
   mounted: boolean;
+  /** Read off the 'no-retreat' signal. Such a troop follows an enemy that withdraws from it,
+   * one free Move, to re-establish contact — it is a hold on others, not on itself. */
+  noRetreat: boolean;
   fear: boolean;
   tactics: Tactic[];
   grades: Grades;
@@ -75,11 +78,18 @@ interface Acts { unit?: string }
  * `roll + push + cost === actions committed`.
  */
 export interface Spend {
-  /** Fed to the act's own roll — the attack, the shot, the casting, Rally's check. */
+  /** Fed to the act's own roll — the attack, the shot, the casting, Rally's check, the escape. */
   roll: number;
   /** Fed to the push check that climbs to a rung above the unit's grade. */
   push: number;
+  /** Guard only: +2 Defence each, on top of the rung's own bonus. */
+  defence: number;
+  /** Withdraw only: another Speed's worth of ground, as a Move action buys. */
+  distance: number;
 }
+
+export type Dial = keyof Spend;
+export const DIALS: Dial[] = ['roll', 'push', 'defence', 'distance'];
 
 export interface RungAction extends Acts {
   type: LadderType;
@@ -92,6 +102,9 @@ export interface RungAction extends Acts {
 /** Stride to `to`, spending as many Move actions as the route costs. */
 export interface MoveAction extends Acts { type: 'move'; to: string }
 
+/** Break contact: one Escape check per enemy holding the unit, then move. */
+export interface WithdrawAction extends Acts { type: 'withdraw'; to?: string; spend?: Partial<Spend> }
+
 /** Move into contact and fight: the movement's actions, plus one for the melee, plus whatever
  * the melee is weighted with. */
 export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade; spend?: Partial<Spend> }
@@ -100,7 +113,7 @@ export interface ChargeAction extends Acts { type: 'charge'; target: string; run
  * Success lands on `to`; failure lands on `PushReach.fallback` instead. */
 export interface PushAction extends Acts { type: 'push'; to: string }
 
-export type Action = RungAction | MoveAction | ChargeAction | PushAction;
+export type Action = RungAction | MoveAction | WithdrawAction | ChargeAction | PushAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -119,17 +132,20 @@ export interface RungOption {
   targets: RungTarget[];
 }
 
-/** What the two dials will take, and what each action put on one is worth. */
+/** Which dials an offer will take, and what each action put on one is worth. */
 export interface SpendDials {
   /** Actions this offer can absorb beyond the one it costs. */
   extra: number;
   /** What one of them buys, wherever it lands. */
   step: number;
-  /** The act has a roll of its own. Guard sets a number and Withdraw only provokes the
-   * enemy's strikes, so neither does. */
+  /** The act has a roll of its own. Guard sets a number outright, so it has none. */
   roll: boolean;
   /** There is a rung above the granted one and a check standing between. */
   push: boolean;
+  /** Guard's second dial: the rung's Defence bonus, raised. */
+  defence: boolean;
+  /** Withdraw's second dial: another Speed's worth of ground to run. */
+  distance: boolean;
 }
 
 export interface ActionOffer {
@@ -145,6 +161,28 @@ export interface ActionOffer {
   reachDc: number | null;
   reachModifier: number;
   rungs: [RungOption, RungOption, RungOption];
+}
+
+/** One enemy holding the unit, and what breaking from it costs. */
+export interface EscapeCheck {
+  unit: string;
+  name: string;
+  /** That enemy's attack DC — its strike bonus plus ten. */
+  dc: number;
+  /** A `no-retreat` holder follows a withdrawal that is not a critical success. */
+  follows: boolean;
+}
+
+/** Withdraw is not a ladder: it is one Escape check per holder, and the four degrees are what
+ * Scatter, Break off and Fighting retreat used to name. */
+export interface WithdrawOffer {
+  cost: number;
+  dials: SpendDials;
+  /** The unit's Reflex, less disorder, before anything the dials add. */
+  modifier: number;
+  escapes: EscapeCheck[];
+  /** Cells to leave for, at the full distance the dials could buy. */
+  targets: RungTarget[];
 }
 
 export interface MoveReach {
@@ -190,6 +228,8 @@ export interface Activation {
   /** Feet a single Move action buys. */
   speed: number;
   offers: ActionOffer[];
+  /** Offered in contact, and to a routed unit. `null` when there is nothing to break from. */
+  withdraw: WithdrawOffer | null;
   moves: Map<string, MoveReach>;
   /** Beyond every affordable cell — a reach, not a Stride. See `pushReach`. */
   push: Map<string, PushReach>;

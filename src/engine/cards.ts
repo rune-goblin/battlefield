@@ -19,6 +19,7 @@ export interface UnitStats {
   reach: Reach | null;
   defence: number;
   will: number;
+  reflex: number;
   perception: number;
 }
 
@@ -52,11 +53,11 @@ export interface UnitCard {
   overrides?: Partial<UnitStats>;
 }
 
-interface RoleProfile { defence: Tier; strike: Tier; volley: Tier; will: Tier; perception: Tier; pace: boolean; tactics: Tactic[]; }
+interface RoleProfile { defence: Tier; strike: Tier; volley: Tier; will: Tier; reflex: Tier; perception: Tier; pace: boolean; tactics: Tactic[]; }
 
 export const ROLE_PROFILES: Record<Role, RoleProfile> = {
-  infantry: { defence: 'high', strike: 'moderate', volley: 'moderate', will: 'high', perception: 'moderate', pace: false, tactics: ['raise-shields'] },
-  cavalry: { defence: 'high', strike: 'high', volley: 'moderate', will: 'moderate', perception: 'high', pace: true, tactics: ['cavalry-charge'] },
+  infantry: { defence: 'high', strike: 'moderate', volley: 'moderate', will: 'high', reflex: 'moderate', perception: 'moderate', pace: false, tactics: ['raise-shields'] },
+  cavalry: { defence: 'high', strike: 'high', volley: 'moderate', will: 'moderate', reflex: 'high', perception: 'high', pace: true, tactics: ['cavalry-charge'] },
 };
 
 export function deriveStats(card: UnitCard): UnitStats {
@@ -69,6 +70,7 @@ export function deriveStats(card: UnitCard): UnitStats {
     reach: salvo,
     defence: armourClass(l, p.defence),
     will: saveBonus(l, p.will),
+    reflex: card.sheet?.reflex ?? saveBonus(l, p.reflex),
     perception: perceptionBonus(l, p.perception),
   };
   return { ...base, ...card.overrides };
@@ -116,6 +118,7 @@ export function derivation(card: UnitCard): Derivation[] {
       { stat: 'volley', value: st.volley === null ? '—' : `${sign(st.volley)} ${st.reach}`, from: card.salvo ? `level ${card.level} ${p.volley} DC − 10, salvo ${card.salvo}` : 'no salvo' },
       { stat: 'defence', value: String(st.defence), from: `level ${card.level} ${p.defence} AC` },
       { stat: 'will', value: sign(st.will), from: `level ${card.level} ${p.will} save` },
+      { stat: 'reflex', value: sign(st.reflex), from: `level ${card.level} ${p.reflex} save` },
       { stat: 'perception', value: sign(st.perception), from: `level ${card.level} ${p.perception} perception` },
     ];
   }
@@ -125,6 +128,7 @@ export function derivation(card: UnitCard): Derivation[] {
     { stat: 'volley', value: st.volley === null ? '—' : `${sign(st.volley)} ${st.reach}`, from: sh.salvoDc === null ? 'no Salvo' : `Salvo DC ${sh.salvoDc} − 10; ${sh.salvoFeet} ft → ${band}` },
     { stat: 'defence', value: String(st.defence), from: `AC ${sh.ac}` },
     { stat: 'will', value: sign(st.will), from: `Will save +${sh.will}` },
+    { stat: 'reflex', value: sign(st.reflex), from: `Reflex save +${sh.reflex}` },
     { stat: 'perception', value: sign(st.perception), from: `Perception +${sh.perception}` },
   ];
 }

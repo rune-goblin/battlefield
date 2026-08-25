@@ -15,7 +15,7 @@ describe('level tables', () => {
 describe('deriveStats', () => {
   it('derives a level-6 infantry unit', () => {
     const s = deriveStats({ name: 'x', level: 6, role: 'infantry' });
-    expect(s).toEqual({ strike: 11, volley: null, reach: null, defence: 24, will: 17, perception: 14 });
+    expect(s).toEqual({ strike: 11, volley: null, reach: null, defence: 24, will: 17, reflex: 14, perception: 14 });
   });
   it('a salvo reach gives infantry a volley', () => {
     const s = deriveStats({ name: 'x', level: 6, role: 'infantry', salvo: 'long' });
@@ -33,7 +33,7 @@ describe('derivation', () => {
     const { derivation, paceReason } = await import('../engine/cards.js');
     const { COMBATANTS } = await import('../engine/combatants.js');
     const li = COMBATANTS.find((c) => c.name === 'Line Infantry')!;
-    expect(derivation(li).map((d) => d.from)).toEqual(['Battle DC 21 − 10', 'Salvo DC 21 − 10; 120 ft → long', 'AC 24', 'Will save +13', 'Perception +13']);
+    expect(derivation(li).map((d) => d.from)).toEqual(['Battle DC 21 − 10', 'Salvo DC 21 − 10; 120 ft → long', 'AC 24', 'Will save +13', 'Reflex save +14', 'Perception +13']);
     expect(paceReason(li)).toBe('no Pace: Speed 20 ft');
   });
   it('cites the level table for generic cards', async () => {

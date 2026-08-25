@@ -1,8 +1,9 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
     pushDcFor, pushModifierFor, pushPath, reachOf, rungOf, SPELLS,
-    type ActionOffer, type Grade, type LadderType, type MoveReach, type RungOption, type Unit,
+    type ActionOffer, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
+    type Spend, type SpendDials, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
   import { troopArtUrl, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
@@ -17,6 +18,9 @@
   const strip = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
 
   let chosen = $state<Record<string, string>>({});
+  // One allocation per rung (and one for the withdrawal), so the push dial can be offered
+  // only where a reach check actually stands in the way.
+  let alloc = $state<Record<string, Spend>>({});
   let focused = $state<string | null>(null);
   // Progressive disclosure: the type row is always short; clicking one opens its ladder.
   let openType = $state<string | null>(null);
@@ -27,6 +31,7 @@
   type MoveBand = 1 | 2 | 3 | 'push';
   let hoveredBand = $state<MoveBand | null>(null);
   let moveOpen = $state(true);
+  let withdrawOpen = $state(true);
 
   // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
@@ -42,13 +47,78 @@
   $effect(() => () => { for (const t of flashTimers) clearTimeout(t); });
   const flashSet = $derived(new Set(flashing));
 
+  const NONE: Spend = { roll: 0, push: 0, defence: 0, distance: 0 };
+  const WITHDRAW_KEY = 'withdraw';
+  const used = (sp: Spend) => sp.roll + sp.push + sp.defence + sp.distance;
+
+  /** The push dial bites only on the rung a check stands in front of, never on a granted one. */
+  const rungDials = (offer: ActionOffer, opt: RungOption): SpendDials =>
+    ({ ...offer.dials, push: offer.dials.push && opt.access === 'reach' });
+
+  // Actions drain as the activation runs, so a stored allocation is trimmed on read rather
+  // than tracked — the panel can never propose more than the unit still has.
+  function spendOn(key: string, d: SpendDials): Spend {
+    const stored = alloc[key] ?? NONE;
+    const out = { ...NONE };
+    let left = d.extra;
+    for (const dial of DIALS) {
+      if (!d[dial]) continue;
+      out[dial] = Math.max(0, Math.min(stored[dial], left));
+      left -= out[dial];
+    }
+    return out;
+  }
+  function setDial(key: string, d: SpendDials, dial: Dial, to: number) {
+    const sp = spendOn(key, d);
+    const room = d.extra - used(sp) + sp[dial];
+    alloc = { ...alloc, [key]: { ...sp, [dial]: Math.max(0, Math.min(to, room)) } };
+  }
+
+  const ROLL_NOUN: Record<LadderType, string> = {
+    fight: 'the attack roll', shoot: 'the shot', cast: 'the casting roll',
+    rally: 'the Quality check', guard: '',
+  };
+  const perAction = (offer: ActionOffer | null, dial: Dial, step: number, speed: number) =>
+    dial === 'roll' ? `+${step} to ${offer ? ROLL_NOUN[offer.type] : 'the Escape check'}`
+      : dial === 'push' ? `+${step} to the reach check`
+        : dial === 'defence' ? `+${step} Defence`
+          : `one more Speed's worth (${speed} ft)`;
+  const dialSum = (dial: Dial, n: number, step: number, speed: number) =>
+    n === 0 ? '' : dial === 'distance' ? `+${n * speed} ft` : `+${n * step}`;
+
+  /** What the allocation actually comes to, so the player reads the number before committing. */
+  function totals(offer: ActionOffer, opt: RungOption, sp: Spend, u: Unit): string[] {
+    const step = offer.dials.step;
+    const rung = rungOf(offer.type, opt.index);
+    const out: string[] = [];
+    if (offer.dials.roll) {
+      const own = rung.fight?.bonus ?? 0;
+      out.push(offer.type === 'rally'
+        ? `Quality check d20+${offer.reachModifier + sp.roll * step} vs DC ${levelDc(u.level)}`
+        : `${opt.label} +${own + sp.roll * step} on ${ROLL_NOUN[offer.type]}`);
+    }
+    if (offer.dials.defence) out.push(`Defence +${(rung.guard?.defence ?? 0) + sp.defence * step}`);
+    if (opt.access === 'reach' && offer.reachDc !== null) {
+      out.push(`Reach DC ${offer.reachDc} · d20+${offer.reachModifier + sp.push * step}`);
+    }
+    out.push(`Costs ${offer.cost + used(sp)} of ${u.actions} actions`);
+    return out;
+  }
+
+  function withdrawTotals(w: WithdrawOffer, sp: Spend, u: Unit): string[] {
+    const out = w.escapes.map((e) => `Escape ${e.name}: d20+${w.modifier + sp.roll * w.dials.step} vs DC ${e.dc}`);
+    if (w.dials.distance) out.push(`Runs up to ${(1 + sp.distance) * u.speed} ft`);
+    out.push(`Costs ${w.cost + used(sp)} of ${u.actions} actions`);
+    return out;
+  }
+
   const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}`;
   const rungKey = (offer: ActionOffer, opt: RungOption) => `${offerKey(offer)}:${opt.index}`;
   const openOffer = $derived(offers.find((o) => offerKey(o) === openType) ?? null);
 
   // A new unit closes whatever ladder was open and drops any in-flight drag preview — both
   // are per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; openType = null; drag = null; hoveredBand = null; moveOpen = true; });
+  $effect(() => { void active?.id; openType = null; drag = null; hoveredBand = null; moveOpen = true; withdrawOpen = true; alloc = {}; });
 
   const focusedEntry = $derived.by<{ offer: ActionOffer; opt: RungOption } | null>(() => {
     if (!focused || !openOffer) return null;
@@ -64,7 +134,6 @@
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return SPELLS[offer.spell].at === 'enemy' ? 'attack' : 'deploy';
     if (offer.type === 'shoot' || offer.type === 'fight') return 'attack';
-    if (offer.type === 'withdraw') return 'move';
     return 'deploy';
   }
   const focusedStyle = $derived(focusedEntry ? styleFor(focusedEntry.offer) : 'move');
@@ -112,7 +181,7 @@
     const p = act.push.get(e.cell);
     if (!p) return; // stall — out of reach entirely, occupied, or the unit's own cell
     const path = pushPath(act.moves, act.push, e.cell);
-    drag = { kind: 'push', cell: e.cell, feet: p.feet, fallback: p.fallback, dc: pushDcFor(active), modifier: pushModifierFor(active), path };
+    drag = { kind: 'push', cell: e.cell, feet: p.feet, fallback: p.fallback, dc: pushDcFor(active), modifier: pushModifierFor(active, act.actions), path };
   }
 
   function onBoardDrop(e: BoardEventOf<'drop'>) {
@@ -166,9 +235,14 @@
     return ([1, 2, 3, 'push'] as const).map((n) => ({ style: bandStyle(n), cells: moveBands[n] }));
   });
 
+  const withdrawCells = $derived(
+    act?.withdraw && withdrawOpen && !drag ? act.withdraw.targets.map((t) => t.id) : [],
+  );
+
   const highlights = $derived<{ style: HighlightStyle; cells: string[] }[]>([
     { style: focusedStyle, cells: focusedCells },
     ...standingHighlights,
+    { style: 'move', cells: withdrawCells },
     ...dragHighlights,
   ]);
 
@@ -195,9 +269,17 @@
 
   function performRung(offer: ActionOffer, opt: RungOption, target?: string) {
     const before = game.battle!.log.length;
-    takeAction({ type: offer.type, rung: opt.index, target, spell: offer.spell ?? undefined });
+    takeAction({ type: offer.type, rung: opt.index, target, spell: offer.spell ?? undefined, spend: spendOn(rungKey(offer, opt), rungDials(offer, opt)) });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
     focused = null;
+    alloc = {};
+  }
+
+  function performWithdraw(w: WithdrawOffer, to?: string) {
+    const before = game.battle!.log.length;
+    takeAction({ type: 'withdraw', to, spend: spendOn(WITHDRAW_KEY, w.dials) });
+    for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
+    alloc = {};
   }
 
   // A board click only ever resolves a rung of the currently open type — never a type the
@@ -213,7 +295,12 @@
     }
     return null;
   }
-  function onCell(e: BoardEventOf<'cell'>) { const m = findMatch('cell', e.cell); if (m) performRung(m.offer, m.opt, e.cell); }
+  function onCell(e: BoardEventOf<'cell'>) {
+    const m = findMatch('cell', e.cell);
+    if (m) { performRung(m.offer, m.opt, e.cell); return; }
+    const w = act?.withdraw;
+    if (w && withdrawOpen && w.targets.some((t) => t.id === e.cell)) performWithdraw(w, e.cell);
+  }
   function onToken(e: BoardEventOf<'token'>) { const m = findMatch('unit', e.id); if (m) performRung(m.offer, m.opt, e.id); }
   function onEdge(e: BoardEventOf<'edge'>) { const m = findMatch('wall', e.edge); if (m) performRung(m.offer, m.opt, e.edge); }
 
@@ -390,6 +477,64 @@
         </div>
       {/if}
 
+      <!-- Withdraw is no longer a ladder: one Escape check per holder, and the four degrees
+           are what Scatter, Break off and Fighting retreat used to name. -->
+      {#if act?.withdraw}
+        {@const w = act.withdraw}
+        {@const sp = spendOn(WITHDRAW_KEY, w.dials)}
+        <div class="card withdraw-card">
+          <button class="move-head" aria-expanded={withdrawOpen} onclick={() => { withdrawOpen = !withdrawOpen; }}>
+            <h3>Withdraw</h3>
+            <span class="muted">{withdrawOpen ? '— break contact' : `— ${w.targets.length} cells`}</span>
+          </button>
+          {#if withdrawOpen}
+            {#each w.escapes as e (e.unit)}
+              <p class="escape">
+                <span class="escape-name">{e.name}</span>
+                <span class="muted">DC {e.dc} · d20+{w.modifier + sp.roll * w.dials.step}</span>
+                {#if e.follows}<span class="tag">gives no retreat — follows you</span>{/if}
+              </p>
+            {:else}
+              <p class="muted">Nothing holds you. Run for your own edge.</p>
+            {/each}
+            <p class="muted rung-detail">
+              Crit → away, and unfollowed. Success → away clean. Fail → that enemy strikes free.
+              Crit fail → it strikes free, you gain 1 disorder, and you do not break contact.
+            </p>
+            {#if w.dials.extra > 0 && DIALS.some((x) => w.dials[x])}
+              <div class="dials">
+                <div class="dial-head">
+                  <span>Commit actions</span>
+                  <span class="muted">{used(sp)} of {w.dials.extra} spare</span>
+                </div>
+                {#each DIALS.filter((x) => w.dials[x]) as dial (dial)}
+                  <div class="dial">
+                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] - 1)}>−</button>
+                    <span class="dial-n">{sp[dial]}</span>
+                    <button class="dial-step" disabled={used(sp) >= w.dials.extra} aria-label="more" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] + 1)}>+</button>
+                    <span class="dial-buys">{perAction(null, dial, w.dials.step, active.speed)}</span>
+                    <span class="dial-sum">{dialSum(dial, sp[dial], w.dials.step, active.speed)}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            <p class="totals">
+              {#each withdrawTotals(w, sp, active) as line (line)}<span class="total">{line}</span>{/each}
+            </p>
+            <div class="row rung-go">
+              {#if w.targets.length}
+                <select bind:value={chosen[WITHDRAW_KEY]}>
+                  {#each w.targets as t (t.id)}<option value={t.id}>{t.label}</option>{/each}
+                </select>
+                <button onclick={() => performWithdraw(w, chosen[WITHDRAW_KEY] ?? w.targets[0].id)}>Go</button>
+              {:else}
+                <button onclick={() => performWithdraw(w)}>Go</button>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Progressive disclosure: this row never shows a rung, only the types on offer.
            Clicking one opens its ladder below; clicking it again closes it. -->
       <div class="type-row">
@@ -431,6 +576,28 @@
               {#if !opt.legal}
                 <p class="muted rung-reason">{opt.reason}</p>
               {:else}
+                {@const d = rungDials(openOffer, opt)}
+                {@const sp = spendOn(rungKey(openOffer, opt), d)}
+                {#if d.extra > 0 && DIALS.some((x) => d[x])}
+                  <div class="dials">
+                    <div class="dial-head">
+                      <span>Commit actions</span>
+                      <span class="muted">{used(sp)} of {d.extra} spare</span>
+                    </div>
+                    {#each DIALS.filter((x) => d[x]) as dial (dial)}
+                      <div class="dial">
+                        <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(openOffer, opt), d, dial, sp[dial] - 1)}>−</button>
+                        <span class="dial-n">{sp[dial]}</span>
+                        <button class="dial-step" disabled={used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(openOffer, opt), d, dial, sp[dial] + 1)}>+</button>
+                        <span class="dial-buys">{perAction(openOffer, dial, d.step, active.speed)}</span>
+                        <span class="dial-sum">{dialSum(dial, sp[dial], d.step, active.speed)}</span>
+                      </div>
+                    {/each}
+                    <p class="totals">
+                      {#each totals(openOffer, opt, sp, active) as line (line)}<span class="total">{line}</span>{/each}
+                    </p>
+                  </div>
+                {/if}
                 <div class="row rung-go">
                   {#if opt.targets.length}
                     <select bind:value={chosen[rungKey(openOffer, opt)]}>
@@ -543,4 +710,27 @@
   .gamble { margin: .25rem 0; font-size: .82rem; color: var(--accent); }
   .rung-reason { margin: .1rem 0; font-style: italic; }
   .rung-go { margin-top: .3rem; }
+
+  .dials { margin: .35rem 0 .25rem; padding: .35rem .45rem; border-radius: 6px; background: var(--band); }
+  .dial-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-size: .78rem; font-weight: 600; }
+  .dial { display: flex; align-items: center; gap: .3rem; margin-top: .25rem; font-size: .8rem; }
+  .dial-step {
+    width: 1.35rem; height: 1.35rem; padding: 0; line-height: 1;
+    border: 1px solid var(--rule); border-radius: 4px; background: var(--card); color: var(--ink); cursor: pointer;
+  }
+  .dial-step:disabled { opacity: .35; cursor: default; }
+  .dial-n { min-width: .8rem; text-align: center; font-weight: 600; }
+  .dial-buys { color: var(--muted); }
+  .dial-sum { margin-left: auto; font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+  .totals { display: flex; flex-wrap: wrap; gap: .25rem; margin: .25rem 0; }
+  .total {
+    padding: .05rem .4rem; border-radius: 999px; font-size: .74rem;
+    border: 1px solid var(--accent); color: var(--accent); white-space: nowrap;
+  }
+
+  .withdraw-card h3 { margin: 0; font-size: inherit; }
+  .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: .82rem; }
+  .escape-name { font-weight: 600; }
+  .tag { padding: .02rem .35rem; border-radius: 999px; border: 1px solid var(--bad); color: var(--bad); font-size: .7rem; }
 </style>
