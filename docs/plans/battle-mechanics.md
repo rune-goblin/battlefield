@@ -542,25 +542,36 @@ design already uses everywhere else, and Shoot's rungs (band and cover) already 
 | Overrun | +2, take their ground | take their ground if they break |
 | Loose / Volley / Barrage | band, cover | unchanged |
 
-### Guard's higher rungs become damage reduction
+### Guard: Defence from actions, effect from the rung
 
-Guard's rungs were pure numbers (+2 / +3 / +3 Defence) and so had the same stacking problem,
-with its dial also being Defence. Rather than strip them to nothing, the higher rungs stop
-adding Defence and start reducing damage:
+Guard's Defence scales with committed actions at the usual +2 each — one action +2, two +4,
+three +6. This looks like an exception to the rule and is not: Guard's base act produces
+Defence the way Fight's base act produces an attack, and extra actions add +2 as everywhere
+else. Numbers still come from actions, effects still come from rungs.
 
-| Rung | Effect |
+The rung is independent of the action count and supplies only its effect:
+
+| Rung | Effect (grade-gated) |
 |---|---|
-| **Brace** | Nothing of its own. Defence comes from the actions committed. |
-| **Dig in** | Critical hits against this unit count as ordinary hits — 2 wounds become 1. |
-| **Shieldwall** | All damage is reduced by 1 wound. A critical deals 1, an ordinary hit deals nothing. |
+| Brace | none |
+| Dig in | critical hits count as ordinary hits — 2 wounds become 1 |
+| Shieldwall | adjacent allies count as braced |
 
-A proper escalation: rung 3 subsumes rung 2, since −1 to everything already turns a critical
-into an ordinary hit and blanks ordinary hits as well.
+A Guard-1 troop may commit three actions to Brace for +6 Defence but gets no crit protection.
+A Guard-2 troop committing three gets +6 and the downgrade. Rung and action count being
+orthogonal also fixes the dead dial the dials wave found, where Guard at grade 3 had only the
+push dial and it was closed.
 
-Measured against an even matchup, where an attack averages 0.50 wounds: Dig in gives 0.45,
-Shieldwall gives **0.05**. Against an enemy six levels above (1.30 an attack) Shieldwall gives
-0.40. Deliberately very strong — it costs the whole activation, lasts only until the unit's
-next activation, and just 7 of 162 troops hold Guard grade 3 without a reach roll.
+The curve is unusually legible — each action removes exactly 0.10 wounds per attack:
 
-Worth watching in play: two opposing shieldwalls cannot hurt each other, which makes holding a
-viable stall for a defender playing for the dusk timeout.
+| Defence | Attacker needs | Wounds/attack |
+|---|---|---|
+| — | 12 | 0.50 |
+| +2 | 14 | 0.40 |
+| +4 | 16 | 0.30 |
+| +6 | 18 | 0.20 |
+
+A flat "all damage −1" was considered for Shieldwall and dropped. Stacked on +6 Defence it
+gives 0.05 wounds an attack — a 90% reduction, and two opposing shieldwalls could not hurt
+each other at all, making a dusk stall the defender's dominant play. Defence scaling alone is
+strong without being absolute.
