@@ -581,3 +581,39 @@ A flat "all damage −1" was considered for Shieldwall and dropped. Stacked on +
 gives 0.05 wounds an attack — a 90% reduction, and two opposing shieldwalls could not hurt
 each other at all, making a dusk stall the defender's dominant play. Defence scaling alone is
 strong without being absolute.
+
+
+## Rally: the roll carries the amount, the rung carries the scope
+
+Decision (Mark, 2026-08-26): Rally's roll dial was dead at rungs 2 and 3, because "clear all
+disorder" is a ceiling — once a rung clears everything, a bonus has nothing to buy.
+
+**Rally is a Quality check against the rout DC** — the level DC of the highest-level enemy
+nearby, as the earlier design used — so rallying under a dragon's eye is harder than rallying
+beside a levy. The degrees set how much clears:
+
+| Degree | Clears |
+|---|---|
+| Critical success | All disorder |
+| Success | 2 |
+| Failure | 1 |
+| Critical failure | Nothing, and gain 1 |
+
+Failure still clearing a point keeps the "degrade, never cancel" rule the whole system runs on.
+
+The rungs now carry scope rather than amount:
+
+| Rung | Effect |
+|---|---|
+| **Steady** | This unit |
+| **Rally** | This unit, and one adjacent ally clears 1 |
+| **Inspire** | This unit, and every friendly unit within 2 clears 1 |
+
+Both dials are live at every rung: the roll dial pushes toward clearing 2 instead of 1, or all
+instead of 2, and the push dial buys scope.
+
+The cost of this is that a unit can spend a whole activation rallying and still clear only one
+point. That is harsher than the old fixed clear, and it is what makes disorder a real tempo
+weapon rather than an inconvenience. Inspire's reach is tunable — on hex, 18 cells sit within
+distance 2, so if it proves too wide in play, cap it at a number of allies rather than shrink
+the radius.
