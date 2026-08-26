@@ -770,3 +770,132 @@ setup. The generator script was deleted before committing.
   actions on Defence (+6) beats reaching for Dig in (+3), so the push dial may be the dead one
   now. Measure before tuning.
 - Rally's roll dial is still dead weight at rungs 2 and 3 (carried over from the last wave).
+
+## Rungs as effects notes
+
+Wave 6. A rung's own number and the action dials were two sources for the same thing and they
+stacked: three actions on Press read +6. Every number now comes from committed actions, and
+every rung carries an effect. 142 tests before, 147 after.
+
+### The ceiling, and how it is asserted
+
+The most a single activation can put on any roll is **+4** — two spare actions at
+`ACTION_BONUS`. `src/tests/battle.test.ts`, `rungs carry effects, actions carry numbers` →
+`never puts more than +4 on a roll, whatever the rung` walks it: Strike and Press at two
+actions on the roll both land on `strike + 4`; Overrun with two on the push reads
+`[will + 4, strike]`, so the reach is weighted and the strike behind it is bare; Withdraw is
+`reflex + 4` and Rally `will − 1 + 4`. The shot and the Blast are already asserted at `+ 4` in
+`lets every type absorb a full three-action commitment`.
+
+The wounds table is back to **0.50 / 0.60 / 0.80** for one, two and three actions, measured
+over all twenty faces. The same test now runs the table twice, once on Strike and once on
+Press, which is what says the rung adds nothing — the old Press read 0.60 / 0.80 / 1.00 there.
+
+### Fight
+
+`FightEffect` is `{ disorderOnLoss, takeGround }`. Overrun is unchanged minus the +2.
+
+**Press's disorder is an extra point, not the exchange's own.** `melee` already gave the side
+that took more wounds 1 disorder, so "the loser of the exchange takes 1 disorder" would have
+been a no-op read literally. Press therefore makes losing cost **2**, whichever side loses it —
+symmetric risk, and it replaces "1 disorder if you miss" with something that also bites when
+you hit and get hit harder. A drawn exchange still costs neither side.
+
+`resolveStrike` now returns the wounds that **landed** rather than the wounds rolled, so the
+exchange is decided after the defender's Guard has taken its cut.
+
+### Guard
+
+Two mid-wave corrections from Mark; the second is what is built.
+
+`GuardEffect` is `{ blunt, braces, rooted }` — no number anywhere.
+
+- **Defence is bought with actions, the base act included**: `guardDefence(cost + spend.defence)`
+  is +2 / +4 / +6 for one, two and three actions. Guard's base act produces Defence the way
+  Fight's produces an attack, so nothing double-counts. Measured 0.40 / 0.30 / 0.20 wounds an
+  attack against the bare 0.50 — each action removes exactly a tenth, asserted over the twenty
+  faces in `scales Guard +2, +4 and +6 Defence on one, two and three actions`.
+- **The rung is orthogonal to the action count.** A Guard-1 troop may commit three actions to
+  Brace for +6 and get no protection; a Guard-2 troop gets +6 *and* the crit downgrade. This
+  also kills the dead-dial problem the last wave flagged, since Defence is now on offer at
+  every rung including grade 3.
+- **Dig in** blunts: `reduceWounds` caps the hit at one wound, so a critical lands as an
+  ordinary hit. **Shieldwall** braces adjacent allies, which is worth `guardDefence(1)` — one
+  source for the number, not a literal 2 on the rung.
+- **The damage path has exactly one hook.** `reduceWounds(target, n)` sits inside `applyWounds`,
+  so every source obeys it: melee, the counter-strike, a shot, a Blast, a withdrawal's free
+  strike. Mark's second correction dropped Shieldwall's flat −1, so the hook only expresses the
+  crit downgrade today; it is the one place a further reduction would go.
+
+**Rooted stays on Dig in.** It is no longer a bare downside on the weaker rung: Brace at the
+same three actions buys the same +6 Defence with no root, so rooted is what the crit protection
+costs, and Brace-against-Dig-in is a live choice for a Guard-2 troop. It is also thematic and
+it keeps `rooted` reachable at all — nothing else sets it.
+
+**The stall Mark asked about is gone.** Two opposing shieldwalls could not hurt each other under
+the flat −1; with Defence scaling alone a three-action Guard is 0.20 wounds an attack, hard but
+far from absolute.
+
+### `false-retreat` removed
+
+Deleted from the `Tactic` union and from Slingers and Light Horse. Giving it a job would have
+meant a bonus on the Escape check, which this wave's brief puts out of scope, and it has done
+nothing at all since Withdraw left the ladders. **`docs/design.md` line 146 still documents it**
+— left alone, since the docs were out of scope; flag for the next docs pass.
+
+### `reflex` on `deriveStats` — skipped
+
+`reflex: card.sheet?.reflex ?? saveBonus(...)` is still the one stat read straight off the sheet
+rather than through `card.overrides`. Closing it means adding `reflex` to what both importers
+emit and regenerating `combatants.ts` and `official.ts`, which the brief rules out. Unchanged
+and still worth doing the next time either importer is touched.
+
+### Tests changed
+
+Nine existing tests, all in the two describes that read Guard's or Fight's numbers:
+
+- The four reach-degree tests plus `takes a granted rung with no roll at all` compared
+  `u.guard` against `{ defence, aura }`. `Unit.guard` is now `{ defence, rung }`, so they read
+  the rung they landed on and the Defence one action buys.
+- `puts each action after the first on the push check instead` compared Defence numbers to tell
+  Brace from Dig in; it reads `guard.rung` now, which is what actually differs.
+- `buys Defence on Guard` is renamed "counting the first" and expects 2 / 4 / 6 rather than
+  2 / 4 / 6 arrived at as `rung + dial`.
+- `lets a Fight-2 troop Strike for one action…` expected `11 + 2 + ACTION_BONUS` on Press.
+- `Press adds +2 and costs a point of disorder when it misses` is rewritten as
+  `Press adds nothing to the roll and costs the loser of the exchange a further disorder`.
+- The wounds-table test gained the Press run.
+
+Five added, all in `rungs carry effects, actions carry numbers`: the +4 ceiling, Overrun taking
+ground (the old assertion only looked for the word "overruns" in the log, which the verb alone
+satisfies), the Guard Defence curve, Dig in blunting a critical and nothing else, and
+Shieldwall's aura reaching one cell and no further. No coverage was deleted.
+
+### The panel
+
+`totals()` no longer adds a rung's own number to anything: the roll chip is `+${sp.roll * step}`
+and the Defence chip is `guardDefence(offer.cost + sp.defence)`. The rung blurbs come straight
+off `Rung.detail`, so they followed the engine. The status line reads
+`dig in +6 Defence` rather than `guarding +6`.
+
+### The screenshot
+
+`docs/plans/battle-shots/wave6-effects.png`, hex, Line Infantry at c2 held by Kobold Warriors at
+c3 with Dwarf Battalion beside it at b2. Left: the Fight ladder with two actions on Press —
+**`Press +4 on the attack roll` · `Costs 3 of 3 actions`**, where the old code read +6. Right:
+the same panel with Guard open, Brace at `Defence +2`, Dig in at `Defence +6` with the crit
+downgrade, Shieldwall reading "Adjacent allies count as braced". One image, composed in the
+browser from the two panel states, since the panel opens one ladder at a time. Harness in the
+session scratchpad, nothing added to the repo.
+
+### Rule questions for play
+
+- Press doubles the loser's disorder either way. Against a weaker enemy that is nearly free;
+  against a stronger one it is the riskiest rung in the game. Watch whether it reads as a
+  gamble or as a default.
+- Brace at three actions (+6, no root) against Dig in at three (+6, crit downgrade, rooted) is
+  the new live choice. If rooted never gets picked around, drop it and let grade access be the
+  whole price.
+- Shieldwall's aura is the only thing rung 3 gives, and it needs an ally standing next to it. A
+  lone grade-3 troop gets nothing rung 1 does not already give it.
+- Rally's roll dial is still dead weight at rungs 2 and 3 (carried from two waves back).

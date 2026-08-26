@@ -9,8 +9,8 @@ export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 /** PF2e's economy, unchanged: Move, Move, Move, or Move, Shoot, Guard. */
 export const ACTIONS_PER_ACTIVATION = 3;
-/** What one action after the first is worth. The system's single increment: Press, Brace,
- * Outflanked and the mounted push bonus are all the same number. */
+/** What one action after the first is worth. The system's single increment: Outflanked, a
+ * Ward and the mounted push bonus are all the same number. */
 export const ACTION_BONUS = 2;
 /** The disorder a troop of ordinary discipline absorbs before it routs; `Unit.quality` varies it. */
 export const ROUTED_AT = 3;
@@ -60,7 +60,9 @@ export interface Unit {
   wounds: number;
   disorder: number;
   status: 'active' | 'destroyed' | 'left';
-  guard: { defence: number; aura: number } | null;
+  /** The Guard in force until this unit next activates. `defence` is bought outright with
+   * committed actions; `rung` says which damage reduction the rung itself carries. */
+  guard: { defence: number; rung: Grade } | null;
   /** Activations left before the unit may move again. Digging in sets two: this one and the next. */
   rooted: number;
   exposed: boolean;
@@ -82,7 +84,7 @@ export interface Spend {
   roll: number;
   /** Fed to the push check that climbs to a rung above the unit's grade. */
   push: number;
-  /** Guard only: +2 Defence each, on top of the rung's own bonus. */
+  /** Guard only: +2 Defence each. The rung adds none of its own. */
   defence: number;
   /** Withdraw only: another Speed's worth of ground, as a Move action buys. */
   distance: number;
@@ -142,7 +144,7 @@ export interface SpendDials {
   roll: boolean;
   /** There is a rung above the granted one and a check standing between. */
   push: boolean;
-  /** Guard's second dial: the rung's Defence bonus, raised. */
+  /** Guard's second dial: Defence, which is the only number a Guard sets. */
   defence: boolean;
   /** Withdraw's second dial: another Speed's worth of ground to run. */
   distance: boolean;

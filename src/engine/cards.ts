@@ -11,7 +11,7 @@ export type Signal = 'mounted' | 'melee-drill' | 'shielded' | 'formation' | 'mag
 
 export type Tactic =
   | 'cavalry-charge' | 'reactive-attack' | 'raise-shields' | 'shield-block' | 'defend-allies'
-  | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire' | 'false-retreat' | 'battlefield-medicine' | 'ambush';
+  | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire' | 'battlefield-medicine' | 'ambush';
 
 export interface UnitStats {
   strike: number | null;

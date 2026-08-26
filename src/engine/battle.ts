@@ -161,9 +161,15 @@ export function garrisoned(state: BattleState, u: Unit): boolean {
     .some((n) => (state.board.walls[edgeKey(u.square, n)]?.remaining ?? 0) > 0);
 }
 
-const auraOn = (state: BattleState, u: Unit) => Math.max(0, ...state.units
-  .filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active' && a.guard && dist(state, a.square, u.square) === 1)
-  .map((a) => a.guard!.aura));
+/** What a Guard is worth in Defence: `committed` is the actions it spends, and the first of
+ * them counts — Guard's base act produces Defence the way Fight's produces an attack. */
+export const guardDefence = (committed: number) => committed * ACTION_BONUS;
+
+/** A Shieldwall braces the allies beside it: they get what one action of Guard buys. */
+const auraOn = (state: BattleState, u: Unit) => state.units.some((a) =>
+  a.side === u.side && a.id !== u.id && a.status === 'active'
+  && a.guard && rungOf('guard', a.guard.rung).guard!.braces && dist(state, a.square, u.square) === 1)
+  ? guardDefence(1) : 0;
 
 export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false): number {
   // Circumstance bonuses never stack; the highest applies.
@@ -252,13 +258,26 @@ const degreeWord: Record<Degree, string> = {
   'critical-failure': 'critical failure', failure: 'failure', success: 'success', 'critical-success': 'critical success',
 };
 
-function applyWounds(state: BattleState, target: Unit, n: number, source: string, disorders = true) {
-  if (n <= 0) return;
+/**
+ * The one step between a hit rolled and a wound taken. A Guard's rung is what bites here:
+ * Dig in caps the hit at a single wound, so a critical lands as an ordinary one.
+ */
+export function reduceWounds(target: Unit, n: number): number {
+  const g = target.guard ? rungOf('guard', target.guard.rung).guard! : null;
+  return g?.blunt ? Math.min(n, 1) : n;
+}
+
+/** Wounds that actually land, after the target's Guard. */
+function applyWounds(state: BattleState, target: Unit, raw: number, source: string, disorders = true): number {
+  const n = reduceWounds(target, raw);
+  if (n < raw) log(state, target, `${target.name} has dug in: the critical lands as an ordinary hit.`);
+  if (n <= 0) return 0;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
-  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); return; }
+  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); return n; }
   if (disorders) addDisorder(state, target, 1, 'wounds');
+  return n;
 }
 
 function abandonEngines(state: BattleState, u: Unit) {
@@ -290,29 +309,29 @@ interface StrikeOpts { bonus?: number; free?: boolean; disorders?: boolean; labe
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): number {
   const c = check(rng, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-  const wounds = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
-  applyWounds(state, target, wounds, u.name, opts.disorders ?? true);
+  const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
+  const dealt = applyWounds(state, target, rolled, u.name, opts.disorders ?? true);
   if (c.degree === 'critical-failure' && !opts.free) {
     u.exposed = true;
     log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
   }
-  return wounds;
+  return dealt;
 }
 
 // One exchange: the attacker rolls, the defender rolls back, and the side that took more
 // wounds gains a point of disorder. The wounds themselves do not also disorder — the
-// exchange is the morale event.
+// exchange is the morale event. The rung adds no number to the roll; Press makes losing the
+// exchange cost a further point, whichever side loses it.
 function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, weight = 0) {
   const eff = rung.fight!;
   u.attacked = true;
-  const dealt = resolveStrike(state, rng, u, target, { bonus: eff.bonus + weight, disorders: false, label: rung.verb });
-  if (dealt === 0 && eff.disorderOnMiss) addDisorder(state, u, eff.disorderOnMiss, 'a press that missed');
+  const dealt = resolveStrike(state, rng, u, target, { bonus: weight, disorders: false, label: rung.verb });
   let taken = 0;
   if (target.status === 'active' && target.stats.strike !== null && isEngaged(state, u, target)) {
     taken = resolveStrike(state, rng, target, u, { disorders: false, label: 'strikes back at' });
   }
-  if (dealt > taken) addDisorder(state, target, 1, 'losing the exchange');
-  else if (taken > dealt) addDisorder(state, u, 1, 'losing the exchange');
+  const loser = dealt > taken ? target : taken > dealt ? u : null;
+  if (loser) addDisorder(state, loser, 1 + eff.disorderOnLoss, eff.disorderOnLoss ? 'losing a pressed exchange' : 'losing the exchange');
   if (eff.takeGround && u.status === 'active' && (target.status !== 'active' || isRouted(target))) {
     const ground = target.square;
     if (target.status !== 'active' || !sameSquare(ground, u.square)) {
@@ -786,7 +805,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
         const ram = crewedRam(u);
         if (ram) ram.fired = true;
         u.attacked = true;
-        const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + rung.fight!.bonus + (ram ? 2 : 0) + weight;
+        const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + (ram ? 2 : 0) + weight;
         attackWall(state, rng, u, action.target, bonus, ram ? 'rams' : 'hacks at');
         break;
       }
@@ -797,13 +816,20 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
     }
     case 'guard': {
       const eff = rung.guard!;
-      // Committed actions raise Defence itself, the number every attack already rolls against,
-      // rather than opening a saving throw the battle does not otherwise use.
-      const defence = eff.defence + spend.defence * ACTION_BONUS;
-      u.guard = { defence, aura: eff.aura };
+      // Every number a Guard sets comes from the actions committed to it, the base act
+      // included; the rung is orthogonal and carries only its effect. Defence is the number
+      // every attack already rolls against.
+      const defence = guardDefence(offer.cost + spend.defence);
+      u.guard = { defence, rung: rung.index };
       // Two: this activation, which digging in has already spent, and the next one.
       if (eff.rooted) u.rooted = 2;
-      log(state, u, `${u.name} ${rung.verb}: +${defence} Defence${eff.aura ? `, +${eff.aura} to adjacent allies` : ''}${eff.rooted ? ', rooted next activation' : ''}.`);
+      const parts = [
+        `+${defence} Defence`,
+        eff.blunt ? 'criticals against it land as ordinary hits' : '',
+        eff.braces ? 'adjacent allies count as braced' : '',
+        eff.rooted ? 'rooted next activation' : '',
+      ].filter(Boolean);
+      log(state, u, `${u.name} ${rung.verb}: ${parts.join(', ')}.`);
       break;
     }
     case 'rally': {

@@ -19,8 +19,11 @@ export type RungId =
   | 'minor' | 'major' | 'grand';
 
 export interface ShootEffect { band: 1 | 2 | 3; ignoresCover: boolean }
-export interface FightEffect { bonus: number; disorderOnMiss: number; takeGround: boolean }
-export interface GuardEffect { defence: number; rooted: boolean; aura: number }
+export interface FightEffect { disorderOnLoss: number; takeGround: boolean }
+/** A Guard's Defence comes from the actions committed to it, never from the rung. The rung
+ * carries the effect: `blunt` caps a hit at one wound, so a critical lands as an ordinary one,
+ * and `braces` gives adjacent allies what one action of Guard buys. */
+export interface GuardEffect { blunt: boolean; braces: boolean; rooted: boolean }
 export interface RallyEffect { clear: number; ally: boolean }
 export interface CastEffect { scope: number }
 
@@ -49,14 +52,14 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
     { id: 'barrage', verb: 'barrages', type: 'shoot', index: 3, label: 'Barrage', detail: 'Your full band, ignoring cover.', reachDc: 2, shoot: { band: 3, ignoresCover: true } },
   ],
   fight: [
-    { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'A melee exchange.', reachDc: 0, fight: { bonus: 0, disorderOnMiss: 0, takeGround: false } },
-    { id: 'press', verb: 'presses into', type: 'fight', index: 2, label: 'Press', detail: '+2, and 1 disorder if you miss.', reachDc: 0, fight: { bonus: 2, disorderOnMiss: 1, takeGround: false } },
-    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: '+2, and take their ground if they break.', reachDc: 2, fight: { bonus: 2, disorderOnMiss: 0, takeGround: true } },
+    { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'A plain melee exchange.', reachDc: 0, fight: { disorderOnLoss: 0, takeGround: false } },
+    { id: 'press', verb: 'presses into', type: 'fight', index: 2, label: 'Press', detail: 'The loser of the exchange takes 1 more disorder.', reachDc: 0, fight: { disorderOnLoss: 1, takeGround: false } },
+    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Take their ground if they break.', reachDc: 2, fight: { disorderOnLoss: 0, takeGround: true } },
   ],
   guard: [
-    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence.', reachDc: 0, guard: { defence: 2, rooted: false, aura: 0 } },
-    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: '+3 Defence, rooted next activation.', reachDc: 0, guard: { defence: 3, rooted: true, aura: 0 } },
-    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: '+3 Defence, and +1 to adjacent allies.', reachDc: 2, guard: { defence: 3, rooted: false, aura: 1 } },
+    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: 'Nothing of its own — the Defence comes from the actions you commit.', reachDc: 0, guard: { blunt: false, braces: false, rooted: false } },
+    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Critical hits against you land as ordinary ones. Rooted next activation.', reachDc: 0, guard: { blunt: true, braces: false, rooted: true } },
+    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: 'Adjacent allies count as braced.', reachDc: 2, guard: { blunt: false, braces: true, rooted: false } },
   ],
   rally: [
     { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Clear 1 disorder.', reachDc: 0, rally: { clear: 1, ally: false } },
@@ -73,8 +76,8 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
 export const rungOf = (type: LadderType, index: Grade): Rung => LADDERS[type][index - 1];
 export const clearsAll = (n: number) => n >= CLEAR_ALL;
 
-/** Which types have a roll of their own for a committed action to weight. Guard sets a number
- * outright, so a committed action there feeds the push check or Defence instead. */
+/** Which types have a roll of their own for a committed action to weight. Guard has none: a
+ * committed action there feeds the push check or Defence instead. */
 export const OWN_ROLL: Record<LadderType, boolean> = {
   shoot: true, fight: true, guard: false, rally: true, cast: true,
 };

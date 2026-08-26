@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, guardDefence, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
     pushDcFor, pushModifierFor, pushPath, reachOf, rungOf, SPELLS,
     type ActionOffer, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
     type Spend, type SpendDials, type Unit, type WithdrawOffer,
@@ -86,18 +86,17 @@
   const dialSum = (dial: Dial, n: number, step: number, speed: number) =>
     n === 0 ? '' : dial === 'distance' ? `+${n * speed} ft` : `+${n * step}`;
 
-  /** What the allocation actually comes to, so the player reads the number before committing. */
+  /** What the allocation actually comes to, so the player reads the number before committing.
+   * Every number here is bought with actions — no rung adds one of its own. */
   function totals(offer: ActionOffer, opt: RungOption, sp: Spend, u: Unit): string[] {
     const step = offer.dials.step;
-    const rung = rungOf(offer.type, opt.index);
     const out: string[] = [];
     if (offer.dials.roll) {
-      const own = rung.fight?.bonus ?? 0;
       out.push(offer.type === 'rally'
         ? `Quality check d20+${offer.reachModifier + sp.roll * step} vs DC ${levelDc(u.level)}`
-        : `${opt.label} +${own + sp.roll * step} on ${ROLL_NOUN[offer.type]}`);
+        : `${opt.label} +${sp.roll * step} on ${ROLL_NOUN[offer.type]}`);
     }
-    if (offer.dials.defence) out.push(`Defence +${(rung.guard?.defence ?? 0) + sp.defence * step}`);
+    if (offer.dials.defence) out.push(`Defence +${guardDefence(offer.cost + sp.defence)}`);
     if (opt.access === 'reach' && offer.reachDc !== null) {
       out.push(`Reach DC ${offer.reachDc} · d20+${offer.reachModifier + sp.push * step}`);
     }
@@ -319,7 +318,7 @@
   const aboveLabel = (type: LadderType, index: number) => rungOf(type, Math.min(3, index + 1) as Grade).label;
 
   const status = (u: Unit) => [
-    u.guard ? `guarding +${u.guard.defence}` : '',
+    u.guard ? `${rungOf('guard', u.guard.rung).label.toLowerCase()} +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
     u.warded ? 'warded' : '',
