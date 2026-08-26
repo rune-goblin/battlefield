@@ -57,9 +57,9 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
     { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Take their ground if they break.', reachDc: 2, fight: { disorderOnLoss: 0, takeGround: true } },
   ],
   guard: [
-    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: 'Nothing of its own — the Defence comes from the actions you commit.', reachDc: 0, guard: { blunt: false, braces: false, rooted: false } },
-    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Critical hits against you land as ordinary ones. Rooted next activation.', reachDc: 0, guard: { blunt: true, braces: false, rooted: true } },
-    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: 'Adjacent allies count as braced.', reachDc: 2, guard: { blunt: false, braces: true, rooted: false } },
+    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence, like raising shields.', reachDc: 0, guard: { blunt: false, braces: false, rooted: false } },
+    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: '+2 Defence, and critical hits against you land as ordinary ones. Rooted next activation.', reachDc: 0, guard: { blunt: true, braces: false, rooted: true } },
+    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: '+2 Defence, and adjacent allies count as braced.', reachDc: 2, guard: { blunt: false, braces: true, rooted: false } },
   ],
   rally: [
     { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Clear 1 disorder.', reachDc: 0, rally: { clear: 1, ally: false } },

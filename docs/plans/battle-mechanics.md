@@ -553,9 +553,15 @@ The rung is independent of the action count and supplies only its effect:
 
 | Rung | Effect (grade-gated) |
 |---|---|
-| Brace | none |
-| Dig in | critical hits count as ordinary hits — 2 wounds become 1 |
-| Shieldwall | adjacent allies count as braced |
+| Brace | +2 Defence — the defensive act itself, like raising shields |
+| Dig in | +2 Defence, and critical hits count as ordinary hits |
+| Shieldwall | +2 Defence, and adjacent allies count as braced |
+
+Brace states the +2 rather than disclaiming it. Fight's rung 1 needs no such wording because
+attacking is self-evidently doing something — you roll and may deal damage. A defensive rung
+that reads "nothing of its own" looks useless even when it is not, so Guard's base act names
+its effect the way Raise a Shield and Take Cover do. The number is unchanged: Defence is +2
+per action committed, the first included.
 
 A Guard-1 troop may commit three actions to Brace for +6 Defence but gets no crit protection.
 A Guard-2 troop committing three gets +6 and the downgrade. Rung and action count being

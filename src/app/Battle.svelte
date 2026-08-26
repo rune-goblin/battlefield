@@ -81,7 +81,7 @@
   const perAction = (offer: ActionOffer | null, dial: Dial, step: number, speed: number) =>
     dial === 'roll' ? `+${step} to ${offer ? ROLL_NOUN[offer.type] : 'the Escape check'}`
       : dial === 'push' ? `+${step} to the reach check`
-        : dial === 'defence' ? `+${step} Defence`
+        : dial === 'defence' ? `+${step} more Defence`
           : `one more Speed's worth (${speed} ft)`;
   const dialSum = (dial: Dial, n: number, step: number, speed: number) =>
     n === 0 ? '' : dial === 'distance' ? `+${n * speed} ft` : `+${n * step}`;
