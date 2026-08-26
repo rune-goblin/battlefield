@@ -551,11 +551,16 @@ adding Defence and start reducing damage:
 | Rung | Effect |
 |---|---|
 | **Brace** | Nothing of its own. Defence comes from the actions committed. |
-| **Dig in** | Reduce the first hit taken before your next activation by 1 wound. Rooted next activation. |
-| **Shieldwall** | Critical hits against you count as ordinary hits. Adjacent allies count as braced. |
+| **Dig in** | Critical hits against this unit count as ordinary hits — 2 wounds become 1. |
+| **Shieldwall** | All damage is reduced by 1 wound. A critical deals 1, an ordinary hit deals nothing. |
 
-Shieldwall has a property worth having: cutting criticals is worth almost nothing against a
-peer (0.50 to 0.45 wounds an attack) and a great deal against something far above you (1.30 to
-0.90). Its value rises the more outmatched the unit is, which is exactly when a line forms a
-shieldwall. Dig in works the other way, helping most against many weak attackers, so the two
-rungs answer different threats rather than one strictly beating the other.
+A proper escalation: rung 3 subsumes rung 2, since −1 to everything already turns a critical
+into an ordinary hit and blanks ordinary hits as well.
+
+Measured against an even matchup, where an attack averages 0.50 wounds: Dig in gives 0.45,
+Shieldwall gives **0.05**. Against an enemy six levels above (1.30 an attack) Shieldwall gives
+0.40. Deliberately very strong — it costs the whole activation, lasts only until the unit's
+next activation, and just 7 of 162 troops hold Guard grade 3 without a reach roll.
+
+Worth watching in play: two opposing shieldwalls cannot hurt each other, which makes holding a
+viable stall for a defender playing for the dusk timeout.
