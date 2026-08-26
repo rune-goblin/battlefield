@@ -6,7 +6,7 @@ import { cardTraits, deriveStats, speedOf, type SiegeEngineCard, type UnitCard }
 import { pathTo, reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  clearsAll, gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, spellsFor, SPELLS,
+  gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, spellsFor, SPELLS,
   type Grade, type LadderType, type Rung, type SpellId,
 } from './ladders.js';
 import type { Rng } from './rng.js';
@@ -236,6 +236,16 @@ export function reachDcFor(u: Unit, type: LadderType, rung: Grade): number {
 }
 
 export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
+
+/** The level DC of the strongest enemy nearby — the highest-level enemy within close range,
+ * or across the whole field if none is close. Rallying under a dragon's eye is harder than
+ * rallying beside a levy. */
+export function routDcFor(state: BattleState, u: Unit): number {
+  const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
+  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS[state.board.grid].close);
+  const pool = near.length ? near : enemies;
+  return levelDc(Math.max(0, ...pool.map((e) => e.level)));
+}
 
 /** Cavalry gamble on a long move more reliably than infantry. Tunable: matches the +2 this
  * system already uses for a rung's hardest step (Press, Overrun, Barrage's cover ignore...). */
@@ -565,7 +575,7 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
     case 'guard':
       return { needsTarget: false, targets: [] };
     case 'rally': {
-      if (!rung.rally!.ally) return { needsTarget: false, targets: [] };
+      if (rung.rally!.scope !== 'adjacent') return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
         && a.disorder > 0 && dist(state, a.square, u.square) === 1);
       return { needsTarget: false, targets: allies.map(unitTarget) };
@@ -833,20 +843,27 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
       break;
     }
     case 'rally': {
+      // A Quality check against the rout DC — the degree decides how much clears, so the roll
+      // dial is live at every rung rather than dead once a rung clears everything outright.
       const eff = rung.rally!;
-      const n = clearsAll(eff.clear) ? u.quality : eff.clear;
-      clearDisorder(state, u, n, rung.label.toLowerCase());  // the rung names the effort
-      // The rung clears outright; committed actions buy a Quality check on top, which can only
-      // add. Steady is where it bites — the rungs above already clear everything.
-      if (weight > 0 && u.disorder > 0) {
-        const c = check(rng, reachModifier(u) + weight, levelDc(u.level));
-        log(state, u, `${u.name} presses the rally home: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-        const extra = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
-        if (extra) clearDisorder(state, u, extra, 'the extra effort');
-      }
-      if (eff.ally && action.target) {
+      const c = check(rng, reachModifier(u) + weight, routDcFor(state, u));
+      log(state, u, `${u.name} ${rung.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      const cleared = c.degree === 'critical-success' ? u.disorder
+        : c.degree === 'success' ? 2 : c.degree === 'failure' ? 1 : 0;
+      if (cleared) clearDisorder(state, u, cleared, rung.label.toLowerCase());
+      if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a rally gone wrong');
+
+      // Scope is the rung's own gift, earned by reaching it and independent of the check
+      // above — the push dial buys this, the roll dial buys the amount above.
+      if (eff.scope === 'adjacent' && action.target) {
         const ally = unit(state, action.target);
-        if (dist(state, ally.square, u.square) === 1) clearDisorder(state, ally, ally.quality, `${u.name}'s example`);
+        if (dist(state, ally.square, u.square) === 1) clearDisorder(state, ally, 1, `${u.name}'s example`);
+      } else if (eff.scope === 'nearby') {
+        for (const a of state.units) {
+          if (a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) <= 2) {
+            clearDisorder(state, a, 1, `${u.name}'s example`);
+          }
+        }
       }
       break;
     }

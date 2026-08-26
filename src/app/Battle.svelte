@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, guardDefence, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
-    pushDcFor, pushModifierFor, pushPath, reachOf, rungOf, SPELLS,
+    pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungOf, SPELLS,
     type ActionOffer, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
     type Spend, type SpendDials, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
@@ -93,7 +93,7 @@
     const out: string[] = [];
     if (offer.dials.roll) {
       out.push(offer.type === 'rally'
-        ? `Quality check d20+${offer.reachModifier + sp.roll * step} vs DC ${levelDc(u.level)}`
+        ? `Quality check d20+${offer.reachModifier + sp.roll * step} vs DC ${routDcFor(b, u)}`
         : `${opt.label} +${sp.roll * step} on ${ROLL_NOUN[offer.type]}`);
     }
     if (offer.dials.defence) out.push(`Defence +${guardDefence(offer.cost + sp.defence)}`);
@@ -549,6 +549,12 @@
       {#if openOffer}
         <div class="offer">
           <p class="muted">{openOffer.detail}</p>
+          {#if openOffer.type === 'rally'}
+            <p class="gamble">
+              Quality check vs DC {routDcFor(b, active)} · roll d20{openOffer.reachModifier >= 0 ? '+' : ''}{openOffer.reachModifier}.
+              Crit → clears all. Success → clears 2. Fail → clears 1. Crit fail → clears nothing, and 1 disorder.
+            </p>
+          {/if}
           {#each openOffer.rungs as opt (opt.index)}
             <div
               class="rung"

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, defenceOf,
   endActivation, isOutflanked, isRouted, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
-  pushReach, rangeBetween, select, shootModifier, strikeModifier, unit,
+  pushReach, rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -11,6 +11,7 @@ import type { UnitCard } from '../engine/cards.js';
 import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
 import type { Grade, LadderType } from '../engine/ladders.js';
+import { levelDc } from '../engine/tables.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
@@ -522,13 +523,14 @@ describe('actions buy weight, not repetition', () => {
     expect(strikeMod(heavy)).toBe(7 + 2 * ACTION_BONUS);
     expect(heavy.activated).toContain('u2');
 
-    // Rally clears its rung outright; the committed actions buy a Quality check that can only add.
+    // Rally is a Quality check against the rout DC; the same natural roll fails unweighted but
+    // succeeds once two spare actions weight it — the roll dial is live, not dead weight.
     const shaken = engaged();
     unit(shaken, 'u0').disorder = 3;
-    const steady = act(shaken, { type: 'rally', rung: 1, unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
+    const steady = act(shaken, { type: 'rally', rung: 1, unit: 'u0', spend: { roll: 2 } }, scriptedRng([3]));
     ends(steady);
     expect(unit(steady, 'u0').disorder).toBe(1);
-    expect(unit(act(shaken, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10])), 'u0').disorder).toBe(2);
+    expect(unit(act(shaken, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([3])), 'u0').disorder).toBe(2);
 
     const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
     const p0 = createBattle({
@@ -586,6 +588,83 @@ describe('actions buy weight, not repetition', () => {
   });
 });
 
+describe('Rally: the roll carries the amount, the rung carries the scope', () => {
+  // Level-6 infantry: Will +17, quality 5, rally grade 3 — Steady, Rally and Inspire are all
+  // free, so the tests below pick a rung directly with no reach roll in the way. Kobolds L3
+  // sit adjacent at c3, so the rout DC reads their level; Trolls L8 stay out at e7.
+  const engaged = () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c3');
+    return state;
+  };
+  const rallyOn = (disorder: number, roll: number) => {
+    const s = engaged();
+    unit(s, 'u0').disorder = disorder;
+    return unit(act(s, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([roll])), 'u0');
+  };
+
+  it('the degree decides how much clears: all, 2, 1, or nothing and a point gained', () => {
+    expect(rallyOn(3, 20).disorder).toBe(0); // critical success clears everything
+    expect(rallyOn(3, 6).disorder).toBe(1); // success clears 2
+    expect(rallyOn(3, 2).disorder).toBe(2); // failure still clears 1 — degrade, never cancel
+    expect(rallyOn(3, 1).disorder).toBe(4); // critical failure (a natural 1) clears nothing, and adds 1
+  });
+
+  it('the roll dial changes the outcome at every rung, not just Steady', () => {
+    // Under the old rule Rally and Inspire cleared everything outright, so this natural roll
+    // would land on the same result with or without the dial at rungs 2 and 3.
+    for (const rung of [1, 2, 3] as Grade[]) {
+      const base = () => { const s = engaged(); unit(s, 'u0').disorder = 3; return s; };
+      const bare = unit(act(base(), { type: 'rally', rung, unit: 'u0' }, scriptedRng([2])), 'u0');
+      const weighted = unit(act(base(), { type: 'rally', rung, unit: 'u0', spend: { roll: 2 } }, scriptedRng([2])), 'u0');
+      expect(bare.disorder).toBe(2); // failure clears 1
+      expect(weighted.disorder).toBe(1); // the same roll, weighted +4, succeeds and clears 2 instead
+    }
+  });
+
+  it('reads the rout DC off the highest-level enemy within close range, falling back to the field', () => {
+    const state = engaged();
+    expect(routDcFor(state, unit(state, 'u0'))).toBe(levelDc(3)); // Kobolds L3, close at c3
+    place(state, 'u2', 'h7'); // now nothing is close; the field falls back to Trolls L8
+    expect(routDcFor(state, unit(state, 'u0'))).toBe(levelDc(8));
+  });
+
+  it('Rally reaches one adjacent ally, and Inspire reaches every friendly unit within 2', () => {
+    const ally = (name: string): UnitCard => ({ name, level: 6, role: 'infantry', tactics: [] });
+    const build = () => {
+      const state = createBattle({
+        units: [
+          { card: infantry, side: 'attacker', square: 'a1' },
+          { card: ally('Adjacent'), side: 'attacker', square: 'b1' },
+          { card: ally('Near'), side: 'attacker', square: 'c1' },
+          { card: ally('Far'), side: 'attacker', square: 'd1' },
+          { card: kobolds, side: 'defender', square: 'h8' },
+        ],
+        board: openBoard(),
+      });
+      place(state, 'u0', 'd4');
+      place(state, 'u1', 'd5'); // distance 1 from u0 — adjacent
+      place(state, 'u2', 'd6'); // distance 2 — within Inspire, but not Rally
+      place(state, 'u3', 'd7'); // distance 3 — beyond both
+      unit(state, 'u0').disorder = 1;
+      for (const id of ['u1', 'u2', 'u3']) unit(state, id).disorder = 2;
+      return state;
+    };
+
+    const reach = build();
+    expect(offer(reach, 'rally', 'u0').rungs[1].targets.map((t) => t.id)).toEqual(['u1']);
+    const rallied = act(reach, { type: 'rally', rung: 2, unit: 'u0', target: 'u1' }, scriptedRng([10]));
+    expect(unit(rallied, 'u1').disorder).toBe(1);
+    expect(unit(rallied, 'u2').disorder).toBe(2);
+    expect(unit(rallied, 'u3').disorder).toBe(2);
+
+    const inspired = act(build(), { type: 'rally', rung: 3, unit: 'u0' }, scriptedRng([10]));
+    expect(unit(inspired, 'u1').disorder).toBe(1);
+    expect(unit(inspired, 'u2').disorder).toBe(1);
+    expect(unit(inspired, 'u3').disorder).toBe(2); // beyond Inspire's radius, untouched
+  });
+});
+
 describe('rungs carry effects, actions carry numbers', () => {
   // Level-6 infantry: strike +11, Will +17, Reflex +14, level DC 22, Fight 2 / Guard 1.
   const STRIKE = 11;
@@ -617,8 +696,10 @@ describe('rungs carry effects, actions carry numbers', () => {
     expect(mods(away)[0]).toBe(REFLEX + 4);
     const shaken = engaged();
     unit(shaken, 'u0').disorder = 2;
+    // The check runs against the unweakened disorder — Rally no longer clears a point before
+    // rolling, so nothing has reduced it yet.
     const rallied = act(shaken, { type: 'rally', rung: 1, unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
-    expect(mods(rallied)[0]).toBe(WILL - 1 + 4);
+    expect(mods(rallied)[0]).toBe(WILL - 2 + 4);
   });
 
   it('takes their ground on an Overrun that breaks them', () => {

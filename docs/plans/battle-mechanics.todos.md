@@ -899,3 +899,109 @@ session scratchpad, nothing added to the repo.
 - Shieldwall's aura is the only thing rung 3 gives, and it needs an ally standing next to it. A
   lone grade-3 troop gets nothing rung 1 does not already give it.
 - Rally's roll dial is still dead weight at rungs 2 and 3 (carried from two waves back).
+
+## Rally notes
+
+Wave 7. Rally is now a Quality check against the rout DC; the four degrees decide how much
+clears (all / 2 / 1 / nothing-and-1), and the rungs carry scope instead of amount (self /
++1 adjacent ally / +every friendly within 2). 147 tests before, 151 after.
+
+### `routDcFor`, reconstructed
+
+The `routDc` helper the brief asked for did not exist — grepped clean, confirming the brief's
+note that it was removed as a proto alias. Rebuilt in `battle.ts` next to `escapeDcFor` and
+`pushDcFor`: the highest level among enemies within `BANDS[grid].close`, or across every enemy
+on the field if none are close. `Math.max(0, ...pool.map(level))` mirrors `wallDc`'s existing
+pattern and reads DC 14 (`levelDc(0)`) if somehow no enemy remains at all — untested, since it
+never comes up while the battle is still running.
+
+### Both dials, and how it was verified
+
+The roll dial weights the self check (`reachModifier(u) + spend.roll * ACTION_BONUS`) against
+`routDcFor`, unconditionally, on every rung — Steady, Rally and Inspire run the identical
+check, so there is no rung where it goes quiet. The push dial needed no new code at all: it is
+`doRung`'s existing reach-for-a-higher-rung machinery, which every ladder already gets for free
+once a rung's own number stops depending on which rung was granted. Verified two ways: a new
+test drives the same scripted roll at zero and at +4 (`spend.roll: 2`) across all three rungs of
+a grade-3 troop and gets a different clear amount every time — under the old code rungs 2 and 3
+would have cleared everything either way, so this is the regression test that would have failed
+before this wave. Separately, the screenshot shows both dial rows live at once on one grade-1
+troop's Rally offer: the roll dial bumped on Steady, the push dial bumped on Rally (rung 2, a
+reach).
+
+### Scope is unconditional on the self-check's degree
+
+`eff.scope === 'adjacent'` and `'nearby'` clear their target(s) by a flat 1 regardless of what
+the acting unit's own Quality check rolled — even a critical failure still passes the scope's
+clear to allies. This reads as intentional rather than an oversight: the doc frames the two
+dials as orthogonal ("the roll dial pushes toward clearing 2 instead of 1, or all instead of 2,
+and the push dial buys scope"), and gating scope on the self-check's degree would recouple them.
+Flag if Mark meant a botched Rally to fail its allies too — that would need the scope clear
+moved inside `succeeded(c.degree)`.
+
+### The rough cost of a full commitment
+
+Design's flagged risk: how often does spending the whole activation on Rally still clear only
+one point? Worked from the check itself, using the screenshot's own troop rather than a
+simulation. Line Infantry (Will 13) at 2 disorder, full three-action commitment (`weight = +4`):
+modifier `13 − 2 + 4 = 15` against a same-level enemy's rout DC 22 needs a 7 to succeed. That is
+a failure (clears 1) on 5 of 20 faces — 25% — plus a further 5% (the natural 1) that clears
+nothing and adds a point; success (clears 2) covers exactly half the die, and a critical success
+the remaining 20%. Because `reachModifier` is `will − disorder`, the unit's own disorder
+subtracts from that same roll, so a more-disordered troop needs a higher roll still — the unit
+in the most trouble is both the one that most needs Rally and the one worst at rolling it. That
+compounding is not a bug; it is what makes disorder a tempo weapon rather than a self-correcting
+inconvenience, but it is worth watching in play in case it reads as a spiral rather than a
+tension.
+
+### The panel
+
+`totals()`'s rally line now reads `routDcFor(b, u)` instead of `levelDc(u.level)` — the only
+change there, since the dial-weighted check line already existed. Added one block, gated on
+`openOffer.type === 'rally'`, directly under the offer's own detail line: the check's DC and
+base modifier plus the four-degree breakdown in one `.gamble` paragraph, the same visual
+register Fight/Shoot/Cast already use for their reach line. Rung `detail` text is scope-only
+now ("This unit only." / "This unit, and one adjacent ally clears 1." / "This unit, and every
+friendly unit within 2 clears 1."), matching every other rung description in the panel.
+
+### Tests changed
+
+Two of 147 were invalidated by the reordering (the check now runs before any clearing, where
+the old rung-clears-then-checks order ran the other way):
+
+- `lets every type absorb a full three-action commitment`'s Rally block asserted a fixed clear
+  (rung's own 1, plus an on-top success). Rewritten to the same natural roll landing on failure
+  unweighted and success once weighted — the roll dial changing the outcome, not just the total.
+- `never puts more than +4 on a roll, whatever the rung` asserted the check's modifier against
+  disorder *after* Steady's old pre-clear. Since nothing clears before the check runs now, the
+  expected modifier reads off the unmodified disorder instead (`WILL - 2 + 4`, not `WILL - 1 + 4`).
+
+Four added, in a new `Rally: the roll carries the amount, the rung carries the scope` describe:
+the four degrees against a fixed roll each; the roll-dial-changes-the-outcome regression across
+all three rungs; `routDcFor` reading the close Kobolds then falling back to the field once they
+step out of band; and Rally's one-ally reach against Inspire's within-2 automatic sweep, with a
+control ally at distance 3 that neither rung ever touches. No coverage was deleted.
+
+### The screenshot
+
+`docs/plans/battle-shots/wave7-rally.png`, hex, Line Infantry (Will 13, rally grade 1 — the
+exact population the brief calls out as previously dead weight) at c2, disordered 2/3, held in
+contact by Kobold Warriors at c3 (rout DC 18) with Dwarf Battalion adjacent at d2. Move and
+Withdraw collapsed so the Rally ladder sits complete: the check-and-degrees line, Steady free
+with its roll dial bumped to `Quality check d20+13 vs DC 18`, Rally flagged as a reach with its
+push dial bumped to `Reach DC 22 · d20+13` and Dwarf Battalion selected as the one-ally target,
+Inspire locked below. Harness in the session scratchpad (`wave7-shot.mjs`), nothing added to
+the repo; state written straight into `battlefield.v3` via `page.evaluate` importing
+`/src/engine/index.ts` directly, same recipe as wave 6.
+
+### Rule questions for play
+
+- A unit's own disorder penalises the very check meant to clear it, so a troop already deep in
+  trouble rolls worse at fixing it. Intentional per the design's "expensive when already
+  suppressed" framing for reaching, but Rally has no granted-rung floor to fall back to the way
+  reaching does — a bad roll here can net *worse* than doing nothing. Watch whether it ever
+  reads as punishing rather than tense.
+- Scope clearing regardless of the self-check's degree (see above) means the push dial is
+  strictly the safer buy at every rung — it never whiffs the way the roll dial can. Watch
+  whether the roll dial gets picked at all once players notice this, which would just relocate
+  the "dead dial" problem this wave was meant to close.

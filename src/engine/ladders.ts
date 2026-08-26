@@ -24,7 +24,11 @@ export interface FightEffect { disorderOnLoss: number; takeGround: boolean }
  * carries the effect: `blunt` caps a hit at one wound, so a critical lands as an ordinary one,
  * and `braces` gives adjacent allies what one action of Guard buys. */
 export interface GuardEffect { blunt: boolean; braces: boolean; rooted: boolean }
-export interface RallyEffect { clear: number; ally: boolean }
+/** The rung carries scope, never amount — how much clears comes off the Quality check's
+ * degree instead (see `doRung`'s 'rally' case in `battle.ts`), which is what keeps the roll
+ * dial live at every rung rather than only at Steady. */
+export type RallyScope = 'self' | 'adjacent' | 'nearby';
+export interface RallyEffect { scope: RallyScope }
 export interface CastEffect { scope: number }
 
 export interface Rung {
@@ -43,8 +47,6 @@ export interface Rung {
   cast?: CastEffect;
 }
 
-const CLEAR_ALL = 99;
-
 export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
   shoot: [
     { id: 'loose', verb: 'looses', type: 'shoot', index: 1, label: 'Loose', detail: 'Close band.', reachDc: 0, shoot: { band: 1, ignoresCover: false } },
@@ -62,9 +64,9 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
     { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: '+2 Defence, and adjacent allies count as braced.', reachDc: 2, guard: { blunt: false, braces: true, rooted: false } },
   ],
   rally: [
-    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Clear 1 disorder.', reachDc: 0, rally: { clear: 1, ally: false } },
-    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Clear all disorder.', reachDc: 0, rally: { clear: CLEAR_ALL, ally: false } },
-    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: "Clear all disorder, and an adjacent ally's.", reachDc: 2, rally: { clear: CLEAR_ALL, ally: true } },
+    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit only.', reachDc: 0, rally: { scope: 'self' } },
+    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1.', reachDc: 0, rally: { scope: 'adjacent' } },
+    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1.', reachDc: 2, rally: { scope: 'nearby' } },
   ],
   cast: [
     { id: 'minor', verb: 'casts', type: 'cast', index: 1, label: 'Minor', detail: 'Yourself.', reachDc: 0, cast: { scope: 0 } },
@@ -74,7 +76,6 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
 };
 
 export const rungOf = (type: LadderType, index: Grade): Rung => LADDERS[type][index - 1];
-export const clearsAll = (n: number) => n >= CLEAR_ALL;
 
 /** Which types have a roll of their own for a committed action to weight. Guard has none: a
  * committed action there feeds the push check or Defence instead. */
