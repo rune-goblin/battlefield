@@ -522,3 +522,40 @@ where Withdraw previously just triggered enemy free strikes.
 This is why a critical success is worth having: it is the one result that cannot be followed.
 It also settles a gap the previous wave flagged, where a critical success on a push was
 indistinguishable from a plain success.
+
+
+## Rungs carry effects, actions carry numbers
+
+Decision (Mark, 2026-08-26): a rung's own numeric bonus and the action dials were two sources
+for the same thing, and they stacked. Three actions on Press read +6 — Press's own +2 plus +4
+from two spare actions — where the rule says three actions is `perform, +2, +4`, capped at +4.
+At +6 an even attack needs a 6 and deals 1.00 wounds a turn against the 0.80 the design
+targets.
+
+**All numeric bonus comes from actions. Rungs carry effects.** This is the two-axes split the
+design already uses everywhere else, and Shoot's rungs (band and cover) already obeyed it.
+
+| Rung | Was | Is |
+|---|---|---|
+| Strike | plain | plain exchange |
+| Press | +2, 1 disorder if you miss | the loser of the exchange takes 1 disorder |
+| Overrun | +2, take their ground | take their ground if they break |
+| Loose / Volley / Barrage | band, cover | unchanged |
+
+### Guard's higher rungs become damage reduction
+
+Guard's rungs were pure numbers (+2 / +3 / +3 Defence) and so had the same stacking problem,
+with its dial also being Defence. Rather than strip them to nothing, the higher rungs stop
+adding Defence and start reducing damage:
+
+| Rung | Effect |
+|---|---|
+| **Brace** | Nothing of its own. Defence comes from the actions committed. |
+| **Dig in** | Reduce the first hit taken before your next activation by 1 wound. Rooted next activation. |
+| **Shieldwall** | Critical hits against you count as ordinary hits. Adjacent allies count as braced. |
+
+Shieldwall has a property worth having: cutting criticals is worth almost nothing against a
+peer (0.50 to 0.45 wounds an attack) and a great deal against something far above you (1.30 to
+0.90). Its value rises the more outmatched the unit is, which is exactly when a line forms a
+shieldwall. Dig in works the other way, helping most against many weak attackers, so the two
+rungs answer different threats rather than one strictly beating the other.
