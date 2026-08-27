@@ -106,6 +106,47 @@ query, in `battle.ts`. Both popups read it. This is the one place a test settles
 **Wave 5 — Retire the type row.** The panel drops to stats, the Move bands, Withdraw and the
 log; every ladder moves to the piece it acts on, and the untargeted acts to your own.
 
+**Wave 6 — The props and the tray.** The five action icons are painterly objects, not glyphs:
+crossed swords, a heraldic shield, a lance charge, a war horn, an archery butt. They read as
+pieces on a table, so they get a tray along the board's foot and a heading inside the popup,
+never a 20px bullet.
+
+Chess has one verb, so the destination carries the whole meaning: an empty square is a move,
+an occupied one a capture. This board has six, and chess's own answer to an ambiguous move is
+the promotion dialog — it appears at the square, only where the move is ambiguous, and it
+offers *pictures*. That is `BoardPopup`, and that is where the props belong.
+
+What the tray adds is what a chessboard's edge adds: it tells you where you stand without
+being a control you can get stuck in. Each prop is lit or dim by what `availableActions`
+allows this instant, and picking one up lights every board object it can touch — the reach
+that pure object-first hides until you happen to touch a distant enemy. Touching a board
+object still opens its whole ladder, so the tray is a second road, never the only one.
+
+**Wave 7 — The ring, and the props on the pieces.** The tray goes. Touching your own piece
+blooms its verbs around it, so the menu arrives at the piece instead of the player travelling
+to the board's foot. A ring is learned by direction rather than position, which is what makes
+it faster than a row on the second use and every use after.
+
+The tray could only go because the pieces took over its job. A guarding unit now wears its
+shield, and the verb being aimed rides on whatever it is aimed at — the shoot butt lands on
+the enemy the moment you pick it, before anything is spent. State the board can show is state
+no panel has to.
+
+The ring holds verbs only. Choosing one either acts on your own piece at once, or arms itself
+against a target; either way the ladder that follows is the same stack of rungs it has been
+since Wave 5. A ring is for six equal choices learned by muscle memory; a ladder has unequal
+rows, gambles, detail text and action dials, and it stays a card.
+
+Six, always the same six, always at the same angle: Fight/Charge, Shoot, Cast, Withdraw, Rally,
+Guard, clockwise from twelve. Charge shares the melee slice because one direction means "hit
+them", and a caster's whole book sits behind one Cast slice because the spell is chosen on the
+target. A verb the situation forbids dims in place — a slice that vanished would rotate the
+rest, and direction is the whole point. Each slice is an icon; its name appears under the
+pointer.
+
+Move gets no slice. You never pick up a "move tool" in chess — you pick up the piece — and the
+drag already says it better than a menu could.
+
 ## Judgment calls
 
 - The popup pre-selects its first row, so a plain move stays one gesture plus Enter.

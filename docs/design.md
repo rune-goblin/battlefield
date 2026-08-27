@@ -61,12 +61,15 @@ The board can also generate as an 8×8 hex grid (pointy-top, odd-r) instead of s
 
 ## Setting up a battle
 
-Four stages, in order, each on its own screen:
+Five stages, in order, each on its own screen:
 
 1. **Generate the battlefield.** Pick the hex terrain, a feature and a construction, roll or type a seed, and reroll until the board looks like the hex. See Generating the board.
 2. **Paint.** The GM adjusts the generated board by hand: terrain on any square, elevation 0–2, a wall on any edge, or clears a square. This is where a specific hazard from the adventure goes: the bridge, the burning barn, the ravine.
-3. **Place units.** Build each side from the library, the generator or a custom card, attach siege engines, then put every unit on a square in its side's three deployment ranks. Both sides need at least one unit and every unit needs a square.
-4. **Begin the battle.** Initiative is rolled and the first unit activates.
+3. **The attacking force.** Build the attacker from the library, the generator or a custom card, give it siege engines, and put every piece on a square in ranks 1–3. One side at a time: the screen shows only the attacker's roster, and the board lights only the attacker's deployment ranks.
+4. **The defending force.** The same screen for the defender, on ranks 7–9, with the attacker's pieces already on the board to answer.
+5. **Begin the battle.** Initiative is rolled and the first unit activates.
+
+Each side needs at least one unit, and every unit and emplaced engine needs a square, before the stage will advance.
 
 A river always runs on ranks 4–5, so it never eats a deployment rank; the generator keeps every deployment rank at least half passable.
 
@@ -217,7 +220,13 @@ Each type has one job: forest hides, swamp slows, water blocks, height commands,
 
 ## Siege engines
 
-An engine acts with its train army (`trainArmyId`), sits in its square and shares its activation. Bombard or Volley spends one of the train army's three actions and uses the engine's launch DC − 10; artillery reaches extreme without penalty and cannot fire while the train army is engaged. A ram only Bombards, only a wall segment on an edge of its own square, and at +2. Engines of a destroyed or routed army are captured by any enemy unit that ends the battle in their square or adjacent to it, matching the existing rule that engines change hands.
+An engine is deployed one of two ways, and the choice is the whole difference between them.
+
+**Attached.** The engine rides with one unit, shares that unit's square and activation, and is lost only when the unit is: a destroyed or routed crew abandons it where it falls, and an enemy that ends the battle in or beside that square takes it.
+
+**Emplaced.** The engine is deployed on a square of its own, in its side's deployment ranks, and never moves again. It is worked by whichever friendly unit is standing in or beside its square — no action crews it, and no unit owns it. With no friendly beside it the engine is abandoned, and at the end of that round any enemy standing in or beside it takes the piece, which the captor's units then work exactly as the old owner did. A friendly still standing by holds it however outnumbered: an emplacement is taken by standing on it, not by winning a fight over it. Being fixed, an emplaced ram can only ever batter a wall on an edge of the square it was deployed in, so a ram is normally attached.
+
+Either way the engine fires on its crew's activation and spends one of that unit's three actions. Bombard or Volley uses the engine's launch DC − 10; artillery reaches extreme without penalty and cannot fire while its crew is engaged. A ram only Bombards, only a wall segment on an edge of its own square, and at +2. An engine fires once a round whoever works it: where two friendly units both stand beside an emplacement, the crew is the first in deployment order.
 
 ## Unequal forces
 

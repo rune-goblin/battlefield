@@ -1,10 +1,12 @@
 import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
-import { bannerTexture, engineArtUrl, troopArtUrl } from './art.js';
+import { actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 import type { BoardTheme } from './theme.js';
 
 /** A ring is state, never chrome: the unit acting now, a free strike landing, or the piece a
- * placement stage has hold of. Whose piece it is comes off the flag instead. */
+ * placement stage has hold of. 'active' and 'selected' glow under the piece in its side's
+ * colour — the flag's own; 'flash' is a stroke over the top, so a free strike still reads on
+ * an already-lit piece. */
 export type TokenRing = 'active' | 'selected' | 'flash';
 
 export interface UnitTokenModel {
@@ -22,6 +24,9 @@ export interface UnitTokenModel {
   quality: number;
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
+  /** The action prop riding on the piece: what is being aimed at it right now, or the shield
+   * a guarding unit keeps until it acts again. */
+  prop: ActionIcon | null;
   ring: TokenRing | null;
 }
 
@@ -49,8 +54,12 @@ const ART_ANCHOR_Y = 0.8;
 // The ring traces the piece's footprint — which is also its hit area — now that there is no
 // disc for it to sit outside of. Any wider and it cuts through the flag's level.
 const RING_GAP = 0.01;
+/** How far the glow breathes either side of its footprint, as a fraction of it. */
+const GLOW_SWELL = 0.06;
 /** The flag's height, as a fraction of cell size. */
 const FLAG_RATIO = 0.32;
+/** The action prop's box, as a fraction of cell size. */
+const PROP_RATIO = 0.3;
 // The cloth's mass sits above the middle of the square template — it tapers to a point at the
 // bottom — so the level rides a little high of the sprite's own centre.
 const FLAG_TEXT_Y = -0.07;
@@ -59,6 +68,51 @@ const GHOST_ALPHA = 0.26;
 const PULSE_PERIOD_MS = 1400;
 const FLASH_PERIOD_MS = 260;
 const MOVE_TWEEN_MS = 200;
+// A routed walk holds a steady pace per cell rather than stretching one tween over the whole
+// distance, so a six-cell move reads as six steps; the cap keeps a long charge watchable.
+const WALK_STEP_MS = 150;
+const WALK_MAX_MS = 900;
+
+interface Tween {
+  points: Point[];
+  /** Length of each leg, so a multi-leg walk holds one pace instead of speeding up on the
+   * long legs and crawling on the short ones. */
+  spans: number[];
+  length: number;
+  start: number;
+  duration: number;
+  walk: boolean;
+}
+
+function tweenOf(points: Point[], duration: number, walk: boolean): Tween {
+  const spans: number[] = [];
+  let length = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const span = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    spans.push(span);
+    length += span;
+  }
+  return { points, spans, length, start: performance.now(), duration, walk };
+}
+
+function along(points: Point[], spans: number[], distance: number): Point {
+  let left = distance;
+  for (let i = 0; i < spans.length; i += 1) {
+    if (left > spans[i] && i < spans.length - 1) {
+      left -= spans[i];
+      continue;
+    }
+    const t = spans[i] > 0 ? Math.min(1, left / spans[i]) : 1;
+    const a = points[i];
+    const b = points[i + 1];
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  }
+  return points[points.length - 1];
+}
+
+const easeInOut = (t: number): number => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
+
+const same = (a: Point, b: Point): boolean => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5;
 
 // A shared filter instance: desaturate() only ever sets the same fixed matrix, so every
 // broken token can point at the one instance instead of allocating its own.
@@ -101,6 +155,10 @@ export class Token extends PIXI.Container {
   private chipPath: string | null = null;
   private chipGeneration = 0;
 
+  private propSprite: PIXI.Sprite | null = null;
+  private propIcon: ActionIcon | null = null;
+  private propGeneration = 0;
+
   private readonly routArrow = new PIXI.Graphics();
   private readonly ring = new PIXI.Graphics();
   private ringKind: TokenRing | null = null;
@@ -110,7 +168,8 @@ export class Token extends PIXI.Container {
   // itself be mid-tween from the previous move) to the new cell's centre. `lastCell` is null
   // until the first `place()`, so mounting never tweens in from the origin.
   private lastCell: string | null = null;
-  private tween: { from: Point; to: Point; start: number } | null = null;
+  private tween: Tween | null = null;
+  private route: string[] | null = null;
 
   constructor(id: string) {
     super();
@@ -144,15 +203,17 @@ export class Token extends PIXI.Container {
       this.drawDecor(model, size, theme);
       this.drawBadge(model.level, size, theme);
       this.updateEngineChip(model.engine, size);
+      this.updateProp(model.prop, size);
     } else {
       this.decor.clear();
       this.badge?.destroy();
       this.badge = null;
       this.updateEngineChip(null, size);
+      this.updateProp(null, size);
     }
 
     this.drawRoutArrow(routed, model.side, size, theme);
-    this.drawRing(model.ring, size, theme);
+    this.drawRing(model.ring, model.side, size, theme);
 
     // Re-append: the art and the engine chip are attached lazily as their textures resolve,
     // which would otherwise draw them over the flag and the arrow/ring. addChild on an
@@ -160,8 +221,10 @@ export class Token extends PIXI.Container {
     // order — flag under its own level, both under the arrow and ring.
     if (this.flag) this.addChild(this.flag);
     if (this.badge) this.addChild(this.badge);
+    if (this.propSprite) this.addChild(this.propSprite);
     this.addChild(this.routArrow);
-    this.addChild(this.ring);
+    if (model.ring === 'flash') this.addChild(this.ring);
+    else this.addChildAt(this.ring, 0);
   }
 
   /** A still of the miniature where it currently stands, for the layer to leave behind while
@@ -190,6 +253,12 @@ export class Token extends PIXI.Container {
     this.position.set(point.x, point.y);
   }
 
+  /** The route this piece's next move follows, its own cell first. Spent by that move — see
+   * `takeRoute`. */
+  setRoute(cells: readonly string[]): void {
+    this.route = cells.length > 1 ? [...cells] : null;
+  }
+
   /** Snaps straight back to this token's last-drawn cell — its old one, since a rejected
    * drop never mutates the caller's state and so never triggers a fresh `draw()` to move it
    * to a new one. A valid drop still lands here first and then jumps again once the
@@ -207,26 +276,50 @@ export class Token extends PIXI.Container {
    * cheap no-op unless this token has one or the other running. */
   tick(): void {
     if (this.tween) {
-      const t = Math.min(1, (performance.now() - this.tween.start) / MOVE_TWEEN_MS);
-      const eased = 1 - (1 - t) ** 3; // ease-out cubic
-      const { from, to } = this.tween;
-      this.position.set(from.x + (to.x - from.x) * eased, from.y + (to.y - from.y) * eased);
+      const { points, spans, length, start, duration, walk } = this.tween;
+      const t = Math.min(1, (performance.now() - start) / duration);
+      const eased = walk ? easeInOut(t) : 1 - (1 - t) ** 3;
+      const point = along(points, spans, eased * length);
+      this.position.set(point.x, point.y);
       if (t >= 1) this.tween = null;
     }
-    if (this.ringKind === 'active') this.ring.alpha = this.pulseAlpha();
-    else if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
+    if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
+    else if (this.ringKind) this.breathe();
   }
 
   private place(model: TokenModel, grid: Grid, size: number): void {
     const cell = grid.parse(model.cell);
     const target = grid.center(cell, size);
-    if (this.lastCell !== null && this.lastCell !== model.cell) {
-      this.tween = { from: { x: this.x, y: this.y }, to: target, start: performance.now() };
+    const walk = this.takeRoute(model.cell, grid, size);
+    if (walk) {
+      this.tween = tweenOf(walk, Math.min(WALK_MAX_MS, WALK_STEP_MS * (walk.length - 1)), true);
+    } else if (this.tween && same(this.tween.points[this.tween.points.length - 1], target)) {
+      // A redraw that does not move the piece (a prop, a ring, the log) must not cut a tween
+      // already running to this same cell short.
+    } else if (this.lastCell !== null && this.lastCell !== model.cell) {
+      this.tween = tweenOf([{ x: this.x, y: this.y }, target], MOVE_TWEEN_MS, false);
     } else {
       this.position.set(target.x, target.y);
       this.tween = null;
     }
     this.lastCell = model.cell;
+  }
+
+  /** The waypoints of the queued route, from where the piece actually stands to `cell`, or
+   * null when no route explains this move. The route is spent either way: it describes one
+   * move, and a second move must not replay it. A route is trimmed at `cell` rather than
+   * required to end there, so a push that fails and stops at its fallback still walks the
+   * part of the route it covered. */
+  private takeRoute(cell: string, grid: Grid, size: number): Point[] | null {
+    const route = this.route;
+    // A redraw that does not move the piece leaves the route queued: it is spent by the move
+    // it describes, not by whatever else happens to redraw first.
+    if (!route || cell === this.lastCell) return null;
+    this.route = null;
+    if (route[0] !== this.lastCell) return null;
+    const end = route.indexOf(cell);
+    if (end < 1) return null;
+    return [{ x: this.x, y: this.y }, ...route.slice(1, end + 1).map((k) => grid.center(grid.parse(k), size))];
   }
 
   // The miniature's own base ellipse lands at y ≈ 0 (see ART_ANCHOR_Y), so the shadow sits
@@ -384,6 +477,44 @@ export class Token extends PIXI.Container {
     this.engineChip.position.set(-r * 0.72, -r * 0.72);
   }
 
+  /** Bottom right, clear of the flag, the engine chip and the pip rows. */
+  private updateProp(icon: ActionIcon | null, size: number): void {
+    if (!icon) {
+      if (this.propSprite) this.propSprite.visible = false;
+      this.propIcon = null;
+      return;
+    }
+    if (icon !== this.propIcon) {
+      this.propIcon = icon;
+      const generation = ++this.propGeneration;
+      PIXI.Assets.load<PIXI.Texture>(actionIconUrl(icon))
+        .then((texture) => {
+          if (this.destroyed || generation !== this.propGeneration) return;
+          if (!this.propSprite) {
+            this.propSprite = new PIXI.Sprite(texture);
+            this.propSprite.anchor.set(0.5);
+            this.addChild(this.propSprite);
+          } else {
+            this.propSprite.texture = texture;
+          }
+          this.layoutProp(size);
+        })
+        .catch(() => {});
+    }
+    if (this.propSprite) {
+      this.propSprite.visible = true;
+      this.layoutProp(size);
+    }
+  }
+
+  private layoutProp(size: number): void {
+    if (!this.propSprite) return;
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
+    const { width, height } = this.propSprite.texture;
+    this.propSprite.scale.set((size * PROP_RATIO) / Math.max(width, height, 1));
+    this.propSprite.position.set(r * 0.88, r * 0.62);
+  }
+
   private drawRoutArrow(routed: boolean, side: Side, size: number, theme: BoardTheme): void {
     this.routArrow.visible = routed;
     this.routArrow.clear();
@@ -405,29 +536,31 @@ export class Token extends PIXI.Container {
       .endFill();
   }
 
-  private drawRing(kind: TokenRing | null, size: number, theme: BoardTheme): void {
+  private drawRing(kind: TokenRing | null, side: Side, size: number, theme: BoardTheme): void {
     this.ringKind = kind;
     this.ring.clear();
     this.ring.visible = !!kind;
+    this.ring.scale.set(1);
     if (!kind) { this.pulseStart = 0; return; }
+    this.pulseStart ||= performance.now();
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2 + size * RING_GAP;
-    const colour = kind === 'active' ? theme.token.ringActive
-      : kind === 'flash' ? theme.token.ringFlash
-      : theme.token.ringSelected;
-    const width = kind === 'selected' ? size * 0.06 : kind === 'flash' ? size * 0.07 : size * 0.045;
-    this.ring.lineStyle(width, colour, 1).drawCircle(0, 0, r);
-    if (kind === 'selected') {
-      this.pulseStart = 0;
-      this.ring.alpha = 1;
-    } else {
-      this.pulseStart ||= performance.now();
-      this.ring.alpha = kind === 'active' ? this.pulseAlpha() : this.flashAlpha();
+    if (kind === 'flash') {
+      this.ring.lineStyle(size * 0.07, theme.token.ringFlash, 1).drawCircle(0, 0, r);
+      this.ring.alpha = this.flashAlpha();
+      return;
     }
+    const colour = side === 'attacker' ? theme.attacker : theme.defender;
+    this.ring.beginFill(colour, 1).drawCircle(0, 0, r).endFill();
+    this.breathe();
   }
 
-  private pulseAlpha(): number {
+  /** The glow swells and brightens together, so the piece in hand reads as breathing rather
+   * than blinking. */
+  private breathe(): void {
     const t = ((performance.now() - this.pulseStart) % PULSE_PERIOD_MS) / PULSE_PERIOD_MS;
-    return 0.55 + 0.35 * Math.sin(t * Math.PI * 2);
+    const phase = Math.sin(t * Math.PI * 2);
+    this.ring.alpha = 0.5 + 0.25 * phase;
+    this.ring.scale.set(1 + GLOW_SWELL * phase);
   }
 
   /** A fast, hard blink — distinct from the slow `active` breathing pulse — for a free

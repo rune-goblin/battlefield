@@ -23,6 +23,12 @@ export interface EngineState {
   fired: boolean;
   status: 'crewed' | 'abandoned' | 'captured';
   square: Square;
+  /** Who works it now. An emplaced engine changes this when it is captured. */
+  side: Side;
+  /** Emplaced: it holds its deployment square, is worked by whichever friendly unit stands
+   * in or beside it, and changes hands when only the enemy is left beside it. An attached
+   * engine instead rides with its unit and is only lost when that unit is. */
+  emplaced: boolean;
 }
 
 export interface Unit {
@@ -68,6 +74,9 @@ export interface Unit {
   exposed: boolean;
   warded: boolean;
   blessed: boolean;
+  /** Took heart from an ally's Rally: +2 on its attacks until the end of its next activation.
+   * The support half of the rally ladder — see `RallyEffect.heart`. */
+  heartened: boolean;
   compelled: boolean;
 }
 
@@ -256,6 +265,8 @@ export type Phase = 'battle' | 'ended';
 
 export interface BattleState {
   units: Unit[];
+  /** Emplaced engines only. An attached engine lives on its unit's `engines` instead. */
+  engines: EngineState[];
   /** Deployment order. Activation order is alternating, not fixed. */
   order: string[];
   round: number;

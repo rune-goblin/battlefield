@@ -24,8 +24,6 @@ export interface BoardTheme {
   };
   token: {
     routed: number;
-    ringActive: number;
-    ringSelected: number;
     ringFlash: number;
     pipFilled: number;
     pipEmpty: number;
@@ -51,8 +49,8 @@ const LIGHT: BoardTheme = {
   rule: 0xb9ab93,
   ink: 0x1f1a17,
   accent: 0x7a2e1f,
-  attacker: 0x3a5f8f,
-  defender: 0x8f3a2e,
+  attacker: 0x8f3a2e,
+  defender: 0x3a5f8f,
   terrain: {
     open: 0xefe7d8,
     forest: 0xb9cfa0,
@@ -68,8 +66,6 @@ const LIGHT: BoardTheme = {
   },
   token: {
     routed: 0xb9ab93,
-    ringActive: 0xb4611f,
-    ringSelected: 0x1f1a17,
     ringFlash: 0xf2c744,
     pipFilled: 0x1f1a17,
     pipEmpty: 0xf8f4ec,
@@ -86,8 +82,8 @@ const DARK: BoardTheme = {
   rule: 0x4c4338,
   ink: 0xe8e1d5,
   accent: 0xd98b6e,
-  attacker: 0x6f9bd1,
-  defender: 0xd9705c,
+  attacker: 0xd9705c,
+  defender: 0x6f9bd1,
   terrain: {
     open: 0x2a2520,
     forest: 0x3a5030,
@@ -103,8 +99,6 @@ const DARK: BoardTheme = {
   },
   token: {
     routed: 0x8c8378,
-    ringActive: 0xd98b6e,
-    ringSelected: 0xe8e1d5,
     ringFlash: 0xffe066,
     pipFilled: 0xe8e1d5,
     pipEmpty: 0x2a2520,

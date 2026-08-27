@@ -37,3 +37,10 @@ export function bannerTexture(colour: number): PIXI.Texture {
   banners.set(colour, texture);
   return texture;
 }
+
+/** The action props. `charge` and `withdraw` have no ladder behind them: charging is the drag
+ * of the piece itself, and a withdrawal is one Escape check per holder. Every spell shares
+ * the one `cast` prop and is told apart by its label. */
+export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'rally' | 'shoot' | 'withdraw';
+
+export const actionIconUrl = (icon: ActionIcon): string => `${BASE}art/action-icons/${icon}.webp`;

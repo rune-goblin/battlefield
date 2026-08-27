@@ -2,7 +2,7 @@
   import { BRUSH_TERRAINS, sameBrush, type BoardEventOf, type Brush } from '../board/index.js';
   import { parse, type Board } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
-  import { back, game, generate, next, save } from './game.svelte.js';
+  import { game, generate, save } from './game.svelte.js';
 
   const UNDO_LIMIT = 5;
 
@@ -57,40 +57,49 @@
   }
 </script>
 
-<h2>Paint the board</h2>
-{#if game.setup.board}
-  <div class="card">
-    <div class="palette">
-      {#each BRUSH_TERRAINS as t, i (t)}
-        <button class:on={on({ kind: 'terrain', terrain: t })} onclick={() => (brush = { kind: 'terrain', terrain: t })}>{i + 1} · {t}</button>
-      {/each}
+<div class="stage">
+  {#if game.setup.board}
+    <div class="card controls">
+      <div class="palette">
+        {#each BRUSH_TERRAINS as t, i (t)}
+          <button class:on={on({ kind: 'terrain', terrain: t })} onclick={() => (brush = { kind: 'terrain', terrain: t })}>{i + 1} · {t}</button>
+        {/each}
+        {#each [0, 1, 2] as l, i (l)}
+          <button class:on={on({ kind: 'elevation', level: l })} onclick={() => (brush = { kind: 'elevation', level: l })}>{'QWE'[i]} · elev {l}</button>
+        {/each}
+        <button class:on={on({ kind: 'erase' })} onclick={() => (brush = { kind: 'erase' })}>X · erase</button>
+      </div>
+      <div class="palette">
+        {#each [0, 1, 2, 3] as t (t)}
+          <button class:on={on({ kind: 'wall', tier: t })} onclick={() => (brush = { kind: 'wall', tier: t })}>wall tier {t}</button>
+        {/each}
+        <button class:on={on({ kind: 'wall-clear' })} onclick={() => (brush = { kind: 'wall-clear' })}>remove wall</button>
+        <button disabled={!undoStack.length} onclick={undo}>Undo stroke</button>
+        <button onclick={generate}>Regenerate</button>
+        <details class="help">
+          <summary class="muted">Brush keys and gestures</summary>
+          <p class="muted">
+            Drag to paint; right-drag erases; shift-click fills a region of the same terrain. A wall brush snaps to the
+            nearest edge between two squares. Click the board first, then <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>,
+            <kbd>R</kbd> (repeat to cycle tier), <kbd>X</kbd>, <kbd>Esc</kbd>. Wheel zooms, middle-drag or space-drag pans,
+            double-click refits. Water sits at elevation 0; a difference of two levels between neighbours is a cliff.
+          </p>
+        </details>
+      </div>
     </div>
-    <div class="palette">
-      {#each [0, 1, 2] as l, i (l)}
-        <button class:on={on({ kind: 'elevation', level: l })} onclick={() => (brush = { kind: 'elevation', level: l })}>{'QWE'[i]} · elevation {l}</button>
-      {/each}
-      <button class:on={on({ kind: 'erase' })} onclick={() => (brush = { kind: 'erase' })}>X · erase</button>
-    </div>
-    <div class="palette">
-      {#each [0, 1, 2, 3] as t (t)}
-        <button class:on={on({ kind: 'wall', tier: t })} onclick={() => (brush = { kind: 'wall', tier: t })}>wall tier {t}</button>
-      {/each}
-      <button class:on={on({ kind: 'wall-clear' })} onclick={() => (brush = { kind: 'wall-clear' })}>remove wall</button>
-      <button disabled={!undoStack.length} onclick={undo}>Undo stroke</button>
-    </div>
-    <p class="muted">
-      Drag to paint; right-drag erases; shift-click fills a region of the same terrain. A wall brush snaps to the
-      nearest edge between two squares. Click the board first, then <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>,
-      <kbd>R</kbd> (repeat to cycle tier), <kbd>X</kbd>, <kbd>Esc</kbd>. Wheel zooms, middle-drag or space-drag pans,
-      double-click refits. Water sits at elevation 0; a difference of two levels between neighbours is a cliff.
-    </p>
-  </div>
 
-  <PixiBoard board={game.setup.board} mode="paint" {brush} onpaint={apply} onbrush={(b) => (brush = b)} />
-{/if}
-
-<div class="row">
-  <button onclick={back}>Back</button>
-  <button onclick={generate}>Regenerate</button>
-  <button class="primary" disabled={!game.setup.board} onclick={next}>Next: place units</button>
+    <div class="boardfill">
+      <PixiBoard board={game.setup.board} mode="paint" fill {brush} onpaint={apply} onbrush={(b) => (brush = b)} />
+    </div>
+  {/if}
 </div>
+
+<style>
+  .controls { padding: .5rem .7rem; }
+  .controls .palette { margin: .2rem 0; }
+  .help { position: relative; }
+  .help summary { cursor: pointer; }
+  .help p { position: absolute; right: 0; z-index: 5; width: 34rem; max-width: 70vw; margin: .4rem 0 0;
+    padding: .6rem .8rem; background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+</style>

@@ -29,11 +29,18 @@ export interface BoardView {
   /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
    * wash. Empty clears it. */
   setDragPath(cells: string[]): void;
+  /** The route the token's next move walks, its own cell first — the same cells the drag
+   * traced. Without one a move cuts straight across the board to its destination. Spent by
+   * that move, so it is set once per committed move, just before the new position arrives. */
+  setRoute(id: string, cells: readonly string[]): void;
   setSelected(id: string | null): void;
   /** The one token a press may escalate into a drag in battle mode; place mode ignores this
    * and always allows any token to drag. */
   setDraggable(id: string | null): void;
   setMode(mode: BoardMode): void;
+  /** Ignore every pointer, key, hover and zoom until unfrozen — for a DOM menu that owns the
+   * board while it is open. */
+  setFrozen(frozen: boolean): void;
   setBrush(brush: Brush | null): void;
   on<T extends BoardEventType>(event: T, handler: (event: BoardEventOf<T>) => void): () => void;
   /** Screen point (e.g. from a native `DragEvent`) to a cell key, for drag-drop from outside
@@ -181,6 +188,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     setDragPath(cells) {
       overlayLayer.setDragPath(cells);
     },
+    setRoute(id, cells) {
+      tokenLayer.setRoute(id, cells);
+    },
     setSelected(id) {
       overlayLayer.setSelected(id);
     },
@@ -189,6 +199,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     setMode(mode) {
       interaction.setMode(mode);
+    },
+    setFrozen(frozen) {
+      interaction.setFrozen(frozen);
     },
     setBrush(brush) {
       interaction.setBrush(brush);
@@ -292,7 +305,7 @@ export { BoardContainer } from './BoardContainer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the BASE_URL-prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
-export { engineArtUrl, troopArtUrl } from './art.js';
+export { actionIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';

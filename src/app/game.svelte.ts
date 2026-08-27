@@ -3,14 +3,22 @@ import {
   type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
 } from '../engine/index.js';
 
-export type Stage = 'board' | 'paint' | 'place' | 'battle';
+export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
 export interface SetupUnit { card: UnitCard; side: Side; square: string | null; engines: string[] }
-export interface Setup { spec: BoardSpec; board: Board | null; units: SetupUnit[] }
+/** An engine deployed on a square of its own. `engines` on a SetupUnit is the attached kind. */
+export interface SetupEngine { name: string; side: Side; square: string | null }
+export interface Setup { spec: BoardSpec; board: Board | null; units: SetupUnit[]; emplacements: SetupEngine[] }
 
-// v2 -> v3: Unit gained actions/feet/flying, rooted went boolean -> number, and BattleState
-// gained begun. A v2 save deserialises with actions: undefined and throws on the first action.
-const KEY = 'battlefield.v3';
-const STAGES: Stage[] = ['board', 'paint', 'place', 'battle'];
+// v3 -> v4: BattleState gained engines for emplacements. A v3 save deserialises without it
+// and throws the first time the board reads it.
+const KEY = 'battlefield.v4';
+// A save written before a field existed still parses; it crashes later, at render. Drop it
+// here so a missed KEY bump costs a fresh start rather than a broken board.
+const intact = (b: BattleState | null | undefined): boolean =>
+  !!b && Array.isArray(b.units) && Array.isArray(b.engines) && Array.isArray(b.log);
+const STAGES: Stage[] = ['board', 'paint', 'attackers', 'defenders', 'battle'];
+/** The side each deployment stage edits. */
+export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker', defenders: 'defender' };
 
 const randomSeed = () => Math.floor(Math.random() * 1e9);
 
@@ -19,6 +27,7 @@ function defaultSetup(): Setup {
   return {
     spec: { base: 'plains', feature: 'none', construction: null, seed: randomSeed() },
     board: null,
+    emplacements: [],
     units: [
       { card: pick('Line Infantry'), side: 'attacker', square: 'c2', engines: [] },
       { card: pick('Heavy Cavalry'), side: 'attacker', square: 'e2', engines: [] },
@@ -33,7 +42,10 @@ function load(): { stage: Stage; setup: Setup; battle: BattleState | null } {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.setup && STAGES.includes(parsed.stage)) return parsed;
+      if (parsed.setup && STAGES.includes(parsed.stage)) {
+        if (!intact(parsed.battle)) parsed.battle = null;
+        return parsed;
+      }
     }
   } catch { /* fresh start */ }
   return { stage: 'board', setup: defaultSetup(), battle: null };
@@ -42,7 +54,7 @@ function load(): { stage: Stage; setup: Setup; battle: BattleState | null } {
 const saved = load();
 
 export const game = $state({
-  stage: (saved.battle ? 'battle' : saved.stage === 'battle' ? 'place' : saved.stage) as Stage,
+  stage: (saved.battle ? 'battle' : saved.stage === 'battle' ? 'defenders' : saved.stage) as Stage,
   setup: saved.setup,
   battle: saved.battle as BattleState | null,
   history: [] as BattleState[],
@@ -56,12 +68,30 @@ export function generate() {
   const board = generateBoard($state.snapshot(game.setup.spec));
   game.setup.board = board;
   for (const u of game.setup.units) if (u.square && at(board, parse(u.square)).terrain === 'water') u.square = null;
+  for (const e of game.setup.emplacements) if (e.square && at(board, parse(e.square)).terrain === 'water') e.square = null;
   save();
 }
 
 export function rerollSeed() {
   game.setup.spec.seed = randomSeed();
   generate();
+}
+
+/** One side is ready when it has a unit and everything it owns stands on a square. */
+export function sideReady(side: Side): boolean {
+  const us = game.setup.units.filter((u) => u.side === side);
+  return us.length > 0 && us.every((u) => u.square !== null)
+    && game.setup.emplacements.filter((e) => e.side === side).every((e) => e.square !== null);
+}
+
+export const ready = () => sideReady('attacker') && sideReady('defender');
+
+/** What the rail's forward button does and says on the current stage. */
+export function forward(): { label: string; enabled: boolean; go: () => void } {
+  if (game.stage === 'board') return { label: 'Next: paint', enabled: !!game.setup.board, go: next };
+  if (game.stage === 'paint') return { label: 'Next: the attacking force', enabled: !!game.setup.board, go: next };
+  if (game.stage === 'attackers') return { label: 'Next: the defending force', enabled: sideReady('attacker'), go: next };
+  return { label: 'Begin the battle', enabled: ready(), go: startBattle };
 }
 
 export function next() {
@@ -86,6 +116,10 @@ export function startBattle() {
         square: u.square!,
         engines: u.engines.map((n) => ENGINES.find((e) => e.name === n)!).filter(Boolean),
       })),
+      engines: game.setup.emplacements
+        .filter((e) => e.square)
+        .map((e) => ({ card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square! }))
+        .filter((e) => e.card),
     },
     randomRng,
   );
@@ -127,7 +161,7 @@ export function undo() {
 export function backToSetup() {
   game.battle = null;
   game.history = [];
-  game.stage = 'place';
+  game.stage = 'attackers';
   save();
 }
 

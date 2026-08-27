@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, defenceOf,
+  act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf,
   endActivation, isOutflanked, isRouted, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
   pushReach, rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
@@ -33,6 +33,15 @@ function battle(rolls: number[], board = openBoard()) {
 }
 
 const place = (state: BattleState, id: string, sq: string) => { unit(state, id).square = parse(sq); };
+// Emplacement status follows position, and nothing but an action recomputes it — a test that
+// moves a unit by hand has to run one to see the consequence.
+const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', rung: 1 }, scriptedRng([10])));
+/** Burn every unit's activation so `endRound` runs, which is where an engine changes hands. */
+const runRound = (state: BattleState) => {
+  let s = state;
+  while (s.round === 1 && s.phase === 'battle') s = burn(s, activeUnit(s)!.id);
+  return s;
+};
 const types = (state: BattleState, id?: string) => availableActions(state, id).map((o) => o.type);
 const offer = (state: BattleState, type: LadderType, id?: string) =>
   availableActions(state, id).find((o) => o.type === type) as ActionOffer;
@@ -139,17 +148,17 @@ describe('alternating activation', () => {
 describe('the menu is filtered by situation', () => {
   it('offers Shoot and Guard in the open, and movement outside the menu', () => {
     const { state } = battle([]);
-    expect(types(state, 'u2')).toEqual(['shoot', 'guard']);
-    expect(types(state, 'u0')).toEqual(['guard']);
+    expect(types(state, 'u2')).toEqual(['shoot', 'guard', 'rally']);
+    expect(types(state, 'u0')).toEqual(['guard', 'rally']);
     const a = activation(state, 'u0')!;
     expect(a.actions).toBe(3);
     expect(a.speed).toBe(25);
     expect(a.moves.size).toBeGreaterThan(0);
   });
-  it('offers Fight and Guard in contact, Rally once disordered, and the withdrawal alongside', () => {
+  it('offers Fight and Guard in contact, Rally throughout, and the withdrawal alongside', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
-    expect(types(state, 'u0')).toEqual(['fight', 'guard']);
+    expect(types(state, 'u0')).toEqual(['fight', 'guard', 'rally']);
     expect(activation(state, 'u0')!.withdraw).not.toBeNull();
     unit(state, 'u0').disorder = 1;
     expect(types(state, 'u0')).toEqual(['fight', 'guard', 'rally']);
@@ -663,6 +672,33 @@ describe('Rally: the roll carries the amount, the rung carries the scope', () =>
     expect(unit(inspired, 'u2').disorder).toBe(1);
     expect(unit(inspired, 'u3').disorder).toBe(2); // beyond Inspire's radius, untouched
   });
+
+  it('lends heart to a neighbour with nothing to clear, worth one action of weight', () => {
+    const levy: UnitCard = { name: 'Levy', level: 6, role: 'infantry', tactics: [] };
+    const state = createBattle({
+      units: [
+        { card: levy, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'e2' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    place(state, 'u0', 'd4');
+    place(state, 'u1', 'd5');
+    place(state, 'u2', 'd6');
+    const bare = strikeModifier(state, unit(state, 'u1'), unit(state, 'u2'));
+
+    // Steady clears nothing here — the levy is in good order — but the troop beside it still
+    // takes heart, which is the whole role a weak unit has next to a strong one.
+    const s = act(state, { type: 'rally', rung: 1, unit: 'u0', target: 'u1' }, scriptedRng([10]));
+    expect(unit(s, 'u1').heartened).toBe(true);
+    expect(strikeModifier(s, unit(s, 'u1'), unit(s, 'u2'))).toBe(bare + ACTION_BONUS);
+
+    // It waits for the troop it was given to, and is spent by that activation.
+    const round = endActivation(select(endActivation(s), 'u2'));
+    expect(unit(round, 'u1').heartened).toBe(true);
+    expect(unit(endActivation(select(round, 'u1')), 'u1').heartened).toBe(false);
+  });
 });
 
 describe('rungs carry effects, actions carry numbers', () => {
@@ -1094,5 +1130,49 @@ describe.each(['square', 'hex'] as const)('a full round on %s', (kind) => {
     expect(seen.sort()).toEqual(['u0', 'u1', 'u2', 'u3']);
     expect(s.round).toBe(2);
     expect(activation(s)!.moves.size).toBeGreaterThan(0);
+  });
+});
+
+describe('an emplaced engine', () => {
+  const catapult = { name: 'Catapult', level: 7, kind: 'artillery' as const, launch: 12, reach: 'extreme' as const, defence: 20 };
+  const emplaced = () => createBattle({
+    units: [
+      { card: infantry, side: 'attacker', square: 'c2' },
+      { card: kobolds, side: 'defender', square: 'c7' },
+    ],
+    engines: [{ card: catapult, side: 'defender', square: 'c8' }],
+    board: openBoard(),
+  });
+
+  it('is crewed by whichever friendly stands beside it, and lets that unit fire it', () => {
+    const state = emplaced();
+    expect(state.engines[0].status).toBe('crewed');
+    expect(crewOf(state, state.engines[0])!.id).toBe('u1');
+    expect(shootModifier(state, unit(state, 'u1'), unit(state, 'u0'))).toBe(catapult.launch);
+  });
+
+  it('holds its square when the crew walks off, and goes abandoned', () => {
+    let state = emplaced();
+    place(state, 'u1', 'c5');
+    state = refresh(state);
+    expect(notation(state.engines[0].square)).toBe('c8');
+    expect(state.engines[0].status).toBe('abandoned');
+    expect(crewOf(state, state.engines[0])).toBeNull();
+  });
+
+  it('changes hands at the end of a round once only the enemy stands by it', () => {
+    let state = emplaced();
+    place(state, 'u1', 'c5');
+    place(state, 'u0', 'b8');
+    state = runRound(state);
+    expect(state.engines[0].side).toBe('attacker');
+    expect(crewOf(state, state.engines[0])!.id).toBe('u0');
+  });
+
+  it('stays put while a friendly is still beside it, however close the enemy', () => {
+    let state = emplaced();
+    place(state, 'u0', 'b8');
+    state = runRound(state);
+    expect(state.engines[0].side).toBe('defender');
   });
 });

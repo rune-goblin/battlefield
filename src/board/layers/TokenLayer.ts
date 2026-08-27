@@ -80,6 +80,12 @@ export class TokenLayer {
     }
   }
 
+  /** The route a token's next move follows — see `Token.setRoute`. Unknown ids are ignored:
+   * a token that does not exist yet has no move to route. */
+  setRoute(id: string, cells: readonly string[]): void {
+    this.cache.get(id)?.setRoute(cells);
+  }
+
   private clearGhost(): void {
     if (!this.ghost) return;
     this.container.removeChild(this.ghost);

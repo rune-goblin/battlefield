@@ -1,13 +1,14 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, guardDefence, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, SPELLS,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
+    offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, SPELLS, withdrawTargets,
     type ActionOffer, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
-    type Spend, type SpendDials, type TargetRef, type Unit, type WithdrawOffer,
+    type RungTarget, type Spend, type SpendDials, type TargetOffer, type TargetRef, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
-  import { troopArtUrl, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
+  import { actionIconUrl, troopArtUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
   import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
+  import RadialMenu from './RadialMenu.svelte';
   import { backToSetup, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
   const b = $derived(game.battle!);
@@ -18,7 +19,6 @@
   const offers = $derived(act?.offers ?? []);
   const strip = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
 
-  let chosen = $state<Record<string, string>>({});
   // One allocation per rung (and one for the withdrawal), so the push dial can be offered
   // only where a reach check actually stands in the way.
   let alloc = $state<Record<string, Spend>>({});
@@ -29,7 +29,6 @@
   type MoveBand = 1 | 2 | 3 | 'push';
   let hoveredBand = $state<MoveBand | null>(null);
   let moveOpen = $state(true);
-  let withdrawOpen = $state(true);
 
   // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
@@ -81,8 +80,6 @@
       : dial === 'push' ? `+${step} to the reach check`
         : dial === 'defence' ? `+${step} more Defence`
           : `one more Speed's worth (${speed} ft)`;
-  const dialSum = (dial: Dial, n: number, step: number, speed: number) =>
-    n === 0 ? '' : dial === 'distance' ? `+${n * speed} ft` : `+${n * step}`;
 
   /** What the allocation actually comes to, so the player reads the number before committing.
    * Every number here is bought with actions — no rung adds one of its own. */
@@ -102,6 +99,28 @@
     return out;
   }
 
+  /** The fewest committed actions whose Stride reaches `cell`. `withdrawOffer.targets` is the
+   * reach at *full* commitment, so a destination picked off that wash needs its own price
+   * quoting — `doWithdrawAction` refuses one the committed distance does not carry. */
+  function withdrawFloor(u: Unit, w: WithdrawOffer, cell: string): number {
+    for (let n = 0; n <= w.dials.extra; n++) {
+      if (withdrawTargets(b, u, n * u.speed).some((sq) => notation(sq) === cell)) return n;
+    }
+    return w.dials.extra;
+  }
+
+  /** What a withdrawal to `cell` actually spends: the dials as set, with distance floored at
+   * what the destination needs. Distance takes its share of the budget first, so a run the
+   * player has already chosen is never quietly shortened by the roll dial. */
+  function withdrawSpend(cell?: string): Spend {
+    const w = act?.withdraw;
+    if (!w || !active) return NONE;
+    const sp = spendOn(WITHDRAW_KEY, w.dials);
+    if (cell === undefined) return sp;
+    const distance = Math.max(sp.distance, withdrawFloor(active, w, cell));
+    return { ...NONE, roll: Math.min(sp.roll, Math.max(0, w.dials.extra - distance)), distance };
+  }
+
   function withdrawTotals(w: WithdrawOffer, sp: Spend, u: Unit): string[] {
     const out = w.escapes.map((e) => `Escape ${e.name}: d20+${w.modifier + sp.roll * w.dials.step} vs DC ${e.dc}`);
     if (w.dials.distance) out.push(`Runs up to ${(1 + sp.distance) * u.speed} ft`);
@@ -114,7 +133,7 @@
 
   // A new unit drops every open popup and any in-flight drag preview — all of it is
   // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; aim = null; drag = null; pending = null; hoveredBand = null; moveOpen = true; withdrawOpen = true; alloc = {}; });
+  $effect(() => { void active?.id; aim = null; drag = null; pending = null; armed = null; radial = null; hoveredBand = null; moveOpen = true; alloc = {}; });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return SPELLS[offer.spell].at === 'enemy' ? 'attack' : 'deploy';
@@ -142,12 +161,186 @@
   const picked = $derived(pending?.rows[pending.index] ?? null);
   const preview = $derived(drag ?? picked);
   // Touching a board object opens the other popup: every rung that can act on *that*, which
-  // is `offersAt`'s whole job. One flat list, because the player picks a rung, not a type.
+  // is `offersAt`'s whole job. Grouped by verb, because the props are what the eye lands on —
+  // a tile row across the top, then the chosen verb's three rungs beneath it.
   interface AimRow { offer: ActionOffer; opt: RungOption }
-  interface Aim { cell: string; target: TargetRef; label: string; rows: AimRow[]; index: number }
+  interface Aim { cell: string; target: TargetRef; label: string; groups: TargetOffer[]; group: number; index: number }
   let aim = $state<Aim | null>(null);
-  const aimed = $derived(aim?.rows[aim.index] ?? null);
+  const aimGroup = $derived(aim?.groups[aim.group] ?? null);
+  const aimed = $derived<AimRow | null>(
+    aimGroup && aim ? { offer: aimGroup.offer, opt: aimGroup.rungs[aim.index] } : null,
+  );
   let anchor = $state<{ x: number; y: number } | null>(null);
+
+  // --- The ring. Touching your own piece blooms its verbs around it, so the menu arrives at
+  // the piece rather than the player travelling to a menu. Choosing one either acts on your
+  // own piece at once (Guard, a self-Rally) or arms it against a target. It sets no mode a
+  // player can be stranded in — a verb stays armed only until it is spent, Esc, or a touch
+  // anywhere else.
+  const ICON_FOR: Record<LadderType, ActionIcon> = {
+    fight: 'attack', shoot: 'shoot', guard: 'block', rally: 'rally', cast: 'cast',
+  };
+
+  // Always these six, always in this order. A ring is learned by direction, so a verb the
+  // situation forbids dims in place — letting it vanish would rotate every other verb onto a
+  // new angle and cost the player the muscle memory the ring exists to build.
+  type Slot = 'melee' | 'shoot' | 'cast' | 'withdraw' | 'rally' | 'guard';
+  const SLOTS: Slot[] = ['melee', 'shoot', 'cast', 'withdraw', 'rally', 'guard'];
+  const SLOT_LABEL: Record<Slot, string> = {
+    melee: 'Fight', shoot: 'Shoot', cast: 'Cast', withdraw: 'Withdraw', rally: 'Rally', guard: 'Guard',
+  };
+  const SLOT_STYLE: Record<Slot, HighlightStyle> = {
+    melee: 'attack', shoot: 'attack', cast: 'deploy', withdraw: 'move', rally: 'deploy', guard: 'deploy',
+  };
+  // Why a slice is dim, for the times the engine offers no rung to carry a reason of its own.
+  const UNAVAILABLE: Record<Slot, (u: Unit) => string> = {
+    melee: () => 'No melee attack',
+    shoot: (u) => (u.stats.volley === null ? 'No ranged attack' : 'No shot from here'),
+    cast: (u) => (u.spells.length ? 'Nothing in reach to cast on' : 'No spells'),
+    withdraw: () => 'Nothing holds you here',
+    rally: () => 'Nothing to clear, and nobody near to lift',
+    guard: () => 'Cannot guard',
+  };
+
+  interface Prop {
+    key: Slot;
+    icon: ActionIcon;
+    label: string;
+    note: string;
+    legal: boolean;
+    /** The ladder an aim off this slice narrows to. Charge and Withdraw have none. */
+    type: LadderType | null;
+    style: HighlightStyle;
+    /** Everything this verb can touch right now. */
+    cells: string[];
+  }
+
+  const cellOf = (id: string) => {
+    const u = b.units.find((x) => x.id === id);
+    return u ? notation(u.square) : null;
+  };
+  const targetCell = (t: RungTarget): string | null =>
+    t.kind === 'cell' ? t.id : t.kind === 'wall' ? t.id.split('|')[0] : cellOf(t.id);
+
+  /** Where an offer can land, with the unit's own square first when a rung needs no target. */
+  function offerCells(offer: ActionOffer): string[] {
+    const legal = offer.rungs.filter((r) => r.legal);
+    const cells = legal.flatMap((r) => r.targets).map(targetCell).filter((x): x is string => x !== null);
+    // A rung that names no target acts on your own piece, which is where its popup opens.
+    if (active && legal.some((r) => !r.needsTarget)) cells.unshift(notation(active.square));
+    return [...new Set(cells)];
+  }
+
+  const props = $derived.by<Prop[]>(() => {
+    if (!active || !act) return [];
+    const byType = new Map<LadderType, ActionOffer[]>();
+    for (const offer of act.offers) {
+      const list = byType.get(offer.type);
+      if (list) list.push(offer);
+      else byType.set(offer.type, [offer]);
+    }
+    // Charge shares the melee slice with Fight. Charging is how a unit out of contact reaches
+    // the fight the slice already holds, so one direction means "hit them" either way.
+    const charges = act.charges.map((c) => cellOf(c.unit)).filter((x): x is string => x !== null);
+    const w = act.withdraw;
+
+    return SLOTS.map((key): Prop => {
+      if (key === 'withdraw') {
+        return {
+          key, icon: 'withdraw', label: 'Withdraw', type: null, style: 'move',
+          legal: !!w && w.targets.length > 0,
+          note: !w ? 'Nothing holds you here' : w.targets.length ? 'Break contact and go' : 'Nowhere to go',
+          cells: w ? w.targets.map((t) => t.id) : [],
+        };
+      }
+      const type: LadderType = key === 'melee' ? 'fight' : key;
+      const offers = byType.get(type) ?? [];
+      const cells = [...new Set([...offers.flatMap(offerCells), ...(key === 'melee' ? charges : [])])];
+      if (key === 'melee' && !offers.length) {
+        return {
+          key, icon: 'charge', label: 'Charge', type: null, style: 'attack',
+          legal: charges.length > 0,
+          note: active.stats.strike === null ? 'No melee attack'
+            : charges.length ? 'Close and fight' : 'Nothing in reach to close on',
+          cells: charges,
+        };
+      }
+      // One slice per verb, so a caster's whole book sits behind Cast — the aim popup already
+      // groups by verb and shows every spell that reaches whatever the player touches.
+      const label = key === 'cast' ? 'Cast' : offers[0]?.label ?? SLOT_LABEL[key];
+      return {
+        key, icon: ICON_FOR[type], label, type, style: SLOT_STYLE[key],
+        legal: cells.length > 0,
+        note: cells.length ? (key === 'cast' ? 'Choose a spell on the target' : offers[0].detail)
+          : offers.flatMap((o) => o.rungs).find((r) => r.reason)?.reason ?? UNAVAILABLE[key](active),
+        cells,
+      };
+    });
+  });
+
+  let armed = $state<string | null>(null);
+  const armedProp = $derived(props.find((p) => p.key === armed && p.legal) ?? null);
+  // The arm outlives the popup it opened, so cancelling the popup lands back on the wash
+  // instead of on nothing. `arming` is the state where the board is waiting to be touched.
+  const arming = $derived(armedProp && !aim && !pending ? armedProp : null);
+  // A new activation, or a verb that has run out of targets, drops the arm.
+  $effect(() => { if (armed && !armedProp) armed = null; });
+
+  /** One step back up the chain the ring starts: popup, then the wash, then the ring, then
+   * nothing. Nothing is committed until the last click, so every stage can be walked out of. */
+  function stepBack() {
+    if (pending) { pending = null; return; }
+    if (aim) { aim = null; return; }
+    if (armed) {
+      armed = null;
+      if (active) radial = { cell: notation(active.square) };
+      return;
+    }
+    radial = null;
+  }
+
+  /** Take a verb off the ring: it lights everything it can touch. One thing to touch means
+   * there is nothing to choose, so it opens there at once — which is what keeps Guard a
+   * single click, the way it was when the ladder sat straight on the piece. */
+  function takeProp(p: Prop) {
+    if (!p.legal || !active) return;
+    pending = null;
+    aim = null;
+    radial = null;
+    if (armed === p.key) { armed = null; return; }
+    armed = p.key;
+    if (p.cells.length === 1) applyProp(p, p.cells[0]);
+  }
+
+  /** Spend an armed prop on a board object. */
+  function applyProp(p: Prop, cell: string) {
+    // A charge is read off the cell rather than the slice: in contact the melee slice fights,
+    // out of it the same slice closes.
+    const c = p.key === 'melee' ? act?.charges.find((x) => cellOf(x.unit) === cell) : undefined;
+    if (c) {
+      pending = { cell: c.cell, rows: [chargeRow(c)], index: 0, rung: null };
+      return;
+    }
+    // A withdrawal is a destination, not a target, so it parks the same drop a drag there
+    // would — and reads its escapes and dials in that popup rather than a panel card.
+    if (p.key === 'withdraw') {
+      const rows = rowsAt(cell).filter((r) => r.kind === 'withdraw');
+      if (rows.length) pending = { cell, rows, index: 0, rung: null };
+      return;
+    }
+    const u = b.units.find((x) => x.status === 'active' && notation(x.square) === cell);
+    const target: TargetRef = u ? { kind: 'unit', id: u.id } : { kind: 'cell', id: cell };
+    aimAt(target, cell, u?.name ?? cell, p.type);
+  }
+
+  let radial = $state<{ cell: string } | null>(null);
+  const radialItems = $derived(props.map((p) => ({
+    key: p.key, src: actionIconUrl(p.icon), label: p.label, note: p.note, legal: p.legal,
+  })));
+  const pickProp = (key: string) => {
+    const p = props.find((x) => x.key === key);
+    if (p) takeProp(p);
+  };
 
   function classify(moves: Map<string, MoveReach>, path: string[]): { near: string[]; far: string[] } {
     const near: string[] = [];
@@ -207,6 +400,10 @@
     // `TokenLayer` just snaps the token back to where it actually is.
     const rows = rowsAt(e.cell);
     pending = rows.length ? { cell: e.cell, rows, index: 0, rung: null } : null;
+    // Dropped on a piece with no charge behind it — already in contact, or out of reach — the
+    // drag still means "act on that", so its ladder opens where the piece stands.
+    const enemy = !rows.length ? enemyAt(e.cell) : null;
+    if (enemy) aimAt({ kind: 'unit', id: enemy.id }, e.cell, enemy.name);
   }
 
   /** A second click on the row already chosen confirms it, so a plain move is drag, click. */
@@ -219,8 +416,11 @@
   function commit() {
     const p = pending;
     pending = null;
+    armed = null;
     const row = p?.rows[p.index];
     if (!p || !row) return;
+    // The piece walks the route the drag traced, not the straight line to where it ends.
+    if (active) boardRef?.setRoute(active.id, row.path);
     if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, rung: p.rung ?? undefined });
     else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
     else if (row.kind === 'push') takeAction({ type: 'push', to: row.cell });
@@ -230,9 +430,10 @@
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
 
   function onKey(e: KeyboardEvent) {
+    // One Escape, one step back — the same walk out that a click off the target takes.
+    if (e.key === 'Escape') { stepBack(); return; }
     if (pending) {
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
-      else if (e.key === 'Escape') pending = null;
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         pending = { ...pending, index: (pending.index + stepBy(e.key, pending.rows.length)) % pending.rows.length, rung: null };
@@ -244,7 +445,12 @@
     else if (e.key === 'Escape') aim = null;
     else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      aim = { ...aim, index: (aim.index + stepBy(e.key, aim.rows.length)) % aim.rows.length };
+      const n = aim.groups[aim.group].rungs.length;
+      aim = { ...aim, index: (aim.index + stepBy(e.key, n)) % n };
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const n = aim.groups.length;
+      aim = { ...aim, group: (aim.group + (e.key === 'ArrowRight' ? 1 : n - 1)) % n, index: 0 };
     }
   }
 
@@ -253,7 +459,7 @@
   // a popup is open, and never otherwise.
   let lastAnchor: { x: number; y: number } | null = null;
   $effect(() => {
-    const open = pending ?? aim;
+    const open = pending ?? aim ?? radial;
     if (!open) { anchor = null; lastAnchor = null; return; }
     const cell = open.cell;
     let frame = 0;
@@ -288,7 +494,7 @@
   const dropCost = (row: Preview): number =>
     row.kind === 'move' || row.kind === 'charge' ? row.actions
       : row.kind === 'push' ? (act?.actions ?? 0)
-        : act?.withdraw ? act.withdraw.cost + used(spendOn(WITHDRAW_KEY, act.withdraw.dials)) : 1;
+        : act?.withdraw ? act.withdraw.cost + used(withdrawSpend(row.cell)) : 1;
   const aimCost = (row: AimRow) =>
     row.offer.cost + used(spendOn(rungKey(row.offer, row.opt), rungDials(row.offer, row.opt)));
   const cost = $derived(picked ? dropCost(picked) : aimed ? aimCost(aimed) : 0);
@@ -326,29 +532,43 @@
     if (act) for (const [cell, m] of act.moves) bands[bandOf(m.actions)].push(cell);
     return { ...bands, push: act ? [...act.push.keys()] : [] };
   });
+  // Contact empties `moves`/`push` outright (see `moveReach`), so the Move card would
+  // otherwise sit there reading "0 cells reachable" four times over with no reason given.
+  const holders = $derived(active ? engagedEnemies(b, active) : []);
+
   const bandStyle = (n: MoveBand): HighlightStyle => (n === 'push' ? 'push' : n === 1 ? 'move' : n === 2 ? 'moveFar' : 'moveFar3');
 
   // The standing wash: every band, the moment a unit is selected, before any drag. Hovering a
   // Move row narrows the wash to just that band; a live drag takes over entirely.
   const standingHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
-    if (!active || !act || preview) return [];
+    if (!active || !act || preview || arming) return [];
     if (hoveredBand) return [{ style: bandStyle(hoveredBand), cells: moveBands[hoveredBand] }];
     return ([1, 2, 3, 'push'] as const).map((n) => ({ style: bandStyle(n), cells: moveBands[n] }));
   });
 
-  const withdrawCells = $derived(
-    act?.withdraw && withdrawOpen && !preview ? act.withdraw.targets.map((t) => t.id) : [],
-  );
-
   const aimCells = $derived(aim && aimed ? [aim.cell] : []);
   const aimStyle = $derived<HighlightStyle>(aimed ? styleFor(aimed.offer) : 'attack');
 
+  // An armed prop lights everything it can touch, so picking the verb first still teaches
+  // reach — the thing pure object-first hides until you happen to touch a distant enemy.
+  const propCells = $derived(arming?.cells ?? []);
+  // A withdrawal lights ground to run to, not a target to hit, so it washes like a move.
+  const propStyle = $derived<HighlightStyle>(arming?.style ?? 'attack');
+
   const highlights = $derived<{ style: HighlightStyle; cells: string[] }[]>([
+    { style: propStyle, cells: propCells },
     { style: aimStyle, cells: aimCells },
     ...standingHighlights,
-    { style: 'move', cells: withdrawCells },
     ...previewHighlights,
   ]);
+
+  /** What rides on a piece: the verb being aimed at it right now, or the shield a guarding
+   * unit keeps until it acts again. State the board can show is state the panel need not. */
+  function propOn(u: Unit): ActionIcon | null {
+    if (aim?.target.kind === 'unit' && aim.target.id === u.id && aimGroup) return ICON_FOR[aimGroup.offer.type];
+    if (picked?.kind === 'charge' && picked.enemy === u.id) return 'charge';
+    return u.guard ? 'block' : null;
+  }
 
   const tokens = $derived.by<TokenModel[]>(() => [
     ...b.units.filter((u) => u.status === 'active').map((u): UnitTokenModel => ({
@@ -363,12 +583,16 @@
       disorder: u.disorder,
       quality: u.quality,
       engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
+      prop: propOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : null,
     })),
     // Abandoned and captured engines stand alone on the square they were left.
     ...b.units.flatMap((u) => u.engines
       .filter((e) => e.status !== 'crewed')
       .map((e, i): EngineTokenModel => ({ kind: 'engine', id: `${u.id}:engine:${i}`, side: u.side, name: e.name, cell: notation(e.square), ring: null }))),
+    // An emplacement is a board object in its own right, drawn whoever is working it.
+    ...b.engines.map((e, i): EngineTokenModel =>
+      ({ kind: 'engine', id: `engine:${i}`, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ]);
 
   function performRung(offer: ActionOffer, opt: RungOption, target?: string) {
@@ -380,16 +604,18 @@
 
   function performWithdraw(w: WithdrawOffer, to?: string) {
     const before = game.battle!.log.length;
-    takeAction({ type: 'withdraw', to, spend: spendOn(WITHDRAW_KEY, w.dials) });
+    takeAction({ type: 'withdraw', to, spend: withdrawSpend(to) });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
     alloc = {};
   }
 
-  /** Open the popup for a board object: everything this unit can do to it, rung by rung. */
-  function aimAt(target: TargetRef, cell: string, label: string) {
+  /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
+   * prop taken off the tray narrows it to that one verb. */
+  function aimAt(target: TargetRef, cell: string, label: string, only: LadderType | null = null) {
     if (!active) return;
-    const rows = offersAt(b, target, active.id).flatMap((t) => t.rungs.map((opt) => ({ offer: t.offer, opt })));
-    aim = rows.length ? { cell, target, label, rows, index: 0 } : null;
+    const all = offersAt(b, target, active.id);
+    const groups = only ? all.filter((g) => g.offer.type === only) : all;
+    aim = groups.length ? { cell, target, label, groups, group: 0, index: 0 } : null;
   }
 
   /** A second touch of the same row takes it, the way the drop popup's rows work. */
@@ -399,11 +625,14 @@
     aim = { ...aim, index: i };
   }
 
+  const aimVerb = (i: number) => { if (aim) aim = { ...aim, group: i, index: 0 }; };
+
   function takeAim() {
     const a = aim;
-    const row = a?.rows[a.index];
+    const row = aimed;
     if (!a || !row) return;
     aim = null;
+    armed = null;
     // The id goes through only where the rung actually names it: Guard takes none, and a
     // Rally on your own piece must not arrive carrying your own id as its ally.
     const names = row.opt.targets.some((t) => t.kind === a.target.kind && t.id === a.target.id);
@@ -411,29 +640,53 @@
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
-    // A click on the parked destination confirms the row it has chosen; a click anywhere else
-    // abandons it and means whatever it would have meant with nothing parked.
+    // A click on the parked destination confirms the row it has chosen. Anywhere else is a
+    // cancel: while something is open or armed, a stray click walks one step back rather than
+    // meaning something new, so a verb picked by mistake costs one click to undo.
     if (pending) {
       if (pending.cell === e.cell) { commit(); return; }
-      pending = null;
+      stepBack();
+      return;
     }
-    aim = null;
-    const w = act?.withdraw;
-    if (w && withdrawOpen && w.targets.some((t) => t.id === e.cell)) performWithdraw(w, e.cell);
+    if (aim) { stepBack(); return; }
+    const p = arming;
+    if (p) {
+      if (p.cells.includes(e.cell)) applyProp(p, e.cell);
+      else stepBack();
+    }
   }
   function onToken(e: BoardEventOf<'token'>) {
     // A charge parks on its approach cell, so clicking the enemy is what confirms it.
     if (pending) {
       if (picked?.kind === 'charge' && picked.enemy === e.id) { commit(); return; }
-      pending = null;
+      stepBack();
+      return;
     }
+    if (aim) { stepBack(); return; }
     const u = b.units.find((x) => x.id === e.id);
-    aimAt({ kind: 'unit', id: e.id }, u ? notation(u.square) : '', u?.name ?? e.id);
+    const cell = u ? notation(u.square) : '';
+    const p = arming;
+    if (p) {
+      if (p.cells.includes(cell)) applyProp(p, cell);
+      else stepBack();
+      return;
+    }
+    // Your own piece is the verbs; anyone else's is what you can do to them.
+    if (e.id === active?.id) { radial = { cell }; return; }
+    aimAt({ kind: 'unit', id: e.id }, cell, u?.name ?? e.id);
   }
   // A wall has no cell of its own; its popup opens over the first of the two it divides.
   function onEdge(e: BoardEventOf<'edge'>) {
-    pending = null;
+    if (pending || aim || arming) { stepBack(); return; }
     aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '));
+  }
+
+  /** The ring is the menu while it is open: the board answers nothing (`frozen`), and a press
+   * anywhere off the ring closes it and does nothing else. */
+  function onWindowPointerDown(e: PointerEvent) {
+    if (!radial) return;
+    if (e.target instanceof Element && e.target.closest('.radial')) return;
+    radial = null;
   }
 
   function pickUnit(u: Unit) {
@@ -451,6 +704,7 @@
     u.exposed ? 'exposed' : '',
     u.warded ? 'warded' : '',
     u.blessed ? 'blessed' : '',
+    u.heartened ? `heartened +${HEART_BONUS}` : '',
     u.compelled ? 'compelled' : '',
     b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
   ].filter(Boolean).join(' · ');
@@ -479,7 +733,7 @@
   </div>
 {/snippet}
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} />
 
 <div class="battle">
   <div class="battle-top">
@@ -495,13 +749,14 @@
     </div>
   </div>
 
-  <div class="battle-board">
+  <div class="battle-board" class:aiming={arming !== null}>
     <PixiBoard
       bind:this={boardRef}
       board={b.board}
       {tokens}
       mode="battle"
       fill
+      frozen={radial !== null}
       {highlights}
       dragPath={previewPath}
       draggable={active?.id ?? null}
@@ -511,6 +766,9 @@
       ondrag={active ? onBoardDrag : undefined}
       ondrop={active ? onBoardDrop : undefined}
     />
+    {#if radial && anchor && radialItems.length}
+      <RadialMenu x={anchor.x} y={anchor.y} items={radialItems} pick={pickProp} />
+    {/if}
     {#if drag}
       <div class="drag-hud">
         <strong>{rowLabel(drag)}</strong>
@@ -522,13 +780,54 @@
         {@render popupHead(pending.cell)}
         {#each pending.rows as row, i (rowKey(row))}
           <button class="popup-row" class:on={i === pending.index} onclick={() => choose(i)}>
-            <span class="popup-verb">{rowLabel(row)}</span>
+            <span class="popup-verb">
+              {#if row.kind === 'charge'}<img class="row-prop" src={actionIconUrl('charge')} alt="" />{/if}
+              {rowLabel(row)}
+            </span>
             <span class="muted">{rowDetail(row)}</span>
           </button>
+          {#if i === pending.index && row.kind === 'withdraw' && act?.withdraw && active}
+            {@const w = act.withdraw}
+            {@const sp = withdrawSpend(row.cell)}
+            {@const floor = withdrawFloor(active, w, row.cell)}
+            <div class="popup-escapes">
+              {#each w.escapes as e (e.unit)}
+                <p class="escape">
+                  <span class="escape-name">{e.name}</span>
+                  <span class="muted">DC {e.dc} · d20+{w.modifier + sp.roll * w.dials.step}</span>
+                  {#if e.follows}<span class="tag">gives no retreat — follows you</span>{/if}
+                </p>
+              {:else}
+                <p class="muted">Nothing holds you. Run for your own edge.</p>
+              {/each}
+              <p class="muted rung-detail">
+                Crit → away, and unfollowed. Success → away clean. Fail → that enemy strikes
+                free. Crit fail → it strikes free, you gain 1 disorder, and you do not break
+                contact.
+              </p>
+            </div>
+            {#if w.dials.extra > 0 && DIALS.some((x) => w.dials[x])}
+              <div class="popup-dials">
+                {#each DIALS.filter((x) => w.dials[x]) as dial (dial)}
+                  {@const least = dial === 'distance' ? floor : 0}
+                  <div class="dial">
+                    <button class="dial-step" disabled={sp[dial] <= least} aria-label="less" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] - 1)}>−</button>
+                    <span class="dial-n">{sp[dial]}</span>
+                    <button class="dial-step" disabled={used(sp) >= w.dials.extra} aria-label="more" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] + 1)}>+</button>
+                    <span class="dial-buys">{perAction(null, dial, w.dials.step, active.speed)}</span>
+                    {#if dial === 'distance' && floor > 0}<span class="muted">{row.cell} needs {floor}</span>{/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            <p class="popup-totals">
+              {#each withdrawTotals(w, sp, active) as line (line)}<span class="total">{line}</span>{/each}
+            </p>
+          {/if}
           {#if i === pending.index && row.kind === 'charge' && active}
             <div class="rung-chips">
               {#each FIGHT_RUNGS as g (g)}
-                {@const access = rungAccess(active, 'fight', g)}
+                {@const access = rungAccess(b, active, 'fight', g)}
                 <button
                   class="rung-chip {access}"
                   class:on={chargeRung === g}
@@ -548,37 +847,47 @@
     {#if aim && anchor && active && !pending}
       <BoardPopup x={anchor.x} y={anchor.y}>
         {@render popupHead(aim.label)}
-        {#each aim.rows as row, i (rungKey(row.offer, row.opt))}
+        <div class="verb-row" class:solo={aim.groups.length === 1}>
+          {#each aim.groups as g, gi (offerKey(g.offer))}
+            {@const icon = ICON_FOR[g.offer.type]}
+            <button class="verb-tile" class:on={gi === aim.group} onclick={() => aimVerb(gi)}>
+              {#if icon}<img src={actionIconUrl(icon)} alt="" />{/if}
+              <span>{g.offer.label}</span>
+            </button>
+            {/each}
+        </div>
+        {#each aim.groups[aim.group].rungs as opt, i (opt.rung)}
+          {@const offer = aim.groups[aim.group].offer}
           <button class="popup-row" class:on={i === aim.index} onclick={() => aimChoose(i)}>
             <span class="popup-verb">
-              {row.offer.label} · {row.opt.label}
-              {#if row.opt.access === 'reach'}<span class="chip-note">gamble</span>{/if}
+              {opt.label}
+              {#if opt.access === 'reach'}<span class="chip-note">gamble</span>{/if}
             </span>
-            <span class="muted">{row.opt.detail}</span>
+            <span class="muted">{opt.detail}</span>
           </button>
           {#if i === aim.index}
-            {@const d = rungDials(row.offer, row.opt)}
-            {@const sp = spendOn(rungKey(row.offer, row.opt), d)}
-            {#if row.opt.access === 'reach' && row.offer.reachDc !== null}
+            {@const d = rungDials(offer, opt)}
+            {@const sp = spendOn(rungKey(offer, opt), d)}
+            {#if opt.access === 'reach' && offer.reachDc !== null}
               <p class="popup-gamble">
-                DC {row.offer.reachDc} · d20{row.offer.reachModifier >= 0 ? '+' : ''}{row.offer.reachModifier + sp.push * d.step}.
-                Fail → {rungOf(row.offer.type, row.offer.granted).label}.
+                DC {offer.reachDc} · d20{offer.reachModifier >= 0 ? '+' : ''}{offer.reachModifier + sp.push * d.step}.
+                Fail → {rungOf(offer.type, offer.granted).label}.
               </p>
             {/if}
             {#if d.extra > 0 && DIALS.some((x) => d[x])}
               <div class="popup-dials">
                 {#each DIALS.filter((x) => d[x]) as dial (dial)}
                   <div class="dial">
-                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(row.offer, row.opt), d, dial, sp[dial] - 1)}>−</button>
+                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] - 1)}>−</button>
                     <span class="dial-n">{sp[dial]}</span>
-                    <button class="dial-step" disabled={used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(row.offer, row.opt), d, dial, sp[dial] + 1)}>+</button>
-                    <span class="dial-buys">{perAction(row.offer, dial, d.step, active.speed)}</span>
+                    <button class="dial-step" disabled={used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] + 1)}>+</button>
+                    <span class="dial-buys">{perAction(offer, dial, d.step, active.speed)}</span>
                   </div>
                 {/each}
               </div>
             {/if}
             <p class="popup-totals">
-              {#each totals(row.offer, row.opt, sp, active) as line (line)}<span class="total">{line}</span>{/each}
+              {#each totals(offer, opt, sp, active) as line (line)}<span class="total">{line}</span>{/each}
             </p>
           {/if}
         {/each}
@@ -650,9 +959,28 @@
             onclick={() => { moveOpen = !moveOpen; if (!moveOpen) hoveredBand = null; }}
           >
             <h3>Move</h3>
-            <span class="muted">{moveOpen ? '— drag the token, or read the bands' : `— ${moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable`}</span>
+            <span class="muted">
+              {#if holders.length}
+                — held in contact
+              {:else if moveOpen}
+                — drag the token, or read the bands
+              {:else}
+                — {moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable
+              {/if}
+            </span>
           </button>
           {#if moveOpen}
+          {#if holders.length}
+            <p class="move-held">
+              <strong>{holders.map((e) => e.name).join(' and ')}</strong>
+              {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
+              contact — <strong>Withdraw</strong> is the only way off this square, and it costs an
+              Escape check against each of them.
+              {#if act.withdraw}
+                Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
+              {/if}
+            </p>
+          {:else}
           <div class="move-rows">
             {#each ([1, 2, 3] as const) as n (n)}
               <div
@@ -684,66 +1012,10 @@
             </div>
           </div>
           {/if}
-        </div>
-      {/if}
-
-      <!-- Withdraw is no longer a ladder: one Escape check per holder, and the four degrees
-           are what Scatter, Break off and Fighting retreat used to name. -->
-      {#if act?.withdraw}
-        {@const w = act.withdraw}
-        {@const sp = spendOn(WITHDRAW_KEY, w.dials)}
-        <div class="card withdraw-card">
-          <button class="move-head" aria-expanded={withdrawOpen} onclick={() => { withdrawOpen = !withdrawOpen; }}>
-            <h3>Withdraw</h3>
-            <span class="muted">{withdrawOpen ? '— break contact' : `— ${w.targets.length} cells`}</span>
-          </button>
-          {#if withdrawOpen}
-            {#each w.escapes as e (e.unit)}
-              <p class="escape">
-                <span class="escape-name">{e.name}</span>
-                <span class="muted">DC {e.dc} · d20+{w.modifier + sp.roll * w.dials.step}</span>
-                {#if e.follows}<span class="tag">gives no retreat — follows you</span>{/if}
-              </p>
-            {:else}
-              <p class="muted">Nothing holds you. Run for your own edge.</p>
-            {/each}
-            <p class="muted rung-detail">
-              Crit → away, and unfollowed. Success → away clean. Fail → that enemy strikes free.
-              Crit fail → it strikes free, you gain 1 disorder, and you do not break contact.
-            </p>
-            {#if w.dials.extra > 0 && DIALS.some((x) => w.dials[x])}
-              <div class="dials">
-                <div class="dial-head">
-                  <span>Commit actions</span>
-                  <span class="muted">{used(sp)} of {w.dials.extra} spare</span>
-                </div>
-                {#each DIALS.filter((x) => w.dials[x]) as dial (dial)}
-                  <div class="dial">
-                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] - 1)}>−</button>
-                    <span class="dial-n">{sp[dial]}</span>
-                    <button class="dial-step" disabled={used(sp) >= w.dials.extra} aria-label="more" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] + 1)}>+</button>
-                    <span class="dial-buys">{perAction(null, dial, w.dials.step, active.speed)}</span>
-                    <span class="dial-sum">{dialSum(dial, sp[dial], w.dials.step, active.speed)}</span>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-            <p class="totals">
-              {#each withdrawTotals(w, sp, active) as line (line)}<span class="total">{line}</span>{/each}
-            </p>
-            <div class="row rung-go">
-              {#if w.targets.length}
-                <select bind:value={chosen[WITHDRAW_KEY]}>
-                  {#each w.targets as t (t.id)}<option value={t.id}>{t.label}</option>{/each}
-                </select>
-                <button onclick={() => performWithdraw(w, chosen[WITHDRAW_KEY] ?? w.targets[0].id)}>Go</button>
-              {:else}
-                <button onclick={() => performWithdraw(w)}>Go</button>
-              {/if}
-            </div>
           {/if}
         </div>
       {/if}
+
 
       {#if !offers.length}
         <p class="muted">Nothing else to do here — end the activation.</p>
@@ -780,6 +1052,23 @@
   .battle-panel { grid-area: panel; display: flex; flex-direction: column; gap: .6rem; padding: .75rem; overflow-y: auto; border-left: 1px solid var(--rule); min-height: 0; }
   .battle-panel .log { flex: 1; min-height: 8rem; max-height: none; }
 
+  .battle-board.aiming { cursor: crosshair; }
+
+  .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }
+  /* One verb is a heading, not a choice — the rungs below no longer name it themselves. */
+  .verb-row.solo .verb-tile { flex-direction: row; justify-content: center; gap: .45rem; cursor: default; }
+  .verb-row.solo .verb-tile img { width: 2rem; height: 1.6rem; }
+  .verb-tile {
+    display: flex; flex-direction: column; align-items: center; gap: .1rem;
+    flex: 1; padding: .2rem; border: 1px solid transparent; border-radius: 8px;
+    background: transparent; color: var(--ink); font: inherit; font-size: .72rem; font-weight: 600; cursor: pointer;
+  }
+  .verb-tile img { width: 2.4rem; height: 1.9rem; object-fit: contain; }
+  .verb-tile:hover { background: var(--band); }
+  .verb-tile.on { border-color: var(--accent); background: var(--band); }
+
+  .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
+
   .drag-hud {
     position: absolute; top: .6rem; left: .6rem; z-index: 5;
     display: flex; gap: .6rem; align-items: center;
@@ -796,7 +1085,7 @@
   }
   .popup-row:hover { background: var(--band); }
   .popup-row.on { border-color: var(--accent); background: var(--band); }
-  .popup-verb { font-weight: 600; }
+  .popup-verb { display: flex; align-items: center; gap: .35rem; font-weight: 600; }
   .rung-chips { display: flex; gap: .3rem; padding: .1rem .5rem .3rem 1rem; }
   .rung-chip {
     display: flex; gap: .25rem; align-items: baseline;
@@ -841,6 +1130,7 @@
     display: flex; justify-content: space-between; align-items: baseline; gap: .5rem;
     padding: .3rem .55rem; border-radius: 6px; border-left: 4px solid transparent; background: var(--band);
   }
+  .move-held { margin: 0; padding: .45rem .55rem; border-radius: 6px; border-left: 4px solid var(--bad); background: var(--band); line-height: 1.45; }
   .move-row.band-1 { border-left-color: var(--good); }
   .move-row.band-2 { border-left-color: var(--warn); }
   .move-row.band-3 { border-left-color: var(--warn2); }
@@ -854,6 +1144,7 @@
   .popup-totals { display: flex; flex-wrap: wrap; gap: .25rem; padding: 0 .5rem .3rem 1rem; margin: 0; }
 
   .rung-detail { margin: .1rem 0; }
+  .popup-escapes { padding: .1rem .5rem .2rem 1rem; font-size: .8rem; }
   .rung-go { margin-top: .3rem; }
 
   .dials { margin: .35rem 0 .25rem; padding: .35rem .45rem; border-radius: 6px; background: var(--band); }
@@ -866,7 +1157,6 @@
   .dial-step:disabled { opacity: .35; cursor: default; }
   .dial-n { min-width: .8rem; text-align: center; font-weight: 600; }
   .dial-buys { color: var(--muted); }
-  .dial-sum { margin-left: auto; font-weight: 600; color: var(--accent); white-space: nowrap; }
 
   .totals { display: flex; flex-wrap: wrap; gap: .25rem; margin: .25rem 0; }
   .total {
@@ -874,7 +1164,6 @@
     border: 1px solid var(--accent); color: var(--accent); white-space: nowrap;
   }
 
-  .withdraw-card h3 { margin: 0; font-size: inherit; }
   .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: .82rem; }
   .escape-name { font-weight: 600; }
   .tag { padding: .02rem .35rem; border-radius: 999px; border: 1px solid var(--bad); color: var(--bad); font-size: .7rem; }

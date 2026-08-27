@@ -22,7 +22,10 @@ import {
 
 export interface Deployment { card: UnitCard; side: Side; square: string; engines?: SiegeEngineCard[]; }
 
-export interface BattleSetup { units: Deployment[]; board: Board; }
+/** An engine deployed on a square of its own rather than attached to a unit. */
+export interface Emplacement { card: SiegeEngineCard; side: Side; square: string; }
+
+export interface BattleSetup { units: Deployment[]; board: Board; engines?: Emplacement[]; }
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
@@ -53,13 +56,20 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
       mounted: traits.signals.includes('mounted'), noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
-      engines: (d.engines ?? []).map((e) => ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed' as const, square: sq })),
+      engines: (d.engines ?? []).map((e) => engineState(e, d.side, sq, false)),
       square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
-      guard: null, rooted: 0, exposed: false, warded: false, blessed: false, compelled: false,
+      guard: null, rooted: 0, exposed: false, warded: false, blessed: false, heartened: false, compelled: false,
     };
   });
+  const emplaced = (setup.engines ?? []).map((e) => {
+    const sq = parse(e.square);
+    if (!canDeploy(setup.board, e.side, false, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
+    if (taken.has(e.square)) throw new Error(`${e.square} is already occupied`);
+    taken.add(e.square);
+    return engineState(e.card, e.side, sq, true);
+  });
   const state: BattleState = {
-    units, order: units.map((u) => u.id), round: 1,
+    units, engines: emplaced, order: units.map((u) => u.id), round: 1,
     pending: 'attacker', active: null, begun: false, activated: [], lastSide: null,
     board: clone(setup.board),
     phase: 'battle', winner: null, endedBy: null,
@@ -68,8 +78,12 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     log: [{ round: 1, text: 'Round 1 begins.' }],
   };
   state.pending = nextSide(state) ?? 'attacker';
+  refreshEmplacements(state);
   return state;
 }
+
+const engineState = (e: SiegeEngineCard, side: Side, square: Square, emplaced: boolean): EngineState =>
+  ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced });
 
 const count = (units: Unit[], side: Side) => units.filter((u) => u.side === side).length;
 
@@ -188,19 +202,36 @@ export function reachOf(state: BattleState, u: Unit): number {
   return REACH_RANK[u.stats.reach] - (isWeakened(u) ? 1 : 0);
 }
 
-const crewedArtillery = (u: Unit): EngineState | null =>
-  u.engines.find((e) => e.status === 'crewed' && !e.fired && e.kind === 'artillery') ?? null;
-const crewedRam = (u: Unit): EngineState | null =>
-  u.engines.find((e) => e.status === 'crewed' && !e.fired && e.kind === 'ram') ?? null;
+/**
+ * The unit that works an emplaced engine: a standing friendly in or beside its square. Two
+ * units may both be beside it, so the crew is the first in deployment order — one engine
+ * fires once a round whoever stands there, and the choice never splits a shot in two.
+ */
+export const crewOf = (state: BattleState, e: EngineState): Unit | null =>
+  state.units.find((u) => u.side === e.side && isStanding(u) && dist(state, u.square, e.square) <= 1) ?? null;
+
+/** Every engine this unit may fire: the ones riding with it, plus any emplacement it crews. */
+export const enginesOf = (state: BattleState, u: Unit): EngineState[] =>
+  [...u.engines, ...state.engines.filter((e) => crewOf(state, e)?.id === u.id)];
+
+/** An emplaced engine is crewed exactly while a friendly stands by it — nothing sets that. */
+function refreshEmplacements(state: BattleState) {
+  for (const e of state.engines) e.status = crewOf(state, e) ? 'crewed' : 'abandoned';
+}
+
+const crewedArtillery = (state: BattleState, u: Unit): EngineState | null =>
+  enginesOf(state, u).find((e) => e.status === 'crewed' && !e.fired && e.kind === 'artillery') ?? null;
+const crewedRam = (state: BattleState, u: Unit): EngineState | null =>
+  enginesOf(state, u).find((e) => e.status === 'crewed' && !e.fired && e.kind === 'ram') ?? null;
 
 /** A crewed engine replaces the unit's own shooting profile, grade and all, while it is loaded. */
-export function shootGrade(u: Unit): Grade {
-  const e = crewedArtillery(u);
+export function shootGrade(state: BattleState, u: Unit): Grade {
+  const e = crewedArtillery(state, u);
   if (!e) return u.grades.shoot;
   return (e.reach ? REACH_RANK[e.reach] : 1) as Grade;
 }
 
-export const canShoot = (u: Unit) => u.stats.volley !== null || crewedArtillery(u) !== null;
+export const canShoot = (state: BattleState, u: Unit) => u.stats.volley !== null || crewedArtillery(state, u) !== null;
 
 const rangeRank = (r: Range) => (r === 'close' ? 1 : r === 'long' ? 2 : r === 'extreme' ? 3 : r === 'beyond' ? 4 : 0);
 
@@ -209,8 +240,13 @@ function volleyRank(state: BattleState, u: Unit, target: Unit): number {
   return elevation(state, u) > elevation(state, target) ? rank - 1 : rank;
 }
 
+/** What an ally's Rally is worth to the unit that took heart from it: one action's weight,
+ * lent rather than spent — the same +2 a committed action buys on any ladder. */
+export const HEART_BONUS = ACTION_BONUS;
+
 export function strikeModifier(state: BattleState, u: Unit, target: Unit): number {
   let m = u.stats.strike ?? 0;
+  if (u.heartened) m += HEART_BONUS;
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   if (square(state, u).terrain === 'swamp' || square(state, u).terrain === 'shallows') m -= 1;
@@ -220,8 +256,9 @@ export function strikeModifier(state: BattleState, u: Unit, target: Unit): numbe
 }
 
 export function shootModifier(state: BattleState, u: Unit, target: Unit): number {
-  const e = crewedArtillery(u);
+  const e = crewedArtillery(state, u);
   let m = e ? e.launch : (u.stats.volley ?? 0);
+  if (u.heartened) m += HEART_BONUS;
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   if (!e && volleyRank(state, u, target) >= 3) m -= 2;
@@ -309,6 +346,14 @@ function addDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (routed) abandonEngines(state, u);
 }
 
+/** The support half of a Rally. A troop with a poor ladder of its own still lends a real +2 to
+ * the one beside it, which is the role a weak unit is meant to have beside a strong one. */
+function hearten(state: BattleState, u: Unit, ally: Unit) {
+  if (ally.heartened) return;
+  ally.heartened = true;
+  log(state, u, `${ally.name} takes heart (+${HEART_BONUS} on its attacks until it has acted).`);
+}
+
 function clearDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (u.disorder === 0) return;
   u.disorder = Math.max(0, u.disorder - n);
@@ -355,7 +400,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, 
 }
 
 function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, weight = 0) {
-  const e = crewedArtillery(u);
+  const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
   const c = check(rng, shootModifier(state, u, target) + weight, defenceOf(state, target, u, true, rung.shoot!.ignoresCover));
@@ -563,7 +608,7 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
       const band = rung.shoot!.band;
       const inBand = (e: Unit) => { const r = rangeRank(rangeBetween(state, u, e)); return r > 0 && r <= band; };
       const targets: RungTarget[] = enemies.filter(inBand).map(unitTarget);
-      if (u.side === 'attacker' && crewedArtillery(u)) {
+      if (u.side === 'attacker' && crewedArtillery(state, u)) {
         targets.push(...wallKeys(state).filter((k) => wallRank(state, u, k) <= band).map(wallTarget));
       }
       return { needsTarget: true, targets };
@@ -576,9 +621,10 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
     case 'guard':
       return { needsTarget: false, targets: [] };
     case 'rally': {
-      if (rung.rally!.scope !== 'adjacent') return { needsTarget: false, targets: [] };
+      // A steady ally is still worth naming: it takes heart even where it has nothing to clear.
+      if (rung.rally!.heart !== 'adjacent') return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
-        && a.disorder > 0 && dist(state, a.square, u.square) === 1);
+        && dist(state, a.square, u.square) === 1);
       return { needsTarget: false, targets: allies.map(unitTarget) };
     }
     case 'cast': {
@@ -591,7 +637,7 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
   }
 }
 
-const gradeOf = (u: Unit, type: LadderType): Grade => (type === 'shoot' ? shootGrade(u) : u.grades[type]);
+const gradeOf = (state: BattleState, u: Unit, type: LadderType): Grade => (type === 'shoot' ? shootGrade(state, u) : u.grades[type]);
 
 /** Fight, Shoot and a Blast are the one attack an activation gets. Everything else may be
  * repeated; a second attack was the thing that broke the pacing. */
@@ -601,8 +647,8 @@ const isAttack = (type: LadderType, spell: SpellId | null) =>
 /** Whether a unit takes this rung outright, reaches for it, or cannot take it at all. A
  * charge carries a Fight rung of its own, with no `ActionOffer` around it, so the rule lives
  * here rather than inside `rungOption`. */
-export function rungAccess(u: Unit, type: LadderType, index: Grade): RungOption['access'] {
-  const granted = gradeOf(u, type);
+export function rungAccess(state: BattleState, u: Unit, type: LadderType, index: Grade): RungOption['access'] {
+  const granted = gradeOf(state, u, type);
   if (index <= granted) return 'free';
   if (index > granted + 1) return 'locked';
   return u.compelled ? 'locked' : u.blessed ? 'free' : 'reach';
@@ -610,7 +656,7 @@ export function rungAccess(u: Unit, type: LadderType, index: Grade): RungOption[
 
 function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: SpellId | null, granted: Grade, blocked: string | null): RungOption {
   const rung = rungOf(type, index);
-  const access = rungAccess(u, type, index);
+  const access = rungAccess(state, u, type, index);
   const { needsTarget, targets } = targetsFor(state, u, rung, spell);
   let reason: string | null = blocked ?? (access === 'locked'
     ? (u.compelled && index === granted + 1 ? 'compelled' : 'above your grade')
@@ -624,10 +670,12 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
 const BASE_COST = 1;
 
 function offerFor(state: BattleState, u: Unit, type: LadderType, spell: SpellId | null): ActionOffer {
-  const granted = gradeOf(u, type);
+  const granted = gradeOf(state, u, type);
   const reachable: Grade | null = granted < 3 && !u.compelled ? (granted + 1) as Grade : null;
   const rolls = reachable !== null && !u.blessed;
-  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation' : null;
+  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
+    : type === 'rally' && !u.disorder && !alliesWithin(state, u, 2).length ? 'no disorder to clear, and nobody near to lift'
+      : null;
   const rungs = [1, 2, 3].map((i) => rungOption(state, u, type, i as Grade, spell, granted, blocked)) as [RungOption, RungOption, RungOption];
   const s = spell ? SPELLS[spell] : null;
   return {
@@ -677,16 +725,18 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   const types: LadderType[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
   // A wall is a thing to fight even when nobody defends it.
   if (!contact && u.side === 'attacker' && wallKeys(state).some((k) => bordersWall(u, k))) types.push('fight');
-  if (u.disorder > 0) types.push('rally');
+  // Rally is offered whether or not there is disorder to clear: with none, it is the support
+  // verb — the order that lends the troop beside you the weight of an action.
+  types.push('rally');
   const offers = types
-    .filter((t) => (t === 'shoot' ? canShoot(u) : t === 'fight' ? u.stats.strike !== null : true))
+    .filter((t) => (t === 'shoot' ? canShoot(state, u) : t === 'fight' ? u.stats.strike !== null : true))
     .map((t) => offerFor(state, u, t, null));
   for (const s of u.spells) offers.push(offerFor(state, u, 'cast', s));
   return offers;
 }
 
 function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wanted: Grade, blessed: boolean, weight = 0): Grade {
-  const granted = gradeOf(u, type);
+  const granted = gradeOf(state, u, type);
   if (wanted <= granted) return wanted;
   const rung = rungOf(type, wanted);
   if (blessed) {
@@ -775,7 +825,7 @@ function doCast(state: BattleState, rng: Rng, u: Unit, rung: Rung, spell: SpellI
   switch (spell) {
     case 'blast': {
       u.attacked = true;
-      const c = check(rng, reachModifier(u) + weight, defenceOf(state, target, u, true, true));
+      const c = check(rng, reachModifier(u) + (u.heartened ? HEART_BONUS : 0) + weight, defenceOf(state, target, u, true, true));
       log(state, u, `${u.name} blasts ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       applyWounds(state, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, `${u.name}'s magic`);
       break;
@@ -806,7 +856,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
     case 'shoot': {
       const band = rung.shoot!.band;
       if (action.target && action.target.includes('|')) {
-        const e = crewedArtillery(u);
+        const e = crewedArtillery(state, u);
         if (!e) { log(state, u, `${u.name} has nothing that can batter a wall from here.`); break; }
         if (wallRank(state, u, action.target) > band) { log(state, u, `${u.name}'s shot falls short of the wall.`); break; }
         e.fired = true;
@@ -821,7 +871,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
     }
     case 'fight': {
       if (action.target && action.target.includes('|')) {
-        const ram = crewedRam(u);
+        const ram = crewedRam(state, u);
         if (ram) ram.fired = true;
         u.attacked = true;
         const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + (ram ? 2 : 0) + weight;
@@ -863,16 +913,20 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
       if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a rally gone wrong');
 
       // Scope is the rung's own gift, earned by reaching it and independent of the check
-      // above — the push dial buys this, the roll dial buys the amount above.
-      if (eff.scope === 'adjacent' && action.target) {
-        const ally = unit(state, action.target);
-        if (dist(state, ally.square, u.square) === 1) clearDisorder(state, ally, 1, `${u.name}'s example`);
-      } else if (eff.scope === 'nearby') {
+      // above — the push dial buys this, the roll dial buys the amount above. What an ally
+      // gets is heart at every rung, and a point of disorder cleared once the clearing scope
+      // reaches it too.
+      const lift = (a: Unit) => {
+        if (eff.scope !== 'self') clearDisorder(state, a, 1, `${u.name}'s example`);
+        hearten(state, u, a);
+      };
+      if (eff.heart === 'nearby') {
         for (const a of state.units) {
-          if (a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) <= 2) {
-            clearDisorder(state, a, 1, `${u.name}'s example`);
-          }
+          if (a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) <= 2) lift(a);
         }
+      } else if (action.target) {
+        const ally = unit(state, action.target);
+        if (dist(state, ally.square, u.square) === 1) lift(ally);
       }
       break;
     }
@@ -881,6 +935,10 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
       break;
   }
 }
+
+const alliesWithin = (state: BattleState, u: Unit, reach: number) => state.units.filter(
+  (a) => a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) <= reach,
+);
 
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */
 export function activation(state: BattleState, unitId?: string): Activation | null {
@@ -916,6 +974,7 @@ function finish(state: BattleState, u: Unit) {
   u.feet = 0;
   u.rooted = Math.max(0, u.rooted - 1);
   u.blessed = false;
+  u.heartened = false;
   u.compelled = false;
   state.activated.push(u.id);
   state.lastSide = u.side;
@@ -938,6 +997,7 @@ export function endActivation(input: BattleState, unitId?: string): BattleState 
   if (!u) throw new Error('no unit is activating');
   if (unitId && u.id !== unitId) throw new Error(`${unitId} is not activating`);
   finish(state, u);
+  refreshEmplacements(state);
   return state;
 }
 
@@ -1026,10 +1086,10 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   if (u.attacked) throw new Error(`${u.name} has already attacked this activation`);
   const option = approach(state, u, foe, moveReach(state, u));
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
-  const wanted = action.rung ?? gradeOf(u, 'fight');
+  const wanted = action.rung ?? gradeOf(state, u, 'fight');
   const roll = Math.max(0, Math.trunc(action.spend?.roll ?? 0));
   const push = Math.max(0, Math.trunc(action.spend?.push ?? 0));
-  if (push && wanted <= gradeOf(u, 'fight')) throw new Error(`${rungOf('fight', wanted).label} needs no push check`);
+  if (push && wanted <= gradeOf(state, u, 'fight')) throw new Error(`${rungOf('fight', wanted).label} needs no push check`);
   const cost = option.actions + 1 + roll + push;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
   spendMovement(u, option);
@@ -1086,6 +1146,7 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
           : doRung(state, rng, u, action);
   u.actions -= cost;
   if (u.actions <= 0 || u.status !== 'active') finish(state, u);
+  refreshEmplacements(state);
   return state;
 }
 
@@ -1103,6 +1164,8 @@ function endRound(state: BattleState) {
     }
   }
   for (const u of state.units) for (const e of u.engines) e.fired = false;
+  for (const e of state.engines) e.fired = false;
+  seizeEmplacements(state);
   const a = standing(state, 'attacker').length;
   const d = standing(state, 'defender').length;
   if (a === 0 || d === 0) {
@@ -1126,6 +1189,23 @@ function endRound(state: BattleState) {
   state.begun = false;
   state.pending = nextSide(state) ?? state.pending;
   log(state, null, `Round ${state.round} begins.`);
+}
+
+/**
+ * An emplacement left with only the enemy beside it changes hands at the end of the round.
+ * A friendly still standing by holds it, however outnumbered — the engine is taken by
+ * standing on it, not by winning a fight over it.
+ */
+function seizeEmplacements(state: BattleState) {
+  for (const e of state.engines) {
+    if (crewOf(state, e)) continue;
+    const captor = state.units.find((c) => c.side !== e.side && isStanding(c) && dist(state, c.square, e.square) <= 1);
+    if (!captor) continue;
+    e.side = captor.side;
+    e.status = 'crewed';
+    e.fired = true;
+    log(state, captor, `${captor.name} takes the ${e.name} on ${notation(e.square)}.`);
+  }
 }
 
 function captureEngines(state: BattleState) {

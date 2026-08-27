@@ -213,3 +213,368 @@ Judgment calls:
   since rows 1 and 9 start three files in. Worth revisiting if it reads as ragged.
 - **`public/rules.html` still draws an 8 × 8 board** in its SVG diagram. The prose numbers are
   updated; the diagram is not, and redrawing it is its own job.
+
+## Wave 6 notes — the props and the tray
+
+- **A drag onto a creature is an attack, whether or not it has to close.** `chargeTargets`
+  returns nothing while a unit is engaged — `moveReach` is empty in contact — so before this
+  a drag onto the enemy you were already fighting parked no rows and did *nothing at all*.
+  `onBoardDrop` now falls through to that piece's own ladder, which is the Fight rungs in
+  contact and the Shoot rungs at range. Mark hit this and reported it as "if I drag onto a
+  creature it'll trigger the attack action".
+- The tray is status first. Every prop is lit or dim off `availableActions`, and Charge dims
+  the moment a unit is in contact — which is the same instant Fight appears beside it.
+- **A prop lights what it can touch; where that is one thing, it opens there at once.** Guard
+  and a self-Rally name no target, so their cell list is the unit's own piece and one click
+  still reaches the ladder — the tray never costs a click that the board did not.
+- Charge is a prop with no `ActionOffer` behind it. Charging is the drag of the piece itself,
+  so `Prop.offer` is null and `applyProp` parks the same `pending` a drop would.
+- Move has no prop, and should not get one. You never pick up a "move tool" in chess; you pick
+  up the piece. The five props are exactly the verbs that are not Move, which is a good sign
+  the set Mark drew is the right set.
+- **Cast has no prop.** Its tile falls back to a lettered disc. Only spellcasters ever see it.
+- **The rules' words won, not the filenames'.** The props ship as `attack.webp` and
+  `block.webp`; the tray, the log and `public/rules.html` all say Fight and Guard. Two names
+  for one act is worse than an unfamiliar one — but Mark said "attack" and "block" twice
+  unprompted, so this is the first thing to revisit if the vocabulary feels wrong.
+- The popup's verb heading always renders, even for a lone verb. The rung rows used to read
+  `Fight · Strike`; now they read `Strike`, so without the heading nothing in the popup named
+  the verb at all.
+
+### A wash that clobbered another wash
+
+`PixiBoard`'s highlight effect built its map with `byStyle.set(g.style, g.cells)`, so the
+*last* group of a given style won and the earlier one vanished. An armed prop and the aim
+popup both wash in `attack`, and the popup's empty group wiped the prop's lit targets — the
+tray armed correctly and lit nothing. Groups union now. The same bug sat latent in
+`withdrawCells`, which shares `move` with the 1-action band; it never showed because a unit in
+contact has no move band to clobber.
+
+### Verification
+
+`npx vite build` and `npx vitest run` green. Driven live in Chrome: the tray under the board
+with Charge / Shoot / Guard, Guard opening its ladder in one click, Shoot arming and washing
+both enemies red then opening Barrage alone at five ranks, Charge arming and parking the full
+route arrow with its Strike / Press / Overrun chips, and — after that charge resolved — the
+Kobolds dragged onto the Line Infantry they were now in contact with, which opened Fight.
+Dragging the Rally prop out of the tray onto a piece opened the Rally ladder.
+`docs/plans/tactile-board-shots/wave6-props.jpg`.
+
+## Wave 7 notes — the ring, and the props on the pieces
+
+- **The tray is gone.** It had one job the ring cannot do — glanceable status — and the pieces
+  took that job over instead. `Prop`, `takeProp` and `applyProp` all survived the move; only
+  the row of buttons and the drag-a-prop-from-the-tray gesture went with it.
+- **Click, not press-and-hold.** `Interaction` already escalates a press into a drag the moment
+  the pointer moves and emits `token` when it does not, so click-the-piece and drag-the-piece
+  are two clean signals with nothing between them. A hold timer would have been a third
+  concept competing for the same input, and it would have made the fastest verb in the game
+  wait for a timeout. A second click on the same piece closes the ring.
+- **`Token.prop`** carries one icon and two meanings: the verb being aimed at that piece right
+  now, and the shield a guarding unit keeps until it acts again. The aim wins where both apply,
+  since a pending choice is the more urgent of the two. Bottom right, clear of the flag
+  (top right), the engine chip (top left) and the pip rows (bottom left).
+- The hub in the ring's middle names whatever the pointer is over, so the ring reads on first
+  use without permanent labels crowding five props into a small circle. It covers the piece
+  while a slice is hovered; left as is, since it appears only on hover.
+- Slices bloom with a 28ms stagger, and the whole animation drops under
+  `prefers-reduced-motion`.
+- The board wears a crosshair while a verb is armed. The lit target cells are still the real
+  signal — the cursor says *you are aiming*, the wash says *at what*, and the second is the
+  one that teaches range.
+- **Cast still breaks the ring.** Five slices is the sweet spot and a caster has Shoot, Guard,
+  Rally plus Blast, Ward, Mend, Bless and Compel. Every spell now shows the one `cast` prop and
+  is told apart only by its label, so a caster would ring nine near-identical slices. One Cast
+  slice opening a second ring is the usual answer, and it is still open.
+
+### Verification
+
+`npx vite build`, `npx svelte-check` and `npx vitest run` green. Driven live in Chrome: the
+ring blooming on the Line Infantry with Charge, Shoot and Guard; Guard opening its ladder in
+one click and the shield landing on the piece before the Brace was even confirmed, then
+staying there once it was; the ring reopening with Charge dim once two actions could no longer
+buy a three-action charge; Shoot arming, washing both enemies red, and the archery butt landing
+on the Troll Marauders as its ladder opened; the hub naming "Shoot · Long band" on hover.
+`docs/plans/tactile-board-shots/wave7-ring.jpg`.
+
+
+## Wave 8 notes — Withdraw and Cast take their props
+
+Mark drew `withdraw.webp` (a boot kicking up dirt) and `cast.webp`, so both got slices.
+
+- **Withdraw needs no Move counterpart after all.** `withdrawOffer` already returns null unless
+  a unit is engaged or routed, so the slice appears exactly when it applies and the
+  *Move when free, Withdraw when engaged* pairing solves a problem that does not exist. Move
+  still has no slice; the drag says it better.
+- A withdrawal is a destination, not a target, so its slice lights ground and washes in `move`
+  rather than `attack`, and applying it parks the same `pending` a drag to that cell would.
+- **The Withdraw panel card is gone.** Its escapes, the four degrees, both dials and the totals
+  all moved into that popup, so the panel is now stats, the Move bands and the log. `chosen`
+  and `dialSum` went with it — the card's `<select>` and its per-dial running total were their
+  only readers.
+
+### The withdrawal that silently did nothing
+
+Picking a far cell off the Withdraw wash and confirming did nothing at all: no log line, no
+move, no error on screen. `doWithdrawAction` throws when the destination is further than the
+committed distance carries you (`battle.ts:1001`), and `commit()` clears `pending` *before*
+performing, so the throw surfaced as a popup that closed and a board that did not change.
+
+The engine is right and the UI was wrong. `withdrawOffer.targets` is the reach at *full*
+commitment — every cell two spare actions of Stride could buy — so a wash built from it offers
+ground the default allocation of zero cannot reach. `withdrawFloor` now finds the fewest
+committed actions that carry the unit to the chosen cell, and `withdrawSpend` floors the
+distance dial there, so the popup quotes the whole price of the destination the way a Move row
+quotes the whole route. The dial cannot be turned below the floor, and it names what the cell
+needs beside it.
+
+Distance takes its share of the budget before the roll dial, so a run already chosen is never
+quietly shortened; `DIALS` puts `roll` first, and reading the allocation in that order would
+otherwise let the escape bonus eat the ground under a parked withdrawal.
+
+No new engine test: `battle.test.ts`'s "buys distance with the other dial, and refuses a cell
+further than it bought" already pins the rule, and it is the test that named the bug.
+
+### Verification
+
+`npx vite build`, `npx svelte-check` and `npx vitest run` green. Driven live in Chrome up to
+the point the bug appeared: the ring on an engaged unit showing Charge dim, Withdraw, Fight and
+Guard; Withdraw arming and washing the escape ground; the popup at b4 carrying the Escape check
+against Line Infantry (DC 21 · d20+12), the no-retreat tag, the four degrees, both dials and
+the totals. The floor fix landed after that run and is verified by build and typecheck only —
+Mark drives the board from here.
+
+## Wave 7b — Six slices, always
+
+### The ring was showing three verbs, and the player had lost the other three
+
+Rally, Cast and Withdraw were absent because `availableActions` never offered them: Rally is
+pushed only when `u.disorder > 0` (`battle.ts:680`), a Cast offer exists once per entry in
+`u.spells` (`battle.ts:684`), and `withdrawOffer` returns null unless something holds the unit
+(`battle.ts:984`). The engine is right — those verbs are situational — but `props` built the
+ring out of whatever came back, so a slice that went away rotated every other slice onto a new
+angle. A ring learned by direction cannot afford that.
+
+`props` now returns exactly six, always in this order: **Fight/Charge, Shoot, Cast, Withdraw,
+Rally, Guard** — clockwise from twelve, offence on the right, support and retreat on the left.
+A verb the situation forbids dims in place and says why (`UNAVAILABLE`, per slot), rather than
+vanishing.
+
+Two merges made six out of seven verbs:
+
+- **Charge shares the melee slice with Fight.** One direction means "hit them"; whether it
+  costs an approach is the board's business, not the menu's. The slice wears the charge prop
+  and reads "Charge" out of contact, the attack prop and the fight offer's label in it. Cells
+  are the union, and `applyProp` reads a charge off the cell rather than off the slice, so an
+  attacker beside a wall can still fight the wall while a charge is on offer elsewhere.
+- **A caster's whole book sits behind one Cast slice.** Five spells were five slices. The aim
+  popup already groups by verb across the top, so arming Cast lights every cell any spell
+  reaches and the spell is chosen on the target.
+
+### Icons only, and the name on the pointer
+
+Every slice carried a permanent label under its icon, and the hub in the middle repeated the
+label plus its note on hover — six labelled discs and a caption box for a menu meant to be
+read by direction. The hub is gone. A slice is an icon disc; hovering reveals its name below
+it, absolutely positioned so nothing in the ring moves. The note stays on `title`.
+
+Dim slices use `aria-disabled`, not `disabled`: a disabled button swallows pointer events in
+most browsers, and hovering a dim slice is exactly how the player learns why it is out.
+
+### Verification
+
+`npx vite build` and `npx svelte-check` green. Not yet driven in the browser.
+
+### The ring owns the board while it is open
+
+Touching a piece opened the ring, but the board underneath stayed live: cells lit under the
+pointer, tokens took clicks, and a drag through the ring moved the unit. A menu that the board
+argues with is not a menu.
+
+`Interaction` grew a `frozen` flag (`Interaction.ts:setFrozen`), plumbed through `BoardView`
+and `PixiBoard` as `frozen={radial !== null}`. Frozen, it answers no pointer, key, wheel or
+double-click, and clears the hover on the way in — the pointer sits still over whatever was
+just clicked, and no later move arrives to clear it because the events stop at the freeze.
+
+A press anywhere off the ring closes it and does nothing else (`onWindowPointerDown`). The
+canvas ignored that press, so its release finds no gesture to resolve and emits nothing: the
+click that dismisses the ring never also picks a cell.
+
+### Every step back out, one click at a time
+
+The chain the ring starts is popup → wash → ring → nothing, and nothing is committed until the
+last click, so `stepBack` walks it in reverse. Escape takes one step. So does a click that means
+nothing where it landed: a cell the armed verb cannot touch, a token that is not a target, a
+click off a parked destination. A verb picked by mistake now costs one click to undo instead of
+dropping the player back to bare board.
+
+The arm outlives the popup it opened — `armed` survives, and `arming` is the narrower state
+where the board is actually waiting to be touched. Cancelling an aim lands back on that verb's
+wash rather than on nothing. A performed action clears the arm outright.
+
+### Verification
+
+`npx vite build`, `npx svelte-check` and `npx vitest run` (155) green. Not yet driven in the
+browser.
+
+### The piece walks the route it was given
+
+A move tweened straight from the old cell to the new one, cutting across whatever the drag had
+just traced. `Token` now carries a one-shot route (`setRoute`, plumbed through `TokenLayer` and
+`BoardView`), and `Battle.commit` hands it the committed row's own `path` — the same cells the
+router produced and the drag drew — just before the action lands.
+
+Judgment calls: the walk holds a steady pace per cell (150 ms, capped at 900) rather than
+stretching one tween over the whole distance, and eases in and out over the route as a whole
+instead of per step, so a long charge reads as travel rather than as a stutter. The route is
+trimmed at wherever the piece actually ends up rather than required to end at its last cell, so
+a push that fails walks the part of the route it covered and stops at its fallback. A redraw
+that does not move the piece no longer cuts a running tween short, and leaves a queued route
+queued.
+
+`npx vite build` and `npx svelte-check` green. `npx vitest run` 153/155 — the two failures are
+the uncommitted Rally work (`rally` now offered with no disorder to clear), untouched here.
+Not yet driven in the browser.
+
+## Rally as the support verb
+
+Rally was invisible unless a unit was already disordered, and a troop with a poor ladder had
+nothing to do but attack badly. Both problems have the same fix: **an order lifts the troop
+beside you, whether or not you have anything to clear.**
+
+`RallyEffect` grew a second scope, `heart`, alongside the one that clears disorder:
+
+| Rung | Clears | Hearts |
+| --- | --- | --- |
+| Steady | this unit | one adjacent ally |
+| Rally | this unit, one adjacent ally | that ally |
+| Inspire | this unit, every friendly within 2 | all of them |
+
+`heart` reaches one step further out than `scope` at the bottom of the ladder on purpose. A
+levy has rally grade 1, so under the old scoping it could not touch an ally at all without
+reaching for rung 2 — a check it usually fails, which would have made the supporting role a
+coin flip. At rung 1 the gift is certain, and grade still buys the reach and the clearing.
+
+**What heart is worth.** `heartened` is a per-activation mark like `warded` and `blessed`:
++2 (`HEART_BONUS = ACTION_BONUS`) on the unit's attacks — strike, shot and blast — cleared in
+`finish` at the end of its next activation. It is one action's weight, lent rather than spent,
+which is exactly the trade: a weak troop gives up its own poor attack to put an action's worth
+behind a strong one's good attack. It sits clear of Bless, which buys a free rung instead, and
+it complements Guard's shieldwall — Guard shields the neighbours, Rally sharpens them.
+
+**Availability.** `availableActions` pushes `rally` unconditionally now. `offerFor` blocks the
+whole offer with "no disorder to clear, and nobody near to lift" when the unit is in good order
+and alone, so the ring's Rally slice dims with a reason instead of vanishing. Rally's adjacent
+targets no longer filter on `a.disorder > 0` — a steady ally is still worth naming.
+
+### Judgment calls
+
+- **Heart weighs attacks only**, not reach checks, rally checks or escapes. Putting it in
+  `reachModifier` would have spread it across half the engine for one sentence of rules text;
+  "+2 on its next attack" is what a player can hold in their head.
+- **It does not stack.** `hearten` returns early on a unit that already has it, so two Steadys
+  into the same troop is a wasted action, not +4.
+- **The board does not show it yet** — only the status line under the unit does
+  (`heartened +2`). A pennant on the token is the right home, next to the guard shield, but
+  `Token.ts` was under edit; left for the next pass.
+- `docs/design.md` and `public/rules.html` still describe pre-ladder Rally (shaken −2 / −1) and
+  were already stale before this change. Not touched: the ladders in `ladders.ts` are the
+  living rules, and half-updating one row of an outdated table would read as if it were current.
+
+### Verification
+
+`npx vitest run` (156, one new), `npx vite build` green. `npx svelte-check` reports one error in
+`App.svelte:33` (`STAGE_SIDE[game.stage]` typed `never`) from an edit of yours in flight — no
+file of this change is involved.
+
+## A shell that fits the screen, two deployment stages, and emplaced engines
+
+### The buttons were below the fold
+
+Every setup stage was one long scrolling document with Back/Next at the bottom, so on a laptop
+the board pushed them off screen and the player could not tell the stage had a way forward.
+The shell is now a fixed-height grid — `body` never scrolls, `.wrap` is `100dvh` over rows
+masthead / rail / content, and each stage scrolls its own pane (`.stage-scroll`). Back and the
+forward button live in the stage rail, pushed right of the step chips; the forward button reads
+its label, its enabled state and its action off `forward()` in the store, so a stage no longer
+carries navigation of its own. The masthead lost about 90px (h1 to 1.5rem, tagline inline).
+Boards take the space that bought: `BoardSetup`, `Paint` and `Place` all pass `fill` and sit in
+a `flex:1` pane instead of the old capped 40rem square.
+
+### Place split into Attackers and Defenders
+
+`Stage` is now `board | paint | attackers | defenders | battle`, and `Place.svelte` takes a
+`side` prop: it shows one side's roster, lights only that side's deployment ranks, and only its
+own tokens answer a click. Both sides' pieces draw on the board throughout, so the defender
+deploys against what the attacker actually did.
+
+### Emplaced engines
+
+`EngineState` gained `side` and `emplaced`; `BattleState` gained `engines`, which holds the
+emplaced ones only (an attached engine still lives on its unit's `engines`). An emplacement has
+no owner: `crewOf` finds the standing friendly in or beside its square, `enginesOf` unions that
+with the unit's own, and `refreshEmplacements` recomputes crewed/abandoned after every action.
+`seizeEmplacements` runs in `endRound`, before the rout check, and flips `side` when only the
+enemy stands by.
+
+### Judgment calls
+
+- **Both deployment kinds, not one.** The picker offers "on its own square" or "with <unit>",
+  so the two rules in `design.md` both stay reachable. A fixed ram is nearly useless — it can
+  only ever batter a wall on an edge of its deployment square — which is exactly why attaching
+  had to survive rather than be replaced.
+- **Crewing is adjacency, not an action.** Consistent with "siege engines are stats, not verbs"
+  from the battle-mechanics notes: no Crew verb, no ownership, nothing to forget to do.
+- **One crew, first in deployment order**, where two friendlies both stand beside an
+  emplacement. Arbitrary but deterministic; the alternative is letting the player pick, which
+  is a new decision per round for no interesting choice.
+- **A captured engine cannot fire the round it is taken** (`seizeEmplacements` sets `fired`
+  after the round's reset). Taking a loaded piece and shooting with it immediately felt like it
+  skipped a beat.
+- **Capture ignores numbers.** One friendly beside the engine holds it against any number of
+  enemies. Contesting it by count would need a rule for ties and would make the piece a
+  second combat system.
+- **`status` on an emplacement is derived, never authored.** Nothing sets crewed/abandoned by
+  hand; a test that moves a unit directly has to run an action to see the consequence
+  (`refresh` in `battle.test.ts`).
+- **No board treatment for an abandoned engine yet.** `TokenRing`'s `flash` animates for as
+  long as it is set, so it is wrong for a standing state; an emplacement draws with no ring
+  whoever holds it. A dimmed or greyed engine token is the right answer and wants `Token.ts`.
+- **Save key stayed `battlefield.v3`.** The change is additive — `emplacements` defaults to `[]`
+  and a stored `'place'` stage maps to `'attackers'` — so a board in progress survives.
+
+### A stale expectation in the tree, not this change
+
+`battle.test.ts`'s two menu-filter cases expected Rally to appear only with disorder, which the
+uncommitted Rally work above had already made unconditional. Updated to match the comment in
+`availableActions`; the rule itself was not touched.
+
+### Verification
+
+`npx vitest run` (160, four new on the emplacement rule), `npx vite build` and
+`npx svelte-check` all green. Not yet run in a browser.
+
+### Contact tells you it is holding you
+
+Dragging an engaged unit did nothing and looked broken. `moveReach` and `pushReach` both return
+empty in contact (`battle.ts:444`, `:476`), so `rowsAt` found no move or push reading and the
+token snapped back with no explanation; the Move card meanwhile showed four bands all reading
+"0 cells reachable". The rule stands — the Move card now names the holders and points at
+Withdraw instead of rendering the empty bands.
+
+Judgment call: the notice sits in the Move card rather than on the board, because that is where
+the player already looks for reach, and the Withdraw destinations are still just a drag away.
+
+### The lit piece glows from under, in its side's colour
+
+The acting/held piece traded its stroked ring for a filled disc drawn under the miniature —
+red for the attacker, blue for the defender — swelling 6% either way of the footprint while it
+fades, both off the same sine so it breathes rather than blinks. `flash` keeps its stroke over
+the top, so a free strike still reads on an already-lit piece.
+
+Red now means attacker and blue defender everywhere — the flags, the board theme, the sidebar's
+`--att`/`--def`, and `rules.html`'s diagrams all swapped, so the glow reads its colour straight
+off `theme.attacker`/`theme.defender` rather than carrying a pair of its own.
+
+Judgment call: `selected` (placement) got the same treatment as `active`, since both mean "the
+piece in hand".

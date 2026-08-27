@@ -22,6 +22,8 @@
     draggable?: string | null;
     /** Full-bleed: fills its container instead of sitting in a capped, square-ish column. */
     fill?: boolean;
+    /** The board answers nothing while something else is the menu — see `BoardView.setFrozen`. */
+    frozen?: boolean;
     onhover?: (event: BoardEventOf<'hover'>) => void;
     oncell?: (event: BoardEventOf<'cell'>) => void;
     onedge?: (event: BoardEventOf<'edge'>) => void;
@@ -34,7 +36,7 @@
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], selected = null, draggable = null, fill = false,
+    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], selected = null, draggable = null, fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
   }: Props = $props();
 
@@ -44,6 +46,7 @@
 
   export function centerOn(cell: string) { view?.centerOn(cell); }
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
+  export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
 
   onMount(() => {
     view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });
@@ -71,12 +74,16 @@
   $effect(() => {
     if (!view) return;
     const byStyle = new Map(HIGHLIGHT_STYLES.map((s) => [s, [] as string[]]));
-    for (const g of highlights) byStyle.set(g.style, g.cells);
+    // Groups union rather than replace: two callers may light the same style at once — an
+    // armed action prop and an open popup both wash in `attack` — and the later group used to
+    // wipe the earlier one's cells.
+    for (const g of highlights) byStyle.get(g.style)!.push(...g.cells);
     for (const [style, cells] of byStyle) view.setHighlight(cells, style);
   });
   $effect(() => { view?.setDragPath(dragPath); });
   $effect(() => { view?.setSelected(selected); });
   $effect(() => { view?.setDraggable(draggable); });
+  $effect(() => { view?.setFrozen(frozen); });
 </script>
 
 <div class="pixiboard" class:fill bind:this={container}>

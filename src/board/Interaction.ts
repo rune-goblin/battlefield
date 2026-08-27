@@ -77,6 +77,8 @@ export class Interaction {
   private origin: Point = { x: 0, y: 0 };
   private lastScreen: Point = { x: 0, y: 0 };
   private spaceDown = false;
+  /** A DOM menu owns the board: no hover, no hit, no pan, no zoom until it closes. */
+  private frozen = false;
   private pointerInside = false;
   private hoverCell: string | null = null;
   private hoverEdge: string | null = null;
@@ -107,6 +109,19 @@ export class Interaction {
 
   setDraggable(id: string | null): void {
     this.draggableId = id;
+  }
+
+  /** Freeze the board while something else is the menu. The hover is cleared on the way in,
+   * because the pointer sits still over whatever was clicked and no later move will arrive to
+   * clear it — the events stop at the overlay. */
+  setFrozen(frozen: boolean): void {
+    if (frozen === this.frozen) return;
+    this.frozen = frozen;
+    if (frozen) {
+      this.cancel();
+      this.setHover(null, null);
+    }
+    this.applyCursor();
   }
 
   setBrush(brush: Brush | null): void {
@@ -166,6 +181,7 @@ export class Interaction {
   private onContextMenu = (e: Event): void => { e.preventDefault(); };
 
   private onPointerDown = (e: PointerEvent): void => {
+    if (this.frozen) return;
     this.o.canvas.focus({ preventScroll: true });
     const screen = this.screenOf(e);
     this.pointerInside = true;
@@ -201,6 +217,7 @@ export class Interaction {
   };
 
   private onPointerMove = (e: PointerEvent): void => {
+    if (this.frozen) return;
     const screen = this.screenOf(e);
     this.pointerInside = true;
     const moved = Math.hypot(screen.x - this.origin.x, screen.y - this.origin.y);
@@ -230,6 +247,7 @@ export class Interaction {
   };
 
   private onPointerUp = (e: PointerEvent): void => {
+    if (this.frozen) return;
     const screen = this.screenOf(e);
     const gesture = this.gesture;
     this.gesture = { kind: 'none' };
@@ -274,6 +292,7 @@ export class Interaction {
   };
 
   private onWheel = (e: WheelEvent): void => {
+    if (this.frozen) return;
     e.preventDefault();
     const viewport = this.o.viewport;
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.scale.x * Math.exp(-e.deltaY * ZOOM_STEP)));
@@ -290,6 +309,7 @@ export class Interaction {
   };
 
   private onDoubleClick = (e: MouseEvent): void => {
+    if (this.frozen) return;
     // "Empty space" means nothing claims the click: no token, and no brush either, since a
     // paint brush makes every cell a target and a refit mid-stroke would fight the painter.
     if (this.brush || this.hitAt(this.screenOf(e))?.kind === 'token') return;
@@ -297,6 +317,7 @@ export class Interaction {
   };
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    if (this.frozen) return;
     if (e.key === ' ') {
       e.preventDefault();
       this.spaceDown = true;
