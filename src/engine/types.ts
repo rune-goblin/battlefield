@@ -121,6 +121,13 @@ export type TargetKind = 'cell' | 'unit' | 'wall';
 
 export interface RungTarget { kind: TargetKind; id: string; label: string }
 
+/** One board object a rung can be aimed at: a cell, a piece, or a wall. */
+export interface TargetRef { kind: TargetKind; id: string }
+
+/** What one offer can do to a given target: the offer, and only those of its rungs that both
+ * reach that target and are legal right now. See `offersAt`. */
+export interface TargetOffer { offer: ActionOffer; rungs: RungOption[] }
+
 export interface RungOption {
   rung: RungId;
   index: Grade;

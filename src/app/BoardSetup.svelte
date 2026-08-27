@@ -35,7 +35,7 @@
     <button class="primary" onclick={generate}>Generate</button>
     <button onclick={rerollSeed}>Reroll seed</button>
   </div>
-  <p class="muted">Rank 1 is the attacker's edge, rank 8 the defender's. The seed reproduces the board; reroll until it looks like the hex.</p>
+  <p class="muted">Rank 1 is the attacker's edge, rank 9 the defender's. The seed reproduces the board; reroll until it looks like the hex.</p>
 </div>
 
 {#if game.setup.board}

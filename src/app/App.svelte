@@ -12,7 +12,7 @@
 
 <div class="wrap">
   <div class="topbar">
-    <div><h1>Battlefield</h1><div class="muted">Eight by eight, three actions, four wounds.</div></div>
+    <div><h1>Battlefield</h1><div class="muted">Sixty-one hexes, three actions, four wounds.</div></div>
     <nav><a href="rules.html" target="_blank" rel="noopener">Rules</a><a href="https://github.com/rune-goblin/battlefield" target="_blank" rel="noopener">Source</a></nav>
   </div>
   {#if game.stage !== 'battle'}

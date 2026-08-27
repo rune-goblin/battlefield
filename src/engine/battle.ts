@@ -16,6 +16,7 @@ import {
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
   type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PushAction,
   type PushReach, type Range, type RungAction, type RungOption, type RungTarget, type Side,
+  type TargetOffer, type TargetRef,
   type Dial, type Spend, type SpendDials, type Unit, type WithdrawAction, type WithdrawOffer,
 } from './types.js';
 
@@ -597,11 +598,19 @@ const gradeOf = (u: Unit, type: LadderType): Grade => (type === 'shoot' ? shootG
 const isAttack = (type: LadderType, spell: SpellId | null) =>
   type === 'fight' || type === 'shoot' || (type === 'cast' && spell === 'blast');
 
+/** Whether a unit takes this rung outright, reaches for it, or cannot take it at all. A
+ * charge carries a Fight rung of its own, with no `ActionOffer` around it, so the rule lives
+ * here rather than inside `rungOption`. */
+export function rungAccess(u: Unit, type: LadderType, index: Grade): RungOption['access'] {
+  const granted = gradeOf(u, type);
+  if (index <= granted) return 'free';
+  if (index > granted + 1) return 'locked';
+  return u.compelled ? 'locked' : u.blessed ? 'free' : 'reach';
+}
+
 function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: SpellId | null, granted: Grade, blocked: string | null): RungOption {
   const rung = rungOf(type, index);
-  const access: RungOption['access'] = index <= granted ? 'free'
-    : index === granted + 1 ? (u.compelled ? 'locked' : u.blessed ? 'free' : 'reach')
-      : 'locked';
+  const access = rungAccess(u, type, index);
   const { needsTarget, targets } = targetsFor(state, u, rung, spell);
   let reason: string | null = blocked ?? (access === 'locked'
     ? (u.compelled && index === granted + 1 ? 'compelled' : 'above your grade')
@@ -946,6 +955,25 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
   const reached = reachFor(state, rng, u, offer.type, action.rung, blessed, spend.push * ACTION_BONUS);
   perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend);
   return offer.cost + spent(spend);
+}
+
+/**
+ * Every rung that can act on one board object, grouped by its offer — the one answer to
+ * "what can this unit do to *that*", and the only thing the popups read. A rung that names no
+ * target of its own (Guard, and Rally's own unit) belongs to the acting unit's own piece,
+ * which is where its popup opens.
+ */
+export function offersAt(state: BattleState, target: TargetRef, unitId?: string): TargetOffer[] {
+  const u = unitId ? state.units.find((x) => x.id === unitId) : activeUnit(state);
+  if (!u) return [];
+  const own = target.kind === 'unit' && target.id === u.id;
+  const out: TargetOffer[] = [];
+  for (const offer of availableActions(state, u.id)) {
+    const rungs = offer.rungs.filter((o) => o.legal
+      && (o.targets.some((t) => t.kind === target.kind && t.id === target.id) || (own && !o.needsTarget)));
+    if (rungs.length) out.push({ offer, rungs });
+  }
+  return out;
 }
 
 /** Withdraw is offered in contact, and to a routed unit whichever way it faces. */

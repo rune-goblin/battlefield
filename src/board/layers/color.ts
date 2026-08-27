@@ -7,3 +7,12 @@ export function shade(color: number, factor: number): number {
   const b = clamp((color & 0xff) * factor);
   return (r << 16) | (g << 8) | b;
 }
+
+/** Blend `t` of `b` into `a`, both 0xRRGGBB. Unlike `shade`, this can lighten. */
+export function mix(a: number, b: number, t: number): number {
+  const lerp = (x: number, y: number) => Math.round(x + (y - x) * t);
+  const r = lerp((a >> 16) & 0xff, (b >> 16) & 0xff);
+  const g = lerp((a >> 8) & 0xff, (b >> 8) & 0xff);
+  const bl = lerp(a & 0xff, b & 0xff);
+  return (r << 16) | (g << 8) | bl;
+}

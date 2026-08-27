@@ -1,4 +1,4 @@
-import { allSquares, edgeKey, gridFor, inBounds, notation, parse, SIZE, FILES, type Grid, type GridKind, type Square } from './grid.js';
+import { edgeKey, gridFor, notation, parse, SIZE, FILES, type Grid, type GridKind, type Square } from './grid.js';
 import { seededRandom, type Random } from './rng.js';
 
 export * from './grid.js';
@@ -66,12 +66,15 @@ const DENSITY: Record<HexTerrain, Density> = {
 };
 
 export const DEPLOY_DEPTH = 3;
-const DEPLOY_RANKS = new Set([0, 1, 2, 5, 6, 7]);
 
 export function deployRanks(side: 'attacker' | 'defender', ambush = false): number[] {
   const depth = DEPLOY_DEPTH + (ambush ? 1 : 0);
   return Array.from({ length: depth }, (_, i) => side === 'attacker' ? i : SIZE - 1 - i);
 }
+
+const DEPLOY_RANKS = new Set([...deployRanks('attacker'), ...deployRanks('defender')]);
+// Ranks neither side deploys on — where a river or a fought-over feature belongs.
+export const NEUTRAL_RANKS = Array.from({ length: SIZE }, (_, r) => r).filter(r => !DEPLOY_RANKS.has(r));
 
 function between(rnd: Random, [lo, hi]: [number, number]): number {
   return lo + Math.floor(rnd() * (hi - lo + 1));
@@ -87,7 +90,7 @@ function emptyBoard(spec: BoardSpec): Board {
 
 function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: number, allowed: (sq: Square) => boolean): void {
   const grid = gridOf(board);
-  const candidates = allSquares().filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
+  const candidates = grid.cells().filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
   if (!candidates.length) return;
   const patch: Square[] = [pick(rnd, candidates)];
   at(board, patch[0]).terrain = terrain;
@@ -101,16 +104,18 @@ function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: numb
 }
 
 function layRidge(board: Board, rnd: Random, high: boolean): void {
+  const grid = gridOf(board);
   const length = between(rnd, [5, 8]);
-  const rank = between(rnd, [2, 5]);
-  let sq: Square = { file: between(rnd, [0, 1]), rank };
+  const rank = between(rnd, [2, SIZE - 3]);
+  const west = grid.cells().filter(c => c.rank === rank).map(c => c.file).sort((a, b) => a - b);
+  let sq: Square = { file: west[0] + between(rnd, [0, 1]), rank };
   const ridge: Square[] = [];
-  while (ridge.length < length && inBounds(sq)) {
+  while (ridge.length < length && grid.inBounds(sq)) {
     if (at(board, sq).elevation === 0) ridge.push(sq);
     at(board, sq).elevation = 1;
     const drift = rnd();
     const step: Square = drift < 0.6 ? { file: sq.file + 1, rank: sq.rank }
-      : { file: sq.file, rank: Math.min(5, Math.max(2, sq.rank + (drift < 0.8 ? 1 : -1))) };
+      : { file: sq.file, rank: Math.min(SIZE - 3, Math.max(2, sq.rank + (drift < 0.8 ? 1 : -1))) };
     sq = step.file === sq.file && step.rank === sq.rank ? { file: sq.file + 1, rank: sq.rank } : step;
   }
   if (high && ridge.length >= 3) {
@@ -119,23 +124,31 @@ function layRidge(board: Board, rnd: Random, high: boolean): void {
   }
 }
 
-// A river crosses the attacker's path between the deployment zones, on ranks 4 and 5.
+// A river crosses the attacker's path on the neutral band between the deployment zones. On
+// the hexagon a flank file exists on only part of that band, so a cell the shape lacks falls
+// back to whichever band rank does hold that file — the river must reach both flanks.
 function layRiver(board: Board, rnd: Random): void {
-  const start = between(rnd, [3, 4]);
-  let rank = start;
+  const grid = gridOf(board);
+  const band = NEUTRAL_RANKS;
+  let rank = between(rnd, [band[0], band[band.length - 1]]);
   const course: Square[] = [];
+  const place = (file: number, r: number): Square => {
+    const wanted = { file, rank: r };
+    if (grid.inBounds(wanted)) return wanted;
+    return { file, rank: band.find(b => grid.inBounds({ file, rank: b })) ?? r };
+  };
   for (let file = 0; file < SIZE; file++) {
-    course.push({ file, rank });
+    course.push(place(file, rank));
     const drift = rnd();
     const next = drift < 0.25 ? rank - 1 : drift < 0.5 ? rank + 1 : rank;
-    if (next !== rank && next >= 3 && next <= 4 && file < SIZE - 1) {
-      course.push({ file, rank: next });
+    if (next !== rank && band.includes(next) && file < SIZE - 1) {
+      course.push(place(file, next));
       rank = next;
     }
   }
-  for (const sq of course) { at(board, sq).terrain = 'water'; at(board, sq).elevation = 0; }
+  for (const sq of course) if (grid.inBounds(sq)) { at(board, sq).terrain = 'water'; at(board, sq).elevation = 0; }
   const fords = between(rnd, [1, 2]);
-  const candidates = course.filter((sq, i) => {
+  const candidates = course.filter(sq => grid.inBounds(sq)).filter((sq, i) => {
     const prev = course[i - 1]; const next = course[i + 1];
     return (!prev || prev.rank === sq.rank) && (!next || next.rank === sq.rank);
   });
@@ -144,19 +157,27 @@ function layRiver(board: Board, rnd: Random): void {
   for (const n of chosen) at(board, parse(n)).terrain = 'shallows';
 }
 
+// The lake hugs one flank of the board, so each of its ranks starts at that rank's own
+// outermost cell rather than a fixed file — on the hexagon the flank is a diagonal.
 function layLake(board: Board, rnd: Random): void {
-  const side = pick(rnd, ['a', 'h'] as const);
+  const grid = gridOf(board);
+  const west = rnd() < 0.5;
   const size = between(rnd, [8, 12]);
   const rank0 = between(rnd, [2, 3]);
   const lake: Square[] = [];
-  const file0 = side === 'a' ? 0 : SIZE - 1;
-  const dir = side === 'a' ? 1 : -1;
+  const dir = west ? 1 : -1;
   for (let depth = 0; lake.length < size && depth < 3; depth++) {
     const height = Math.min(4 - depth, size - lake.length);
-    for (let r = 0; r < height; r++) lake.push({ file: file0 + dir * depth, rank: rank0 + r });
+    for (let r = 0; r < height; r++) {
+      const rank = rank0 + r;
+      const files = grid.cells().filter(c => c.rank === rank).map(c => c.file);
+      if (!files.length) continue;
+      lake.push({ file: (west ? Math.min(...files) : Math.max(...files)) + dir * depth, rank });
+    }
   }
-  for (const sq of lake) { at(board, sq).terrain = 'water'; at(board, sq).elevation = 0; }
-  const shore = lake.flatMap(sq => gridOf(board).neighbours(sq)).filter(sq => at(board, sq).terrain === 'open');
+  const wet = lake.filter(sq => grid.inBounds(sq));
+  for (const sq of wet) { at(board, sq).terrain = 'water'; at(board, sq).elevation = 0; }
+  const shore = wet.flatMap(sq => grid.neighbours(sq)).filter(sq => at(board, sq).terrain === 'open');
   const marsh = between(rnd, [1, 3]);
   for (let i = 0; i < marsh && shore.length; i++) at(board, pick(rnd, shore)).terrain = 'shallows';
 }
@@ -169,13 +190,19 @@ function layFort(board: Board, rnd: Random, tier: number): void {
   const budget = wallBudget(tier);
   const width = budget >= 7 ? 3 : 2;
   const depth = budget >= 5 ? 2 : 1;
-  const file0 = between(rnd, [1, SIZE - width - 1]);
+  const grid = gridOf(board);
+  // One file clear of the home rank's own ends, so the block keeps a flank neighbour on each
+  // side and the whole budget has somewhere to go.
+  const home = grid.cells().filter(c => c.rank === SIZE - 1).map(c => c.file).sort((a, b) => a - b);
+  const lo = home[0] + 1;
+  const file0 = between(rnd, [lo, Math.max(lo, home[home.length - 1] - width)]);
   const block: Square[] = [];
   for (let d = 0; d < depth; d++) for (let w = 0; w < width; w++) block.push({ file: file0 + w, rank: SIZE - 1 - d });
-  for (const sq of block) { at(board, sq).terrain = 'settlement'; at(board, sq).elevation = 0; }
-  const inside = new Set(block.map(notation));
-  const front = block.filter(sq => sq.rank === SIZE - depth).map(sq => edgeKey(sq, { file: sq.file, rank: sq.rank - 1 }));
-  const flanks = block.flatMap(sq => gridOf(board).neighbours(sq)
+  const walled = block.filter(sq => grid.inBounds(sq));
+  for (const sq of walled) { at(board, sq).terrain = 'settlement'; at(board, sq).elevation = 0; }
+  const inside = new Set(walled.map(notation));
+  const front = walled.filter(sq => sq.rank === SIZE - depth).map(sq => edgeKey(sq, { file: sq.file, rank: sq.rank - 1 }));
+  const flanks = walled.flatMap(sq => grid.neighbours(sq)
     .filter(n => n.rank === sq.rank && !inside.has(notation(n)))
     .map(n => edgeKey(sq, n)));
   const edges = [...front, ...flanks].slice(0, budget);
@@ -203,11 +230,12 @@ export function generateBoard(spec: BoardSpec): Board {
 }
 
 export function count(board: Board, terrain: SquareTerrain): number {
-  return allSquares().filter(sq => at(board, sq).terrain === terrain).length;
+  return gridOf(board).cells().filter(sq => at(board, sq).terrain === terrain).length;
 }
 
 export function render(board: Board): string {
   const glyph: Record<SquareTerrain, string> = { open: '.', forest: 'T', swamp: '~', shallows: '=', water: 'W', settlement: '#' };
+  const grid = gridOf(board);
   const rows: string[] = [];
   // Odd rows of an odd-r hex board sit half a cell to the right; the shared edge between two
   // rows lands halfway between the two indents.
@@ -217,9 +245,9 @@ export function render(board: Board): string {
     let row = `${rank + 1} ` + indent(rank);
     for (let file = 0; file < SIZE; file++) {
       const s = board.squares[rank][file];
-      row += glyph[s.terrain] + (s.elevation > 0 ? String(s.elevation) : ' ');
+      row += grid.inBounds({ file, rank }) ? glyph[s.terrain] + (s.elevation > 0 ? String(s.elevation) : ' ') : '  ';
       const east = { file: file + 1, rank };
-      row += inBounds(east) && board.walls[edgeKey({ file, rank }, east)] ? '|' : ' ';
+      row += grid.inBounds(east) && board.walls[edgeKey({ file, rank }, east)] ? '|' : ' ';
     }
     rows.push(row);
     if (rank > 0) {

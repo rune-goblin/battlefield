@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { allSquares, at, gridOf, type Board, type Grid, type Point, type Square, type SquareTerrain } from '../../engine/index.js';
+import { at, gridOf, type Board, type Grid, type Point, type Square, type SquareTerrain } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { shade } from './color.js';
 
@@ -50,7 +50,7 @@ export class TerrainLayer {
     const grid = gridOf(board);
 
     const byTerrain = new Map<SquareTerrain, Square[]>();
-    for (const sq of allSquares()) {
+    for (const sq of grid.cells()) {
       const terrain = at(board, sq).terrain;
       const list = byTerrain.get(terrain);
       if (list) list.push(sq); else byTerrain.set(terrain, [sq]);
@@ -90,7 +90,7 @@ export class TerrainLayer {
   private drawElevation(grid: Grid, board: Board, size: number, theme: BoardTheme): void {
     const tint = new PIXI.Graphics();
     tint.name = 'Terrain_elevation';
-    for (const sq of allSquares()) {
+    for (const sq of grid.cells()) {
       const elevation = at(board, sq).elevation;
       const alpha = ELEVATION_ALPHA[Math.min(elevation, ELEVATION_ALPHA.length - 1)];
       if (!alpha) continue;
@@ -101,7 +101,7 @@ export class TerrainLayer {
     const hatch = new PIXI.Graphics();
     hatch.name = 'Terrain_slope';
     const seen = new Set<string>();
-    for (const sq of allSquares()) {
+    for (const sq of grid.cells()) {
       for (const n of grid.neighbours(sq)) {
         const key = grid.edgeKey(sq, n);
         if (seen.has(key)) continue;

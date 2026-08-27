@@ -11,7 +11,7 @@ const at = (grid: Grid, key: string) => grid.neighbours(parse(key)).map(notation
 
 describe.each([['square', squareGrid], ['hex', hexGrid]] as const)('%s grid', (_kind, grid) => {
   it('round-trips keys and centres', () => {
-    for (const c of allSquares()) {
+    for (const c of grid.cells()) {
       expect(grid.parse(grid.key(c))).toEqual(c);
       for (const size of [16, 40]) expect(grid.fromPoint(grid.center(c, size), size)).toEqual(c);
     }
@@ -36,16 +36,16 @@ describe('square grid', () => {
 describe('hex grid', () => {
   it('has six neighbours inside the board and fewer at the rim', () => {
     expect(at(hexGrid, 'd4')).toEqual(['c4', 'd3', 'd5', 'e3', 'e4', 'e5']);
-    expect(at(hexGrid, 'a1')).toEqual(['a2', 'b1']);
-    expect(at(hexGrid, 'h1')).toEqual(['g1', 'g2', 'h2']);
+    expect(at(hexGrid, 'c1')).toEqual(['b2', 'c2', 'd1']);
+    expect(at(hexGrid, 'g1')).toEqual(['f1', 'f2', 'g2']);
   });
   it('measures cube distance, so a square diagonal can be one step or two', () => {
     expect(hexGrid.distance(parse('c2'), parse('d1'))).toBe(1);
-    expect(hexGrid.distance(parse('c2'), parse('b1'))).toBe(2);
-    expect(hexGrid.distance(parse('a1'), parse('c4'))).toBe(4);
+    expect(hexGrid.distance(parse('c2'), parse('b3'))).toBe(2);
+    expect(hexGrid.distance(parse('c1'), parse('e4'))).toBe(4);
   });
   it('continues a Pace step in the same cube direction', () => {
-    expect(hexGrid.beyond(parse('a1'), parse('a2'))).toEqual(parse('b3'));
+    expect(hexGrid.beyond(parse('c1'), parse('c2'))).toEqual(parse('d3'));
     expect(hexGrid.beyond(parse('e2'), parse('e3'))).toEqual(parse('d4'));
     expect(hexGrid.beyond(parse('e2'), parse('f2'))).toEqual(parse('g2'));
     expect(hexGrid.beyond(parse('a2'), parse('a1'))).toBeNull();

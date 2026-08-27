@@ -1,7 +1,20 @@
 import * as PIXI from 'pixi.js';
-import { allSquares, at, gridOf, type Board, type Point, type Wall } from '../../engine/index.js';
+import { at, gridOf, type Board, type Point, type Wall } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
-import { shade } from './color.js';
+import { mix, shade } from './color.js';
+
+// One course of stone per damage box, laid across the edge rather than up it — the board is
+// seen from above, so a stouter wall is a wider band, not a taller one. A battered wall loses
+// courses, so it thins as its boxes go.
+const COURSE = 0.062;      // course depth, as a fraction of the cell pitch
+const BLOCK = 0.16;        // block length, as a fraction of the edge
+const MORTAR = 0.22;       // mortar gap, as a fraction of a block
+// Rubble left by a breach: [position along the edge, width as a fraction of the edge, spill
+// across it in courses]. The middle is left clear — that gap is the way through.
+const RUBBLE: [number, number, number][] = [
+  [-0.46, 0.13, 0], [-0.34, 0.09, 0.7], [-0.22, 0.11, -0.6],
+  [0.23, 0.1, 0.6], [0.35, 0.14, -0.5], [0.47, 0.09, 0.2],
+];
 
 function perpendicular(a: Point, b: Point): { px: number; py: number; len: number } {
   const dx = b.x - a.x;
@@ -10,27 +23,48 @@ function perpendicular(a: Point, b: Point): { px: number; py: number; len: numbe
   return { px: -dy / len, py: dx / len, len };
 }
 
-function drawWall(g: PIXI.Graphics, a: Point, b: Point, wall: Wall, theme: BoardTheme): void {
-  const stone = shade(theme.rule, 0.65);
-  const { px, py } = perpendicular(a, b);
-  if (wall.remaining <= 0) {
-    // Breached: a broken bar in the accent colour (distinct hue from standing stone) — a
-    // grey stroke at the same low alpha nearly disappeared against terrain fills in testing.
-    g.lineStyle(4, theme.accent, 0.75);
-    g.moveTo(a.x, a.y).lineTo(a.x + (b.x - a.x) * 0.42, a.y + (b.y - a.y) * 0.42);
-    g.moveTo(a.x + (b.x - a.x) * 0.58, a.y + (b.y - a.y) * 0.58).lineTo(b.x, b.y);
-    return;
+function drawMasonry(g: PIXI.Graphics, len: number, size: number, courses: number, stone: number, shadow: number): void {
+  const course = Math.max(2.4, size * COURSE);
+  const thickness = courses * course;
+  const count = Math.max(3, Math.round(1 / BLOCK));
+  const block = len / count;
+  g.beginFill(shadow, 0.5).drawRect(-len / 2 - 0.8, -thickness / 2 + course * 0.4, len + 1.6, thickness).endFill();
+  for (let i = 0; i < courses; i++) {
+    const y = -thickness / 2 + i * course;
+    const stagger = i % 2 ? 0.5 : 0;
+    const face = shade(stone, i % 2 ? 0.86 : 1);
+    for (let b = -1; b <= count; b++) {
+      const start = -len / 2 + (b + stagger) * block;
+      const x0 = Math.max(-len / 2, start);
+      const x1 = Math.min(len / 2, start + block * (1 - MORTAR));
+      if (x1 - x0 < 1) continue;
+      g.beginFill(face, 1).drawRect(x0, y, x1 - x0, course * 0.82).endFill();
+    }
   }
-  g.lineStyle(5, stone, 1).moveTo(a.x, a.y).lineTo(b.x, b.y);
-  // Tier ticks: one per box in the wall's tier, evenly spaced along the bar.
-  const ticks = wall.tier + 1;
-  g.lineStyle(1.4, theme.background, 0.9);
-  for (let i = 1; i <= ticks; i++) {
-    const t = i / (ticks + 1);
-    const x = a.x + (b.x - a.x) * t;
-    const y = a.y + (b.y - a.y) * t;
-    g.moveTo(x - px * 2, y - py * 2).lineTo(x + px * 2, y + py * 2);
+}
+
+function drawRubble(g: PIXI.Graphics, len: number, size: number, stone: number, shadow: number): void {
+  const course = Math.max(2.4, size * COURSE) * 1.25;
+  for (const [t, w, spill] of RUBBLE) {
+    const x = t * len - (w * len) / 2;
+    const y = spill * course - course / 2;
+    g.beginFill(shadow, 0.5).drawRect(x, y + course * 0.45, w * len, course).endFill();
+    g.beginFill(shade(stone, 0.82), 1).drawRect(x, y, w * len, course).endFill();
   }
+}
+
+/** A wall's own Graphics, laid out along its edge in local space and rotated onto the board. */
+function wallGraphics(a: Point, b: Point, size: number, wall: Wall, theme: BoardTheme): PIXI.Graphics {
+  const g = new PIXI.Graphics();
+  g.position.set((a.x + b.x) / 2, (a.y + b.y) / 2);
+  g.rotation = Math.atan2(b.y - a.y, b.x - a.x);
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  // Toward the ink colour, so stone lifts off the terrain in either theme.
+  const stone = mix(theme.rule, theme.ink, 0.38);
+  const shadow = shade(theme.ink, 0.42);
+  if (wall.remaining <= 0) drawRubble(g, len, size, stone, shadow);
+  else drawMasonry(g, len, size, wall.remaining, stone, shadow);
+  return g;
 }
 
 function drawCliff(g: PIXI.Graphics, a: Point, b: Point, theme: BoardTheme): void {
@@ -59,6 +93,7 @@ export class EdgeLayer {
     const grid = gridOf(board);
     const g = new PIXI.Graphics();
     g.name = 'Edges';
+    this.container.addChild(g);
 
     const seen = new Set<string>();
     for (const [key, wall] of Object.entries(board.walls)) {
@@ -68,11 +103,13 @@ export class EdgeLayer {
       const b = grid.parse(bKey);
       if (!grid.inBounds(a) || !grid.inBounds(b)) continue;
       const [p, q] = grid.edgeSegment(a, b, size);
-      drawWall(g, p, q, wall, theme);
+      const bar = wallGraphics(p, q, size, wall, theme);
+      bar.name = `Wall_${key}`;
+      this.container.addChild(bar);
     }
 
     // Cliffs: any edge not already carrying a wall bar, where elevation drops by 2+.
-    for (const sq of allSquares()) {
+    for (const sq of grid.cells()) {
       for (const n of grid.neighbours(sq)) {
         const key = grid.edgeKey(sq, n);
         if (seen.has(key)) continue;
@@ -82,8 +119,6 @@ export class EdgeLayer {
         drawCliff(g, p, q, theme);
       }
     }
-
-    this.container.addChild(g);
   }
 
   clear(): void {

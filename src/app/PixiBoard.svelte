@@ -43,6 +43,7 @@
   let view: BoardView | undefined;
 
   export function centerOn(cell: string) { view?.centerOn(cell); }
+  export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
 
   onMount(() => {
     view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });

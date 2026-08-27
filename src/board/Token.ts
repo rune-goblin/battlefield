@@ -1,9 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
-import { engineArtUrl, troopArtUrl } from './art.js';
+import { bannerTexture, engineArtUrl, troopArtUrl } from './art.js';
 import type { BoardTheme } from './theme.js';
 
-export type TokenRing = 'active' | 'selected' | 'highlighted' | 'flash';
+/** A ring is state, never chrome: the unit acting now, a free strike landing, or the piece a
+ * placement stage has hold of. Whose piece it is comes off the flag instead. */
+export type TokenRing = 'active' | 'selected' | 'flash';
 
 export interface UnitTokenModel {
   kind: 'unit';
@@ -35,16 +37,25 @@ export interface EngineTokenModel {
 
 export type TokenModel = UnitTokenModel | EngineTokenModel;
 
-/** The base disc's diameter, as a fraction of cell size. TokenLayer's hit-test radius matches. */
-export const TOKEN_DISC_RATIO = 0.82;
+/** The piece's footprint, as a fraction of cell size: how wide the miniature draws, where the
+ * markers hang off it, and TokenLayer's hit-test radius. */
+export const TOKEN_FOOTPRINT_RATIO = 0.82;
 
 // proto: pf2e-trooper's *_strategy.webp renders put the miniature's own base ellipse about
 // four-fifths of the way down a square image (checked by eye against half a dozen troop and
 // engine samples). There is no per-image crop data to anchor exactly, so one tuned constant
 // stands in for the whole set rather than measuring each image.
 const ART_ANCHOR_Y = 0.8;
-const RING_GAP = 0.06;
+// The ring traces the piece's footprint — which is also its hit area — now that there is no
+// disc for it to sit outside of. Any wider and it cuts through the flag's level.
+const RING_GAP = 0.01;
+/** The flag's height, as a fraction of cell size. */
+const FLAG_RATIO = 0.32;
+// The cloth's mass sits above the middle of the square template — it tapers to a point at the
+// bottom — so the level rides a little high of the sprite's own centre.
+const FLAG_TEXT_Y = -0.07;
 const LIFT_SCALE = 1.08;
+const GHOST_ALPHA = 0.26;
 const PULSE_PERIOD_MS = 1400;
 const FLASH_PERIOD_MS = 260;
 const MOVE_TWEEN_MS = 200;
@@ -57,30 +68,33 @@ DESATURATE.desaturate();
 function badgeStyle(size: number, theme: BoardTheme): Partial<PIXI.ITextStyle> {
   return {
     fontFamily: 'Signika, sans-serif',
-    fontSize: Math.max(9, Math.min(15, size * 0.26)),
-    fill: theme.token.badgeText,
+    fontSize: Math.max(8, Math.min(13, size * 0.19)),
+    fill: theme.token.bannerText,
     fontWeight: 'bold',
   };
 }
 
 /**
- * One battlefield piece (a unit or a standalone engine): base disc, miniature sprite, and
- * the small markers around it. `draw` is called on every `TokenLayer.setTokens`/geometry
- * pass and redraws everything from the model — cheap at board scale (at most 64 pieces) and
- * far simpler than diffing which of a dozen small parts actually changed. Art loads through
- * `PIXI.Assets`; the coloured base disc is the placeholder until it resolves.
+ * One battlefield piece (a unit or a standalone engine): the miniature sprite, a shadow that
+ * stands it on the ground, and the small markers around it. `draw` is called on every
+ * `TokenLayer.setTokens`/geometry pass and redraws everything from the model — cheap at board
+ * scale (at most 64 pieces) and far simpler than diffing which of a dozen small parts
+ * actually changed. Art loads through `PIXI.Assets`; until it resolves the piece is its
+ * shadow and its flag.
  */
 export class Token extends PIXI.Container {
   readonly id: string;
   private model: TokenModel | null = null;
   private dragging = false;
 
-  private readonly base = new PIXI.Graphics();
-  private readonly decor = new PIXI.Graphics(); // badge backing, wound/disorder pips, chip frame
+  private readonly shadow = new PIXI.Graphics();
+  private readonly decor = new PIXI.Graphics(); // wound/disorder pips, chip frame
   private art: PIXI.Sprite | null = null;
   private artPath: string | null = null;
   private artGeneration = 0;
 
+  private flag: PIXI.Sprite | null = null;
+  private flagColour: number | null = null;
   private badge: PIXI.Text | null = null;
 
   private engineChip: PIXI.Sprite | null = null;
@@ -101,7 +115,7 @@ export class Token extends PIXI.Container {
   constructor(id: string) {
     super();
     this.id = id;
-    this.addChild(this.base, this.decor, this.routArrow, this.ring);
+    this.addChild(this.shadow, this.decor, this.routArrow, this.ring);
     this.routArrow.visible = false;
     this.ring.visible = false;
   }
@@ -121,9 +135,10 @@ export class Token extends PIXI.Container {
     const broken = model.kind === 'unit' && wounds >= MAX_WOUNDS - 1;
     const routed = model.kind === 'unit' && disorder >= model.quality;
 
-    this.drawBase(model, size, theme, routed);
+    this.drawShadow(size, theme);
     this.updateArt(model, size);
     this.filters = broken ? [DESATURATE] : null;
+    this.updateFlag(model.side, size, theme, routed);
 
     if (model.kind === 'unit') {
       this.drawDecor(model, size, theme);
@@ -139,11 +154,27 @@ export class Token extends PIXI.Container {
     this.drawRoutArrow(routed, model.side, size, theme);
     this.drawRing(model.ring, size, theme);
 
-    // Re-append: art, badge and the engine chip are attached lazily as their art resolves,
-    // which would otherwise draw them over the arrow/ring. addChild on an existing child
-    // just moves it to the top, so this keeps those two topmost regardless of load order.
+    // Re-append: the art and the engine chip are attached lazily as their textures resolve,
+    // which would otherwise draw them over the flag and the arrow/ring. addChild on an
+    // existing child just moves it to the top, so this fixes the order regardless of load
+    // order — flag under its own level, both under the arrow and ring.
+    if (this.flag) this.addChild(this.flag);
+    if (this.badge) this.addChild(this.badge);
     this.addChild(this.routArrow);
     this.addChild(this.ring);
+  }
+
+  /** A still of the miniature where it currently stands, for the layer to leave behind while
+   * this piece is dragged. A sibling, not a child: the container itself follows the pointer.
+   * Null until the art resolves, which is also the only case with nothing to copy. */
+  ghost(): PIXI.Sprite | null {
+    if (!this.art) return null;
+    const ghost = new PIXI.Sprite(this.art.texture);
+    ghost.anchor.copyFrom(this.art.anchor);
+    ghost.scale.copyFrom(this.art.scale);
+    ghost.position.set(this.x, this.y);
+    ghost.alpha = GHOST_ALPHA;
+    return ghost;
   }
 
   /** `Interaction`'s board-internal token drag: lift and follow the pointer. */
@@ -198,10 +229,10 @@ export class Token extends PIXI.Container {
     this.lastCell = model.cell;
   }
 
-  private drawBase(model: TokenModel, size: number, theme: BoardTheme, routed: boolean): void {
-    const r = (size * TOKEN_DISC_RATIO) / 2;
-    const colour = routed ? theme.token.routed : model.side === 'attacker' ? theme.attacker : theme.defender;
-    this.base.clear().beginFill(colour, 1).drawCircle(0, 0, r).endFill();
+  // The miniature's own base ellipse lands at y ≈ 0 (see ART_ANCHOR_Y), so the shadow sits
+  // there: enough to stand the piece on the ground now that no disc does it.
+  private drawShadow(size: number, theme: BoardTheme): void {
+    this.shadow.clear().beginFill(theme.ink, 0.22).drawEllipse(0, size * 0.02, size * 0.27, size * 0.08).endFill();
   }
 
   private updateArt(model: TokenModel, size: number): void {
@@ -229,17 +260,13 @@ export class Token extends PIXI.Container {
 
   private layoutArt(size: number): void {
     if (!this.art) return;
-    const target = size * TOKEN_DISC_RATIO;
+    const target = size * TOKEN_FOOTPRINT_RATIO;
     this.art.scale.set(target / Math.max(this.art.texture.width, 1));
   }
 
   private drawDecor(model: UnitTokenModel, size: number, theme: BoardTheme): void {
-    const r = (size * TOKEN_DISC_RATIO) / 2;
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     this.decor.clear();
-
-    const bx = r * 0.82;
-    const by = r * 0.82;
-    this.decor.lineStyle(1, theme.rule, 1).beginFill(theme.token.badgeFill, 1).drawCircle(bx, by, size * 0.15).endFill();
 
     const pip = size * 0.11;
     const step = size * 0.145;
@@ -277,8 +304,38 @@ export class Token extends PIXI.Container {
     }
   }
 
+  /** The side's flag, top right — the only thing on the piece that says whose it is, now that
+   * the coloured disc is gone. A routed unit flies a colourless one. */
+  private updateFlag(side: Side, size: number, theme: BoardTheme, routed: boolean): void {
+    const colour = routed ? theme.token.routed : side === 'attacker' ? theme.attacker : theme.defender;
+    if (!this.flag) {
+      this.flag = new PIXI.Sprite(bannerTexture(colour));
+      this.flag.anchor.set(0.5);
+      this.addChild(this.flag);
+      this.flagColour = colour;
+    } else if (colour !== this.flagColour) {
+      this.flag.texture = bannerTexture(colour);
+      this.flagColour = colour;
+    }
+    this.layoutFlag(size);
+  }
+
+  private layoutFlag(size: number): void {
+    if (!this.flag) return;
+    const { baseTexture, height } = this.flag.texture;
+    // An SVG rasterizes a frame or two after `Texture.from` hands back the texture, and until
+    // it does the frame is 1×1 — scaling off that would blow the flag up to a full screen.
+    if (!baseTexture.valid) {
+      baseTexture.once('loaded', () => { if (!this.destroyed) this.layoutFlag(size); });
+      return;
+    }
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
+    this.flag.scale.set((size * FLAG_RATIO) / height);
+    this.flag.position.set(r * 0.88, -r * 0.88);
+    this.badge?.position.set(this.flag.x, this.flag.y + size * FLAG_RATIO * FLAG_TEXT_Y);
+  }
+
   private drawBadge(level: number, size: number, theme: BoardTheme): void {
-    const r = (size * TOKEN_DISC_RATIO) / 2;
     if (!this.badge) {
       this.badge = new PIXI.Text(String(level), new PIXI.TextStyle(badgeStyle(size, theme)));
       this.badge.anchor.set(0.5);
@@ -287,7 +344,7 @@ export class Token extends PIXI.Container {
       this.badge.text = String(level);
       this.badge.style = new PIXI.TextStyle(badgeStyle(size, theme));
     }
-    this.badge.position.set(r * 0.82, r * 0.82);
+    this.layoutFlag(size);
   }
 
   private updateEngineChip(engineName: string | null, size: number): void {
@@ -322,7 +379,7 @@ export class Token extends PIXI.Container {
 
   private layoutChip(size: number): void {
     if (!this.engineChip) return;
-    const r = (size * TOKEN_DISC_RATIO) / 2;
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     this.engineChip.scale.set((size * 0.24) / Math.max(this.engineChip.texture.width, 1));
     this.engineChip.position.set(-r * 0.72, -r * 0.72);
   }
@@ -334,7 +391,7 @@ export class Token extends PIXI.Container {
     // Board-local y grows toward the attacker's home edge (rank 0), on both grids — see
     // grid.ts's SquareGrid/HexGrid `center`. A routed unit retreats toward its own edge.
     const dir = side === 'attacker' ? 1 : -1;
-    const r = (size * TOKEN_DISC_RATIO) / 2;
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     const x = r + size * 0.16;
     const half = size * 0.2 * dir;
     const width = size * 0.07;
@@ -353,19 +410,18 @@ export class Token extends PIXI.Container {
     this.ring.clear();
     this.ring.visible = !!kind;
     if (!kind) { this.pulseStart = 0; return; }
-    const r = (size * TOKEN_DISC_RATIO) / 2 + size * RING_GAP;
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2 + size * RING_GAP;
     const colour = kind === 'active' ? theme.token.ringActive
       : kind === 'flash' ? theme.token.ringFlash
-      : kind === 'selected' ? theme.token.ringSelected
-      : theme.token.ringHighlight;
+      : theme.token.ringSelected;
     const width = kind === 'selected' ? size * 0.06 : kind === 'flash' ? size * 0.07 : size * 0.045;
     this.ring.lineStyle(width, colour, 1).drawCircle(0, 0, r);
-    if (kind === 'active' || kind === 'flash') {
+    if (kind === 'selected') {
+      this.pulseStart = 0;
+      this.ring.alpha = 1;
+    } else {
       this.pulseStart ||= performance.now();
       this.ring.alpha = kind === 'active' ? this.pulseAlpha() : this.flashAlpha();
-    } else {
-      this.pulseStart = 0;
-      this.ring.alpha = kind === 'highlighted' ? 0.8 : 1;
     }
   }
 

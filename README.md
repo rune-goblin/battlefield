@@ -1,6 +1,6 @@
 # Battlefield
 
-A fast abstract battle game for armies. Eight by eight, three actions, four wounds. Play it hot-seat in a browser, or on paper with a d20 and a chessboard.
+A fast abstract battle game for armies. A hexagon of sixty-one hexes, three actions, four wounds. Play it hot-seat in a browser, or on paper with a d20.
 
 - **Play:** `npm install && npm run dev`
 - **Rules:** [`public/rules.html`](public/rules.html), served at `/rules.html` in the app

@@ -39,6 +39,10 @@ export interface BoardView {
   /** Screen point (e.g. from a native `DragEvent`) to a cell key, for drag-drop from outside
    * the canvas — a DOM tray item dropped onto the board. */
   cellAt(clientX: number, clientY: number): string | null;
+  /** A cell's centre in CSS pixels inside the canvas — `cellAt` the other way round, so a DOM
+   * overlay can anchor itself to a cell. Null when the cell is off-board or there is no board
+   * yet. Pan, zoom and resize all move it, and none of them is announced here. */
+  screenOf(cell: string): Point | null;
   /** Pans (without rezooming) so `cell` sits in the middle of the viewport. A no-op if the
    * cell is off-board or there is no board yet. */
   centerOn(cell: string): void;
@@ -201,6 +205,12 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const local = boardContainer.toLocal({ x: clientX - rect.left, y: clientY - rect.top });
       const cell = geometry.grid.fromPoint(local, geometry.size);
       return cell ? geometry.grid.key(cell) : null;
+    },
+    screenOf(cell) {
+      if (!geometry) return null;
+      const c = geometry.grid.parse(cell);
+      if (!geometry.grid.inBounds(c)) return null;
+      return boardContainer.toGlobal(geometry.grid.center(c, geometry.size));
     },
     // Pans `opts.parent` (the pan/zoom container `boardContainer` sits in) so the cell's
     // centre lands under the viewport's screen centre, at whatever zoom is already set.

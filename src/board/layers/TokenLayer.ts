@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../../engine/index.js';
 import type { TokenBounds } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
-import { Token, TOKEN_DISC_RATIO, type TokenModel } from '../Token.js';
+import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel } from '../Token.js';
 
 /**
  * Token sprites, diffed by id against the previous `setTokens` call — modelled on
@@ -18,6 +18,7 @@ export class TokenLayer {
   private models: readonly TokenModel[] = [];
   private readonly cache = new Map<string, Token>();
   private draggingId: string | null = null;
+  private ghost: PIXI.Sprite | null = null;
 
   // Wave 5 needs every token ticked regardless of drag state: a move tween or a free-strike
   // flash can be running on some other token while one is being dragged.
@@ -35,6 +36,7 @@ export class TokenLayer {
 
   /** Called by `setBoard`'s redraw with the board's current grid and cell size. */
   setGeometry(grid: Grid | null, size: number, theme: BoardTheme): void {
+    this.clearGhost();
     this.grid = grid;
     this.size = size;
     this.theme = theme;
@@ -49,7 +51,7 @@ export class TokenLayer {
   /** Discs in board-local coordinates, for `Interaction`'s hit test. */
   bounds(): TokenBounds[] {
     if (!this.size) return [];
-    const radius = (this.size * TOKEN_DISC_RATIO) / 2;
+    const radius = (this.size * TOKEN_FOOTPRINT_RATIO) / 2;
     return [...this.cache.values()].map((token) => ({ id: token.id, x: token.x, y: token.y, radius }));
   }
 
@@ -59,13 +61,30 @@ export class TokenLayer {
     const live = id && point ? id : null;
     if (this.draggingId && this.draggingId !== live && this.grid) {
       this.cache.get(this.draggingId)?.endDrag(this.grid, this.size);
+      this.clearGhost();
     }
     this.draggingId = live;
     if (!live) return;
     const token = this.cache.get(live);
     if (!token) return;
     if (token.isDragging) token.dragTo(point!);
-    else token.beginDrag(point!);
+    else {
+      // Captured before the lift, while the token still stands on its own cell — the ghost
+      // is what says where the piece came from, so the arrow needs no tether of its own.
+      this.ghost = token.ghost();
+      if (this.ghost) {
+        this.ghost.zIndex = -1;
+        this.container.addChild(this.ghost);
+      }
+      token.beginDrag(point!);
+    }
+  }
+
+  private clearGhost(): void {
+    if (!this.ghost) return;
+    this.container.removeChild(this.ghost);
+    this.ghost.destroy();
+    this.ghost = null;
   }
 
   private renderAll(): void {

@@ -42,7 +42,7 @@ Troops without a `[Salvo]` item cannot Volley. A siege engine's Volley bonus is 
 
 ## The battlefield
 
-A chessboard: eight files a to h and eight ranks 1 to 8. Rank 1 is the attacker's edge and rank 8 the defender's. Each square holds at most one unit. Units move like rooks, one square orthogonally per Advance; distance between two units is the count of orthogonal squares from one to the other.
+A hexagon of hexes: nine files a to i and nine ranks 1 to 9, rows of 5·6·7·8·9·8·7·6·5, sixty-one cells in all. Rank 1 is the attacker's edge and rank 9 the defender's, and both are the narrowest rows — the line widens as it advances and funnels again at the objective. Each cell holds at most one unit. Units step to any of the six neighbours per Advance; distance between two units is the count of steps from one to the other.
 
 | Distance | Band | Strike | Volley |
 |---|---|---|---|
@@ -53,7 +53,7 @@ A chessboard: eight files a to h and eight ranks 1 to 8. Rank 1 is the attacker'
 
 Two units are engaged when they occupy orthogonally adjacent squares with no barrier on the edge between them. Diagonal neighbours are at distance 2 and never engaged.
 
-Deployment: attacker anywhere on ranks 1–3, defender anywhere on ranks 6–8, never on water. Two empty ranks lie between the lines, so a unit on the front rank reaches contact in its first activation and a unit held back on rank 1 takes two; the depth of the deployment is the first decision. Ambush tactics (the `Vigilance & Pursuit` family) may deploy one rank further in.
+Deployment: attacker anywhere on ranks 1–3, defender anywhere on ranks 7–9, never on water. Three empty ranks lie between the lines, so a unit on the front rank reaches contact in its first activation and a unit held back on rank 1 takes two; the depth of the deployment is the first decision. Ambush tactics (the `Vigilance & Pursuit` family) may deploy one rank further in.
 
 The board is the geometry the rest hangs on. Squares carry terrain and elevation; edges carry barriers. Eight files give room for a refused flank, a reserve rank and a walled corner; three ranks of deployment a side give both players a front line and a reserve.
 

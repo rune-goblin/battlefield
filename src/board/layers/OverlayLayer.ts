@@ -6,6 +6,12 @@ export type { HighlightStyle } from '../theme.js';
 
 const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'push', 'attack'];
 
+// The drag arrow's head, as fractions of cell size: how far its tip stops short of the
+// destination's centre, how long it is, and how wide at the base.
+const HEAD_INSET = 0.2;
+const HEAD_LENGTH = 0.22;
+const HEAD_HALF_WIDTH = 0.13;
+
 /**
  * Hover cell, selection ring, the three highlight-style washes, and a paint preview — all
  * cell-shaped, so they share one draw pass keyed off the current `Grid`/cell size.
@@ -112,11 +118,34 @@ export class OverlayLayer {
     g.lineStyle(width, colour, alpha).moveTo(p.x, p.y).lineTo(q.x, q.y);
   }
 
+  // The route the unit will actually walk, with an arrowhead on the end — a straight
+  // origin-to-destination arrow would lie about a path that bends around terrain. The head
+  // stops short of the destination's centre so it points at the cell rather than covering
+  // whatever stands there.
   private strokePath(g: PIXI.Graphics, cells: string[], colour: number, alpha: number, width: number): void {
     const points = cells.map((key) => this.grid!.parse(key)).filter((c) => this.grid!.inBounds(c)).map((c) => this.grid!.center(c, this.size));
     if (points.length < 2) return;
+    const end = points[points.length - 1];
+    const previous = points[points.length - 2];
+    const span = Math.hypot(end.x - previous.x, end.y - previous.y) || 1;
+    const ux = (end.x - previous.x) / span;
+    const uy = (end.y - previous.y) / span;
+    const head = this.size * HEAD_LENGTH;
+    const tip = { x: end.x - ux * this.size * HEAD_INSET, y: end.y - uy * this.size * HEAD_INSET };
+    const base = { x: tip.x - ux * head, y: tip.y - uy * head };
+
     g.lineStyle(width, colour, alpha).moveTo(points[0].x, points[0].y);
-    for (const p of points.slice(1)) g.lineTo(p.x, p.y);
+    for (const p of points.slice(1, -1)) g.lineTo(p.x, p.y);
+    g.lineTo(base.x, base.y);
+
+    const half = this.size * HEAD_HALF_WIDTH;
+    g.lineStyle(0)
+      .beginFill(colour, alpha)
+      .moveTo(tip.x, tip.y)
+      .lineTo(base.x - uy * half, base.y + ux * half)
+      .lineTo(base.x + uy * half, base.y - ux * half)
+      .closePath()
+      .endFill();
   }
 
   private strokeCell(g: PIXI.Graphics, key: string, colour: number, alpha: number, width: number): void {

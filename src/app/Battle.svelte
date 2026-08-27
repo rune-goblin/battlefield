@@ -1,11 +1,12 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, DIALS, engagedEnemies, guardDefence, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
-    pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungOf, SPELLS,
-    type ActionOffer, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
-    type Spend, type SpendDials, type Unit, type WithdrawOffer,
+    offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, SPELLS,
+    type ActionOffer, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
+    type Spend, type SpendDials, type TargetRef, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
   import { troopArtUrl, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
+  import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
   import { backToSetup, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
@@ -21,9 +22,6 @@
   // One allocation per rung (and one for the withdrawal), so the push dial can be offered
   // only where a reach check actually stands in the way.
   let alloc = $state<Record<string, Spend>>({});
-  let focused = $state<string | null>(null);
-  // Progressive disclosure: the type row is always short; clicking one opens its ladder.
-  let openType = $state<string | null>(null);
   let boardRef = $state<PixiBoard>();
 
   // Move's own row, hovered independently of the type row — Move is drag-driven and its bands
@@ -113,29 +111,16 @@
 
   const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}`;
   const rungKey = (offer: ActionOffer, opt: RungOption) => `${offerKey(offer)}:${opt.index}`;
-  const openOffer = $derived(offers.find((o) => offerKey(o) === openType) ?? null);
 
-  // A new unit closes whatever ladder was open and drops any in-flight drag preview — both
-  // are per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; openType = null; drag = null; hoveredBand = null; moveOpen = true; withdrawOpen = true; alloc = {}; });
+  // A new unit drops every open popup and any in-flight drag preview — all of it is
+  // per-activation UI state, not part of the engine's own state.
+  $effect(() => { void active?.id; aim = null; drag = null; pending = null; hoveredBand = null; moveOpen = true; withdrawOpen = true; alloc = {}; });
 
-  const focusedEntry = $derived.by<{ offer: ActionOffer; opt: RungOption } | null>(() => {
-    if (!focused || !openOffer) return null;
-    for (const opt of openOffer.rungs) if (rungKey(openOffer, opt) === focused) return { offer: openOffer, opt };
-    return null;
-  });
-  const focusedCells = $derived((focusedEntry?.opt.targets ?? []).filter((t) => t.kind === 'cell').map((t) => t.id));
-  const highlightedUnitIds = $derived(new Set((focusedEntry?.opt.targets ?? []).filter((t) => t.kind === 'unit').map((t) => t.id)));
-
-  // Cell/unit targets highlight directly off `RungTarget.kind`; a wall target has no board
-  // highlight (`BoardView.setHighlight` only paints cells) but still resolves on an edge
-  // click via `onEdge` below — see "Wave 2 notes" in the todos.
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return SPELLS[offer.spell].at === 'enemy' ? 'attack' : 'deploy';
     if (offer.type === 'shoot' || offer.type === 'fight') return 'attack';
     return 'deploy';
   }
-  const focusedStyle = $derived(focusedEntry ? styleFor(focusedEntry.offer) : 'move');
 
   // --- Drag to move: the primary verb. A path traces cell by cell as the pointer moves,
   // clamped to what the engine's own `moves`/`charges` say is reachable — never recomputed
@@ -145,7 +130,24 @@
   interface ChargePreview { kind: 'charge'; cell: string; enemy: string; feet: number; actions: number; path: string[] }
   // Beyond every action the unit has — the DC and fallback are the bargain the HUD/panel read.
   interface PushPreview { kind: 'push'; cell: string; feet: number; fallback: string; dc: number; modifier: number; path: string[] }
-  let drag = $state<MovePreview | ChargePreview | PushPreview | null>(null);
+  // No traced route: a withdrawal breaks contact and leaves, so its arrow is the straight
+  // line from where the unit stands to where it is going.
+  interface WithdrawPreview { kind: 'withdraw'; cell: string; path: string[] }
+  type Preview = MovePreview | ChargePreview | PushPreview | WithdrawPreview;
+  let drag = $state<Preview | null>(null);
+  // A released drag, parked until the player picks one of its readings and confirms. One drop
+  // means more than one thing, and deciding by where the pointer landed decides for the player.
+  interface Parked { cell: string; rows: Preview[]; index: number; rung: Grade | null }
+  let pending = $state<Parked | null>(null);
+  const picked = $derived(pending?.rows[pending.index] ?? null);
+  const preview = $derived(drag ?? picked);
+  // Touching a board object opens the other popup: every rung that can act on *that*, which
+  // is `offersAt`'s whole job. One flat list, because the player picks a rung, not a type.
+  interface AimRow { offer: ActionOffer; opt: RungOption }
+  interface Aim { cell: string; target: TargetRef; label: string; rows: AimRow[]; index: number }
+  let aim = $state<Aim | null>(null);
+  const aimed = $derived(aim?.rows[aim.index] ?? null);
+  let anchor = $state<{ x: number; y: number } | null>(null);
 
   function classify(moves: Map<string, MoveReach>, path: string[]): { near: string[]; far: string[] } {
     const near: string[] = [];
@@ -160,68 +162,168 @@
     return b.units.find((u) => u.status === 'active' && u.side !== a.side && notation(u.square) === cell);
   }
 
+  const chargeRow = (c: ChargeOption): ChargePreview =>
+    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: movePath(act!.moves, c.cell) });
+
+  /** Every reading of a drop on `cell`, in the order the popup offers them. One drag chains as
+   * many Move actions as the route costs — `MoveReach.actions` counts them, and a row quotes
+   * the whole price rather than asking again per action. */
+  function rowsAt(cell: string): Preview[] {
+    if (!active || !act) return [];
+    // Dropped on a piece: there is one thing that means, and it is not a move.
+    const enemy = enemyAt(cell);
+    if (enemy) {
+      const charge = act.charges.find((c) => c.unit === enemy.id);
+      return charge ? [chargeRow(charge)] : [];
+    }
+    const rows: Preview[] = [];
+    const m = act.moves.get(cell);
+    if (m) {
+      const path = movePath(act.moves, cell);
+      rows.push({ kind: 'move', cell, feet: m.feet, actions: m.actions, path, ...classify(act.moves, path) });
+    }
+    const p = act.push.get(cell);
+    if (p) {
+      rows.push({ kind: 'push', cell, feet: p.feet, fallback: p.fallback, dc: pushDcFor(active), modifier: pushModifierFor(active, act.actions), path: pushPath(act.moves, act.push, cell) });
+    }
+    // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
+    for (const c of act.charges) if (c.cell === cell) rows.push(chargeRow(c));
+    if (act.withdraw?.targets.some((t) => t.id === cell)) rows.push({ kind: 'withdraw', cell, path: [notation(active.square), cell] });
+    return rows;
+  }
+
   function onBoardDrag(e: BoardEventOf<'drag'>) {
     if (!active || !act || e.id !== active.id) return;
     if (e.cell === null) { drag = null; return; }
-    const enemy = enemyAt(e.cell);
-    if (enemy) {
-      const charge = act.charges.find((c) => c.unit === enemy.id);
-      if (!charge) return; // stall — out of reach, or too few actions left for the melee
-      const path = movePath(act.moves, charge.cell);
-      drag = { kind: 'charge', cell: charge.cell, enemy: enemy.id, feet: charge.feet, actions: charge.actions + 1, path };
-      return;
-    }
-    const m = act.moves.get(e.cell);
-    if (m) {
-      const path = movePath(act.moves, e.cell);
-      drag = { kind: 'move', cell: e.cell, feet: m.feet, actions: m.actions, path, ...classify(act.moves, path) };
-      return;
-    }
-    const p = act.push.get(e.cell);
-    if (!p) return; // stall — out of reach entirely, occupied, or the unit's own cell
-    const path = pushPath(act.moves, act.push, e.cell);
-    drag = { kind: 'push', cell: e.cell, feet: p.feet, fallback: p.fallback, dc: pushDcFor(active), modifier: pushModifierFor(active, act.actions), path };
+    const next = rowsAt(e.cell)[0];
+    // Dragging past reach stalls at the last legal cell rather than drawing an illegal one.
+    if (next) drag = next;
   }
 
   function onBoardDrop(e: BoardEventOf<'drop'>) {
     drag = null;
     if (!active || !act || e.id !== active.id) return;
-    const enemy = enemyAt(e.cell);
-    if (enemy) {
-      if (act.charges.some((c) => c.unit === enemy.id)) takeAction({ type: 'charge', target: enemy.id });
-      return;
-    }
-    if (act.moves.has(e.cell)) { takeAction({ type: 'move', to: e.cell }); return; }
-    if (act.push.has(e.cell)) takeAction({ type: 'push', to: e.cell });
-    // An illegal drop is a no-op: state never changes, so `tokens` never changes, so
+    // An illegal drop parks nothing: state never changes, so `tokens` never changes, so
     // `TokenLayer` just snaps the token back to where it actually is.
+    const rows = rowsAt(e.cell);
+    pending = rows.length ? { cell: e.cell, rows, index: 0, rung: null } : null;
   }
 
-  const dragHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
-    if (!drag) return [];
-    if (drag.kind === 'charge') return [{ style: 'attack', cells: drag.path.slice(1) }];
-    if (drag.kind === 'push') return [{ style: 'push', cells: drag.path.slice(1) }];
-    return [{ style: 'move', cells: drag.near }, { style: 'moveFar', cells: drag.far }];
+  /** A second click on the row already chosen confirms it, so a plain move is drag, click. */
+  function choose(i: number) {
+    if (!pending) return;
+    if (pending.index === i) { commit(); return; }
+    pending = { ...pending, index: i, rung: null };
+  }
+
+  function commit() {
+    const p = pending;
+    pending = null;
+    const row = p?.rows[p.index];
+    if (!p || !row) return;
+    if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, rung: p.rung ?? undefined });
+    else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
+    else if (row.kind === 'push') takeAction({ type: 'push', to: row.cell });
+    else if (act?.withdraw) performWithdraw(act.withdraw, row.cell);
+  }
+
+  const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
+
+  function onKey(e: KeyboardEvent) {
+    if (pending) {
+      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      else if (e.key === 'Escape') pending = null;
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        pending = { ...pending, index: (pending.index + stepBy(e.key, pending.rows.length)) % pending.rows.length, rung: null };
+      }
+      return;
+    }
+    if (!aim) return;
+    if (e.key === 'Enter') { e.preventDefault(); takeAim(); }
+    else if (e.key === 'Escape') aim = null;
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      aim = { ...aim, index: (aim.index + stepBy(e.key, aim.rows.length)) % aim.rows.length };
+    }
+  }
+
+  // proto: pan, zoom, a window resize and the board's own recentring each move the cell under
+  // an open popup, and no one event covers all four — so the anchor is read every frame while
+  // a popup is open, and never otherwise.
+  let lastAnchor: { x: number; y: number } | null = null;
+  $effect(() => {
+    const open = pending ?? aim;
+    if (!open) { anchor = null; lastAnchor = null; return; }
+    const cell = open.cell;
+    let frame = 0;
+    const follow = () => {
+      const p = boardRef?.screenOf(cell);
+      if (p && (!lastAnchor || Math.abs(p.x - lastAnchor.x) > 0.5 || Math.abs(p.y - lastAnchor.y) > 0.5)) {
+        lastAnchor = { x: p.x, y: p.y };
+        anchor = lastAnchor;
+      }
+      frame = requestAnimationFrame(follow);
+    };
+    follow();
+    return () => cancelAnimationFrame(frame);
   });
-  const dragPath = $derived(drag?.path ?? []);
-  const dragEnemyName = $derived.by(() => {
-    if (!drag || drag.kind !== 'charge') return '';
-    const enemy = drag.enemy;
-    return b.units.find((u) => u.id === enemy)?.name ?? enemy;
+
+  const enemyName = (id: string) => b.units.find((u) => u.id === id)?.name ?? id;
+  const actions = (n: number) => `${n} action${n === 1 ? '' : 's'}`;
+  const actionCost = (n: number) => (n === 0 ? 'free, on banked movement' : actions(n));
+  const rowLabel = (row: Preview) =>
+    row.kind === 'charge' ? `Charge ${enemyName(row.enemy)}`
+      : row.kind === 'push' ? 'Push here'
+        : row.kind === 'withdraw' ? 'Withdraw here' : 'Move here';
+  const rowDetail = (row: Preview) =>
+    row.kind === 'charge' ? `${row.feet} ft · ${actions(row.actions)}, melee included`
+      : row.kind === 'push' ? `DC ${row.dc} · a fail stops you at ${row.fallback}, and it spends every action you have left`
+        : row.kind === 'withdraw' ? 'One Escape check per enemy holding you'
+          : `${row.feet} ft · ${actionCost(row.actions)}`;
+  const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
+
+  // What each reading of a drop actually costs. A push is the odd one: it spends every action
+  // the unit has left, win or lose — that is what reaching beyond them all means.
+  const dropCost = (row: Preview): number =>
+    row.kind === 'move' || row.kind === 'charge' ? row.actions
+      : row.kind === 'push' ? (act?.actions ?? 0)
+        : act?.withdraw ? act.withdraw.cost + used(spendOn(WITHDRAW_KEY, act.withdraw.dials)) : 1;
+  const aimCost = (row: AimRow) =>
+    row.offer.cost + used(spendOn(rungKey(row.offer, row.opt), rungDials(row.offer, row.opt)));
+  const cost = $derived(picked ? dropCost(picked) : aimed ? aimCost(aimed) : 0);
+  const left = $derived(act?.actions ?? 0);
+
+  // A charge carries a Fight rung of its own; `doCharge` takes the granted one unless told.
+  const FIGHT_RUNGS: Grade[] = [1, 2, 3];
+  const chargeRung = $derived(pending?.rung ?? active?.grades.fight ?? 1);
+
+  const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
+    if (!preview) return [];
+    if (preview.kind === 'charge') return [{ style: 'attack', cells: preview.path.slice(1) }];
+    if (preview.kind === 'push') return [{ style: 'push', cells: preview.path.slice(1) }];
+    if (preview.kind === 'withdraw') return [{ style: 'move', cells: [preview.cell] }];
+    return [{ style: 'move', cells: preview.near }, { style: 'moveFar', cells: preview.far }];
   });
-  // Which Move row the live drag distance falls into, so the panel tracks the drag.
+  const previewPath = $derived(preview?.path ?? []);
+  // Banked movement can carry a unit to a cell for no further action at all, so a reach's
+  // cost floors at the 1-action row rather than indexing a row that does not exist.
+  const bandOf = (actions: number): 1 | 2 | 3 => Math.max(1, Math.min(3, actions)) as 1 | 2 | 3;
+
+  // Which Move row the preview's distance falls into, so the panel tracks the drag.
   const dragBand = $derived.by<MoveBand | null>(() => {
-    if (!drag) return null;
-    if (drag.kind === 'push') return 'push';
-    if (drag.kind === 'move') return Math.min(3, drag.actions) as 1 | 2 | 3;
-    return null;
+    if (!preview) return null;
+    if (preview.kind === 'push') return 'push';
+    if (preview.kind === 'move') return bandOf(preview.actions);
+    return null; // a charge and a withdrawal are not Move rows
+
   });
 
   // Move's four bands, grouped straight off the engine's own `moves`/`push` maps — no pathing
   // recomputed here, just the `actions` each already carries.
   const moveBands = $derived.by<Record<1 | 2 | 3, string[]> & { push: string[] }>(() => {
     const bands: Record<1 | 2 | 3, string[]> = { 1: [], 2: [], 3: [] };
-    if (act) for (const [cell, m] of act.moves) bands[Math.min(3, m.actions) as 1 | 2 | 3].push(cell);
+    if (act) for (const [cell, m] of act.moves) bands[bandOf(m.actions)].push(cell);
     return { ...bands, push: act ? [...act.push.keys()] : [] };
   });
   const bandStyle = (n: MoveBand): HighlightStyle => (n === 'push' ? 'push' : n === 1 ? 'move' : n === 2 ? 'moveFar' : 'moveFar3');
@@ -229,20 +331,23 @@
   // The standing wash: every band, the moment a unit is selected, before any drag. Hovering a
   // Move row narrows the wash to just that band; a live drag takes over entirely.
   const standingHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
-    if (!active || !act || drag) return [];
+    if (!active || !act || preview) return [];
     if (hoveredBand) return [{ style: bandStyle(hoveredBand), cells: moveBands[hoveredBand] }];
     return ([1, 2, 3, 'push'] as const).map((n) => ({ style: bandStyle(n), cells: moveBands[n] }));
   });
 
   const withdrawCells = $derived(
-    act?.withdraw && withdrawOpen && !drag ? act.withdraw.targets.map((t) => t.id) : [],
+    act?.withdraw && withdrawOpen && !preview ? act.withdraw.targets.map((t) => t.id) : [],
   );
 
+  const aimCells = $derived(aim && aimed ? [aim.cell] : []);
+  const aimStyle = $derived<HighlightStyle>(aimed ? styleFor(aimed.offer) : 'attack');
+
   const highlights = $derived<{ style: HighlightStyle; cells: string[] }[]>([
-    { style: focusedStyle, cells: focusedCells },
+    { style: aimStyle, cells: aimCells },
     ...standingHighlights,
     { style: 'move', cells: withdrawCells },
-    ...dragHighlights,
+    ...previewHighlights,
   ]);
 
   const tokens = $derived.by<TokenModel[]>(() => [
@@ -258,7 +363,7 @@
       disorder: u.disorder,
       quality: u.quality,
       engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
-      ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : highlightedUnitIds.has(u.id) ? 'highlighted' : null,
+      ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : null,
     })),
     // Abandoned and captured engines stand alone on the square they were left.
     ...b.units.flatMap((u) => u.engines
@@ -270,7 +375,6 @@
     const before = game.battle!.log.length;
     takeAction({ type: offer.type, rung: opt.index, target, spell: offer.spell ?? undefined, spend: spendOn(rungKey(offer, opt), rungDials(offer, opt)) });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
-    focused = null;
     alloc = {};
   }
 
@@ -281,37 +385,61 @@
     alloc = {};
   }
 
-  // A board click only ever resolves a rung of the currently open type — never a type the
-  // panel isn't showing, which would act on something the player was never shown. Hovering
-  // the focused rung wins when it targets the same thing (disambiguates a cell/unit two
-  // rungs both offer); otherwise every legal rung of the open type is searched, same as
-  // clicking its own "Go" button.
-  function findMatch(kind: 'cell' | 'unit' | 'wall', id: string): { offer: ActionOffer; opt: RungOption } | null {
-    if (!openOffer) return null;
-    if (focusedEntry?.opt.targets.some((t) => t.kind === kind && t.id === id)) return focusedEntry;
-    for (const opt of openOffer.rungs) {
-      if (opt.legal && opt.targets.some((t) => t.kind === kind && t.id === id)) return { offer: openOffer, opt };
-    }
-    return null;
+  /** Open the popup for a board object: everything this unit can do to it, rung by rung. */
+  function aimAt(target: TargetRef, cell: string, label: string) {
+    if (!active) return;
+    const rows = offersAt(b, target, active.id).flatMap((t) => t.rungs.map((opt) => ({ offer: t.offer, opt })));
+    aim = rows.length ? { cell, target, label, rows, index: 0 } : null;
   }
+
+  /** A second touch of the same row takes it, the way the drop popup's rows work. */
+  function aimChoose(i: number) {
+    if (!aim) return;
+    if (aim.index === i) { takeAim(); return; }
+    aim = { ...aim, index: i };
+  }
+
+  function takeAim() {
+    const a = aim;
+    const row = a?.rows[a.index];
+    if (!a || !row) return;
+    aim = null;
+    // The id goes through only where the rung actually names it: Guard takes none, and a
+    // Rally on your own piece must not arrive carrying your own id as its ally.
+    const names = row.opt.targets.some((t) => t.kind === a.target.kind && t.id === a.target.id);
+    performRung(row.offer, row.opt, names ? a.target.id : undefined);
+  }
+
   function onCell(e: BoardEventOf<'cell'>) {
-    const m = findMatch('cell', e.cell);
-    if (m) { performRung(m.offer, m.opt, e.cell); return; }
+    // A click on the parked destination confirms the row it has chosen; a click anywhere else
+    // abandons it and means whatever it would have meant with nothing parked.
+    if (pending) {
+      if (pending.cell === e.cell) { commit(); return; }
+      pending = null;
+    }
+    aim = null;
     const w = act?.withdraw;
     if (w && withdrawOpen && w.targets.some((t) => t.id === e.cell)) performWithdraw(w, e.cell);
   }
-  function onToken(e: BoardEventOf<'token'>) { const m = findMatch('unit', e.id); if (m) performRung(m.offer, m.opt, e.id); }
-  function onEdge(e: BoardEventOf<'edge'>) { const m = findMatch('wall', e.edge); if (m) performRung(m.offer, m.opt, e.edge); }
+  function onToken(e: BoardEventOf<'token'>) {
+    // A charge parks on its approach cell, so clicking the enemy is what confirms it.
+    if (pending) {
+      if (picked?.kind === 'charge' && picked.enemy === e.id) { commit(); return; }
+      pending = null;
+    }
+    const u = b.units.find((x) => x.id === e.id);
+    aimAt({ kind: 'unit', id: e.id }, u ? notation(u.square) : '', u?.name ?? e.id);
+  }
+  // A wall has no cell of its own; its popup opens over the first of the two it divides.
+  function onEdge(e: BoardEventOf<'edge'>) {
+    pending = null;
+    aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '));
+  }
 
   function pickUnit(u: Unit) {
     if (u.status !== 'active' || u.side !== b.pending || b.activated.includes(u.id)) return;
     selectUnit(u.id);
     boardRef?.centerOn(notation(u.square));
-  }
-
-  function toggleType(offer: ActionOffer) {
-    const key = offerKey(offer);
-    openType = openType === key ? null : key;
   }
 
   const grantedLabel = (type: LadderType, granted: Grade) => rungOf(type, granted).label;
@@ -332,6 +460,26 @@
   let logEl = $state<HTMLDivElement>();
   $effect(() => { void b.log.length; logEl?.scrollTo({ top: logEl.scrollHeight }); });
 </script>
+
+{#snippet popupHead(label: string)}
+  <div class="popup-head">
+    <span>{label}</span>
+    <span class="popup-actions" title="Actions left this activation">
+      {#each Array(ACTIONS_PER_ACTIVATION) as _, i (i)}<span class="pip circle" class:on={i < left}></span>{/each}
+    </span>
+  </div>
+{/snippet}
+
+{#snippet popupFoot(confirm: () => void)}
+  <div class="popup-foot">
+    <button class="primary" onclick={confirm}>Confirm</button>
+    <span class="muted">
+      {cost} of {left} action{left === 1 ? '' : 's'}{cost >= left ? ' — ends the activation' : ''}
+    </span>
+  </div>
+{/snippet}
+
+<svelte:window onkeydown={onKey} />
 
 <div class="battle">
   <div class="battle-top">
@@ -355,7 +503,7 @@
       mode="battle"
       fill
       {highlights}
-      {dragPath}
+      dragPath={previewPath}
       draggable={active?.id ?? null}
       oncell={active ? onCell : undefined}
       ontoken={active ? onToken : undefined}
@@ -365,14 +513,77 @@
     />
     {#if drag}
       <div class="drag-hud">
-        {#if drag.kind === 'charge'}
-          <strong>Charge {dragEnemyName}</strong> — {drag.feet} ft · {drag.actions} action{drag.actions === 1 ? '' : 's'} (incl. melee)
-        {:else if drag.kind === 'push'}
-          <strong>Push to {drag.cell}</strong> — DC {drag.dc} · fail and you stop at {drag.fallback}
-        {:else}
-          <strong>Move to {drag.cell}</strong> — {drag.feet} ft · {drag.actions} action{drag.actions === 1 ? '' : 's'}
-        {/if}
+        <strong>{rowLabel(drag)}</strong>
+        <span class="muted">{drag.cell} — {rowDetail(drag)}</span>
       </div>
+    {/if}
+    {#if pending && anchor}
+      <BoardPopup x={anchor.x} y={anchor.y}>
+        {@render popupHead(pending.cell)}
+        {#each pending.rows as row, i (rowKey(row))}
+          <button class="popup-row" class:on={i === pending.index} onclick={() => choose(i)}>
+            <span class="popup-verb">{rowLabel(row)}</span>
+            <span class="muted">{rowDetail(row)}</span>
+          </button>
+          {#if i === pending.index && row.kind === 'charge' && active}
+            <div class="rung-chips">
+              {#each FIGHT_RUNGS as g (g)}
+                {@const access = rungAccess(active, 'fight', g)}
+                <button
+                  class="rung-chip {access}"
+                  class:on={chargeRung === g}
+                  disabled={access === 'locked'}
+                  onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
+                >
+                  {rungOf('fight', g).label}
+                  {#if access === 'reach'}<span class="chip-note">gamble</span>{/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        {/each}
+        {@render popupFoot(commit)}
+      </BoardPopup>
+    {/if}
+    {#if aim && anchor && active && !pending}
+      <BoardPopup x={anchor.x} y={anchor.y}>
+        {@render popupHead(aim.label)}
+        {#each aim.rows as row, i (rungKey(row.offer, row.opt))}
+          <button class="popup-row" class:on={i === aim.index} onclick={() => aimChoose(i)}>
+            <span class="popup-verb">
+              {row.offer.label} · {row.opt.label}
+              {#if row.opt.access === 'reach'}<span class="chip-note">gamble</span>{/if}
+            </span>
+            <span class="muted">{row.opt.detail}</span>
+          </button>
+          {#if i === aim.index}
+            {@const d = rungDials(row.offer, row.opt)}
+            {@const sp = spendOn(rungKey(row.offer, row.opt), d)}
+            {#if row.opt.access === 'reach' && row.offer.reachDc !== null}
+              <p class="popup-gamble">
+                DC {row.offer.reachDc} · d20{row.offer.reachModifier >= 0 ? '+' : ''}{row.offer.reachModifier + sp.push * d.step}.
+                Fail → {rungOf(row.offer.type, row.offer.granted).label}.
+              </p>
+            {/if}
+            {#if d.extra > 0 && DIALS.some((x) => d[x])}
+              <div class="popup-dials">
+                {#each DIALS.filter((x) => d[x]) as dial (dial)}
+                  <div class="dial">
+                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(row.offer, row.opt), d, dial, sp[dial] - 1)}>−</button>
+                    <span class="dial-n">{sp[dial]}</span>
+                    <button class="dial-step" disabled={used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(row.offer, row.opt), d, dial, sp[dial] + 1)}>+</button>
+                    <span class="dial-buys">{perAction(row.offer, dial, d.step, active.speed)}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            <p class="popup-totals">
+              {#each totals(row.offer, row.opt, sp, active) as line (line)}<span class="total">{line}</span>{/each}
+            </p>
+          {/if}
+        {/each}
+        {@render popupFoot(takeAim)}
+      </BoardPopup>
     {/if}
   </div>
 
@@ -464,8 +675,8 @@
             >
               <span class="move-row-label">Push</span>
               <span class="muted">
-                {#if drag?.kind === 'push'}
-                  DC {drag.dc} · fail and you stop at {drag.fallback}
+                {#if preview?.kind === 'push'}
+                  DC {preview.dc} · fail and you stop at {preview.fallback}
                 {:else}
                   DC {pushDcFor(active)} · a fail stops you at the furthest cell you can afford
                 {/if}
@@ -534,89 +745,10 @@
         </div>
       {/if}
 
-      <!-- Progressive disclosure: this row never shows a rung, only the types on offer.
-           Clicking one opens its ladder below; clicking it again closes it. -->
-      <div class="type-row">
-        {#each offers as offer (offerKey(offer))}
-          <button class="type-chip" class:open={openType === offerKey(offer)} onclick={() => toggleType(offer)}>
-            {offer.label}
-          </button>
-        {:else}
-          <p class="muted">Nothing else to do here — end the activation.</p>
-        {/each}
-      </div>
-
-      {#if openOffer}
-        <div class="offer">
-          <p class="muted">{openOffer.detail}</p>
-          {#if openOffer.type === 'rally'}
-            <p class="gamble">
-              Quality check vs DC {routDcFor(b, active)} · roll d20{openOffer.reachModifier >= 0 ? '+' : ''}{openOffer.reachModifier}.
-              Crit → clears all. Success → clears 2. Fail → clears 1. Crit fail → clears nothing, and 1 disorder.
-            </p>
-          {/if}
-          {#each openOffer.rungs as opt (opt.index)}
-            <div
-              class="rung"
-              class:locked={opt.access === 'locked'}
-              class:reach={opt.access === 'reach'}
-              role="group"
-              onmouseenter={() => { if (opt.legal) focused = rungKey(openOffer, opt); }}
-              onmouseleave={() => { if (focused === rungKey(openOffer, opt)) focused = null; }}
-              onfocusin={() => { if (opt.legal) focused = rungKey(openOffer, opt); }}
-              onfocusout={() => { if (focused === rungKey(openOffer, opt)) focused = null; }}
-            >
-              <div class="rung-head">
-                <span class="rung-label">{opt.index}. {opt.label}</span>
-                <span class="rung-access {opt.access}">{opt.access === 'free' ? 'Free' : opt.access === 'reach' ? 'Reach — gamble' : 'Locked'}</span>
-              </div>
-              <p class="muted rung-detail">{opt.detail}</p>
-              {#if opt.access === 'reach'}
-                <p class="gamble">
-                  DC {openOffer.reachDc} · roll d20{openOffer.reachModifier >= 0 ? '+' : ''}{openOffer.reachModifier}.
-                  Crit → {aboveLabel(openOffer.type, opt.index)}. Fail → falls back to {grantedLabel(openOffer.type, openOffer.granted)}.
-                  Crit fail → {grantedLabel(openOffer.type, openOffer.granted)}, and 1 disorder.
-                </p>
-              {/if}
-              {#if !opt.legal}
-                <p class="muted rung-reason">{opt.reason}</p>
-              {:else}
-                {@const d = rungDials(openOffer, opt)}
-                {@const sp = spendOn(rungKey(openOffer, opt), d)}
-                {#if d.extra > 0 && DIALS.some((x) => d[x])}
-                  <div class="dials">
-                    <div class="dial-head">
-                      <span>Commit actions</span>
-                      <span class="muted">{used(sp)} of {d.extra} spare</span>
-                    </div>
-                    {#each DIALS.filter((x) => d[x]) as dial (dial)}
-                      <div class="dial">
-                        <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(openOffer, opt), d, dial, sp[dial] - 1)}>−</button>
-                        <span class="dial-n">{sp[dial]}</span>
-                        <button class="dial-step" disabled={used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(openOffer, opt), d, dial, sp[dial] + 1)}>+</button>
-                        <span class="dial-buys">{perAction(openOffer, dial, d.step, active.speed)}</span>
-                        <span class="dial-sum">{dialSum(dial, sp[dial], d.step, active.speed)}</span>
-                      </div>
-                    {/each}
-                    <p class="totals">
-                      {#each totals(openOffer, opt, sp, active) as line (line)}<span class="total">{line}</span>{/each}
-                    </p>
-                  </div>
-                {/if}
-                <div class="row rung-go">
-                  {#if opt.targets.length}
-                    <select bind:value={chosen[rungKey(openOffer, opt)]}>
-                      {#each opt.targets as t (t.id)}<option value={t.id}>{t.label}</option>{/each}
-                    </select>
-                    <button onclick={() => performRung(openOffer, opt, chosen[rungKey(openOffer, opt)] ?? opt.targets[0].id)}>Go</button>
-                  {:else}
-                    <button onclick={() => performRung(openOffer, opt)}>Go</button>
-                  {/if}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </div>
+      {#if !offers.length}
+        <p class="muted">Nothing else to do here — end the activation.</p>
+      {:else}
+        <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
       {/if}
     {/if}
 
@@ -650,10 +782,32 @@
 
   .drag-hud {
     position: absolute; top: .6rem; left: .6rem; z-index: 5;
+    display: flex; gap: .6rem; align-items: center;
     padding: .35rem .7rem; border-radius: 8px; font-size: .85rem;
     background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
     pointer-events: none;
   }
+  .popup-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .1rem .4rem .3rem; font-weight: 600; color: var(--muted); }
+  .popup-actions { display: flex; gap: 2px; }
+  .popup-row {
+    display: flex; flex-direction: column; gap: .1rem; width: 100%;
+    padding: .35rem .5rem; border: 1px solid transparent; border-radius: 7px;
+    background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+  }
+  .popup-row:hover { background: var(--band); }
+  .popup-row.on { border-color: var(--accent); background: var(--band); }
+  .popup-verb { font-weight: 600; }
+  .rung-chips { display: flex; gap: .3rem; padding: .1rem .5rem .3rem 1rem; }
+  .rung-chip {
+    display: flex; gap: .25rem; align-items: baseline;
+    padding: .1rem .4rem; border: 1px solid var(--rule); border-radius: 999px;
+    background: transparent; color: var(--ink); font: inherit; font-size: .78rem; cursor: pointer;
+  }
+  .rung-chip.on { border-color: var(--accent); background: var(--band); }
+  .rung-chip:disabled { opacity: .4; cursor: default; }
+  .chip-note { font-size: .68rem; color: var(--muted); }
+  .popup-foot { display: flex; gap: .5rem; align-items: center; padding: .3rem .5rem 0; border-top: 1px solid var(--rule); margin-top: .3rem; }
+  .popup-foot button { font-size: .8rem; padding: .15rem .5rem; }
 
   .unit-card {
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .2rem;
@@ -694,26 +848,12 @@
   .move-row.current { outline: 2px solid var(--accent); outline-offset: -1px; }
   .move-row-label { font-weight: 600; font-size: .85rem; white-space: nowrap; }
 
-  .type-row { display: flex; flex-wrap: wrap; gap: .35rem; }
-  .type-chip {
-    padding: .3rem .65rem; border-radius: 999px; border: 1px solid var(--rule); background: var(--card);
-    color: var(--ink); font: inherit; cursor: pointer;
-  }
-  .type-chip.open { border-color: var(--accent); background: var(--accent); color: var(--paper); }
+  .hint { font-size: .8rem; }
+  .popup-gamble { padding: 0 .5rem .2rem 1rem; font-size: .78rem; color: var(--accent); }
+  .popup-dials { display: flex; flex-direction: column; gap: .2rem; padding: .1rem .5rem .2rem 1rem; }
+  .popup-totals { display: flex; flex-wrap: wrap; gap: .25rem; padding: 0 .5rem .3rem 1rem; margin: 0; }
 
-  .offer { border: 1px solid var(--rule); border-radius: 8px; padding: .5rem .6rem; background: var(--card); }
-  .rung { border-top: 1px dashed var(--rule); padding: .3rem 0; }
-  .rung:first-of-type { border-top: none; }
-  .rung.locked { opacity: .5; }
-  .rung-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
-  .rung-label { font-weight: 600; }
-  .rung-access { font-size: .72rem; padding: .05rem .4rem; border-radius: 999px; border: 1px solid var(--rule); white-space: nowrap; }
-  .rung-access.free { color: var(--good); border-color: var(--good); }
-  .rung-access.reach { color: var(--accent); border-color: var(--accent); }
-  .rung-access.locked { color: var(--muted); }
   .rung-detail { margin: .1rem 0; }
-  .gamble { margin: .25rem 0; font-size: .82rem; color: var(--accent); }
-  .rung-reason { margin: .1rem 0; font-style: italic; }
   .rung-go { margin-top: .3rem; }
 
   .dials { margin: .35rem 0 .25rem; padding: .35rem .45rem; border-radius: 6px; background: var(--band); }

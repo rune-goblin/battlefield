@@ -1,9 +1,9 @@
 import * as PIXI from 'pixi.js';
-import { FILES, SIZE, type Grid } from '../../engine/index.js';
+import { FILES, type Cell, type Grid } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { createMapText } from './MapTextUtils.js';
 
-/** Coordinate labels (files below, ranks along the left) — a–h / 1–8 either grid. */
+/** Coordinate labels: files below, ranks along the left. */
 export class LabelLayer {
   private readonly container: PIXI.Container;
   private readonly viewport: PIXI.Container;
@@ -26,14 +26,26 @@ export class LabelLayer {
       align: 'center',
     };
 
-    for (let file = 0; file < SIZE; file++) {
-      const c = grid.center({ file, rank: 0 }, size);
+    // A hexagonal board has no full first rank or file, so each label hangs off the outermost
+    // cell its own file or rank actually has.
+    const cells = grid.cells();
+    const outermost = (group: (c: Cell) => number, pick: (c: Cell) => number): Map<number, Cell> => {
+      const best = new Map<number, Cell>();
+      for (const c of cells) {
+        const held = best.get(group(c));
+        if (!held || pick(c) < pick(held)) best.set(group(c), c);
+      }
+      return best;
+    };
+
+    for (const [file, cell] of outermost((c) => c.file, (c) => c.rank)) {
+      const c = grid.center(cell, size);
       const text = createMapText({ text: FILES[file], x: c.x, y: bounds.height + margin, style }, this.viewport);
       if (text) this.container.addChild(text);
     }
-    for (let rank = 0; rank < SIZE; rank++) {
-      const c = grid.center({ file: 0, rank }, size);
-      const text = createMapText({ text: String(rank + 1), x: -margin, y: c.y, style, anchorX: 1 }, this.viewport);
+    for (const [rank, cell] of outermost((c) => c.rank, (c) => c.file)) {
+      const c = grid.center(cell, size);
+      const text = createMapText({ text: String(rank + 1), x: c.x - size * 0.62 - margin, y: c.y, style, anchorX: 1 }, this.viewport);
       if (text) this.container.addChild(text);
     }
   }
