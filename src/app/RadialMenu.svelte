@@ -5,7 +5,6 @@
     key: string;
     src: string;
     label: string;
-    note: string;
     legal: boolean;
   }
 
@@ -13,15 +12,24 @@
     /** The piece's centre, in CSS pixels inside the board container. */
     x: number;
     y: number;
+    /** The actor's cell circumradius on screen; the ring's hole clears it. */
+    hole: number;
     items: Item[];
     pick: (key: string) => void;
   }
-  let { x, y, items, pick }: Props = $props();
+  let { x, y, hole, items, pick }: Props = $props();
 
-  const RADIUS = 98;
-  const TRACK = 62;
-  const R_OUT = RADIUS + TRACK / 2;
-  const R_IN = RADIUS - TRACK / 2;
+  // The seat is UI, not board: it holds its size through pan and zoom. The icons are wider
+  // than the track on purpose — they break both rims, so the ring reads as their backing
+  // rather than as six buttons in a gutter.
+  const SEAT = 96;
+  const TRACK = 76;
+  const CLEAR = 10;
+  const MIN_IN = 67;
+
+  // The hole sits outside the actor's hex, so the piece stays readable under an open ring.
+  const R_IN = $derived(Math.max(hole + CLEAR, MIN_IN));
+  const R_OUT = $derived(R_IN + TRACK);
 
   // Twelve o'clock, then clockwise. A ring is learned by direction, so the order must be the
   // same every time a piece is touched — `props` in Battle.svelte holds it at six.
@@ -48,7 +56,7 @@
 <div class="radial" style="left: {x}px; top: {y}px">
   <!-- Band, rims and icons are one piece: everything is placed off --ro/--ri, so the outer edge
        can run ahead to full width while the hole opens behind it. -->
-  <div class="ring" style="--ro: {R_OUT}; --ri: {R_IN}" out:zip>
+  <div class="ring" style="--ro: {R_OUT}; --ri: {R_IN}; --seat-size: {SEAT}px" out:zip>
     <div class="band"></div>
     <div class="rim outer"></div>
     <div class="rim inner"></div>
@@ -60,12 +68,11 @@
         class:dim={!item.legal}
         aria-disabled={!item.legal}
         style="--ux: {p.ux}; --uy: {p.uy}"
-        title={item.note}
         onclick={() => item.legal && pick(item.key)}
         onpointerenter={() => { hover = i; }}
         onpointerleave={() => { hover = hover === i ? null : hover; }}
       >
-        <span class="face"><img src={item.src} alt={item.label} draggable="false" /></span>
+        <img class="face" src={item.src} alt={item.label} draggable="false" />
         <span class="name" class:show={hover === i}>{item.label}</span>
       </button>
     {/each}
@@ -105,39 +112,42 @@
 
   .slice {
     position: absolute; left: 0; top: 0;
-    width: 3.2rem; height: 3.2rem; padding: 0; border: 0; background: none;
+    width: var(--seat-size); height: var(--seat-size); padding: 0; border: 0; background: none;
     color: var(--ink); font: inherit; cursor: pointer;
     transform: translate(
       calc(-50% + var(--ux) * var(--seat) * 1px),
       calc(-50% + var(--uy) * var(--seat) * 1px)
     );
   }
-  /* The seat rides the band; only the disc itself pops, so the two never come apart. */
+  /* The seat rides the band; only the icon itself pops, so the two never come apart. The
+     shadow is what separates it from the board where it overhangs the rims. */
   .face {
     position: absolute; inset: 0;
-    display: grid; place-items: center;
-    border: 1px solid var(--rule); border-radius: 50%;
-    background: var(--card);
+    width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+    filter: drop-shadow(0 2px 5px rgb(0 0 0 / .55));
+    transition: transform .12s cubic-bezier(.25, 1.3, .45, 1), filter .12s ease;
     animation: pop .3s cubic-bezier(.25, 1.3, .45, 1) 120ms backwards;
   }
-  .face img { width: 2.4rem; height: 2.4rem; object-fit: contain; pointer-events: none; }
 
   /* The name is read off the pointer, not carried by every slice at once — six labelled discs
      is a wall of text, and the ring is meant to be learned by direction. Absolute, so revealing
      it never nudges the ring. */
   .name {
     position: absolute; top: 100%; left: 50%; transform: translate(-50%, .15rem);
-    padding: .05rem .3rem; border-radius: 6px; white-space: nowrap;
-    font-size: .7rem; font-weight: 600; pointer-events: none;
+    padding: .15rem .45rem; border-radius: 6px; white-space: nowrap;
+    font-size: .95rem; font-weight: 600; pointer-events: none;
     background: var(--card); border: 1px solid var(--accent);
     opacity: 0; transition: opacity .1s ease;
   }
   .name.show { opacity: 1; }
 
-  .slice:hover:not(.dim) .face { border-color: var(--accent); background: var(--band); }
-  /* Dim slices still answer the pointer: hovering one is how you learn why it is out. */
+  /* Growth is the highlight: the hovered icon lifts off the ring instead of lighting a disc. */
+  .slice:hover:not(.dim) .face {
+    transform: scale(1.22);
+    filter: drop-shadow(0 3px 8px rgb(0 0 0 / .6)) brightness(1.12);
+  }
   .slice.dim { cursor: default; }
-  .slice.dim .face { filter: grayscale(1); opacity: .4; }
+  .slice.dim .face { filter: grayscale(1) drop-shadow(0 2px 5px rgb(0 0 0 / .45)); opacity: .4; }
 
   @keyframes spread {
     from { --ro: 10; opacity: 0; }

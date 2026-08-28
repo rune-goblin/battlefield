@@ -31,12 +31,12 @@ References: Kingmaker war rules (Archives of Nethys: War Actions, War Encounters
 | Will | `saves.will` | +13 |
 | Reflex | `saves.reflex` | +14 |
 | Perception | initiative | +13 |
-| Pace | Speed ≥ 30 ft or a fly speed: Advance moves two squares | 20 ft → no |
+| Pace | Speed sets squares per Advance: 30 ft and under one, 60 ft two, 90 ft three. Flight is not distance — it only ignores terrain | 20 ft → one square |
 | Level | rout DC for enemies | 6 |
 | Wounds | derived from HP (below) | 0 |
 | Shaken | the `demoralized` counter effect | 0 |
 
-The imported troop keeps its sheet: `UnitCard.sheet` carries AC, HP, Battle DC, Salvo DC and range in feet, all three saves, Perception and Speed as written on the actor. The battle stats are derived from it, never edited by hand, and the unit row shows both: the sheet line as the source, and the battle line with each number's derivation (`derivation(card)`), so a GM can see that Strike +11 is Battle DC 21 − 10 and Pace is absent because Speed is 20 ft. Generic roster cards have no sheet and derive from the level table instead; the row says so.
+The imported troop keeps its sheet: `UnitCard.sheet` carries AC, HP, Battle DC, Salvo DC and range in feet, all three saves, Perception and Speed as written on the actor. The battle stats are derived from it, never edited by hand, and the unit row shows both: the sheet line as the source, and the battle line with each number's derivation (`derivation(card)`), so a GM can see that Strike +11 is Battle DC 21 − 10 and that Speed 20 ft advances one square. Thirty feet of Speed is a square: a troop is a formation, not one creature. Generic roster cards have no sheet and derive from the level table instead; the row says so.
 
 Troops without a `[Salvo]` item cannot Volley. A siege engine's Volley bonus is `getSiegeLaunchDc(...) − 10`, and it always reaches extreme.
 
@@ -115,7 +115,7 @@ The battle ends when one side has no unit that is neither destroyed nor routed, 
 
 | Action | Cost | Effect |
 |---|---|---|
-| Advance | 1 | Not while engaged. Move one square orthogonally; Pace units move two on open, level ground. Cannot cross a barrier, enter water, or enter an occupied square. Ending adjacent to an enemy engages it. |
+| Advance | 1 | Not while engaged. Move as many squares as the unit's Speed buys — one at 30 ft and under, two at 60, three at 90. Movement pools across the activation, so a Pace unit's spare square carries to its next action. Cannot cross a barrier, enter water, or enter an occupied square. Ending adjacent to an enemy engages it. |
 | Withdraw | 1 | Move one square orthogonally away from every engaged enemy. If engaged when you start, the cost is 2 and each engaged enemy may spend its reaction on a free Strike (success = 1 wound, no critical). |
 | Strike | 1 | Engaged only. d20 + Strike bonus vs the target's Defence DC. Critical 2 wounds, success 1, critical failure: you are Exposed (−2 Defence until your next activation). Takes the multiple attack penalty. |
 | Volley | 1 | Not engaged; target within your Volley band. Firing at a target engaged with an ally is −4. d20 + Volley bonus vs Defence DC; extreme −2. Critical 2 wounds, success 1. Takes the multiple attack penalty. |
@@ -162,9 +162,9 @@ A square is one of five types. Open is the default and does nothing.
 | Type | Effect |
 |---|---|
 | Open | — |
-| Forest | Cover: the occupant has +1 Defence against Volley. Cancels Pace and blocks cavalry-charge. |
-| Swamp | Slows: entering costs the whole Advance and one more action; Pace and cavalry-charge never apply. A unit in swamp Strikes at −1. |
-| Shallows | A ford or marsh edge: as swamp, and a unit in shallows cannot Withdraw or Retreat while engaged. |
+| Forest | Difficult (a flier is over it, as it is over all of these — that is all flight does): entering costs two squares' worth of movement, so a troop spends two actions and a Pace unit one — which is what cancels Pace. Cover: the occupant has +1 Defence against Volley. Blocks cavalry-charge. |
+| Swamp | Very difficult: entering costs three squares' worth, so a troop spends three actions and a Pace unit two. Pace and cavalry-charge never apply. A unit in swamp Strikes at −1. |
+| Shallows | A ford or marsh edge: difficult as forest, and a unit in shallows cannot Withdraw or Retreat while engaged. |
 | Water | Impassable. No unit enters; Volleys cross it. |
 
 Settlement squares count as forest for cover and as open for movement.
@@ -175,7 +175,7 @@ Every square has an elevation of 0, 1 or 2. The effects read the difference betw
 
 - Striking uphill: −1 to Strike per level of difference.
 - Volley downhill: the target's cover does not apply and the Volley reaches one band further; Volley uphill: −1 per level.
-- Advancing uphill: cancels Pace for that Advance and blocks cavalry-charge.
+- Advancing uphill: a square's worth more per level climbed, so a troop spends two actions to climb one square. That is what cancels Pace, and it blocks cavalry-charge.
 - Rout DC: a unit on higher ground than every engaged enemy treats the DC as 2 lower, matching the fortification bonus. The two do not stack.
 - An edge with a difference of 2 is a cliff (see barriers).
 

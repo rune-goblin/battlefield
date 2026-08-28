@@ -172,3 +172,6 @@ export function resetSetup() {
   game.stage = 'board';
   save();
 }
+
+// Module-level $state is seeded once from localStorage; a hot patch would keep the old game.
+if (import.meta.hot) import.meta.hot.accept(() => import.meta.hot!.invalidate());

@@ -3,6 +3,9 @@ import { at, barrierBetween, gridOf, notation, type Board, type Square, type Squ
 /** One board cell is ten feet, so every cost below reads as a PF2e distance. */
 export const CELL_FEET = 10;
 
+/** What entering a square costs: a square's worth of ground, two on difficult terrain and
+ * three on very difficult. A troop moves a square an action, so it pays those in whole
+ * actions; a Pace unit covers two squares' worth, so difficult ground costs it one. */
 export const TERRAIN_FEET: Record<SquareTerrain, number> = {
   open: CELL_FEET,
   // A settlement is a road, so it is never worse than open ground.

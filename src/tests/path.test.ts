@@ -8,7 +8,7 @@ const walk = (board = openBoard('hex'), budget = 100, flying = false) =>
   reachable(board, from, { budget, flying });
 
 describe('terrain costs in feet', () => {
-  it('charges the table for what it enters, and ten feet a level climbed', () => {
+  it('charges two squares\u2019 worth for difficult ground, three for very difficult', () => {
     const board = openBoard('hex');
     board.squares[2][2].terrain = 'forest';
     board.squares[1][3].terrain = 'swamp';

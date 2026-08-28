@@ -578,3 +578,139 @@ off `theme.attacker`/`theme.defender` rather than carrying a pair of its own.
 
 Judgment call: `selected` (placement) got the same treatment as `active`, since both mean "the
 piece in hand".
+
+### Reach is shaded, not coloured
+
+Six coloured washes at 0.35 left the map unreadable — green, amber and red bands fighting the
+terrain's own palette and each other. The bands are now plain ink at three alphas (0.1 / 0.17 /
+0.26), so the terrain under them still reads: the free step sits most solid, and each extra
+action costs a step of contrast. `push` and `attack` add a thin ink outline, which is the one
+thing three greys alone cannot say — ground past every action you have, and ground under
+threat. `theme.overlay.highlight` is gone with the colours.
+
+Washes are 8% / 16% / 24% ink. `push` and `attack` add a thin ink outline, which is the one
+thing three greys alone cannot say — ground past every action you have, and ground under
+threat.
+
+Even in grey the standing wash was unreadable, so selecting a unit no longer paints its reach
+at all: the drag arrow says where a move goes, and hovering a Move row is how you ask to see
+the band behind it. What remains on the board is the deploy band, the aim, and the drag's own
+path.
+
+Judgment call: colour on the board now means terrain and side, nothing else. The sidebar keeps
+its amber move-band text (`--warn`/`--warn2`); it no longer matches the board, and that pairing
+should probably go next.
+
+### A Move action buys a square, not a Speed
+
+The bands sprawled because the board spent the sheet's Speed against a 10 ft cell: a 25 ft troop
+covered two and a half squares an action, cavalry four. `squaresPerAction` now reads the Speed
+in bands of thirty feet — 30 ft and under one square, 60 ft two, 90 ft three — and `speedOf` is
+that count in board feet. A troop is a formation, not one creature, so thirty feet of the
+actor's Speed carries it one square.
+
+Judgment call: the band is `ceil(speed / 30)` rather than a three-entry table, so a 120 ft
+outlier gets four squares instead of silently capping at three. Cards with no sheet (the roster
+and the generator) still fall back to type: cavalry two, infantry one.
+
+Terrain prices itself off that square: difficult ground (forest, shallows) costs two squares'
+worth and swamp three, so a troop spends two actions entering forest and three entering swamp,
+while a Pace unit spends one and two. Climbing a level costs a square's worth on top, which is
+what cancels Pace uphill. `docs/design.md` and `public/rules.html` are updated to match — both
+previously described swamp as "the whole Advance and one more action".
+
+Flight buys no distance — it is a terrain modifier and nothing else, which `Unit.flying` already
+carried: open ground for every square, and walls, cliffs and water crossed. The unit's `pace`
+flag comes off `squaresPerAction` too, so one place decides how far anything moves. Move rows quote actions alone: with a
+square costing 10 ft, "20 ft · 2 actions" was saying the same thing twice, and the withdrawal
+dial counts squares.
+
+### Dragging the map, and room to drag it in
+
+Panning was middle-drag and space-drag only, and both were undiscoverable. Right-drag pans
+now, and a two-finger trackpad drag pans as well: `Interaction.isPanWheel` sends a wheel event
+to the pan when it carries a horizontal delta or a vertical one under 40 pixels, and to the
+zoom otherwise. A pinch arrives as a ctrl-wheel, so pinch still zooms.
+
+Judgment call: the right button pans everywhere except under a paint brush, where it stays the
+eraser — a brush in hand is the one time the right button already means something. A right
+click that never moves now does nothing, so the `cell` event lost its `button` field; nothing
+read it, and right-clicking a deploy cell used to place a piece there by accident.
+
+Judgment call: the 40-pixel wheel threshold is a guess at where a mouse notch stops and a
+trackpad starts. A mouse with smooth scrolling will pan when it means to zoom; the fix if that
+shows up is a preference, not a better guess.
+
+The fit reserves two cell pitches of empty board on every side (`PAD_CELLS` in
+`src/board/index.ts`) in place of the old 0.86 margin fraction. Panning has to be able to grab
+somewhere, and the outermost hexes sat against the viewport edge with nothing beside them. It
+costs about a fifth of the resting board size, which the zoom buys back.
+
+### The map moves inside a window, and only the map
+
+Free panning lost the board: two-finger drags walked it off the canvas with nothing to walk it
+back. `Interaction.clamp` now holds the padded board rect against the canvas after every pan,
+zoom, `centerOn` and refit — larger than the canvas it may slide until an edge would come
+inside, smaller than the canvas it sits centred. At the resting fit there is nothing to pan,
+which is the point: everything is already on screen.
+
+A trackpad pinch is a ctrl-wheel, and anywhere but the canvas Chrome answers it by zooming the
+whole document — panel, radial menu and canvas together, and the zoom outlives a reload.
+`main.ts` swallows the ctrl-wheel window-wide, so the board is the only thing that scales.
+⌘+/− still works, which is how you undo one that already stuck.
+
+### The action popup can be moved off the thing it is about
+
+Both board popups — the parked row/withdrawal one and the aim one — are draggable, and each
+carries an X in the top-right beside a Cancel in the foot. Judgment calls:
+
+- The whole card is the handle. A press on a button, input, select or link is left alone, so
+  the rows, dials and rung chips still work; anything else grabs. A separate title bar would
+  have cost a row of height the popup does not have to spare.
+- Once moved, the tail is hidden. It pointed at the cell, and a dragged popup is no longer
+  over it.
+- A new anchor resets the offset, so the next popup opens on its own cell rather than where
+  the last one was left. Switching verbs or rungs inside one popup keeps the position.
+- X and Cancel both run `stepBack`, the same walk out Escape and a click off the target take:
+  the popup closes and the wash stays armed.
+
+### The action popup sits in the top-right corner
+
+Both board popups now open pinned to the top-right of the board area instead of over the cell
+they are about, so the offer never covers the move it is offering. Judgment calls:
+
+- The tail is gone, along with the above/below flip and the height measurement that drove it.
+  Nothing points at the cell any more; the highlights already do that.
+- The drag survives — the corner is a starting point, not a cage. The offset now resets on a
+  new cell rather than on a new anchor, so switching verbs or rungs still keeps the position.
+- The per-frame anchor read is down to the ring alone, which is the only thing left that has
+  to track its cell through a pan, a zoom or a recentre.
+
+### A shot arcs from the shooter to the target
+
+Aiming a shot draws the shot's own flight path: a red arrow that leaves the shooter's cell
+thin, rises over the ground between, and plunges into the target's cell head first. The shoot
+prop becomes a bullseye in the middle of the target's hex, at 0.6 of a cell, and the arrow
+points at it. Judgment calls:
+
+- The arc is a quadratic curve lifted straight up, `LIFT_SPAN` of the span between the two
+  cells, floored and capped in cell sizes so a two-hex shot and a ten-hex shot both look like
+  they were thrown rather than fired flat.
+- Red, from a new `overlay.shot` theme colour. It is the one thing on the board that colours
+  for danger — every other overlay is ink at some alpha — and the alternative, ink, would have
+  sunk into the terrain it flies over.
+- Its own layer (z 35) above the pieces, not the overlay layer: a shot passing over a crowded
+  middle has to stay one readable line rather than duck behind whoever stands under it.
+- The bullseye is the one prop that centres rather than hanging off the piece's corner. It
+  covers the miniature it is aimed at, which is the point: the mark is on that unit.
+- The tip stops `TIP_INSET` short of the target's centre — the bullseye's own radius — so the
+  head lands on the mark instead of covering it. The two constants live in different files
+  (`Token.SHOT_PROP_RATIO`, `ShotLayer.TIP_INSET`) and have to be moved together.
+- Only `shoot` draws one. Fight and cast land on things already touching or already washed.
+
+### The ring names its slice and nothing more
+
+The hover label on a radial slice is the verb alone. The second line — "Close and fight",
+"Choose a spell on the target" — is gone, and with it the `note` field on `Prop`, the
+`UNAVAILABLE` map behind it and the reason lookup that fed a dim slice. A dim slice still
+answers the pointer and still reads greyed, but it no longer says why it is out.

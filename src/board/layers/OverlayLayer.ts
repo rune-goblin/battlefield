@@ -6,6 +6,24 @@ export type { HighlightStyle } from '../theme.js';
 
 const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'push', 'attack'];
 
+/** Reach reads as ink, never colour: the terrain keeps the board's only palette, so a band is
+ * a wash the map shows straight through. Three levels, and the cheaper the ground the more
+ * solid it sits — a free step is plain, a three-action haul is barely there. */
+const FAINT = 0.08;
+const MID = 0.16;
+const STRONG = 0.24;
+
+/** `push` and `attack` also take a thin outline: both mean something the wash alone cannot
+ * say — ground past every action you have, and ground under threat. */
+const SHADE: Record<HighlightStyle, { wash: number; outline: boolean }> = {
+  deploy: { wash: MID, outline: false },
+  move: { wash: STRONG, outline: false },
+  moveFar: { wash: MID, outline: false },
+  moveFar3: { wash: FAINT, outline: false },
+  push: { wash: FAINT, outline: true },
+  attack: { wash: STRONG, outline: true },
+};
+
 // The drag arrow's head, as fractions of cell size: how far its tip stops short of the
 // destination's centre, how long it is, and how wide at the base.
 const HEAD_INSET = 0.2;
@@ -13,8 +31,8 @@ const HEAD_LENGTH = 0.22;
 const HEAD_HALF_WIDTH = 0.13;
 
 /**
- * Hover cell, selection ring, the three highlight-style washes, and a paint preview — all
- * cell-shaped, so they share one draw pass keyed off the current `Grid`/cell size.
+ * Hover cell, selection ring, the highlight washes, and a paint preview — all cell-shaped, so
+ * they share one draw pass keyed off the current `Grid`/cell size.
  */
 export class OverlayLayer {
   private readonly container: PIXI.Container;
@@ -86,7 +104,9 @@ export class OverlayLayer {
     for (const style of HIGHLIGHT_ORDER) {
       const cells = this.highlights.get(style);
       if (!cells?.size) continue;
-      for (const key of cells) this.fillCell(g, key, this.theme.overlay.highlight[style], 0.35);
+      const shade = SHADE[style];
+      for (const key of cells) this.fillCell(g, key, this.theme.ink, shade.wash);
+      if (shade.outline) for (const key of cells) this.strokeCell(g, key, this.theme.ink, 0.3, 1.5);
     }
 
     if (this.paintPreview) {

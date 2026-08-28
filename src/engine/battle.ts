@@ -2,7 +2,7 @@ import {
   at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
   type Board, type Square, type Wall,
 } from './board.js';
-import { cardTraits, deriveStats, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
+import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { pathTo, reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
@@ -51,7 +51,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     taken.add(d.square);
     return {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
-      stats: deriveStats(d.card), pace: traits.pace, fear: traits.fear, tactics: traits.tactics,
+      stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
       grades: gradesFor(d.card), spells: spellsFor(d.card), quality: qualityFor(d.card),
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
       mounted: traits.signals.includes('mounted'), noRetreat: traits.signals.includes('no-retreat'),

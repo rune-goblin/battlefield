@@ -7,6 +7,7 @@ import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, t
 import { EdgeLayer } from './layers/EdgeLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
+import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
 import { TokenLayer } from './layers/TokenLayer.js';
 import type { TokenModel } from './Token.js';
@@ -18,9 +19,10 @@ export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Inte
 export type { TokenBounds } from './hit.js';
 export type { EngineTokenModel, TokenModel, TokenRing, UnitTokenModel } from './Token.js';
 
-// The grid fills this fraction of the container; the rest is margin for LabelLayer's
-// coordinate text, which sits just outside the grid bounds.
-const FIT_MARGIN = 0.86;
+// Empty board left around the grid on every side, in cell pitches. It holds LabelLayer's
+// coordinate text, and it is what a pan grabs: without it the outermost cells sit against the
+// viewport edge with nothing beside them to drag from.
+const PAD_CELLS = 2;
 
 export interface BoardView {
   setBoard(board: Board | null): void;
@@ -29,6 +31,9 @@ export interface BoardView {
   /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
    * wash. Empty clears it. */
   setDragPath(cells: string[]): void;
+  /** The shot being aimed: an arc from the shooter's cell over to the target's, drawn above
+   * the pieces. Null clears it. */
+  setShot(shot: { from: string; to: string } | null): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
@@ -50,6 +55,9 @@ export interface BoardView {
    * overlay can anchor itself to a cell. Null when the cell is off-board or there is no board
    * yet. Pan, zoom and resize all move it, and none of them is announced here. */
   screenOf(cell: string): Point | null;
+  /** A cell's circumradius in CSS pixels — what `screenOf` gives for position, this gives for
+   * size, so a DOM overlay can ring the cell at whatever zoom is set. */
+  cellRadius(cell: string): number | null;
   /** Pans (without rezooming) so `cell` sits in the middle of the viewport. A no-op if the
    * cell is off-board or there is no board yet. */
   centerOn(cell: string): void;
@@ -96,6 +104,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   const edgeLayer = new EdgeLayer(layers.createLayer('edges', layers.getDefaultZIndex('edges')));
   const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), opts.theme);
   const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), opts.ticker, opts.theme);
+  const shotLayer = new ShotLayer(layers.createLayer('shot', 35), opts.theme);
   const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), opts.parent);
 
   let currentBoard: Board | null = null;
@@ -107,7 +116,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     const grid = gridOf(currentBoard);
     const unit = grid.bounds(1);
     const { width, height } = opts.size();
-    const size = Math.max(1, Math.min((width * FIT_MARGIN) / unit.width, (height * FIT_MARGIN) / unit.height));
+    const size = Math.max(1, Math.min(width / (unit.width + 2 * PAD_CELLS), height / (unit.height + 2 * PAD_CELLS)));
     return { grid, size };
   }
 
@@ -118,6 +127,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       edgeLayer.clear();
       labelLayer.clear();
       overlayLayer.setGeometry(null, 0, opts.theme);
+      shotLayer.setGeometry(null, 0, opts.theme);
       tokenLayer.setGeometry(null, 0, opts.theme);
       return;
     }
@@ -131,7 +141,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     labelLayer.draw(grid, size, opts.theme);
     labelLayer.rescale();
     overlayLayer.setGeometry(grid, size, opts.theme);
+    shotLayer.setGeometry(grid, size, opts.theme);
     tokenLayer.setGeometry(grid, size, opts.theme);
+    interaction.clamp();
   }
 
   /** Shift-click fill: the connected run of cells sharing the clicked cell's terrain. */
@@ -163,6 +175,17 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     viewport: opts.parent,
     toLocal: (screen: Point) => boardContainer.toLocal(screen),
     geometry: () => geometry,
+    content: () => {
+      if (!geometry) return null;
+      const bounds = geometry.grid.bounds(geometry.size);
+      const pad = PAD_CELLS * geometry.size;
+      return {
+        x: boardContainer.position.x - pad,
+        y: boardContainer.position.y - pad,
+        width: bounds.width + 2 * pad,
+        height: bounds.height + 2 * pad,
+      };
+    },
     tokens: () => tokenLayer.bounds(),
     region,
     emit,
@@ -187,6 +210,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     setDragPath(cells) {
       overlayLayer.setDragPath(cells);
+    },
+    setShot(shot) {
+      shotLayer.setShot(shot);
     },
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);
@@ -225,6 +251,14 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       if (!geometry.grid.inBounds(c)) return null;
       return boardContainer.toGlobal(geometry.grid.center(c, geometry.size));
     },
+    cellRadius(cell) {
+      if (!geometry) return null;
+      const c = geometry.grid.parse(cell);
+      if (!geometry.grid.inBounds(c)) return null;
+      const centre = boardContainer.toGlobal(geometry.grid.center(c, geometry.size));
+      const vertex = boardContainer.toGlobal(geometry.grid.vertices(c, geometry.size)[0]);
+      return Math.hypot(vertex.x - centre.x, vertex.y - centre.y);
+    },
     // Pans `opts.parent` (the pan/zoom container `boardContainer` sits in) so the cell's
     // centre lands under the viewport's screen centre, at whatever zoom is already set.
     centerOn(cell) {
@@ -238,6 +272,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
         width / 2 - scale * (boardContainer.position.x + local.x),
         height / 2 - scale * (boardContainer.position.y + local.y),
       );
+      interaction.clamp();
       labelLayer.rescale();
     },
     resetView() {

@@ -152,7 +152,7 @@ describe('the menu is filtered by situation', () => {
     expect(types(state, 'u0')).toEqual(['guard', 'rally']);
     const a = activation(state, 'u0')!;
     expect(a.actions).toBe(3);
-    expect(a.speed).toBe(25);
+    expect(a.speed).toBe(10);
     expect(a.moves.size).toBeGreaterThan(0);
   });
   it('offers Fight and Guard in contact, Rally throughout, and the withdrawal alongside', () => {
@@ -237,37 +237,50 @@ describe('reaching above your grade', () => {
 });
 
 describe('movement points', () => {
-  it('one Move action spends Speed and stops short of what it cannot afford', () => {
+  it('one Move action carries a troop one square, and a Pace unit two', () => {
     const { state } = battle([]);
-    expect(unit(state, 'u0').speed).toBe(25);
+    expect(unit(state, 'u0').speed).toBe(10);
+    expect(unit(state, 'u1').speed).toBe(20);
     unit(state, 'u0').actions = 1;
-    const m = moves(state, 'u0');
-    expect(m.get('c3')).toMatchObject({ feet: 10, actions: 1 });
-    expect(m.get('c4')).toMatchObject({ feet: 20, actions: 1 });
-    expect(m.has('c5')).toBe(false);
+    unit(state, 'u1').actions = 1;
+    expect(moves(state, 'u0').get('c3')).toMatchObject({ feet: 10, actions: 1 });
+    expect(moves(state, 'u0').has('c4')).toBe(false);
+    expect(moves(state, 'u1').get('e4')).toMatchObject({ feet: 20, actions: 1 });
+    expect(moves(state, 'u1').has('e5')).toBe(false);
   });
 
-  it('a second Move action buys another Speed, and the five feet left over carry', () => {
+  it('a second Move action buys another square', () => {
     const { state } = battle([]);
-    const s = act(state, { type: 'move', to: 'c4', unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
     const u = unit(s, 'u0');
-    expect(u.square).toEqual(parse('c4'));
+    expect(u.square).toEqual(parse('c3'));
     expect(u.actions).toBe(2);
-    expect(u.feet).toBe(5);
-    expect(moveReach(s, u).get('f4')).toMatchObject({ feet: 30, actions: 1 });
-    expect(movePath(moveReach(s, u), 'f4')).toEqual(['c4', 'd4', 'e4', 'f4']);
+    expect(u.feet).toBe(0);
+    expect(moveReach(s, u).get('c5')).toMatchObject({ feet: 20, actions: 2 });
+    expect(movePath(moveReach(s, u), 'c5')).toEqual(['c3', 'c4', 'c5']);
   });
 
-  it('spends the terrain table in feet', () => {
+  it('banks the half-action a Pace unit leaves in a single open square', () => {
+    const { state } = battle([]);
+    const s = act(state, { type: 'move', to: 'e3', unit: 'u1' }, scriptedRng([10]));
+    expect(unit(s, 'u1').actions).toBe(2);
+    expect(unit(s, 'u1').feet).toBe(10);
+    // The banked ten feet buys the next open square outright.
+    expect(moves(s, 'u1').get('e4')).toMatchObject({ feet: 10, actions: 0 });
+  });
+
+  it('charges a troop two actions for difficult ground and three for swamp', () => {
     const board = openBoard();
     board.squares[2][2].terrain = 'forest';
     board.squares[3][2].terrain = 'swamp';
     board.squares[1][3].elevation = 1;
     const { state } = battle([], board);
     const m = moves(state, 'u0');
-    expect(m.get('c3')!.feet).toBe(20);
-    expect(m.get('d2')!.feet).toBe(20);
-    expect(m.get('c4')!.feet).toBe(50);
+    expect(m.get('c3')).toMatchObject({ feet: 20, actions: 2 });
+    expect(m.get('d2')).toMatchObject({ feet: 20, actions: 2 });
+    expect(m.has('c4')).toBe(false);
+    // A Pace unit covers two squares an action, so the same forest costs it one.
+    expect(moves(state, 'u1').get('e3')).toMatchObject({ feet: 10, actions: 1 });
   });
 
   it('will not cross water, a standing wall or a cliff, but a breach is a crossing', () => {
@@ -276,7 +289,7 @@ describe('movement points', () => {
     board.walls[edgeKey(parse('c2'), parse('d2'))] = { tier: 1, boxes: 2, remaining: 2 };
     board.squares[1][1].elevation = 2;
     const { state } = battle([], board);
-    unit(state, 'u0').actions = 1;
+    unit(state, 'u0').actions = 2;
     expect([...moves(state, 'u0').keys()].sort()).toEqual(['b1', 'c1', 'd1']);
     state.board.walls[edgeKey(parse('c2'), parse('d2'))].remaining = 0;
     expect(moves(state, 'u0').get('d2')).toMatchObject({ feet: 10 });
@@ -315,11 +328,11 @@ describe('movement points', () => {
 
   it('three actions cover a stride and then a charge, and no more', () => {
     const { state } = battle([]);
-    place(state, 'u2', 'c6');
-    let s = act(state, { type: 'move', to: 'c4', unit: 'u0' }, scriptedRng([10]));
+    place(state, 'u2', 'c5');
+    let s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').actions).toBe(2);
     s = act(s, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 10]));
-    expect(unit(s, 'u0').square).toEqual(parse('c5'));
+    expect(unit(s, 'u0').square).toEqual(parse('c4'));
     expect(s.activated).toEqual(['u0']);
     expect(s.pending).toBe('defender');
   });
@@ -565,10 +578,10 @@ describe('actions buy weight, not repetition', () => {
 
   it('leaves Move buying ground, and a Strike affordable after it', () => {
     const { state } = battle([]);
-    place(state, 'u2', 'c5');
-    let s = act(state, { type: 'move', to: 'c4', unit: 'u0' }, scriptedRng([10]));
+    place(state, 'u2', 'c4');
+    let s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').actions).toBe(2);
-    expect(unit(s, 'u0').feet).toBe(5);
+    expect(unit(s, 'u0').feet).toBe(0);
     expect(unit(s, 'u0').attacked).toBe(false);
     s = act(s, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(strikeMod(s)).toBe(11);
@@ -967,13 +980,13 @@ describe('withdrawal', () => {
 
   it('buys distance with the other dial, and refuses a cell further than it bought', () => {
     const one = activation(held(), 'u0')!.withdraw!;
-    // Two spare actions at 25 ft each, so the far cells are on offer up front.
+    // Two spare actions at a square each, so the far cells are on offer up front.
     expect(one.dials).toMatchObject({ roll: true, push: false, defence: false, distance: true, extra: 2 });
-    expect(one.targets.map((t) => t.id)).toContain('c5');
-    expect(() => act(held(), { type: 'withdraw', to: 'c5', unit: 'u0' }, scriptedRng([5])))
+    expect(one.targets.map((t) => t.id)).toContain('b1');
+    expect(() => act(held(), { type: 'withdraw', to: 'b1', unit: 'u0' }, scriptedRng([5])))
       .toThrow(/further than 0 committed actions/);
-    const far = act(held(), { type: 'withdraw', to: 'c5', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
-    expect(where(far)).toBe('c5');
+    const far = act(held(), { type: 'withdraw', to: 'b1', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
+    expect(where(far)).toBe('b1');
   });
 
   it('refuses an allocation past the actions left, on either dial', () => {
@@ -1030,10 +1043,10 @@ describe('no retreat', () => {
   });
 
   it('cannot follow a unit that outruns its single move', () => {
-    // Two committed actions carry the infantry 50 ft, out to e5. The Line's one move covers
-    // 20, which puts no cell adjacent to e5 inside its reach.
-    const s = act(chased(), { type: 'withdraw', to: 'e5', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
-    expect(notation(unit(s, 'u0').square)).toBe('e5');
+    // Two committed actions carry the Pace unit four squares, out to e4. The Line's one move
+    // covers a square, which puts no cell adjacent to e4 inside its reach.
+    const s = act(chased(cavalry), { type: 'withdraw', to: 'e4', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
+    expect(notation(unit(s, 'u0').square)).toBe('e4');
     expect(notation(unit(s, 'u1').square)).toBe('c3');
   });
 

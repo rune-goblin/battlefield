@@ -29,11 +29,13 @@ describe('grade derivation', () => {
     expect(gradesFor(rabble)).toEqual({ shoot: 1, fight: 2, guard: 1, rally: 1, cast: 1 });
   });
 
-  it('carries movement as Speed in feet, not as a grade', () => {
+  it('carries movement as pace, not as a grade', () => {
     const camels = troop('Qadiran Camel Corps');
     expect(camels.signals).toContain('mounted');
-    expect(speedOf(camels)).toBe(35);
-    expect(speedOf(troop('Goblin Rabble'))).toBe(25);
+    expect(speedOf(camels)).toBe(20);
+    expect(speedOf(troop('Goblin Rabble'))).toBe(10);
+    // Flight buys no ground: the gargoyles' 25 ft walks a square like anything else.
+    expect(speedOf(troop('Gargoyle Wing'))).toBe(10);
     expect(gradesFor(camels)).not.toHaveProperty('move');
   });
 

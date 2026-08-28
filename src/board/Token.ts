@@ -51,6 +51,10 @@ export const TOKEN_FOOTPRINT_RATIO = 0.82;
 // engine samples). There is no per-image crop data to anchor exactly, so one tuned constant
 // stands in for the whole set rather than measuring each image.
 const ART_ANCHOR_Y = 0.8;
+// A pointy-top hex is only ~0.577 of a pitch tall above its centre, and a piece drawn to the
+// full footprint width overshoots that; dropping the miniature (and the ground it stands on)
+// keeps its head inside its own cell.
+const ART_DROP = 0.1;
 // The ring traces the piece's footprint — which is also its hit area — now that there is no
 // disc for it to sit outside of. Any wider and it cuts through the flag's level.
 const RING_GAP = 0.01;
@@ -58,8 +62,11 @@ const RING_GAP = 0.01;
 const GLOW_SWELL = 0.06;
 /** The flag's height, as a fraction of cell size. */
 const FLAG_RATIO = 0.32;
-/** The action prop's box, as a fraction of cell size. */
+/** The action prop's box, as a fraction of cell size. The shot's bullseye is the exception in
+ * both size and place: it rides the middle of the cell at better than half a hex, because it
+ * is what the arc's head is aimed at rather than a badge hung off the piece. */
 const PROP_RATIO = 0.3;
+const SHOT_PROP_RATIO = 0.6;
 // The cloth's mass sits above the middle of the square template — it tapers to a point at the
 // bottom — so the level rides a little high of the sprite's own centre.
 const FLAG_TEXT_Y = -0.07;
@@ -235,7 +242,7 @@ export class Token extends PIXI.Container {
     const ghost = new PIXI.Sprite(this.art.texture);
     ghost.anchor.copyFrom(this.art.anchor);
     ghost.scale.copyFrom(this.art.scale);
-    ghost.position.set(this.x, this.y);
+    ghost.position.set(this.x + this.art.x, this.y + this.art.y);
     ghost.alpha = GHOST_ALPHA;
     return ghost;
   }
@@ -322,10 +329,12 @@ export class Token extends PIXI.Container {
     return [{ x: this.x, y: this.y }, ...route.slice(1, end + 1).map((k) => grid.center(grid.parse(k), size))];
   }
 
-  // The miniature's own base ellipse lands at y ≈ 0 (see ART_ANCHOR_Y), so the shadow sits
-  // there: enough to stand the piece on the ground now that no disc does it.
+  // The miniature's own base ellipse lands at its local y ≈ 0 (see ART_ANCHOR_Y), so the
+  // shadow tracks the same drop the art takes: enough to stand the piece on the ground now
+  // that no disc does it.
   private drawShadow(size: number, theme: BoardTheme): void {
-    this.shadow.clear().beginFill(theme.ink, 0.22).drawEllipse(0, size * 0.02, size * 0.27, size * 0.08).endFill();
+    const y = size * (ART_DROP + 0.02);
+    this.shadow.clear().beginFill(theme.ink, 0.22).drawEllipse(0, y, size * 0.27, size * 0.08).endFill();
   }
 
   private updateArt(model: TokenModel, size: number): void {
@@ -355,6 +364,7 @@ export class Token extends PIXI.Container {
     if (!this.art) return;
     const target = size * TOKEN_FOOTPRINT_RATIO;
     this.art.scale.set(target / Math.max(this.art.texture.width, 1));
+    this.art.position.set(0, size * ART_DROP);
   }
 
   private drawDecor(model: UnitTokenModel, size: number, theme: BoardTheme): void {
@@ -477,7 +487,8 @@ export class Token extends PIXI.Container {
     this.engineChip.position.set(-r * 0.72, -r * 0.72);
   }
 
-  /** Bottom right, clear of the flag, the engine chip and the pip rows. */
+  /** Bottom right, clear of the flag, the engine chip and the pip rows — except the shot's
+   * bullseye, which the arc's head has to be able to point at. */
   private updateProp(icon: ActionIcon | null, size: number): void {
     if (!icon) {
       if (this.propSprite) this.propSprite.visible = false;
@@ -511,8 +522,10 @@ export class Token extends PIXI.Container {
     if (!this.propSprite) return;
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     const { width, height } = this.propSprite.texture;
-    this.propSprite.scale.set((size * PROP_RATIO) / Math.max(width, height, 1));
-    this.propSprite.position.set(r * 0.88, r * 0.62);
+    const shot = this.propIcon === 'shoot';
+    this.propSprite.scale.set((size * (shot ? SHOT_PROP_RATIO : PROP_RATIO)) / Math.max(width, height, 1));
+    if (shot) this.propSprite.position.set(0, 0);
+    else this.propSprite.position.set(r * 0.88, r * 0.62);
   }
 
   private drawRoutArrow(routed: boolean, side: Side, size: number, theme: BoardTheme): void {

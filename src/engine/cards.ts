@@ -1,3 +1,4 @@
+import { CELL_FEET } from './path.js';
 import { armourClass, areaDc, perceptionBonus, saveBonus, type Tier } from './tables.js';
 
 export type Role = 'infantry' | 'cavalry';
@@ -87,12 +88,26 @@ export function cardTraits(card: UnitCard) {
   };
 }
 
-// A flying troop's land Speed says nothing about how far it moves; treat it as pace.
-export function speedOf(card: UnitCard): number {
-  const sh = card.sheet;
-  if (!sh) return cardTraits(card).pace ? 35 : 25;
-  return sh.fly ? Math.max(sh.speed, 30) : sh.speed;
+/** Feet of Speed a square of the board asks for. A troop is not one creature: thirty feet of
+ * the actor's Speed carries the formation one square. */
+const SPEED_PER_SQUARE = 30;
+
+/**
+ * Squares one Move action buys, off the sheet's Speed: 30 ft and under walks one, 60 ft two,
+ * 90 ft three. Flight buys no distance at all — it only changes what the ground costs, which
+ * `Unit.flying` already handles. A card with no sheet falls back to its type: cavalry two,
+ * infantry one.
+ */
+export function squaresPerAction(card: UnitCard): number {
+  const sheet = card.sheet;
+  if (!sheet) return cardTraits(card).pace ? 2 : 1;
+  return Math.max(1, Math.ceil(sheet.speed / SPEED_PER_SQUARE));
 }
+
+export const paceOf = (card: UnitCard): boolean => squaresPerAction(card) > 1;
+
+/** What one Move action buys, in feet — `CELL_FEET` a square. */
+export const speedOf = (card: UnitCard): number => squaresPerAction(card) * CELL_FEET;
 
 export type EngineKind = 'artillery' | 'ram';
 
@@ -133,8 +148,11 @@ export function derivation(card: UnitCard): Derivation[] {
   ];
 }
 
+const SQUARE_WORDS = ['no', 'one square', 'two squares', 'three squares'];
+
 export function paceReason(card: UnitCard): string {
-  const sh = card.sheet;
-  if (!sh) return cardTraits(card).pace ? 'Pace' : 'no Pace';
-  return sh.fly ? `Pace: fly speed` : sh.speed >= 30 ? `Pace: Speed ${sh.speed} ft` : `no Pace: Speed ${sh.speed} ft`;
+  const n = squaresPerAction(card);
+  const squares = `${SQUARE_WORDS[n] ?? `${n} squares`} an Advance`;
+  const flight = card.sheet?.fly ? ', over any ground' : '';
+  return card.sheet ? `Speed ${card.sheet.speed} ft → ${squares}${flight}` : `${paceOf(card) ? 'Pace' : 'no Pace'}: ${squares}`;
 }

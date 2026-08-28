@@ -7,7 +7,7 @@ export type BoardMode = 'view' | 'paint' | 'place' | 'battle';
 
 export type BoardEvent =
   | { type: 'hover'; cell: string | null }
-  | { type: 'cell'; cell: string; button: 0 | 2 }
+  | { type: 'cell'; cell: string }
   | { type: 'edge'; edge: string }
   | { type: 'token'; id: string }
   | { type: 'paint'; cells: string[]; edges: string[]; brush: Brush }
@@ -23,6 +23,9 @@ const CLICK_SLOP = 4;
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 2.5;
 const ZOOM_STEP = 0.0015;
+// A mouse wheel notch arrives as one delta this big or larger; a trackpad two-finger drag
+// arrives as a stream of small ones. The wheel zooms, the trackpad pans.
+const WHEEL_NOTCH = 40;
 const WALL_TIERS = 4;
 // A wall stroke prefers edges it is travelling along: |cos| ≥ this against the drag vector.
 // 0.45 admits a hex's 60° edges, which a zigzag row boundary needs, and rejects the square
@@ -31,9 +34,16 @@ const PARALLEL = 0.45;
 
 interface Stroke { brush: Brush; cells: Set<string>; edges: Set<string> }
 
+/** One axis of the pan clamp. Content wider than the canvas may slide until an edge would
+ * come inside it; content narrower than the canvas sits centred, with nothing to drag. */
+function axis(position: number, offset: number, extent: number, canvas: number): number {
+  if (extent <= canvas) return (canvas - extent) / 2 - offset;
+  return Math.min(-offset, Math.max(canvas - extent - offset, position));
+}
+
 type Gesture =
   | { kind: 'none' }
-  | { kind: 'press'; token: string | null }
+  | { kind: 'press'; token: string | null; pans: boolean }
   | { kind: 'paint'; stroke: Stroke }
   | { kind: 'drag'; token: string }
   | { kind: 'pan' };
@@ -45,6 +55,9 @@ export interface InteractionOptions {
   /** Screen point (CSS pixels inside the canvas) to board-local coordinates. */
   toLocal(screen: Point): Point;
   geometry(): { grid: Grid; size: number } | null;
+  /** The padded board rectangle in `viewport`'s own coordinates. Pan and zoom are clamped so
+   * it never leaves the canvas: the map moves inside a window, it does not get lost. */
+  content(): { x: number; y: number; width: number; height: number } | null;
   tokens: TokenBoundsProvider;
   /** Connected cells of the same terrain as `cell`, for shift-click fill. */
   region(cell: string): string[];
@@ -98,6 +111,7 @@ export class Interaction {
     c.addEventListener('contextmenu', this.onContextMenu);
     c.addEventListener('keydown', this.onKeyDown);
     c.addEventListener('keyup', this.onKeyUp);
+    c.addEventListener('blur', this.onBlur);
     this.applyCursor();
   }
 
@@ -135,7 +149,19 @@ export class Interaction {
   resetView(): void {
     this.o.viewport.scale.set(1);
     this.o.viewport.position.set(0, 0);
+    this.clamp();
     this.viewportChanged();
+  }
+
+  /** Re-clamp after the canvas resized under a pan. */
+  clamp(): void {
+    const content = this.o.content();
+    if (!content) return;
+    const viewport = this.o.viewport;
+    const scale = viewport.scale.x;
+    const canvas = this.o.canvas;
+    viewport.x = axis(viewport.x, content.x * scale, content.width * scale, canvas.clientWidth);
+    viewport.y = axis(viewport.y, content.y * scale, content.height * scale, canvas.clientHeight);
   }
 
   destroy(): void {
@@ -150,6 +176,7 @@ export class Interaction {
     c.removeEventListener('contextmenu', this.onContextMenu);
     c.removeEventListener('keydown', this.onKeyDown);
     c.removeEventListener('keyup', this.onKeyUp);
+    c.removeEventListener('blur', this.onBlur);
   }
 
   private screenOf(e: PointerEvent | WheelEvent | MouseEvent): Point {
@@ -197,12 +224,20 @@ export class Interaction {
     }
     if (e.button !== 0 && e.button !== 2) return;
 
+    // Right-drag pans everywhere except under a paint brush, where the right button is the
+    // eraser. A right-click that never moves does nothing at all.
+    if (e.button === 2 && !(this.mode === 'paint' && this.brush)) {
+      e.preventDefault();
+      this.gesture = { kind: 'press', token: null, pans: true };
+      return;
+    }
+
     const hit = this.hitAt(screen);
     if (hit?.kind === 'token' && (this.mode === 'place' || this.mode === 'battle')) {
       // Battle mode drags only the active unit's own token; every other token still presses
       // (so a plain click still resolves as a target on release) but never escalates to drag.
       const draggable = this.mode === 'place' || hit.id === this.draggableId;
-      this.gesture = { kind: 'press', token: draggable ? hit.id : null };
+      this.gesture = { kind: 'press', token: draggable ? hit.id : null, pans: false };
       return;
     }
     if (this.mode === 'paint' && this.brush) {
@@ -213,7 +248,7 @@ export class Interaction {
       this.extend(stroke, screen, e.shiftKey);
       return;
     }
-    this.gesture = { kind: 'press', token: null };
+    this.gesture = { kind: 'press', token: null, pans: false };
   };
 
   private onPointerMove = (e: PointerEvent): void => {
@@ -226,6 +261,7 @@ export class Interaction {
       this.o.viewport.x += screen.x - this.lastScreen.x;
       this.o.viewport.y += screen.y - this.lastScreen.y;
       this.lastScreen = screen;
+      this.clamp();
       this.viewportChanged();
       return;
     }
@@ -233,8 +269,13 @@ export class Interaction {
 
     if (this.gesture.kind === 'paint') {
       this.extend(this.gesture.stroke, screen, false);
-    } else if (this.gesture.kind === 'press' && this.gesture.token && moved > CLICK_SLOP) {
-      this.gesture = { kind: 'drag', token: this.gesture.token };
+    } else if (this.gesture.kind === 'press' && moved > CLICK_SLOP) {
+      if (this.gesture.pans) {
+        this.gesture = { kind: 'pan' };
+        this.applyCursor();
+      } else if (this.gesture.token) {
+        this.gesture = { kind: 'drag', token: this.gesture.token };
+      }
     }
     if (this.gesture.kind === 'drag') {
       const local = this.o.toLocal(screen);
@@ -274,13 +315,13 @@ export class Interaction {
       return;
     }
 
-    if (gesture.kind !== 'press') return;
+    if (gesture.kind !== 'press' || gesture.pans) return;
     if (Math.hypot(screen.x - this.origin.x, screen.y - this.origin.y) > CLICK_SLOP) return;
     const hit = this.hitAt(screen);
     if (!hit) return;
     if (hit.kind === 'token') this.o.emit({ type: 'token', id: hit.id });
     else if (hit.kind === 'edge') this.o.emit({ type: 'edge', edge: hit.id });
-    else this.o.emit({ type: 'cell', cell: hit.id, button: e.button === 2 ? 2 : 0 });
+    else this.o.emit({ type: 'cell', cell: hit.id });
   };
 
   private onPointerCancel = (): void => { this.cancel(); };
@@ -295,6 +336,15 @@ export class Interaction {
     if (this.frozen) return;
     e.preventDefault();
     const viewport = this.o.viewport;
+    if (this.isPanWheel(e)) {
+      viewport.x -= e.deltaX;
+      viewport.y -= e.deltaY;
+      this.lastScreen = this.screenOf(e);
+      this.pointerInside = true;
+      this.clamp();
+      this.viewportChanged();
+      return;
+    }
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.scale.x * Math.exp(-e.deltaY * ZOOM_STEP)));
     if (next === viewport.scale.x) return;
     const screen = this.screenOf(e);
@@ -305,8 +355,16 @@ export class Interaction {
     viewport.y += (after.y - before.y) * next;
     this.lastScreen = screen;
     this.pointerInside = true;
+    this.clamp();
     this.viewportChanged();
   };
+
+  // Pinch-zoom reaches the page as a ctrl-wheel, so it stays a zoom; a plain two-finger
+  // trackpad drag pans. Line and page deltas only come from a real wheel.
+  private isPanWheel(e: WheelEvent): boolean {
+    if (e.ctrlKey || e.metaKey || e.deltaMode !== 0) return false;
+    return e.deltaX !== 0 || Math.abs(e.deltaY) < WHEEL_NOTCH;
+  }
 
   private onDoubleClick = (e: MouseEvent): void => {
     if (this.frozen) return;
@@ -339,6 +397,12 @@ export class Interaction {
 
   private onKeyUp = (e: KeyboardEvent): void => {
     if (e.key !== ' ') return;
+    this.spaceDown = false;
+    this.applyCursor();
+  };
+
+  // No keyup arrives once focus has gone, so a held space would stay held.
+  private onBlur = (): void => {
     this.spaceDown = false;
     this.applyCursor();
   };

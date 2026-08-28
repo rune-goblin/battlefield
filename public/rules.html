@@ -79,7 +79,7 @@
 <tr><td>Will</td><td>Will save modifier; used for morale</td><td>+13</td></tr>
 <tr><td>Perception</td><td>Used for initiative</td><td>+13</td></tr>
 <tr><td>Type</td><td>Infantry or cavalry, from the army's type</td><td>infantry</td></tr>
-<tr><td>Pace</td><td>A unit with Speed 30 ft or more, or a fly speed, has Pace; cavalry usually does</td><td>20 ft → no</td></tr>
+<tr><td>Pace</td><td>Speed sets how many squares an Advance moves: one at 30 ft or less, two at 60 ft, three at 90 ft</td><td>20 ft → one square</td></tr>
 <tr><td>Fear</td><td>A unit with frightful presence or a fear aura</td><td>no</td></tr>
 <tr><td>Level</td><td>Sets the morale DC its enemies must beat</td><td>6</td></tr>
 <tr><td>Wounds</td><td>0 to 4, from current hit points (section 7)</td><td>0</td></tr>
@@ -276,15 +276,17 @@
 <p>Roll a Will save against the rout DC. Critical success: this unit makes no further rout checks this battle. Success: nothing. Failure: shaken +1. Critical failure: shaken +2.</p>
 
 <h2 id="ground">9. Ground, height and barriers</h2>
+<p>A flying unit is over all of it: it pays open ground for every square whatever the terrain, and crosses walls and cliffs. Flight buys no extra distance — how far a unit moves is its Speed.</p>
+
 <p>Three layers shape the field. Terrain on a square changes checks; height on a square decides who has the advantage; barriers on edges decide where units can go. Each type has one job: forest hides, swamp slows, water blocks, height commands, walls hold.</p>
 <h3>Terrain</h3>
 <p>Every square is one of six types. Open is the default and does nothing.</p>
 <table>
 <tr><th>Terrain</th><th>Effect</th></tr>
 <tr><td>Open</td><td>—</td></tr>
-<tr><td>Forest</td><td>Cover: the occupant gains +1 Defence against Volleys. Cancels Pace and blocks Cavalry Charge.</td></tr>
-<tr><td>Swamp</td><td>Slows: an Advance into swamp costs two actions and moves one square only; Pace and Cavalry Charge never apply. A unit in swamp Strikes at −1.</td></tr>
-<tr><td>Shallows</td><td>A ford or marsh edge: as swamp, and a unit in shallows cannot Withdraw or Retreat while engaged.</td></tr>
+<tr><td>Forest</td><td>Difficult ground: entering costs two squares of movement, so an ordinary unit spends two actions and a unit with Pace spends one. Cover: the occupant gains +1 Defence against Volleys. Blocks Cavalry Charge.</td></tr>
+<tr><td>Swamp</td><td>Very difficult ground: entering costs three squares of movement, so an ordinary unit spends three actions and a unit with Pace two. Pace and Cavalry Charge never apply. A unit in swamp Strikes at −1.</td></tr>
+<tr><td>Shallows</td><td>A ford or marsh edge: difficult ground as forest, and a unit in shallows cannot Withdraw or Retreat while engaged.</td></tr>
 <tr><td>Water</td><td>Impassable. No unit enters; Volleys cross it.</td></tr>
 <tr><td>Settlement</td><td>Cover, as forest; open ground for movement.</td></tr>
 </table>
@@ -293,7 +295,7 @@
 <ul>
 <li>Striking uphill: −1 to Strike per level of difference.</li>
 <li>Volleying downhill: the target's cover does not apply and your Volley reaches one band further. Volleying uphill: −1 per level.</li>
-<li>Advancing uphill cancels Pace for that Advance and blocks Cavalry Charge.</li>
+<li>Advancing uphill costs one square of movement more per level climbed, so an ordinary unit spends two actions to climb a square. That is what cancels Pace, and it blocks Cavalry Charge.</li>
 <li>A unit standing higher than every enemy it is engaged with treats its rout DC as 2 lower (section 8).</li>
 <li>An edge with a difference of 2 is a cliff.</li>
 </ul>
@@ -352,7 +354,7 @@
 <h2 id="ref">Quick reference</h2>
 <div class="wrap"><table class="ref">
 <tr><th>Action</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
-<tr><td>Advance</td><td>1 (2 into swamp or shallows)</td><td>—</td><td>Not while engaged. One square orthogonally; two with Pace on open, level ground. No barriers, water or occupied squares</td></tr>
+<tr><td>Advance</td><td>1 (2 into forest or shallows, 3 into swamp)</td><td>—</td><td>Not while engaged. As many squares as Speed buys: one at 30 ft or less, two at 60, three at 90. No barriers, water or occupied squares</td></tr>
 <tr><td>Withdraw</td><td>1, or 2 if engaged</td><td>—</td><td>One square away from engaged enemies; each may spend its reaction on a free Strike</td></tr>
 <tr><td>Strike</td><td>1, engaged</td><td>d20 + Strike vs Defence</td><td>Crit 2 wounds · hit 1 · crit fail: exposed −2. MAP −5/−10</td></tr>
 <tr><td>Volley</td><td>1, not engaged, in reach</td><td>d20 + Volley vs Defence (−2 extreme, −4 into melee)</td><td>Crit 2 wounds · hit 1. MAP −5/−10</td></tr>

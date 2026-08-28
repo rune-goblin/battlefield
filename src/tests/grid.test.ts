@@ -85,8 +85,8 @@ describe('battle on hex', () => {
     for (const cell of ['b2', 'c1', 'c3', 'd1', 'd2', 'd3']) {
       expect(moves.get(cell), cell).toMatchObject({ feet: 10, actions: 1 });
     }
-    expect(moves.get('c4')).toMatchObject({ feet: 20, actions: 1 });
-    expect(moves.get('c5')).toMatchObject({ feet: 30, actions: 2 });
+    expect(moves.get('c4')).toMatchObject({ feet: 20, actions: 2 });
+    expect(moves.get('c5')).toMatchObject({ feet: 30, actions: 3 });
   });
   it('engages across a square diagonal and outflanks from two of the six', () => {
     const state = hexBattle();

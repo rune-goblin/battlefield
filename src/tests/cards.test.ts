@@ -34,7 +34,7 @@ describe('derivation', () => {
     const { COMBATANTS } = await import('../engine/combatants.js');
     const li = COMBATANTS.find((c) => c.name === 'Line Infantry')!;
     expect(derivation(li).map((d) => d.from)).toEqual(['Battle DC 21 − 10', 'Salvo DC 21 − 10; 120 ft → long', 'AC 24', 'Will save +13', 'Reflex save +14', 'Perception +13']);
-    expect(paceReason(li)).toBe('no Pace: Speed 20 ft');
+    expect(paceReason(li)).toBe('Speed 20 ft → one square an Advance');
   });
   it('cites the level table for generic cards', async () => {
     const { derivation } = await import('../engine/cards.js');

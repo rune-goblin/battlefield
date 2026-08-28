@@ -2,43 +2,79 @@
   import type { Snippet } from 'svelte';
 
   interface Props {
-    /** The anchor, in CSS pixels inside the board container. */
-    x: number;
-    y: number;
+    /** The cell the offer is about. It only resets the drag: the popup sits in the corner. */
+    cell: string;
+    close: () => void;
     children: Snippet;
   }
-  let { x, y, children }: Props = $props();
+  let { cell, close, children }: Props = $props();
 
-  // The gap the tail spans, matching the transform below.
-  const TAIL_ROOM = 44;
+  let dx = $state(0);
+  let dy = $state(0);
+  let dragging = $state(false);
+  // A fresh cell is a fresh popup, so it comes back to the corner.
+  $effect(() => { void cell; dx = 0; dy = 0; });
 
-  // Above the cell, unless it would overflow the top of the board. Measured rather than
-  // guessed: the popup's height depends on how many rows and dials the offer has.
-  let height = $state(0);
-  const below = $derived(y - height < TAIL_ROOM);
+  let from: { x: number; y: number; dx: number; dy: number } | null = null;
+
+  function grab(e: PointerEvent) {
+    if (e.button !== 0) return;
+    if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a')) return;
+    from = { x: e.clientX, y: e.clientY, dx, dy };
+    dragging = true;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+
+  function move(e: PointerEvent) {
+    if (!from) return;
+    dx = from.dx + e.clientX - from.x;
+    dy = from.dy + e.clientY - from.y;
+  }
+
+  function drop() {
+    from = null;
+    dragging = false;
+  }
 </script>
 
-<div class="board-popup" class:below style="left: {x}px; top: {y}px" bind:clientHeight={height}>
+<div
+  role="dialog"
+  aria-label="Action"
+  tabindex="-1"
+  class="board-popup"
+  class:dragging
+  style="transform: translate({dx}px, {dy}px)"
+  onpointerdown={grab}
+  onpointermove={move}
+  onpointerup={drop}
+  onpointercancel={drop}
+>
+  <button class="popup-close" aria-label="Close" title="Close" onclick={close}>×</button>
   {@render children()}
 </div>
 
 <style>
   .board-popup {
     position: absolute; z-index: 6;
-    transform: translate(-50%, calc(-100% - 2.2rem));
+    top: .6rem; right: .6rem;
     min-width: 14rem; max-width: 22rem;
     padding: .4rem; border-radius: 10px;
     background: var(--card); border: 1px solid var(--accent);
     box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
     font-size: .85rem;
+    cursor: grab;
+    touch-action: none;
   }
-  .board-popup.below { transform: translate(-50%, 2.2rem); }
+  .board-popup.dragging { cursor: grabbing; box-shadow: 0 10px 26px rgba(0, 0, 0, .45); }
 
-  /* The tail points back at the cell the popup is talking about. */
-  .board-popup::after {
-    content: ''; position: absolute; left: 50%; margin-left: -6px;
-    border: 6px solid transparent;
+  .popup-close {
+    position: absolute; top: .15rem; right: .2rem;
+    width: 1.15rem; height: 1.15rem; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 5px;
+    background: transparent; color: var(--muted);
+    font: inherit; font-size: 1rem; line-height: 1; cursor: pointer;
   }
-  .board-popup:not(.below)::after { top: 100%; border-top-color: var(--accent); }
-  .board-popup.below::after { bottom: 100%; border-bottom-color: var(--accent); }
+  .popup-close:hover { background: var(--band); color: var(--ink); }
 </style>

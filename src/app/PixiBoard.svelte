@@ -17,6 +17,8 @@
     highlights?: HighlightGroup[];
     /** The token-drag path trace, unit's own cell first — see `BoardView.setDragPath`. */
     dragPath?: string[];
+    /** The shot being aimed, shooter's cell to target's — see `BoardView.setShot`. */
+    shot?: { from: string; to: string } | null;
     selected?: string | null;
     /** In battle mode, the only token a press may pick up. Place mode ignores this. */
     draggable?: string | null;
@@ -36,7 +38,7 @@
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], selected = null, draggable = null, fill = false, frozen = false,
+    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], shot = null, selected = null, draggable = null, fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
   }: Props = $props();
 
@@ -46,6 +48,7 @@
 
   export function centerOn(cell: string) { view?.centerOn(cell); }
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
+  export function cellRadius(cell: string) { return view?.cellRadius(cell) ?? null; }
   export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
 
   onMount(() => {
@@ -81,6 +84,7 @@
     for (const [style, cells] of byStyle) view.setHighlight(cells, style);
   });
   $effect(() => { view?.setDragPath(dragPath); });
+  $effect(() => { view?.setShot(shot); });
   $effect(() => { view?.setSelected(selected); });
   $effect(() => { view?.setDraggable(draggable); });
   $effect(() => { view?.setFrozen(frozen); });
