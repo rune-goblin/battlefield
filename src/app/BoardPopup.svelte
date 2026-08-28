@@ -56,8 +56,9 @@
 
 <style>
   .board-popup {
-    position: absolute; z-index: 6;
-    top: .6rem; right: .6rem;
+    position: absolute; z-index: 6; pointer-events: auto;
+    top: calc(var(--inset-top, 0px) + .6rem);
+    right: calc(var(--inset-right, 0px) + .6rem);
     min-width: 14rem; max-width: 22rem;
     padding: .4rem; border-radius: 10px;
     background: var(--card); border: 1px solid var(--accent);

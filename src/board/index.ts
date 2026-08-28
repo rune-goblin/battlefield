@@ -3,7 +3,7 @@ import { at, gridOf, type Board, type Grid, type Point } from '../engine/index.j
 import { BoardApp } from './BoardApp.js';
 import { BoardContainer } from './BoardContainer.js';
 import { brushColour, type Brush } from './brush.js';
-import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, type BoardMode } from './Interaction.js';
+import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, type BoardMode, type Rect } from './Interaction.js';
 import { EdgeLayer } from './layers/EdgeLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
@@ -23,6 +23,8 @@ export type { EngineTokenModel, TokenModel, TokenRing, UnitTokenModel } from './
 // coordinate text, and it is what a pan grabs: without it the outermost cells sit against the
 // viewport edge with nothing beside them to drag from.
 const PAD_CELLS = 2;
+
+export type { Rect } from './Interaction.js';
 
 export interface BoardView {
   setBoard(board: Board | null): void;
@@ -61,6 +63,12 @@ export interface BoardView {
   /** Pans (without rezooming) so `cell` sits in the middle of the viewport. A no-op if the
    * cell is off-board or there is no board yet. */
   centerOn(cell: string): void;
+  /** One step of zoom, about `at` (a canvas point) or the middle of `into` if given. */
+  zoomBy(factor: number, into?: Rect): void;
+  /** Fits `cells` — or the whole board, given none — inside `into`, defaulting to the whole
+   * canvas. The board never frames itself: something asked, and said where. */
+  frame(cells: readonly string[] | null, into?: Rect): void;
+  zoom(): number;
   resetView(): void;
   resize(): void;
   destroy(): void;
@@ -146,6 +154,44 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     interaction.clamp();
   }
 
+  /** The padded board rectangle, in the viewport's coordinates — the pan clamp's bounds, and
+   * what "frame everything" frames. */
+  function contentRect(): Rect | null {
+    if (!geometry) return null;
+    const bounds = geometry.grid.bounds(geometry.size);
+    const pad = PAD_CELLS * geometry.size;
+    return {
+      x: boardContainer.position.x - pad,
+      y: boardContainer.position.y - pad,
+      width: bounds.width + 2 * pad,
+      height: bounds.height + 2 * pad,
+    };
+  }
+
+  /** The rectangle a set of cells covers, in the viewport's coordinates, with a cell of margin
+   * so a piece at the edge keeps its art and its flag. */
+  function cellsBox(cells: readonly string[]): Rect | null {
+    if (!geometry) return null;
+    const { grid, size } = geometry;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const key of cells) {
+      const cell = grid.parse(key);
+      if (!grid.inBounds(cell)) continue;
+      for (const v of grid.vertices(cell, size)) {
+        minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
+        minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+      }
+    }
+    if (minX > maxX) return null;
+    const pad = size;
+    return {
+      x: boardContainer.position.x + minX - pad,
+      y: boardContainer.position.y + minY - pad,
+      width: maxX - minX + 2 * pad,
+      height: maxY - minY + 2 * pad,
+    };
+  }
+
   /** Shift-click fill: the connected run of cells sharing the clicked cell's terrain. */
   function region(key: string): string[] {
     if (!currentBoard || !geometry) return [key];
@@ -175,17 +221,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     viewport: opts.parent,
     toLocal: (screen: Point) => boardContainer.toLocal(screen),
     geometry: () => geometry,
-    content: () => {
-      if (!geometry) return null;
-      const bounds = geometry.grid.bounds(geometry.size);
-      const pad = PAD_CELLS * geometry.size;
-      return {
-        x: boardContainer.position.x - pad,
-        y: boardContainer.position.y - pad,
-        width: bounds.width + 2 * pad,
-        height: bounds.height + 2 * pad,
-      };
-    },
+    content: contentRect,
     tokens: () => tokenLayer.bounds(),
     region,
     emit,
@@ -274,6 +310,21 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       );
       interaction.clamp();
       labelLayer.rescale();
+    },
+    zoomBy(factor, into) {
+      const box = into ?? { x: 0, y: 0, ...opts.size() };
+      interaction.zoomBy(factor, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    },
+    // The cells' own bounding box, grown by a cell all round so pieces on the edge of the
+    // frame are not cropped by their own art, then handed to `Interaction` to centre.
+    frame(cells, into) {
+      if (!geometry) return;
+      const box = cells?.length ? cellsBox(cells) : contentRect();
+      if (!box) return;
+      interaction.frame(box, into ?? { x: 0, y: 0, ...opts.size() });
+    },
+    zoom() {
+      return interaction.zoom;
     },
     resetView() {
       interaction.resetView();

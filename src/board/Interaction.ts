@@ -3,6 +3,8 @@ import type { Grid, Point } from '../engine/index.js';
 import { BRUSH_TERRAINS, eraseForm, isEdgeBrush, type Brush } from './brush.js';
 import { edgeCandidates, hitTest, nearestEdge, type Hit, type TokenBoundsProvider } from './hit.js';
 
+export interface Rect { x: number; y: number; width: number; height: number }
+
 export type BoardMode = 'view' | 'paint' | 'place' | 'battle';
 
 export type BoardEvent =
@@ -34,11 +36,14 @@ const PARALLEL = 0.45;
 
 interface Stroke { brush: Brush; cells: Set<string>; edges: Set<string> }
 
-/** One axis of the pan clamp. Content wider than the canvas may slide until an edge would
- * come inside it; content narrower than the canvas sits centred, with nothing to drag. */
+/** One axis of the pan clamp: the content may slide, and may not leave. Wider than the canvas,
+ * it stops when an edge would come inside it; narrower, it stops when an edge would go outside.
+ * A fitted board pans rather than sitting pinned to the middle, because the UI layer covers
+ * part of the canvas and sliding out from under a panel is the whole way to look there. */
 function axis(position: number, offset: number, extent: number, canvas: number): number {
-  if (extent <= canvas) return (canvas - extent) / 2 - offset;
-  return Math.min(-offset, Math.max(canvas - extent - offset, position));
+  const a = -offset;
+  const b = canvas - extent - offset;
+  return Math.min(Math.max(a, b), Math.max(Math.min(a, b), position));
 }
 
 type Gesture =
@@ -57,7 +62,7 @@ export interface InteractionOptions {
   geometry(): { grid: Grid; size: number } | null;
   /** The padded board rectangle in `viewport`'s own coordinates. Pan and zoom are clamped so
    * it never leaves the canvas: the map moves inside a window, it does not get lost. */
-  content(): { x: number; y: number; width: number; height: number } | null;
+  content(): Rect | null;
   tokens: TokenBoundsProvider;
   /** Connected cells of the same terrain as `cell`, for shift-click fill. */
   region(cell: string): string[];
@@ -151,6 +156,40 @@ export class Interaction {
     this.o.viewport.position.set(0, 0);
     this.clamp();
     this.viewportChanged();
+  }
+
+  /** A step of zoom about a screen point, on the same scale and limits as the wheel. */
+  zoomBy(factor: number, at: Point): void {
+    const viewport = this.o.viewport;
+    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.scale.x * factor));
+    if (next === viewport.scale.x) return;
+    const before = viewport.toLocal(at);
+    viewport.scale.set(next);
+    const after = viewport.toLocal(at);
+    viewport.x += (after.x - before.x) * next;
+    viewport.y += (after.y - before.y) * next;
+    this.clamp();
+    this.viewportChanged();
+  }
+
+  /** Put `box` (viewport-local) in the middle of `into` (screen), as large as the zoom limits
+   * allow. The caller decides what `into` is: the whole canvas, or the part of it no panel is
+   * covering — a framing command is asked for, so it may land where the asker can see it. */
+  frame(box: Rect, into: Rect): void {
+    if (box.width <= 0 || box.height <= 0) return;
+    const viewport = this.o.viewport;
+    const scale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(into.width / box.width, into.height / box.height)));
+    viewport.scale.set(scale);
+    viewport.position.set(
+      into.x + into.width / 2 - scale * (box.x + box.width / 2),
+      into.y + into.height / 2 - scale * (box.y + box.height / 2),
+    );
+    this.clamp();
+    this.viewportChanged();
+  }
+
+  get zoom(): number {
+    return this.o.viewport.scale.x;
   }
 
   /** Re-clamp after the canvas resized under a pan. */

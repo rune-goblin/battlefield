@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, qualityFor, seededRandom, ROSTER, type Side, type UnitCard } from '../engine/index.js';
-  import type { BoardEventOf, TokenModel } from '../board/index.js';
+  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, qualityFor, RADIUS, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
+  import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
+  import { AppShell, MapControls, TopBar } from './shell/index.js';
+  import StageNav from './StageNav.svelte';
   import { game, resetSetup, save, type SetupUnit } from './game.svelte.js';
 
   interface Props { side: Side }
@@ -54,6 +56,8 @@
   }
   const highlight = $derived(deployCells(side, pickedAmbush, selected));
   const highlightCells = $derived([...highlight]);
+
+  let boardRef = $state<PixiBoard>();
 
   const tokens = $derived.by<TokenModel[]>(() => [
     ...units.flatMap((u, i) => u.square ? [{
@@ -114,6 +118,26 @@
     selected = nextUnplaced();
     save();
   }
+  /** Where the Place button puts a piece: nearest its own edge, then nearest the centre file. */
+  function autoCell(p: Pick): string | null {
+    const piece = pieceAt(p);
+    if (!piece) return null;
+    const forAmbush = p.kind === 'unit' && ambush(piece as SetupUnit);
+    const open = [...deployCells(piece.side, forAmbush, p)].map(parse);
+    if (!open.length) return null;
+    const home = (c: Square) => (piece.side === 'attacker' ? c.rank : SIZE - 1 - c.rank);
+    open.sort((a, b) => home(a) - home(b) || Math.abs(a.file - RADIUS) - Math.abs(b.file - RADIUS));
+    return notation(open[0]);
+  }
+
+  function placeAuto(p: Pick) {
+    const cell = autoCell(p);
+    if (!cell || !pieceAt(p)) return;
+    pieceAt(p).square = cell;
+    selected = nextUnplaced();
+    save();
+  }
+
   function nextUnplaced(): Pick | null {
     const u = mine.find(({ u }) => u.square === null);
     if (u) return { kind: 'unit', i: u.i };
@@ -148,7 +172,13 @@
 
   function onTrayDragStart(p: Pick, e: DragEvent) {
     e.dataTransfer?.setData('text/plain', idOf(p));
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      // Dragging the icon carries the miniature already; dragging the rest of the row would
+      // otherwise carry a snapshot of the whole card.
+      const icon = (e.currentTarget as HTMLElement).querySelector('img');
+      if (icon && e.target !== icon) e.dataTransfer.setDragImage(icon, icon.width / 2, icon.height / 2);
+    }
     dragging = p;
     selected = p;
   }
@@ -165,7 +195,7 @@
     save();
   }
 
-  const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', perception: 'Per', reach: 'Reach' };
+  const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', reflex: 'Ref', perception: 'Per' };
 
   let engineName = $state(ENGINES.find((e) => e.name === 'Catapult')?.name ?? ENGINES[0].name);
   // 'emplace' drops the engine on a square of its own; anything else is a unit index and the
@@ -201,26 +231,60 @@
   const unplaced = $derived(mine.filter(({ u }) => !u.square).length + myEngines.filter(({ e }) => !e.square).length);
 </script>
 
-{#snippet sheetLines(card: UnitCard)}
-  {@const sh = card.sheet}
-  <div class="muted stat">
-    {#if sh}
-      Sheet · AC {sh.ac} · HP {sh.hp} · Battle DC {sh.battleDc} · Salvo {sh.salvoDc === null ? '—' : `DC ${sh.salvoDc} (${sh.salvoFeet} ft)`} · Fort +{sh.fortitude} · Ref +{sh.reflex} · Will +{sh.will} · Per +{sh.perception} · Speed {sh.speed} ft{sh.fly ? ', fly' : ''}
-    {:else}
-      Sheet · none (generic card, level table)
-    {/if}
-  </div>
-  <div class="muted stat derived">
-    Battle ·
-    {#each derivation(card) as d (d.stat)}
-      <span title={d.from}>{STAT_LABEL[d.stat]} {d.value}</span> ·
-    {/each}
-    {paceReason(card)}
-  </div>
+{#snippet grip(label: string)}
+  <span class="grip" role="presentation" title={`Drag ${label} onto the board`}></span>
 {/snippet}
 
-<div class="stage place">
-  <section class="sidepane stage-scroll">
+{#snippet statBlock(card: UnitCard)}
+  <dl class="stats">
+    {#each derivation(card) as d (d.stat)}
+      <div class="statcell" title={d.from}>
+        <dt>{STAT_LABEL[d.stat]}</dt>
+        <dd>{d.value}</dd>
+      </div>
+    {/each}
+  </dl>
+{/snippet}
+
+{#snippet sheetLines(card: UnitCard)}
+  {@const sh = card.sheet}
+  <p class="line">
+    {#if sh}
+      AC {sh.ac} · HP {sh.hp} · Battle DC {sh.battleDc} · Salvo {sh.salvoDc === null ? '—' : `DC ${sh.salvoDc} (${sh.salvoFeet} ft)`} · Fort +{sh.fortitude}{sh.fly ? ' · flies' : ''}
+    {:else}
+      No sheet — a generic card off the level table
+    {/if}
+  </p>
+  <p class="line">{paceReason(card)}</p>
+{/snippet}
+
+<AppShell leftTitle="{sideWord} force" leftWidth={26}>
+  {#snippet top()}
+    <TopBar>
+      {#snippet status()}
+        {#if unplaced}
+          <strong>{unplaced}</strong> still to place — drag one onto a lit square, or press Place.
+        {:else}
+          Every piece is placed. Drag a token — or its card — to move it.
+        {/if}
+      {/snippet}
+      {#snippet tools()}<StageNav />{/snippet}
+    </TopBar>
+  {/snippet}
+
+  {#snippet float()}
+    <MapControls
+      board={boardRef}
+      army={() => [...mine.map(({ u }) => u.square), ...myEngines.map(({ e }) => e.square)].filter((sq) => sq !== null)}
+      armyLabel="Frame the {sideWord} force"
+    />
+  {/snippet}
+
+  {#snippet map()}
+    <PixiBoard bind:this={boardRef} {board} {tokens} mode="place" fill highlights={[{ style: 'deploy', cells: highlightCells }]} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop} />
+  {/snippet}
+
+  {#snippet left()}
     <div class="card">
       <div class="row">
         <select bind:value={rosterName}>
@@ -253,28 +317,52 @@
     </div>
 
     <h3 class={side === 'attacker' ? 'side-att' : 'side-def'}>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
-    <div class="unitlist">
+    <div class="unitlist" style:--side={side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
       {#each mine as { u, i } (i)}
+        {@const p = { kind: 'unit' as const, i }}
         <div
-          class="unitrow click"
+          class="piece"
           class:sel={selected?.kind === 'unit' && selected.i === i}
+          class:down={!!u.square}
+          class:lift={dragging?.kind === 'unit' && dragging.i === i}
           role="button"
           tabindex="0"
-          draggable={!u.square}
-          ondragstart={u.square ? undefined : (e) => onTrayDragStart({ kind: 'unit', i }, e)}
-          ondragend={u.square ? undefined : onTrayDragEnd}
-          onclick={() => (selected = { kind: 'unit', i })}
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selected = { kind: 'unit', i }; } }}
+          draggable="true"
+          ondragstart={(e) => onTrayDragStart(p, e)}
+          ondragend={onTrayDragEnd}
+          onclick={() => (selected = p)}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selected = p; } }}
         >
-          <div><strong>{u.card.name}</strong> <span class="muted">L{u.card.level} {u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(', ') : ''}</span><br>
+          <div class="head">
+            {@render grip(u.card.name)}
+            <div class="title">
+              <h4 class="name">{u.card.name}</h4>
+              <p class="meta">{u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(' · ') : ''}</p>
+            </div>
+            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeUnit(i); }} title="Take out of the force" aria-label="Remove {u.card.name}">×</button>
+          </div>
+
+          {@render statBlock(u.card)}
+
+          <div class="plate">
+            <div class="portrait">
+              <img src={troopArtUrl(u.card.name, u.card.role)} alt="" />
+              <span class="level">{u.card.level}</span>
+            </div>
+            {#if u.square}
+              <button class="deploy set" onclick={(ev) => { ev.stopPropagation(); unplace(p); }} title="Take it off the board">{u.square}<span class="undo">↩</span></button>
+            {:else}
+              <button class="deploy" disabled={!autoCell(p)} onclick={(ev) => { ev.stopPropagation(); placeAuto(p); }} title={`Put it on the board · ${deployNote(u)}`}>Place</button>
+            {/if}
+          </div>
+
+          <div class="details">
             {@render sheetLines(u.card)}
+            <p class="line where">{u.square ? `Standing on ${u.square}` : `Off the board · deploys on ${deployNote(u)}`}</p>
             {#each u.engines as e, ei (ei)}
-              <div class="muted">⚙ {e} rides along <button onclick={(ev) => { ev.stopPropagation(); detach(u, ei); }} title="Remove engine" style="padding:0 .35rem">×</button></div>
+              <p class="line">⚙ {e} rides along <button class="kill inline" onclick={(ev) => { ev.stopPropagation(); detach(u, ei); }} title="Leave the engine behind" aria-label="Detach {e}">×</button></p>
             {/each}
           </div>
-          <span class="muted stat">{u.square ? `on ${u.square}` : `drag to place · ${deployNote(u)}`}</span>
-          <button disabled={!u.square} onclick={(ev) => { ev.stopPropagation(); unplace({ kind: 'unit', i }); }} title="Unplace">↩</button>
-          <button onclick={(ev) => { ev.stopPropagation(); removeUnit(i); }} title="Remove">×</button>
         </div>
       {:else}
         <p class="muted">No units yet. Add one from the roster, or generate a force.</p>
@@ -282,53 +370,140 @@
 
       {#each myEngines as { e, i } (i)}
         {@const c = engineCard(e.name)}
+        {@const art = engineArtUrl(e.name)}
+        {@const p = { kind: 'engine' as const, i }}
         <div
-          class="unitrow click engine"
+          class="piece engine"
           class:sel={selected?.kind === 'engine' && selected.i === i}
+          class:down={!!e.square}
+          class:lift={dragging?.kind === 'engine' && dragging.i === i}
           role="button"
           tabindex="0"
-          draggable={!e.square}
-          ondragstart={e.square ? undefined : (ev) => onTrayDragStart({ kind: 'engine', i }, ev)}
-          ondragend={e.square ? undefined : onTrayDragEnd}
-          onclick={() => (selected = { kind: 'engine', i })}
-          onkeydown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selected = { kind: 'engine', i }; } }}
+          draggable="true"
+          ondragstart={(ev) => onTrayDragStart(p, ev)}
+          ondragend={onTrayDragEnd}
+          onclick={() => (selected = p)}
+          onkeydown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selected = p; } }}
         >
-          <div><strong>⚙ {e.name}</strong>
-            {#if c}<span class="muted">L{c.level} {c.kind}{c.reach ? ' · ' + c.reach : ''} · +{c.launch} · Def {c.defence}</span>{/if}
+          <div class="head">
+            {@render grip(e.name)}
+            <div class="title">
+              <h4 class="name">{e.name}</h4>
+              <p class="meta">emplacement{c ? ` · ${c.kind}` : ''}</p>
+            </div>
+            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeEmplacement(i); }} title="Take out of the force" aria-label="Remove {e.name}">×</button>
           </div>
-          <span class="muted stat">{e.square ? `emplaced on ${e.square}` : 'drag to emplace'}</span>
-          <button disabled={!e.square} onclick={(ev) => { ev.stopPropagation(); unplace({ kind: 'engine', i }); }} title="Unplace">↩</button>
-          <button onclick={(ev) => { ev.stopPropagation(); removeEmplacement(i); }} title="Remove">×</button>
+
+          {#if c}
+            <dl class="stats">
+              <div class="statcell"><dt>Launch</dt><dd>+{c.launch}</dd></div>
+              <div class="statcell"><dt>Def</dt><dd>{c.defence}</dd></div>
+              <div class="statcell"><dt>Reach</dt><dd>{c.reach ?? '—'}</dd></div>
+            </dl>
+          {/if}
+
+          <div class="plate">
+            <div class="portrait">
+              {#if art}<img src={art} alt="" />{:else}<span class="cog">⚙</span>{/if}
+              {#if c}<span class="level">{c.level}</span>{/if}
+            </div>
+            {#if e.square}
+              <button class="deploy set" onclick={(ev) => { ev.stopPropagation(); unplace(p); }} title="Take it off the board">{e.square}<span class="undo">↩</span></button>
+            {:else}
+              <button class="deploy" disabled={!autoCell(p)} onclick={(ev) => { ev.stopPropagation(); placeAuto(p); }} title="Put it on the board">Place</button>
+            {/if}
+          </div>
+
+          <div class="details">
+            <p class="line where">{e.square ? `Emplaced on ${e.square}` : 'Off the board · holds the square it stands on'}</p>
+          </div>
         </div>
       {/each}
     </div>
 
-    <div class="row" style="margin-top:.6rem">
+    <div class="row">
       <button onclick={resetSetup}>Reset to the example</button>
     </div>
-  </section>
-
-  <section class="boardpane">
-    <p class="muted deploy-note">
-      {#if unplaced}
-        <strong>{unplaced}</strong> still to place. Drag one onto a lit square, or select it and click.
-      {:else}
-        Every piece is placed. Drag a token to move it.
-      {/if}
-      Attackers deploy on ranks 1–3, defenders on 7–9; an ambush unit may go one rank further in.
-    </p>
-    <div class="boardfill">
-      <PixiBoard {board} {tokens} mode="place" fill highlights={[{ style: 'deploy', cells: highlightCells }]} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop} />
-    </div>
-  </section>
-</div>
+  {/snippet}
+</AppShell>
 
 <style>
-  .place { display: grid; grid-template-columns: 26rem minmax(0, 1fr); gap: 1rem; min-height: 0; }
-  .boardpane { display: flex; flex-direction: column; gap: .3rem; min-height: 0; }
-  .deploy-note { margin: 0; }
-  .unitrow.engine { border-style: dashed; }
-  @media (max-width: 62rem) {
-    .place { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1.4fr); }
+
+  /* The card. A piece off the board is a card still in hand: dashed edge, hatched paper. Put
+     it down and the card goes solid, with its square stamped under the portrait. */
+  .piece {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.9rem;
+    grid-template-areas: 'head plate' 'stats plate' 'details details';
+    column-gap: .65rem;
+    padding: .5rem .6rem .45rem .75rem;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    cursor: grab;
+    transition: border-color .15s, box-shadow .15s, opacity .15s;
   }
+  .piece::before {
+    content: '';
+    position: absolute;
+    inset: -1px auto -1px -1px;
+    width: 4px;
+    border-radius: 8px 0 0 8px;
+    background: var(--side);
+  }
+  .piece:not(.down) {
+    border-style: dashed;
+    background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--rule) 18%, transparent) 7px 8px);
+  }
+  .piece:hover { border-color: var(--accent); }
+  .piece.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .piece.lift { opacity: .4; }
+  .piece:active { cursor: grabbing; }
+
+  /* An emplacement's rail is broken: it holds a square rather than marching off one. */
+  .piece.engine::before { background: repeating-linear-gradient(to bottom, var(--side) 0 5px, transparent 5px 9px); }
+
+  .head { grid-area: head; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: .4rem; }
+  .unitlist { gap: .5rem; }
+  .grip {
+    display: block;
+    width: .6rem; height: 1.05rem; margin-top: .15rem; align-self: center;
+    background-image: radial-gradient(currentColor .9px, transparent 1px);
+    background-size: .3rem .3rem;
+    color: var(--rule);
+    cursor: grab;
+  }
+  .piece:hover .grip { color: var(--accent); }
+  .name { margin: 0; font-size: .95rem; font-weight: 600; line-height: 1.15; }
+  .meta { margin: .1rem 0 0; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+  .stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .4rem; margin: .5rem 0 0; }
+  .statcell { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--rule) 50%, transparent); padding-left: .35rem; }
+  .statcell dt { font-size: .55rem; letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+  .statcell dd { margin: 0; font-size: .92rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .plate { grid-area: plate; display: flex; flex-direction: column; gap: .3rem; }
+  .portrait { position: relative; aspect-ratio: 1; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--band); display: grid; place-items: center; }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .portrait .cog { font-size: 1.6rem; color: var(--muted); }
+  .level {
+    position: absolute; top: 0; right: 0; min-width: 1.15rem; padding: .05rem .2rem;
+    font-size: .68rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;
+    color: var(--paper); background: var(--side); border-radius: 0 5px 0 6px;
+  }
+  .deploy { width: 100%; padding: .2rem .1rem; font-size: .8rem; border-radius: 5px; font-variant-numeric: tabular-nums; }
+  .deploy:not(.set) { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .deploy.set { color: var(--muted); }
+  .undo { margin-left: .25rem; opacity: .35; }
+  .deploy.set:hover .undo { opacity: 1; }
+
+  .details { grid-area: details; margin-top: .5rem; padding-top: .35rem; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
+  .line { margin: 0; font-size: .72rem; line-height: 1.4; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .where { color: var(--ink); }
+  .piece:not(.down) .where { font-style: italic; color: var(--muted); }
+
+  .kill { border: 0; background: none; color: var(--muted); padding: 0 .2rem; font-size: 1rem; line-height: 1; opacity: .5; }
+  .kill:hover:not(:disabled) { color: var(--bad); opacity: 1; border-color: transparent; }
+  .kill.inline { font-size: .8rem; }
 </style>

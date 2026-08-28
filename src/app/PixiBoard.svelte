@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import {
     createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
-    type HighlightStyle, type TokenModel,
+    type HighlightStyle, type Rect, type TokenModel,
   } from '../board/index.js';
   import type { Board } from '../engine/index.js';
 
@@ -50,6 +50,8 @@
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
   export function cellRadius(cell: string) { return view?.cellRadius(cell) ?? null; }
   export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
+  export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
+  export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
 
   onMount(() => {
     view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });

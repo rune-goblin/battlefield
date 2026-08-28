@@ -714,3 +714,98 @@ The hover label on a radial slice is the verb alone. The second line — "Close 
 "Choose a spell on the target" — is gone, and with it the `note` field on `Prop`, the
 `UNAVAILABLE` map behind it and the reason lookup that fed a dim slice. A dim slice still
 answers the pointer and still reads greyed, but it no longer says why it is out.
+
+### The deployment card carries the piece
+
+A unit that ends up unplaced — never dragged out, or unplaced by `generate()` when a reroll
+put water under it — was invisible: the board draws only pieces with a square, and the tray
+row was a wall of text with no obvious way to get it down. The row now shows the miniature and
+carries a Place button.
+
+- The whole row drags, placed or not, not just an unplaced one. Dragging a placed piece moves
+  it (`onTrayDrop` writes the same array entry, so no duplicate is possible) and its own
+  square counts as open, since `deployCells` excludes the piece being dragged.
+- `setDragImage` is set to the row's icon for a row-body drag. Dragging the icon itself
+  already carries the miniature; without this, dragging the text carried a snapshot of the
+  whole card.
+- Place picks the open deploy cell nearest the piece's own edge, then nearest the centre file:
+  a click fills the back rank outward from the middle. Rank order matters more than file, so a
+  force placed entirely by button lines up behind its own edge rather than spread across the
+  band.
+- Place is disabled with the deploy ranks full, and it is not offered for a placed piece — ↩
+  takes it off the board and the button comes back.
+
+### The card is the piece
+
+The tray row became a card: name and grip top-left, the six battle stats under it as a labelled
+grid, the miniature and its deploy button down the right, sheet and pace lines in a footer.
+`STAT_LABEL` gained `reflex`, which `derivation()` has always returned and the row rendered as
+`undefined +12`.
+
+- Off the board reads as *off the board*: the card is dashed and hatched, and its footer line
+  is italic. Putting it down makes the card solid and stamps the square on the button. The
+  whole complaint that started this was a piece that had quietly lost its square, so the two
+  states have to be tellable apart across the room.
+- The deploy button is the state, not two controls: `Place` while it is in hand, `c7 ↩` once it
+  is down. One slot under the portrait, one thing to look at to answer "where is it?".
+- The level rides the portrait's corner as a chip in the side's colour, the way the flag rides
+  the token on the board — the same number in the same place in both views.
+- A rail down the card's left edge carries the side colour; an emplacement's rail is broken
+  rather than solid. Between the rail, the chip and the wash on the board, a side is never
+  named twice in the same words.
+- No new typeface. The app is Georgia-and-friends with no webfont, so the card gets its
+  character from letterspaced small caps on the stat labels and tabular numerals on the values,
+  not from a font that would have to be loaded.
+- The grip is decorative: the whole card drags, so the dots say "this moves" without becoming
+  a second tab stop for the same job the card already does.
+
+### The map became a layer
+
+The setup stages sat in a centred `.wrap` with the board in a box, while `Battle.svelte` broke
+out with `position: fixed; inset: 0; z-index: 20` and built its own three-area grid. Two
+shells, one of them an escape hatch. Both are gone: every stage now mounts
+`src/app/shell/AppShell.svelte` and fills its layers. `docs/plans/app-shell.md` is the model
+and the multiplayer seams; the judgment calls are here.
+
+- Docks are glass over the map. They do not resize the canvas, and — after a first pass that
+  had them do it — they do not re-fit the board either. The board fills the viewport and holds
+  still; a panel opening moves no hex. A re-fit on a panel toggle is a camera jump with a
+  different trigger, and in a tactical game the pieces staying put is worth more than the screen
+  a dock covers.
+- The pan clamp had to loosen for that to be liveable: content smaller than the canvas used to
+  be pinned centred, so nothing could be dragged out from under a panel. It now slides and
+  stops at the canvas edge instead.
+- The bottom bar sits between the docks, not under them. The unit strip is about the map, so
+  it lives in the map's column; the top bar spans everything because the app's identity does.
+- Three dock states, not two: hidden is a real state, and it is the one the top bar's toggle
+  reaches. `[` and `]` walk open → rail → hidden, which is the fastest way to a big map.
+- Dock state persists under `battlefield.ui.v1`, not in `game.save()`. The moment a second
+  player exists, "which panels are open" must not be in the document both seats share.
+- The pin layer is inset 0, so board coordinates from `screenOf` land unchanged. Things that
+  want a corner instead read the `--inset-*` variables — the action popup opens in the map's
+  top-right, not behind the orders dock.
+- The battle log moved to the left dock. It was at the bottom of the right panel, below the
+  active unit and the move bands, where it was the first thing scrolled away from.
+- `float` and `modal` are declared and empty. They are the two layers the next feature will
+  want (a torn-off panel, a roll both seats watch), and naming them now is what stops the next
+  overlay from being another `position: fixed` escape hatch.
+
+### Viewport controls, and who decides where a frame lands
+
+Zoom in, zoom out, frame everything, frame my army — a floating cluster in the shell's `float`
+layer, bottom-right, offset by the same `--inset-*` variables the popups use, so it slides
+clear of the orders dock and takes the true corner when the docks are hidden.
+
+- The board gained `zoomBy(factor, into)` and `frame(cells, into)`, and both take the target
+  rectangle from the caller. That keeps the rule intact: the board has no idea a panel exists,
+  but a command the player pressed can still land in the part of the map they can see. Framing
+  everything with both docks open now shows the file labels that the unit strip normally
+  covers.
+- `Interaction.frame` clamps to the same `MIN_ZOOM`/`MAX_ZOOM` as the wheel, so "frame my army"
+  on two adjacent units stops at 2.5× rather than filling the screen with one hex.
+- The framed box is the cells' own bounding box grown by one cell, because a piece's art and
+  its flag stand well outside its hex and would otherwise be cropped by the frame.
+- No disabled state at the zoom limits: the board's scale is PIXI's, not Svelte's, and the
+  wheel can change it behind the toolbar's back. A no-op click beats a button that lies. If it
+  starts to matter, the fix is for `BoardView` to publish zoom changes, not for the toolbar to
+  poll.

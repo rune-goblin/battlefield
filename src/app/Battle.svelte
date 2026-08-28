@@ -8,6 +8,7 @@
   import { actionIconUrl, troopArtUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
   import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
+  import { AppShell, MapControls, TopBar } from './shell/index.js';
   import RadialMenu from './RadialMenu.svelte';
   import { backToSetup, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
@@ -727,21 +728,32 @@
 
 <svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} />
 
-<div class="battle">
-  <div class="battle-top">
-    <div class="battle-top-left">
-      <strong>Round {b.round} / 6</strong>
-      <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span> to activate
-      {#if active}<span class="muted">· {active.name}</span>{/if}
-      <span class="muted">· {spec}</span>
-    </div>
-    <div class="row">
-      <button onclick={undo} disabled={!game.history.length} title="Undo the last action">Undo</button>
-      <button onclick={backToSetup}>New battle</button>
-    </div>
-  </div>
+<AppShell leftTitle="Battle log" leftWidth={21} rightTitle="Orders" rightWidth={24}>
+  {#snippet top()}
+    <TopBar>
+      {#snippet status()}
+        <strong>Round {b.round} / 6</strong>
+        <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span> to activate
+        {#if active}<span class="muted">· {active.name}</span>{/if}
+        <span class="muted">· {spec}</span>
+      {/snippet}
+      {#snippet tools()}
+        <button onclick={undo} disabled={!game.history.length} title="Undo the last action">Undo</button>
+        <button onclick={backToSetup}>New battle</button>
+      {/snippet}
+    </TopBar>
+  {/snippet}
 
-  <div class="battle-board" class:aiming={arming !== null}>
+  {#snippet float()}
+    <MapControls
+      board={boardRef}
+      army={() => b.units.filter((u) => u.side === (active?.side ?? b.pending) && u.status === 'active').map((u) => notation(u.square))}
+      armyLabel="Frame the {active?.side ?? b.pending} force"
+    />
+  {/snippet}
+
+  {#snippet map()}
+    <div class="mapwrap" class:aiming={arming !== null}>
     <PixiBoard
       bind:this={boardRef}
       board={b.board}
@@ -759,6 +771,10 @@
       ondrag={active ? onBoardDrag : undefined}
       ondrop={active ? onBoardDrop : undefined}
     />
+    </div>
+  {/snippet}
+
+  {#snippet pin()}
     {#if radial && anchor && radialItems.length}
       <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={radialItems} pick={pickProp} />
     {/if}
@@ -887,9 +903,10 @@
         {@render popupFoot(takeAim)}
       </BoardPopup>
     {/if}
-  </div>
+  {/snippet}
 
-  <div class="battle-strip">
+  {#snippet bottom()}
+    <div class="battle-strip">
     {#each strip as u (u.id)}
       {@const spent = b.activated.includes(u.id)}
       <button class="unit-card" class:active={active?.id === u.id} class:spent disabled={spent} onclick={() => pickUnit(u)}>
@@ -906,9 +923,10 @@
     {:else}
       <p class="muted">No units left to activate this round.</p>
     {/each}
-  </div>
+    </div>
+  {/snippet}
 
-  <div class="battle-panel">
+  {#snippet right()}
     {#if b.phase === 'ended'}
       <div class="card result">
         <h2>{b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`}</h2>
@@ -1017,35 +1035,22 @@
       {/if}
     {/if}
 
-    <h3>Battle log</h3>
+  {/snippet}
+
+  {#snippet left()}
     <div class="log" bind:this={logEl}>
       {#each b.log as e, i (i)}
         <p class:round={!e.unit} class={cls(e.check)}>{e.text}</p>
       {/each}
     </div>
-  </div>
-</div>
+  {/snippet}
+</AppShell>
 
 <style>
-  .battle {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    display: grid;
-    grid-template-columns: 1fr 24rem;
-    grid-template-rows: auto 1fr auto;
-    grid-template-areas: "top top" "board panel" "strip panel";
-    background: var(--paper);
-    color: var(--ink);
-  }
-  .battle-top { grid-area: top; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .5rem 1rem; border-bottom: 1px solid var(--rule); }
-  .battle-top-left { display: flex; gap: .4rem; align-items: baseline; flex-wrap: wrap; }
-  .battle-board { grid-area: board; position: relative; min-width: 0; min-height: 0; }
-  .battle-strip { grid-area: strip; display: flex; gap: .5rem; padding: .5rem .75rem; overflow-x: auto; border-top: 1px solid var(--rule); background: var(--band); }
-  .battle-panel { grid-area: panel; display: flex; flex-direction: column; gap: .6rem; padding: .75rem; overflow-y: auto; border-left: 1px solid var(--rule); min-height: 0; }
-  .battle-panel .log { flex: 1; min-height: 8rem; max-height: none; }
-
-  .battle-board.aiming { cursor: crosshair; }
+  .mapwrap { width: 100%; height: 100%; }
+  .mapwrap.aiming { cursor: crosshair; }
+  .battle-strip { display: flex; gap: .5rem; padding: .4rem .75rem; overflow-x: auto; }
+  .log { flex: 1; min-height: 8rem; max-height: none; background: none; padding: 0; }
 
   .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }
   /* One verb is a heading, not a choice — the rungs below no longer name it themselves. */
@@ -1063,7 +1068,9 @@
   .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
 
   .drag-hud {
-    position: absolute; top: .6rem; left: .6rem; z-index: 5;
+    position: absolute; z-index: 5;
+    top: calc(var(--inset-top, 0px) + .6rem);
+    left: calc(var(--inset-left, 0px) + .6rem);
     display: flex; gap: .6rem; align-items: center;
     padding: .35rem .7rem; border-radius: 8px; font-size: .85rem;
     background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);

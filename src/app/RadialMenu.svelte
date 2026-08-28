@@ -80,7 +80,7 @@
 </div>
 
 <style>
-  .radial { position: absolute; z-index: 7; width: 0; height: 0; }
+  .radial { position: absolute; z-index: 7; width: 0; height: 0; pointer-events: auto; }
 
   .ring {
     position: absolute; left: 0; top: 0; width: 0; height: 0;
