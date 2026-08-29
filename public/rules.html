@@ -33,6 +33,11 @@
   .att { fill:#8f3a2e; } .def { fill:#3a5f8f; } @media (prefers-color-scheme: dark){ .att{fill:#d9705c;} .def{fill:#6f9bd1;} }
   .lbl { font:600 13px Georgia,serif; fill:var(--ink); } .sm { font:12px Georgia,serif; fill:var(--muted); } .step { fill:var(--band); stroke:var(--rule); }
   .cell { fill:none; stroke:var(--rule); }
+  .hx { stroke:none; opacity:.15; }
+  .hx.b1 { fill:var(--accent); opacity:.26; } .hx.b2 { fill:var(--accent); opacity:.16; }
+  .hx.b3 { fill:var(--accent); opacity:.07; } .hx.here { fill:var(--accent); opacity:.6; }
+  .rung { font:600 13px Georgia,serif; fill:var(--ink); } .free { fill:var(--band); stroke:var(--rule); }
+  .reach { fill:none; stroke:var(--accent); stroke-width:2; stroke-dasharray:5 3; } .locked { fill:none; stroke:var(--rule); stroke-dasharray:2 4; }
   @media (max-width:40rem){ .toc{columns:1;} body{font-size:16px;} }
 </style>
 </head>
@@ -43,7 +48,7 @@
 <p class="sub">Rules for resolving a battle between armies in a single sitting.</p>
 
 <div class="key">
-<p><strong>In one paragraph.</strong> Each army is a unit on a square of an eight-by-eight board. Units move like rooks, one square at a time. On its activation a unit takes three actions and keeps one reaction: advance, withdraw, strike, volley, brace or rally. Every roll is an ordinary d20 check using numbers already on the army's troop sheet. Hits deal wounds, one or two at a time; four wounds destroy a unit. Taking wounds forces morale checks; failing them makes a unit shaken, and a unit that is shaken three times routs. The battle ends when one side has nothing left standing, or at dusk after six rounds.</p>
+<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of sixty-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit does one of five things — Shoot, Fight, Guard, Rally, Cast — or it moves. Each of the five is a ladder of three rungs, and a unit's grade on that ladder is the rung it takes for free; the rung above is a gamble it may reach for, and the rung above that is out of reach. Every act costs one action, and the actions left over buy weight: +2 each, on the roll, on the climb, or on the Defence a Guard sets. Hits deal wounds, one or two at a time, and four wounds destroy a unit. Losing a melee exchange, taking a shot, or watching half the army fall costs disorder, and a unit whose disorder reaches its Quality is shaken, and one point past it routs. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
 </div>
 
 <nav class="toc">
@@ -52,442 +57,649 @@
 <a href="#board">3. The battlefield</a><br>
 <a href="#setup">4. Setting up</a><br>
 <a href="#round">5. The round</a><br>
-<a href="#actions">6. Actions</a><br>
-<a href="#wounds">7. Wounds</a><br>
-<a href="#morale">8. Morale</a><br>
-<a href="#ground">9. Ground, height and barriers</a><br>
-<a href="#siege">10. Siege engines</a><br>
-<a href="#tactics">11. Trained tactics</a><br>
-<a href="#end">12. Ending the battle</a><br>
-<a href="#odds">13. Fighting against the odds</a><br>
+<a href="#ladders">6. Ladders, grades and weight</a><br>
+<a href="#move">7. Moving and breaking away</a><br>
+<a href="#wounds">8. Wounds</a><br>
+<a href="#disorder">9. Disorder and rout</a><br>
+<a href="#ground">10. Ground, height and walls</a><br>
+<a href="#magic">11. Magic</a><br>
+<a href="#siege">12. Siege engines</a><br>
+<a href="#end">13. Ending the battle</a><br>
+<a href="#odds">14. Fighting against the odds</a><br>
 <a href="#ref">Quick reference</a><br>
-<a href="#example">Worked battle</a>
+<a href="#example">Worked round</a><br>
+<a href="#notes">Design notes</a>
 </nav>
 
 <h2 id="need">1. What you need</h2>
-<p>Each army's troop sheet, a d20, and a chessboard: eight files lettered a to h and eight ranks numbered 1 to 8, or the battle board in the kingdom app, which generates one from the hex. Each player commands the armies they lead and any the GM hands them. The GM commands every army of an enemy faction and acts for them in initiative order.</p>
-<p>A battle happens when armies of hostile factions end up in the same hex. The side that moved in is the <strong>attacker</strong>; the side already there is the <strong>defender</strong>. The defender's hex sets the ground (section 9). The battle resolves inside the kingdom's Actions phase, before the next kingdom action.</p>
+<p>Each army's troop sheet, a d20, and the battle board in the kingdom app: a hexagon of sixty-one hexes, files lettered a to i and ranks numbered 1 to 9, generated from the hex being fought over. Each player commands the armies they lead and any the GM hands them. The GM commands every army of an enemy faction.</p>
+<p>A battle happens when armies of hostile factions end up in the same hex. The side that moved in is the <strong>attacker</strong>; the side already there is the <strong>defender</strong>. The defender's hex sets the ground (section 10). The battle resolves inside the kingdom's Actions phase, before the next kingdom action.</p>
 
 <h2 id="card">2. The unit</h2>
-<p>An army in battle is a <strong>unit</strong>, and a unit is one of two types, the same two the skirmish rules use: <strong>infantry</strong> or <strong>cavalry</strong>. A siege engine is never a unit; it rides with one (section 10). You never invent new numbers for a unit; every value comes from its troop sheet.</p>
+<p>An army in battle is a <strong>unit</strong>, and a unit is one of two types: <strong>infantry</strong> or <strong>cavalry</strong>. A siege engine is never a unit; it rides with one or holds a hex of its own (section 12). You never invent a number for a unit. Every value comes off the troop sheet, and a card with no sheet takes the level tables for its type.</p>
+
+<h3>Numbers off the sheet</h3>
 <div class="wrap"><table>
 <tr><th>Battle value</th><th>Where it comes from</th><th>Line Infantry, level 6</th></tr>
-<tr><td>Strike bonus</td><td>The DC of the troop's <em>Battle</em> attack, minus 10</td><td>DC 21 → +11</td></tr>
-<tr><td>Volley bonus</td><td>The DC of the troop's <em>Salvo</em> attack, minus 10. No Salvo, no Volley.</td><td>DC 21 → +11</td></tr>
-<tr><td>Volley reach</td><td>The Salvo's range: up to 60 ft reaches <em>close</em>; up to 120 ft reaches <em>long</em>; more reaches <em>extreme</em></td><td>120 ft → long</td></tr>
-<tr><td>Defence</td><td>Armour Class, including any equipment or fortification bonus already on the sheet</td><td>24</td></tr>
-<tr><td>Will</td><td>Will save modifier; used for morale</td><td>+13</td></tr>
-<tr><td>Perception</td><td>Used for initiative</td><td>+13</td></tr>
-<tr><td>Type</td><td>Infantry or cavalry, from the army's type</td><td>infantry</td></tr>
-<tr><td>Pace</td><td>Speed sets how many squares an Advance moves: one at 30 ft or less, two at 60 ft, three at 90 ft</td><td>20 ft → one square</td></tr>
-<tr><td>Fear</td><td>A unit with frightful presence or a fear aura</td><td>no</td></tr>
-<tr><td>Level</td><td>Sets the morale DC its enemies must beat</td><td>6</td></tr>
-<tr><td>Wounds</td><td>0 to 4, from current hit points (section 7)</td><td>0</td></tr>
-<tr><td>Shaken</td><td>0 to 3, from the army's demoralized value</td><td>0</td></tr>
+<tr><td>Strike</td><td>The DC of the troop's <em>Battle</em> attack, minus 10</td><td>DC 21 &rarr; +11</td></tr>
+<tr><td>Volley</td><td>The DC of the troop's <em>Salvo</em> attack, minus 10. No Salvo, no shooting.</td><td>DC 21 &rarr; +11</td></tr>
+<tr><td>Reach</td><td>The Salvo's range: up to 60 ft reaches <em>close</em>, up to 120 ft <em>long</em>, more <em>extreme</em>. Reach sets the Shoot grade.</td><td>120 ft &rarr; long</td></tr>
+<tr><td>Defence</td><td>Armour Class, including any fortification bonus already on the sheet</td><td>24</td></tr>
+<tr><td>Will</td><td>Will save. Every reach for a rung, every Rally, every Blast.</td><td>+13</td></tr>
+<tr><td>Reflex</td><td>Reflex save. Breaking contact, and nothing else.</td><td>+14</td></tr>
+<tr><td>Speed</td><td>30 ft of the actor's Speed carries the formation one hex, and a hex is 10 ft: one Move action buys <code>&lceil;Speed &divide; 30&rceil;</code> hexes, minimum one</td><td>20 ft &rarr; 10 ft an action</td></tr>
+<tr><td>Level</td><td>The DC of its own reaches, and the DC its enemies rally against</td><td>6 &rarr; DC 22</td></tr>
+<tr><td>Wounds</td><td>0 to 4, from current hit points (section 8)</td><td>0</td></tr>
+<tr><td>Disorder</td><td>From the army's demoralized value (section 9)</td><td>0</td></tr>
 </table></div>
-<p>Level DCs are the standard table: level 3 is DC 18, level 6 is 22, level 7 is 23, level 8 is 24.</p>
+<p>Level DCs are the standard table: level 1 is DC 15, 3 is 18, 6 is 22, 8 is 24, 12 is 30.</p>
+<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level where Armour Class spreads 3.2, which is why breaking contact reads off Reflex rather than off Defence. Perception is derived and displayed, but no rule reads it — there is no initiative roll (section 5).</p>
+<p>A card with no sheet takes the level tables for its type. Infantry: high AC, moderate attack, high Will, moderate Reflex, one hex an action. Cavalry: high AC, high attack, moderate Will, high Reflex, two hexes an action.</p>
+
+<h3>Grades</h3>
+<p>A unit carries a <strong>grade</strong> of 1, 2 or 3 on each of the five ladders. The grade is read off the statblock, never hand-picked.</p>
+<div class="wrap"><table>
+<tr><th>Ladder</th><th>Grade comes from</th></tr>
+<tr><td>Shoot</td><td>Salvo reach: none or close is 1, long is 2, extreme is 3</td></tr>
+<tr><td>Fight</td><td>No melee attack is 1; a melee drill or a fear aura is 3; anything else is 2</td></tr>
+<tr><td>Guard</td><td>1, plus 1 for fighting in formation, plus 1 for shields or a magic ward. Maximum 3.</td></tr>
+<tr><td>Rally</td><td>Will save: high for its level or better is 3, moderate is 2, anything lower is 1</td></tr>
+<tr><td>Cast</td><td>No spellcasting is 1. A caster is 1 below level 8, 2 to level 14, 3 from level 15.</td></tr>
+</table></div>
+<p>An importer reads <em>melee drill</em>, <em>shields</em>, <em>formation</em>, <em>magic ward</em>, <em>mounted</em> and <em>no retreat</em> straight off the recurring action names on a statblock. A trained tactic, where a card carries one, raises one grade to 3 and does nothing else: covering fire raises Shoot; a reactive attack, dirty fighting or a feint raises Fight; raised shields or a shield block raises Guard; defending allies or battlefield medicine raises Rally.</p>
+<div class="aside">
+<h4>Armour Class and attack DC carry no grade information</h4>
+<p>Across all 162 published troops, Armour Class spreads 3.2 points within a level and attack DC 2.6 — at level 12 every troop shares one attack DC. Both are functions of level, so neither says anything about a troop's character. Will spreads 5.1 and Speed falls across seven bands, so those two are read numerically, and the recurring action names carry the rest.</p>
+</div>
+
+<h3>Quality</h3>
+<p>A unit's <strong>Quality</strong> is the disorder it absorbs before it breaks, and it too comes off the Will save: 2 below the low band, 3 at low, 4 at moderate, 5 at high, 6 at extreme. Line Infantry has Quality 3; Kobold Warriors, better disciplined for their level, have 4; Troll Marauders, who are not disciplined at all, have 2 and are shaken by two bad exchanges.</p>
 
 <h2 id="board">3. The battlefield</h2>
-<p>The battlefield is a chessboard. Files run a to h across the board and ranks 1 to 8 from the attacker's edge to the defender's. Name a square by file and rank: c2, e7. Every unit stands on one square, and a square holds at most one unit.</p>
-<p>Units move like rooks: one square along a file or a rank per Advance, never diagonally. The <strong>distance</strong> between two units is the count of orthogonal steps from one square to the other: from c5 to d7 is one file and two ranks, distance 3. Distance sets the <strong>range</strong>:</p>
+<p>The battlefield is a hexagon of sixty-one hexes, in rows of 5, 6, 7, 8, 9, 8, 7, 6 and 5. Files run a to i and ranks 1 to 9, from the attacker's edge to the defender's; e5 is the centre. Name a hex by file and rank: c3, e7. Every unit stands on one hex, and a hex holds at most one unit.</p>
+<p>Hexes have no diagonal. Every one of a hex's six neighbours is adjacent, at distance 1, and the <strong>distance</strong> between two units is the number of steps from one hex to the other. Distance sets the band a shot falls in:</p>
 <table>
-<tr><th>Distance</th><th>Range</th><th>Strike</th><th>Volley</th></tr>
-<tr><td>1</td><td>Engaged</td><td>Yes</td><td>No</td></tr>
-<tr><td>2</td><td>Close</td><td>No</td><td>Any Salvo</td></tr>
-<tr><td>3</td><td>Long</td><td>No</td><td>Salvo with long or extreme reach</td></tr>
-<tr><td>4 or more</td><td>Extreme</td><td>No</td><td>Salvo with extreme reach, or a siege engine, at −2</td></tr>
+<tr><th>Distance</th><th>Band</th><th>Reached by</th></tr>
+<tr><td>1</td><td>Engaged</td><td>Fight. No shooting either way.</td></tr>
+<tr><td>2</td><td>Close</td><td>Loose, and every rung above it</td></tr>
+<tr><td>3</td><td>Long</td><td>Volley and Barrage</td></tr>
+<tr><td>4&ndash;5</td><td>Extreme</td><td>Barrage, and any artillery whose reach carries that far</td></tr>
+<tr><td>6 or more</td><td>Beyond</td><td>Nothing</td></tr>
 </table>
-<p>Two units on orthogonally adjacent squares are <strong>engaged</strong>, unless a barrier lies on the edge between them (section 9). Diagonal neighbours stand at distance 2 and are never engaged. A unit engaged with two or more enemy units is <strong>outflanked</strong> and takes −2 to Defence.</p>
-<figure><svg viewBox="0 0 464 498" role="img" aria-label="The board at deployment">
-<rect class="att" opacity=".12" x="36" y="276" width="416" height="156"/>
-<rect class="def" opacity=".12" x="36" y="16" width="416" height="156"/>
-<rect class="cell" x="36" y="16" width="52" height="52"/>
-<rect class="cell" x="36" y="68" width="52" height="52"/>
-<rect class="cell" x="36" y="120" width="52" height="52"/>
-<rect class="cell" x="36" y="172" width="52" height="52"/>
-<rect class="cell" x="36" y="224" width="52" height="52"/>
-<rect class="cell" x="36" y="276" width="52" height="52"/>
-<rect class="cell" x="36" y="328" width="52" height="52"/>
-<rect class="cell" x="36" y="380" width="52" height="52"/>
-<rect class="cell" x="88" y="16" width="52" height="52"/>
-<rect class="cell" x="88" y="68" width="52" height="52"/>
-<rect class="cell" x="88" y="120" width="52" height="52"/>
-<rect class="cell" x="88" y="172" width="52" height="52"/>
-<rect class="cell" x="88" y="224" width="52" height="52"/>
-<rect class="cell" x="88" y="276" width="52" height="52"/>
-<rect class="cell" x="88" y="328" width="52" height="52"/>
-<rect class="cell" x="88" y="380" width="52" height="52"/>
-<rect class="cell" x="140" y="16" width="52" height="52"/>
-<rect class="cell" x="140" y="68" width="52" height="52"/>
-<rect class="cell" x="140" y="120" width="52" height="52"/>
-<rect class="cell" x="140" y="172" width="52" height="52"/>
-<rect class="cell" x="140" y="224" width="52" height="52"/>
-<rect class="cell" x="140" y="276" width="52" height="52"/>
-<rect class="cell" x="140" y="328" width="52" height="52"/>
-<rect class="cell" x="140" y="380" width="52" height="52"/>
-<rect class="cell" x="192" y="16" width="52" height="52"/>
-<rect class="cell" x="192" y="68" width="52" height="52"/>
-<rect class="cell" x="192" y="120" width="52" height="52"/>
-<rect class="cell" x="192" y="172" width="52" height="52"/>
-<rect class="cell" x="192" y="224" width="52" height="52"/>
-<rect class="cell" x="192" y="276" width="52" height="52"/>
-<rect class="cell" x="192" y="328" width="52" height="52"/>
-<rect class="cell" x="192" y="380" width="52" height="52"/>
-<rect class="cell" x="244" y="16" width="52" height="52"/>
-<rect class="cell" x="244" y="68" width="52" height="52"/>
-<rect class="cell" x="244" y="120" width="52" height="52"/>
-<rect class="cell" x="244" y="172" width="52" height="52"/>
-<rect class="cell" x="244" y="224" width="52" height="52"/>
-<rect class="cell" x="244" y="276" width="52" height="52"/>
-<rect class="cell" x="244" y="328" width="52" height="52"/>
-<rect class="cell" x="244" y="380" width="52" height="52"/>
-<rect class="cell" x="296" y="16" width="52" height="52"/>
-<rect class="cell" x="296" y="68" width="52" height="52"/>
-<rect class="cell" x="296" y="120" width="52" height="52"/>
-<rect class="cell" x="296" y="172" width="52" height="52"/>
-<rect class="cell" x="296" y="224" width="52" height="52"/>
-<rect class="cell" x="296" y="276" width="52" height="52"/>
-<rect class="cell" x="296" y="328" width="52" height="52"/>
-<rect class="cell" x="296" y="380" width="52" height="52"/>
-<rect class="cell" x="348" y="16" width="52" height="52"/>
-<rect class="cell" x="348" y="68" width="52" height="52"/>
-<rect class="cell" x="348" y="120" width="52" height="52"/>
-<rect class="cell" x="348" y="172" width="52" height="52"/>
-<rect class="cell" x="348" y="224" width="52" height="52"/>
-<rect class="cell" x="348" y="276" width="52" height="52"/>
-<rect class="cell" x="348" y="328" width="52" height="52"/>
-<rect class="cell" x="348" y="380" width="52" height="52"/>
-<rect class="cell" x="400" y="16" width="52" height="52"/>
-<rect class="cell" x="400" y="68" width="52" height="52"/>
-<rect class="cell" x="400" y="120" width="52" height="52"/>
-<rect class="cell" x="400" y="172" width="52" height="52"/>
-<rect class="cell" x="400" y="224" width="52" height="52"/>
-<rect class="cell" x="400" y="276" width="52" height="52"/>
-<rect class="cell" x="400" y="328" width="52" height="52"/>
-<rect class="cell" x="400" y="380" width="52" height="52"/>
-<text class="sm" x="62" y="448" text-anchor="middle">a</text>
-<text class="sm" x="114" y="448" text-anchor="middle">b</text>
-<text class="sm" x="166" y="448" text-anchor="middle">c</text>
-<text class="sm" x="218" y="448" text-anchor="middle">d</text>
-<text class="sm" x="270" y="448" text-anchor="middle">e</text>
-<text class="sm" x="322" y="448" text-anchor="middle">f</text>
-<text class="sm" x="374" y="448" text-anchor="middle">g</text>
-<text class="sm" x="426" y="448" text-anchor="middle">h</text>
-<text class="sm" x="28" y="410" text-anchor="end">1</text>
-<text class="sm" x="28" y="358" text-anchor="end">2</text>
-<text class="sm" x="28" y="306" text-anchor="end">3</text>
-<text class="sm" x="28" y="254" text-anchor="end">4</text>
-<text class="sm" x="28" y="202" text-anchor="end">5</text>
-<text class="sm" x="28" y="150" text-anchor="end">6</text>
-<text class="sm" x="28" y="98" text-anchor="end">7</text>
-<text class="sm" x="28" y="46" text-anchor="end">8</text>
-<circle class="att" cx="166" cy="348" r="10"/>
-<text class="lbl" x="166" y="370" text-anchor="middle">Inf</text>
-<circle class="att" cx="270" cy="348" r="10"/>
-<text class="lbl" x="270" y="370" text-anchor="middle">Cav</text>
-<rect class="def" x="208" y="78" width="20" height="20" rx="3"/>
-<text class="lbl" x="218" y="110" text-anchor="middle">Kob</text>
-<rect class="def" x="260" y="78" width="20" height="20" rx="3"/>
-<text class="lbl" x="270" y="110" text-anchor="middle">Trl</text>
-<text class="sm" x="36" y="470">Shaded ranks 1–3: the attacker deploys here. Shaded ranks 7–9: the defender.</text>
-<text class="sm" x="36" y="488">Infantry c2 to kobolds d7: 1 file + 5 ranks = distance 6, extreme.</text>
-<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
-</svg><figcaption>Circles are the attacker's units, squares the defender's. Distance is the count of orthogonal steps from one square to the other.</figcaption></figure>
-<p>Squares carry terrain and height; edges carry walls and cliffs. Eight files give room for a refused flank, a reserve rank and a walled corner.</p>
-
-<div class="aside">
-<h4>Hex variant</h4>
-<p>The battle board can also generate as an eight-by-eight grid of hexes instead of squares, chosen when you generate the battlefield. Deployment still holds to ranks 1 to 3 and 6 to 8. Read every "orthogonal" above as "adjacent": hexes have no diagonal, so the rule that diagonal neighbours stand at distance 2 and are never engaged is a square-board rule only — on hex every neighbour is adjacent, at distance 1, and engaged if nothing stands on the edge between them. Every other number on this page — Volley bands, wounds, morale, wall and cliff rules — carries over unchanged, but the hex grid itself is roomier: eighteen cells fall within distance 2 of a given cell against a square board's twelve, so Volley and Demoralize reach further across the board in practice; the front deployment ranks meet at more points, so the opening clash is wider; and a unit that Withdraws while unengaged has two cells that count as homeward instead of one. These are properties of the grid, not a rule change made to fix them — whether the numbers above should move for hex play is still being tested.</p>
-</div>
+<figure><svg viewBox="0 0 472 432" role="img" aria-label="Shooting bands measured from c3">
+<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="hx b1"/>
+<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="cell"/>
+<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="hx b1"/>
+<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="cell"/>
+<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="hx b2"/>
+<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="cell"/>
+<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="hx b3"/>
+<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="cell"/>
+<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="hx b3"/>
+<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="cell"/>
+<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="hx b1"/>
+<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="cell"/>
+<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="hx b1"/>
+<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="cell"/>
+<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="hx b1"/>
+<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="cell"/>
+<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="hx b2"/>
+<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="cell"/>
+<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="hx b3"/>
+<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="cell"/>
+<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="hx b3"/>
+<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="cell"/>
+<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="hx b1"/>
+<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="cell"/>
+<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="hx here"/>
+<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="cell"/>
+<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="hx b1"/>
+<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="cell"/>
+<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="hx b1"/>
+<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="cell"/>
+<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="hx b2"/>
+<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="cell"/>
+<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="hx b3"/>
+<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="cell"/>
+<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="hx b3"/>
+<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="cell"/>
+<polygon points="97.5,256.0 75.0,269.0 52.5,256.0 52.5,230.0 75.0,217.0 97.5,230.0" class="hx b1"/>
+<polygon points="97.5,256.0 75.0,269.0 52.5,256.0 52.5,230.0 75.0,217.0 97.5,230.0" class="cell"/>
+<polygon points="142.6,256.0 120.1,269.0 97.5,256.0 97.5,230.0 120.1,217.0 142.6,230.0" class="hx b1"/>
+<polygon points="142.6,256.0 120.1,269.0 97.5,256.0 97.5,230.0 120.1,217.0 142.6,230.0" class="cell"/>
+<polygon points="187.6,256.0 165.1,269.0 142.6,256.0 142.6,230.0 165.1,217.0 187.6,230.0" class="hx b1"/>
+<polygon points="187.6,256.0 165.1,269.0 142.6,256.0 142.6,230.0 165.1,217.0 187.6,230.0" class="cell"/>
+<polygon points="232.6,256.0 210.1,269.0 187.6,256.0 187.6,230.0 210.1,217.0 232.6,230.0" class="hx b1"/>
+<polygon points="232.6,256.0 210.1,269.0 187.6,256.0 187.6,230.0 210.1,217.0 232.6,230.0" class="cell"/>
+<polygon points="277.7,256.0 255.2,269.0 232.6,256.0 232.6,230.0 255.2,217.0 277.7,230.0" class="hx b2"/>
+<polygon points="277.7,256.0 255.2,269.0 232.6,256.0 232.6,230.0 255.2,217.0 277.7,230.0" class="cell"/>
+<polygon points="322.7,256.0 300.2,269.0 277.7,256.0 277.7,230.0 300.2,217.0 322.7,230.0" class="hx b3"/>
+<polygon points="322.7,256.0 300.2,269.0 277.7,256.0 277.7,230.0 300.2,217.0 322.7,230.0" class="cell"/>
+<polygon points="367.7,256.0 345.2,269.0 322.7,256.0 322.7,230.0 345.2,217.0 367.7,230.0" class="hx b3"/>
+<polygon points="367.7,256.0 345.2,269.0 322.7,256.0 322.7,230.0 345.2,217.0 367.7,230.0" class="cell"/>
+<polygon points="412.8,256.0 390.3,269.0 367.7,256.0 367.7,230.0 390.3,217.0 412.8,230.0" class="cell"/>
+<polygon points="75.0,217.0 52.5,230.0 30.0,217.0 30.0,191.0 52.5,178.0 75.0,191.0" class="hx b2"/>
+<polygon points="75.0,217.0 52.5,230.0 30.0,217.0 30.0,191.0 52.5,178.0 75.0,191.0" class="cell"/>
+<polygon points="120.1,217.0 97.5,230.0 75.0,217.0 75.0,191.0 97.5,178.0 120.1,191.0" class="hx b1"/>
+<polygon points="120.1,217.0 97.5,230.0 75.0,217.0 75.0,191.0 97.5,178.0 120.1,191.0" class="cell"/>
+<polygon points="165.1,217.0 142.6,230.0 120.1,217.0 120.1,191.0 142.6,178.0 165.1,191.0" class="hx b1"/>
+<polygon points="165.1,217.0 142.6,230.0 120.1,217.0 120.1,191.0 142.6,178.0 165.1,191.0" class="cell"/>
+<polygon points="210.1,217.0 187.6,230.0 165.1,217.0 165.1,191.0 187.6,178.0 210.1,191.0" class="hx b1"/>
+<polygon points="210.1,217.0 187.6,230.0 165.1,217.0 165.1,191.0 187.6,178.0 210.1,191.0" class="cell"/>
+<polygon points="255.2,217.0 232.6,230.0 210.1,217.0 210.1,191.0 232.6,178.0 255.2,191.0" class="hx b2"/>
+<polygon points="255.2,217.0 232.6,230.0 210.1,217.0 210.1,191.0 232.6,178.0 255.2,191.0" class="cell"/>
+<polygon points="300.2,217.0 277.7,230.0 255.2,217.0 255.2,191.0 277.7,178.0 300.2,191.0" class="hx b3"/>
+<polygon points="300.2,217.0 277.7,230.0 255.2,217.0 255.2,191.0 277.7,178.0 300.2,191.0" class="cell"/>
+<polygon points="345.2,217.0 322.7,230.0 300.2,217.0 300.2,191.0 322.7,178.0 345.2,191.0" class="hx b3"/>
+<polygon points="345.2,217.0 322.7,230.0 300.2,217.0 300.2,191.0 322.7,178.0 345.2,191.0" class="cell"/>
+<polygon points="390.3,217.0 367.7,230.0 345.2,217.0 345.2,191.0 367.7,178.0 390.3,191.0" class="cell"/>
+<polygon points="435.3,217.0 412.8,230.0 390.3,217.0 390.3,191.0 412.8,178.0 435.3,191.0" class="cell"/>
+<polygon points="97.5,178.0 75.0,191.0 52.5,178.0 52.5,152.0 75.0,139.0 97.5,152.0" class="hx b2"/>
+<polygon points="97.5,178.0 75.0,191.0 52.5,178.0 52.5,152.0 75.0,139.0 97.5,152.0" class="cell"/>
+<polygon points="142.6,178.0 120.1,191.0 97.5,178.0 97.5,152.0 120.1,139.0 142.6,152.0" class="hx b2"/>
+<polygon points="142.6,178.0 120.1,191.0 97.5,178.0 97.5,152.0 120.1,139.0 142.6,152.0" class="cell"/>
+<polygon points="187.6,178.0 165.1,191.0 142.6,178.0 142.6,152.0 165.1,139.0 187.6,152.0" class="hx b2"/>
+<polygon points="187.6,178.0 165.1,191.0 142.6,178.0 142.6,152.0 165.1,139.0 187.6,152.0" class="cell"/>
+<polygon points="232.6,178.0 210.1,191.0 187.6,178.0 187.6,152.0 210.1,139.0 232.6,152.0" class="hx b2"/>
+<polygon points="232.6,178.0 210.1,191.0 187.6,178.0 187.6,152.0 210.1,139.0 232.6,152.0" class="cell"/>
+<polygon points="277.7,178.0 255.2,191.0 232.6,178.0 232.6,152.0 255.2,139.0 277.7,152.0" class="hx b3"/>
+<polygon points="277.7,178.0 255.2,191.0 232.6,178.0 232.6,152.0 255.2,139.0 277.7,152.0" class="cell"/>
+<polygon points="322.7,178.0 300.2,191.0 277.7,178.0 277.7,152.0 300.2,139.0 322.7,152.0" class="hx b3"/>
+<polygon points="322.7,178.0 300.2,191.0 277.7,178.0 277.7,152.0 300.2,139.0 322.7,152.0" class="cell"/>
+<polygon points="367.7,178.0 345.2,191.0 322.7,178.0 322.7,152.0 345.2,139.0 367.7,152.0" class="cell"/>
+<polygon points="412.8,178.0 390.3,191.0 367.7,178.0 367.7,152.0 390.3,139.0 412.8,152.0" class="cell"/>
+<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="hx b3"/>
+<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="cell"/>
+<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="hx b3"/>
+<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="cell"/>
+<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="hx b3"/>
+<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="cell"/>
+<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="hx b3"/>
+<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="cell"/>
+<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="hx b3"/>
+<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="cell"/>
+<polygon points="345.2,139.0 322.7,152.0 300.2,139.0 300.2,113.0 322.7,100.0 345.2,113.0" class="cell"/>
+<polygon points="390.3,139.0 367.7,152.0 345.2,139.0 345.2,113.0 367.7,100.0 390.3,113.0" class="cell"/>
+<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="hx b3"/>
+<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="cell"/>
+<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="hx b3"/>
+<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="cell"/>
+<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="hx b3"/>
+<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="cell"/>
+<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="hx b3"/>
+<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="cell"/>
+<polygon points="322.7,100.0 300.2,113.0 277.7,100.0 277.7,74.0 300.2,61.0 322.7,74.0" class="cell"/>
+<polygon points="367.7,100.0 345.2,113.0 322.7,100.0 322.7,74.0 345.2,61.0 367.7,74.0" class="cell"/>
+<polygon points="165.1,61.0 142.6,74.0 120.1,61.0 120.1,35.0 142.6,22.0 165.1,35.0" class="cell"/>
+<polygon points="210.1,61.0 187.6,74.0 165.1,61.0 165.1,35.0 187.6,22.0 210.1,35.0" class="cell"/>
+<polygon points="255.2,61.0 232.6,74.0 210.1,61.0 210.1,35.0 232.6,22.0 255.2,35.0" class="cell"/>
+<polygon points="300.2,61.0 277.7,74.0 255.2,61.0 255.2,35.0 277.7,22.0 300.2,35.0" class="cell"/>
+<polygon points="345.2,61.0 322.7,74.0 300.2,61.0 300.2,35.0 322.7,22.0 345.2,35.0" class="cell"/>
+<text class="sm" x="110.6" y="364.0" text-anchor="end">1</text>
+<text class="sm" x="88.1" y="325.0" text-anchor="end">2</text>
+<text class="sm" x="65.5" y="286.0" text-anchor="end">3</text>
+<text class="sm" x="43.0" y="247.0" text-anchor="end">4</text>
+<text class="sm" x="20.5" y="208.0" text-anchor="end">5</text>
+<text class="sm" x="43.0" y="169.0" text-anchor="end">6</text>
+<text class="sm" x="65.5" y="130.0" text-anchor="end">7</text>
+<text class="sm" x="88.1" y="91.0" text-anchor="end">8</text>
+<text class="sm" x="110.6" y="52.0" text-anchor="end">9</text>
+<text class="sm" x="52.5" y="406.0" text-anchor="middle">a</text>
+<text class="sm" x="97.5" y="406.0" text-anchor="middle">b</text>
+<text class="sm" x="142.6" y="406.0" text-anchor="middle">c</text>
+<text class="sm" x="187.6" y="406.0" text-anchor="middle">d</text>
+<text class="sm" x="232.6" y="406.0" text-anchor="middle">e</text>
+<text class="sm" x="277.7" y="406.0" text-anchor="middle">f</text>
+<text class="sm" x="322.7" y="406.0" text-anchor="middle">g</text>
+<text class="sm" x="367.7" y="406.0" text-anchor="middle">h</text>
+<text class="sm" x="412.8" y="406.0" text-anchor="middle">i</text>
+<text class="sm" x="30" y="426">From c3: close within 2, long at 3, extreme out to 5.</text>
+</svg><figcaption>The bands from c3. Every hex within two steps is close, the ring at three is long, and the two rings beyond it are extreme.</figcaption></figure>
+<p>Two enemy units on adjacent hexes are <strong>engaged</strong>, unless a cliff lies on the edge between them. A unit engaged with two or more enemies is <strong>outflanked</strong> and takes &minus;2 to Defence. An engaged unit cannot stride away and cannot shoot; it fights, guards, rallies, casts, or withdraws (section 7).</p>
+<p>Hexes carry terrain and height; edges carry walls and cliffs (section 10).</p>
 
 <h2 id="setup">4. Setting up</h2>
-<p>Setup runs in four stages, each on its own screen in the app.</p>
-<h3>Stage 1: generate the battlefield</h3>
-<p>Pick the hex's terrain (plains, forest, hills, mountains, swamp or desert), add a feature if the hex has one (a river or a lakeside) and a construction if it holds one (a fort of tier 0 to 3), then roll a seed. The generator lays out the board; the same seed always gives the same board. Reroll until the board looks like the hex. Hex types are tendencies: a plains board can carry a copse and a hills board a marsh, never many. A river always runs on ranks 4 and 5, and water never lands on a deployment rank, so both sides can always deploy.</p>
+<p>Setup runs in five stages, each on its own screen in the app.</p>
+<h3>Stage 1: the battlefield</h3>
+<p>Pick the hex's terrain (plains, forest, hills, mountains, swamp or desert), add a feature if the hex has one (a river or a lakeside) and a construction if it holds one (a fort of tier 0 to 3), then roll a seed. The generator lays the board out, and the same seed always gives the same board. Reroll until it looks like the hex.</p>
+<p>Terrain is a tendency, not a rule: a plains board can carry a copse and a hills board a marsh, never many. Hills and desert raise a low ridge, mountains a high one with peaks. A river runs across ranks 4 to 6, the band neither side deploys on, and carries one or two fords; a lake hugs one flank with a marshy shore. Water never lands on a deployment rank, so both sides can always deploy.</p>
+<div class="wrap"><table>
+<tr><th>Hex terrain</th><th>What the generator lays down</th></tr>
+<tr><td>Plains</td><td>Up to two small copses, a marsh or a pond at most</td></tr>
+<tr><td>Forest</td><td>Eight to eleven woods of three to six hexes</td></tr>
+<tr><td>Hills</td><td>A low ridge, one to three copses</td></tr>
+<tr><td>Mountains</td><td>A high ridge with one or two peaks, four to seven woods</td></tr>
+<tr><td>Swamp</td><td>Eight to twelve bogs, one to three ponds, a copse or two</td></tr>
+<tr><td>Desert</td><td>A low ridge and open ground</td></tr>
+</table></div>
 <h3>Stage 2: paint</h3>
-<p>The GM adjusts the board by hand: set any square's terrain, set its height to 0, 1 or 2, put a wall on any edge, or clear a square. This is where a hazard from the adventure goes: the bridge, the burning barn, the ravine.</p>
-<h3>Stage 3: place units</h3>
-<p>Build each side from the troop library, the force generator or a custom card, attach siege engines to the units that bring them, then put every unit on a square. The attacker deploys anywhere on ranks 1 to 3, the defender anywhere on ranks 7 to 9, never on water. A unit with an ambush tactic may deploy one rank further in. Both sides need at least one unit and every unit needs a square. Note each unit's wounds and shaken from its sheet.</p>
-<p>Two empty ranks lie between the lines. A unit on rank 3 reaches contact in its first activation; a unit held back on rank 1 takes two. The depth of your deployment is your first decision.</p>
-<p><strong>Every player commands a unit.</strong> When the players' side brings fewer armies than players, split armies before deployment: one army becomes two or more units of the same card, each with its own square, wounds and shaken. Each half is a full unit, and each is a separate target for outflanking and for rout checks; a player who commands one may lose it. After the battle the halves rejoin: wounds take the average rounded up, shaken takes the higher. The GM may also hand an allied faction's unit to a player for the battle.</p>
-<p><strong>The opposing force.</strong> The GM picks the enemy from the library or lets the generator build one. The generator reads the other side and answers it: the same number of units give or take one, every unit within three levels of the other side's average, and the total level within a tenth of the other side's. At most one unit brings a siege engine. An attacker facing walls brings one three times in four, and it may be a ram; anyone else brings artillery one time in five. The generated force is a starting point; add to it or remove from it.</p>
-<h3>Stage 4: begin</h3>
-<p>Each unit rolls initiative: d20 + Perception. Units act in this order every round for the whole battle. The first unit activates.</p>
+<p>The GM adjusts the board by hand: set any hex's terrain, set its height to 0, 1 or 2, put a wall on any edge, or clear a hex. This is where a hazard from the adventure goes — the bridge, the burning barn, the ravine.</p>
+<h3>Stages 3 and 4: the two forces</h3>
+<p>Build each side from the troop library, the force generator or a custom card, attach siege engines to the units that bring them, then put every unit on a hex. The attacker deploys anywhere on ranks 1 to 3, the defender anywhere on ranks 7 to 9, never on water. A unit with an ambush tactic may deploy one rank further in. Both sides need at least one unit, and every unit needs a hex. Note each unit's wounds and disorder from its sheet.</p>
+<p>Three ranks lie between the lines. A unit on rank 3 reaches contact in its first activation; a unit held back on rank 1 takes two. The depth of your deployment is your first decision.</p>
+<p><strong>Every player commands a unit.</strong> When the players' side brings fewer armies than players, split armies before deployment: one army becomes two or more units of the same card, each with its own hex, wounds and disorder. Each half is a full unit, a separate target for outflanking and a separate candidate for routing; a player who commands one may lose it. After the battle the halves rejoin: wounds take the average rounded up, disorder the higher. The GM may also hand an allied faction's unit to a player for the battle.</p>
+<p><strong>The opposing force.</strong> The GM picks the enemy from the library or lets the generator build one. The generator reads the other side and answers it: the same number of units give or take one, every unit within three levels of the other side's average, and the total level within a tenth of the other side's. At most one unit brings a siege engine. An attacker facing walls brings one three times in four, and it may be a ram; anyone else brings artillery one time in five. Add to the generated force or take from it.</p>
+<h3>Stage 5: begin</h3>
+<p>The attacker's side activates first. There is no initiative roll.</p>
+<figure><svg viewBox="0 0 472 432" role="img" aria-label="The hexagon at deployment">
+<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="hx att"/>
+<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="cell"/>
+<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="hx att"/>
+<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="cell"/>
+<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="hx att"/>
+<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="cell"/>
+<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="hx att"/>
+<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="cell"/>
+<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="hx att"/>
+<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="cell"/>
+<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="hx att"/>
+<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="cell"/>
+<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="hx att"/>
+<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="cell"/>
+<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="hx att"/>
+<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="cell"/>
+<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="hx att"/>
+<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="cell"/>
+<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="hx att"/>
+<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="cell"/>
+<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="hx att"/>
+<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="cell"/>
+<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="hx att"/>
+<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="cell"/>
+<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="hx att"/>
+<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="cell"/>
+<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="hx att"/>
+<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="cell"/>
+<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="hx att"/>
+<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="cell"/>
+<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="hx att"/>
+<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="cell"/>
+<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="hx att"/>
+<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="cell"/>
+<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="hx att"/>
+<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="cell"/>
+<polygon points="97.5,256.0 75.0,269.0 52.5,256.0 52.5,230.0 75.0,217.0 97.5,230.0" class="cell"/>
+<polygon points="142.6,256.0 120.1,269.0 97.5,256.0 97.5,230.0 120.1,217.0 142.6,230.0" class="cell"/>
+<polygon points="187.6,256.0 165.1,269.0 142.6,256.0 142.6,230.0 165.1,217.0 187.6,230.0" class="cell"/>
+<polygon points="232.6,256.0 210.1,269.0 187.6,256.0 187.6,230.0 210.1,217.0 232.6,230.0" class="cell"/>
+<polygon points="277.7,256.0 255.2,269.0 232.6,256.0 232.6,230.0 255.2,217.0 277.7,230.0" class="cell"/>
+<polygon points="322.7,256.0 300.2,269.0 277.7,256.0 277.7,230.0 300.2,217.0 322.7,230.0" class="cell"/>
+<polygon points="367.7,256.0 345.2,269.0 322.7,256.0 322.7,230.0 345.2,217.0 367.7,230.0" class="cell"/>
+<polygon points="412.8,256.0 390.3,269.0 367.7,256.0 367.7,230.0 390.3,217.0 412.8,230.0" class="cell"/>
+<polygon points="75.0,217.0 52.5,230.0 30.0,217.0 30.0,191.0 52.5,178.0 75.0,191.0" class="cell"/>
+<polygon points="120.1,217.0 97.5,230.0 75.0,217.0 75.0,191.0 97.5,178.0 120.1,191.0" class="cell"/>
+<polygon points="165.1,217.0 142.6,230.0 120.1,217.0 120.1,191.0 142.6,178.0 165.1,191.0" class="cell"/>
+<polygon points="210.1,217.0 187.6,230.0 165.1,217.0 165.1,191.0 187.6,178.0 210.1,191.0" class="cell"/>
+<polygon points="255.2,217.0 232.6,230.0 210.1,217.0 210.1,191.0 232.6,178.0 255.2,191.0" class="cell"/>
+<polygon points="300.2,217.0 277.7,230.0 255.2,217.0 255.2,191.0 277.7,178.0 300.2,191.0" class="cell"/>
+<polygon points="345.2,217.0 322.7,230.0 300.2,217.0 300.2,191.0 322.7,178.0 345.2,191.0" class="cell"/>
+<polygon points="390.3,217.0 367.7,230.0 345.2,217.0 345.2,191.0 367.7,178.0 390.3,191.0" class="cell"/>
+<polygon points="435.3,217.0 412.8,230.0 390.3,217.0 390.3,191.0 412.8,178.0 435.3,191.0" class="cell"/>
+<polygon points="97.5,178.0 75.0,191.0 52.5,178.0 52.5,152.0 75.0,139.0 97.5,152.0" class="cell"/>
+<polygon points="142.6,178.0 120.1,191.0 97.5,178.0 97.5,152.0 120.1,139.0 142.6,152.0" class="cell"/>
+<polygon points="187.6,178.0 165.1,191.0 142.6,178.0 142.6,152.0 165.1,139.0 187.6,152.0" class="cell"/>
+<polygon points="232.6,178.0 210.1,191.0 187.6,178.0 187.6,152.0 210.1,139.0 232.6,152.0" class="cell"/>
+<polygon points="277.7,178.0 255.2,191.0 232.6,178.0 232.6,152.0 255.2,139.0 277.7,152.0" class="cell"/>
+<polygon points="322.7,178.0 300.2,191.0 277.7,178.0 277.7,152.0 300.2,139.0 322.7,152.0" class="cell"/>
+<polygon points="367.7,178.0 345.2,191.0 322.7,178.0 322.7,152.0 345.2,139.0 367.7,152.0" class="cell"/>
+<polygon points="412.8,178.0 390.3,191.0 367.7,178.0 367.7,152.0 390.3,139.0 412.8,152.0" class="cell"/>
+<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="hx def"/>
+<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="cell"/>
+<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="hx def"/>
+<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="cell"/>
+<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="hx def"/>
+<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="cell"/>
+<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="hx def"/>
+<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="cell"/>
+<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="hx def"/>
+<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="cell"/>
+<polygon points="345.2,139.0 322.7,152.0 300.2,139.0 300.2,113.0 322.7,100.0 345.2,113.0" class="hx def"/>
+<polygon points="345.2,139.0 322.7,152.0 300.2,139.0 300.2,113.0 322.7,100.0 345.2,113.0" class="cell"/>
+<polygon points="390.3,139.0 367.7,152.0 345.2,139.0 345.2,113.0 367.7,100.0 390.3,113.0" class="hx def"/>
+<polygon points="390.3,139.0 367.7,152.0 345.2,139.0 345.2,113.0 367.7,100.0 390.3,113.0" class="cell"/>
+<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="hx def"/>
+<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="cell"/>
+<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="hx def"/>
+<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="cell"/>
+<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="hx def"/>
+<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="cell"/>
+<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="hx def"/>
+<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="cell"/>
+<polygon points="322.7,100.0 300.2,113.0 277.7,100.0 277.7,74.0 300.2,61.0 322.7,74.0" class="hx def"/>
+<polygon points="322.7,100.0 300.2,113.0 277.7,100.0 277.7,74.0 300.2,61.0 322.7,74.0" class="cell"/>
+<polygon points="367.7,100.0 345.2,113.0 322.7,100.0 322.7,74.0 345.2,61.0 367.7,74.0" class="hx def"/>
+<polygon points="367.7,100.0 345.2,113.0 322.7,100.0 322.7,74.0 345.2,61.0 367.7,74.0" class="cell"/>
+<polygon points="165.1,61.0 142.6,74.0 120.1,61.0 120.1,35.0 142.6,22.0 165.1,35.0" class="hx def"/>
+<polygon points="165.1,61.0 142.6,74.0 120.1,61.0 120.1,35.0 142.6,22.0 165.1,35.0" class="cell"/>
+<polygon points="210.1,61.0 187.6,74.0 165.1,61.0 165.1,35.0 187.6,22.0 210.1,35.0" class="hx def"/>
+<polygon points="210.1,61.0 187.6,74.0 165.1,61.0 165.1,35.0 187.6,22.0 210.1,35.0" class="cell"/>
+<polygon points="255.2,61.0 232.6,74.0 210.1,61.0 210.1,35.0 232.6,22.0 255.2,35.0" class="hx def"/>
+<polygon points="255.2,61.0 232.6,74.0 210.1,61.0 210.1,35.0 232.6,22.0 255.2,35.0" class="cell"/>
+<polygon points="300.2,61.0 277.7,74.0 255.2,61.0 255.2,35.0 277.7,22.0 300.2,35.0" class="hx def"/>
+<polygon points="300.2,61.0 277.7,74.0 255.2,61.0 255.2,35.0 277.7,22.0 300.2,35.0" class="cell"/>
+<polygon points="345.2,61.0 322.7,74.0 300.2,61.0 300.2,35.0 322.7,22.0 345.2,35.0" class="hx def"/>
+<polygon points="345.2,61.0 322.7,74.0 300.2,61.0 300.2,35.0 322.7,22.0 345.2,35.0" class="cell"/>
+<text class="sm" x="110.6" y="364.0" text-anchor="end">1</text>
+<text class="sm" x="88.1" y="325.0" text-anchor="end">2</text>
+<text class="sm" x="65.5" y="286.0" text-anchor="end">3</text>
+<text class="sm" x="43.0" y="247.0" text-anchor="end">4</text>
+<text class="sm" x="20.5" y="208.0" text-anchor="end">5</text>
+<text class="sm" x="43.0" y="169.0" text-anchor="end">6</text>
+<text class="sm" x="65.5" y="130.0" text-anchor="end">7</text>
+<text class="sm" x="88.1" y="91.0" text-anchor="end">8</text>
+<text class="sm" x="110.6" y="52.0" text-anchor="end">9</text>
+<text class="sm" x="52.5" y="406.0" text-anchor="middle">a</text>
+<text class="sm" x="97.5" y="406.0" text-anchor="middle">b</text>
+<text class="sm" x="142.6" y="406.0" text-anchor="middle">c</text>
+<text class="sm" x="187.6" y="406.0" text-anchor="middle">d</text>
+<text class="sm" x="232.6" y="406.0" text-anchor="middle">e</text>
+<text class="sm" x="277.7" y="406.0" text-anchor="middle">f</text>
+<text class="sm" x="322.7" y="406.0" text-anchor="middle">g</text>
+<text class="sm" x="367.7" y="406.0" text-anchor="middle">h</text>
+<text class="sm" x="412.8" y="406.0" text-anchor="middle">i</text>
+<circle class="att" cx="165.1" cy="317.0" r="9"/>
+<text class="lbl" x="165.1" y="337.0" text-anchor="middle">Inf</text>
+<circle class="att" cx="232.6" cy="278.0" r="9"/>
+<text class="lbl" x="232.6" y="298.0" text-anchor="middle">Cav</text>
+<circle class="def" cx="210.1" cy="83.0" r="9"/>
+<text class="lbl" x="210.1" y="103.0" text-anchor="middle">Kob</text>
+<circle class="def" cx="277.7" cy="122.0" r="9"/>
+<text class="lbl" x="277.7" y="142.0" text-anchor="middle">Trl</text>
+<text class="sm" x="30" y="426">Ranks 1–3: the attacker deploys here. Ranks 7–9: the defender. Ranks 4–6 are the ground between.</text>
+</svg><figcaption>Sixty-one hexes, files a to i and ranks 1 to 9. Circles are the attacker's units, and the shaded bands are the two deployment zones.</figcaption></figure>
 
 <h2 id="round">5. The round</h2>
-<p>A round is an hour of battle. In initiative order, each unit that is not destroyed or routed takes <strong>three actions</strong>, then the next unit acts. Each unit also has <strong>one reaction</strong> per round, refreshed at the start of its activation. When every unit has acted:</p>
+<p>A round is an hour of battle, and every unit acts once in it. The sides alternate: after each activation, the side with more units still to act goes next, and on a tie the side that did not act last. You choose which of your own units takes each of your turns.</p>
+<p>An activation is <strong>three actions</strong>. A unit attacks <strong>once</strong> per activation — one Fight, one Shoot, or one Blast. Further actions buy weight on what it is already doing, never a second attack.</p>
+<p>When every unit has acted, the round ends:</p>
 <ol>
-<li>Every unit that must make a rout check does so (section 8).</li>
-<li>If one side has no unit that is neither destroyed nor routed, the battle ends. If this was the sixth round, dusk ends it.</li>
+<li>Each side that has lost half its starting units to death or rout takes it once, that round only: every unit of that side still standing gains 1 disorder.</li>
+<li>An emplaced engine with only the enemy beside it changes hands. Every engine reloads.</li>
+<li>If either side has no unit still standing, the battle ends. If this was the sixth round, dusk ends it.</li>
 </ol>
-<p>This is the action economy you already play: "Advance, Advance, Strike", "Volley, Volley, Brace", "Rally, Withdraw".</p>
+<p>Alternating activation is what keeps a round readable: no side ever takes its whole army's worth of actions while the other watches, and a side that outnumbers the other spends its surplus at the end of the round rather than the start.</p>
 
-<h2 id="actions">6. Actions</h2>
-<p>Each action costs one of the unit's three actions unless stated.</p>
+<h2 id="ladders">6. Ladders, grades and weight</h2>
+<p>Five things a unit can do, and each is a ladder of three rungs. The rung is what happens; the grade is how high the unit climbs for free.</p>
+<div class="wrap"><table>
+<tr><th>Ladder</th><th>Rung 1</th><th>Rung 2</th><th>Rung 3</th></tr>
+<tr><td>Shoot</td><td><strong>Loose</strong> — close band</td><td><strong>Volley</strong> — long band</td><td><strong>Barrage</strong> — your full band, ignoring cover</td></tr>
+<tr><td>Fight</td><td><strong>Strike</strong> — a plain melee exchange</td><td><strong>Press</strong> — the loser of the exchange takes 1 more disorder</td><td><strong>Overrun</strong> — take their ground if they break</td></tr>
+<tr><td>Guard</td><td><strong>Brace</strong> — raised shields</td><td><strong>Dig in</strong> — criticals against you land as ordinary hits; you may not move again this activation</td><td><strong>Shieldwall</strong> — adjacent allies count as braced</td></tr>
+<tr><td>Rally</td><td><strong>Steady</strong> — yourself, and one adjacent ally takes heart</td><td><strong>Rally</strong> — and that ally clears 1 as well</td><td><strong>Inspire</strong> — every friendly unit within 2 clears 1 and takes heart</td></tr>
+<tr><td>Cast</td><td><strong>Minor</strong> — yourself</td><td><strong>Major</strong> — yourself or an adjacent unit</td><td><strong>Grand</strong> — anywhere in sight</td></tr>
+</table></div>
+<p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one nothing at all. Rally is otherwise always offered, and a caster adds a row for each spell it knows. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
+
+<h3>Reaching above your grade</h3>
+<figure><svg viewBox="0 0 620 210" role="img" aria-label="A grade-1 shooter: Loose is free, Volley is a reach, Barrage is locked">
+<rect class="locked" x="20" y="12" width="230" height="48" rx="5"/>
+<text class="rung" x="40" y="42">3 &middot; Barrage</text>
+<text class="sm" x="270" y="34">Two rungs above your grade.</text>
+<text class="sm" x="270" y="52">Nothing reaches it this activation.</text>
+<rect class="reach" x="20" y="76" width="230" height="48" rx="5"/>
+<text class="rung" x="40" y="106">2 &middot; Volley</text>
+<text class="sm" x="270" y="98">One above. Reach for it: Will, less disorder,</text>
+<text class="sm" x="270" y="116">against your own level DC.</text>
+<rect class="free" x="20" y="140" width="230" height="48" rx="5"/>
+<text class="rung" x="40" y="170">1 &middot; Loose</text>
+<text class="sm" x="270" y="162">Your grade. Take it, no roll.</text>
+<text class="sm" x="270" y="180">Grade 2 would take Volley the same way.</text>
+</svg><figcaption>A close-reach troop shoots at grade 1. Critical success on the reach climbs one further still; failure falls back to the granted rung, and the act happens anyway.</figcaption></figure>
+<p>A unit takes any rung at or below its grade with no roll at all. One rung above is a <strong>reach</strong>: roll d20 + Will, less disorder, against your own level DC, and add 2 when the rung reached for is the third of its ladder. Two rungs above is locked.</p>
+<table>
+<tr><th>Reach</th><th>Result</th></tr>
+<tr><td>Critical success</td><td>Climb one rung further still, to a maximum of 3</td></tr>
+<tr><td>Success</td><td>The rung you reached for</td></tr>
+<tr><td>Failure</td><td>Fall back to your granted rung. The act still happens.</td></tr>
+<tr><td>Critical failure</td><td>Fall back, and take 1 disorder for the botched order</td></tr>
+</table>
+<p>A reach costs nothing but the risk. The act goes ahead either way, so the question is never whether to act but how high to aim.</p>
+
+<h3>Weight</h3>
+<p>Every act costs one action. The actions left over are committed to the same act as <strong>weight</strong>, and each one is worth +2 wherever it lands. There are four places it can land:</p>
 <dl>
-<dt>Advance</dt><dd>Only while not engaged. Move one square along a file or rank. A unit with Pace moves two squares instead when both squares are open or settlement and neither is uphill. You cannot cross a barrier, enter water, or enter an occupied square. Ending next to an enemy engages it.</dd>
-<dt>Withdraw</dt><dd>Move one square along a file or rank, away from every enemy you are engaged with; a unit that is not engaged moves one square toward its own edge. If you are engaged when you start, this costs two actions and each enemy engaged with you may spend its reaction on a free Strike at you as you go (a success deals 1 wound; no critical).</dd>
-<dt>Strike</dt><dd>Only while engaged. Roll d20 + Strike bonus against the target's Defence. Critical success: 2 wounds. Success: 1 wound. Failure: nothing. Critical failure: you are <em>exposed</em>, −2 Defence until your next activation. Takes the multiple attack penalty.</dd>
-<dt>Volley</dt><dd>Only while not engaged, at a target within your Volley reach. Roll d20 + Volley bonus against the target's Defence; at extreme range take −2. Firing at a target that is engaged with your own ally is −4. Critical success 2 wounds, success 1. Takes the multiple attack penalty.</dd>
-<dt>Brace</dt><dd>+2 to Defence until your next activation. While braced, you may spend your reaction on a free Strike at an enemy that Advances into a square next to you (success deals 1 wound; no critical).</dd>
-<dt>Rally</dt><dd>Roll a Will save against your rout DC (section 8). Critical success: shaken −2. Success: shaken −1. Failure: nothing. Critical failure: shaken +1.</dd>
-<dt>Retreat (two actions)</dt><dd>Withdraw twice. The first square draws free Strikes as usual if you were engaged; the second does not. A unit that Retreats past its own edge leaves the battle intact.</dd>
+<dt>Roll</dt><dd>The act's own roll: the melee, the shot, the Rally check, the casting, the escape. Guard has no roll of its own.</dd>
+<dt>Push</dt><dd>The reach check, when you are climbing above your grade.</dd>
+<dt>Defence</dt><dd>Guard only. A Guard sets a number outright rather than rolling, and the number is the actions committed to it &times; 2, counting the first: Brace alone is +2 Defence, two actions make it +4, three make it +6.</dd>
+<dt>Distance</dt><dd>Withdraw only. Each action buys another Speed's worth of ground to run (section 7).</dd>
 </dl>
+<p>So a unit with three actions may Strike and put both spare actions on the roll, at +4; or reach for Press with one action on the climb and one on the melee; or dig in at +6 Defence and dare the field to come to it. The rung carries the effect and the actions carry the numbers — that separation is what keeps a weak unit's grade-1 act worth taking at all.</p>
 <div class="key">
-<p><strong>Multiple attack penalty.</strong> Your second Strike or Volley in an activation is at −5, your third at −10. Free Strikes from reactions ignore the penalty and never critical.</p>
-<p><strong>One reaction.</strong> The braced free Strike, the free Strike at a withdrawing enemy, and every reaction tactic spend the unit's one reaction for the round. A single elite unit cannot cut down every unit that touches it.</p>
-<p><strong>Bonuses do not stack.</strong> Brace, cover and fortification all give circumstance bonuses to Defence; use the highest.</p>
+<p><strong>One attack an activation.</strong> Fight, Shoot and a Blast are the same slot. A second attack was the thing that broke the pacing, so the spare actions buy weight instead. Everything else — Guard, Rally, the other spells, moving — may be repeated.</p>
 </div>
 
-<h2 id="wounds">7. Wounds</h2>
+<h2 id="move">7. Moving and breaking away</h2>
+<h3>Move</h3>
+<p>One Move action buys the unit's Speed in feet, and a hex costs feet by its terrain: 10 for open ground or a settlement, 20 for forest or shallows, 30 for swamp, plus 10 for each level of height climbed. Water cannot be entered at all. So an infantry troop at 10 ft an action spends two actions to enter forest and three to enter swamp, and a cavalry troop at 20 ft an action spends one and two.</p>
+<p>Movement banks across the whole activation rather than lapsing at the end of each Move, so a 20 ft troop that steps one open hex keeps the leftover 10 ft for the next step. A unit may not enter an occupied hex, cross a standing wall, or cross a cliff. A breach in a wall is an ordinary crossing.</p>
+<p>A flier pays 10 ft a hex whatever the ground and crosses walls and cliffs. Flight buys no extra distance: how far a unit goes is still its Speed.</p>
+<h3>Charge</h3>
+<p>A charge is the movement it takes plus one action for the melee, and the melee is an ordinary Fight rung with all the same dials. It is one act, so it spends the activation's attack.</p>
+<h3>Push</h3>
+<p>A push reaches for ground beyond every action the unit has left — one action's worth further, and no more. Roll d20 + Will, less disorder, +2 if the unit is mounted or trained to charge, and +2 for every action beyond the first, against your own level DC. A push always spends every action left, win or lose.</p>
+<table>
+<tr><th>Push</th><th>Result</th></tr>
+<tr><td>Success or better</td><td>Reach the hex</td></tr>
+<tr><td>Failure</td><td>Stop at the furthest hex on that same route you could have paid for outright</td></tr>
+<tr><td>Critical failure</td><td>Stop short as above, and take 1 disorder</td></tr>
+</table>
+<h3>Withdraw</h3>
+<p>Withdrawing is the only way out of contact, and it is the only way a shaken or routed unit moves at all &mdash; neither may Stride. It costs one action, and it is not a ladder: it is one <strong>Escape check</strong> against each enemy holding you — d20 + Reflex, less disorder, against that enemy's attack DC, which is its Strike plus 10. An enemy with no melee attack holds nobody.</p>
+<table>
+<tr><th>Escape</th><th>Result</th></tr>
+<tr><td>Critical success</td><td>Clean break. A pursuer that gives no retreat is thrown off outright.</td></tr>
+<tr><td>Success</td><td>Clean break</td></tr>
+<tr><td>Failure</td><td>That enemy lands a free strike: one wound at most, never a critical</td></tr>
+<tr><td>Critical failure</td><td>The free strike, 1 disorder, and its grip holds — you stay where you stand</td></tr>
+</table>
+<p>Having broken away, the unit moves one hex clear of everything it was engaged with, and each action put on the distance dial buys another Speed's worth of ground. A unit with nowhere clear to go is offered the rest rather than being stuck. A troop that gives <em>no retreat</em> follows: one free move of its own Speed to re-establish contact, dealing no damage. Outrunning it is the only way clear.</p>
+
+<h2 id="wounds">8. Wounds</h2>
 <figure><svg viewBox="0 0 720 120" role="img" aria-label="Wound ladder from fresh to destroyed">
 <g transform="translate(20,20)">
-<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">0–1</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
-<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 Weakened</text><text class="sm" x="240" y="62" text-anchor="middle">−2 to attacks</text><text class="sm" x="240" y="78" text-anchor="middle">reach shrinks</text>
-<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">3 Broken</text><text class="sm" x="420" y="62" text-anchor="middle">no Advance</text><text class="sm" x="420" y="78" text-anchor="middle">rout check every round</text>
+<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">0&ndash;1</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
+<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 Weakened</text><text class="sm" x="240" y="62" text-anchor="middle">&minus;2 to Strike</text><text class="sm" x="240" y="78" text-anchor="middle">and to Volley</text>
+<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">3 Broken</text><text class="sm" x="420" y="62" text-anchor="middle">as Weakened;</text><text class="sm" x="420" y="78" text-anchor="middle">one hit from gone</text>
 <rect x="540" y="0" width="120" height="40" rx="4" fill="var(--accent)"/><text class="lbl" x="600" y="25" text-anchor="middle" style="fill:var(--paper)">4 Destroyed</text><text class="sm" x="600" y="62" text-anchor="middle">removed</text>
 <path d="M120,20 L180,20 M300,20 L360,20 M480,20 L540,20" stroke="var(--rule)" stroke-width="2" marker-end="url(#arrow)"/>
 </g>
 <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
-</svg><figcaption>A hit adds one wound, a critical hit two. Nothing is rolled for damage.</figcaption></figure>
-<p>Damage is never rolled. A hit deals one wound, a critical hit two. Each unit holds up to four:</p>
+</svg><figcaption>A hit adds one wound, a critical two. Nothing is rolled for damage.</figcaption></figure>
+<p>Damage is never rolled. A hit deals one wound, a critical hit two, and each unit holds four. The level difference between attacker and target does the work damage dice do elsewhere: a level-6 troop striking a level-2 troop hits on about 7 and criticals from 17, and the reverse hits only from 17 and cannot critical without help.</p>
+<p>A unit that enters battle already hurt starts with wounds: 0 above three-quarters of its hit points, 1 above half, 2 above a quarter, 3 with any left. After the battle they are written back the same way.</p>
+
+<h3>The melee exchange</h3>
+<p>A Fight is an exchange, not a blow. The attacker rolls d20 + Strike against the target's Defence; then the target, if it still stands and still has a melee attack, strikes back the same way. Critical success deals 2 wounds, success 1, failure nothing. A critical failure leaves the striker <strong>exposed</strong>: &minus;2 Defence until it next activates.</p>
+<p>The wounds of an exchange do not disorder anybody. The exchange itself is the morale event: whichever side took more wounds gains 1 disorder, and if the attacker climbed to <strong>Press</strong>, the loser takes 2. An exchange that comes out even costs nobody anything.</p>
+<p><strong>Overrun</strong> changes what happens after: if the target is destroyed or routed by the exchange and its hex is clear, the attacker takes the ground.</p>
+
+<h3>Shooting</h3>
+<p>A shot is one roll: d20 + Volley against the target's Defence, with the same two wounds on a critical and one on a hit. A wound from a shot costs the target 1 disorder, and so does a wound from a Blast or from a free strike — melee exchanges are the only wounds that do not carry disorder of their own.</p>
+<p>The rung sets how far the shot carries. Loose reaches the close band, Volley the long band, Barrage your full band, and Barrage alone ignores cover. Shooting is not possible while engaged, in either direction.</p>
+
+<h3>Defence</h3>
+<p>Every attack rolls against the target's Defence, and Defence is built the same way each time.</p>
 <table>
-<tr><th>Wounds</th><th>Condition</th><th>Effect</th></tr>
-<tr><td>0–1</td><td>—</td><td>Fights normally</td></tr>
-<tr><td>2</td><td>Weakened</td><td>−2 to Strike and Volley; Volley reach shrinks by one band</td></tr>
-<tr><td>3</td><td>Broken</td><td>As Weakened; cannot Advance; makes a rout check every round</td></tr>
-<tr><td>4</td><td>Destroyed</td><td>Removed from the battle</td></tr>
+<tr><th>Term</th><th>Value</th></tr>
+<tr><td>Base</td><td>The unit's Defence, off the sheet</td></tr>
+<tr><td>Circumstance</td><td>The best one of: the Defence its own Guard set, +2 from an adjacent Shieldwall, +2 from a Ward, +1 for forest cover against a shot. These never stack.</td></tr>
+<tr><td>Disorder</td><td>&minus;1 for each point</td></tr>
+<tr><td>Outflanked</td><td>&minus;2 while engaged with two or more enemies</td></tr>
+<tr><td>Exposed</td><td>&minus;2 after a critically failed Strike, until the unit acts again</td></tr>
 </table>
-<p>The level difference between attacker and target does the work that damage dice do elsewhere. A level-6 troop striking a level-2 troop hits on about 7 and above and criticals from 17; the reverse hits only from 17 and cannot critical without help.</p>
-<p>A unit that enters battle already hurt starts with wounds: 0 if above three-quarters of its hit points, 1 if above half, 2 if above a quarter, 3 if it has any left. After the battle, wounds are written back the same way.</p>
+<p>A unit that has dug in caps every hit it takes at one wound, so a critical against it lands as an ordinary one.</p>
 
-<h2 id="morale">8. Morale</h2>
-<p>Every unit tracks <strong>shaken</strong> from 0 to 3. Each point is −1 to every check the unit rolls. At shaken 3 the unit is <strong>routed</strong>: on each of its activations it must Retreat, it cannot Strike or Volley, and it leaves the battle when it passes its own edge.</p>
-<h3>Rout check triggers</h3>
-<p>At the end of the round, a unit makes one rout check if any of these happened:</p>
-<ul>
-<li>it took a wound this round;</li>
-<li>it is Broken;</li>
-<li>half or more of its side's starting units are now destroyed or routed (checked once, the round it first happens).</li>
-</ul>
-<h3>The rout DC</h3>
-<p>The level DC of the highest-level enemy unit within close range of the checking unit. If no enemy is within close range, use the highest-level enemy on the field. Add 2 if that enemy has a fear aura or frightful presence. Subtract 2 if the checking unit holds its own fortification or stands higher than every enemy it is engaged with; these two do not stack.</p>
-<h3>The check</h3>
-<p>Roll a Will save against the rout DC. Critical success: this unit makes no further rout checks this battle. Success: nothing. Failure: shaken +1. Critical failure: shaken +2.</p>
+<h2 id="disorder">9. Disorder and rout</h2>
+<p>Morale is one number: <strong>disorder</strong>. Each point is &minus;1 to everything the unit rolls and &minus;1 to its Defence. Morale runs one point past Quality, and the two bands above it are different things.</p>
+<p>When disorder <em>reaches</em> the unit's Quality (section 2) the unit is <strong>shaken</strong>: it may do nothing but Rally or withdraw. It holds its hex if it wants to, it still counts as standing, and Rally is a real way back &mdash; a shaken unit that clears a point is a unit again.</p>
+<p>One point <em>past</em> Quality and it is <strong>routed</strong>: nothing but the withdrawal, it runs for its own edge, and it leaves the field when it reaches it. Disorder stops there; a routed unit cannot be driven further. Its own Rally is gone, so the only way back is an adjacent ally's Rally or an Inspire within 2 &mdash; which is what makes the troop beside a breaking one worth keeping there.</p>
+<div class="wrap"><table>
+<tr><th>Disorder comes from</th><th>Points</th></tr>
+<tr><td>Losing a melee exchange</td><td>1, or 2 against a Press</td></tr>
+<tr><td>A wound from a shot, a Blast or a free strike</td><td>1</td></tr>
+<tr><td>Coming to grips with something you fear</td><td>1, when one side of the contact has a fear aura and the other does not</td></tr>
+<tr><td>A critically failed reach, push or Rally</td><td>1</td></tr>
+<tr><td>A critically failed escape</td><td>1, and you do not get away</td></tr>
+<tr><td>Half your army gone</td><td>1 to every unit of that side still standing, once per battle</td></tr>
+</table></div>
+<h3>Rally</h3>
+<p>Rally is the only thing that clears disorder. Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within close range, or, when no enemy is close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
+<table>
+<tr><th>Rally</th><th>Clears</th></tr>
+<tr><td>Critical success</td><td>All of it</td></tr>
+<tr><td>Success</td><td>2</td></tr>
+<tr><td>Failure</td><td>1</td></tr>
+<tr><td>Critical failure</td><td>Nothing, and 1 more</td></tr>
+</table>
+<p>The roll says how much clears; the rung says who else it reaches. Every rung lets an ally <strong>take heart</strong> — +2 on its attacks until it has acted — and from Rally upward the ally clears a point as well. This is why a unit with nothing to clear still has a use for the act: a levy's Steady is a poor self-rally and a real gift to the troop beside it.</p>
 
-<h2 id="ground">9. Ground, height and barriers</h2>
-<p>A flying unit is over all of it: it pays open ground for every square whatever the terrain, and crosses walls and cliffs. Flight buys no extra distance — how far a unit moves is its Speed.</p>
-
-<p>Three layers shape the field. Terrain on a square changes checks; height on a square decides who has the advantage; barriers on edges decide where units can go. Each type has one job: forest hides, swamp slows, water blocks, height commands, walls hold.</p>
+<h2 id="ground">10. Ground, height and walls</h2>
+<p>Three layers shape the field. Terrain fills a hex and changes what checks cost; height decides who has the advantage; barriers sit on edges and decide where units may go. Forest hides, swamp slows, water blocks, height commands, walls hold.</p>
 <h3>Terrain</h3>
-<p>Every square is one of six types. Open is the default and does nothing.</p>
-<table>
-<tr><th>Terrain</th><th>Effect</th></tr>
-<tr><td>Open</td><td>—</td></tr>
-<tr><td>Forest</td><td>Difficult ground: entering costs two squares of movement, so an ordinary unit spends two actions and a unit with Pace spends one. Cover: the occupant gains +1 Defence against Volleys. Blocks Cavalry Charge.</td></tr>
-<tr><td>Swamp</td><td>Very difficult ground: entering costs three squares of movement, so an ordinary unit spends three actions and a unit with Pace two. Pace and Cavalry Charge never apply. A unit in swamp Strikes at −1.</td></tr>
-<tr><td>Shallows</td><td>A ford or marsh edge: difficult ground as forest, and a unit in shallows cannot Withdraw or Retreat while engaged.</td></tr>
-<tr><td>Water</td><td>Impassable. No unit enters; Volleys cross it.</td></tr>
-<tr><td>Settlement</td><td>Cover, as forest; open ground for movement.</td></tr>
-</table>
+<div class="wrap"><table>
+<tr><th>Terrain</th><th>To enter</th><th>Effect</th></tr>
+<tr><td>Open</td><td>10 ft</td><td>&mdash;</td></tr>
+<tr><td>Settlement</td><td>10 ft</td><td>A road through the walls; no cover of its own</td></tr>
+<tr><td>Forest</td><td>20 ft</td><td>Cover: +1 Defence against a shot, unless the shooter stands higher or looses a Barrage</td></tr>
+<tr><td>Shallows</td><td>20 ft</td><td>A ford or a marsh edge: &minus;1 to Strike from it</td></tr>
+<tr><td>Swamp</td><td>30 ft</td><td>&minus;1 to Strike from it</td></tr>
+<tr><td>Water</td><td>&mdash;</td><td>Impassable. Shots cross it.</td></tr>
+</table></div>
 <h3>Height</h3>
-<p>Every square has a height of 0, 1 or 2. Count the difference between the attacker's square and the target's:</p>
+<p>Every hex stands at height 0, 1 or 2. Count the difference between the two hexes:</p>
 <ul>
-<li>Striking uphill: −1 to Strike per level of difference.</li>
-<li>Volleying downhill: the target's cover does not apply and your Volley reaches one band further. Volleying uphill: −1 per level.</li>
-<li>Advancing uphill costs one square of movement more per level climbed, so an ordinary unit spends two actions to climb a square. That is what cancels Pace, and it blocks Cavalry Charge.</li>
-<li>A unit standing higher than every enemy it is engaged with treats its rout DC as 2 lower (section 8).</li>
-<li>An edge with a difference of 2 is a cliff.</li>
+<li>Attacking upward, in melee or with a shot, costs &minus;1 for each level of difference.</li>
+<li>Shooting downward counts the range one band closer, and the target's forest cover does not apply.</li>
+<li>Climbing costs 10 ft a level on top of the terrain.</li>
+<li>An edge with a difference of 2 is a <strong>cliff</strong>: nobody crosses it, and nobody is engaged across it.</li>
 </ul>
-<h3>Barriers</h3>
-<p>A barrier sits on the edge between two squares. Terrain fills a square; a barrier is a line a unit must get over. Units on either side of a barrier are not engaged across it and cannot Advance, Withdraw or Retreat across it unless the barrier says so.</p>
+<h3>Walls</h3>
+<p>A wall sits on the edge between two hexes. Nobody crosses it until it is breached, but units on either side are engaged across it and shots cross it freely. An attacker striking across a standing wall takes &minus;2. A defender standing beside a wall of its own is <strong>garrisoned</strong> and shoots at +1.</p>
+<p>Only the attacker attacks a wall, and each segment has wound boxes equal to its tier plus one. Fight a segment on an edge of your own hex, or bombard one within your rung's band with artillery. The DC is 10 + the wall's tier + the level of the highest defender still standing; a hit takes one box, a critical two, and a segment with no boxes left is breached and gone. A ram rolls at +2 and is good for nothing else. Walls are repaired through fortification maintenance, never during a battle.</p>
+<p>A fort is a block of settlement hexes against the defender's edge, walled on its front and flanks with the segments its tier allows: four edges at tier 0, up to seven at tier 3. A short budget leaves a gate open on one flank. Whatever the fortification gives the garrison in Defence and saves is already on its sheet.</p>
+
+<h2 id="magic">11. Magic</h2>
+<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>, and a caster knows the whole menu below. Its Cast grade decides how far a spell carries: Minor reaches itself, Major an adjacent unit, Grand anywhere in sight. Three trained tactics grant a single spell to a troop with no magic at all — battlefield medicine grants Mend, defending allies grants Ward, and demoralizing grants Compel.</p>
 <div class="wrap"><table>
-<tr><th>Barrier</th><th>Cross</th><th>Engaged across</th><th>Fire across</th></tr>
-<tr><td>Wall (tier 0–3)</td><td>No, until breached</td><td>Yes. The assaulting unit Strikes at −2; the garrison Strikes normally and Volleys at +1 at any range</td><td>Yes</td></tr>
-<tr><td>Cliff (height difference of 2)</td><td>No</td><td>No</td><td>The upper side Volleys at +1; the lower side cannot Volley the upper</td></tr>
+<tr><th>Spell</th><th>At</th><th>Effect</th></tr>
+<tr><td>Blast</td><td>An enemy</td><td>An attack that ignores cover: d20 + Will, less disorder, against Defence. It is the activation's one attack.</td></tr>
+<tr><td>Ward</td><td>An ally</td><td>+2 Defence until the target acts</td></tr>
+<tr><td>Mend</td><td>An ally</td><td>Remove one wound</td></tr>
+<tr><td>Bless</td><td>An ally</td><td>The target's next act climbs one rung free, with no reach check</td></tr>
+<tr><td>Compel</td><td>An enemy</td><td>The target may not reach above its grade on its next activation</td></tr>
 </table></div>
-<p>A wall is made of segments, one per edge, and each segment has wound boxes equal to the fortification's tier plus one. A siege engine may <strong>Bombard</strong> a segment: a Volley against Defence 10 + tier + the defender's level, whose wounds go to the segment instead of a unit. When a segment's boxes are all marked it is breached and removed, and the two squares behave as neighbours again. Only engines damage walls. A tier-0 wall is a palisade or hedge with a single box, and one hit from any engine breaches it. Walls are repaired through fortification maintenance, never during a battle.</p>
-<p>A fort is a block of settlement squares against the defender's edge, walled on its front and flanks with the segments its tier allows: four at tier 0, up to seven at tier 3. A short budget leaves a gate open on one flank. The garrison's Defence and save bonuses from the fortification are already on its sheet.</p>
 
-<h2 id="siege">10. Siege engines</h2>
-<p>A siege engine travels with an army, sits in that army's square and acts on its activation. Firing it (a Volley or a Bombard) spends one of that army's three actions and uses the engine's launch DC minus 10 as its bonus. An engine reaches extreme range without the −2 penalty and cannot fire while its army is engaged. A ram cannot fire at units; it may only Bombard a wall segment on an edge of its own square, and it rolls at +2. When an army is destroyed or routed it abandons its engines where it stands, and any enemy unit that ends the battle on that square or next to it captures them.</p>
+<h2 id="siege">12. Siege engines</h2>
+<p>An engine is <strong>attached</strong> to a unit and rides with it, or <strong>emplaced</strong> on a hex of its own. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>
+<p>A loaded artillery piece replaces its unit's shooting profile, grade and all: the unit shoots with the engine's launch bonus, and the engine's reach sets the Shoot grade. Artillery reaches the extreme band without the &minus;2 an ordinary volley pays, and it cannot fire while its crew is engaged, because nobody shoots in contact. A ram fights walls at +2 and does nothing else. Each engine fires once a round, whoever works it; where two friendly units both stand beside an emplacement, the crew is the first in deployment order.</p>
+<p>An emplaced engine never moves, so an emplaced ram can only ever batter a wall on an edge of the hex it deployed in. A ram is normally attached.</p>
+<p>A unit that is destroyed or routs abandons its engines where it stands. An emplacement left with only the enemy beside it changes hands at the end of the round — the engine is taken by standing on it, not by winning a fight over it — and an abandoned engine beside an enemy still standing at the end of the battle is captured.</p>
 
-<h2 id="tactics">11. Trained tactics</h2>
-<p>An army that has trained a tactic gains its battle action. Untrained armies use only the actions in section 6.</p>
-<div class="wrap"><table>
-<tr><th>Tactic</th><th>Battle action</th></tr>
-<tr><td>Cavalry Charge</td><td>Two actions: Advance, then Strike at +2, or +3 if the target stands lower. Needs Pace; every square entered must be open or settlement and not uphill.</td></tr>
-<tr><td>Reactive Attack</td><td>Reaction: a free Strike at an enemy that Advances into a square next to you, without Bracing.</td></tr>
-<tr><td>Raise Shields</td><td>Your Brace gives +3 instead of +2.</td></tr>
-<tr><td>Shield Block</td><td>Reaction, once per round: reduce one wound result by 1.</td></tr>
-<tr><td>Defend Allies</td><td>One action: an ally next to you is not outflanked until your next activation.</td></tr>
-<tr><td>Feint</td><td>One action while engaged: Strike bonus against the target's Will DC. Success: the target is outflanked until end of round. Critical failure: you are.</td></tr>
-<tr><td>Dirty Fighting</td><td>Strike an outflanked target; on a hit it also becomes shaken +1 unless it passes a DC 11 flat check.</td></tr>
-<tr><td>Demoralize</td><td>One action, target within close: d20 + level + Will modifier against the target's Will DC. Success shaken +1, critical +2, critical failure your own shaken +1.</td></tr>
-<tr><td>Covering Fire</td><td>Volley; on a hit the target also takes −2 to Strike until its next activation.</td></tr>
-<tr><td>False Retreat</td><td>Reaction when you Withdraw: the enemy that takes the free Strike at you becomes outflanked until end of round.</td></tr>
-<tr><td>Battlefield Medicine</td><td>Two actions, once per battle per target: remove 1 wound from an ally next to you.</td></tr>
-</table></div>
-<p>Passive tactics and doctrines that change a troop's Armour Class, saves or fear immunity apply on their own, because every roll reads the live sheet.</p>
-
-<h2 id="end">12. Ending the battle</h2>
-<p>The battle ends when one side has no unit still standing, or at the end of round six.</p>
-<h3>The winner</h3>
-<p>Units keep their wounds. The winning kingdom rolls a Warfare check. Critical success: heal 1 wound on every damaged unit and gain 1 Fame. Success: heal 1 wound on one unit. Failure: nothing. Critical failure: every unit becomes shaken +1.</p>
-<h3>The loser</h3>
-<p>Units keep their wounds and shaken. The losing kingdom rolls a Defense check. Critical success: one destroyed unit survives at 3 wounds. Success: nothing. Failure: +1 Unrest. Critical failure: +1d4 Unrest. Surviving units fall back one hex toward their nearest friendly settlement.</p>
-<h3>After dusk</h3>
-<p>If both sides still stand after six rounds, both withdraw to their edges, keep their wounds and shaken, and the hex remains contested.</p>
+<h2 id="end">13. Ending the battle</h2>
+<p>The battle ends at the end of a round: when a side has no unit still standing, or after the sixth round, whichever comes first. A unit is standing when it is neither destroyed nor routed nor gone from the field; a shaken unit still counts, so a side reduced to shaken units has not yet lost.</p>
+<h3>Dusk</h3>
+<p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
+<h3>The kingdom's checks</h3>
+<p>The winning kingdom rolls a Warfare check. Critical success: heal 1 wound on every damaged unit and gain 1 Fame. Success: heal 1 wound on one unit. Failure: nothing. Critical failure: 1 disorder on every unit.</p>
+<p>The losing kingdom rolls a Defense check. Critical success: one destroyed unit survives at 3 wounds. Success: nothing. Failure: 1 Unrest. Critical failure: 1d4 Unrest.</p>
 <h3>Back on the kingdom map</h3>
-<p>Wounds become hit points (section 7). Shaken becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband, and their engines are captured or destroyed. Tend Wounded heals as usual.</p>
+<p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
 
-<h2 id="odds">13. Fighting against the odds</h2>
+<h2 id="odds">14. Fighting against the odds</h2>
 <p>There are no points. Four things decide an uneven fight:</p>
 <ul>
-<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive.</li>
-<li><strong>Numbers.</strong> Outflanking and repeated rout checks let three lesser units grind down one greater unit, at the cost of wounds on two of them. Numbers pay off only when they reach a second side of the enemy, and a ridge or river decides where that second side is.</li>
-<li><strong>Ground.</strong> Forest, high ground, shallows and walls favour the defender. A small garrison behind walls is a real obstacle.</li>
-<li><strong>Time.</strong> Six rounds and the half-side rout trigger reward a decisive attacker and punish a hesitant one.</li>
+<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive. Level sets the DC of your own reaches too, so a high-level unit climbs its ladders no more easily than a low-level one — it simply starts higher.</li>
+<li><strong>Quality.</strong> A troop with a poor Will save is shaken at 2 disorder, which is two lost exchanges, and routed at 3. Trolls hit harder than almost anything at their level and break faster than a militia.</li>
+<li><strong>Numbers.</strong> Outflanking pays only when it reaches a second side of the enemy, and a ridge or a river decides where that second side is. Three lesser units grind down one greater one through disorder, not through wounds.</li>
+<li><strong>Ground and time.</strong> Forest, high ground and walls favour the defender. Six rounds and the half-army check reward a decisive attacker and punish a hesitant one.</li>
 </ul>
 <p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
 
 <h2 id="ref">Quick reference</h2>
 <div class="wrap"><table class="ref">
-<tr><th>Action</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
-<tr><td>Advance</td><td>1 (2 into forest or shallows, 3 into swamp)</td><td>—</td><td>Not while engaged. As many squares as Speed buys: one at 30 ft or less, two at 60, three at 90. No barriers, water or occupied squares</td></tr>
-<tr><td>Withdraw</td><td>1, or 2 if engaged</td><td>—</td><td>One square away from engaged enemies; each may spend its reaction on a free Strike</td></tr>
-<tr><td>Strike</td><td>1, engaged</td><td>d20 + Strike vs Defence</td><td>Crit 2 wounds · hit 1 · crit fail: exposed −2. MAP −5/−10</td></tr>
-<tr><td>Volley</td><td>1, not engaged, in reach</td><td>d20 + Volley vs Defence (−2 extreme, −4 into melee)</td><td>Crit 2 wounds · hit 1. MAP −5/−10</td></tr>
-<tr><td>Brace</td><td>1</td><td>—</td><td>+2 Defence; reaction: free Strike at an enemy advancing next to you</td></tr>
-<tr><td>Rally</td><td>1</td><td>Will vs rout DC</td><td>Crit −2 shaken · success −1 · crit fail +1</td></tr>
-<tr><td>Retreat</td><td>2</td><td>—</td><td>Withdraw twice; second square draws no free Strike; leave past your edge</td></tr>
-<tr><td>Bombard</td><td>1 (siege engine)</td><td>d20 + launch DC − 10 vs 10 + tier + level; ram +2, adjacent edge only</td><td>Wounds a wall segment; tier + 1 boxes; tier 0 breaks on one hit. Only engines damage walls</td></tr>
+<tr><th>Act</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
+<tr><td>Move</td><td>1 per Speed's worth</td><td>&mdash;</td><td>10 ft open or settlement, 20 forest or shallows, 30 swamp, +10 a level climbed. Movement banks across the activation. Not while engaged.</td></tr>
+<tr><td>Charge</td><td>The movement, plus 1</td><td>A Fight rung on arrival</td><td>Spends the activation's attack</td></tr>
+<tr><td>Push</td><td>Every action left</td><td>Will &minus; disorder, +2 mounted, +2 an action past the first, vs your level DC</td><td>Success reaches the hex; failure stops at the last hex you could afford; critical failure adds 1 disorder</td></tr>
+<tr><td>Withdraw</td><td>1, plus the distance dial</td><td>Reflex &minus; disorder vs each holder's Strike + 10</td><td>Failure: a free strike, 1 wound at most. Critical failure: 1 disorder and you stay put. Then one hex clear, or a Speed's worth per action bought.</td></tr>
+<tr><td>Shoot</td><td>1</td><td>Volley vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the wound costs the target 1 disorder. Loose reaches close, Volley long, Barrage your full band and through cover.</td></tr>
+<tr><td>Fight</td><td>1</td><td>Strike vs Defence, then the target strikes back</td><td>Crit 2 wounds &middot; hit 1 &middot; the side that took more takes 1 disorder, 2 against a Press &middot; critical failure exposes you. Overrun takes their ground.</td></tr>
+<tr><td>Guard</td><td>1</td><td>&mdash;</td><td>+2 Defence for every action committed, the first included. Dig in caps hits at one wound; Shieldwall braces adjacent allies.</td></tr>
+<tr><td>Rally</td><td>1</td><td>Will &minus; disorder vs the rout DC</td><td>Crit clears all &middot; success 2 &middot; failure 1 &middot; critical failure adds 1. The rung says who else it lifts.</td></tr>
+<tr><td>Cast</td><td>1</td><td>Blast: Will &minus; disorder vs Defence. The rest need no roll.</td><td>Minor reaches yourself, Major an adjacent unit, Grand anywhere in sight</td></tr>
+<tr><td>Reach</td><td>Nothing; it is part of the act</td><td>Will &minus; disorder vs your level DC, +2 for a third rung</td><td>Crit climbs one further &middot; failure falls back to your grade and the act happens anyway &middot; critical failure adds 1 disorder</td></tr>
 </table></div>
 <div class="wrap"><table class="ref">
 <tr><th>Modifier</th><th>Value</th></tr>
-<tr><td>Distance</td><td>1 engaged · 2 close · 3 long · 4+ extreme (−2)</td></tr>
-<tr><td>Multiple attack penalty</td><td>Second Strike or Volley −5, third −10; free Strikes ignore it and never crit</td></tr>
-<tr><td>Outflanked (engaged by 2+)</td><td>−2 Defence</td></tr>
-<tr><td>Weakened (2 wounds)</td><td>−2 Strike and Volley; reach −1 band</td></tr>
-<tr><td>Broken (3 wounds)</td><td>As Weakened; no Advance; rout check every round</td></tr>
-<tr><td>Shaken</td><td>−1 per point to all checks; 3 = routed</td></tr>
-<tr><td>Forest, settlement</td><td>+1 Defence vs Volley; forest cancels Pace</td></tr>
-<tr><td>Swamp, shallows</td><td>Advance costs 2; Strike −1; no Pace. Shallows: no Withdraw while engaged</td></tr>
-<tr><td>Height</td><td>Strike or Volley uphill −1 per level; Volley downhill ignores cover, +1 band; rout DC −2 above every engaged enemy</td></tr>
-<tr><td>Wall</td><td>No crossing until breached; assault Strike −2; garrison Volley +1</td></tr>
-<tr><td>Cliff</td><td>No crossing, no engagement; upper side Volley +1, lower side no Volley</td></tr>
-<tr><td>Rout DC</td><td>Level DC of highest enemy within close (else on field); +2 fear; −2 own fort or higher ground</td></tr>
-<tr><td>Rout check</td><td>Will save: crit = immune · fail +1 shaken · crit fail +2</td></tr>
+<tr><td>Distance</td><td>1 engaged &middot; 2 close &middot; 3 long &middot; 4&ndash;5 extreme &middot; 6+ out of range</td></tr>
+<tr><td>Weight</td><td>+2 an action, on the roll, on the reach, on Guard's Defence, or on Withdraw's distance</td></tr>
+<tr><td>One attack an activation</td><td>Fight, Shoot and Blast share the slot</td></tr>
+<tr><td>Disorder</td><td>&minus;1 a point on every roll and on Defence. At Quality, shaken &mdash; Rally or withdraw only. One past it, routed &mdash; withdraw only, and it runs for its edge.</td></tr>
+<tr><td>Quality</td><td>2 to 6, from the Will save: below low 2, low 3, moderate 4, high 5, extreme 6</td></tr>
+<tr><td>Outflanked</td><td>&minus;2 Defence while engaged with two or more enemies</td></tr>
+<tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike, until the unit acts again</td></tr>
+<tr><td>Weakened (2 wounds)</td><td>&minus;2 to Strike and Volley. Broken (3 wounds) is the same.</td></tr>
+<tr><td>Take heart</td><td>+2 on the ally's attacks until it has acted</td></tr>
+<tr><td>Forest</td><td>+1 Defence against a shot, unless the shooter stands higher or looses a Barrage</td></tr>
+<tr><td>Swamp or shallows</td><td>&minus;1 to Strike from it</td></tr>
+<tr><td>Height</td><td>&minus;1 a level attacking upward. Shooting downward counts one band closer and beats cover.</td></tr>
+<tr><td>Extreme band</td><td>&minus;2 to a unit's own volley. Artillery ignores it.</td></tr>
+<tr><td>Into a melee</td><td>&minus;4 shooting at a target engaged with one of your own</td></tr>
+<tr><td>Wall</td><td>Attacker striking across it &minus;2 &middot; garrisoned defender shoots at +1 &middot; DC 10 + tier + the highest standing defender's level &middot; tier + 1 boxes &middot; hit 1 box, crit 2 &middot; ram +2</td></tr>
+<tr><td>Cliff</td><td>Two levels on one edge: no crossing, no engagement</td></tr>
+<tr><td>Rout DC</td><td>The level DC of the highest-level enemy within close range, or of the highest-level enemy on the field when none is close</td></tr>
+</table></div>
+<div class="wrap"><table class="ref">
+<tr><th>Level</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>12</td><td>14</td><td>16</td><td>18</td><td>20</td></tr>
+<tr><th>DC</th><td>15</td><td>16</td><td>18</td><td>19</td><td>20</td><td>22</td><td>23</td><td>24</td><td>26</td><td>27</td><td>30</td><td>32</td><td>35</td><td>38</td><td>40</td></tr>
 </table></div>
 
-<h2 id="example">Worked battle</h2>
+<h2 id="example">Worked round</h2>
 <div class="example">
-<p>A forest hex: every square is forest at height 0, and there are no barriers. The attacker brings <b>Heavy Cavalry</b> (level 7, Defence 25, Strike +12, Will +14, Perception +14, Speed 40 so Pace) and <b>Line Infantry</b> (level 6, Defence 24, Strike +11, Volley +11 with long reach, Will +13, Perception +13). The defender has <b>Kobold Warriors</b> (level 3, Defence 18, Strike +7, Volley +7 with close reach, Will +9, Perception +9) and <b>Troll Marauders</b> (level 8, Defence 25, Strike +13, Will +11, Perception +15, Speed 30 so Pace). Forest cancels Pace for both mounted units, and every unit has cover against Volleys.</p>
-<p>Initiative: infantry 25, trolls 22, cavalry 19, kobolds 14. Deployment: infantry c2, cavalry e2, kobolds d7, trolls e7. Both sides keep a rank in hand.</p>
+<p>Open plains, no height and no walls. The attacker brings <b>Line Infantry</b> (level 6, Strike +11, Volley +11 at long reach, Defence 24, Will +13, Reflex +14, 10 ft an action; Shoot 2, Fight 2, Guard 2, Rally 1; Quality 3) and <b>Heavy Cavalry</b> (level 7, Strike +12, Defence 25, Will +14, Reflex +13, 20 ft an action; Fight 3, Guard 1, Rally 1; Quality 3). The defender has <b>Kobold Warriors</b> (level 3, Strike +7, Volley +7 at close reach, Defence 18, Will +9, Reflex +12, 10 ft an action; Shoot 1, Fight 2, Guard 2, Rally 2; Quality 4) and <b>Troll Marauders</b> (level 8, Strike +13, Defence 25, Will +11, Reflex +15, 10 ft an action; Fight 2, Guard 2, Rally 1; Quality 2 — trolls hit hard and break early).</p>
+<p>Deployment: infantry c3 and cavalry e3, kobolds d7 and trolls e7. Every pairing stands at distance 4.</p>
 
-<p><b>Round 1.</b> The infantry finds the kobolds at distance 6 and Advances three times, c3, c4, c5; the kobolds are now at distance 3, long range, but no action is left. The trolls Advance e6, e5, putting the infantry at c5 at distance 2, and Brace. The cavalry Advances e3, e4 and stands next to the trolls: engaged. It Strikes: +12 against Defence 25 + 2 for Brace = 27; roll 16, total 28, a hit, trolls 1 wound. The kobolds Advance to d6, which puts the infantry at distance 2, close range, and Volley: +7 against 24 + 1 cover = 25; roll 19, total 26, a hit, infantry 1 wound. They Brace. End of round: the trolls were wounded and check against the engaged level-7 cavalry, DC 23: Will +11, roll 14, total 25, success. The infantry was wounded and checks against the level-8 trolls within close range, DC 24: Will +13, roll 8, total 21, failure, infantry shaken 1.</p>
+<p><b>Round 1.</b> Distance 4 is the extreme band, and the infantry's Shoot grade of 2 only reaches the long one, so it spends its whole activation on a single shot: one action for the act, one on the reach, one on the roll. The reach is 14 + 15 (Will 13, plus 2 from the committed action) = 29 against DC 24, its own level DC of 22 plus 2 for a third rung — success, so it barrages. The shot is 19 + 11 (Volley 11, plus 2 of weight, less 2 for the extreme band) = 30 against Defence 18: critical success, 2 wounds, and the wound costs the kobolds a point of disorder. Weakened by the first shot of the battle.</p>
+<p>The kobolds walk: d7 to d6 to d5, two actions of 10 ft, stopping short of contact. The cavalry charges the trolls — 30 ft to d6, two Move actions, and the third pays for the melee. Its Fight grade is 3, so Overrun is free: 8 + 12 = 20 against Defence 25, a failure. The trolls answer with a Press, both spare actions on the roll: 8 + 17 (Strike 13, plus 4) = 25 against 23, because the kobolds now standing at d5 have the cavalry outflanked. A hit, one wound. The cavalry strikes back at 14 + 12 = 26 against 25 and wounds the trolls in turn. The exchange is even, so nobody loses order for it.</p>
 
-<p><b>Round 2.</b> The infantry (shaken 1, −1 to checks) Advances to c6, next to the kobolds at d6: engaged. It Strikes: +11 − 1 against 18 + 2 Brace = 20; roll 15, total 25, a hit, kobolds 1 wound. A second Strike at −5: +5 against 20; roll 17, total 22, a hit. Kobolds at 2 wounds: Weakened. The trolls Strike the cavalry: +13 against 25; roll 12, total 25, a hit, cavalry 1 wound. Second Strike: +8 against 25; roll 9, total 17, a miss. They Brace. The cavalry Strikes the trolls: +12 against 27; roll 16, total 28, a hit. Trolls at 2 wounds: Weakened. Second Strike: +7 against 27; roll 6, total 13, a miss. It Braces. The kobolds, Weakened and engaged, Withdraw to d7 for two actions; the infantry spends its reaction on a free Strike: +11 − 1 against 18; roll 11, total 21, a hit. Kobolds at 3 wounds: Broken. They Brace. End of round: the kobolds were wounded and are Broken, one check against the level-6 infantry within close range, DC 22: Will +9, roll 12, total 21, failure, kobolds shaken 1. The trolls check against DC 23: Will +11, roll 4, total 15, failure, trolls shaken 1. The cavalry checks against DC 24: Will +14, roll 7, total 21, failure, cavalry shaken 1.</p>
+<p><b>Round 2.</b> The infantry volleys at the kobolds at distance 2: 14 + 11 (Volley 11, plus 4 of weight, less 4 for shooting at a target its own cavalry is engaged with) = 25 against 17 — Defence 18 less their point of disorder. A hit: third wound, Broken, and a second point of disorder.</p>
+<p>The kobolds rally, both spare actions on the roll: 14 + 11 (Will 9, less 2 for disorder, plus 4) = 25 against the rout DC of 23, which is the level DC of the cavalry, the highest-level enemy within close range. Success clears 2, and they are steady again at 3 wounds.</p>
+<p>The cavalry overruns: 26 against 25, a hit, trolls Weakened. The trolls strike back at 16 against 23 and miss, so they lose the exchange and take their first point of disorder — one of the two they have. Then the trolls activate and press: a natural 20, 34 against 23, critical success, 2 wounds, and the cavalry is Broken. The cavalry strikes back at 24 against 24 and wounds them again, Broken as well — but it lost a pressed exchange, which costs 2 disorder. It stands at 2 of its Quality 3, one bad round from routing.</p>
 
-<p><b>Round 3.</b> The infantry Advances to d6, next to the kobolds at d7, and Strikes: +10 against 18 + 2 = 20; roll 16, total 26, a hit. Kobolds at 4 wounds: destroyed. The infantry Advances again to e6, next to the trolls at e5. The trolls are now engaged from e4 and e6: outflanked. The trolls (Weakened, shaken 1, outflanked) Strike the cavalry: +13 − 2 − 1 against 25 + 2 Brace = 27; roll 12, total 22, a miss. Second Strike: +5 against 27; roll 15, total 20, a miss. They Rally: Will +11 − 1 against DC 23; roll 15, total 25, success, shaken back to 0. The cavalry (shaken 1) Strikes the trolls: +12 − 1 against 25 − 2 outflanked = 23; roll 12, total 23, a hit. Trolls at 3 wounds: Broken. Second Strike: +6 against 23; roll 15, total 21, a miss. It Braces. End of round: the trolls were wounded, are Broken, and half their side is destroyed: one check against DC 23. Will +11, roll 3, total 14, failure, trolls shaken 1.</p>
-<figure><svg viewBox="0 0 464 480" role="img" aria-label="The flank in round 3">
-<rect class="cell" x="36" y="16" width="52" height="52"/>
-<rect class="cell" x="36" y="68" width="52" height="52"/>
-<rect class="cell" x="36" y="120" width="52" height="52"/>
-<rect class="cell" x="36" y="172" width="52" height="52"/>
-<rect class="cell" x="36" y="224" width="52" height="52"/>
-<rect class="cell" x="36" y="276" width="52" height="52"/>
-<rect class="cell" x="36" y="328" width="52" height="52"/>
-<rect class="cell" x="36" y="380" width="52" height="52"/>
-<rect class="cell" x="88" y="16" width="52" height="52"/>
-<rect class="cell" x="88" y="68" width="52" height="52"/>
-<rect class="cell" x="88" y="120" width="52" height="52"/>
-<rect class="cell" x="88" y="172" width="52" height="52"/>
-<rect class="cell" x="88" y="224" width="52" height="52"/>
-<rect class="cell" x="88" y="276" width="52" height="52"/>
-<rect class="cell" x="88" y="328" width="52" height="52"/>
-<rect class="cell" x="88" y="380" width="52" height="52"/>
-<rect class="cell" x="140" y="16" width="52" height="52"/>
-<rect class="cell" x="140" y="68" width="52" height="52"/>
-<rect class="cell" x="140" y="120" width="52" height="52"/>
-<rect class="cell" x="140" y="172" width="52" height="52"/>
-<rect class="cell" x="140" y="224" width="52" height="52"/>
-<rect class="cell" x="140" y="276" width="52" height="52"/>
-<rect class="cell" x="140" y="328" width="52" height="52"/>
-<rect class="cell" x="140" y="380" width="52" height="52"/>
-<rect class="cell" x="192" y="16" width="52" height="52"/>
-<rect class="cell" x="192" y="68" width="52" height="52"/>
-<rect class="cell" x="192" y="120" width="52" height="52"/>
-<rect class="cell" x="192" y="172" width="52" height="52"/>
-<rect class="cell" x="192" y="224" width="52" height="52"/>
-<rect class="cell" x="192" y="276" width="52" height="52"/>
-<rect class="cell" x="192" y="328" width="52" height="52"/>
-<rect class="cell" x="192" y="380" width="52" height="52"/>
-<rect class="cell" x="244" y="16" width="52" height="52"/>
-<rect class="cell" x="244" y="68" width="52" height="52"/>
-<rect class="cell" x="244" y="120" width="52" height="52"/>
-<rect class="cell" x="244" y="172" width="52" height="52"/>
-<rect class="cell" x="244" y="224" width="52" height="52"/>
-<rect class="cell" x="244" y="276" width="52" height="52"/>
-<rect class="cell" x="244" y="328" width="52" height="52"/>
-<rect class="cell" x="244" y="380" width="52" height="52"/>
-<rect class="cell" x="296" y="16" width="52" height="52"/>
-<rect class="cell" x="296" y="68" width="52" height="52"/>
-<rect class="cell" x="296" y="120" width="52" height="52"/>
-<rect class="cell" x="296" y="172" width="52" height="52"/>
-<rect class="cell" x="296" y="224" width="52" height="52"/>
-<rect class="cell" x="296" y="276" width="52" height="52"/>
-<rect class="cell" x="296" y="328" width="52" height="52"/>
-<rect class="cell" x="296" y="380" width="52" height="52"/>
-<rect class="cell" x="348" y="16" width="52" height="52"/>
-<rect class="cell" x="348" y="68" width="52" height="52"/>
-<rect class="cell" x="348" y="120" width="52" height="52"/>
-<rect class="cell" x="348" y="172" width="52" height="52"/>
-<rect class="cell" x="348" y="224" width="52" height="52"/>
-<rect class="cell" x="348" y="276" width="52" height="52"/>
-<rect class="cell" x="348" y="328" width="52" height="52"/>
-<rect class="cell" x="348" y="380" width="52" height="52"/>
-<rect class="cell" x="400" y="16" width="52" height="52"/>
-<rect class="cell" x="400" y="68" width="52" height="52"/>
-<rect class="cell" x="400" y="120" width="52" height="52"/>
-<rect class="cell" x="400" y="172" width="52" height="52"/>
-<rect class="cell" x="400" y="224" width="52" height="52"/>
-<rect class="cell" x="400" y="276" width="52" height="52"/>
-<rect class="cell" x="400" y="328" width="52" height="52"/>
-<rect class="cell" x="400" y="380" width="52" height="52"/>
-<text class="sm" x="62" y="448" text-anchor="middle">a</text>
-<text class="sm" x="114" y="448" text-anchor="middle">b</text>
-<text class="sm" x="166" y="448" text-anchor="middle">c</text>
-<text class="sm" x="218" y="448" text-anchor="middle">d</text>
-<text class="sm" x="270" y="448" text-anchor="middle">e</text>
-<text class="sm" x="322" y="448" text-anchor="middle">f</text>
-<text class="sm" x="374" y="448" text-anchor="middle">g</text>
-<text class="sm" x="426" y="448" text-anchor="middle">h</text>
-<text class="sm" x="28" y="410" text-anchor="end">1</text>
-<text class="sm" x="28" y="358" text-anchor="end">2</text>
-<text class="sm" x="28" y="306" text-anchor="end">3</text>
-<text class="sm" x="28" y="254" text-anchor="end">4</text>
-<text class="sm" x="28" y="202" text-anchor="end">5</text>
-<text class="sm" x="28" y="150" text-anchor="end">6</text>
-<text class="sm" x="28" y="98" text-anchor="end">7</text>
-<text class="sm" x="28" y="46" text-anchor="end">8</text>
-<line x1="218" y1="146" x2="270" y2="146" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
-<circle class="att" cx="270" cy="244" r="10"/>
-<text class="lbl" x="270" y="266" text-anchor="middle">Cav</text>
-<circle class="att" cx="270" cy="140" r="10"/>
-<text class="lbl" x="270" y="162" text-anchor="middle">Inf</text>
-<rect class="def" x="260" y="182" width="20" height="20" rx="3"/>
-<text class="lbl" x="270" y="214" text-anchor="middle">Trl</text>
-<text class="sm" x="36" y="470">The trolls at e5 are engaged from e4 and e6: Outflanked, −2 Defence.</text>
-<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
-</svg><figcaption>Round 3. The infantry steps from d6 to e6 and the trolls are engaged on two sides.</figcaption></figure>
+<p><b>Round 3.</b> The infantry volleys again: 19 against 18, a hit, and the fourth wound destroys the kobolds. The trolls press the cavalry: 24 against 23, a hit, and the fourth wound destroys it. Both sides have now lost half their army, so both take the check at the end of the round. The infantry takes a point of disorder and holds. The trolls take their second — their Quality is 2 — and are shaken. They are still standing, so the battle runs on.</p>
 
-<p><b>Round 4.</b> The infantry Strikes the trolls: +10 against 23; roll 14, total 24, a hit. Trolls at 4 wounds: destroyed. The defender has no unit standing. The attacker wins in four rounds.</p>
+<p><b>Round 4.</b> The infantry volleys, both spare actions on the roll: 5 + 14 (Volley 11, less 1 for the disorder it just took, plus 4) = 19 against 23 — Defence 25, less the trolls' own 2 — a miss. The trolls are shaken, so Rally and the withdrawal are the whole menu. They rally, both spare actions on the roll: 11 + 13 (Will 11, less 2 for disorder, plus 4) = 24 against the rout DC of 22, the level DC of the infantry, now the only enemy on the field. Success clears 2. The trolls are steady again at 3 wounds, and it cost them the entire activation.</p>
 
-<p><b>Afterwards.</b> The attacker's Warfare check succeeds and heals the cavalry to 0 wounds. The infantry keeps 1 wound (72 of 96 hit points) and both units keep shaken 1, written back as demoralized 1. The trolls and kobolds disband. The defender's Defense check fails: 1 Unrest.</p>
+<p><b>Round 5.</b> The infantry volleys and misses again: 7 + 15 = 22 against 25. The trolls cross the two hexes to the infantry, two Move actions, and the third fights: 12 + 13 = 25 against Defence 24, a hit, one wound. The infantry strikes back at 9 + 10 = 19 against 25 and misses, so it loses the exchange and takes a second point of disorder.</p>
 
-<p>The transcript shows the shape of a field battle. The four-rank gap gives the kobolds one volley on the approach and no more. The trolls stand in the open and are flanked because the infantry walks round the fallen kobolds. The multiple attack penalty makes the second Strike a coin flip. The last unit of a side goes down to a rout trigger it can no longer pass. On a hills or river hex the trolls would have held a ridge or a ford, and the fight would run two rounds longer.</p>
+<p><b>Round 6.</b> The trolls press, both spare actions on the roll: 14 + 17 = 31 against 24, a hit, a second wound, and the infantry is Weakened. It strikes back at 6 + 10 = 16 against 25 and misses. Losing a pressed exchange costs 2 disorder, which takes it from 2 to 4 — one past its Quality of 3, so the infantry routs. At the end of the round the attacker has no unit standing, and the defender holds the field.</p>
+
+<p>The transcript shows the shape of the game. The infantry never moved: at grade 2 it could not reach the enemy line, so it gambled a reach on the first activation and spent the rest of the battle shooting into a melee at &minus;4 and still landing hits, because a level-6 troop against a level-3 one barely needs the dice. The cavalry won its charge and died anyway, because Press turns wounds into disorder and the trolls out-rolled it once. And the trolls, whose Quality of 2 had them shaken by the end of round 3, bought it back with a whole activation — three actions to clear two points, and no attack that round. That is the price of the band above Quality: not the unit, but the tempo. Spend it and you are a hammer again; fail the check twice and you are running for your own edge.</p>
 </div>
+
+<h2 id="notes">Design notes</h2>
+<h3>The problem</h3>
+<p>Armies in Reignmaker are troop actors with kingdom-level records, and nothing resolved army against army: events applied a condition to a random army, the only path to destruction was upkeep morale, and the war-action data was display-only. The skirmish rules — a five-foot grid, five actions, segments — suit a heroic encounter and fail a GM running three faction armies against four players' armies in one sitting.</p>
+<p>These rules resolve a field battle in well under an hour, give every player a unit to command and a real decision every activation, handle unequal forces with no points system, and reuse the numbers the troop actors already carry. With four players and a GM, a battle is six to nine units and runs three to five rounds. Units only: commanders and player characters are deferred, and the action economy leaves room for them.</p>
+<h3>Principles</h3>
+<ol>
+<li>One dice idiom. Every roll is d20 + modifier against a DC with four degrees, so it posts as an ordinary check and level scaling comes free.</li>
+<li>One number of each kind per unit: one hex of position, one count of wounds, one of disorder. Nothing is tracked pairwise.</li>
+<li>Melee does not lock. A Fight is an exchange, and position changes only by choice.</li>
+<li>The rung carries the effect and the action carries the number. That is what keeps a weak unit's grade-1 act worth taking, and it is why a spare action is never a second attack.</li>
+<li>Every number comes off the actor: Battle DC, Salvo DC and range, AC, saves, Speed, level. There is no second profile to maintain.</li>
+<li>Unequal forces are expected. The level curve, outflanking, ground and walls balance a fight; there are no points.</li>
+</ol>
+<h3>Lineage</h3>
+<div class="wrap"><table>
+<tr><th>Source</th><th>Taken, and what became of it</th></tr>
+<tr><td>Kingmaker war rules</td><td>The engaged / close / long / extreme bands, measured in hexes. Hit points became four wounds; shaken and routed became the two bands of disorder above a per-unit Quality. Weary and mired were dropped — Weakened and the ground cover those cases. Ammunition was dropped.</td></tr>
+<tr><td><em>Dragon Rampant</em></td><td>A half-strength breakpoint, which is Weakened at two wounds, and courage that worsens with losses, which is the half-army check. Its failed order that ends your turn was not adopted: a failed reach still acts, so nobody loses a turn to the dice.</td></tr>
+<tr><td><em>One Page Rules: Fantasy</em></td><td>One morale marker doing all the work, which is disorder. Fatigue was dropped; one attack an activation covers it.</td></tr>
+<tr><td>Pathfinder 2e</td><td>Three actions an activation, the four degrees of success, and the level tables the whole system reads its DCs from. The multiple attack penalty was dropped when a second attack was: spare actions buy weight instead.</td></tr>
+</table></div>
+<p>The rules are playable on paper with a d20 and a chessboard's worth of counters, and they ship as a standalone web game. A Foundry or Reignmaker adapter attaches at two seams, the unit card in and the battle state out; neither the rules nor the engine depends on a VTT.</p>
 
 </main>
 </body>

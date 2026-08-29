@@ -313,7 +313,7 @@ Model guidance per wave, for cost:
   "primary" container with a scale of 0.5 and an offset, then mounts `BoardContainer` into it
   and drives it from a JSON battle state — proves the container makes no assumptions about
   owning the stage or the DOM events (it takes an `EventTarget` and a `toLocal` function).
-- Write `docs/board.md`: the `BoardView` API, the grid interface, how to mount in Foundry,
+- Write `docs/pixi-board.md`: the `BoardView` API, the grid interface, how to mount in Foundry,
   what was lifted from Reignmaker and what changed.
 - Update `README.md`, `docs/design.md` (hex option, one paragraph), `public/rules.html`
   (a sidebar on the hex variant).

@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, levelDc, MAX_WOUNDS, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
     offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, SPELLS, withdrawTargets,
     type ActionOffer, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
     type RungTarget, type Spend, type SpendDials, type TargetOffer, type TargetRef, type Unit, type WithdrawOffer,
@@ -134,7 +134,7 @@
 
   // A new unit drops every open popup and any in-flight drag preview — all of it is
   // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; aim = null; drag = null; pending = null; armed = null; radial = null; hoveredBand = null; moveOpen = true; alloc = {}; });
+  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; radial = null; hoveredBand = null; moveOpen = true; alloc = {}; });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return SPELLS[offer.spell].at === 'enemy' ? 'attack' : 'deploy';
@@ -155,6 +155,12 @@
   interface WithdrawPreview { kind: 'withdraw'; cell: string; path: string[] }
   type Preview = MovePreview | ChargePreview | PushPreview | WithdrawPreview;
   let drag = $state<Preview | null>(null);
+  // The cell a drag has pulled to that the piece may not take — an X goes there, since the
+  // refusal reads where the player is pulling rather than on the piece under their finger.
+  let blockedCell = $state<string | null>(null);
+  // The enemy a live drag is pulling into, and whether the drop can reach a melee on it. The
+  // mark rides the piece rather than the cell: the overlay's X would sit under the token.
+  let dragTarget = $state<{ id: string; attack: boolean } | null>(null);
   // A released drag, parked until the player picks one of its readings and confirms. One drop
   // means more than one thing, and deciding by where the pointer landed decides for the player.
   interface Parked { cell: string; rows: Preview[]; index: number; rung: Grade | null }
@@ -349,12 +355,6 @@
    * the whole price rather than asking again per action. */
   function rowsAt(cell: string): Preview[] {
     if (!active || !act) return [];
-    // Dropped on a piece: there is one thing that means, and it is not a move.
-    const enemy = enemyAt(cell);
-    if (enemy) {
-      const charge = act.charges.find((c) => c.unit === enemy.id);
-      return charge ? [chargeRow(charge)] : [];
-    }
     const rows: Preview[] = [];
     const m = act.moves.get(cell);
     if (m) {
@@ -371,25 +371,56 @@
     return rows;
   }
 
+  /** Whether Fight already names this enemy — the melee of a unit standing in contact, which
+   * needs no ground crossed and so has no charge behind it. */
+  const canFight = (enemy: Unit) => offers.some((o) => o.type === 'fight' && o.rungs.some(
+    (r) => r.legal && r.targets.some((t) => t.kind === 'unit' && t.id === enemy.id),
+  ));
+
   function onBoardDrag(e: BoardEventOf<'drag'>) {
     if (!active || !act || e.id !== active.id) return;
-    if (e.cell === null) { drag = null; return; }
+    dragTarget = null;
+    if (e.cell === null) { drag = null; blockedCell = null; return; }
+    // Pulling into a piece is a melee and nothing else: the charge that closes on it, or the
+    // fight already in contact. The swords go on the target the moment either one stands up.
+    const enemy = enemyAt(e.cell);
+    if (enemy) {
+      const charge = act.charges.find((c) => c.unit === enemy.id);
+      dragTarget = { id: enemy.id, attack: !!charge || canFight(enemy) };
+      // A charge redraws the route to its approach cell; anything else leaves the trace where
+      // it stalled, so the arrow still shows how far the drag did get.
+      if (charge) drag = chargeRow(charge);
+      blockedCell = null;
+      return;
+    }
     const next = rowsAt(e.cell)[0];
     // Dragging past reach stalls at the last legal cell rather than drawing an illegal one.
-    if (next) drag = next;
+    if (next) { drag = next; blockedCell = null; return; }
+    // Nothing this cell can mean: past every action, walled off, impassable, or an ally is
+    // standing on it. The X goes under the pointer while the arrow keeps the last legal cell
+    // it traced, so the refusal names the ground refused rather than the whole gesture. The
+    // piece's own square never takes it — an X there would cover the thing it is about.
+    blockedCell = e.cell === notation(active.square) ? null : e.cell;
   }
 
   function onBoardDrop(e: BoardEventOf<'drop'>) {
     drag = null;
+    blockedCell = null;
+    dragTarget = null;
     if (!active || !act || e.id !== active.id) return;
+    // Dropped on a piece: the charge, or the fight it is already in. A shot is aimed by
+    // touching a target, never by dragging into one — a drag is the unit going there.
+    const enemy = enemyAt(e.cell);
+    if (enemy) {
+      const charge = act.charges.find((c) => c.unit === enemy.id);
+      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge)], index: 0, rung: null };
+      else aimAt({ kind: 'unit', id: enemy.id }, e.cell, enemy.name, 'fight');
+      return;
+    }
     // An illegal drop parks nothing: state never changes, so `tokens` never changes, so
     // `TokenLayer` just snaps the token back to where it actually is.
     const rows = rowsAt(e.cell);
     pending = rows.length ? { cell: e.cell, rows, index: 0, rung: null } : null;
-    // Dropped on a piece with no charge behind it — already in contact, or out of reach — the
-    // drag still means "act on that", so its ladder opens where the piece stands.
-    const enemy = !rows.length ? enemyAt(e.cell) : null;
-    if (enemy) aimAt({ kind: 'unit', id: enemy.id }, e.cell, enemy.name);
   }
 
   /** A second click on the row already chosen confirms it, so a plain move is drag, click. */
@@ -522,6 +553,40 @@
   // Contact empties `moves`/`push` outright (see `moveReach`), so the Move card would
   // otherwise sit there reading "0 cells reachable" four times over with no reason given.
   const holders = $derived(active ? engagedEnemies(b, active) : []);
+  // Every other way a Stride can be closed. Contact at least draws enemies next to you; a root
+  // or a spent last action leaves the board looking exactly like ground you could walk onto,
+  // so the panel and a dragged token both have to say it out loud.
+  interface Stuck { tag: string; why: string }
+  const stuck = $derived.by<Stuck | null>(() => {
+    if (!active || !act || act.moves.size || act.push.size) return null;
+    // Contact keeps its own card in the panel; here it is one more reason a drag goes nowhere.
+    if (holders.length) return {
+      tag: 'held in contact',
+      why: 'A Stride is closed while you are in contact. Withdraw is the only way off this square.',
+    };
+    if (isRouted(active)) return {
+      tag: 'routed',
+      why: 'A routed unit runs for its own edge and no other way. The withdrawal is the only thing it is offered, and it leaves the field when it gets there.',
+    };
+    if (isShaken(active)) return {
+      tag: 'shaken',
+      why: 'A shaken unit leaves a square by withdrawing and no other way. Its only other act is Rally — clear a point and it is a unit again.',
+    };
+    if (active.rooted > 0) return {
+      tag: 'rooted',
+      why: 'Digging in roots you where you stand: no Stride for the rest of this activation. Your remaining actions still fight, shoot, rally and cast.',
+    };
+    if (active.speed === 0) return { tag: 'no speed', why: 'This piece has Speed 0. It holds the ground it was placed on.' };
+    if (act.actions <= 0) return { tag: 'out of actions', why: 'No actions left to spend — end the activation.' };
+    return { tag: 'boxed in', why: 'Nothing adjacent can be entered: the ground around you is blocked or occupied.' };
+  });
+
+  // The piece lifts only while some drop could still land. `stuck` already means no Stride and
+  // no push, so with no charge and nowhere to withdraw to there is nothing to carry: lifting it
+  // to snap it straight back mimes a move being considered, where the X alone is the answer.
+  const anchored = $derived(
+    stuck && !act?.charges.length && !act?.withdraw?.targets.length ? active?.id ?? null : null,
+  );
 
   const bandStyle = (n: MoveBand): HighlightStyle => (n === 'push' ? 'push' : n === 1 ? 'move' : n === 2 ? 'moveFar' : 'moveFar3');
 
@@ -557,6 +622,7 @@
   /** What rides on a piece: the verb being aimed at it right now, or the shield a guarding
    * unit keeps until it acts again. State the board can show is state the panel need not. */
   function propOn(u: Unit): ActionIcon | null {
+    if (dragTarget?.id === u.id) return dragTarget.attack ? 'attack' : 'no';
     if (aim?.target.kind === 'unit' && aim.target.id === u.id && aimGroup) return ICON_FOR[aimGroup.offer.type];
     if (picked?.kind === 'charge' && picked.enemy === u.id) return 'charge';
     return u.guard ? 'block' : null;
@@ -691,6 +757,7 @@
   const aboveLabel = (type: LadderType, index: number) => rungOf(type, Math.min(3, index + 1) as Grade).label;
 
   const status = (u: Unit) => [
+    isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : '',
     u.guard ? `${rungOf('guard', u.guard.rung).label.toLowerCase()} +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
@@ -763,6 +830,8 @@
       frozen={radial !== null}
       {highlights}
       dragPath={previewPath}
+      barred={blockedCell}
+      {anchored}
       {shot}
       draggable={active?.id ?? null}
       oncell={active ? onCell : undefined}
@@ -782,6 +851,12 @@
       <div class="drag-hud">
         <strong>{rowLabel(drag)}</strong>
         <span class="muted">{drag.cell} — {rowDetail(drag)}</span>
+      </div>
+    {:else if blockedCell && stuck}
+      <div class="drag-hud stuck">
+        <img class="row-prop" src={actionIconUrl('no')} alt="" />
+        <strong>Cannot move — {stuck.tag}</strong>
+        <span class="muted">{stuck.why}</span>
       </div>
     {/if}
     {#if pending}
@@ -936,7 +1011,7 @@
               <span class={u.side === 'attacker' ? 'side-att' : 'side-def'}>{u.name}</span>
               <span class="stat">wounds {u.wounds}/{MAX_WOUNDS}</span>
               <span class="stat">disorder {u.disorder}/{u.quality}</span>
-              <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : 'standing') : u.status}</span>
+              <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : 'standing') : u.status}</span>
             </div>
           {/each}
         </div>
@@ -973,6 +1048,8 @@
             <span class="muted">
               {#if holders.length}
                 — held in contact
+              {:else if stuck}
+                — {stuck.tag}
               {:else if moveOpen}
                 — drag the token, or read the bands
               {:else}
@@ -982,7 +1059,7 @@
           </button>
           {#if moveOpen}
           {#if holders.length}
-            <p class="move-held">
+            <p class="move-note">
               <strong>{holders.map((e) => e.name).join(' and ')}</strong>
               {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
               contact — <strong>Withdraw</strong> is the only way off this square, and it costs an
@@ -990,6 +1067,11 @@
               {#if act.withdraw}
                 Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
               {/if}
+            </p>
+          {:else if stuck}
+            <p class="move-note">
+              <img class="row-prop" src={actionIconUrl('no')} alt="" />
+              {stuck.why}
             </p>
           {:else}
           <div class="move-rows">
@@ -1028,7 +1110,17 @@
       {/if}
 
 
-      {#if !offers.length}
+      {#if isRouted(active)}
+        <p class="muted">
+          Routed at {active.disorder}/{active.quality} — nothing but the withdrawal, and it runs
+          for its own edge. Only an adjacent ally's Rally can bring it back.
+        </p>
+      {:else if isShaken(active)}
+        <p class="muted">
+          Shaken at {active.disorder}/{active.quality} — it may Rally or withdraw, nothing else.
+          One more point and it routs.
+        </p>
+      {:else if !offers.length}
         <p class="muted">Nothing else to do here — end the activation.</p>
       {:else}
         <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
@@ -1068,7 +1160,7 @@
   .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
 
   .drag-hud {
-    position: absolute; z-index: 5;
+    position: absolute; z-index: 5; max-width: 26rem;
     top: calc(var(--inset-top, 0px) + .6rem);
     left: calc(var(--inset-left, 0px) + .6rem);
     display: flex; gap: .6rem; align-items: center;
@@ -1076,6 +1168,7 @@
     background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
     pointer-events: none;
   }
+  .drag-hud.stuck { border-color: var(--bad); }
   .popup-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .1rem 1.3rem .3rem .4rem; font-weight: 600; color: var(--muted); }
   .popup-actions { display: flex; gap: 2px; }
   .popup-row {
@@ -1131,7 +1224,8 @@
     display: flex; justify-content: space-between; align-items: baseline; gap: .5rem;
     padding: .3rem .55rem; border-radius: 6px; border-left: 4px solid transparent; background: var(--band);
   }
-  .move-held { margin: 0; padding: .45rem .55rem; border-radius: 6px; border-left: 4px solid var(--bad); background: var(--band); line-height: 1.45; }
+  .move-note .row-prop { vertical-align: -.35rem; margin-right: .2rem; }
+  .move-note { margin: 0; padding: .45rem .55rem; border-radius: 6px; border-left: 4px solid var(--bad); background: var(--band); line-height: 1.45; }
   .move-row.band-1 { border-left-color: var(--good); }
   .move-row.band-2 { border-left-color: var(--warn); }
   .move-row.band-3 { border-left-color: var(--warn2); }

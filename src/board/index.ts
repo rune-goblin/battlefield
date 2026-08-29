@@ -33,6 +33,12 @@ export interface BoardView {
   /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
    * wash. Empty clears it. */
   setDragPath(cells: string[]): void;
+  /** The cell a drag has reached that it cannot take, marked with an X. Null clears it. */
+  setBarred(cell: string | null): void;
+  /** A token whose drag traces without the piece leaving its square: the pointer and every
+   * `drag`/`drop` event still run, so the caller can answer the gesture, but a piece that has
+   * nowhere to go never lifts. Null lets every drag lift again. */
+  setAnchored(id: string | null): void;
   /** The shot being aimed: an arc from the shooter's cell over to the target's, drawn above
    * the pieces. Null clears it. */
   setShot(shot: { from: string; to: string } | null): void;
@@ -101,7 +107,7 @@ export interface MountBoardOptions {
  * drives it with `Interaction` — no `PIXI.Application`, canvas creation, or resize handling of
  * its own. This is the seam `createBoardView` builds on below, and the one the Wave 6
  * Foundry-mount prototype (`dev/foundry-mount/`) calls directly to prove the board can be
- * driven without also constructing a second `PIXI.Application`. See `docs/board.md`.
+ * driven without also constructing a second `PIXI.Application`. See `docs/pixi-board.md`.
  */
 export function mountBoardView(opts: MountBoardOptions): BoardView {
   const boardContainer = new BoardContainer();
@@ -212,6 +218,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     return [...seen];
   }
 
+  let anchoredId: string | null = null;
+
   function emit(event: BoardEvent): void {
     for (const handler of handlers.get(event.type) ?? []) (handler as (e: BoardEvent) => void)(event);
   }
@@ -230,7 +238,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     onBrush: (brush) => opts.onBrush?.(brush),
     onClear: () => overlayLayer.setSelected(null),
     onViewport: () => labelLayer.rescale(),
-    onDrag: (id, point) => tokenLayer.setDrag(id, point),
+    onDrag: (id, point) => tokenLayer.setDrag(id, id === anchoredId ? null : point),
   });
 
   return {
@@ -246,6 +254,13 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     setDragPath(cells) {
       overlayLayer.setDragPath(cells);
+    },
+    setBarred(cell) {
+      overlayLayer.setBarred(cell);
+    },
+    setAnchored(id) {
+      anchoredId = id;
+      if (id) tokenLayer.setDrag(null, null);
     },
     setShot(shot) {
       shotLayer.setShot(shot);

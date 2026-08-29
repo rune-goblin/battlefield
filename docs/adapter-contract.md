@@ -2,19 +2,21 @@
 
 Battlefield is playable on its own. Integrations attach at two seams in `src/engine`, and nothing in the engine imports a DOM or a VTT (`tsconfig.engine.json` compiles it with `lib: ["ES2022"]` and no ambient types).
 
+This file is the code seam and nothing else. The rules are in `public/rules.html`, which is the only place they are written down; where a mapping below has a meaning, that document explains it and this one points at it.
+
 ## Input: `UnitCard`
 
 ```ts
-{ name, level, role: 'infantry' | 'cavalry', salvo?: 'close' | 'long' | 'extreme', pace?, fear?, caster?, signals?, tactics?, wounds?, disorder?, overrides?: Partial<UnitStats> }
+{ name, level, role: 'infantry' | 'cavalry', sheet?: TroopSheet, salvo?: 'close' | 'long' | 'extreme', pace?, fear?, caster?, signals?, tactics?, wounds?, disorder?, overrides?: Partial<UnitStats> }
 ```
 
-Roles match the skirmish rules: infantry and cavalry, with siege engines as a separate class (`SiegeEngineCard`, attached to a unit). `deriveStats(card)` fills Strike, Volley (when `salvo` is set), reach, Defence, Will and Perception from the PF2e level tables for the role. An adapter that has real numbers passes them in `overrides`; a fully overridden card is a troop sheet.
+Roles match the skirmish rules: infantry and cavalry, with siege engines as a separate class (`SiegeEngineCard`, attached to a unit or emplaced on a cell of its own). `deriveStats(card)` fills Strike, Volley (when `salvo` is set), reach, Defence, Will, Reflex and Perception from the PF2e level tables for the role. An adapter that has real numbers passes them in `overrides` and the raw statblock in `sheet`; a fully overridden card is a troop sheet. Reflex is read off `sheet` when there is one, and it is the only stat breaking contact consults. Perception is derived and displayed but no rule reads it — there is no initiative roll.
 
-`gradesFor(card)` then derives the seven ladder grades and `qualityFor(card)` the rout threshold, so no troop needs hand-authoring. `signals` is the closed vocabulary of structural cues an importer reads off a statblock — `mounted`, `melee-drill`, `shielded`, `formation`, `magic-ward`, `no-retreat` — and `caster` marks spellcasting. `tactics` stays an optional override that only raises a grade.
+`gradesFor(card)` then derives the five ladder grades — Shoot, Fight, Guard, Rally, Cast, each 1 to 3 — and `qualityFor(card)` the disorder a unit absorbs before it routs, so no troop needs hand-authoring. `signals` is the closed vocabulary of structural cues an importer reads off a statblock — `mounted`, `melee-drill`, `shielded`, `formation`, `magic-ward`, `no-retreat` — and `caster` marks spellcasting. `tactics` stays an optional override that only raises a grade.
 
 | Source | Mapping |
 |---|---|
-| Pathfinder 2e troop actor | `strike = Battle DC − 10`, `volley = Salvo DC − 10`, reach from the Salvo template distance (≤60 close, ≤120 long, else extreme), `defence = AC`, `will`, `perception`, `pace = Speed ≥ 30 or fly`, `fear` from a frightful presence or fear aura, `caster` from a spellcasting entry, a spell item or a Troop Spellcasting action, `signals` from the recurring action names, `wounds` from HP thresholds (¾, ½, ¼), `disorder` from a demoralized counter. |
+| Pathfinder 2e troop actor | `sheet` takes the actor verbatim: AC, HP, the `[Battle]` and `[Salvo]` check DCs, the Salvo template's distance in feet, all three saves, Perception, Speed and `fly`. `fear` comes from a frightful presence or fear aura, `caster` from a spellcasting entry, a spell item or a Troop Spellcasting action, `signals` from the recurring action names, `wounds` from the HP thresholds and `disorder` from a demoralized counter. What each number then becomes — the Battle DC less ten, the reach bands, Speed into cells — is section 2 of the rules, and `derivation(card)` prints it for a GM. |
 | Foundry VTT | Same as above through the actor document; post each `LogEntry.check` as a chat card. |
 | Reignmaker | An `Army` record's linked actor gives the card; `ledBy` gives the side; the defender's hex terrain, its river or lake and its fortification tier give the `BoardSpec` for `generateBoard`, and the GM paints the result; a `SiegeEngine` with `trainArmyId` becomes a `SiegeEngineCard` in that army's `Deployment.engines` (Trooper's siege vehicles map by name onto `ENGINES`). |
 
@@ -23,7 +25,7 @@ Roles match the skirmish rules: infantry and cavalry, with siege engines as a se
 After `phase === 'ended'`, each `Unit` carries `wounds`, `disorder`, `status` (`active`, `destroyed`, `left`) and `side`; `winner` and `endedBy` name the result; `walls.remaining` is what stands. An adapter writes back:
 
 - wounds → hit points (`max`, `⌊¾⌋`, `⌊½⌋`, `⌊¼⌋`, `0`);
-- disorder → frightened / demoralized, one stack per point, keeping the higher value;
+- disorder → frightened / demoralized, one stack per point, keeping the higher value; a unit whose disorder reached its `quality` routed and left the field;
 - `destroyed` → disband; each `EngineState` with `status: 'captured'` changes owner to the capturing side, `abandoned` ones are lost;
 - the loser's surviving units fall back one hex.
 

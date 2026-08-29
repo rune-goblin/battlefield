@@ -589,7 +589,7 @@ Judgment calls taken inside the wave:
   question of whether the numeric bands should move for hex play. That question is *not*
   resolved here — see "Reserved judgment calls" at the top of this file and Wave 1's notes,
   both unchanged by this wave.
-- **`docs/board.md`** documents the `BoardView`/`Grid` interfaces as they actually ended up
+- **`docs/pixi-board.md`** documents the `BoardView`/`Grid` interfaces as they actually ended up
   (`setSelected` reads a cell key not a token id; `setBrush`/`cellAt` exist and aren't in the
   plan's sketch; no `BoardEvent` members for brush/drag state, those are constructor-option
   hooks instead), the layer list, the `mountBoardView` recipe, the Reignmaker lift-and-diff per
@@ -597,7 +597,7 @@ Judgment calls taken inside the wave:
   a porter will actually look for it), and the `public/art/` size note the brief asked for.
 
 No new rule numbers changed and no new engine code — this wave touched `src/board/index.ts`,
-`src/board/layers/TerrainLayer.ts` (signature only), `dev/foundry-mount/`, `docs/board.md`,
+`src/board/layers/TerrainLayer.ts` (signature only), `dev/foundry-mount/`, `docs/pixi-board.md`,
 `docs/design.md`, `public/rules.html`, `README.md`. `npx vitest run` stayed at 79 (no PIXI
 tests, per prototype mode); `npx vite build` stayed clean and the same shape (single JS/CSS
 bundle) before and after. The existing in-app board was screenshotted again after the
@@ -648,7 +648,7 @@ What each one means for hardening, beyond the marker's own comment:
   texture), not likely to need revisiting, but grep will surface it, so it's listed.
 - **`OverlayLayer.ts`'s `setSelected` reading a cell key** — already tracked above and in
   Wave 2/3's notes as a "doesn't need to change, just stop being the only thing it does" note,
-  not a defect; a hardening pass can leave it exactly as documented in `docs/board.md`.
+  not a defect; a hardening pass can leave it exactly as documented in `docs/pixi-board.md`.
 
 Beyond the grep: the plan's own "Prototype mode" section names one more thing a hardening wave
 owns that no `proto:` marker will surface, since it's an absence, not a shortcut —

@@ -199,12 +199,13 @@ export class Token extends PIXI.Container {
     const wounds = model.kind === 'unit' ? model.wounds : 0;
     const disorder = model.kind === 'unit' ? model.disorder : 0;
     const broken = model.kind === 'unit' && wounds >= MAX_WOUNDS - 1;
-    const routed = model.kind === 'unit' && disorder >= model.quality;
+    const shaken = model.kind === 'unit' && disorder >= model.quality;
+    const routed = model.kind === 'unit' && disorder > model.quality;
 
     this.drawShadow(size, theme);
     this.updateArt(model, size);
     this.filters = broken ? [DESATURATE] : null;
-    this.updateFlag(model.side, size, theme, routed);
+    this.updateFlag(model.side, size, theme, shaken);
 
     if (model.kind === 'unit') {
       this.drawDecor(model, size, theme);
@@ -408,9 +409,10 @@ export class Token extends PIXI.Container {
   }
 
   /** The side's flag, top right — the only thing on the piece that says whose it is, now that
-   * the coloured disc is gone. A routed unit flies a colourless one. */
-  private updateFlag(side: Side, size: number, theme: BoardTheme, routed: boolean): void {
-    const colour = routed ? theme.token.routed : side === 'attacker' ? theme.attacker : theme.defender;
+   * the coloured disc is gone. A shaken unit flies a colourless one, and the arrow that comes
+   * with the rout is what separates the two bands on the board. */
+  private updateFlag(side: Side, size: number, theme: BoardTheme, shaken: boolean): void {
+    const colour = shaken ? theme.token.routed : side === 'attacker' ? theme.attacker : theme.defender;
     if (!this.flag) {
       this.flag = new PIXI.Sprite(bannerTexture(colour));
       this.flag.anchor.set(0.5);

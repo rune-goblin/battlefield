@@ -93,8 +93,11 @@ export const unit = (state: BattleState, id: string): Unit => {
   return u;
 };
 
-export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < u.quality;
-export const isRouted = (u: Unit) => u.status === 'active' && u.disorder >= u.quality;
+/** Morale runs one point past Quality. At Quality the unit is shaken and may do nothing but
+ * Rally or withdraw; the point above it is the rout, and Rally is the only way back down. */
+export const isShaken = (u: Unit) => u.status === 'active' && u.disorder >= u.quality;
+export const isRouted = (u: Unit) => u.status === 'active' && u.disorder > u.quality;
+export const isStanding = (u: Unit) => u.status === 'active' && u.disorder <= u.quality;
 export const isWeakened = (u: Unit) => u.wounds >= 2;
 export const isBroken = (u: Unit) => u.wounds >= 3;
 
@@ -339,10 +342,13 @@ function abandonEngines(state: BattleState, u: Unit) {
 
 function addDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (n === 0 || u.status !== 'active') return;
-  const was = isRouted(u);
-  u.disorder = Math.max(0, Math.min(u.quality, u.disorder + n));
-  const routed = !was && isRouted(u) ? ' — routed' : '';
-  log(state, u, `${u.name} is disordered ${u.disorder}/${u.quality} (${n > 0 ? '+' : ''}${n}, ${why})${routed}.`);
+  const wasShaken = isShaken(u);
+  const wasRouted = isRouted(u);
+  // The rout sits one point above Quality, so that is where the cap goes.
+  u.disorder = Math.max(0, Math.min(u.quality + 1, u.disorder + n));
+  const routed = !wasRouted && isRouted(u);
+  const crossed = routed ? ' — routed' : !wasShaken && isShaken(u) ? ' — shaken' : '';
+  log(state, u, `${u.name} is disordered ${u.disorder}/${u.quality} (${n > 0 ? '+' : ''}${n}, ${why})${crossed}.`);
   if (routed) abandonEngines(state, u);
 }
 
@@ -441,6 +447,9 @@ export const moveActionsFor = (u: Unit, feet: number) =>
 export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
   if (u.speed === 0 || u.rooted > 0 || u.actions <= 0 || u.status !== 'active') return out;
+  // A shaken unit leaves a cell by withdrawing and no other way, which is what keeps a rout
+  // running for its own edge instead of striding wherever it likes.
+  if (isShaken(u)) return out;
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = reachable(state.board, u.square, {
@@ -473,6 +482,7 @@ export function movePath(moves: Map<string, MoveReach>, to: string): string[] {
 export function pushReach(state: BattleState, u: Unit): Map<string, PushReach> {
   const out = new Map<string, PushReach>();
   if (u.speed === 0 || u.rooted > 0 || u.actions <= 0 || u.status !== 'active') return out;
+  if (isShaken(u)) return out;
   if (engagedEnemies(state, u).length) return out;
   const affordable = moveReach(state, u);
   const reach = reachable(state.board, u.square, {
@@ -719,8 +729,10 @@ export const spent = (s: Spend) => s.roll + s.push + s.defence + s.distance;
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  // A routed unit is offered nothing but the withdrawal, which is no longer a ladder.
+  // A routed unit is offered nothing but the withdrawal, which is no longer a ladder. A shaken
+  // one is offered Rally beside it — the one act that can bring it back down.
   if (isRouted(u)) return [];
+  if (isShaken(u)) return [offerFor(state, u, 'rally', null)];
   const contact = engagedEnemies(state, u).length > 0;
   const types: LadderType[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
   // A wall is a thing to fight even when nobody defends it.
@@ -798,7 +810,7 @@ function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawActio
 function follow(state: BattleState, u: Unit, escapes: Escape[]) {
   for (const { holder, degree } of escapes) {
     if (degree === 'critical-success' || u.status !== 'active') continue;
-    if (!holder.noRetreat || !isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
+    if (!holder.noRetreat || isShaken(holder) || !isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
     if (isEngaged(state, holder, u)) continue;
     const reach = reachable(state.board, holder.square, {
       budget: holder.speed, flying: holder.flying, occupied: occupiedBy(state, holder),
@@ -890,13 +902,15 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
       // every attack already rolls against.
       const defence = guardDefence(offer.cost + spend.defence);
       u.guard = { defence, rung: rung.index };
-      // Two: this activation, which digging in has already spent, and the next one.
-      if (eff.rooted) u.rooted = 2;
+      // One: the rest of this activation, and no further. `finish` clears it. The Guard
+      // bonus itself dies when the unit acts again, so a root outliving it would be a penalty
+      // charged after the protection it paid for had already lapsed.
+      if (eff.rooted) u.rooted = 1;
       const parts = [
         `+${defence} Defence`,
         eff.blunt ? 'criticals against it land as ordinary hits' : '',
         eff.braces ? 'adjacent allies count as braced' : '',
-        eff.rooted ? 'rooted next activation' : '',
+        eff.rooted ? 'rooted for the rest of the activation' : '',
       ].filter(Boolean);
       log(state, u, `${u.name} ${rung.verb}: ${parts.join(', ')}.`);
       break;
@@ -1036,12 +1050,12 @@ export function offersAt(state: BattleState, target: TargetRef, unitId?: string)
   return out;
 }
 
-/** Withdraw is offered in contact, and to a routed unit whichever way it faces. */
+/** Withdraw is offered in contact, and to a shaken unit whichever way it faces. */
 export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffer | null {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return null;
   const holders = holdersOf(state, u);
-  if (!holders.length && !isRouted(u)) return null;
+  if (!holders.length && !isShaken(u)) return null;
   const extra = Math.max(0, u.actions - BASE_COST);
   const distance = u.speed > 0 && u.rooted === 0;
   return {

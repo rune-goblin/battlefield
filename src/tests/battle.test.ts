@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf,
-  endActivation, isOutflanked, isRouted, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
+  endActivation, isOutflanked, isRouted, isShaken, isStanding, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
   pushReach, rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, notation, parse } from '../engine/board.js';
@@ -202,7 +202,7 @@ describe('reaching above your grade', () => {
   it('success lands on the rung reached for', () => {
     const s = reachGuard(5);
     expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 2 });
-    expect(unit(s, 'u0').rooted).toBe(2);
+    expect(unit(s, 'u0').rooted).toBe(1);
   });
 
   it('failure falls back to the granted rung and still acts', () => {
@@ -225,14 +225,13 @@ describe('reaching above your grade', () => {
     expect(g.rungs.map((r) => r.access)).toEqual(['free', 'free', 'free']);
   });
 
-  it('a unit that digs in may not move for the rest of this activation or the next', () => {
+  it('a unit that digs in may not move for the rest of the activation, and moves freely in the next', () => {
     const { state } = battle([]);
     let s = act(state, { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([5]));
     expect(moves(s, 'u0').size).toBe(0);
     s = endActivation(s);
     for (const id of ['u2', 'u1', 'u3']) s = burn(s, id);
-    expect(moves(s, 'u0').size).toBe(0);
-    expect(moves(endActivation(s), 'u0').size).toBeGreaterThan(0);
+    expect(moves(s, 'u0').size).toBeGreaterThan(0);
   });
 });
 
@@ -1083,19 +1082,42 @@ describe('disorder', () => {
     expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(before - 2);
     expect(defenceOf(state, unit(state, 'u0'), null, false)).toBe(unit(state, 'u0').stats.defence - 2);
   });
-  it('a unit whose disorder reaches its Quality routs and may only withdraw', () => {
+  it('at Quality a unit is shaken: Rally or withdraw, and it still counts as standing', () => {
     const { state } = battle([]);
     const k = unit(state, 'u2');
     expect(k.quality).toBe(5);
     k.disorder = k.quality;
+    expect(isShaken(k)).toBe(true);
+    expect(isRouted(k)).toBe(false);
+    expect(isStanding(k)).toBe(true);
+    expect(types(state, 'u2')).toEqual(['rally']);
+    expect(activation(state, 'u2')!.withdraw).not.toBeNull();
+    expect(moveReach(state, k).size).toBe(0);
+  });
+  it('one point past Quality a unit routs, and disorder stops there', () => {
+    const { state } = battle([]);
+    const k = unit(state, 'u2');
+    k.disorder = k.quality + 1;
     expect(isRouted(k)).toBe(true);
+    expect(isStanding(k)).toBe(false);
     expect(types(state, 'u2')).toEqual([]);
     expect(activation(state, 'u2')!.withdraw).not.toBeNull();
   });
-  it('a routed unit leaves the field at its own edge', () => {
+  it('a shaken unit rallies back below Quality', () => {
+    const { state } = battle([]);
+    const k = unit(state, 'u2');
+    k.disorder = k.quality;
+    const s = act(burn(state, 'u0'), { type: 'rally', rung: 1, unit: 'u2' }, scriptedRng([18]));
+    expect(isShaken(unit(s, 'u2'))).toBe(false);
+  });
+  it('a routed unit leaves the field at its own edge; a shaken one holds', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c8');
-    unit(state, 'u2').disorder = unit(state, 'u2').quality;
+    const shaken = structuredClone(state);
+    unit(shaken, 'u2').disorder = unit(shaken, 'u2').quality;
+    expect(unit(act(burn(shaken, 'u0'), { type: 'withdraw', unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
+
+    unit(state, 'u2').disorder = unit(state, 'u2').quality + 1;
     const s = act(burn(state, 'u0'), { type: 'withdraw', unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
   });

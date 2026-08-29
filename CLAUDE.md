@@ -13,5 +13,11 @@ We are exploring the board and its rules, not shipping. Until this section is re
 ## Layout
 
 - `src/engine/` — pure rules, no DOM, no PIXI. `src/board/` — PIXI board, no Svelte.
-  `src/app/` — Svelte stages. `docs/design.md` is the rules source; `public/rules.html` is
-  the player text; `docs/plans/` holds wave plans.
+  `src/app/` — Svelte stages.
+- `public/rules.html` is the single source of truth for the rules. There is no second rules
+  document: when a rule changes, that file changes with it, and the engine is the arbiter of
+  what it says. `docs/adapter-contract.md` is the integration seam and `docs/pixi-board.md` is
+  the board library's API — code, not rules.
+- `docs/plans/` records how the design got here. Every file in it is history, dated to the wave
+  that wrote it, and none of it is authoritative about current rules; the `*.todos.md` files
+  hold the judgment calls and the open questions for play.

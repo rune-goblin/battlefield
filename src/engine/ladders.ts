@@ -65,7 +65,7 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
   ],
   guard: [
     { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence, like raising shields.', reachDc: 0, guard: { blunt: false, braces: false, rooted: false } },
-    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: '+2 Defence, and critical hits against you land as ordinary ones. Rooted next activation.', reachDc: 0, guard: { blunt: true, braces: false, rooted: true } },
+    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: '+2 Defence, and critical hits against you land as ordinary ones. Rooted for the rest of the activation.', reachDc: 0, guard: { blunt: true, braces: false, rooted: true } },
     { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: '+2 Defence, and adjacent allies count as braced.', reachDc: 2, guard: { blunt: false, braces: true, rooted: false } },
   ],
   rally: [

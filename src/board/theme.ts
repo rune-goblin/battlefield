@@ -21,7 +21,8 @@ export interface BoardTheme {
   overlay: {
     hover: number;
     selected: number;
-    /** The shot arc — the one place on the board colour means danger rather than terrain. */
+    /** The shot arc and the barred X — where colour on the board means danger rather than
+     * terrain. */
     shot: number;
   };
   token: {

@@ -1,10 +1,11 @@
 # The PIXI board
 
-`src/board/` renders the battlefield: an 8×8 square or hex grid, painted terrain, walls,
+`src/board/` renders the battlefield: a nine-by-nine store holding either a square grid or the
+hexagon of sixty-one hexes, painted terrain, walls,
 tokens. It depends on `pixi.js` only — no Svelte, no DOM beyond a canvas element and whatever
 container it is given. `src/app/PixiBoard.svelte` is the only Svelte wrapper; every stage
 (board, paint, place, battle) uses it. This doc describes the API as it actually ended up —
-several names differ from `docs/plans/pixi-board.md`'s aspirational sketch, noted inline — plus
+several names differ from the aspirational sketch in `docs/plans/pixi-board.md`, noted inline — plus
 the mount recipe for embedding the board somewhere this code doesn't own the stage (Foundry,
 Reignmaker), what Wave 6 had to change to make that true, and what was lifted from
 `pf2e-reignmaker` and what changed on the way in.

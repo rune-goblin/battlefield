@@ -1,4 +1,4 @@
-# The app model
+lets giv# The app model
 
 What the client is made of, and where multiplayer will attach. Wave 1 of this plan (the shell
 and its layers) is built; everything under "Not built" is a proposal, in the order it should

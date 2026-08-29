@@ -17,6 +17,10 @@
     highlights?: HighlightGroup[];
     /** The token-drag path trace, unit's own cell first — see `BoardView.setDragPath`. */
     dragPath?: string[];
+    /** The cell a drag has reached that it may not take — see `BoardView.setBarred`. */
+    barred?: string | null;
+    /** A token that traces a drag without leaving its square — see `BoardView.setAnchored`. */
+    anchored?: string | null;
     /** The shot being aimed, shooter's cell to target's — see `BoardView.setShot`. */
     shot?: { from: string; to: string } | null;
     selected?: string | null;
@@ -38,7 +42,7 @@
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], shot = null, selected = null, draggable = null, fill = false, frozen = false,
+    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, selected = null, draggable = null, fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
   }: Props = $props();
 
@@ -86,6 +90,8 @@
     for (const [style, cells] of byStyle) view.setHighlight(cells, style);
   });
   $effect(() => { view?.setDragPath(dragPath); });
+  $effect(() => { view?.setBarred(barred); });
+  $effect(() => { view?.setAnchored(anchored); });
   $effect(() => { view?.setShot(shot); });
   $effect(() => { view?.setSelected(selected); });
   $effect(() => { view?.setDraggable(draggable); });

@@ -33,7 +33,7 @@ primary.addChild(primaryBounds);
 // The board's own pan/zoom container, nested one level inside `primary` — `Interaction` is
 // its only writer, so a wheel-zoom or drag-pan in this demo moves the board, not Foundry's
 // own primary container. `mountBoardView` doesn't create this itself: `BoardApp` owns an
-// equivalent container for the in-app board (see `docs/board.md`), and a host is free to
+// equivalent container for the in-app board (see `docs/pixi-board.md`), and a host is free to
 // reuse whatever pan/zoom container it already has instead of this one.
 const boardViewport = new PIXI.Container();
 primary.addChild(boardViewport);

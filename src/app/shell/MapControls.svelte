@@ -48,13 +48,13 @@
 <style>
   /* Parked in the map's bottom-right corner, which moves when a dock or the strip does. */
   .mapcontrols {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     position: absolute;
     right: calc(var(--inset-right, 0px) + .85rem);
     bottom: calc(var(--inset-bottom, 0px) + .85rem);
     pointer-events: auto;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
     border: 1px solid var(--rule);
     border-radius: 9px;
     background: color-mix(in srgb, var(--card) 92%, transparent);

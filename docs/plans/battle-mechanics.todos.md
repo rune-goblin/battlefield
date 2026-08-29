@@ -1005,3 +1005,197 @@ the repo; state written straight into `battlefield.v3` via `page.evaluate` impor
   strictly the safer buy at every rung — it never whiffs the way the roll dial can. Watch
   whether the roll dial gets picked at all once players notice this, which would just relocate
   the "dead dial" problem this wave was meant to close.
+
+### Blocked-move feedback
+
+A rooted piece dragged nowhere and the board said nothing: `moveReach` returns an empty map for
+a root, Speed 0, a spent last action or a boxed-in square, and the Move card then read "0 cells
+reachable" four times with no reason, exactly the way contact used to before `holders`. Battle's
+`stuck` derivation names the reason once and both surfaces read it — a tag on the Move head with
+a sentence in the card, and a HUD badge raised by a drag that finds no legal cell. Judgment call:
+the drag still runs and the token still snaps back. Refusing the drag outright would be quieter
+but would also teach nothing, and the snap-back is the gesture the answer hangs off.
+
+The answer is `no.webp` (Mark's, matching the action-icon set) drawn in the cell the drag has
+pulled to (`OverlayLayer.setBarred`), never on the piece's own square — an X under the token
+would cover the thing it is about — plus the one-line reason in the drag HUD. It is the first
+sprite `OverlayLayer` owns: `redraw` throws its Graphics away on every pointer move, so the
+sprite is held across the clear and re-added rather than reloaded. `ActionIcon` gained `'no'`,
+which names no action at all — the odd member of a union that otherwise maps to ladders. Contact is in `stuck` too, so a held unit dragged anywhere but
+a Withdraw target gets the same X.
+
+**A piece with nowhere to go does not lift.** `BoardView.setAnchored(id)` keeps the token on its
+square while the drag still tracks and still emits `drag`/`drop`, so the X follows the pointer
+and the piece never mimes a move it cannot make. It anchors only when no drop could land at all
+— `stuck`, plus no charge and no Withdraw target — since a held unit still drags to its escape
+cells and a rooted one might still charge.
+
+**The X also marks ground an ordinary drag cannot take.** Past every action, walled off,
+impassable, or an ally standing there: the arrow keeps the last legal cell it traced and the X
+sits under the pointer, so the refusal names the ground refused rather than the whole gesture.
+The piece's own square is exempt, and enemies are the `dragTarget` prop's business, not the
+overlay's.
+
+**The reason does not go in the combat log.** Mark asked for that; `log` lives on `BattleState`
+(`types.ts:285`) and Undo rewinds whole states, so a refused gesture in the log would either
+enter the undo history or be silently rewound by it. The log is what happened in the battle, and
+a drag that took no action did not happen. If the wording wants to live in the left column
+instead of the corner, it needs a UI-only notice list in `Battle.svelte`, not `state.log`.
+
+### The root no longer outlives its Guard
+
+Dig in set `rooted = 2`, which `finish` walked down over two activations: the rest of the
+digging one and the whole next one. `begin` clears `u.guard`, so the Defence the root paid for
+was already gone by the time the second activation started — the unit spent a whole turn nailed
+down with nothing to show for it, which is Mark's call and plainly right. Now `rooted = 1`: the
+root ends with the activation that bought it, while the +Defence still stands through the
+enemy's turn, the way every Guard rung does.
+
+This makes Dig in cheaper against Brace at the same action count, so the live choice the last
+wave built (Brace +6 no root, against Dig in +6 with the crit downgrade) tilts toward Dig in for
+any Guard-2 troop that was going to stand still anyway. Watch whether Brace has a reason to
+exist at three actions; if not, the crit downgrade is what needs a price, not movement.
+
+### A drag into a piece is a melee
+
+Dragging the active token onto an enemy used to fall through to the general aim popup, which
+groups every verb that reaches that target — so a drag onto a distant enemy opened Shoot and
+drew its arc. A drag is the unit *going there*, so it can only ever mean melee. `onBoardDrop`
+now reads an enemy cell itself: the charge that closes on it if one stands, otherwise the Fight
+already in contact (`aimAt(..., 'fight')`), and nothing at all when neither does. Shooting is
+now reachable only by touching a target or taking Shoot off the ring — Mark's call, and it also
+makes the drag's meaning single.
+
+The target wears the answer while the drag is live: crossed swords (`attack`) when the drop can
+reach a melee, `no` when it cannot. Judgment call: the mark rides the piece as a prop rather
+than going through `OverlayLayer.setBarred`, because the overlay draws under `TokenLayer` and an
+X on an occupied cell would sit behind the token it is about. `blockedCell` keeps the empty
+ground it already had.
+
+Second judgment call: hovering an enemy leaves the drag trace where it stalled instead of
+clearing it, so the arrow still says how far the drag did get while the badge says the piece is
+out of reach. Only a charge redraws the route, and it draws it to the approach cell.
+
+The "spend the move, then act to attack" case is already the charge: `doCharge` is the movement
+plus one action for the melee, and `chargeTargets` only offers what the action count affords. A
+unit in contact needs no ground crossed, which is why the fallback is Fight rather than a
+synthesised move-then-fight.
+
+## Rules-document notes
+
+`public/rules.html` was rewritten against the engine as it stands (five ladders, grades and
+reaches, the four dials, disorder against Quality, the hexagon). Writing it turned up four
+places where the engine and its own presentation disagree, or where a rule has quietly gone
+inert. None is a bug worth a wave on its own; each is a decision waiting to be made.
+
+- **Weakened does not actually shrink shooting range.** `reachOf` drops a Weakened unit's band
+  by one and `Battle.svelte` prints that on the unit card, but nothing reads it: the band a shot
+  can carry comes from the Shoot rung, and the granted rung comes from `shootGrade`, which
+  consults `grades.shoot` and the crewed engine and never the wound count. Either wounds should
+  cap the Shoot grade or `reachOf` should go. The rules text says only "−2 to Strike and Volley",
+  which is what the engine does.
+- **Broken carries nothing.** At 3 wounds `isBroken` sets a label in the log and is read nowhere
+  else. Under the old rules it stopped an Advance and forced a rout check every round. Disorder
+  does the morale work now, so the question is whether the third wound should cost anything of
+  its own or stay a warning light. The rules text describes it as the latter.
+- **Perception is dead.** `deriveStats` fills it and `Place.svelte` shows it, but the alternating
+  activation order removed the only rule that read it. Keep it as sheet colour or drop it from
+  `UnitStats`.
+- **`UnitCard.pace` is dead wherever a sheet exists.** `squaresPerAction` reads `sheet.speed`
+  and only falls back to `pace` when there is no sheet, so Troll Marauders' `pace: true` against
+  a 30 ft Speed resolves to one cell an action. The importer should stop writing the field for
+  sheeted cards, or `paceOf` should say which one wins.
+
+`docs/design.md` was then deleted outright — see the two sections at the end of this file for
+what came out of it. `README.md`, `CLAUDE.md`, `docs/adapter-contract.md` and `docs/pixi-board.md` were
+brought in line, and `rules.html` is now the only document that states a rule.
+
+### Open rule questions, carried over from `docs/design.md`
+
+`docs/design.md` is gone: its rules were superseded, and what survived went into
+`public/rules.html` — the purpose, the principles, the lineage and the kingdom's own two
+aftermath checks. These are the questions it left open that are still open. Two of its seven
+are settled and dropped: a unit may not move diagonally, because the board is hexes and there is
+no diagonal; and Pace is a Speed threshold, not a tag, though the dead `UnitCard.pace` field
+above is the loose end that leaves.
+
+- Whether shooting should be limited per battle, the way Kingmaker's five shots are, to reward
+  closing. Nothing counts ammunition today.
+- Whether a split army's halves should rejoin at average wounds, or whether splitting should
+  cost upkeep so it is a real trade rather than free.
+- Whether height should also shorten movement downhill, or only charge for the climb.
+- Whether a commander, when commanders arrive, grants a free action, a rung granted outright,
+  or a once-per-battle bonus. The old answer — a second reaction — died with reactions.
+- Whether the last standing unit of a side at 3 wounds should rout on its own at the end of the
+  round. This is the same question as "Broken carries nothing" above, asked from the other end.
+
+### Playtest plan, carried over from `docs/design.md`
+
+Four paper battles, each finishing inside six rounds and producing a result a GM accepts:
+
+1. The worked battle in `public/rules.html`, which is a real engine transcript and should
+   reproduce exactly on its seed.
+2. An even three against three at equal level on a hills board, with two split units.
+3. A river crossing with two fords, through swamp.
+4. A level-4 garrison behind seven wall segments against a level-8 attacker with a catapult.
+
+Every DC used must exist on a troop in `data/troops/`.
+
+## Shaken and routed notes — 2026-08-29
+
+Disorder used to end at Quality: reaching it routed the unit outright, and since Rally is the
+only thing that clears disorder and a routed unit is offered no ladder at all, a unit that
+routed could never bring itself back. Troll Marauders (Quality 2) hit that wall in two bad
+exchanges and were effectively removed from play with actions still on the clock. Morale now
+runs one point further and splits in two:
+
+- **Shaken**, at `disorder === quality`. Rally or withdraw, nothing else. Still counts as
+  standing, holds its hex, does not run homeward, does not leave at its own edge.
+- **Routed**, at `disorder > quality`. The withdrawal alone, homeward only, leaves the field at
+  its edge, and no longer standing. Disorder caps at `quality + 1`.
+
+`isBroken` was already the wound band (wounds >= 3), so the morale band is `isShaken`. The name
+comes off the lineage row in `rules.html`, which already called the old two states shaken and
+routed.
+
+### Judgment calls
+
+- **A shaken unit gets Rally and nothing else** — not Guard as well, and not the full menu.
+  Guard would let a shaken unit hunker and stall; the point of the band is that reforming costs
+  the whole activation. Asked and confirmed with the user before writing it.
+- **Shaken does not run homeward.** The homeward restriction and the rout arrow now mark the
+  top band alone, so the arrow appearing means "this one is leaving" rather than "this one is
+  in trouble". The colourless flag marks shaken, so the two bands still read apart on the board.
+- **Neither band may Stride.** `moveReach` and `pushReach` never checked the rout at all, so a
+  routed unit could stride in any direction while `withdrawTargets` sent its *withdrawal*
+  homeward — the rules said "runs for its own edge and nowhere else" and the engine did not
+  enforce it. Both are now closed to a shaken unit, which makes the withdrawal the only way
+  either band leaves a cell. This was a live bug, not a consequence of the split.
+- **Shaken counts as standing**, so a side reduced to shaken units has not lost and the
+  half-army check still disorders them. Routed does not count, which is what still ends a
+  battle.
+- **A `no-retreat` holder that is shaken no longer gives chase.** It could not otherwise act;
+  letting it follow would have been the one thing a shaken unit does off its own turn.
+- Disorder caps at `quality + 1` rather than running unbounded, so a routed unit cannot be
+  driven deeper and an ally's Rally always has a reachable ledge to pull it back to.
+
+### The worked battle in `rules.html` is now hand-written past round 3
+
+The transcript used to end in round 3, when the trolls took their second disorder and routed.
+Under the split they are only shaken there, still standing, so the battle runs on. Rounds 4-6
+are written by hand to show the recovery — the trolls spend a whole activation rallying back to
+steady, close, and press the infantry into a rout of its own — and the attacker now loses.
+**These rounds are not verified engine output.** The playtest plan below says the worked battle
+should reproduce exactly on its seed; that is now false for rounds 4-6 and should be the first
+thing replayed against the engine.
+
+### Rule questions for play
+
+- Whether a shaken unit should be able to Guard after all. It cannot brace while it reforms,
+  which makes a shaken unit in contact very soft — it eats a full exchange at -Quality on its
+  Defence with no way to raise it.
+- Whether an ally's Rally should be able to lift a unit out of the rout band at all, or whether
+  the rout should be one-way and only the shaken band recoverable. Today Rally and Inspire both
+  reach a routed unit, which is the only thing that makes the top band survivable.
+- Whether a shaken unit should be forced to withdraw when it has no Rally worth making, rather
+  than being allowed to stand still and do nothing.

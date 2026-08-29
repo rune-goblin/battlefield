@@ -1,7 +1,7 @@
 {
   "name": "battlefield",
   "version": "0.1.0",
-  "description": "A fast abstract battle game for armies: seven steps, two actions, four wounds.",
+  "description": "A fast abstract battle game for armies: sixty-one hexes, three actions, four wounds.",
   "type": "module",
   "license": "MIT",
   "author": "Mark Pearce",

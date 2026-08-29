@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import type { Grid } from '../../engine/index.js';
+import { actionIconUrl } from '../art.js';
 import type { BoardTheme, HighlightStyle } from '../theme.js';
 
 export type { HighlightStyle } from '../theme.js';
@@ -30,6 +31,10 @@ const HEAD_INSET = 0.2;
 const HEAD_LENGTH = 0.22;
 const HEAD_HALF_WIDTH = 0.13;
 
+/** The barred X's box, as a fraction of cell size. It marks the whole cell, so it sits nearer
+ * the shot's bullseye than the badge-sized props hung off a piece. */
+const BAR_RATIO = 0.52;
+
 /**
  * Hover cell, selection ring, the highlight washes, and a paint preview — all cell-shaped, so
  * they share one draw pass keyed off the current `Grid`/cell size.
@@ -39,6 +44,7 @@ export class OverlayLayer {
   private grid: Grid | null = null;
   private size = 0;
   private theme: BoardTheme;
+  private destroyed = false;
 
   private readonly highlights = new Map<HighlightStyle, Set<string>>();
   private hoverCell: string | null = null;
@@ -48,6 +54,13 @@ export class OverlayLayer {
   /** The drag-to-move trace, unit's own cell first — a thin trail on top of the highlight
    * wash so a fanned-out hex reach still reads as one path rather than a region. */
   private dragPath: string[] = [];
+  /** The cell a drag has reached that it may not take, marked where the arrowhead would have
+   * gone: the refusal belongs where the player is pulling, not on the piece they grabbed. */
+  private barredCell: string | null = null;
+  /** Every other mark this layer makes is Graphics, thrown away and redrawn. The X is a
+   * sprite, so it is held across redraws rather than reloaded on every pointer move. */
+  private barredSprite: PIXI.Sprite | null = null;
+  private barredLoading = false;
 
   constructor(container: PIXI.Container, theme: BoardTheme) {
     this.container = container;
@@ -95,8 +108,16 @@ export class OverlayLayer {
     this.redraw();
   }
 
+  setBarred(cell: string | null): void {
+    if (cell === this.barredCell) return;
+    this.barredCell = cell;
+    this.redraw();
+  }
+
   private redraw(): void {
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    for (const child of this.container.removeChildren()) {
+      if (child !== this.barredSprite) child.destroy({ children: true });
+    }
     if (!this.grid || !this.size) return;
     const g = new PIXI.Graphics();
     g.name = 'Overlay';
@@ -121,6 +142,39 @@ export class OverlayLayer {
     if (this.selectedCell) this.strokeCell(g, this.selectedCell, this.theme.overlay.selected, 1, 3);
 
     this.container.addChild(g);
+    this.drawBarred();
+  }
+
+  private drawBarred(): void {
+    const cell = this.barredCell ? this.grid!.parse(this.barredCell) : null;
+    if (!cell || !this.grid!.inBounds(cell)) {
+      if (this.barredSprite) this.barredSprite.visible = false;
+      return;
+    }
+    if (!this.barredSprite) {
+      this.loadBarred();
+      return;
+    }
+    const { x, y } = this.grid!.center(cell, this.size);
+    const { width, height } = this.barredSprite.texture;
+    this.barredSprite.scale.set((this.size * BAR_RATIO) / Math.max(width, height, 1));
+    this.barredSprite.position.set(x, y);
+    this.barredSprite.visible = true;
+    this.container.addChild(this.barredSprite);
+  }
+
+  private loadBarred(): void {
+    if (this.barredLoading) return;
+    this.barredLoading = true;
+    PIXI.Assets.load<PIXI.Texture>(actionIconUrl('no'))
+      .then((texture) => {
+        // The layer may have been destroyed, or the drag released, while the texture loaded.
+        if (this.destroyed) return;
+        this.barredSprite = new PIXI.Sprite(texture);
+        this.barredSprite.anchor.set(0.5);
+        this.redraw();
+      })
+      .catch(() => { this.barredLoading = false; });
   }
 
   private fillCell(g: PIXI.Graphics, key: string, colour: number, alpha: number): void {
@@ -175,6 +229,8 @@ export class OverlayLayer {
   }
 
   destroy(): void {
+    this.destroyed = true;
     this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.barredSprite = null;
   }
 }

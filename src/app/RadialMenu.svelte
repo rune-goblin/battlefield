@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cubicIn } from 'svelte/easing';
+  import type { TransitionConfig } from 'svelte/transition';
 
   interface Item {
     key: string;
@@ -44,7 +45,7 @@
 
   // Closing is the one piece running backwards: scaling the ring carries its icons back down
   // their spokes with it. `t` falls 1 -> 0, so 0 is shut on the piece centre.
-  const zip = () => ({
+  const zip = (_node: Element): TransitionConfig => ({
     duration: reduced() ? 0 : 170,
     easing: cubicIn,
     css: (t: number) => `transform: scale(${0.06 + 0.94 * t}); opacity: ${t};`,
