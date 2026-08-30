@@ -1,5 +1,5 @@
 import {
-  act, at, COMBATANTS, createBattle, endActivation as endActivationEngine, ENGINES, generateBoard, parse, randomRng, select,
+  act, at, COMBATANTS, createBattle, endActivation as endActivationEngine, ENGINES, generateBoard, OFFICIAL, parse, randomRng, select,
   type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
 } from '../engine/index.js';
 
@@ -23,7 +23,7 @@ export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker',
 const randomSeed = () => Math.floor(Math.random() * 1e9);
 
 function defaultSetup(): Setup {
-  const pick = (name: string) => COMBATANTS.find((c) => c.name === name)!;
+  const pick = (name: string) => [...COMBATANTS, ...OFFICIAL].find((c) => c.name === name)!;
   return {
     spec: { base: 'plains', feature: 'none', construction: null, seed: randomSeed() },
     board: null,
@@ -31,8 +31,12 @@ function defaultSetup(): Setup {
     units: [
       { card: pick('Line Infantry'), side: 'attacker', square: 'c2', engines: [] },
       { card: pick('Heavy Cavalry'), side: 'attacker', square: 'e2', engines: [] },
+      // Apprentice Magician Clique (L5) sits between Line Infantry (L6) and Heavy Cavalry (L7).
+      { card: pick('Apprentice Magician Clique'), side: 'attacker', square: 'd2', engines: [] },
       { card: pick('Kobold Warriors'), side: 'defender', square: 'c7', engines: [] },
       { card: pick('Troll Marauders'), side: 'defender', square: 'e7', engines: [] },
+      // Mitflit Vermin Cavalry (L4) sits between Kobold Warriors (L3) and Troll Marauders (L8).
+      { card: pick('Mitflit Vermin Cavalry'), side: 'defender', square: 'd7', engines: [] },
     ],
   };
 }
@@ -102,6 +106,16 @@ export function next() {
 export function back() {
   const i = STAGES.indexOf(game.stage);
   if (i > 0) { game.stage = STAGES[i - 1]; save(); }
+}
+
+/** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach — the rail's
+ * step buttons use this so switching between board/paint/attackers/defenders during setup
+ * doesn't cost a walk back through every stage in between. `battle` isn't a valid target:
+ * it's reached only through `startBattle`, once both sides are ready. */
+export function goToStage(stage: Stage) {
+  if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
+  game.stage = stage;
+  save();
 }
 
 export function startBattle() {

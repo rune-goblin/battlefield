@@ -19,7 +19,7 @@ export class BoardApp {
     this.app = new PIXI.Application({
       view: canvas,
       resizeTo: container,
-      backgroundColor: this.themeValue.background,
+      backgroundColor: this.themeValue.canvas,
       antialias: true,
       // proto: cap at 2x so a 5K display doesn't blow the canvas budget; autoDensity keeps
       // the CSS size independent of the backing (device-pixel) resolution.
@@ -48,7 +48,7 @@ export class BoardApp {
 
   setTheme(theme: BoardTheme): void {
     this.themeValue = theme;
-    this.app.renderer.background.color = theme.background;
+    this.app.renderer.background.color = theme.canvas;
   }
 
   resize(): void {

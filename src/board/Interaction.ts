@@ -247,9 +247,21 @@ export class Interaction {
   private onContextMenu = (e: Event): void => { e.preventDefault(); };
 
   private onPointerDown = (e: PointerEvent): void => {
-    if (this.frozen) return;
-    this.o.canvas.focus({ preventScroll: true });
     const screen = this.screenOf(e);
+    // A frozen board still lets the middle button pan — the ring tracks the board's screen
+    // position live, so dragging a menu that opened offscreen back into view is safe even
+    // though every other gesture (hit-testing, drag, paint) stays blocked under it.
+    if (this.frozen) {
+      if (e.button !== 1) return;
+      e.preventDefault();
+      this.origin = screen;
+      this.lastScreen = screen;
+      this.o.canvas.setPointerCapture(e.pointerId);
+      this.gesture = { kind: 'pan' };
+      this.applyCursor();
+      return;
+    }
+    this.o.canvas.focus({ preventScroll: true });
     this.pointerInside = true;
     this.origin = screen;
     this.lastScreen = screen;
@@ -291,19 +303,20 @@ export class Interaction {
   };
 
   private onPointerMove = (e: PointerEvent): void => {
-    if (this.frozen) return;
-    const screen = this.screenOf(e);
-    this.pointerInside = true;
-    const moved = Math.hypot(screen.x - this.origin.x, screen.y - this.origin.y);
-
     if (this.gesture.kind === 'pan') {
+      const screen = this.screenOf(e);
       this.o.viewport.x += screen.x - this.lastScreen.x;
       this.o.viewport.y += screen.y - this.lastScreen.y;
       this.lastScreen = screen;
+      this.pointerInside = true;
       this.clamp();
       this.viewportChanged();
       return;
     }
+    if (this.frozen) return;
+    const screen = this.screenOf(e);
+    this.pointerInside = true;
+    const moved = Math.hypot(screen.x - this.origin.x, screen.y - this.origin.y);
     this.lastScreen = screen;
 
     if (this.gesture.kind === 'paint') {
@@ -327,7 +340,7 @@ export class Interaction {
   };
 
   private onPointerUp = (e: PointerEvent): void => {
-    if (this.frozen) return;
+    if (this.frozen && this.gesture.kind !== 'pan') return;
     const screen = this.screenOf(e);
     const gesture = this.gesture;
     this.gesture = { kind: 'none' };

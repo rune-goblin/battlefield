@@ -1,22 +1,25 @@
 import { cardTraits, deriveStats, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
+import { treesForTradition, type Tree } from './magic.js';
 import { saveBonus, type Tier } from './tables.js';
 
 // Two types have no ladder. A Move action spends the troop's Speed in feet, and taking it
 // twice or three times is what March and Charge used to name. A Withdraw rolls the escaping
 // unit's Reflex against whoever is holding it, and the four degrees say what Scatter, Break
-// off and Fighting retreat used to name — see `doWithdraw` in `battle.ts`.
+// off and Fighting retreat used to name — see `doWithdraw` in `battle.ts`. Cast keeps its slot
+// in `LadderType` (the offer menu still groups by it) but carries no grade of its own: Tier 1
+// of every tree a caster's tradition grants is free, and its own push pool decides how far a
+// push reaches — see `magic.ts` and `doCast` in `battle.ts`.
 export type LadderType = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
 export type Grade = 1 | 2 | 3;
-export type Grades = Record<LadderType, Grade>;
+export type Grades = Record<Exclude<LadderType, 'cast'>, Grade>;
 
 export type RungId =
   | 'fire' | 'aim' | 'snipe'
   | 'strike' | 'press' | 'overrun'
   | 'brace' | 'dig-in' | 'shieldwall'
-  | 'steady' | 'rally' | 'inspire'
-  | 'minor' | 'major' | 'grand';
+  | 'steady' | 'rally' | 'inspire';
 
 export interface FightEffect { disorderOnLoss: number; takeGround: boolean }
 /** A Guard's Defence comes from the actions committed to it, never from the rung. The rung
@@ -33,7 +36,6 @@ export interface GuardEffect { blunt: boolean; braces: boolean; rooted: boolean 
  * troop beside it, which is the whole role a weak unit is meant to have in a fight. */
 export type RallyScope = 'self' | 'adjacent' | 'nearby';
 export interface RallyEffect { scope: RallyScope; heart: RallyScope }
-export interface CastEffect { scope: number }
 
 export interface Rung {
   id: RungId;
@@ -47,10 +49,9 @@ export interface Rung {
   fight?: FightEffect;
   guard?: GuardEffect;
   rally?: RallyEffect;
-  cast?: CastEffect;
 }
 
-export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
+export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = {
   // A troop's effective range (its Reach) is the band Fire reaches for free. Aim and Snipe do
   // not climb toward a fixed far band — they buy one, then two bands of swing away from that
   // effective range, in whichever direction the target actually is. See `shootHome` and its
@@ -75,31 +76,16 @@ export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
     { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1 and takes heart.', reachDc: 0, rally: { scope: 'adjacent', heart: 'adjacent' } },
     { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1 and takes heart.', reachDc: 2, rally: { scope: 'nearby', heart: 'nearby' } },
   ],
-  cast: [
-    { id: 'minor', verb: 'casts', type: 'cast', index: 1, label: 'Minor', detail: 'Yourself.', reachDc: 0, cast: { scope: 0 } },
-    { id: 'major', verb: 'casts', type: 'cast', index: 2, label: 'Major', detail: 'Yourself or an adjacent unit.', reachDc: 0, cast: { scope: 1 } },
-    { id: 'grand', verb: 'casts', type: 'cast', index: 3, label: 'Grand', detail: 'Anywhere in sight.', reachDc: 2, cast: { scope: Infinity } },
-  ],
 };
 
-export const rungOf = (type: LadderType, index: Grade): Rung => LADDERS[type][index - 1];
+export const rungOf = (type: Exclude<LadderType, 'cast'>, index: Grade): Rung => LADDERS[type][index - 1];
 
 /** Which types have a roll of their own for a committed action to weight. Guard has none: a
- * committed action there feeds the push check or Defence instead. */
+ * committed action there feeds the push check or Defence instead. Cast always does — every
+ * push is a roll — so it reads `true` here too, even though it shares no other machinery with
+ * `rungOf`'s four ladders. */
 export const OWN_ROLL: Record<LadderType, boolean> = {
   shoot: true, fight: true, guard: false, rally: true, cast: true,
-};
-
-export type SpellId = 'blast' | 'ward' | 'mend' | 'bless' | 'compel';
-
-export interface Spell { id: SpellId; label: string; detail: string; at: 'enemy' | 'ally'; rolls: boolean }
-
-export const SPELLS: Record<SpellId, Spell> = {
-  blast: { id: 'blast', label: 'Blast', detail: 'A magical attack that ignores cover.', at: 'enemy', rolls: true },
-  ward: { id: 'ward', label: 'Ward', detail: '+2 Defence until the target acts.', at: 'ally', rolls: false },
-  mend: { id: 'mend', label: 'Mend', detail: 'Remove one wound.', at: 'ally', rolls: false },
-  bless: { id: 'bless', label: 'Bless', detail: "The target's next action climbs one rung free.", at: 'ally', rolls: false },
-  compel: { id: 'compel', label: 'Compel', detail: 'The target may not reach above its grade on its next activation.', at: 'enemy', rolls: false },
 };
 
 // Grades come from the statblock, never from a curated list. Two measurements over all 162
@@ -134,7 +120,7 @@ const cap = (n: number): Grade => Math.max(1, Math.min(3, n)) as Grade;
 
 // A tactic is a hand-authored hint that a statblock's numbers do not carry. Every grade below
 // is already decided without one.
-const TACTIC_GRADE: Partial<Record<Tactic, [LadderType, Grade]>> = {
+const TACTIC_GRADE: Partial<Record<Tactic, [Exclude<LadderType, 'cast'>, Grade]>> = {
   'covering-fire': ['shoot', 3],
   'reactive-attack': ['fight', 3],
   'dirty-fighting': ['fight', 3],
@@ -147,7 +133,7 @@ const TACTIC_GRADE: Partial<Record<Tactic, [LadderType, Grade]>> = {
 
 export function gradesFor(card: UnitCard): Grades {
   const stats = deriveStats(card);
-  const { fear, tactics, caster, signals } = cardTraits(card);
+  const { fear, tactics, signals } = cardTraits(card);
   const l = card.level;
   const has = (s: Signal) => signals.includes(s);
   const willB = willBand(stats, l);
@@ -159,7 +145,6 @@ export function gradesFor(card: UnitCard): Grades {
     fight: stats.strike === null ? 1 : has('melee-drill') || fear ? 3 : 2,
     guard: cap(1 + (has('formation') ? 1 : 0) + (has('shielded') || has('magic-ward') ? 1 : 0)),
     rally: atLeast(willB, 'high') ? 3 : atLeast(willB, 'moderate') ? 2 : 1,
-    cast: caster ? (l >= 15 ? 3 : l >= 8 ? 2 : 1) : 1,
   };
 
   for (const t of tactics) {
@@ -169,19 +154,21 @@ export function gradesFor(card: UnitCard): Grades {
   return grades;
 }
 
-// proto: troop statblocks name a spellcasting entry but not what it casts, so a caster knows
-// the whole menu and its Cast grade decides how far the spell carries. Three of the tactics are
-// the same trick by another name, and grant their one spell to a troop with no magic at all.
-const TACTIC_SPELL: Partial<Record<Tactic, SpellId>> = {
-  'battlefield-medicine': 'mend',
-  'defend-allies': 'ward',
-  'demoralize': 'compel',
+// A tactic grants its tree's Tier 1 as a fixed, untiered effect to a troop with no magic of
+// its own (section 11) — it never unlocks a push, so which tradition would have gated it is
+// moot. See `resolveTree` in battle.ts for the fixed tier each one grants.
+export const TACTIC_TREE: Partial<Record<Tactic, Tree>> = {
+  'battlefield-medicine': 'healing',
+  'defend-allies': 'defense',
+  'demoralize': 'controlling',
 };
 
-export function spellsFor(card: UnitCard): SpellId[] {
-  const { tactics, caster } = cardTraits(card);
-  if (caster) return Object.keys(SPELLS) as SpellId[];
-  const out = new Set<SpellId>();
-  for (const t of tactics) { const s = TACTIC_SPELL[t]; if (s) out.add(s); }
+/** Every tree this card can cast at all: a caster's whole tradition, or the one tree a
+ * non-caster's tactic grants. */
+export function treesFor(card: UnitCard): Tree[] {
+  const { tactics, caster, tradition } = cardTraits(card);
+  if (caster) return treesForTradition(tradition);
+  const out = new Set<Tree>();
+  for (const t of tactics) { const tree = TACTIC_TREE[t]; if (tree) out.add(tree); }
   return [...out];
 }

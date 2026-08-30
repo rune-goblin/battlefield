@@ -3,12 +3,16 @@ import {
   type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { pathTo, reachable, stepFeet } from './path.js';
+import { CELL_FEET, pathTo, reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, spellsFor, SPELLS,
-  type Grade, type LadderType, type Rung, type SpellId,
+  gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, treesFor,
+  type Grade, type LadderType, type Rung,
 } from './ladders.js';
+import {
+  bandOut, castPoolFor, castRungOf, TRADITION_TIERS, TREE_LABEL, TREE_RANGE, TREE_ROLLS,
+  TREE_TARGET, type CastAxis, type CastBand, type CastTier, type Tree,
+} from './magic.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
 import {
@@ -52,13 +56,23 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     return {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
-      grades: gradesFor(d.card), spells: spellsFor(d.card), quality: qualityFor(d.card),
+      grades: gradesFor(d.card),
+      tradition: traits.caster ? traits.tradition : null,
+      trees: treesFor(d.card),
+      castPool: traits.caster ? castPoolFor(d.card.level) : 0,
+      quality: qualityFor(d.card),
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
       mounted: traits.signals.includes('mounted'), noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e) => engineState(e, d.side, sq, false)),
       square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
-      guard: null, rooted: 0, exposed: false, warded: false, blessed: false, heartened: false, compelled: false,
+      guard: null, rooted: 0, exposed: false, heartened: false, compelled: false,
+      defense: { bonus: 0, noWoundDisorder: false, damageReduction: 0 },
+      offense: { bonus: 0, damage: 0, noStrikeBack: false },
+      movementBuff: { bonusFeet: 0, flies: false },
+      control: { movementPenaltyFeet: 0, actionPenalty: false },
+      lingering: null,
+      nextSaveBonus: 0,
     };
   });
   const emplaced = (setup.engines ?? []).map((e) => {
@@ -191,7 +205,7 @@ const auraOn = (state: BattleState, u: Unit) => state.units.some((a) =>
 
 export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false): number {
   // Circumstance bonuses never stack; the highest applies.
-  let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target), target.warded ? 2 : 0);
+  let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target), target.defense.bonus);
   const downhill = attacker ? elevation(state, attacker) > elevation(state, target) : false;
   if (vsVolley && !ignoresCover && square(state, target).terrain === 'forest' && !downhill) circumstance = Math.max(circumstance, 1);
   let penalty = target.disorder;
@@ -261,6 +275,7 @@ export const HEART_BONUS = ACTION_BONUS;
 export function strikeModifier(state: BattleState, u: Unit, target: Unit): number {
   let m = u.stats.strike ?? 0;
   if (u.heartened) m += HEART_BONUS;
+  if (u.offense.bonus) m += u.offense.bonus;
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   if (square(state, u).terrain === 'swamp' || square(state, u).terrain === 'shallows') m -= 1;
@@ -273,6 +288,7 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
   const e = crewedArtillery(state, u);
   let m = e ? e.launch : (u.stats.volley ?? 0);
   if (u.heartened) m += HEART_BONUS;
+  if (u.offense.bonus) m += u.offense.bonus;
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   if (!e && volleyRank(state, u, target) >= 4) m -= 2;
@@ -282,12 +298,32 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
   return m;
 }
 
-/** The DC a unit rolls against to reach one rung above its grade. */
-export function reachDcFor(u: Unit, type: LadderType, rung: Grade): number {
-  return levelDc(u.level) + rungOf(type, rung).reachDc;
+/** The DC a unit rolls against to reach one rung above its grade. `tree` is required, and
+ * `rungOf` never consulted, when `type` is `'cast'` — Cast's rungs are per-tree (see
+ * `castRungOf` in magic.ts), not a fixed ladder. */
+export function reachDcFor(u: Unit, type: LadderType, rung: Grade, tree?: Tree): number {
+  const bonus = type === 'cast' ? castRungOf(tree!, rung as CastTier).reachDc : rungOf(type, rung).reachDc;
+  return levelDc(u.level) + bonus;
 }
 
 export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
+
+/** What a caster rolls to push a cast: spell attack standing in for Will, the same reach
+ * formula every other ladder uses (section 11). */
+export const spellAttackModifier = (u: Unit) => (u.stats.spellAttack ?? 0) - u.disorder;
+
+/** What a target resists a Blast or Controlling effect roll against: the caster's own spell
+ * DC, plus whatever this cast's push bonused it (section 11's "effect roll" bonus). */
+export const spellDcFor = (u: Unit, bonus = 0) => (u.stats.spellDc ?? 0) + bonus;
+
+/** Healing's "+1/+2 on the target's next save" is consumed by whichever save comes first,
+ * whoever's activation that falls in — not tied to `begin`/`finish` the way every other cast
+ * flag on `Unit` is. */
+function takeSaveBonus(u: Unit): number {
+  const b = u.nextSaveBonus;
+  u.nextSaveBonus = 0;
+  return b;
+}
 
 /** The level DC of the strongest enemy nearby — the highest-level enemy within close range,
  * or across the whole field if none is close. Rallying under a dragon's eye is harder than
@@ -329,16 +365,44 @@ export function reduceWounds(target: Unit, n: number): number {
   return g?.blunt ? Math.min(n, 1) : n;
 }
 
-/** Wounds that actually land, after the target's Guard. */
-function applyWounds(state: BattleState, target: Unit, raw: number, source: string, disorders = true): number {
-  const n = reduceWounds(target, raw);
+/** The target's Fortitude, less its own disorder, the way every other save reads it. */
+export const fortitudeModifier = (u: Unit) => u.stats.fortitude - u.disorder;
+
+/**
+ * Wounds that actually land, after the target's Guard, the attacker's Offense buff, and the
+ * target's Defense buff. A wound dealt at range or by a free strike then asks a Fortitude save
+ * against the attacker's level DC before it disorders anyone — a melee exchange skips the save
+ * outright (pass `disorders: false`), since the wounds of an exchange were never the morale
+ * event to begin with; the exchange itself is (see `melee`).
+ */
+function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, disorders = true): number {
+  let n = reduceWounds(target, raw);
   if (n < raw) log(state, target, `${target.name} has dug in: the critical lands as an ordinary hit.`);
+  if (n > 0 && attacker.offense.damage) {
+    n += attacker.offense.damage;
+    log(state, attacker, `${attacker.name}'s Offense buff adds ${attacker.offense.damage} to the damage result.`);
+    attacker.offense.damage = 0;
+  }
+  if (n > 0 && target.defense.damageReduction) {
+    n = Math.max(0, n - target.defense.damageReduction);
+    log(state, target, `${target.name}'s Defense buff takes ${target.defense.damageReduction} off the damage.`);
+    target.defense.damageReduction = 0;
+  }
   if (n <= 0) return 0;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); return n; }
-  if (disorders) addDisorder(state, target, 1, 'wounds');
+  if (disorders) {
+    if (target.defense.noWoundDisorder) {
+      target.defense.noWoundDisorder = false;
+      log(state, target, `${target.name}'s Defense buff takes this wound with no disorder.`);
+    } else {
+      const c = check(rng, fortitudeModifier(target) + takeSaveBonus(target), levelDc(attacker.level));
+      log(state, target, `${target.name} braces against the wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a wound taken');
+    }
+  }
   return n;
 }
 
@@ -383,7 +447,7 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
   const c = check(rng, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
-  const dealt = applyWounds(state, target, rolled, u.name, opts.disorders ?? true);
+  const dealt = applyWounds(state, rng, target, rolled, u.name, u, opts.disorders ?? true);
   if (c.degree === 'critical-failure' && !opts.free) {
     u.exposed = true;
     log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
@@ -400,7 +464,10 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, 
   u.attacked = true;
   const dealt = resolveStrike(state, rng, u, target, { bonus: weight, disorders: false, label: rung.verb });
   let taken = 0;
-  if (target.status === 'active' && target.stats.strike !== null && isEngaged(state, u, target)) {
+  if (u.offense.noStrikeBack) {
+    u.offense.noStrikeBack = false;
+    log(state, u, `${u.name}'s Offense buff keeps ${target.name} from striking back.`);
+  } else if (target.status === 'active' && target.stats.strike !== null && isEngaged(state, u, target)) {
     taken = resolveStrike(state, rng, target, u, { disorders: false, label: 'strikes back at' });
   }
   const loser = dealt > taken ? target : taken > dealt ? u : null;
@@ -423,7 +490,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung
   const c = check(rng, shootModifier(state, u, target) + weight, defenceOf(state, target, u, true));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-  applyWounds(state, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source);
+  applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
 }
 
 const wallDc = (state: BattleState, wall: Wall) =>
@@ -447,7 +514,12 @@ const occupiedBy = (state: BattleState, u: Unit) =>
   new Set(state.units.filter((o) => o.status === 'active' && o.id !== u.id).map((o) => notation(o.square)));
 
 /** Feet the unit may still spend: what earlier Move actions banked, plus what the rest buy. */
-export const movementBudget = (u: Unit) => u.feet + u.actions * u.speed;
+export const movementBudget = (u: Unit) =>
+  Math.max(0, u.feet + u.actions * u.speed + u.movementBuff.bonusFeet - u.control.movementPenaltyFeet);
+
+/** Movement's own Tier 2 grants "ignores terrain penalties" and Tier 3 a movement type — both
+ * ride the existing flight rule (see `resolveTree`), so a buffed unit reads as flying too. */
+const fliesLike = (u: Unit) => u.flying || u.movementBuff.flies;
 
 // Movement pools across the activation rather than being lost at the end of each Stride, so a
 // swamp cell at 30 ft stays enterable by a 25 ft troop over two actions.
@@ -464,7 +536,7 @@ export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = reachable(state.board, u.square, {
-    budget: movementBudget(u), flying: u.flying, occupied: occupiedBy(state, u),
+    budget: movementBudget(u), flying: fliesLike(u), occupied: occupiedBy(state, u),
   });
   const home = notation(u.square);
   for (const [key, entry] of reach) {
@@ -497,7 +569,7 @@ export function pushReach(state: BattleState, u: Unit): Map<string, PushReach> {
   if (engagedEnemies(state, u).length) return out;
   const affordable = moveReach(state, u);
   const reach = reachable(state.board, u.square, {
-    budget: movementBudget(u) + u.speed, flying: u.flying, occupied: occupiedBy(state, u),
+    budget: movementBudget(u) + u.speed, flying: fliesLike(u), occupied: occupiedBy(state, u),
   });
   const home = notation(u.square);
   for (const [key, entry] of reach) {
@@ -563,7 +635,7 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
     .filter((n) => enterable(state, u, u.square, n))
     .map(notation));
   if (feet > 0 && u.speed > 0) {
-    const reach = reachable(state.board, u.square, { budget: feet, flying: u.flying, occupied: occupiedBy(state, u) });
+    const reach = reachable(state.board, u.square, { budget: feet, flying: fliesLike(u), occupied: occupiedBy(state, u) });
     for (const key of reach.keys()) {
       const sq = parse(key);
       if (sameSquare(sq, u.square)) continue;
@@ -622,12 +694,20 @@ const wallTarget = (key: string): RungTarget => ({ kind: 'wall', id: key, label:
 
 interface TargetSet { needsTarget: boolean; targets: RungTarget[] }
 
-function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | null): TargetSet {
+/** The cumulative hex reach of a Cast band: how far Engaged/Short/Medium/Long/Extreme carries,
+ * the same thresholds Shooting's own bands use. Unlike a shot's Aim/Snipe (an offset window
+ * either side of effective range), a spell's range is a ceiling — anything from the caster's
+ * own hex out to the band counts, the way "range: 30 feet" reads on any other statblock. */
+function castCeiling(state: BattleState, band: CastBand): number {
+  return band === 'engaged' ? 1 : BANDS[state.board.grid][band];
+}
+
+function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null): TargetSet {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
-  switch (rung.type) {
+  switch (type) {
     case 'shoot': {
       const home = shootHome(state, u);
-      const offset = rung.index - 1;
+      const offset = index - 1;
       const inBand = (e: Unit) => { const r = rangeRank(rangeBetween(state, u, e)); return inRange(r) && Math.abs(r - home) <= offset; };
       const targets: RungTarget[] = enemies.filter(inBand).map(unitTarget);
       if (u.side === 'attacker' && crewedArtillery(state, u)) {
@@ -644,44 +724,64 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
       return { needsTarget: false, targets: [] };
     case 'rally': {
       // A steady ally is still worth naming: it takes heart even where it has nothing to clear.
-      if (rung.rally!.heart !== 'adjacent') return { needsTarget: false, targets: [] };
+      if (rungOf('rally', index).rally!.heart !== 'adjacent') return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
         && dist(state, a.square, u.square) === 1);
       return { needsTarget: false, targets: allies.map(unitTarget) };
     }
     case 'cast': {
-      const scope = rung.cast!.scope;
-      const wants = spell ? SPELLS[spell].at : 'ally';
+      const tree = spell!;
+      // The offer's own targets are a superset: the graphical menu only ever pushes effect
+      // (see `RungAction.axis`), so range never actually extends, but a direct `act()` call
+      // may still push range — `doCastAction` re-checks the real band once the axis is known,
+      // the same way `perform`'s own shoot case re-checks a rung's band and logs "falls short".
+      const ceiling = castCeiling(state, bandOut(TREE_RANGE[tree], index - 1));
+      const wants = TREE_TARGET[tree];
       const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active');
-      const inScope = pool.filter((t) => (t.id === u.id ? scope >= 0 : dist(state, t.square, u.square) <= scope));
-      return { needsTarget: true, targets: (wants === 'enemy' ? inScope.filter((t) => t.id !== u.id) : inScope).map(unitTarget) };
+      const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
+      return { needsTarget: true, targets: pool.filter((t) => (wants === 'enemy' ? t.id !== u.id : true) && inRangeOf(t)).map(unitTarget) };
     }
   }
 }
 
-const gradeOf = (state: BattleState, u: Unit, type: LadderType): Grade => (type === 'shoot' ? shootGrade(state, u) : u.grades[type]);
+const gradeOf = (state: BattleState, u: Unit, type: LadderType): Grade =>
+  (type === 'shoot' ? shootGrade(state, u) : type === 'cast' ? 1 : u.grades[type]);
 
 /** Fight, Shoot and a Blast are the one attack an activation gets. Everything else may be
  * repeated; a second attack was the thing that broke the pacing. */
-const isAttack = (type: LadderType, spell: SpellId | null) =>
+const isAttack = (type: LadderType, spell: Tree | null) =>
   type === 'fight' || type === 'shoot' || (type === 'cast' && spell === 'blast');
 
 /** Whether a unit takes this rung outright, reaches for it, or cannot take it at all. A
  * charge carries a Fight rung of its own, with no `ActionOffer` around it, so the rule lives
  * here rather than inside `rungOption`. */
-export function rungAccess(state: BattleState, u: Unit, type: LadderType, index: Grade): RungOption['access'] {
+export function rungAccess(state: BattleState, u: Unit, type: Exclude<LadderType, 'cast'>, index: Grade): RungOption['access'] {
   const granted = gradeOf(state, u, type);
   if (index <= granted) return 'free';
   if (index > granted + 1) return 'locked';
-  return u.compelled ? 'locked' : u.blessed ? 'free' : 'reach';
+  return u.compelled ? 'locked' : 'reach';
 }
 
-function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: SpellId | null, granted: Grade, blocked: string | null): RungOption {
-  const rung = rungOf(type, index);
-  const access = rungAccess(state, u, type, index);
-  const { needsTarget, targets } = targetsFor(state, u, rung, spell);
+/**
+ * Cast's own access: Tier 1 is always free once a tree is offered at all, and reaching for
+ * Tier 2 or Tier 3 is a direct choice — never "two rungs above is locked", the one place Cast
+ * departs from every other ladder's reach rule — capped by how far the caster's own tradition
+ * may ever push that tree (0 meaning no access, section 11). A tactic-granted tree with no
+ * tradition behind it never pushes at all.
+ */
+function castAccess(u: Unit, tree: Tree, index: Grade): RungOption['access'] {
+  if (index === 1) return 'free';
+  if (u.compelled) return 'locked';
+  const cap = u.tradition ? TRADITION_TIERS[u.tradition][tree] : 1;
+  return index <= cap ? 'reach' : 'locked';
+}
+
+function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null, granted: Grade, blocked: string | null): RungOption {
+  const rung = type === 'cast' ? castRungOf(spell!, index as CastTier) : rungOf(type, index);
+  const access = type === 'cast' ? castAccess(u, spell!, index) : rungAccess(state, u, type, index);
+  const { needsTarget, targets } = targetsFor(state, u, type, index, spell);
   let reason: string | null = blocked ?? (access === 'locked'
-    ? (u.compelled && index === granted + 1 ? 'compelled' : 'above your grade')
+    ? (u.compelled ? 'compelled' : type === 'cast' ? "above your tradition's reach" : 'above your grade')
     : null);
   if (!reason && needsTarget && !targets.length) reason = 'no target';
   return { rung: rung.id, index, label: rung.label, detail: rung.detail, access, legal: reason === null, reason, needsTarget, targets };
@@ -691,30 +791,31 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
  * buys is weight — never a second act. */
 const BASE_COST = 1;
 
-function offerFor(state: BattleState, u: Unit, type: LadderType, spell: SpellId | null): ActionOffer {
+function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
   const granted = gradeOf(state, u, type);
-  const reachable: Grade | null = granted < 3 && !u.compelled ? (granted + 1) as Grade : null;
-  const rolls = reachable !== null && !u.blessed;
+  const cap = type === 'cast' ? (u.tradition ? TRADITION_TIERS[u.tradition][spell!] : 1) : 3;
+  const reachable: Grade | null = granted < 3 && !u.compelled && granted < cap ? (granted + 1) as Grade : null;
+  const rolls = reachable !== null;
   const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
     : type === 'rally' && !u.disorder && !alliesWithin(state, u, 2).length ? 'no disorder to clear, and nobody near to lift'
       : null;
   const rungs = [1, 2, 3].map((i) => rungOption(state, u, type, i as Grade, spell, granted, blocked)) as [RungOption, RungOption, RungOption];
-  const s = spell ? SPELLS[spell] : null;
   return {
     type, spell, cost: BASE_COST,
     dials: {
       extra: Math.max(0, u.actions - BASE_COST),
       step: ACTION_BONUS,
-      roll: s ? s.rolls : OWN_ROLL[type],
+      roll: OWN_ROLL[type],
       push: rolls,
       defence: type === 'guard',
       distance: false,
+      pool: type === 'cast',
     },
-    label: s ? s.label : type[0].toUpperCase() + type.slice(1),
-    detail: s ? s.detail : LADDERS[type][granted - 1].detail,
+    label: spell ? TREE_LABEL[spell] : type[0].toUpperCase() + type.slice(1),
+    detail: type === 'cast' ? castRungOf(spell!, 1).detail : LADDERS[type][granted - 1].detail,
     granted, reachable,
-    reachDc: rolls ? reachDcFor(u, type, reachable!) : null,
-    reachModifier: reachModifier(u),
+    reachDc: rolls ? reachDcFor(u, type, reachable!, spell ?? undefined) : null,
+    reachModifier: type === 'cast' ? spellAttackModifier(u) : reachModifier(u),
     rungs,
   };
 }
@@ -725,13 +826,16 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: SpellId 
  */
 function commit(u: Unit, label: string, dials: SpendDials, cost: number, spend: Partial<Spend> | undefined, pushable: boolean): Spend {
   const read = (d: Dial) => Math.max(0, Math.trunc(spend?.[d] ?? 0));
-  const out: Spend = { roll: read('roll'), push: read('push'), defence: read('defence'), distance: read('distance') };
+  const out: Spend = { roll: read('roll'), push: read('push'), defence: read('defence'), distance: read('distance'), pool: read('pool') };
+  // The pool draws from `u.castPool`, a budget of its own — it never counts against `u.actions`.
   const total = cost + out.roll + out.push + out.defence + out.distance;
   if (total > u.actions) throw new Error(`${u.name} has only ${u.actions} action${u.actions === 1 ? '' : 's'} to commit`);
   if (out.roll && !dials.roll) throw new Error(`${label} has no roll of its own to weight`);
   if (out.defence && !dials.defence) throw new Error(`${label} sets no Defence to raise`);
   if (out.distance && !dials.distance) throw new Error(`${label} buys no ground`);
   if (out.push && !pushable) throw new Error(`${label} needs no push check`);
+  if (out.pool && !dials.pool) throw new Error(`${label} has no push pool of its own`);
+  if (out.pool && out.pool > u.castPool) throw new Error(`${u.name} has only ${u.castPool} in its push pool`);
   return out;
 }
 
@@ -755,23 +859,21 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   const offers = types
     .filter((t) => (t === 'shoot' ? canShoot(state, u) : t === 'fight' ? u.stats.strike !== null : true))
     .map((t) => offerFor(state, u, t, null));
-  for (const s of u.spells) offers.push(offerFor(state, u, 'cast', s));
+  for (const t of u.trees) offers.push(offerFor(state, u, 'cast', t));
   return offers;
 }
 
-function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wanted: Grade, blessed: boolean, weight = 0): Grade {
+function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wanted: Grade, weight = 0, tree?: Tree): Grade {
   const granted = gradeOf(state, u, type);
   if (wanted <= granted) return wanted;
-  const rung = rungOf(type, wanted);
-  if (blessed) {
-    log(state, u, `${u.name} rides the blessing up to ${rung.label}.`);
-    return wanted;
-  }
-  const c = check(rng, reachModifier(u) + weight, reachDcFor(u, type, wanted));
-  log(state, u, `${u.name} reaches for ${rung.label}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  const label = type === 'cast' ? castRungOf(tree!, wanted as CastTier).label : rungOf(type, wanted).label;
+  const modifier = type === 'cast' ? spellAttackModifier(u) : reachModifier(u);
+  const c = check(rng, modifier + weight + takeSaveBonus(u), reachDcFor(u, type, wanted, tree));
+  log(state, u, `${u.name} reaches for ${label}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   if (c.degree === 'critical-success') return Math.min(3, wanted + 1) as Grade;
   if (c.degree === 'success') return wanted;
-  log(state, u, `${u.name} falls back to ${rungOf(type, granted).label}.`);
+  const fallbackLabel = type === 'cast' ? castRungOf(tree!, granted as CastTier).label : rungOf(type, granted).label;
+  log(state, u, `${u.name} falls back to ${fallbackLabel}.`);
   if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a botched order');
   return granted;
 }
@@ -789,7 +891,7 @@ function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawActio
   let pinned = false;
   for (const holder of holdersOf(state, u)) {
     if (u.status !== 'active') break;
-    const c = check(rng, escapeModifier(u, weight), escapeDcFor(holder));
+    const c = check(rng, escapeModifier(u, weight) + takeSaveBonus(u), escapeDcFor(holder));
     log(state, u, `${u.name} breaks from ${holder.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     escapes.push({ holder, degree: c.degree });
     if (succeeded(c.degree)) continue;
@@ -839,38 +941,112 @@ function follow(state: BattleState, u: Unit, escapes: Escape[]) {
   }
 }
 
-function doCast(state: BattleState, rng: Rng, u: Unit, rung: Rung, spell: SpellId, action: RungAction, weight = 0) {
-  const scope = rung.cast!.scope;
+/**
+ * A cast's six trees (section 11). `tier` is what the cast reached on whichever one axis was
+ * pushed — range, duration or effect (`axis`; Tier 1 on the other two, always). Only `effect`
+ * ever changes what a tree actually does; `range` and `duration` instead widen where it lands
+ * or how long it lasts, and — for Blast or Controlling only — sweeten the effect roll as a
+ * consolation, per "The six trees" in rules.html.
+ */
+function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: CastTier, axis: CastAxis, action: RungAction, rollWeight = 0) {
   const target = action.target ? unit(state, action.target) : u;
-  if (target.id !== u.id && dist(state, target.square, u.square) > scope) {
-    log(state, u, `${u.name}'s ${SPELLS[spell].label} cannot carry to ${target.name}.`);
+  const rangeTier = axis === 'range' ? tier : 1;
+  const durationTier = axis === 'duration' ? tier : 1;
+  const effectTier = axis === 'effect' ? tier : 1;
+  const band = bandOut(TREE_RANGE[tree], rangeTier - 1);
+  if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, band)) {
+    log(state, u, `${u.name}'s ${TREE_LABEL[tree]} cannot carry to ${target.name}.`);
     return;
   }
-  switch (spell) {
+  if (tree === 'blast') u.attacked = true;
+  if (!TREE_ROLLS[tree]) {
+    resolveTree(state, rng, u, target, tree, effectTier, durationTier, 'success');
+    return;
+  }
+  // Effect's own push sweetens the roll by shaving the target's save (Blast and Controlling's
+  // own Tier 2/3 "Bonus"); range or duration's push instead sweetens it with the flat, generic
+  // bonus every tree shares — nothing to bonus at all on the four ally trees, which never get
+  // here at all.
+  const savePenalty = axis === 'effect' ? (effectTier === 3 ? 2 : effectTier === 2 ? 1 : 0) : 0;
+  const dcBonus = axis !== 'effect' ? (tier === 3 ? 4 : tier === 2 ? 2 : 0) : 0;
+  const saveStat = tree === 'blast' ? target.stats.reflex : target.stats.will;
+  const c = check(rng, saveStat - target.disorder + takeSaveBonus(target) - savePenalty, spellDcFor(u, dcBonus + rollWeight));
+  log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  resolveTree(state, rng, u, target, tree, effectTier, durationTier, c.degree);
+}
+
+/** How many of the target's own activations a lingering or regenerating effect still ticks
+ * for. "Instant" duration is one tick — the target's very next activation — since a single
+ * cast never pushes both effect and duration at once (section 11). */
+const durationRounds = (durationTier: CastTier) => durationTier;
+
+/**
+ * What a landed cast actually does, tree by tree (section 11's "The six trees" table).
+ * `degree` is the target's own effect-roll result for Blast and Controlling — a plain
+ * `'success'` for the four ally trees, which never roll one and always land.
+ */
+function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: Tree, effectTier: CastTier, durationTier: CastTier, degree: Degree) {
+  switch (tree) {
     case 'blast': {
-      u.attacked = true;
-      const c = check(rng, reachModifier(u) + (u.heartened ? HEART_BONUS : 0) + weight, defenceOf(state, target, u, true, true));
-      log(state, u, `${u.name} blasts ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-      applyWounds(state, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, `${u.name}'s magic`);
+      if (succeeded(degree)) return;
+      let wounds = degree === 'critical-failure' ? 2 : 1;
+      if (effectTier >= 2) wounds += 1;
+      applyWounds(state, rng, target, wounds, `${u.name}'s magic`, u, true);
+      if (effectTier >= 3) target.lingering = { tree: 'blast', roundsLeft: durationRounds(durationTier) };
       break;
     }
-    case 'ward':
-      target.warded = true;
-      log(state, u, `${u.name} wards ${target.name} (+2 Defence until it acts).`);
+    case 'healing': {
+      clearDisorder(state, target, 1, 'Healing');
+      if (effectTier >= 2) {
+        if (target.wounds > 0) {
+          target.wounds -= 1;
+          log(state, u, `${u.name} heals ${target.name}: wounds ${target.wounds}/${MAX_WOUNDS}.`);
+        }
+        target.nextSaveBonus = 1;
+      }
+      if (effectTier >= 3) {
+        target.lingering = { tree: 'healing', roundsLeft: durationRounds(durationTier) };
+        target.nextSaveBonus = 2;
+      }
       break;
-    case 'mend':
-      if (target.wounds === 0) { log(state, u, `${target.name} has no wound to mend.`); break; }
-      target.wounds -= 1;
-      log(state, u, `${u.name} mends ${target.name}: wounds ${target.wounds}/${MAX_WOUNDS}.`);
+    }
+    case 'controlling': {
+      if (succeeded(degree)) return;
+      target.control.movementPenaltyFeet = CELL_FEET;
+      log(state, u, `${u.name} compels ${target.name}: -1 movement on its next activation.`);
+      if (effectTier >= 2) {
+        target.control.actionPenalty = true;
+        log(state, u, `${u.name} compels ${target.name} further: -1 action on its next activation.`);
+      }
+      if (effectTier >= 3) {
+        target.compelled = true;
+        log(state, u, `${u.name} compels ${target.name} fully: it may not reach above its grade.`);
+      }
       break;
-    case 'bless':
-      target.blessed = true;
-      log(state, u, `${u.name} blesses ${target.name}: its next action climbs a rung free.`);
+    }
+    case 'offense': {
+      target.offense.bonus = effectTier === 3 ? 3 : effectTier === 2 ? 2 : 1;
+      if (effectTier >= 2) target.offense.damage = 1;
+      if (effectTier >= 3) target.offense.noStrikeBack = true;
+      log(state, u, `${u.name} buffs ${target.name}'s Offense (+${target.offense.bonus} to attacks).`);
       break;
-    case 'compel':
-      target.compelled = true;
-      log(state, u, `${u.name} compels ${target.name}: it may not reach above its grade.`);
+    }
+    case 'defense': {
+      target.defense.bonus = effectTier >= 2 ? 4 : 2;
+      if (effectTier >= 2) target.defense.noWoundDisorder = true;
+      if (effectTier >= 3) { target.defense.damageReduction = 1; target.nextSaveBonus = 2; }
+      log(state, u, `${u.name} buffs ${target.name}'s Defense (+${target.defense.bonus} Defence).`);
       break;
+    }
+    case 'movement': {
+      target.movementBuff.bonusFeet = effectTier * CELL_FEET;
+      // proto: Tier 2's "ignores terrain penalties" and Tier 3's movement-type grant both ride
+      // the existing `flying` pathing rule rather than a new terrain-cost mode — a superset of
+      // Tier 2's own text (flight also ignores blocked edges), simpler than adding a third one.
+      if (effectTier >= 2) target.movementBuff.flies = true;
+      log(state, u, `${u.name} buffs ${target.name}'s Movement (+${target.movementBuff.bonusFeet} ft).`);
+      break;
+    }
   }
 }
 
@@ -933,7 +1109,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
       // A Quality check against the rout DC — the degree decides how much clears, so the roll
       // dial is live at every rung rather than dead once a rung clears everything outright.
       const eff = rung.rally!;
-      const c = check(rng, reachModifier(u) + weight, routDcFor(state, u));
+      const c = check(rng, reachModifier(u) + weight + takeSaveBonus(u), routDcFor(state, u));
       log(state, u, `${u.name} ${rung.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       const cleared = c.degree === 'critical-success' ? u.disorder
         : c.degree === 'success' ? 2 : c.degree === 'failure' ? 1 : 0;
@@ -958,9 +1134,6 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
       }
       break;
     }
-    case 'cast':
-      doCast(state, rng, u, rung, offer.spell!, action, weight);
-      break;
   }
 }
 
@@ -982,8 +1155,30 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
   };
 }
 
+// proto: Blast's lingering wound or Healing's regeneration, at the start of the target's own
+// activation — "no roll", so this reads as no Fortitude save against its disorder either; a
+// side-effect of an attack already resolved, not a fresh one, rather than a fresh wound event.
+function tickLingering(state: BattleState, u: Unit) {
+  const l = u.lingering;
+  if (!l) return;
+  if (l.tree === 'blast') {
+    const n = reduceWounds(u, 1);
+    if (n > 0) {
+      u.wounds = Math.min(MAX_WOUNDS, u.wounds + n);
+      log(state, u, `${u.name} takes a lingering wound (${u.wounds}/${MAX_WOUNDS}).`);
+      if (u.wounds >= MAX_WOUNDS) { u.status = 'destroyed'; abandonEngines(state, u); }
+    }
+  } else if (l.tree === 'healing' && u.wounds > 0) {
+    u.wounds -= 1;
+    log(state, u, `${u.name} regenerates: wounds ${u.wounds}/${MAX_WOUNDS}.`);
+  }
+  l.roundsLeft -= 1;
+  if (l.roundsLeft <= 0 || u.status !== 'active') u.lingering = null;
+}
+
 // What lasted "until this unit acts again" ends when it starts acting. What was laid on its
-// next activation — rooted, compelled, a blessing — is spent by this one and cleared at the end.
+// next activation — rooted, compelled, Controlling's action penalty — is spent by this one and
+// cleared at the end (or, for the action penalty, consumed right here).
 function begin(state: BattleState, u: Unit) {
   if (state.begun && state.active === u.id) return;
   state.active = u.id;
@@ -993,7 +1188,14 @@ function begin(state: BattleState, u: Unit) {
   u.feet = 0;
   u.guard = null;
   u.exposed = false;
-  u.warded = false;
+  u.defense = { bonus: 0, noWoundDisorder: false, damageReduction: 0 };
+  u.castPool = castPoolFor(u.level);
+  if (u.control.actionPenalty) {
+    u.actions -= 1;
+    u.control.actionPenalty = false;
+    log(state, u, `${u.name} is compelled: one fewer action this activation.`);
+  }
+  if (u.status === 'active') tickLingering(state, u);
 }
 
 function finish(state: BattleState, u: Unit) {
@@ -1001,9 +1203,11 @@ function finish(state: BattleState, u: Unit) {
   u.attacked = false;
   u.feet = 0;
   u.rooted = Math.max(0, u.rooted - 1);
-  u.blessed = false;
   u.heartened = false;
   u.compelled = false;
+  u.offense = { bonus: 0, damage: 0, noStrikeBack: false };
+  u.movementBuff = { bonusFeet: 0, flies: false };
+  u.control.movementPenaltyFeet = 0;
   state.activated.push(u.id);
   state.lastSide = u.side;
   state.active = null;
@@ -1038,10 +1242,16 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
   const spend = commit(u, offer.label, offer.dials, offer.cost, action.spend, opt.access === 'reach');
-  const blessed = u.blessed;
-  u.blessed = false;
-  const reached = reachFor(state, rng, u, offer.type, action.rung, blessed, spend.push * ACTION_BONUS);
-  perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend);
+  u.castPool -= spend.pool;
+  const weight = (spend.push + spend.pool) * ACTION_BONUS;
+  if (offer.type === 'cast') {
+    const tree = offer.spell!;
+    const reached = reachFor(state, rng, u, 'cast', action.rung, weight, tree);
+    doCastAction(state, rng, u, tree, reached as CastTier, action.axis ?? 'effect', action, spend.roll);
+  } else {
+    const reached = reachFor(state, rng, u, offer.type, action.rung, weight);
+    perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend);
+  }
   return offer.cost + spent(spend);
 }
 
@@ -1074,7 +1284,7 @@ export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffe
   const distance = u.speed > 0 && u.rooted === 0;
   return {
     cost: BASE_COST,
-    dials: { extra, step: ACTION_BONUS, roll: holders.length > 0, push: false, defence: false, distance },
+    dials: { extra, step: ACTION_BONUS, roll: holders.length > 0, push: false, defence: false, distance, pool: false },
     modifier: escapeModifier(u),
     escapes: holders.map((e) => ({ unit: e.id, name: e.name, dc: escapeDcFor(e), follows: e.noRetreat })),
     targets: withdrawTargets(state, u, distance ? extra * u.speed : 0).map((sq) => cellTarget(notation(sq))),
@@ -1128,9 +1338,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
     log(state, u, `${u.name}'s charge finds nobody.`);
     return option.actions;
   }
-  const blessed = u.blessed;
-  u.blessed = false;
-  const reached = reachFor(state, rng, u, 'fight', wanted, blessed, push * ACTION_BONUS);
+  const reached = reachFor(state, rng, u, 'fight', wanted, push * ACTION_BONUS);
   melee(state, rng, u, foe, rungOf('fight', reached), roll * ACTION_BONUS);
   return cost;
 }
@@ -1167,6 +1375,13 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   }
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u);
+  // A lingering wound can destroy a unit the moment its own activation starts — nothing left
+  // to spend actions on, so the activation ends here instead of reaching the dispatch below.
+  if (u.status !== 'active') {
+    finish(state, u);
+    refreshEmplacements(state);
+    return state;
+  }
   const cost = action.type === 'move' ? doStride(state, u, action)
     : action.type === 'push' ? doPush(state, rng, u, action)
       : action.type === 'withdraw' ? doWithdrawAction(state, rng, u, action)

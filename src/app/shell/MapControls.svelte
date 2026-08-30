@@ -22,6 +22,15 @@
   // a panel opens — only when the player asks.
   const zoom = (factor: number) => board?.zoomBy(factor, visibleRect());
   const frame = (of: string[] | null) => board?.frame(of, visibleRect());
+
+  // proto: session-only — doesn't survive a reload. Owned here rather than by the battle/place
+  // stages, since the grid is a map-display preference, not game state.
+  let gridVisible = $state(false);
+  let gridWidth = $state(1);
+  const applyGrid = () => board?.setGrid({ visible: gridVisible, width: gridWidth });
+  const toggleGrid = () => { gridVisible = !gridVisible; applyGrid(); };
+
+  let settings: HTMLDialogElement | undefined = $state();
 </script>
 
 <div class="mapcontrols">
@@ -43,7 +52,39 @@
       </svg>
     </button>
   {/if}
+  <button class="rule" title={gridVisible ? 'Hide hex grid' : 'Show hex grid'} aria-label={gridVisible ? 'Hide hex grid' : 'Show hex grid'} aria-pressed={gridVisible} onclick={toggleGrid}>
+    {#if gridVisible}
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M1.5 8s2.3-4 6.5-4 6.5 4 6.5 4-2.3 4-6.5 4-6.5-4-6.5-4z" />
+        <circle cx="8" cy="8" r="1.6" />
+      </svg>
+    {:else}
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M1.5 8.5s2.3-3 6.5-3 6.5 3 6.5 3M5 11.2l-.8 1.4M8 11.7V13M11 11.2l.8 1.4" />
+      </svg>
+    {/if}
+  </button>
+  <button title="Grid settings" aria-label="Grid settings" onclick={() => settings?.showModal()}>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.2" />
+      <path d="M8 1.6v1.7M8 12.7v1.7M14.4 8h-1.7M3.3 8H1.6M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2M12.5 12.5l-1.2-1.2M4.7 4.7L3.5 3.5" />
+    </svg>
+  </button>
 </div>
+
+<dialog bind:this={settings} class="grid-settings">
+  <h2>Hex grid</h2>
+  <label>
+    <input type="checkbox" bind:checked={gridVisible} onchange={applyGrid} />
+    Show the reference grid
+  </label>
+  <label>
+    Line weight
+    <input type="range" min="0.5" max="2" step="0.5" bind:value={gridWidth} oninput={applyGrid} />
+    <span>{gridWidth}px</span>
+  </label>
+  <button onclick={() => settings?.close()}>Done</button>
+</dialog>
 
 <style>
   /* Parked in the map's bottom-right corner, which moves when a dock or the strip does. */
@@ -74,4 +115,23 @@
   button.rule { border-top-width: 3px; border-top-style: double; }
 
   svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  .grid-settings {
+    min-width: 15rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+  }
+  .grid-settings::backdrop { background: rgba(0, 0, 0, .35); }
+  .grid-settings h2 { margin: 0 0 .7rem; font-size: 1rem; }
+  .grid-settings label {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .9rem; color: var(--muted);
+    margin-bottom: .6rem;
+  }
+  .grid-settings label span { color: var(--ink); min-width: 2.4em; }
+  .grid-settings > button { margin-top: .3rem; width: 100%; }
 </style>

@@ -1311,3 +1311,182 @@ coincidence — renaming the rung removes that collision as a side effect.
   two things — a different rung (an effect) or weight on the roll (a bonus) — since the
   mechanic already existed (the Weight section's Roll/Push split) but wasn't named as a choice
   until a unit was already deep in "Reaching above your grade."
+
+### Cast rework: six trees, four traditions, a caster's own push pool — 2026-08-30
+
+Decision (Mark), reached over a long design conversation and written straight into
+`public/rules.html` section 11 (no engine work yet — `src/engine/ladders.ts`'s `CastEffect`,
+`SPELLS` and `LADDERS.cast` still implement the old model, so the doc and the engine now
+disagree the same way the "Rules-document notes" gaps above already do). Cast stops being a
+grade-gated three-rung ladder like Shoot/Fight/Guard/Rally. The base cast is free for every
+caster — no roll, a fixed range, Tier 1 of whichever tree is chosen. Pushing (one of range,
+duration, or effect — never more than one per cast) risks a **cast roll** (the existing reach
+formula verbatim: Will − disorder vs. level DC, +2 at Tier 3, falls back to the free base on a
+failure, the act never lost to the dice). A landed cast then resolves through six trees — Blast,
+Healing, Controlling, and three buffs (Offense, Defense, Movement) — each its own three-tier
+progression where a tier is a different kind of thing, not a bigger number. Morale was proposed
+and dropped: its two jobs (clearing disorder, a check bonus) already belonged to Healing and the
+buffs.
+
+A caster also draws on a second action pool ordinary actions can't touch — level ÷ 5, rounded
+down, spendable only on a Cast push, refreshing every activation. Cast's own grade retires
+entirely with this: the pool is the one mechanic gating how far a push goes, not a grade and a
+pool doing overlapping jobs.
+
+Every caster belongs to one of four traditions (arcane, divine, occult, primal), and a tradition
+caps the highest tier it may ever reach per tree — 0 meaning no access. The grid (`rules.html`
+section 11) was hand-tuned to sum to 10 per tradition, a budget check rather than a claim of
+equal power.
+
+- **Blast and Controlling are the only trees needing an effect roll** — the other five apply
+  automatically once the cast lands, since an ally has nothing to resist. Both are now the
+  *target's* save, not the caster's attack roll, mirroring an Escape check's shape: Blast asks
+  Reflex, Controlling asks Will, both against the caster's own level DC. This replaces Blast's
+  old caster-rolls-vs-Defence resolution outright.
+- **The five old named spells (Blast, Ward, Mend, Bless, Compel) are retired.** Every caster
+  works through the six trees, not a spell menu. Lineage, not mechanic: Blast → the Blast tree,
+  Mend → Healing, Ward → Defense, Compel → Controlling (its Tier 3, word for word), Bless → the
+  Offense buff in name only — its old effect (a free rung-climb, no reach check) has no home in
+  the new trees and does not survive. The three tactics that used to grant one of these spells to
+  a non-caster (`battlefield-medicine`, `defend-allies`, `demoralize`) now grant a fixed,
+  untiered effect instead: Healing's Tier 2, Defense's Tier 1, and Controlling's Tier 3
+  respectively. Flagged as an approximate remap, not a careful one — nobody checked whether those
+  three specific tiers are the right power level for a non-caster's one free trick.
+- **Fortitude still has no tree.** Blast landed on Reflex and Controlling on Will, which was the
+  natural read for a compulsion effect ("may not reach above its grade") but leaves Fortitude —
+  kept on the sheet earlier today for exactly this kind of future use — still without one. A
+  debuff tree (poison/exhaustion/disease — Fortitude's classic flavor) was raised and
+  deliberately not built: "going too far" for one session, per the user.
+- **Offense's Tier 3 went through two drafts.** First "a second attack" — rejected on sight,
+  since it breaks this system's own stated principle that a spare action is never a second attack
+  (Design notes, principle 4). Second, "the buffed unit's next hit lands as a critical" — also
+  rejected, because this engine's wound model tops out at 2 wounds on a critical and Tier 2's own
+  "+1 damage" already gets an ordinary hit there; there was no higher number left for a crit to
+  reach. Landed on: if the buffed unit's next act is a Fight, the target does not strike back.
+  Deliberately not also added to the Fight ladder itself when the same idea came up there a
+  second time — the user's own call, on the principle that a twist repeated across two trees
+  makes both of them less distinct.
+- **A raw-data finding, not yet acted on**: the local `data/troops/*.json` files carry a genuine
+  `spellcastingEntry` item per caster (`fey-host.json`, `veteran-war-priests.json`,
+  `pixi-swarm.json` — 3 of the 38 local troops), each with its own `system.spelldc = { dc,
+  value }`, entirely separate from Battle DC and from Will/Reflex/Fortitude. The entry's *name*
+  already states the tradition in plain text ("Primal Innate Spells", "Divine Prepared Spells",
+  "Cleric Domain Spells") — a real answer to where a troop's tradition should come from, found
+  in the source data rather than needing a new hand-authored field or a derived signal.
+  `scripts/import-troops.mjs` currently reads none of this (`spellAttack`, `spellDC`, or the
+  entry name) — it only ever pulls `battleDc`, `salvoDc`, and the three ordinary saves. Veteran
+  War Priests carries *two* spellcasting entries (Domain DC 32/atk 24, Prepared DC 35/atk 27)
+  with no rule yet for which one an importer should prefer.
+
+Decision (Mark), same day: yes, use the real numbers. `rules.html` now reads spell attack for
+the caster's own cast-push roll (replacing Will, same as every other reach's formula otherwise)
+and spell DC for what a target resists on Blast's and Controlling's effect rolls (replacing the
+generic level-DC table there, the same way an Escape check already resists a holder's own attack
+DC rather than a table value). Not yet built: `TroopSheet` (`cards.ts:28`) has no `spellAttack`/
+`spellDc` fields, and `import-troops.mjs` reads neither `spellAttack` nor `spellDC` off
+`spellcastingEntry.system.spelldc`, nor the entry's name for tradition — all three still need
+doing before any of section 11 can run. Two loose ends for whoever picks this up: Veteran War
+Priests' two spellcasting entries (Domain DC 32/atk 24, Prepared DC 35/atk 27) need a rule for
+which one an importer keeps, and a caster with no sheet at all (the level-table fallback path)
+needs its own formula for both numbers, the way Will/Reflex/Perception already have one.
+
+### Cast range: a base band per tree — 2026-08-30
+
+The six-trees writeup above left "a fixed range read off the caster" (section 11) undefined —
+no tree ever got an actual band. Decision (Mark): Healing is Engaged, the three buffs (Offense,
+Defense, Movement) are short, Controlling is medium, Blast is long. `rules.html`'s Cast · range
+row in "The six trees" table now names all four; no new range word was needed, since "engaged"
+is already the distance-1 band from section 3's own table (the same one that gates Fight and
+blocks Shoot), not a fresh "touch" category.
+
+Checked against the corpus before settling on long for Blast: of the 27 official troops with a
+Salvo, reach splits 14 short / 11 medium / 2 long / 0 extreme. Medium is the second-most-common
+*native* reach, so anchoring Blast there barely read as magical; long is the rare tier, so an
+unrolled Blast reaching it is a genuine edge over ordinary shooting, and it keeps push-to-Extreme
+symmetric with the siege-engine-only band. Controlling went to medium rather than short so it
+doesn't clump with the three buffs, landing a four-band spread (Engaged/short/medium/long) with
+a legible escalation: support closest, buffs a step out, control further, the damage tree
+farthest.
+
+One asymmetry flagged and left as-is: Blast's own Tier 3 range push (two bands from its long
+base) overflows past Extreme, the board's own ceiling — Tier 2 already gets it there, so Tier 3's
+range option buys nothing further on Blast specifically. Folded into the existing "legal, buys
+nothing" clause in "The six trees" rather than treated as a special case, since the rules already
+carve out that shape for a duration push on a Tier-1 Blast or either push on an ally tree with no
+effect roll to bonus. Controlling's own two-band push (medium → extreme) doesn't hit this, since
+medium sits one band further back from the ceiling than long does.
+
+### Cast rework lands in the engine — 2026-08-30
+
+`src/engine/battle.ts`, `cards.ts`, `types.ts` and a new `magic.ts` now implement section 11 as
+written, closing the doc/engine gap the "Cast rework" entry above flagged. `SpellId`/`SPELLS`/
+`spellsFor`/`u.spells` are gone; a caster now carries `tradition`, `trees` (every tree its
+tradition or a tactic grants, Tier 1 included) and `castPool` (level ÷ 5, refreshed every
+activation, its own budget alongside — never inside — the ordinary three actions). Cast keeps
+its slot in `LadderType` so the existing offer/`ActionOffer`/`RungOption` menu machinery still
+carries it (one row per tree, same as one spell per row before), but `Grades` dropped `cast`
+entirely — every tree's Tier 1 is free the moment it's offered, gated only by
+`TRADITION_TIERS`, not a per-troop grade. `reachFor`'s existing four-degree algorithm (crit
+climbs a tier, failure falls back to Tier 1, critical failure adds 1 disorder) turned out to
+fit Cast's own reach rule — "two rungs above is locked" everywhere else, but Cast may reach for
+Tier 3 directly — without changes, once `gradeOf` reads 1 for cast and `reachDcFor` reads
+`castRungOf`'s own +2-at-Tier-3 instead of a ladder's rung. `RungAction` grew an `axis?:
+CastAxis` field (range/duration/effect, defaulting to `'effect'`) and `Spend`/`SpendDials` grew
+a `pool` dial, validated against `u.castPool` rather than `u.actions` in `commit`.
+
+Retired outright, per the rules' own "does not survive" note: the old Bless spell and the
+`blessed` flag (free rung-climb, no reach check) — nothing in the six trees replaces it, so it
+is simply gone, not remapped.
+
+**What plays exactly as written:** tradition gating (0 means no access, capped tiers above
+that); each tree's own base range band and a range push extending it (target lists in the menu
+are an optimistic superset — the real band is re-checked at resolution and logs "cannot carry"
+on a miss, the same pattern `perform`'s own Shoot case already used for "falls short"); the
+caster's pool stacking with ordinary push actions on the same reach roll; Blast and Controlling
+rolling the target's own save against the caster's spell DC (replacing the old caster-rolls-
+vs-Defence Blast outright); the generic +2/+4 effect-roll bonus from a range or duration push,
+and the tree-specific -1/-2 to the target's save from an effect push instead; Fortitude's own
+wound-disorder save (this file, 2026-08-30 above) firing independently of Blast's Reflex save,
+since a Blast is still "a wound from a Blast" once it lands.
+
+**Deliberately simplified, marked `// proto:`** — none of these change what a rule *decides*,
+only how faithfully a rare corner is modeled:
+- Movement's own Tier 2 ("ignores terrain penalties") and Tier 3 (a movement-type grant) both
+  ride the existing `flying` pathing rule rather than a new terrain-cost mode. A superset of
+  Tier 2's own text (flight also ignores blocked edges, not just terrain cost), simpler than
+  teaching `path.ts` a third movement mode for one buff.
+- A lingering wound or regeneration ticks with no Fortitude save and no roll at all — read as
+  covered by the rules' own "no roll" for the tick, not as a fresh wound event. Since a single
+  cast never pushes both effect and duration, `durationRounds` almost always resolves to 1 tick
+  in practice; the mechanism supports more if that changes.
+- "The target's next save" (Healing Tier 2/3, Defense Tier 3) is one flag consumed by whichever
+  save comes first, with no expiry of its own — including a reach roll, since this system reads
+  Escape/Reach/Push/Rally/Cast through the same one formula family. A buff/debuff that instead
+  "lasts until the target's own next activation" (Offense, Defense's AC, Controlling, the
+  movement buffs) is a flat flag cleared at `begin`/`finish`, not a duration countdown — so two
+  stacked buffs of the same kind replace rather than combine, and a third source landing before
+  the first expires simply overwrites it. No case where two independent buffs are live on one
+  unit at once was worth building for yet.
+- Tradition data: no troop states one (see the spell-attack/DC entry above), so every caster
+  still falls back to arcane. `Apprentice Magician Clique` in the tests exercises exactly this
+  fallback — its own tests are the arcane baseline, not a hand-picked example.
+
+**Not done, tracked separately:** the importer still doesn't read `spellAttack`/`spellDc`/a
+tradition off a real troop's `spellcastingEntry` (see the entry above) — `TroopSheet` grew
+optional `spellAttack`/`spellDc` fields for a hand-authored `overrides` to fill meanwhile, the
+same way `official.ts` already overrides other derived stats.
+
+### Rule questions for play
+
+- Does Fortitude get a debuff tree, or stay imported-but-unused a while longer?
+- Is the tactic → fixed-tier remap (Healing T2 / Defense T1 / Controlling T3) actually the right
+  power level for a non-caster's one free trick, or was it just the nearest tier that matched the
+  old spell's flavor?
+- Duration only matters where an effect persists past the moment it resolves (the four buffs,
+  Controlling, and a Blast or Heal that also reached Tier 3) — pushing it anywhere else is legal
+  and buys nothing. Untested whether that reads as a trap for a player who doesn't already know
+  which trees persist.
+- One push per cast (range, duration, or effect, never more than one) was assumed rather than
+  decided outright, on the precedent that every other ladder only ever reaches for one rung above
+  grade in a single act. Revisit if splitting a caster's pool across two of the three ever comes
+  up.

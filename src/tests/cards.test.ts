@@ -15,7 +15,7 @@ describe('level tables', () => {
 describe('deriveStats', () => {
   it('derives a level-6 infantry unit', () => {
     const s = deriveStats({ name: 'x', level: 6, role: 'infantry' });
-    expect(s).toEqual({ strike: 11, volley: null, reach: null, defence: 24, will: 17, reflex: 14, perception: 14 });
+    expect(s).toEqual({ strike: 11, volley: null, reach: null, defence: 24, will: 17, reflex: 14, fortitude: 14, spellAttack: null, spellDc: null, perception: 14 });
   });
   it('a salvo reach gives infantry a volley', () => {
     const s = deriveStats({ name: 'x', level: 6, role: 'infantry', salvo: 'long' });

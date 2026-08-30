@@ -17,8 +17,11 @@
     hole: number;
     items: Item[];
     pick: (key: string) => void;
+    /** A ring branched off another one gets a way back to it, seated in its own hole — nothing
+     * to click there otherwise. The top-level ring has none: closing it needs no undo. */
+    back?: () => void;
   }
-  let { x, y, hole, items, pick }: Props = $props();
+  let { x, y, hole, items, pick, back }: Props = $props();
 
   // The seat is UI, not board: it holds its size through pan and zoom. The icons are wider
   // than the track on purpose — they break both rims, so the ring reads as their backing
@@ -77,6 +80,10 @@
         <span class="name" class:show={hover === i}>{item.label}</span>
       </button>
     {/each}
+
+    {#if back}
+      <button class="back" aria-label="Back" onclick={back}>←</button>
+    {/if}
   </div>
 </div>
 
@@ -149,6 +156,22 @@
   }
   .slice.dim { cursor: default; }
   .slice.dim .face { filter: grayscale(1) drop-shadow(0 2px 5px rgb(0 0 0 / .45)); opacity: .4; }
+
+  /* Seated in the hole itself, not a seventh slice — small enough that the piece underneath
+     still reads, since undoing the branch is the one thing this ring adds over the last. */
+  .back {
+    position: absolute; left: 0; top: 0;
+    width: 34px; height: 34px; transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 1px solid rgb(150 143 132 / .5);
+    background: rgb(26 23 20 / .78);
+    /* Fixed, not `--ink`/`--paper`: the band behind it is dark in either theme, and those two
+       swap which one that means. */
+    color: #f4efe6; font-size: 1.5rem; font-weight: 700; line-height: 1; cursor: pointer;
+    filter: drop-shadow(0 2px 4px rgb(0 0 0 / .4));
+    transition: transform .12s cubic-bezier(.25, 1.3, .45, 1), background-color .12s ease;
+  }
+  .back:hover { transform: translate(-50%, -50%) scale(1.15); background: rgb(26 23 20 / .92); }
 
   @keyframes spread {
     from { --ro: 10; opacity: 0; }

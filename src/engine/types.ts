@@ -1,7 +1,8 @@
 import type { Board, GridKind, Square } from './board.js';
-import type { EngineKind, Reach, Role, Tactic, UnitStats } from './cards.js';
+import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
-import type { Grade, Grades, LadderType, RungId, SpellId } from './ladders.js';
+import type { Grade, Grades, LadderType } from './ladders.js';
+import type { CastAxis, CastBand, CastTier, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
 export const SIDES: Side[] = ['attacker', 'defender'];
@@ -53,7 +54,15 @@ export interface Unit {
   fear: boolean;
   tactics: Tactic[];
   grades: Grades;
-  spells: SpellId[];
+  /** `null` for a non-caster and for a caster with no tradition set (there is none, per
+   * `cardTraits`' own fallback — see cards.ts). Gates which trees `trees` may ever hold. */
+  tradition: Tradition | null;
+  /** Every tree this unit may cast at all, Tier 1 included — the caster's whole tradition, or
+   * the one tree a non-caster's tactic grants (section 11). */
+  trees: Tree[];
+  /** The caster's own push-only pool: level ÷ 5, refreshed every activation. 0 for a
+   * non-caster or a tactic-granted tree, which never pushes at all. */
+  castPool: number;
   quality: number;
   /** Actions left in this activation; back to three between activations. */
   actions: number;
@@ -72,12 +81,27 @@ export interface Unit {
   /** Activations left before the unit may move again. Digging in sets two: this one and the next. */
   rooted: number;
   exposed: boolean;
-  warded: boolean;
-  blessed: boolean;
   /** Took heart from an ally's Rally: +2 on its attacks until the end of its next activation.
    * The support half of the rally ladder — see `RallyEffect.heart`. */
   heartened: boolean;
+  /** Controlling Tier 3: may not reach above its grade on its next activation. Cleared at
+   * `finish`, the same as `heartened`. */
   compelled: boolean;
+  /** Defense buff, applied the moment it's cast: protects the target through whatever comes
+   * before its own next activation, the way the old Ward spell did — cleared at `begin`. */
+  defense: { bonus: number; noWoundDisorder: boolean; damageReduction: number };
+  /** Offense buff and Controlling's action penalty apply *during* the buffed or compelled
+   * unit's own next activation, not before it — cleared at `finish`. */
+  offense: { bonus: number; damage: number; noStrikeBack: boolean };
+  movementBuff: { bonusFeet: number; flies: boolean };
+  /** Controlling Tier 1/2. Tier 3 is `compelled`, above. */
+  control: { movementPenaltyFeet: number; actionPenalty: boolean };
+  /** Blast's lingering wound or Healing's regeneration: ticks at the start of the target's own
+   * activation (`begin`), for as many of its own activations as `roundsLeft` still covers. */
+  lingering: { tree: Tree; roundsLeft: number } | null;
+  /** Healing's "+1/+2 on the target's next save" — consumed by whichever save comes first,
+   * whoever's activation that falls in, not tied to `begin`/`finish` at all. */
+  nextSaveBonus: number;
 }
 
 /** Which unit acts. Defaults to `activeUnit(state)`. */
@@ -97,16 +121,23 @@ export interface Spend {
   defence: number;
   /** Withdraw only: another Speed's worth of ground, as a Move action buys. */
   distance: number;
+  /** Cast only: points off the caster's own push pool, stacked on top of `push` — see
+   * `castPool` on `Unit`. */
+  pool: number;
 }
 
 export type Dial = keyof Spend;
-export const DIALS: Dial[] = ['roll', 'push', 'defence', 'distance'];
+export const DIALS: Dial[] = ['roll', 'push', 'defence', 'distance', 'pool'];
 
 export interface RungAction extends Acts {
   type: LadderType;
   rung: Grade;
   target?: string;
-  spell?: SpellId;
+  spell?: Tree;
+  /** Cast only: which of range, duration or effect this push reaches for — never more than
+   * one. Defaults to `'effect'`, the only axis the graphical menu ever offers; range and
+   * duration pushes are reachable through this same action, just not from the board yet. */
+  axis?: CastAxis;
   spend?: Partial<Spend>;
 }
 
@@ -138,7 +169,8 @@ export interface TargetRef { kind: TargetKind; id: string }
 export interface TargetOffer { offer: ActionOffer; rungs: RungOption[] }
 
 export interface RungOption {
-  rung: RungId;
+  /** A `RungId` for the four ladders; `${Tree}-${CastTier}` (e.g. `blast-2`) for Cast. */
+  rung: string;
   index: Grade;
   label: string;
   detail: string;
@@ -164,6 +196,8 @@ export interface SpendDials {
   defence: boolean;
   /** Withdraw's second dial: another Speed's worth of ground to run. */
   distance: boolean;
+  /** Cast's own second dial: the caster's push-only pool, on top of `push`. */
+  pool: boolean;
 }
 
 export interface ActionOffer {
@@ -171,7 +205,7 @@ export interface ActionOffer {
   /** Actions the act itself costs, before anything the dials take. */
   cost: number;
   dials: SpendDials;
-  spell: SpellId | null;
+  spell: Tree | null;
   label: string;
   detail: string;
   granted: Grade;

@@ -5,6 +5,7 @@ import { BoardContainer } from './BoardContainer.js';
 import { brushColour, type Brush } from './brush.js';
 import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, type BoardMode, type Rect } from './Interaction.js';
 import { EdgeLayer } from './layers/EdgeLayer.js';
+import { GridLayer, type GridSettings } from './layers/GridLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
 import { ShotLayer } from './layers/ShotLayer.js';
@@ -14,6 +15,7 @@ import type { TokenModel } from './Token.js';
 import { currentTheme, type BoardTheme, type HighlightStyle } from './theme.js';
 
 export type { HighlightStyle } from './theme.js';
+export type { GridSettings } from './layers/GridLayer.js';
 export type { Brush } from './brush.js';
 export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
 export type { TokenBounds } from './hit.js';
@@ -23,6 +25,11 @@ export type { EngineTokenModel, TokenModel, TokenRing, UnitTokenModel } from './
 // coordinate text, and it is what a pan grabs: without it the outermost cells sit against the
 // viewport edge with nothing beside them to drag from.
 const PAD_CELLS = 2;
+// Extra empty canvas below the grid, pan-clamp only (it does not shrink the fitted zoom the
+// way PAD_CELLS would). The board is full-bleed behind the army bar at the bottom of the
+// screen, so a cell near the board's south edge can otherwise only ever sit under it — this
+// gives a pan room to carry that cell above the bar instead.
+const BOTTOM_PAD_CELLS = 6;
 
 export type { Rect } from './Interaction.js';
 
@@ -55,6 +62,9 @@ export interface BoardView {
    * board while it is open. */
   setFrozen(frozen: boolean): void;
   setBrush(brush: Brush | null): void;
+  /** The faint reference hex outline, off by default — the map controls' settings dialog owns
+   * its state, not any of the game/battle stages. */
+  setGrid(settings: Partial<GridSettings>): void;
   on<T extends BoardEventType>(event: T, handler: (event: BoardEventOf<T>) => void): () => void;
   /** Screen point (e.g. from a native `DragEvent`) to a cell key, for drag-drop from outside
    * the canvas — a DOM tray item dropped onto the board. */
@@ -115,6 +125,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
 
   const layers = boardContainer.layers;
   const terrainLayer = new TerrainLayer(layers.createLayer('terrain', layers.getDefaultZIndex('terrain')));
+  // Above terrain (0) but below edges (10) — the hairline should sit over the elevation wash,
+  // not get swallowed by it, but a wall or cliff still draws over the hairline it crosses.
+  const gridLayer = new GridLayer(layers.createLayer('grid', 4));
   const edgeLayer = new EdgeLayer(layers.createLayer('edges', layers.getDefaultZIndex('edges')));
   const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), opts.theme);
   const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), opts.ticker, opts.theme);
@@ -138,6 +151,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     geometry = fit();
     if (!currentBoard || !geometry) {
       terrainLayer.clear();
+      gridLayer.setGeometry(null, 0, opts.theme);
       edgeLayer.clear();
       labelLayer.clear();
       overlayLayer.setGeometry(null, 0, opts.theme);
@@ -151,6 +165,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     boardContainer.position.set((width - bounds.width) / 2, (height - bounds.height) / 2);
 
     terrainLayer.draw(opts.renderer, currentBoard, size, opts.theme);
+    gridLayer.setGeometry(grid, size, opts.theme);
     edgeLayer.draw(currentBoard, size, opts.theme);
     labelLayer.draw(grid, size, opts.theme);
     labelLayer.rescale();
@@ -166,11 +181,12 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     if (!geometry) return null;
     const bounds = geometry.grid.bounds(geometry.size);
     const pad = PAD_CELLS * geometry.size;
+    const bottomPad = BOTTOM_PAD_CELLS * geometry.size;
     return {
       x: boardContainer.position.x - pad,
       y: boardContainer.position.y - pad,
       width: bounds.width + 2 * pad,
-      height: bounds.height + 2 * pad,
+      height: bounds.height + pad + bottomPad,
     };
   }
 
@@ -282,6 +298,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     setBrush(brush) {
       interaction.setBrush(brush);
+    },
+    setGrid(settings) {
+      gridLayer.setSettings(settings);
     },
     on(event, handler) {
       const set = handlers.get(event) ?? new Set();
@@ -406,7 +425,7 @@ export { BoardContainer } from './BoardContainer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the BASE_URL-prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
-export { actionIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
+export { actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';

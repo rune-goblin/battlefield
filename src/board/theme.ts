@@ -11,6 +11,9 @@ export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', '
 export interface BoardTheme {
   mode: 'light' | 'dark';
   background: number;
+  /** The canvas mat behind the board's own bounds — deliberately far off any terrain colour
+   * so the map's edge reads against it in both themes. */
+  canvas: number;
   band: number;
   rule: number;
   ink: number;
@@ -48,6 +51,7 @@ export interface BoardTheme {
 const LIGHT: BoardTheme = {
   mode: 'light',
   background: 0xf8f4ec,
+  canvas: 0x141210,
   band: 0xefe7d8,
   rule: 0xb9ab93,
   ink: 0x1f1a17,
@@ -81,6 +85,7 @@ const LIGHT: BoardTheme = {
 const DARK: BoardTheme = {
   mode: 'dark',
   background: 0x1d1a17,
+  canvas: 0x141210,
   band: 0x2a2520,
   rule: 0x4c4338,
   ink: 0xe8e1d5,

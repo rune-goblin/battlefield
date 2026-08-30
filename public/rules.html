@@ -46,7 +46,7 @@
 <p class="sub">Rules for resolving a battle between armies in a single sitting.</p>
 
 <div class="key">
-<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of sixty-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit does one of five things — Shoot, Fight, Guard, Rally, Cast — or it moves. Each of the five is a ladder of three rungs, and a unit's grade on that ladder is the rung it takes for free; the rung above is a gamble it may reach for, and the rung above that is out of reach. Every act costs one action, and the actions left over buy weight: +2 each, on the roll, on the climb, or on the Defence a Guard sets. Hits deal wounds, one or two at a time, and four wounds destroy a unit. Losing a melee exchange, taking a shot, or watching half the army fall costs disorder, and a unit whose disorder reaches its Quality is shaken, and one point past it routs. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
+<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of sixty-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit does one of five things — Shoot, Fight, Guard, Rally, Cast — or it moves. Shoot, Fight, Guard and Rally are each a ladder of three rungs, and a unit's grade on that ladder is the rung it takes for free; the rung above is a gamble it may reach for, and the rung above that is out of reach. Cast works differently: every caster's base spell is free, and pushing buys more (section 11). Every act costs one action, and the actions left over buy weight: +2 each, on the roll, on the climb, or on the Defence a Guard sets. Hits deal wounds, one or two at a time, and four wounds destroy a unit. Losing a melee exchange or watching half the army fall costs disorder outright; a wound from a shot, a Blast or a free strike costs it too, unless the target's Fortitude saves against it. A unit whose disorder reaches its Quality is shaken, and one point past it routs. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
 </div>
 
 <nav class="toc">
@@ -84,25 +84,24 @@
 <tr><td>Defence</td><td>Armour Class, including any fortification bonus already on the sheet</td><td>24</td></tr>
 <tr><td>Will</td><td>Will save. Every reach for a rung, every Rally, every Blast.</td><td>+13</td></tr>
 <tr><td>Reflex</td><td>Reflex save. Breaking contact, and nothing else.</td><td>+14</td></tr>
-<tr><td>Fortitude</td><td>Fortitude save. Carried on every sheet; no rule reads it yet.</td><td>+15</td></tr>
+<tr><td>Fortitude</td><td>Fortitude save. Rolled against a wound from a shot, a Blast or a free strike, to resist the disorder it would otherwise cost (section 8).</td><td>+15</td></tr>
 <tr><td>Speed</td><td>Off the sheet's Speed in feet: one Move action buys <code>&lceil;Speed &divide; 30&rceil;</code> hexes, minimum one. The hex has no fixed size of its own &mdash; only this conversion matters.</td><td>20 ft &rarr; 1 hex an action</td></tr>
 <tr><td>Level</td><td>The DC of its own reaches, and the DC its enemies rally against</td><td>6 &rarr; DC 22</td></tr>
 <tr><td>Wounds</td><td>0 to 4, from current hit points (section 8)</td><td>0</td></tr>
 <tr><td>Disorder</td><td>From the army's demoralized value (section 9)</td><td>0</td></tr>
 </table></div>
 <p>Level DCs are the standard table: level 1 is DC 15, 3 is 18, 6 is 22, 8 is 24, 12 is 30.</p>
-<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level where Armour Class spreads 3.2, which is why breaking contact reads off Reflex rather than off Defence. Perception is derived and displayed, but no rule reads it — there is no initiative roll (section 5). Fortitude is imported and displayed the same way, held in reserve for a typed effect a future spell might force the save against.</p>
-<p>A card with no sheet takes the level tables for its type. Infantry: high AC, moderate attack, high Will, moderate Reflex, one hex an action. Cavalry: high AC, high attack, moderate Will, high Reflex, two hexes an action.</p>
+<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level where Armour Class spreads 3.2, which is why breaking contact reads off Reflex rather than off Defence. Perception is derived and displayed, but no rule reads it — there is no initiative roll (section 5). Fortitude now reads for one thing: the save a wound from a shot, a Blast or a free strike asks before it disorders anyone (section 8).</p>
+<p>A card with no sheet takes the level tables for its type. Infantry: high AC, moderate attack, high Will, moderate Reflex, moderate Fortitude, one hex an action. Cavalry: high AC, high attack, moderate Will, high Reflex, moderate Fortitude, two hexes an action.</p>
 
 <h3>Grades</h3>
-<p>A unit carries a <strong>grade</strong> of 1, 2 or 3 on each of the five ladders. The grade is read off the statblock, never hand-picked.</p>
+<p>A unit carries a <strong>grade</strong> of 1, 2 or 3 on each of four ladders. The grade is read off the statblock, never hand-picked. Cast carries no grade of its own — a tradition caps how far a caster may push instead (section 11).</p>
 <div class="wrap"><table>
 <tr><th>Ladder</th><th>Grade comes from</th></tr>
 <tr><td>Shoot</td><td>1 for every troop with an ordinary Salvo; a covering-fire tactic grants 3 outright</td></tr>
 <tr><td>Fight</td><td>No melee attack is 1; a melee drill or a fear aura is 3; anything else is 2</td></tr>
 <tr><td>Guard</td><td>1, plus 1 for fighting in formation, plus 1 for shields or a magic ward. Maximum 3.</td></tr>
 <tr><td>Rally</td><td>Will save: high for its level or better is 3, moderate is 2, anything lower is 1</td></tr>
-<tr><td>Cast</td><td>No spellcasting is 1. A caster is 1 below level 8, 2 to level 14, 3 from level 15.</td></tr>
 </table></div>
 <p>An importer reads <em>melee drill</em>, <em>shields</em>, <em>formation</em>, <em>magic ward</em>, <em>mounted</em> and <em>no retreat</em> straight off the recurring action names on a statblock. A trained tactic, where a card carries one, raises one grade to 3 and does nothing else: covering fire raises Shoot; a reactive attack, dirty fighting or a feint raises Fight; raised shields or a shield block raises Guard; defending allies or battlefield medicine raises Rally.</p>
 <div class="aside">
@@ -420,16 +419,15 @@
 <p>Alternating activation is what keeps a round readable: no side ever takes its whole army's worth of actions while the other watches, and a side that outnumbers the other spends its surplus at the end of the round rather than the start.</p>
 
 <h2 id="ladders">6. Ladders, grades and weight</h2>
-<p>Five things a unit can do, and each is a ladder of three rungs. The rung is what happens; the grade is how high the unit climbs for free.</p>
+<p>Four things a unit can do this way, and each is a ladder of three rungs. The rung is what happens; the grade is how high the unit climbs for free. A fifth, Cast, works differently — no grade, a tradition-capped tree instead of a rung, and its own push (section 11).</p>
 <div class="wrap"><table>
 <tr><th>Ladder</th><th>Rung 1</th><th>Rung 2</th><th>Rung 3</th></tr>
 <tr><td>Shoot</td><td><strong>Fire</strong> — your effective range</td><td><strong>Aim</strong> — one band off it, either way</td><td><strong>Snipe</strong> — two bands off it, either way</td></tr>
 <tr><td>Fight</td><td><strong>Strike</strong> — a plain melee exchange</td><td><strong>Press</strong> — the loser of the exchange takes 1 more disorder</td><td><strong>Overrun</strong> — take their ground if they break</td></tr>
 <tr><td>Guard</td><td><strong>Brace</strong> — raised shields</td><td><strong>Dig in</strong> — criticals against you land as ordinary hits; you may not move again this activation</td><td><strong>Shieldwall</strong> — adjacent allies count as braced</td></tr>
 <tr><td>Rally</td><td><strong>Steady</strong> — yourself, and one adjacent ally takes heart</td><td><strong>Rally</strong> — and that ally clears 1 as well</td><td><strong>Inspire</strong> — every friendly unit within 2 clears 1 and takes heart</td></tr>
-<tr><td>Cast</td><td><strong>Minor</strong> — yourself</td><td><strong>Major</strong> — yourself or an adjacent unit</td><td><strong>Grand</strong> — anywhere in sight</td></tr>
 </table></div>
-<p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one nothing at all. Rally is otherwise always offered, and a caster adds a row for each spell it knows. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
+<p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one nothing at all. Rally is otherwise always offered, and a caster adds a row for each of the six trees its tradition grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
 <p>Climbing the ladder is one way to spend a spare action; buying a flat bonus on the roll you are already making is the other. A rung changes what the act does — Aim reaches past your natural range, Overrun takes ground, Inspire widens Rally's reach. Weight changes only the number: +2 per action, stacked on the same act, whatever rung you took it at. Neither is more correct than the other — see <a href="#weight">Weight</a>, below, for where each spare action can land.</p>
 
 <h3>Reaching above your grade</h3>
@@ -516,7 +514,7 @@
 <p><strong>Overrun</strong> changes what happens after: if the target is destroyed or routed by the exchange and its hex is clear, the attacker takes the ground.</p>
 
 <h3>Shooting</h3>
-<p>A shot is one roll: d20 + Volley against the target's Defence, with the same two wounds on a critical and one on a hit. A wound from a shot costs the target 1 disorder, and so does a wound from a Blast or from a free strike — melee exchanges are the only wounds that do not carry disorder of their own.</p>
+<p>A shot is one roll: d20 + Volley against the target's Defence, with the same two wounds on a critical and one on a hit. A wound from a shot, a Blast or a free strike sends the target to a Fortitude save — d20 + Fortitude, less disorder, against the attacking creature's level DC — and only a failure costs it 1 disorder. A melee exchange asks no such save: its wounds were never the morale event to begin with (above).</p>
 <p>The rung sets how far off the shooter's own effective range the shot reaches. Fire is that range itself, free; Aim swings one band off it and Snipe two, in whichever direction the target actually is &mdash; nearer or farther. Weight bought with a spare action goes on the roll or on that reach check, the player's choice; nothing about the rung itself touches cover. Shooting is not possible while engaged, in either direction.</p>
 
 <h3>Defence</h3>
@@ -524,7 +522,7 @@
 <table>
 <tr><th>Term</th><th>Value</th></tr>
 <tr><td>Base</td><td>The unit's Defence, off the sheet</td></tr>
-<tr><td>Circumstance</td><td>The best one of: the Defence its own Guard set, +2 from an adjacent Shieldwall, +2 from a Ward, +1 for forest cover against a shot. These never stack.</td></tr>
+<tr><td>Circumstance</td><td>The best one of: the Defence its own Guard set, +2 from an adjacent Shieldwall, +2 or +4 from a Defense buff (section 11), +1 for forest cover against a shot. These never stack.</td></tr>
 <tr><td>Disorder</td><td>&minus;1 for each point</td></tr>
 <tr><td>Outflanked</td><td>&minus;2 while engaged with two or more enemies</td></tr>
 <tr><td>Exposed</td><td>&minus;2 after a critically failed Strike, until the unit acts again</td></tr>
@@ -538,7 +536,7 @@
 <div class="wrap"><table>
 <tr><th>Disorder comes from</th><th>Points</th></tr>
 <tr><td>Losing a melee exchange</td><td>1, or 2 against a Press</td></tr>
-<tr><td>A wound from a shot, a Blast or a free strike</td><td>1</td></tr>
+<tr><td>A wound from a shot, a Blast or a free strike, on a failed Fortitude save against the attacker's level DC</td><td>1</td></tr>
 <tr><td>Coming to grips with something you fear</td><td>1, when one side of the contact has a fear aura and the other does not</td></tr>
 <tr><td>A critically failed reach, push or Rally</td><td>1</td></tr>
 <tr><td>A critically failed escape</td><td>1, and you do not get away</td></tr>
@@ -582,34 +580,51 @@
 <p>A fort is a block of settlement hexes against the defender's edge, walled on its front and flanks with the segments its tier allows: four edges at tier 0, up to seven at tier 3. A short budget leaves a gate open on one flank. Whatever the fortification gives the garrison in Defence and saves is already on its sheet.</p>
 
 <h2 id="magic">11. Magic</h2>
-<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>, and a caster knows the whole menu below. Its Cast grade decides how far a spell carries: Minor reaches itself, Major an adjacent unit, Grand anywhere in sight. Three trained tactics grant a single spell to a troop with no magic at all — battlefield medicine grants Mend, defending allies grants Ward, and demoralizing grants Compel.</p>
-<div class="wrap"><table>
-<tr><th>Spell</th><th>At</th><th>Effect</th></tr>
-<tr><td>Blast</td><td>An enemy</td><td>An attack that ignores cover: d20 + Will, less disorder, against Defence. It is the activation's one attack.</td></tr>
-<tr><td>Ward</td><td>An ally</td><td>+2 Defence until the target acts</td></tr>
-<tr><td>Mend</td><td>An ally</td><td>Remove one wound</td></tr>
-<tr><td>Bless</td><td>An ally</td><td>The target's next act climbs one rung free, with no reach check</td></tr>
-<tr><td>Compel</td><td>An enemy</td><td>The target may not reach above its grade on its next activation</td></tr>
-</table></div>
+<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>, and every caster belongs to one of magic's four traditions: <strong>arcane</strong>, <strong>divine</strong>, <strong>occult</strong>, <strong>primal</strong>. A tradition does not carry every kind of magic &mdash; see Tradition, below.</p>
 
+<h3>Casting</h3>
+<p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster itself rolls, and <strong>spell DC</strong>, what a target must beat to resist it. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
+<p>The cast itself is free: no roll, at whichever tree's own base range (below), resolving at Tier 1 of whichever tree you choose. Pushing is what introduces risk. Reaching for extended range, a longer duration, or a stronger effect &mdash; never more than one of the three on a single cast &mdash; commits you to a <strong>cast roll</strong>: d20 + spell attack, less disorder, against your own level DC, +2 when the tier reached for is the third &mdash; the same reach formula every other ladder uses, with spell attack standing in for Will. Crit success climbs one tier further than you reached for, capped at the third; success gets you what you reached for; failure falls back to the free base and the cast still happens, the same as every other ladder's reach; critical failure falls back and costs you 1 disorder.</p>
+<p>Once the cast lands, an enemy-targeted tree &mdash; Blast or Controlling &mdash; needs a second, separate <strong>effect roll</strong> to see how well it bites, decoupled from the cast roll that got it there. Neither is the caster rolling an attack: the target resists instead, the same shape as an Escape check resists a holder's own attack DC. Blast asks for Reflex, Controlling for Will &mdash; the target rolls d20 + that save, less disorder, against the caster's own spell DC. Blast is still the activation's one attack, the same slot a Fight or a Shot uses. An ally-targeted tree &mdash; Healing, or the Offense, Defense or Movement buff &mdash; has nothing to resist, so it simply applies once the cast lands, no second roll.</p>
 <div class="aside">
-<h4>Cast rework — draft, not decided</h4>
-<p>What follows replaces nothing above yet. It is a sketch of where the conversation about Cast has landed, kept here so it can be read as one shape instead of a chat thread.</p>
-<p><strong>Converged so far.</strong> Cast drops Minor/Major/Grand as a scope ladder: range no longer climbs with a rung. Every caster gets the base cast for free, at a fixed range read off the caster, no roll required &mdash; the same way a granted rung is free on every other ladder. Pushing is what introduces risk: spending weight to reach for extended range or an extended effect commits you to a <strong>cast roll</strong> you might fail, where declining to push never does. Once the cast succeeds &mdash; automatically at the base, or by winning the pushed roll &mdash; a separate <strong>effect roll</strong> decides what actually happens, decoupled from the cast roll itself. Which effect the cast produces is a further, separate choice: damaging, healing, controlling, or one of four buffs &mdash; offense, defense, movement, morale. Each of those seven types carries its own three-tier progression, and a tier is a different kind of thing, not a bigger number on the same thing &mdash; the two worked so far:</p>
-<div class="wrap"><table>
-<tr><th>Type</th><th>Tier 1</th><th>Tier 2</th><th>Tier 3</th></tr>
-<tr><td>Damaging</td><td>An ordinary hit</td><td>+1 to the damage result</td><td>A second attack</td></tr>
-<tr><td>Movement (buff)</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>Grants a movement type: fly, swim, or water walk</td></tr>
-</table></div>
-<p>Healing, controlling, and offense/defense/morale buffs are named but not yet sketched to a tier table.</p>
-<p><strong>Open, as questions.</strong></p>
-<ul>
-<li>What sets a type's tier for a given caster &mdash; read off its signature spells or class signals per troop, the way Fight's grade already reads off <em>melee-drill</em>, or chosen freely at cast time and capped by one shared Cast level?</li>
-<li>A failed cast roll (only possible when pushing) costs you the extension you reached for &mdash; does it also cost the base effect roll that would otherwise have followed, or does the cast still land at its unpushed base and only the reach fails, the way every other ladder's reach already falls back to its granted rung rather than losing the act entirely?</li>
-<li>An earlier pass at this also named a penalty to the target's saving throw as a third thing weight could buy, alongside extended range and extended effect. Still three, or has the save penalty folded into "extended effect"?</li>
-<li>What stat does the effect roll check, and against which of the target's saves &mdash; does that vary by effect type, now that Fortitude is on the sheet alongside Will and Reflex (section 2)?</li>
-</ul>
+<h4>No tree here targets Fortitude yet</h4>
+<p>Blast rolls against Reflex and Controlling against Will, so casting still leaves Fortitude untouched &mdash; its live use is resisting the disorder a wound deals outright (section 8), not a spell effect. A debuff category (poison, exhaustion, disease: the classic Fortitude flavor) is still the obvious candidate for an eighth tree, but adding one to a system that only just settled on six is a real question, not a foregone one.</p>
 </div>
+<p>A caster also draws on a second pool ordinary actions can't touch: <strong>level &divide; 5, rounded down</strong>, spendable only on a Cast push &mdash; 0 below level 5, rising to 4 at level 20. It refreshes every activation, exactly as the ordinary three actions do. Cast carries no grade of its own: there is no second number gating which tiers are free, the way grade still does for Shoot, Fight, Guard and Rally. The pool is the one mechanic deciding how far a push goes, stacked on top of whatever a caster's ordinary three actions also commit to the same cast.</p>
+<div class="aside">
+<h4>Other ways the pool could refresh</h4>
+<p>Deferred rather than built: a flat allocation drawn down across the whole battle instead of refreshing every activation; a recharge roll each turn, closer to how Pathfinder's own recharge works; or a refresh every few turns instead of every one. Simplicity wins for now.</p>
+</div>
+
+<h3>Tradition</h3>
+<p>Each cell below is the highest tier a tradition may ever reach in that tree &mdash; 0 meaning no access at all. Nothing reaches every tree, and nothing sits at 0 in more than two.</p>
+<div class="wrap"><table>
+<tr><th>Tree</th><th>Arcane</th><th>Divine</th><th>Occult</th><th>Primal</th></tr>
+<tr><td>Blast</td><td>3</td><td>1</td><td>2</td><td>2</td></tr>
+<tr><td>Healing</td><td>0</td><td>3</td><td>1</td><td>2</td></tr>
+<tr><td>Controlling</td><td>2</td><td>2</td><td>3</td><td>1</td></tr>
+<tr><td>Offense (buff)</td><td>1</td><td>2</td><td>3</td><td>1</td></tr>
+<tr><td>Defense (buff)</td><td>2</td><td>2</td><td>1</td><td>1</td></tr>
+<tr><td>Movement (buff)</td><td>2</td><td>0</td><td>0</td><td>3</td></tr>
+<tr><td><em>Total</em></td><td><em>10</em></td><td><em>10</em></td><td><em>10</em></td><td><em>10</em></td></tr>
+</table></div>
+<p>Every column sums to 10 &mdash; a budget check, not proof of equal power. A 3 in Blast and a 3 in Movement aren't worth the same at the table, so this only rules out one tradition being flatly starved next to the other three.</p>
+
+<h3>The six trees</h3>
+<p>A tier is a different kind of thing, not a bigger number on the same thing &mdash; the same rule every rung already follows. Cast &middot; range and Cast &middot; duration aren't trees a tradition gates; every caster pushes them the same way regardless of tradition. Pushing either where the tree it would improve has nothing to use it &mdash; a duration push on a Blast still at Tier 1, either push on an ally-targeted tree once its own effect roll doesn't exist to bonus, or a second band of range on a Blast already pushed one band from long to extreme, the board's own ceiling &mdash; is legal and simply buys nothing, the same as a dial with nowhere to land elsewhere in the system.</p>
+<div class="wrap"><table>
+<tr><th rowspan="2">Tree</th><th rowspan="2">Tier 1 &middot; base (free)</th><th colspan="2">Tier 2 &middot; push</th><th colspan="2">Tier 3 &middot; push, critical</th></tr>
+<tr><th>Effect</th><th>Bonus</th><th>Effect</th><th>Bonus</th></tr>
+<tr><td>Cast &middot; range</td><td>Engaged for Healing; short for the three buffs; medium for Controlling; long for Blast</td><td>One band out</td><td>+2 effect roll</td><td>Two bands out</td><td>+4 effect roll</td></tr>
+<tr><td>Cast &middot; duration</td><td>Instant</td><td>Lasts 2 rounds</td><td>+2 effect roll</td><td>Lasts 3 rounds</td><td>+4 effect roll</td></tr>
+<tr><td>Blast</td><td>An ordinary hit</td><td>+1 to the damage result</td><td>&minus;1 to the target's save against the effect</td><td>A lingering wound: 1 wound at the start of the target's next activation, no roll &mdash; ticks again each round the cast's duration still covers</td><td>&minus;2 to the target's save against the effect</td></tr>
+<tr><td>Healing</td><td>&minus;1 disorder</td><td>+1 health</td><td>+1 on the target's next save</td><td>Regeneration: 1 wound cleared at the start of each of the target's own activations, for as long as the cast's duration lasts</td><td>+2 on the target's next save</td></tr>
+<tr><td>Controlling</td><td>&minus;1 movement</td><td>&minus;1 action</td><td>&minus;1 to the target's save against the effect</td><td>May not reach above its grade on its next activation</td><td>&minus;2 to the target's save against the effect</td></tr>
+<tr><td>Offense (buff)</td><td>+1 to the buffed unit's attack</td><td>+1 damage</td><td>+2 to the buffed unit's attack</td><td>If the buffed unit's next act is a Fight, the target does not strike back</td><td>+3 to the buffed unit's attack</td></tr>
+<tr><td>Defense (buff)</td><td>+2 AC</td><td>The buffed unit's next wound taken costs it no disorder</td><td>+4 AC</td><td>&minus;1 from the next damage taken</td><td>+4 AC, +2 saves</td></tr>
+<tr><td>Movement (buff)</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>+2 movement</td><td>Grants a movement type: fly, swim, or water walk</td><td>+3 movement</td></tr>
+</table></div><p>The five named spells this system used to have are retired outright &mdash; every caster now works through the six trees above, not a menu of spells &mdash; but each old name is the tree that replaced it, for anyone tracing the lineage: Blast is the Blast tree, Mend is Healing, Ward is Defense, Compel is Controlling, and Bless is the Offense buff. Only the first four carry their old mechanic forward with any precision (Compel most exactly, as Controlling's own Tier 3); Bless's old effect &mdash; a free rung-climb with no reach check &mdash; doesn't survive in Offense's tier table as written, so the naming is lineage, not a literal carry-over.</p>
+<p>Three trained tactics still grant a fixed effect to a troop with no magic of its own, unrolled and untiered: battlefield medicine grants Healing's Tier 2 (+1 health), defending allies grants Defense's Tier 1 (+2 AC), and demoralizing grants Controlling's Tier 3 (may not reach above its grade on its next activation).</p>
 
 <h2 id="siege">12. Siege engines</h2>
 <p>An engine is <strong>attached</strong> to a unit and rides with it, or <strong>emplaced</strong> on a hex of its own. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>
@@ -622,8 +637,7 @@
 <h3>Dusk</h3>
 <p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
 <h3>The kingdom's checks</h3>
-<p>The winning kingdom rolls a Warfare check. Critical success: heal 1 wound on every damaged unit and gain 1 Fame. Success: heal 1 wound on one unit. Failure: nothing. Critical failure: 1 disorder on every unit.</p>
-<p>The losing kingdom rolls a Defense check. Critical success: one destroyed unit survives at 3 wounds. Success: nothing. Failure: 1 Unrest. Critical failure: 1d4 Unrest.</p>
+<p>TODO &mdash; what a battle's outcome buys the kingdom (Fame, Unrest, recovery) is not the engine's concern; <code>BattleState</code> ends at wounds, disorder, destroyed and captured. It belongs here as a kingdom action in whichever system frames the fight, resolved on a PC's own skill check rather than a kingdom rolling a Warfare or Defense skill of its own. Placeholder until that action is designed.</p>
 <h3>Back on the kingdom map</h3>
 <p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
 
@@ -644,11 +658,11 @@
 <tr><td>Charge</td><td>The movement, plus 1</td><td>A Fight rung on arrival</td><td>Spends the activation's attack</td></tr>
 <tr><td>Push</td><td>Every action left</td><td>Will &minus; disorder, +2 mounted, +2 an action past the first, vs your level DC</td><td>Success reaches the hex; failure stops at the last hex you could afford; critical failure adds 1 disorder</td></tr>
 <tr><td>Withdraw</td><td>1, plus the distance dial</td><td>Reflex &minus; disorder vs each holder's Strike + 10</td><td>Failure: a free strike, 1 wound at most. Critical failure: 1 disorder and you stay put. Then one hex clear, or a Speed's worth per action bought.</td></tr>
-<tr><td>Shoot</td><td>1</td><td>Volley vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the wound costs the target 1 disorder. Fire is your effective range, Aim one band off it, Snipe two, either direction.</td></tr>
+<tr><td>Shoot</td><td>1</td><td>Volley vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude &minus; disorder vs your level DC or takes 1 disorder. Fire is your effective range, Aim one band off it, Snipe two, either direction.</td></tr>
 <tr><td>Fight</td><td>1</td><td>Strike vs Defence, then the target strikes back</td><td>Crit 2 wounds &middot; hit 1 &middot; the side that took more takes 1 disorder, 2 against a Press &middot; critical failure exposes you. Overrun takes their ground.</td></tr>
 <tr><td>Guard</td><td>1</td><td>&mdash;</td><td>+2 Defence for every action committed, the first included. Dig in caps hits at one wound; Shieldwall braces adjacent allies.</td></tr>
 <tr><td>Rally</td><td>1</td><td>Will &minus; disorder vs the rout DC</td><td>Crit clears all &middot; success 2 &middot; failure 1 &middot; critical failure adds 1. The rung says who else it lifts.</td></tr>
-<tr><td>Cast</td><td>1</td><td>Blast: Will &minus; disorder vs Defence. The rest need no roll.</td><td>Minor reaches yourself, Major an adjacent unit, Grand anywhere in sight</td></tr>
+<tr><td>Cast</td><td>1, free at the base; a push spends further actions from the caster's pool or its own three</td><td>Push: spell attack &minus; disorder vs your level DC, +2 for Tier 3. Blast's effect: the target's Reflex &minus; disorder vs your spell DC. Controlling's effect: the target's Will &minus; disorder vs your spell DC. Ally trees need no effect roll.</td><td>Push crit climbs one tier further &middot; push failure falls back to the free base, cast still happens &middot; push critical failure falls back and adds 1 disorder. Tradition caps which trees, and how high (section 11).</td></tr>
 <tr><td>Reach</td><td>Nothing; it is part of the act</td><td>Will &minus; disorder vs your level DC, +2 for a third rung</td><td>Crit climbs one further &middot; failure falls back to your grade and the act happens anyway &middot; critical failure adds 1 disorder</td></tr>
 </table></div>
 <div class="wrap"><table class="ref">

@@ -1,11 +1,11 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, SPELLS, withdrawTargets,
-    type ActionOffer, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, castRungOf, CELL_FEET, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
+    offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, TREE_TARGET, withdrawTargets,
+    type ActionOffer, type CastTier, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption, type Tree,
     type RungTarget, type Spend, type SpendDials, type TargetOffer, type TargetRef, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
-  import { actionIconUrl, troopArtUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
+  import { actionIconUrl, castIconUrl, troopArtUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
   import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
@@ -45,7 +45,7 @@
   $effect(() => () => { for (const t of flashTimers) clearTimeout(t); });
   const flashSet = $derived(new Set(flashing));
 
-  const NONE: Spend = { roll: 0, push: 0, defence: 0, distance: 0 };
+  const NONE: Spend = { roll: 0, push: 0, defence: 0, distance: 0, pool: 0 };
   const WITHDRAW_KEY = 'withdraw';
   const used = (sp: Spend) => sp.roll + sp.push + sp.defence + sp.distance;
 
@@ -55,20 +55,23 @@
 
   // Actions drain as the activation runs, so a stored allocation is trimmed on read rather
   // than tracked — the panel can never propose more than the unit still has.
-  function spendOn(key: string, d: SpendDials): Spend {
+  // The pool draws from the caster's own `castPool`, never from `d.extra` — a wholly separate
+  // budget from every other dial, so it is trimmed and capped on its own.
+  function spendOn(key: string, d: SpendDials, poolMax = Infinity): Spend {
     const stored = alloc[key] ?? NONE;
     const out = { ...NONE };
     let left = d.extra;
     for (const dial of DIALS) {
       if (!d[dial]) continue;
+      if (dial === 'pool') { out.pool = Math.max(0, Math.min(stored.pool, poolMax)); continue; }
       out[dial] = Math.max(0, Math.min(stored[dial], left));
       left -= out[dial];
     }
     return out;
   }
-  function setDial(key: string, d: SpendDials, dial: Dial, to: number) {
-    const sp = spendOn(key, d);
-    const room = d.extra - used(sp) + sp[dial];
+  function setDial(key: string, d: SpendDials, dial: Dial, to: number, poolMax = Infinity) {
+    const sp = spendOn(key, d, poolMax);
+    const room = dial === 'pool' ? poolMax : d.extra - used(sp) + sp[dial];
     alloc = { ...alloc, [key]: { ...sp, [dial]: Math.max(0, Math.min(to, room)) } };
   }
 
@@ -80,7 +83,8 @@
     dial === 'roll' ? `+${step} to ${offer ? ROLL_NOUN[offer.type] : 'the Escape check'}`
       : dial === 'push' ? `+${step} to the reach check`
         : dial === 'defence' ? `+${step} more Defence`
-          : `one more square${speed > CELL_FEET ? 's' : ''}' worth of ground`;
+          : dial === 'pool' ? `+${step} to the reach check, off the caster's own pool`
+            : `one more square${speed > CELL_FEET ? 's' : ''}' worth of ground`;
 
   /** What the allocation actually comes to, so the player reads the number before committing.
    * Every number here is bought with actions — no rung adds one of its own. */
@@ -94,7 +98,7 @@
     }
     if (offer.dials.defence) out.push(`Defence +${guardDefence(offer.cost + sp.defence)}`);
     if (opt.access === 'reach' && offer.reachDc !== null) {
-      out.push(`Reach DC ${offer.reachDc} · d20+${offer.reachModifier + sp.push * step}`);
+      out.push(`Reach DC ${offer.reachDc} · d20+${offer.reachModifier + (sp.push + sp.pool) * step}`);
     }
     out.push(`Costs ${offer.cost + used(sp)} of ${u.actions} actions`);
     return out;
@@ -134,10 +138,10 @@
 
   // A new unit drops every open popup and any in-flight drag preview — all of it is
   // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; radial = null; hoveredBand = null; moveOpen = true; alloc = {}; });
+  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; alloc = {}; });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
-    if (offer.spell) return SPELLS[offer.spell].at === 'enemy' ? 'attack' : 'deploy';
+    if (offer.spell) return TREE_TARGET[offer.spell] === 'enemy' ? 'attack' : 'deploy';
     if (offer.type === 'shoot' || offer.type === 'fight') return 'attack';
     return 'deploy';
   }
@@ -271,37 +275,87 @@
   });
 
   let armed = $state<string | null>(null);
+  // Cast alone branches before a target: which tree, chosen off a picker anchored on the
+  // caster's own piece, narrows what "Cast" then lights up and what the eventual aim popup
+  // offers — every other verb still goes straight from the ring to the wash.
+  let castPick = $state<ActionOffer[] | null>(null);
+  let armedTree = $state<Tree | null>(null);
   const armedProp = $derived(props.find((p) => p.key === armed && p.legal) ?? null);
+  const armedCastOffer = $derived(
+    armed === 'cast' && armedTree ? (act?.offers.find((o) => o.type === 'cast' && o.spell === armedTree) ?? null) : null,
+  );
   // The arm outlives the popup it opened, so cancelling the popup lands back on the wash
-  // instead of on nothing. `arming` is the state where the board is waiting to be touched.
-  const arming = $derived(armedProp && !aim && !pending ? armedProp : null);
+  // instead of on nothing. `arming` is the state where the board is waiting to be touched —
+  // narrowed to the chosen tree's own targets once one is picked, not Cast's whole book.
+  const arming = $derived(
+    armedProp && !aim && !pending
+      ? (armedCastOffer ? { ...armedProp, label: armedCastOffer.label, cells: offerCells(armedCastOffer) } : armedProp)
+      : null,
+  );
   // A new activation, or a verb that has run out of targets, drops the arm.
-  $effect(() => { if (armed && !armedProp) armed = null; });
+  $effect(() => { if (armed && !armedProp) { armed = null; armedTree = null; } });
 
-  /** One step back up the chain the ring starts: popup, then the wash, then the ring, then
-   * nothing. Nothing is committed until the last click, so every stage can be walked out of. */
+  /** One step back up the chain the ring starts: popup, then the wash, then the tree picker
+   * (Cast only), then the ring, then nothing. Nothing is committed until the last click, so
+   * every stage can be walked out of. */
   function stepBack() {
     if (pending) { pending = null; return; }
     if (aim) { aim = null; return; }
     if (armed) {
       armed = null;
+      if (armedTree && active) { armedTree = null; castPick = castOffers(); return; }
+      armedTree = null;
+      if (active) radial = { cell: notation(active.square) };
+      return;
+    }
+    if (castPick) {
+      castPick = null;
       if (active) radial = { cell: notation(active.square) };
       return;
     }
     radial = null;
   }
 
+  /** Every tree the active unit could still cast — a fresh read, not a stored list, so a
+   * critically failed push or a spent pool point is reflected the moment the picker reopens. */
+  const castOffers = () => (act?.offers ?? []).filter((o) => o.type === 'cast' && o.rungs.some((r) => r.legal));
+
   /** Take a verb off the ring: it lights everything it can touch. One thing to touch means
    * there is nothing to choose, so it opens there at once — which is what keeps Guard a
-   * single click, the way it was when the ladder sat straight on the piece. */
+   * single click, the way it was when the ladder sat straight on the piece. Cast is the one
+   * verb with a second choice behind it — which tree — so it branches to that picker instead
+   * of lighting the board outright, unless there is only the one tree to pick. */
   function takeProp(p: Prop) {
     if (!p.legal || !active) return;
     pending = null;
     aim = null;
     radial = null;
+    if (p.key === 'cast') {
+      if (armed === 'cast' || castPick) { armed = null; armedTree = null; castPick = null; return; }
+      const offers = castOffers();
+      if (offers.length <= 1) {
+        armed = 'cast';
+        armedTree = offers[0]?.spell ?? null;
+        if (p.cells.length === 1) applyProp(p, p.cells[0]);
+      } else {
+        castPick = offers;
+      }
+      return;
+    }
     if (armed === p.key) { armed = null; return; }
     armed = p.key;
     if (p.cells.length === 1) applyProp(p, p.cells[0]);
+  }
+
+  /** The picker's own choice: arm Cast narrowed to this one tree, opening straight to the aim
+   * popup when it has only one thing to touch. */
+  function chooseTree(o: ActionOffer) {
+    castPick = null;
+    armed = 'cast';
+    armedTree = o.spell;
+    const castProp = props.find((p) => p.key === 'cast');
+    const cells = offerCells(o);
+    if (castProp && cells.length === 1) applyProp(castProp, cells[0]);
   }
 
   /** Spend an armed prop on a board object. */
@@ -332,6 +386,15 @@
   const pickProp = (key: string) => {
     const p = props.find((x) => x.key === key);
     if (p) takeProp(p);
+  };
+
+  // Cast's own second ring: the tree picker, on the same spot the first ring just vacated.
+  const castRadialItems = $derived((castPick ?? []).map((o) => ({
+    key: o.spell as string, src: castIconUrl(o.spell!), label: o.label, legal: true,
+  })));
+  const pickCastTree = (key: string) => {
+    const o = castPick?.find((x) => x.spell === key);
+    if (o) chooseTree(o);
   };
 
   function classify(moves: Map<string, MoveReach>, path: string[]): { near: string[]; far: string[] } {
@@ -473,11 +536,12 @@
 
   // proto: pan, zoom, a window resize and the board's own recentring each move the cell under
   // the open ring, and no one event covers all four — so the anchor is read every frame while
-  // the ring is open, and never otherwise.
+  // the ring is open, and never otherwise. The tree picker is a second ring on the same spot
+  // Cast's own ring held — the caster's own square — so it shares this same tracker.
   let lastAnchor: { x: number; y: number } | null = null;
   $effect(() => {
-    if (!radial) { anchor = null; lastAnchor = null; return; }
-    const cell = radial.cell;
+    const cell = radial?.cell ?? (castPick && active ? notation(active.square) : null);
+    if (!cell) { anchor = null; lastAnchor = null; return; }
     let frame = 0;
     const follow = () => {
       const p = boardRef?.screenOf(cell);
@@ -672,7 +736,10 @@
   function aimAt(target: TargetRef, cell: string, label: string, only: LadderType | null = null) {
     if (!active) return;
     const all = offersAt(b, target, active.id);
-    const groups = only ? all.filter((g) => g.offer.type === only) : all;
+    let groups = only ? all.filter((g) => g.offer.type === only) : all;
+    // The tree was already chosen at the picker; the popup here is one tier ladder, not a
+    // second choice of tree.
+    if (only === 'cast' && armedTree) groups = groups.filter((g) => g.offer.spell === armedTree);
     aim = groups.length ? { cell, target, label, groups, group: 0, index: 0 } : null;
   }
 
@@ -691,6 +758,7 @@
     if (!a || !row) return;
     aim = null;
     armed = null;
+    armedTree = null;
     // The id goes through only where the rung actually names it: Guard takes none, and a
     // Rally on your own piece must not arrive carrying your own id as its ally.
     const names = row.opt.targets.some((t) => t.kind === a.target.kind && t.id === a.target.id);
@@ -707,6 +775,7 @@
       return;
     }
     if (aim) { stepBack(); return; }
+    if (castPick) { stepBack(); return; }
     const p = arming;
     if (p) {
       if (p.cells.includes(e.cell)) applyProp(p, e.cell);
@@ -721,6 +790,7 @@
       return;
     }
     if (aim) { stepBack(); return; }
+    if (castPick) { stepBack(); return; }
     const u = b.units.find((x) => x.id === e.id);
     const cell = u ? notation(u.square) : '';
     const p = arming;
@@ -735,16 +805,17 @@
   }
   // A wall has no cell of its own; its popup opens over the first of the two it divides.
   function onEdge(e: BoardEventOf<'edge'>) {
-    if (pending || aim || arming) { stepBack(); return; }
+    if (pending || aim || arming || castPick) { stepBack(); return; }
     aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '));
   }
 
   /** The ring is the menu while it is open: the board answers nothing (`frozen`), and a press
    * anywhere off the ring closes it and does nothing else. */
   function onWindowPointerDown(e: PointerEvent) {
-    if (!radial) return;
+    if (!radial && !castPick) return;
     if (e.target instanceof Element && e.target.closest('.radial')) return;
     radial = null;
+    castPick = null;
   }
 
   function pickUnit(u: Unit) {
@@ -753,16 +824,18 @@
     boardRef?.centerOn(notation(u.square));
   }
 
-  const grantedLabel = (type: LadderType, granted: Grade) => rungOf(type, granted).label;
-  const aboveLabel = (type: LadderType, index: number) => rungOf(type, Math.min(3, index + 1) as Grade).label;
+  const grantedLabel = (type: Exclude<LadderType, 'cast'>, granted: Grade) => rungOf(type, granted).label;
+  const grantedRungLabel = (offer: ActionOffer) =>
+    offer.type === 'cast' ? castRungOf(offer.spell!, offer.granted as CastTier).label : rungOf(offer.type, offer.granted).label;
+  const aboveLabel = (type: Exclude<LadderType, 'cast'>, index: number) => rungOf(type, Math.min(3, index + 1) as Grade).label;
 
   const status = (u: Unit) => [
     isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : '',
     u.guard ? `${rungOf('guard', u.guard.rung).label.toLowerCase()} +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
-    u.warded ? 'warded' : '',
-    u.blessed ? 'blessed' : '',
+    u.defense.bonus ? `defended +${u.defense.bonus}` : '',
+    u.offense.bonus ? `offense +${u.offense.bonus}` : '',
     u.heartened ? `heartened +${HEART_BONUS}` : '',
     u.compelled ? 'compelled' : '',
     b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
@@ -827,7 +900,7 @@
       {tokens}
       mode="battle"
       fill
-      frozen={radial !== null}
+      frozen={radial !== null || castPick !== null}
       {highlights}
       dragPath={previewPath}
       barred={blockedCell}
@@ -846,6 +919,9 @@
   {#snippet pin()}
     {#if radial && anchor && radialItems.length}
       <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={radialItems} pick={pickProp} />
+    {/if}
+    {#if castPick && anchor && castRadialItems.length}
+      <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={castRadialItems} pick={pickCastTree} back={stepBack} />
     {/if}
     {#if drag}
       <div class="drag-hud">
@@ -951,20 +1027,21 @@
           </button>
           {#if i === aim.index}
             {@const d = rungDials(offer, opt)}
-            {@const sp = spendOn(rungKey(offer, opt), d)}
+            {@const poolMax = active.castPool}
+            {@const sp = spendOn(rungKey(offer, opt), d, poolMax)}
             {#if opt.access === 'reach' && offer.reachDc !== null}
               <p class="popup-gamble">
-                DC {offer.reachDc} · d20{offer.reachModifier >= 0 ? '+' : ''}{offer.reachModifier + sp.push * d.step}.
-                Fail → {rungOf(offer.type, offer.granted).label}.
+                DC {offer.reachDc} · d20{offer.reachModifier >= 0 ? '+' : ''}{offer.reachModifier + (sp.push + sp.pool) * d.step}.
+                Fail → {grantedRungLabel(offer)}.
               </p>
             {/if}
-            {#if d.extra > 0 && DIALS.some((x) => d[x])}
+            {#if (d.extra > 0 || (d.pool && poolMax > 0)) && DIALS.some((x) => d[x])}
               <div class="popup-dials">
                 {#each DIALS.filter((x) => d[x]) as dial (dial)}
                   <div class="dial">
-                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] - 1)}>−</button>
+                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] - 1, poolMax)}>−</button>
                     <span class="dial-n">{sp[dial]}</span>
-                    <button class="dial-step" disabled={used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] + 1)}>+</button>
+                    <button class="dial-step" disabled={dial === 'pool' ? sp.pool >= poolMax : used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] + 1, poolMax)}>+</button>
                     <span class="dial-buys">{perAction(offer, dial, d.step, active.speed)}</span>
                   </div>
                 {/each}

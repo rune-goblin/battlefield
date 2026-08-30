@@ -609,6 +609,82 @@ Mark's playtesting call, not an executor judgment call): whether Volley/Demorali
 deployment shape, or Withdraw's homeward count should change for hex, given the geometry
 Wave 1 and this wave both document. See "Reserved judgment calls" above.
 
+## Canvas mat and elevation highlight (2026-08-30)
+
+Two judgment calls, outside any wave:
+
+- `BoardTheme` gained a `canvas` colour (very dark gray, `0x141210`, same value in both
+  themes), and `BoardApp` now paints the PIXI renderer background with it instead of
+  `theme.background`. The two used to be the same field, and `background` sits close to
+  `terrain.open` in both palettes, so the mat behind the hex grid read as more board. `canvas`
+  is deliberately theme-invariant — it's a mat, not a themed surface — while `background`
+  keeps its existing job as `LabelLayer`'s text-stroke colour, unrelated to the renderer's own
+  background.
+- `TerrainLayer.drawElevation`'s tint switched from `theme.ink` to a fixed white
+  (`ELEVATION_HIGHLIGHT`) at the same per-level alphas. `theme.ink` is dark in the light theme
+  and light in the dark theme, so the old tint darkened higher ground in one theme and
+  lightened it in the other — opposite readings depending on which theme happened to be
+  active. A fixed white wash always lightens, so elevation 0 stays each terrain's own (darkest)
+  colour and levels 1/2 layer a highlight on top, consistently in both themes and over every
+  terrain including water.
+
+## Elevation display rework and grid toggle (2026-08-31)
+
+Mark's design review of the elevation display (wash + edge hachures) went through two passes:
+first toning the hachures down, then dropping them outright as "hideous and overpowering." The
+final scheme, plus one unrelated addition Mark asked for alongside it:
+
+- `TerrainLayer.drawElevation` no longer computes per-edge slope hachures at all (`drawHatch`/
+  `drawTaper` and the `HATCH_*` constants are gone, along with the `diff === 1` edge walk that
+  fed them). Elevation is a fill wash (`min(0.6, 0.1n)` alpha at level *n*) plus a contour
+  outline, both the fixed white `ELEVATION_HIGHLIGHT` wash (not `theme.ink` — see the Wave note
+  above this one) so it lightens consistently over every terrain in both themes. The values
+  line up with what Mark asked for at level 1 (2px/25%/10%) and level 2 (originally 4px/50%,
+  then "let's try a 2px line for lvl 2 as well" — the outline holds at a flat 2px for every
+  level now, alpha alone scaling as `min(1, 0.25n)`; a widening line at level 2 read as just
+  another heavy line, indistinguishable in kind from a cliff's own weight).
+- First cut drew a full hex outline on every elevated cell, so a same-level pair of neighbours
+  each drew their own outline and doubled up on the internal edge between them — Mark caught
+  this from a screenshot ("we shouldn't make hexes with the thick lines... an outline of the
+  shape, not every hex that's higher") and asked for a true contour instead. Fixed: the outline
+  is now drawn only on edges where elevation actually changes between the two neighbours (same
+  `seen`-edge walk the old hachure code used), styled by the *higher* side's level — so two
+  same-level cells share a seamless interior, and a level-2 patch inside a level-1 one gets its
+  own nested 4px/50% ring inside the level-1 area's 2px/25% one, like stacked contour lines. The
+  fill wash stays per-cell (unaffected by this — nothing in the feedback was about the wash).
+- The in-cell elevation numeral (added earlier in this same pass, kept through the rework) is
+  unaffected — it's the part that actually answers "how high," now more useful still since the
+  outline alone doesn't distinguish e.g. two adjacent level-2 cells from one continuous level-2
+  area.
+- New `GridLayer` (`src/board/layers/GridLayer.ts`): an optional, off-by-default faint hex
+  hairline (`theme.rule` at a fixed 0.4 alpha, width configurable), kept as its own layer/
+  container rather than folded into `TerrainLayer` so toggling it or dragging its width slider
+  never re-touches terrain fills or regenerates procedural textures. Sits at z-index 4 — above
+  terrain (0), below edges (10) — so walls/cliffs still draw over the hairline where they cross
+  it.
+- Grid visibility/width lives in `MapControls.svelte` local state (`gridVisible`, `gridWidth`),
+  not in `game.svelte.ts` or either stage — it's a map-display preference, not game state, and a
+  session-only one (`// proto:` — doesn't survive a reload; revisit if that turns out to
+  matter). An eye-icon button next to the existing zoom/frame buttons toggles it directly; a
+  separate gear icon opens a `<dialog>` with the same checkbox plus a line-weight slider
+  (0.5–2px). Both write through `PixiBoard.setGrid()` → `BoardView.setGrid()` →
+  `GridLayer.setSettings()`.
+- `EdgeLayer.drawCliff` (the 2+ elevation-drop barrier — mechanically identical to a wall,
+  `stepFeet` in `path.ts` and `isEngaged` in `battle.ts` both treat it as impassable) also came
+  up in review: with the elevation wash/outline now much bolder, its old stroked zigzag read as
+  just another "heavy line" indistinguishable in kind from the new elevation outline. Reworked
+  as a row of solid trapezoid teeth biting from the edge into the lower side, alternating tall/
+  short for a broken-rock silhouette — same `rock`/`shadow` ink-shade colours as the wall's
+  masonry, but a jagged filled shape rather than coursed rectangles, so a cliff still reads
+  distinctly from both a wall and the new elevation contour at a glance. Tooth count, depth and
+  taper are judgment calls (`len / 9` teeth, tall depth capped at 9px, short at 45% of tall) —
+  not something Mark specified a number for, unlike the elevation outline/fill values.
+- The elevation contour's edge walk originally skipped a cliff edge (`Math.abs(diff) >= 2`),
+  leaving the raised area's outline with a gap exactly where its boundary happened to be a
+  cliff rather than a single-level step. Mark asked for the outline on cliff edges too, so the
+  walk now only skips a same-level edge (`diff === 0`) — a cliff edge gets both the contour
+  outline (from `TerrainLayer`) and the rock teeth (from `EdgeLayer`), stacked.
+
 ## Prototype-mode debt
 
 For whenever prototype mode ends and a hardening wave runs. `grep -rn "proto:" src` today:

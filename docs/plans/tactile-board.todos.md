@@ -809,3 +809,19 @@ clear of the orders dock and takes the true corner when the docks are hidden.
   wheel can change it behind the toolbar's back. A no-op click beats a button that lies. If it
   starts to matter, the fix is for `BoardView` to publish zoom changes, not for the toolbar to
   poll.
+
+### A frozen board still lets the middle button pan
+
+The radial menu's `frozen` flag was all-or-nothing: while a ring was open, `Interaction`
+dropped every pointer/wheel/key event, including a pan, so a ring that opened near an edge and
+spilled offscreen had no way to be dragged into view. The ring itself was never the reason —
+`Battle.svelte`'s `anchor` already re-reads `screenOf(cell)` every frame while a ring is open,
+specifically so it tracks a live pan.
+
+Judgment call: only the middle button escapes the freeze, not right-drag or the two-finger
+wheel pan the rest of the board uses. Right-drag and wheel-pan both run through paths (`hitAt`,
+brush state) that stay untested with a DOM menu on top of the canvas; middle-drag is a pure
+viewport translate with no hit-testing in its way, so it was the one gesture safe to carve out
+without auditing the other two. Space-drag stays blocked too, since `spaceDown` can only be set
+from a keydown and keydown is still fully frozen — reaching it would mean punching a second
+hole in the freeze for one more gesture nobody asked for yet.

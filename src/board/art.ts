@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { engineArt, troopArt } from '../engine/art.js';
-import type { Role } from '../engine/index.js';
+import type { Role, Tree } from '../engine/index.js';
 import bannerTemplate from './faction-banner.svg?raw';
 
 // src/engine/art.ts stays free of Vite types (tsconfig.engine.json carries none) so it
@@ -45,3 +45,12 @@ export function bannerTexture(colour: number): PIXI.Texture {
 export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'withdraw';
 
 export const actionIconUrl = (icon: ActionIcon): string => `${BASE}art/action-icons/${icon}.webp`;
+
+// One face per tree, for the picker that branches off Cast — a second ring, not a slice of
+// the first, so it needs its own art rather than the single generic `cast` face above.
+const CAST_ICON: Record<Tree, string> = {
+  blast: 'blast', healing: 'heal', controlling: 'control',
+  offense: 'buff-attacks', defense: 'buff-defenses', movement: 'buff-movement',
+};
+
+export const castIconUrl = (tree: Tree): string => `${BASE}art/cast-icons/${CAST_ICON[tree]}.webp`;

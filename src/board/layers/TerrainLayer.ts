@@ -1,36 +1,42 @@
 import * as PIXI from 'pixi.js';
-import { at, gridOf, type Board, type Grid, type Point, type Square, type SquareTerrain } from '../../engine/index.js';
+import { at, gridOf, type Board, type Grid, type Square, type SquareTerrain } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { shade } from './color.js';
 
 const TEXTURE_TILE = 32;
-// Elevation tint alpha per level (0 has none); level 3 clamps to the level-2 value.
-const ELEVATION_ALPHA = [0, 0.12, 0.24];
-
-function drawHatch(g: PIXI.Graphics, a: Point, b: Point, lowerCenter: Point, ink: number): void {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy);
-  if (len < 1e-3) return;
-  let px = -dy / len;
-  let py = dx / len;
-  const mx = (a.x + b.x) / 2;
-  const my = (a.y + b.y) / 2;
-  if ((lowerCenter.x - mx) * px + (lowerCenter.y - my) * py < 0) { px = -px; py = -py; }
-  const tickLength = 5;
-  const step = 6;
-  const count = Math.max(1, Math.round(len / step));
-  g.lineStyle(1, ink, 0.5);
-  for (let i = 0; i <= count; i++) {
-    const t = i / count;
-    const x = a.x + dx * t;
-    const y = a.y + dy * t;
-    g.moveTo(x, y).lineTo(x + px * tickLength, y + py * tickLength);
-  }
+// Elevation reads as a fill wash plus a contour outline drawn only where elevation actually
+// changes between neighbours (see the edge walk in `drawElevation`), not on every cell's own
+// perimeter — a same-level pair of cells shares a seamless interior instead of a doubled-up
+// internal line. Fill scales linearly with level (0 has none — it's the unlit base terrain):
+// 10% for level 1, 20% for level 2. The outline holds at a flat 2px and scales only its alpha
+// (25%/50%) — a widening line at level 2 read as "just another heavy line" indistinguishable
+// from a cliff's own weight, where alpha alone still separates the levels without competing
+// with it. A fixed white wash rather than theme.ink, so higher ground reads lighter than lower
+// ground on every terrain (including water) in both light and dark theme.
+function elevationFillAlpha(level: number): number {
+  return level <= 0 ? 0 : Math.min(0.6, 0.1 * level);
+}
+function elevationOutline(level: number): { width: number; alpha: number } {
+  return { width: 2, alpha: Math.min(1, 0.25 * level) };
+}
+const ELEVATION_HIGHLIGHT = 0xffffff;
+// The in-cell elevation numeral, styled like LabelLayer's coordinate labels (ink fill, a
+// background-coloured stroke halo so the digit holds up against any terrain hue in either
+// theme) rather than MapTextUtils' drop-shadow presets, which assume a light-on-dark banner.
+function elevationLabelStyle(theme: BoardTheme, size: number): Partial<PIXI.ITextStyle> {
+  return {
+    fontFamily: 'Signika, sans-serif',
+    fontWeight: '600',
+    fontSize: Math.max(11, Math.min(20, size * 0.34)),
+    fill: theme.ink,
+    stroke: theme.background,
+    strokeThickness: 3,
+    align: 'center',
+  };
 }
 
 /**
- * Cell fills, procedural texture overlays, elevation tint and slope hatching. One
+ * Cell fills, procedural texture overlays, and elevation tint/outline/numerals. One
  * `PIXI.Graphics` per terrain type present on the board, grouped the way Reignmaker's
  * `renderTerrainOverlay` groups hexes by type before drawing (services/map/renderers/
  * TerrainRenderer.ts) — cheaper than one Graphics per cell. A textured type gets a second
@@ -90,31 +96,49 @@ export class TerrainLayer {
   private drawElevation(grid: Grid, board: Board, size: number, theme: BoardTheme): void {
     const tint = new PIXI.Graphics();
     tint.name = 'Terrain_elevation';
+    const labels = new PIXI.Container();
+    labels.name = 'Terrain_elevation_labels';
+    const labelStyle = new PIXI.TextStyle(elevationLabelStyle(theme, size));
     for (const sq of grid.cells()) {
       const elevation = at(board, sq).elevation;
-      const alpha = ELEVATION_ALPHA[Math.min(elevation, ELEVATION_ALPHA.length - 1)];
-      if (!alpha) continue;
-      tint.beginFill(theme.ink, alpha).drawPolygon(grid.vertices(sq, size)).endFill();
-    }
-    this.container.addChild(tint);
+      if (elevation <= 0) continue;
+      tint.beginFill(ELEVATION_HIGHLIGHT, elevationFillAlpha(elevation)).drawPolygon(grid.vertices(sq, size)).endFill();
 
-    const hatch = new PIXI.Graphics();
-    hatch.name = 'Terrain_slope';
+      // A number, not just the wash: level 1 and 2 read close on a busy terrain hue, so the
+      // digit is the part that actually answers "how high" — the wash and outline are there
+      // for the at-a-glance skim.
+      const c = grid.center(sq, size);
+      const label = new PIXI.Text(String(elevation), labelStyle);
+      label.anchor.set(0.5);
+      // Shifted off-centre so a token standing on the cell doesn't fully bury it.
+      label.position.set(c.x, c.y - size * 0.32);
+      labels.addChild(label);
+    }
+
+    // The raised area's own boundary, not every hex inside it: a stroke only where elevation
+    // actually changes between neighbours, styled by the higher side's level. Two same-level
+    // cells share a seamless interior instead of each drawing its own full hex outline, which
+    // doubled up on every internal edge and read as a hex-grid pattern rather than one shape.
     const seen = new Set<string>();
     for (const sq of grid.cells()) {
       for (const n of grid.neighbours(sq)) {
         const key = grid.edgeKey(sq, n);
         if (seen.has(key)) continue;
         seen.add(key);
-        if (board.walls[key]) continue; // the wall bar reads the drop; no need to hatch too
+        if (board.walls[key]) continue; // the wall bar reads the drop; no need to outline too
         const diff = at(board, sq).elevation - at(board, n).elevation;
-        if (Math.abs(diff) !== 1) continue; // a 2+ drop is a cliff (EdgeLayer), not a hatch
-        const lower = diff > 0 ? n : sq;
+        if (diff === 0) continue;
+        // Drawn on a cliff edge too (on top of EdgeLayer's rock teeth), not just a single-level
+        // drop — otherwise a raised area's contour had a gap exactly where its edge happened to
+        // be a cliff, instead of wrapping the whole shape.
+        const outline = elevationOutline(Math.max(at(board, sq).elevation, at(board, n).elevation));
         const [a, b] = grid.edgeSegment(sq, n, size);
-        drawHatch(hatch, a, b, grid.center(lower, size), theme.ink);
+        tint.lineStyle(outline.width, ELEVATION_HIGHLIGHT, outline.alpha).moveTo(a.x, a.y).lineTo(b.x, b.y);
       }
     }
-    this.container.addChild(hatch);
+
+    this.container.addChild(tint);
+    this.container.addChild(labels);
   }
 
   private textureFor(renderer: PIXI.IRenderer, type: SquareTerrain, theme: BoardTheme): PIXI.Texture | null {

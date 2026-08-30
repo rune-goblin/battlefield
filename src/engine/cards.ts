@@ -3,6 +3,10 @@ import { armourClass, areaDc, perceptionBonus, saveBonus, type Tier } from './ta
 
 export type Role = 'infantry' | 'cavalry';
 
+// Which of the four traditions a caster's magic belongs to (rules.html section 11). A
+// tradition gates which trees a caster may reach at all, and how far.
+export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
+
 // A troop's own Salvo attack never derives 'extreme' — that band belongs to siege engines.
 export type Reach = 'short' | 'medium' | 'long' | 'extreme';
 
@@ -22,7 +26,12 @@ export interface UnitStats {
   defence: number;
   will: number;
   reflex: number;
+  fortitude: number;
   perception: number;
+  /** What a caster rolls to push a cast, and what a target resists on Blast or Controlling.
+   * `null` for a non-caster — there is nothing to derive. */
+  spellAttack: number | null;
+  spellDc: number | null;
 }
 
 export interface TroopSheet {
@@ -37,6 +46,12 @@ export interface TroopSheet {
   perception: number;
   speed: number;
   fly: boolean;
+  // proto: no importer reads a spellcasting entry yet (see battle-mechanics.todos.md, "Cast
+  // range" and the earlier spell-attack/DC entry) — these stay unset on every real troop, and
+  // `deriveStats` falls back to the level tables. A hand-authored `overrides` can supply real
+  // numbers meanwhile, the same way official.ts already overrides strike/volley/will today.
+  spellAttack?: number;
+  spellDc?: number;
 }
 
 export interface UnitCard {
@@ -48,6 +63,7 @@ export interface UnitCard {
   pace?: boolean;
   fear?: boolean;
   caster?: boolean;
+  tradition?: Tradition;
   signals?: Signal[];
   tactics?: Tactic[];
   wounds?: number;
@@ -55,17 +71,22 @@ export interface UnitCard {
   overrides?: Partial<UnitStats>;
 }
 
-interface RoleProfile { defence: Tier; strike: Tier; volley: Tier; will: Tier; reflex: Tier; perception: Tier; pace: boolean; tactics: Tactic[]; }
+interface RoleProfile { defence: Tier; strike: Tier; volley: Tier; will: Tier; reflex: Tier; fortitude: Tier; spell: Tier; perception: Tier; pace: boolean; tactics: Tactic[]; }
 
+// Fortitude has no published spread across the 162 troops the way Reflex does (section 2 of
+// the rules) — both roles fall back to moderate until a wound-save tree gives it more to say.
+// Spell attack/DC have no role-based spread published either — casting isn't a role, it's a
+// signal a card either carries or doesn't — so both roles fall back to the same moderate tier.
 export const ROLE_PROFILES: Record<Role, RoleProfile> = {
-  infantry: { defence: 'high', strike: 'moderate', volley: 'moderate', will: 'high', reflex: 'moderate', perception: 'moderate', pace: false, tactics: ['raise-shields'] },
-  cavalry: { defence: 'high', strike: 'high', volley: 'moderate', will: 'moderate', reflex: 'high', perception: 'high', pace: true, tactics: ['cavalry-charge'] },
+  infantry: { defence: 'high', strike: 'moderate', volley: 'moderate', will: 'high', reflex: 'moderate', fortitude: 'moderate', spell: 'moderate', perception: 'moderate', pace: false, tactics: ['raise-shields'] },
+  cavalry: { defence: 'high', strike: 'high', volley: 'moderate', will: 'moderate', reflex: 'high', fortitude: 'moderate', spell: 'moderate', perception: 'high', pace: true, tactics: ['cavalry-charge'] },
 };
 
 export function deriveStats(card: UnitCard): UnitStats {
   const p = ROLE_PROFILES[card.role];
   const l = card.level;
   const salvo = card.salvo ?? null;
+  const caster = card.caster ?? false;
   const base: UnitStats = {
     strike: areaDc(l, p.strike) - 10,
     volley: salvo ? areaDc(l, p.volley) - 10 : null,
@@ -73,6 +94,9 @@ export function deriveStats(card: UnitCard): UnitStats {
     defence: armourClass(l, p.defence),
     will: saveBonus(l, p.will),
     reflex: card.sheet?.reflex ?? saveBonus(l, p.reflex),
+    fortitude: card.sheet?.fortitude ?? saveBonus(l, p.fortitude),
+    spellAttack: caster ? (card.sheet?.spellAttack ?? areaDc(l, p.spell) - 10) : null,
+    spellDc: caster ? (card.sheet?.spellDc ?? areaDc(l, p.spell)) : null,
     perception: perceptionBonus(l, p.perception),
   };
   return { ...base, ...card.overrides };
@@ -84,6 +108,10 @@ export function cardTraits(card: UnitCard) {
     pace: card.pace ?? p.pace,
     fear: card.fear ?? false,
     caster: card.caster ?? false,
+    // proto: no troop data states a tradition yet (see battle-mechanics.todos.md — the
+    // spellcasting-entry name is the real answer, once an importer reads it). Arcane is an
+    // arbitrary default for any caster that doesn't set one.
+    tradition: card.tradition ?? 'arcane',
     signals: card.signals ?? [],
     tactics: card.tactics ?? p.tactics,
   };

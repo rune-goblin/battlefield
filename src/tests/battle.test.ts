@@ -165,14 +165,75 @@ describe('the menu is filtered by situation', () => {
     // Out of contact and steady, there is nothing to break from.
     expect(activation(state, 'u1')!.withdraw).toBeNull();
   });
-  it('offers a caster one row per spell it knows', () => {
+  it("offers a caster one row per tree its tradition grants", () => {
+    // No tradition set falls back to arcane (cards.ts), whose grid is 0 in Healing.
     const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
     const s = createBattle({
       units: [{ card: priest, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
       board: openBoard(),
     });
     expect(availableActions(s, 'u0').filter((o) => o.type === 'cast').map((o) => o.spell))
-      .toEqual(['blast', 'ward', 'mend', 'bless', 'compel']);
+      .toEqual(['blast', 'controlling', 'offense', 'defense', 'movement']);
+  });
+});
+
+describe('the six trees', () => {
+  const cleric: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
+  const castOffer = (state: BattleState, tree: string, id = 'u0') =>
+    availableActions(state, id).find((o) => o.type === 'cast' && o.spell === tree)!;
+
+  it("gates which trees a tradition grants at all, and how far each may push", () => {
+    const s = createBattle({
+      units: [{ card: cleric, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
+      board: openBoard(),
+    });
+    // Divine's own grid (section 11): blast 1, healing 3, controlling 2, offense 2, defense 2,
+    // movement 0 — no Movement row at all, and Blast locked at Tier 1.
+    expect(availableActions(s, 'u0').filter((o) => o.type === 'cast').map((o) => o.spell))
+      .toEqual(['blast', 'healing', 'controlling', 'offense', 'defense']);
+    expect(castOffer(s, 'blast').rungs.map((r) => r.access)).toEqual(['free', 'locked', 'locked']);
+    expect(castOffer(s, 'healing').rungs.map((r) => r.access)).toEqual(['free', 'reach', 'reach']);
+  });
+
+  it("anchors each tree's Tier 1 range at its own base band, and only a range push extends it", () => {
+    const s = createBattle({
+      units: [
+        { card: cleric, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'a1' },
+        { card: infantry, side: 'attacker', square: 'a2' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    place(s, 'u1', 'c3'); // distance 1: engaged, inside Healing's own base range
+    place(s, 'u2', 'c4'); // distance 2: short, one band past it
+    unit(s, 'u2').disorder = 1;
+    // Tier 1's own target list is the real, unpushed band; Tier 3's is the optimistic
+    // superset a range push could reach — `doCastAction` re-checks the real one at resolution,
+    // the same way a shot's own rung re-checks its band once a target is actually chosen.
+    expect(castOffer(s, 'healing').rungs[0].targets.map((t) => t.id)).toEqual(['u0', 'u1']);
+    expect(castOffer(s, 'healing').rungs[2].targets.map((t) => t.id)).toContain('u2');
+
+    // Pushing effect instead of range still can't carry to u2, even reaching Tier 3 outright.
+    const pushedEffect = act(s, { type: 'cast', rung: 3, spell: 'healing', target: 'u2', unit: 'u0', spend: { push: 2 } }, scriptedRng([15]));
+    expect(unit(pushedEffect, 'u2').disorder).toBe(1);
+
+    // Pushing range instead reaches it, at Tier 1's own effect (clears 1 disorder).
+    const pushedRange = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u2', unit: 'u0', axis: 'range', spend: { push: 1 } }, scriptedRng([15]));
+    expect(unit(pushedRange, 'u2').disorder).toBe(0);
+  });
+
+  it('spends the caster\'s own pool on a push, on top of any ordinary actions committed', () => {
+    const s = createBattle({
+      units: [{ card: cleric, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
+      board: openBoard(),
+    });
+    // Level 6 ÷ 5, rounded down: 1 point in the pool.
+    expect(unit(s, 'u0').castPool).toBe(1);
+    expect(() => act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u0', unit: 'u0', spend: { pool: 2 } }, scriptedRng([10])))
+      .toThrow(/only 1 in its push pool/);
+    const s2 = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u0', unit: 'u0', spend: { pool: 1 } }, scriptedRng([10]));
+    expect(unit(s2, 'u0').castPool).toBe(0);
   });
 });
 
@@ -559,9 +620,12 @@ describe('actions buy weight, not repetition', () => {
       board: openBoard(),
     });
     place(p0, 'u1', 'c3');
-    const cast = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
+    // 1 base action + 2 push reaches Tier 2 on a 20; the target's Reflex save then rolls a 1
+    // and fails outright, so the push visibly mattered — the point of this case, not the
+    // exact wound arithmetic, which the disorder/casting-specific tests already cover.
+    const cast = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0', spend: { push: 2 } }, scriptedRng([20, 1]));
     expect(cast.activated).toContain('u0');
-    expect(strikeMod(cast)).toBe(unit(p0, 'u0').stats.will + 2 * ACTION_BONUS);
+    expect(unit(cast, 'u1').wounds).toBeGreaterThan(0);
   });
 
   it('buys Defence on Guard, +2 an action counting the first', () => {
@@ -956,7 +1020,7 @@ describe('withdrawal', () => {
     const two = held({ u2: 'c3', u3: 'b2' });
     expect(activation(two, 'u0')!.withdraw!.escapes.map((e) => e.dc)).toEqual([17, 23]);
     // Kobolds fail (2, struck), Trolls succeed (10) — one strike, not two.
-    const s = act(two, { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([2, 20, 10]));
+    const s = act(two, { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([2, 20, 1, 10]));
     expect(wounds(s)).toBe(1);
     expect(where(s)).toBe('c1');
   });
@@ -1062,11 +1126,20 @@ describe('disorder', () => {
   it('a wounding shot disorders the target, and Rally clears it', () => {
     const { state } = battle([]);
     place(state, 'u0', 'c5');
-    const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20]));
+    // 20 crits the shot; 1 auto-fails the Fortitude save against it, so the wound disorders.
+    const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20, 1]));
     expect(unit(hit, 'u0').wounds).toBe(2);
     expect(unit(hit, 'u0').disorder).toBe(1);
     const rallied = act(endActivation(hit), { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
     expect(unit(rallied, 'u0').disorder).toBe(0);
+  });
+  it('a Fortitude save that succeeds shrugs the wound off with no disorder at all', () => {
+    const { state } = battle([]);
+    place(state, 'u0', 'c5');
+    // 20 crits the shot; 20 also crit-succeeds the save, so the wound lands with no disorder.
+    const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20]));
+    expect(unit(hit, 'u0').wounds).toBe(2);
+    expect(unit(hit, 'u0').disorder).toBe(0);
   });
   it('disorder is −1 to everything', () => {
     const { state } = battle([]);

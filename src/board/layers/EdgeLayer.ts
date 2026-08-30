@@ -67,17 +67,37 @@ function wallGraphics(a: Point, b: Point, size: number, wall: Wall, theme: Board
   return g;
 }
 
-function drawCliff(g: PIXI.Graphics, a: Point, b: Point, theme: BoardTheme): void {
-  const { px, py, len } = perpendicular(a, b);
-  const jag = Math.min(4, len / 6);
-  const segments = Math.max(2, Math.round(len / 6));
-  g.lineStyle(3, shade(theme.ink, 0.55), 0.9);
-  g.moveTo(a.x, a.y);
-  for (let i = 1; i <= segments; i++) {
-    const t = i / segments;
-    const jitter = i % 2 === 0 ? jag : -jag;
-    g.lineTo(a.x + (b.x - a.x) * t + px * jitter, a.y + (b.y - a.y) * t + py * jitter);
+/** A row of solid trapezoid teeth biting from the edge into `lowerCenter`'s side — a rock
+ * outcrop rather than a stroked zigzag line, and alternating tall/short so it reads as broken
+ * rock rather than a uniform castle parapet. */
+function drawCliff(g: PIXI.Graphics, a: Point, b: Point, lowerCenter: Point, theme: BoardTheme): void {
+  let { px, py, len } = perpendicular(a, b);
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  if ((lowerCenter.x - mx) * px + (lowerCenter.y - my) * py < 0) { px = -px; py = -py; }
+  const ux = (b.x - a.x) / len;
+  const uy = (b.y - a.y) / len;
+  const teeth = Math.max(2, Math.round(len / 9));
+  const toothLen = len / teeth;
+  const tallDepth = Math.min(9, len / 3.5);
+  const shortDepth = tallDepth * 0.45;
+  const taper = toothLen * 0.22; // narrows the tip so the base (on the edge) reads wider than the point
+  const rock = shade(theme.ink, 0.55);
+
+  g.beginFill(rock, 0.9);
+  for (let i = 0; i < teeth; i++) {
+    const x0 = a.x + (b.x - a.x) * (i / teeth);
+    const y0 = a.y + (b.y - a.y) * (i / teeth);
+    const x1 = a.x + (b.x - a.x) * ((i + 1) / teeth);
+    const y1 = a.y + (b.y - a.y) * ((i + 1) / teeth);
+    const depth = i % 2 === 0 ? tallDepth : shortDepth;
+    const tipLx = x0 + ux * taper + px * depth;
+    const tipLy = y0 + uy * taper + py * depth;
+    const tipRx = x1 - ux * taper + px * depth;
+    const tipRy = y1 - uy * taper + py * depth;
+    g.drawPolygon([x0, y0, x1, y1, tipRx, tipRy, tipLx, tipLy]);
   }
+  g.endFill();
 }
 
 /** Walls (standing and breached) and cliffs, drawn along `grid.edgeSegment`. */
@@ -115,8 +135,9 @@ export class EdgeLayer {
         if (seen.has(key)) continue;
         seen.add(key);
         if (Math.abs(at(board, sq).elevation - at(board, n).elevation) < 2) continue;
+        const lower = at(board, sq).elevation < at(board, n).elevation ? sq : n;
         const [p, q] = grid.edgeSegment(sq, n, size);
-        drawCliff(g, p, q, theme);
+        drawCliff(g, p, q, grid.center(lower, size), theme);
       }
     }
   }
