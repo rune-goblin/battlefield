@@ -1,4 +1,4 @@
-import { cardTraits, deriveStats, type Reach, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
+import { cardTraits, deriveStats, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
 import { saveBonus, type Tier } from './tables.js';
 
 // Two types have no ladder. A Move action spends the troop's Speed in feet, and taking it
@@ -12,13 +12,12 @@ export type Grade = 1 | 2 | 3;
 export type Grades = Record<LadderType, Grade>;
 
 export type RungId =
-  | 'loose' | 'volley' | 'barrage'
+  | 'fire' | 'aim' | 'snipe'
   | 'strike' | 'press' | 'overrun'
   | 'brace' | 'dig-in' | 'shieldwall'
   | 'steady' | 'rally' | 'inspire'
   | 'minor' | 'major' | 'grand';
 
-export interface ShootEffect { band: 1 | 2 | 3; ignoresCover: boolean }
 export interface FightEffect { disorderOnLoss: number; takeGround: boolean }
 /** A Guard's Defence comes from the actions committed to it, never from the rung. The rung
  * carries the effect: `blunt` caps a hit at one wound, so a critical lands as an ordinary one,
@@ -45,7 +44,6 @@ export interface Rung {
   detail: string;
   /** Added to the level DC when a unit reaches for this rung. Rung 1 is never reached for. */
   reachDc: number;
-  shoot?: ShootEffect;
   fight?: FightEffect;
   guard?: GuardEffect;
   rally?: RallyEffect;
@@ -53,10 +51,14 @@ export interface Rung {
 }
 
 export const LADDERS: Record<LadderType, [Rung, Rung, Rung]> = {
+  // A troop's effective range (its Reach) is the band Fire reaches for free. Aim and Snipe do
+  // not climb toward a fixed far band — they buy one, then two bands of swing away from that
+  // effective range, in whichever direction the target actually is. See `shootHome` and its
+  // callers in battle.ts.
   shoot: [
-    { id: 'loose', verb: 'looses', type: 'shoot', index: 1, label: 'Loose', detail: 'Close band.', reachDc: 0, shoot: { band: 1, ignoresCover: false } },
-    { id: 'volley', verb: 'volleys', type: 'shoot', index: 2, label: 'Volley', detail: 'Long band.', reachDc: 0, shoot: { band: 2, ignoresCover: false } },
-    { id: 'barrage', verb: 'barrages', type: 'shoot', index: 3, label: 'Barrage', detail: 'Your full band, ignoring cover.', reachDc: 2, shoot: { band: 3, ignoresCover: true } },
+    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'Your effective range.', reachDc: 0 },
+    { id: 'aim', verb: 'aims', type: 'shoot', index: 2, label: 'Aim', detail: 'One band off your effective range, either direction.', reachDc: 0 },
+    { id: 'snipe', verb: 'snipes', type: 'shoot', index: 3, label: 'Snipe', detail: 'Two bands off your effective range, either direction.', reachDc: 2 },
   ],
   fight: [
     { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'A plain melee exchange.', reachDc: 0, fight: { disorderOnLoss: 0, takeGround: false } },
@@ -127,8 +129,6 @@ export function qualityFor(card: UnitCard): number {
   return QUALITY[willBand(deriveStats(card), card.level)];
 }
 
-const REACH_GRADE: Record<Reach, Grade> = { close: 1, long: 2, extreme: 3 };
-
 const raise = (g: Grade, to: Grade): Grade => (to > g ? to : g);
 const cap = (n: number): Grade => Math.max(1, Math.min(3, n)) as Grade;
 
@@ -153,7 +153,9 @@ export function gradesFor(card: UnitCard): Grades {
   const willB = willBand(stats, l);
 
   const grades: Grades = {
-    shoot: stats.reach === null ? 1 : REACH_GRADE[stats.reach],
+    // Reach only picks the effective range Fire is free at; every troop starts able to swing
+    // one band off it before it needs a push check, same as an untrained shot at anything else.
+    shoot: 1,
     fight: stats.strike === null ? 1 : has('melee-drill') || fear ? 3 : 2,
     guard: cap(1 + (has('formation') ? 1 : 0) + (has('shielded') || has('magic-ward') ? 1 : 0)),
     rally: atLeast(willB, 'high') ? 3 : atLeast(willB, 'moderate') ? 2 : 1,

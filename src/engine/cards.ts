@@ -3,7 +3,8 @@ import { armourClass, areaDc, perceptionBonus, saveBonus, type Tier } from './ta
 
 export type Role = 'infantry' | 'cavalry';
 
-export type Reach = 'close' | 'long' | 'extreme';
+// A troop's own Salvo attack never derives 'extreme' — that band belongs to siege engines.
+export type Reach = 'short' | 'medium' | 'long' | 'extreme';
 
 // Structural signals an importer reads straight off a statblock: recurring action names that
 // differentiate troops where the level tables do not. AC and attack DC are essentially f(level)
@@ -137,7 +138,7 @@ export function derivation(card: UnitCard): Derivation[] {
       { stat: 'perception', value: sign(st.perception), from: `level ${card.level} ${p.perception} perception` },
     ];
   }
-  const band = sh.salvoFeet === null ? null : sh.salvoFeet <= 60 ? 'close' : sh.salvoFeet <= 120 ? 'long' : 'extreme';
+  const band = sh.salvoFeet === null ? null : sh.salvoFeet <= 60 ? 'short' : sh.salvoFeet <= 120 ? 'medium' : 'long';
   return [
     { stat: 'strike', value: sign(st.strike), from: `Battle DC ${sh.battleDc} − 10` },
     { stat: 'volley', value: st.volley === null ? '—' : `${sign(st.volley)} ${st.reach}`, from: sh.salvoDc === null ? 'no Salvo' : `Salvo DC ${sh.salvoDc} − 10; ${sh.salvoFeet} ft → ${band}` },

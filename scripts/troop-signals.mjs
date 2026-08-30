@@ -45,4 +45,6 @@ export function rangeOf(text) {
   return best;
 }
 
-export const bandOf = (ft) => (ft === null ? null : ft <= 60 ? 'close' : ft <= 120 ? 'long' : 'extreme');
+// Extreme is reserved for siege engines (see BANDS in types.ts) — a troop's own Salvo attack
+// never derives it, however far its range increment runs.
+export const bandOf = (ft) => (ft === null ? null : ft <= 60 ? 'short' : ft <= 120 ? 'medium' : 'long');

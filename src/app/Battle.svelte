@@ -1026,7 +1026,7 @@
           <button class="end-activation" onclick={() => endActivation()}>End activation</button>
         </div>
         <table class="stats"><tbody>
-          <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'close', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
+          <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
           <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
           <tr><td>Disorder</td><td class="stat">{active.disorder}/{active.quality}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
           <tr><td>Move</td><td class="stat">{active.speed} ft{act && act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>

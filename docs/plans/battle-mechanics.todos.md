@@ -1199,3 +1199,115 @@ thing replayed against the engine.
   reach a routed unit, which is the only thing that makes the top band survivable.
 - Whether a shaken unit should be forced to withdraw when it has no Rally worth making, rather
   than being allowed to stand still and do nothing.
+
+### Rally availability, said plainly — 2026-08-29
+
+The band split already gave Rally to a shaken unit and withheld it from a routed one, but the
+Rally subsection of section 9 never said who may take the act — a player looking up "can I
+rally?" read only the check and the table. It now opens with the rule: every unit that is not
+routed may Rally, and the rout takes away only the unit's own — an ally's Rally and Inspire
+still reach a routed unit, which is the sole way back from the top band.
+
+Two errors fixed with it, both introduced by the split itself:
+
+- Section 2 read "the disorder it absorbs before it breaks". `isBroken` is the 3-wound band, so
+  "breaks" pointed at the wrong track. Now "before it is shaken".
+- The worked battle's closing paragraph said "fail the check twice and you are running for your
+  own edge". Wrong: a plain Rally *failure* still clears 1. Only a critical failure adds a
+  point. A shaken unit that rallies recovers on every degree but one.
+
+### Rule question for play
+
+- Rally may be too forgiving now that it is the shaken band's exit. Three of four degrees clear
+  at least a point, so a shaken unit that spends an activation on the check is back in the fight
+  unless it critically fails. The rout is then reachable almost only through combat disorder
+  arriving faster than the unit can spend activations rallying. If the top band turns out to be
+  unreachable in play, the lever is the failure row — make a plain failure clear nothing rather
+  than 1, so the check can be lost without being fumbled.
+
+### Fortitude stays imported — 2026-08-30
+
+Decision (Mark): keep `fortitude` on `UnitStats` and every troop sheet even though nothing in
+the engine reads it yet. `battle-mechanics.md`'s Guard/Withdraw wave already flagged it as
+imported-but-unused, with the door left open for typed attacks (a Blast against Reflex, Fear
+against Will); Cast is the likely home for a Fortitude-keyed effect (a poison or exhaustion
+spell forcing the save), so it stays on the sheet rather than getting pruned as dead data.
+
+`rules.html`'s "Numbers off the sheet" table (section 2) never got a Fortitude row when this was
+decided — added now, next to Reflex, worded the same way as the existing dead-Perception note.
+Also noted in passing: the decision's own wording says "on `UnitStats`", but `fortitude` only
+ever landed on `TroopSheet` (`cards.ts:34`) — `UnitStats` (`cards.ts:18`) has `will`, `reflex`,
+`perception` but no `fortitude`, and `deriveStats` doesn't carry it across. Not fixed here since
+nothing reads it yet either way; worth closing when Cast actually grows a Fortitude-keyed effect.
+
+### Range bands split from Shoot's grade — 2026-08-30
+
+Decision (Mark): the three-band, grade-cumulative Shoot ladder is replaced with four purely
+geometric bands — short (1-2), medium (3-4), long (5-6), extreme (7-8) — decoupled from a
+troop's own reach entirely. Board radius is 4, so 8 is the farthest two hexes are ever apart;
+extreme's own ceiling already reaches it, and beyond (9+) now never occurs on this board.
+
+- **Reach becomes "effective range"**: one of the four bands, still one fact per weapon, still
+  on the card. It no longer sets Shoot's grade — it anchors where Loose is free.
+- **Volley and Barrage swing off that anchor, not up a fixed ladder**: one band either
+  direction on a plain reach success, two on a crit, same single-roll mechanic every other
+  ladder already used (`reachFor` in `battle.ts`, untouched). A short-reach troop's Barrage can
+  reach as far as long; extreme takes a medium-or-longer reach pushing in, or a siege engine's
+  own reach, which starts there for free.
+- **Shoot's grade is uniformly 1** for every troop with an ordinary Salvo (`gradesFor` in
+  `ladders.ts`) — effective range moved the "how far without a roll" question onto Reach, so
+  grade no longer needs to encode it. `covering-fire` (hand-authored only; no imported troop
+  carries it) is the one thing that still raises it, to 3.
+- **A crewed engine still gets the full grade-3 spread free**, reflecting a gun crew working
+  its whole engineered range without the gamble a troop's own reach check carries — `reach:
+  'extreme'` is not exposed to any troop, only to `SiegeEngineCard`s, so extreme is siege-only
+  by construction, not by a special-cased exclusion.
+- **Barrage no longer ignores cover.** The user's call: cover shouldn't be a property of a
+  particular range: "if they want to stack bonuses, they can do that by spending additional
+  actions" — the existing weight dial (+2 per spare action, on the roll or on the push check)
+  already does that job without a rung needing its own cover-piercing flag.
+- Every import script that classifies a Salvo/engine range from raw feet (`troop-signals.mjs`,
+  `import-troops.mjs`, `import-engines.mjs`) now caps a troop's own derivation at long — only
+  `import-engines.mjs` can output `extreme`.
+
+### Worked battle removed from `rules.html` — 2026-08-30
+
+Decision (Mark): pulled the "Worked round" section (Line Infantry vs. Kobold Warriors, six
+rounds) out of `rules.html` entirely rather than patch it. It narrated the pre-rework mechanic
+verbatim — Shoot grade 2 for Line Infantry (now always 1), distance 4 called "the extreme band"
+(now medium), reach/DC arithmetic keyed to the old close/long/extreme thresholds and the
+grade-implies-reach coupling this rework removed — and the rules are still moving, so a hand-
+patched worked example would likely go stale again before the next pass settles. Bring it back
+once the range-band and Shoot rework stops changing under it; regenerate it against the real
+engine rather than hand-simulating six rounds, so the numbers are provably right rather than
+plausible.
+
+The board figure in section 3 (the colored hex rings from c3) has a related but separate gap:
+it still shows three band colors for what is now four bands, and needs a fourth ring computed
+and drawn — that wants a small script rather than hand-edited SVG coordinates, and isn't tied to
+the worked example's removal.
+
+### Shoot's rungs renamed: Loose/Volley/Barrage → Fire/Aim/Snipe — 2026-08-30
+
+Decision (Mark): now that Reach anchors Loose for free and Volley/Barrage merely swing off it
+either direction (see "Range bands split from Shoot's grade", above), the old names read as
+if they described a fixed far ladder — "Volley" and "Barrage" both evoke a farther, heavier
+shot, not a swing that can land closer just as easily. "Volley" also already names the Shoot
+attack stat (`stats.volley`, parallel to Strike), so the rung and the stat shared a name by
+coincidence — renaming the rung removes that collision as a side effect.
+
+- **New names, same three rungs**: `fire` (rung 1, free, your effective range) / `aim` (rung 2,
+  one band off, either direction) / `snipe` (rung 3, two bands off, either direction, +2 to the
+  reach DC). `RungId`, the `LADDERS.shoot` entries, and every comment/test naming a rung in
+  `ladders.ts`, `battle.ts`, `battle.test.ts` and `offers.test.ts` were updated; the `volley`
+  stat, `stats.volley`, `STAT_LABEL`, and the "Volley Gun" engine are untouched — that name
+  refers to the attack bonus, not the rung, and stays.
+- **`public/rules.html` picked up two stale leftovers from the range-band split while it was
+  being swept for the rename**: the Terrain table and the quick-reference Forest row both still
+  said cover doesn't apply "unless … loose a Barrage" — the old rule, already removed from
+  `defenceOf` (`shootAt` never passes `ignoresCover`), but never cleared from these two rows.
+  Dropped the exception; forest cover now only turns off from height, per the code.
+- **Added a paragraph to the top of section 6** stating plainly that a spare action buys one of
+  two things — a different rung (an effect) or weight on the roll (a bonus) — since the
+  mechanic already existed (the Weight section's Roll/Push split) but wasn't named as a choice
+  until a unit was already deep in "Reaching above your grade."

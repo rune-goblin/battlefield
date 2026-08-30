@@ -285,14 +285,14 @@ export interface BattleState {
   log: LogEntry[];
 }
 
-export type Range = 'engaged' | 'close' | 'long' | 'extreme' | 'beyond';
-export const REACH_RANK: Record<Reach, number> = { close: 1, long: 2, extreme: 3 };
+export type Range = 'engaged' | 'short' | 'medium' | 'long' | 'extreme' | 'beyond';
+export const REACH_RANK: Record<Reach, number> = { short: 1, medium: 2, long: 3, extreme: 4 };
 
 // Hex distance is true range where square's Manhattan distance over-counts a diagonal, so the
 // same ring covers 37 of 64 cells on hex against 25 on square. The fan is the geometry and no
-// threshold narrows it; the top band is capped instead, which keeps a Barrage out of the far
-// deployment zone.
+// threshold narrows it; the top band is capped instead. The hexagon board has radius 4, so 8 is
+// the farthest two hexes are ever apart — extreme's own ceiling, not an arbitrary cap.
 export const BANDS: Record<GridKind, Record<Reach, number>> = {
-  square: { close: 2, long: 3, extreme: Infinity },
-  hex: { close: 2, long: 3, extreme: 5 },
+  square: { short: 2, medium: 4, long: 6, extreme: Infinity },
+  hex: { short: 2, medium: 4, long: 6, extreme: 8 },
 };

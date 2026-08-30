@@ -159,15 +159,15 @@ export const wallBetween = (state: BattleState, a: Unit, b: Unit): Wall | null =
   return barrier?.kind === 'wall' ? barrier.wall : null;
 };
 
-/** Which shooting band a distance falls in. Rank 4 is out of range altogether. */
+/** Which of the four range bands a distance falls in. Rank 5 is out of range altogether. */
 function bandRank(state: BattleState, d: number): number {
   const b = BANDS[state.board.grid];
-  return d <= b.close ? 1 : d <= b.long ? 2 : d <= b.extreme ? 3 : 4;
+  return d <= b.short ? 1 : d <= b.medium ? 2 : d <= b.long ? 3 : d <= b.extreme ? 4 : 5;
 }
 
 export function rangeBetween(state: BattleState, a: Unit, b: Unit): Range {
   if (isEngaged(state, a, b)) return 'engaged';
-  return (['close', 'long', 'extreme', 'beyond'] as const)[bandRank(state, dist(state, a.square, b.square)) - 1];
+  return (['short', 'medium', 'long', 'extreme', 'beyond'] as const)[bandRank(state, dist(state, a.square, b.square)) - 1];
 }
 
 export const isOutflanked = (state: BattleState, u: Unit) => engagedEnemies(state, u).length >= 2;
@@ -227,19 +227,30 @@ const crewedArtillery = (state: BattleState, u: Unit): EngineState | null =>
 const crewedRam = (state: BattleState, u: Unit): EngineState | null =>
   enginesOf(state, u).find((e) => e.status === 'crewed' && !e.fired && e.kind === 'ram') ?? null;
 
-/** A crewed engine replaces the unit's own shooting profile, grade and all, while it is loaded. */
+/** A crewed engine replaces the unit's own shooting profile, effective range and all, while it
+ * is loaded: a gun crew works its piece across its whole engineered spread without the gamble
+ * an ordinary troop's own Reach check carries. */
 export function shootGrade(state: BattleState, u: Unit): Grade {
+  return crewedArtillery(state, u) ? 3 : u.grades.shoot;
+}
+
+/** The band a Shoot act is centred on: Fire is free here, Aim one band off it either way,
+ * Snipe two. A crewed engine's own reach overrides the unit's, same as its grade above. */
+export function shootHome(state: BattleState, u: Unit): number {
   const e = crewedArtillery(state, u);
-  if (!e) return u.grades.shoot;
-  return (e.reach ? REACH_RANK[e.reach] : 1) as Grade;
+  const reach = e ? e.reach : u.stats.reach;
+  return reach ? REACH_RANK[reach] : 1;
 }
 
 export const canShoot = (state: BattleState, u: Unit) => u.stats.volley !== null || crewedArtillery(state, u) !== null;
 
-const rangeRank = (r: Range) => (r === 'close' ? 1 : r === 'long' ? 2 : r === 'extreme' ? 3 : r === 'beyond' ? 4 : 0);
+const rangeRank = (r: Range) => (r === 'short' ? 1 : r === 'medium' ? 2 : r === 'long' ? 3 : r === 'extreme' ? 4 : r === 'beyond' ? 5 : 0);
+
+/** Whether a bare rank (1-4) names a real band rather than engaged (0) or beyond (5). */
+const inRange = (r: number) => r >= 1 && r <= 4;
 
 function volleyRank(state: BattleState, u: Unit, target: Unit): number {
-  const rank = Math.min(3, bandRank(state, dist(state, u.square, target.square)));
+  const rank = Math.min(4, bandRank(state, dist(state, u.square, target.square)));
   return elevation(state, u) > elevation(state, target) ? rank - 1 : rank;
 }
 
@@ -264,7 +275,7 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
   if (u.heartened) m += HEART_BONUS;
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
-  if (!e && volleyRank(state, u, target) >= 3) m -= 2;
+  if (!e && volleyRank(state, u, target) >= 4) m -= 2;
   m -= Math.max(0, elevation(state, target) - elevation(state, u));
   if (state.units.some((a) => a.side === u.side && a.id !== u.id && isEngaged(state, target, a))) m -= 4;
   if (garrisoned(state, u)) m += 1;
@@ -283,13 +294,13 @@ export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
  * rallying beside a levy. */
 export function routDcFor(state: BattleState, u: Unit): number {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
-  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS[state.board.grid].close);
+  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS[state.board.grid].short);
   const pool = near.length ? near : enemies;
   return levelDc(Math.max(0, ...pool.map((e) => e.level)));
 }
 
 /** Cavalry gamble on a long move more reliably than infantry. Tunable: matches the +2 this
- * system already uses for a rung's hardest step (Press, Overrun, Barrage's cover ignore...). */
+ * system already uses for a rung's hardest step (Press, Overrun, Snipe's swing...). */
 export const PUSH_BONUS = 2;
 
 /** A push is a Quality check against the level DC, same as every other reach — no rung to add
@@ -409,7 +420,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung
   const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
-  const c = check(rng, shootModifier(state, u, target) + weight, defenceOf(state, target, u, true, rung.shoot!.ignoresCover));
+  const c = check(rng, shootModifier(state, u, target) + weight, defenceOf(state, target, u, true));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source);
@@ -615,11 +626,12 @@ function targetsFor(state: BattleState, u: Unit, rung: Rung, spell: SpellId | nu
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
   switch (rung.type) {
     case 'shoot': {
-      const band = rung.shoot!.band;
-      const inBand = (e: Unit) => { const r = rangeRank(rangeBetween(state, u, e)); return r > 0 && r <= band; };
+      const home = shootHome(state, u);
+      const offset = rung.index - 1;
+      const inBand = (e: Unit) => { const r = rangeRank(rangeBetween(state, u, e)); return inRange(r) && Math.abs(r - home) <= offset; };
       const targets: RungTarget[] = enemies.filter(inBand).map(unitTarget);
       if (u.side === 'attacker' && crewedArtillery(state, u)) {
-        targets.push(...wallKeys(state).filter((k) => wallRank(state, u, k) <= band).map(wallTarget));
+        targets.push(...wallKeys(state).filter((k) => { const r = wallRank(state, u, k); return inRange(r) && Math.abs(r - home) <= offset; }).map(wallTarget));
       }
       return { needsTarget: true, targets };
     }
@@ -866,18 +878,20 @@ function perform(state: BattleState, rng: Rng, u: Unit, offer: ActionOffer, rung
   const weight = spend.roll * ACTION_BONUS;
   switch (rung.type) {
     case 'shoot': {
-      const band = rung.shoot!.band;
+      const home = shootHome(state, u);
+      const offset = rung.index - 1;
+      const outOfBand = (r: number) => !inRange(r) || Math.abs(r - home) > offset;
       if (action.target && action.target.includes('|')) {
         const e = crewedArtillery(state, u);
         if (!e) { log(state, u, `${u.name} has nothing that can batter a wall from here.`); break; }
-        if (wallRank(state, u, action.target) > band) { log(state, u, `${u.name}'s shot falls short of the wall.`); break; }
+        if (outOfBand(wallRank(state, u, action.target))) { log(state, u, `${u.name}'s shot falls short of the wall.`); break; }
         e.fired = true;
         u.attacked = true;
         attackWall(state, rng, u, action.target, e.launch - u.disorder - (isWeakened(u) ? 2 : 0) + weight, 'bombards');
         break;
       }
       const target = unit(state, action.target!);
-      if (rangeRank(rangeBetween(state, u, target)) > band) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
+      if (outOfBand(rangeRank(rangeBetween(state, u, target)))) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
       shootAt(state, rng, u, target, rung, weight);
       break;
     }

@@ -6,7 +6,7 @@ import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import type { BattleState } from '../engine/types.js';
 
-const archers: UnitCard = { name: 'Archers', level: 6, role: 'infantry', salvo: 'extreme', tactics: [] };
+const archers: UnitCard = { name: 'Archers', level: 6, role: 'infantry', salvo: 'medium', tactics: [] };
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', tactics: [] };
 
@@ -41,8 +41,9 @@ describe('what a target affords', () => {
     expect(mine).not.toContain('fight');
   });
 
-  // The rungs *are* the range: a shot is offered from a rung whose band carries that far, so
-  // walking a target away drops rungs off the bottom rather than greying out one Shoot button.
+  // The rungs *are* the range: a shot is offered from a rung whose swing off effective range
+  // reaches that far, so walking a target away drops rungs off the bottom rather than greying
+  // out one Shoot button.
   it('drops a shoot rung once the target walks out of its band', () => {
     const { state, me, foe } = battle();
     const rungsAt = (square: string) => {
@@ -50,10 +51,10 @@ describe('what a target affords', () => {
       const shoot = offersAt(state, { kind: 'unit', id: foe }, me).find((o) => o.offer.type === 'shoot');
       return shoot?.rungs.map((r) => r.label) ?? [];
     };
-    const close = rungsAt('c4');
+    const close = rungsAt('c5');
     const far = rungsAt('c7');
-    expect(close).toContain('Loose');
-    expect(far).not.toContain('Loose');
+    expect(close).toContain('Fire');
+    expect(far).not.toContain('Fire');
     expect(far.length).toBeGreaterThan(0);
     expect(far.every((r) => close.includes(r))).toBe(true);
   });

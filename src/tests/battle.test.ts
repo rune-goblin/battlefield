@@ -15,7 +15,7 @@ import { levelDc } from '../engine/tables.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
-const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 'close', tactics: [] };
+const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 'short', tactics: [] };
 const trolls: UnitCard = { name: 'Trolls', level: 8, role: 'infantry', pace: true, tactics: [] };
 
 function battle(rolls: number[], board = openBoard()) {
@@ -74,7 +74,7 @@ describe('deployment', () => {
   });
   it('starts the attacker out of shooting range of the defender', () => {
     const { state } = battle([]);
-    expect(rangeBetween(state, unit(state, 'u0'), unit(state, 'u2'))).toBe('extreme');
+    expect(rangeBetween(state, unit(state, 'u0'), unit(state, 'u2'))).toBe('long');
   });
 });
 
@@ -813,7 +813,7 @@ describe('rungs carry effects, actions carry numbers', () => {
 });
 
 describe('shooting', () => {
-  it('Loose reaches the close band and Volley the long one', () => {
+  it('Fire reaches effective range and Aim one band off it', () => {
     const { state } = battle([]);
     place(state, 'u0', 'c5');
     const s = offer(state, 'shoot', 'u2');
@@ -842,25 +842,19 @@ describe('shooting', () => {
       place(hex, 'u2', cell);
       return rangeBetween(hex, unit(hex, 'u0'), unit(hex, 'u2'));
     };
-    expect(bandAt('c4')).toBe('close');
-    expect(bandAt('c5')).toBe('long');
-    expect(bandAt('c7')).toBe('extreme');
-    expect(bandAt('c8')).toBe('beyond');
+    expect(bandAt('c4')).toBe('short');
+    expect(bandAt('c6')).toBe('medium');
+    expect(bandAt('c8')).toBe('long');
+    expect(bandAt('c9')).toBe('extreme');
+    // Kobolds are short-reach; even Snipe's ±2 swing tops out at long, so extreme (from c9)
+    // is still out of reach. Beyond itself never occurs on this board — its own radius caps
+    // extreme at 8, which is already the farthest two hexes can ever be.
     expect(targets(offer(hex, 'shoot', 'u2'), 3)).toEqual([]);
     // Manhattan distance already over-counts a square diagonal, so square keeps no cap.
     const sq = battle([], openBoard('square')).state;
     place(sq, 'u0', 'a1');
     place(sq, 'u2', 'h8');
     expect(rangeBetween(sq, unit(sq, 'u0'), unit(sq, 'u2'))).toBe('extreme');
-  });
-  it('Barrage ignores cover', () => {
-    const board = openBoard();
-    board.squares[3][2].terrain = 'forest';
-    const { state } = battle([], board);
-    place(state, 'u0', 'c4');
-    const k = unit(state, 'u2');
-    expect(defenceOf(state, unit(state, 'u0'), k, true)).toBe(unit(state, 'u0').stats.defence + 1);
-    expect(defenceOf(state, unit(state, 'u0'), k, true, true)).toBe(unit(state, 'u0').stats.defence);
   });
 });
 

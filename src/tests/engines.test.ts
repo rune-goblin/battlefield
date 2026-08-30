@@ -33,8 +33,9 @@ describe('siege engines', () => {
     expect(engine('Battering Ram').kind).toBe('ram');
   });
 
-  // A crewed engine replaces the unit's own shooting profile, grade and all: the catapult's
-  // extreme reach grants Barrage outright, while the ballista's long reach must reach for it.
+  // A crewed engine replaces the unit's own shooting profile, effective range and all, and
+  // always gets the full grade-3 spread free — a gun crew works its whole engineered range
+  // without the gamble an ordinary troop's own Reach check carries.
   it('a catapult shoots at extreme range with no roll to reach it, once per round', () => {
     const s0 = battle(['Catapult']);
     const shoot = offer(s0, 'shoot');
@@ -47,12 +48,11 @@ describe('siege engines', () => {
     expect(unit(s1, 'u0').engines[0].fired).toBe(true);
   });
 
-  it('a ballista is granted only the long band and must reach for the rest', () => {
+  it('a ballista also gets the full grade-3 spread once crewed, medium reach and all', () => {
     const s0 = battle(['Ballista']);
     const shoot = offer(s0, 'shoot');
-    expect(shoot.granted).toBe(2);
-    expect(shoot.rungs[1].targets).toEqual([]);
-    expect(shoot.rungs[2].access).toBe('reach');
+    expect(shoot.granted).toBe(3);
+    expect(shoot.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
   });
 
   it('a ram only works against a wall it stands beside, and adds +2', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMBATANTS } from '../engine/combatants.js';
 import { gradesFor, LADDER_TYPES, LADDERS, qualityFor, spellsFor } from '../engine/ladders.js';
-import { speedOf } from '../engine/cards.js';
+import { deriveStats, speedOf } from '../engine/cards.js';
 import { OFFICIAL } from '../engine/official.js';
 import { ROSTER } from '../engine/roster.js';
 import type { UnitCard } from '../engine/cards.js';
@@ -51,9 +51,12 @@ describe('grade derivation', () => {
     expect(gradesFor(einherjar)).toMatchObject({ fight: 3, guard: 3 });
   });
 
-  it('reads the shooting grade off the ranged band', () => {
-    expect(gradesFor(troop('Archer Regiment')).shoot).toBe(3);
-    expect(gradesFor(troop('Hobgoblin Battalion')).shoot).toBe(2);
+  it('gives Shoot the same free grade everywhere: effective range lives in Reach, not grade', () => {
+    expect(deriveStats(troop('Archer Regiment')).reach).toBe('long');
+    expect(deriveStats(troop('Hobgoblin Battalion')).reach).toBe('medium');
+    expect(deriveStats(troop('Orc Raiding Party')).reach).toBe('short');
+    expect(gradesFor(troop('Archer Regiment')).shoot).toBe(1);
+    expect(gradesFor(troop('Hobgoblin Battalion')).shoot).toBe(1);
     expect(gradesFor(troop('Orc Raiding Party')).shoot).toBe(1);
   });
 
@@ -84,7 +87,9 @@ describe('grade derivation', () => {
       for (const type of LADDER_TYPES) expect(g[type], `${card.name} ${type}`).toBeGreaterThanOrEqual(1);
       expect(qualityFor(card), card.name).toBeGreaterThanOrEqual(2);
     }
+    // Shoot no longer varies here: effective range moved to Reach, and no imported troop
+    // carries the covering-fire tactic that is now the only thing that raises Shoot's grade.
     const spread = LADDER_TYPES.map((t) => new Set([...COMBATANTS, ...OFFICIAL].map((c) => gradesFor(c)[t])).size);
-    expect(spread.filter((n) => n > 1).length).toBeGreaterThanOrEqual(5);
+    expect(spread.filter((n) => n > 1).length).toBeGreaterThanOrEqual(4);
   });
 });

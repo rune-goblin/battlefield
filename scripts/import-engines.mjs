@@ -17,7 +17,9 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
     level,
     kind: ram ? 'ram' : 'artillery',
     launch: (Number.isNaN(dc) ? LEVEL_DC[Math.min(20, level)] : dc) - 10,
-    reach: ram ? null : Number.isNaN(rangeFt) ? 'long' : rangeFt <= 60 ? 'close' : rangeFt <= 120 ? 'long' : 'extreme',
+    // Unlike a troop's Salvo, an engine's reach may land on extreme — that band is what
+    // siege equipment is for.
+    reach: ram ? null : Number.isNaN(rangeFt) ? 'medium' : rangeFt <= 60 ? 'short' : rangeFt <= 120 ? 'medium' : 'extreme',
     defence: d.defenses?.ac ?? 10 + level,
     source: d.source?.book ?? '',
   };

@@ -7,9 +7,11 @@ const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
 
 const dc = (html) => Number(/dc:(\d+)/.exec(html ?? '')?.[1] ?? NaN);
 const feet = (html) => Number(/within (\d+) feet/.exec(html ?? '')?.[1] ?? NaN);
+// Extreme is reserved for siege engines (see BANDS in types.ts) — a troop's own Salvo attack
+// never derives it, however far its range increment runs.
 const reachOf = (html) => {
   const ft = feet(html);
-  return Number.isNaN(ft) ? null : ft <= 60 ? 'close' : ft <= 120 ? 'long' : 'extreme';
+  return Number.isNaN(ft) ? null : ft <= 60 ? 'short' : ft <= 120 ? 'medium' : 'long';
 };
 
 function role(d) {

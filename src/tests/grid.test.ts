@@ -58,7 +58,7 @@ describe('hex grid', () => {
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
-const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 'close', tactics: [] };
+const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', salvo: 'short', tactics: [] };
 const trolls: UnitCard = { name: 'Trolls', level: 8, role: 'infantry', tactics: [] };
 
 function hexBattle() {

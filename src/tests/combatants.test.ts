@@ -15,7 +15,7 @@ describe('combatants', () => {
   });
   it('keeps the worked-example numbers', () => {
     const s = deriveStats(COMBATANTS.find((c) => c.name === 'Line Infantry')!);
-    expect(s).toMatchObject({ strike: 11, volley: 11, reach: 'long', defence: 24, will: 13 });
+    expect(s).toMatchObject({ strike: 11, volley: 11, reach: 'medium', defence: 24, will: 13 });
   });
 });
 
