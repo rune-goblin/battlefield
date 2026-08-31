@@ -54,7 +54,7 @@ export interface BoardView {
   /** The cast being aimed: a swirling particle line from the caster's cell out to the
    * target's, coloured by tree. Null clears it. */
   setCast(cast: { from: string; to: string; tree: Tree } | null): void;
-  /** A one-shot resolution burst on `cell`, shaped and tinted for `tree` — fired once a cast
+  /** A one-shot resolution animation on `cell`, selected by `tree` — fired once a cast
    * actually lands, unlike `setCast`'s held aim line. */
   burst(cell: string, tree: Tree): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
@@ -299,6 +299,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       castLayer.setCast(cast);
     },
     burst(cell, tree) {
+      castLayer.resolve();
       effectLayer.burst(cell, tree);
     },
     setRoute(id, cells) {

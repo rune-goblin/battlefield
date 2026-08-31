@@ -56,7 +56,7 @@
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
   export function cellRadius(cell: string) { return view?.cellRadius(cell) ?? null; }
   export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
-  /** Fires a one-shot resolution burst on `cell` — see `BoardView.burst`. */
+  /** Plays a one-shot spell animation on `cell` — see `BoardView.burst`. */
   export function burst(cell: string, tree: Tree) { view?.burst(cell, tree); }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }

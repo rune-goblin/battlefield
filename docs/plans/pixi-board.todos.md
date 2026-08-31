@@ -687,6 +687,24 @@ final scheme, plus one unrelated addition Mark asked for alongside it:
 
 ## Prototype-mode debt
 
+### Spell resolution sprites — 2026-08-31
+
+- The spell sprite sheets remain in `public/art/spell-vfx-spritesheets/` and
+  `public/art/spell-vfx-spritesheets-64f/`, but `EffectLayer` no longer loads or draws them.
+  They remain source material for a possible later art pass. Runtime spell feedback uses
+  deterministic `Graphics` compositions only.
+- `CastLayer` keeps the live caster-to-target aim line while aiming. Confirmation accelerates
+  its particles into the target over 350 ms and fades the line instead of removing both at
+  once. This overlaps the resolution effect's opening and connects the aimed cast to its result.
+- Each tree has its own procedural placeholder composition. Blast uses an additive core,
+  shockwave, and 28 seeded sparks. Healing uses three elliptical pool rings, two redrawn spiral
+  ribbons, eighteen rising bubbles, and a brief cross-shaped glint. Controlling assembles an
+  orb from three rotating elliptical rings and orbiting shards before releasing a lock pulse.
+  Offense crosses two energy slashes through a central flash and throws sparks. Defense
+  assembles a translucent shield and five hex cells, ripples on impact, then sheds fragments.
+  Movement draws five live wind ribbons, a brief pair of wings, and directional streaks.
+  Random values derive from tree and cell, so repeated playback follows stable paths.
+
 For whenever prototype mode ends and a hardening wave runs. `grep -rn "proto:" src` today:
 
 ```

@@ -1,0 +1,74 @@
+{
+  "blast": {
+    "maxAdjacentCentroidDisplacement": 1.933,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      56,
+      57
+    ],
+    "maxFrameFootprint": [
+      108,
+      107
+    ]
+  },
+  "heal": {
+    "maxAdjacentCentroidDisplacement": 1.57,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      38,
+      33
+    ],
+    "maxFrameFootprint": [
+      77,
+      106
+    ]
+  },
+  "control": {
+    "maxAdjacentCentroidDisplacement": 2.157,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      61,
+      59
+    ],
+    "maxFrameFootprint": [
+      109,
+      102
+    ]
+  },
+  "buff-attacks": {
+    "maxAdjacentCentroidDisplacement": 2.807,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      61,
+      56
+    ],
+    "maxFrameFootprint": [
+      107,
+      106
+    ]
+  },
+  "buff-defenses": {
+    "maxAdjacentCentroidDisplacement": 3.287,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      61,
+      52
+    ],
+    "maxFrameFootprint": [
+      104,
+      100
+    ]
+  },
+  "buff-movement": {
+    "maxAdjacentCentroidDisplacement": 3.527,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      40,
+      21
+    ],
+    "maxFrameFootprint": [
+      95,
+      61
+    ]
+  }
+}

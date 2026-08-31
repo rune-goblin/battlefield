@@ -1,0 +1,33 @@
+{
+  "bundles": [
+    {
+      "name": "spell-vfx-64f",
+      "assets": [
+        {
+          "alias": "blast",
+          "src": "blast.json"
+        },
+        {
+          "alias": "heal",
+          "src": "heal.json"
+        },
+        {
+          "alias": "control",
+          "src": "control.json"
+        },
+        {
+          "alias": "buff-attacks",
+          "src": "buff-attacks.json"
+        },
+        {
+          "alias": "buff-defenses",
+          "src": "buff-defenses.json"
+        },
+        {
+          "alias": "buff-movement",
+          "src": "buff-movement.json"
+        }
+      ]
+    }
+  ]
+}

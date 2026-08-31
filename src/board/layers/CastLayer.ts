@@ -13,6 +13,7 @@ const SWIRL_SPAN = 2.4;
 const PARTICLE_MIN_RADIUS = 0.018;
 const PARTICLE_MAX_RADIUS = 0.05;
 const LINE_WIDTH = 0.045;
+const RESOLVE_DURATION = 0.35;
 
 interface Particle {
   g: PIXI.Graphics;
@@ -22,6 +23,7 @@ interface Particle {
   swirlSpeed: number;
   radius: number;
   baseSize: number;
+  resolveAlong: number;
 }
 
 /**
@@ -40,6 +42,8 @@ export class CastLayer {
   private particles: Particle[] = [];
   private a: Point | null = null;
   private b: Point | null = null;
+  private line: PIXI.Graphics | null = null;
+  private resolving: number | null = null;
 
   private readonly tick = (): void => {
     if (!this.particles.length || !this.a || !this.b) return;
@@ -47,24 +51,32 @@ export class CastLayer {
     const dx = this.b.x - this.a.x;
     const dy = this.b.y - this.a.y;
     const len = Math.hypot(dx, dy) || 1;
-    const dirX = dx / len;
-    const dirY = dy / len;
-    const perpX = -dirY;
-    const perpY = dirX;
+    const perpX = -dy / len;
+    const perpY = dx / len;
+    const resolveT = this.resolving === null
+      ? null
+      : Math.min(1, (this.resolving += dt) / RESOLVE_DURATION);
+    const converge = resolveT === null ? 0 : smoothstep(resolveT);
     for (const p of this.particles) {
-      p.along = (p.along + dt * p.travelSpeed) % 1;
-      p.phase += dt * p.swirlSpeed;
+      p.along = resolveT === null
+        ? (p.along + dt * p.travelSpeed) % 1
+        : p.resolveAlong + (1 - p.resolveAlong) * converge;
+      p.phase += dt * p.swirlSpeed * (resolveT === null ? 1 : 1.8);
       // A sine offset perpendicular to the line, scaled by its own cosine, reads as a
       // corkscrew: particles widen and narrow as they'd bank toward and away from a viewer
       // riding along the line, rather than sitting in one flat plane.
       const depth = Math.cos(p.phase);
-      const offset = p.radius * Math.sin(p.phase);
+      const radius = p.radius * (resolveT === null ? 1 : 1 - converge);
+      const offset = radius * Math.sin(p.phase);
       const cx = this.a.x + dx * p.along;
       const cy = this.a.y + dy * p.along;
       p.g.position.set(cx + perpX * offset, cy + perpY * offset);
-      p.g.scale.set(0.55 + 0.45 * (depth * 0.5 + 0.5));
-      p.g.alpha = 0.35 + 0.65 * (depth * 0.5 + 0.5);
+      const visibility = resolveT === null ? 1 : 1 - smoothstep(resolveT);
+      p.g.scale.set((0.55 + 0.45 * (depth * 0.5 + 0.5)) * (1 + converge * 0.8));
+      p.g.alpha = (0.35 + 0.65 * (depth * 0.5 + 0.5)) * visibility;
     }
+    if (this.line && resolveT !== null) this.line.alpha = 1 - smoothstep(resolveT);
+    if (resolveT === 1) this.clearVisual();
   };
 
   constructor(container: PIXI.Container, ticker: PIXI.Ticker, theme: BoardTheme) {
@@ -88,11 +100,16 @@ export class CastLayer {
     this.redraw();
   }
 
+  /** Pulls the live particles into their target and fades the aim line after confirmation. */
+  resolve(): void {
+    if (!this.particles.length || this.resolving !== null) return;
+    this.cast = null;
+    this.resolving = 0;
+    for (const p of this.particles) p.resolveAlong = p.along;
+  }
+
   private redraw(): void {
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
-    this.particles = [];
-    this.a = null;
-    this.b = null;
+    this.clearVisual();
     if (!this.grid || !this.size || !this.cast) return;
     const from = this.grid.parse(this.cast.from);
     const to = this.grid.parse(this.cast.to);
@@ -107,6 +124,7 @@ export class CastLayer {
     line.lineStyle(this.size * LINE_WIDTH, colour, 0.5);
     line.moveTo(a.x, a.y).lineTo(b.x, b.y);
     this.container.addChild(line);
+    this.line = line;
 
     this.a = a;
     this.b = b;
@@ -122,8 +140,18 @@ export class CastLayer {
         swirlSpeed: SWIRL_SPAN * (0.7 + Math.random() * 0.6) * (Math.random() < 0.5 ? -1 : 1),
         radius: this.size * (SWIRL_RADIUS_MIN + Math.random() * (SWIRL_RADIUS_MAX - SWIRL_RADIUS_MIN)),
         baseSize,
+        resolveAlong: 0,
       };
     });
+  }
+
+  private clearVisual(): void {
+    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.particles = [];
+    this.a = null;
+    this.b = null;
+    this.line = null;
+    this.resolving = null;
   }
 
   /** Unhooks the ticker before the generic `LayerManager` teardown runs. */
@@ -132,3 +160,5 @@ export class CastLayer {
     this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
   }
 }
+
+const smoothstep = (t: number): number => t * t * (3 - 2 * t);
