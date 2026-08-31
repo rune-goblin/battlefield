@@ -31,6 +31,10 @@
   let hoveredBand = $state<MoveBand | null>(null);
   let moveOpen = $state(true);
 
+  // Tracks the pointer's own cell while a spell is armed, so its cast line can follow the
+  // cursor before a target is picked — see `cast` below.
+  let hoveredCell = $state<string | null>(null);
+
   // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
   // dedicated field on the log entry.
@@ -668,6 +672,14 @@
   const shot = $derived(
     active && aim && aimGroup?.offer.type === 'shoot' ? { from: notation(active.square), to: aim.cell } : null,
   );
+  // A cast's line tracks the pointer's own cell while its target is still being chosen —
+  // caster's own cell out to whatever legal cell it sits over — then locks to the popup's
+  // target once one is clicked, the same way a shot's arc locks to `aim.cell`.
+  const cast = $derived.by(() => {
+    if (!active || armed !== 'cast' || !armedTree) return null;
+    const to = aim?.cell ?? (hoveredCell && arming?.cells.includes(hoveredCell) ? hoveredCell : null);
+    return to ? { from: notation(active.square), to, tree: armedTree } : null;
+  });
   const aimStyle = $derived<HighlightStyle>(aimed ? styleFor(aimed.offer) : 'attack');
 
   // An armed prop lights everything it can touch, so picking the verb first still teaches
@@ -763,6 +775,10 @@
     // Rally on your own piece must not arrive carrying your own id as its ally.
     const names = row.opt.targets.some((t) => t.kind === a.target.kind && t.id === a.target.id);
     performRung(row.offer, row.opt, names ? a.target.id : undefined);
+    // A cast's resolution burst lands on the clicked cell — the same square the aim popup was
+    // anchored on — regardless of what the roll behind it did; a miss still means the spell
+    // went off, just not to effect.
+    if (row.offer.type === 'cast' && row.offer.spell) boardRef?.burst(a.cell, row.offer.spell);
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
@@ -906,7 +922,9 @@
       barred={blockedCell}
       {anchored}
       {shot}
+      {cast}
       draggable={active?.id ?? null}
+      onhover={(e) => { hoveredCell = e.cell; }}
       oncell={active ? onCell : undefined}
       ontoken={active ? onToken : undefined}
       onedge={active ? onEdge : undefined}

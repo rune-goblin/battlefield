@@ -7,19 +7,24 @@ const TEXTURE_TILE = 32;
 // Elevation reads as a fill wash plus a contour outline drawn only where elevation actually
 // changes between neighbours (see the edge walk in `drawElevation`), not on every cell's own
 // perimeter — a same-level pair of cells shares a seamless interior instead of a doubled-up
-// internal line. Fill scales linearly with level (0 has none — it's the unlit base terrain):
-// 10% for level 1, 20% for level 2. The outline holds at a flat 2px and scales only its alpha
-// (25%/50%) — a widening line at level 2 read as "just another heavy line" indistinguishable
-// from a cliff's own weight, where alpha alone still separates the levels without competing
-// with it. A fixed white wash rather than theme.ink, so higher ground reads lighter than lower
-// ground on every terrain (including water) in both light and dark theme.
+// internal line. Fill scales linearly with |level| (0 has none — it's the unlit base terrain):
+// 10% per level, capped at 60%. The outline holds at a flat 2px and scales only its alpha
+// (25% per level) — a widening line at level 2 read as "just another heavy line"
+// indistinguishable from a cliff's own weight, where alpha alone still separates the levels
+// without competing with it. A fixed white wash for high ground and a fixed black wash for low
+// ground, rather than theme.ink, so a level always reads the same direction (lighter above,
+// darker below) on every terrain (including water) in both light and dark theme.
 function elevationFillAlpha(level: number): number {
-  return level <= 0 ? 0 : Math.min(0.6, 0.1 * level);
+  return level === 0 ? 0 : Math.min(0.6, 0.1 * Math.abs(level));
 }
-function elevationOutline(level: number): { width: number; alpha: number } {
-  return { width: 2, alpha: Math.min(1, 0.25 * level) };
+function elevationOutline(level: number): { width: number; alpha: number; colour: number } {
+  return { width: 2, alpha: Math.min(1, 0.25 * Math.abs(level)), colour: elevationColour(level) };
 }
-const ELEVATION_HIGHLIGHT = 0xffffff;
+function elevationColour(level: number): number {
+  return level >= 0 ? ELEVATION_HIGH : ELEVATION_LOW;
+}
+const ELEVATION_HIGH = 0xffffff;
+const ELEVATION_LOW = 0x000000;
 // The in-cell elevation numeral, styled like LabelLayer's coordinate labels (ink fill, a
 // background-coloured stroke halo so the digit holds up against any terrain hue in either
 // theme) rather than MapTextUtils' drop-shadow presets, which assume a light-on-dark banner.
@@ -101,8 +106,8 @@ export class TerrainLayer {
     const labelStyle = new PIXI.TextStyle(elevationLabelStyle(theme, size));
     for (const sq of grid.cells()) {
       const elevation = at(board, sq).elevation;
-      if (elevation <= 0) continue;
-      tint.beginFill(ELEVATION_HIGHLIGHT, elevationFillAlpha(elevation)).drawPolygon(grid.vertices(sq, size)).endFill();
+      if (elevation === 0) continue;
+      tint.beginFill(elevationColour(elevation), elevationFillAlpha(elevation)).drawPolygon(grid.vertices(sq, size)).endFill();
 
       // A number, not just the wash: level 1 and 2 read close on a busy terrain hue, so the
       // digit is the part that actually answers "how high" — the wash and outline are there
@@ -130,10 +135,13 @@ export class TerrainLayer {
         if (diff === 0) continue;
         // Drawn on a cliff edge too (on top of EdgeLayer's rock teeth), not just a single-level
         // drop — otherwise a raised area's contour had a gap exactly where its edge happened to
-        // be a cliff, instead of wrapping the whole shape.
-        const outline = elevationOutline(Math.max(at(board, sq).elevation, at(board, n).elevation));
+        // be a cliff, instead of wrapping the whole shape. Styled by whichever side is further
+        // from 0 — the more extreme of a rise and a pit sharing an edge is the one that reads.
+        const sqE = at(board, sq).elevation;
+        const nE = at(board, n).elevation;
+        const outline = elevationOutline(Math.abs(sqE) >= Math.abs(nE) ? sqE : nE);
         const [a, b] = grid.edgeSegment(sq, n, size);
-        tint.lineStyle(outline.width, ELEVATION_HIGHLIGHT, outline.alpha).moveTo(a.x, a.y).lineTo(b.x, b.y);
+        tint.lineStyle(outline.width, outline.colour, outline.alpha).moveTo(a.x, a.y).lineTo(b.x, b.y);
       }
     }
 

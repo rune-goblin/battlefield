@@ -466,6 +466,8 @@ export class Interaction {
       case 'q': return { kind: 'elevation', level: 0 };
       case 'w': return { kind: 'elevation', level: 1 };
       case 'e': return { kind: 'elevation', level: 2 };
+      case 'a': return { kind: 'elevation', level: -1 };
+      case 's': return { kind: 'elevation', level: -2 };
       // Repeated R cycles the tier, so one key reaches all four walls.
       case 'r': return { kind: 'wall', tier: this.brush?.kind === 'wall' ? (this.wallTier + 1) % WALL_TIERS : this.wallTier };
       case 'x': return { kind: 'erase' };

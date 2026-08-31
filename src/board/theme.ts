@@ -1,4 +1,4 @@
-import type { SquareTerrain } from '../engine/index.js';
+import type { SquareTerrain, Tree } from '../engine/index.js';
 
 // The standing move-band wash (selecting a unit, before any drag): 'move' is the free band
 // (one action), 'moveFar'/'moveFar3' are the costed band at two and three actions — one shade
@@ -27,6 +27,9 @@ export interface BoardTheme {
     /** The shot arc and the barred X — where colour on the board means danger rather than
      * terrain. */
     shot: number;
+    /** The cast line and its swirling particles, one hue per tree — the only thing telling
+     * two casts apart until sprites replace the particles. */
+    cast: Record<Tree, number>;
   };
   token: {
     routed: number;
@@ -70,6 +73,14 @@ const LIGHT: BoardTheme = {
     hover: 0x1f1a17,
     selected: 0xb4611f,
     shot: 0xb4231b,
+    cast: {
+      blast: 0xd1481f,
+      healing: 0x4f9e5c,
+      controlling: 0x7a4fb0,
+      offense: 0xb0304f,
+      defense: 0x2f6fb0,
+      movement: 0x2f9e96,
+    },
   },
   token: {
     routed: 0xb9ab93,
@@ -104,6 +115,14 @@ const DARK: BoardTheme = {
     hover: 0xe8e1d5,
     selected: 0xd98b6e,
     shot: 0xe0453a,
+    cast: {
+      blast: 0xff7a3d,
+      healing: 0x6fd17a,
+      controlling: 0xa877e0,
+      offense: 0xe0577a,
+      defense: 0x5f9ee0,
+      movement: 0x4fd1c7,
+    },
   },
   token: {
     routed: 0x8c8378,

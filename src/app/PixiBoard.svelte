@@ -4,7 +4,7 @@
     createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
     type GridSettings, type HighlightStyle, type Rect, type TokenModel,
   } from '../board/index.js';
-  import type { Board } from '../engine/index.js';
+  import type { Board, Tree } from '../engine/index.js';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
@@ -23,6 +23,8 @@
     anchored?: string | null;
     /** The shot being aimed, shooter's cell to target's — see `BoardView.setShot`. */
     shot?: { from: string; to: string } | null;
+    /** The cast being aimed, caster's cell to target's — see `BoardView.setCast`. */
+    cast?: { from: string; to: string; tree: Tree } | null;
     selected?: string | null;
     /** In battle mode, the only token a press may pick up. Place mode ignores this. */
     draggable?: string | null;
@@ -42,7 +44,7 @@
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, selected = null, draggable = null, fill = false, frozen = false,
+    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
   }: Props = $props();
 
@@ -54,6 +56,8 @@
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
   export function cellRadius(cell: string) { return view?.cellRadius(cell) ?? null; }
   export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
+  /** Fires a one-shot resolution burst on `cell` — see `BoardView.burst`. */
+  export function burst(cell: string, tree: Tree) { view?.burst(cell, tree); }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
   export function setGrid(settings: Partial<GridSettings>) { view?.setGrid(settings); }
@@ -94,6 +98,7 @@
   $effect(() => { view?.setBarred(barred); });
   $effect(() => { view?.setAnchored(anchored); });
   $effect(() => { view?.setShot(shot); });
+  $effect(() => { view?.setCast(cast); });
   $effect(() => { view?.setSelected(selected); });
   $effect(() => { view?.setDraggable(draggable); });
   $effect(() => { view?.setFrozen(frozen); });

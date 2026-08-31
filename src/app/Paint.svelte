@@ -85,6 +85,9 @@
       {#each [0, 1, 2] as l, i (l)}
         <button class:on={on({ kind: 'elevation', level: l })} onclick={() => (brush = { kind: 'elevation', level: l })}>{'QWE'[i]} · elev {l}</button>
       {/each}
+      {#each [-1, -2] as l, i (l)}
+        <button class:on={on({ kind: 'elevation', level: l })} onclick={() => (brush = { kind: 'elevation', level: l })}>{'AS'[i]} · elev {l}</button>
+      {/each}
       <button class:on={on({ kind: 'erase' })} onclick={() => (brush = { kind: 'erase' })}>X · erase</button>
     </div>
     <div class="palette">
@@ -99,7 +102,7 @@
     </div>
     <p class="muted">
       A wall brush snaps to the nearest edge between two squares. Click the board first, then
-      <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>, <kbd>R</kbd> (repeat to cycle tier),
+      <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>/<kbd>A</kbd>/<kbd>S</kbd>, <kbd>R</kbd> (repeat to cycle tier),
       <kbd>X</kbd>, <kbd>Esc</kbd>. Wheel zooms, middle-drag or space-drag pans, double-click refits.
       Water sits at elevation 0; a difference of two levels between neighbours is a cliff.
     </p>

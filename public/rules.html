@@ -34,8 +34,10 @@
   .hx { stroke:none; opacity:.15; }
   .hx.b1 { fill:var(--accent); opacity:.26; } .hx.b2 { fill:var(--accent); opacity:.16; }
   .hx.b3 { fill:var(--accent); opacity:.07; } .hx.here { fill:var(--accent); opacity:.6; }
-  .rung { font:600 13px Georgia,serif; fill:var(--ink); } .free { fill:var(--band); stroke:var(--rule); }
-  .reach { fill:none; stroke:var(--accent); stroke-width:2; stroke-dasharray:5 3; } .locked { fill:none; stroke:var(--rule); stroke-dasharray:2 4; }
+  table.paths th:nth-child(2) { border-bottom:3px solid var(--accent); }
+  table.paths th:nth-child(3) { border-bottom:3px dashed var(--accent); }
+  table.paths th:nth-child(4) { border-bottom:3px dotted var(--rule); }
+  table.paths td:last-child { color:var(--muted); font-style:italic; }
   @media (max-width:40rem){ .toc{columns:1;} body{font-size:16px;} }
 </style>
 </head>
@@ -64,8 +66,7 @@
 <a href="#siege">12. Siege engines</a><br>
 <a href="#end">13. Ending the battle</a><br>
 <a href="#odds">14. Fighting against the odds</a><br>
-<a href="#ref">Quick reference</a><br>
-<a href="#notes">Design notes</a>
+<a href="#ref">Quick reference</a>
 </nav>
 
 <h2 id="need">1. What you need</h2>
@@ -125,7 +126,7 @@
 <tr><td>9 or more</td><td>Beyond</td><td>Never occurs on this board: extreme's own ceiling is already the farthest two hexes can be</td></tr>
 </table>
 <p>Which rung reaches a given band depends on the shooter, not the band. <strong>Fire</strong> is free at a weapon's own effective range (its Reach, section 2); <strong>Aim</strong> swings one band off it and <strong>Snipe</strong> two, either direction, whichever way the target actually is (section 6). A short-reach troop's Snipe can still reach as far as long, but no further &mdash; extreme takes a medium or long effective range pushing in, or a siege engine's own reach, which starts there for free.</p>
-<figure><svg viewBox="0 0 472 432" role="img" aria-label="Shooting bands measured from c3, ring colours pending a redraw for the fourth band">
+<figure><svg viewBox="0 0 472 432" role="img" aria-label="Shooting bands measured from c3: colour deepens toward the centre; the plain unshaded hexes at the edge are extreme range">
 <polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="hx b1"/>
 <polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="cell"/>
 <polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="hx b1"/>
@@ -253,7 +254,7 @@
 <text class="sm" x="367.7" y="406.0" text-anchor="middle">h</text>
 <text class="sm" x="412.8" y="406.0" text-anchor="middle">i</text>
 <text class="sm" x="30" y="426">From c3: short within 2, medium to 4, long to 6, extreme to 8.</text>
-</svg><figcaption>The bands from c3, drawn to the old three-band count &mdash; short/medium/long/extreme now runs one ring further than shown; see the table above for the current thresholds.</figcaption></figure>
+</svg><figcaption>The bands from c3, colour deepening toward the centre; the plain hexes at the edge are extreme range. See the table above for the exact hex counts.</figcaption></figure>
 <p>Two enemy units on adjacent hexes are <strong>engaged</strong>, unless a cliff lies on the edge between them. A unit engaged with two or more enemies is <strong>outflanked</strong> and takes &minus;2 to Defence. An engaged unit cannot stride away and cannot shoot; it fights, guards, rallies, casts, or withdraws (section 7).</p>
 <p>Hexes carry terrain and height; edges carry walls and cliffs (section 10).</p>
 
@@ -428,42 +429,31 @@
 <tr><td>Rally</td><td><strong>Steady</strong> — yourself, and one adjacent ally takes heart</td><td><strong>Rally</strong> — and that ally clears 1 as well</td><td><strong>Inspire</strong> — every friendly unit within 2 clears 1 and takes heart</td></tr>
 </table></div>
 <p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one nothing at all. Rally is otherwise always offered, and a caster adds a row for each of the six trees its tradition grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
-<p>Climbing the ladder is one way to spend a spare action; buying a flat bonus on the roll you are already making is the other. A rung changes what the act does — Aim reaches past your natural range, Overrun takes ground, Inspire widens Rally's reach. Weight changes only the number: +2 per action, stacked on the same act, whatever rung you took it at. Neither is more correct than the other — see <a href="#weight">Weight</a>, below, for where each spare action can land.</p>
+<p>Every act costs one action, whatever rung it lands on. Any actions left in the activation buy one of two different things, and they are not the same currency. <strong>Reach</strong> is a free gamble that decides which rung fires. <strong>Weight</strong> is a guaranteed bonus, paid for in actions, that only ever changes a number. A unit can reach, weight, both, or neither — they draw on the same pool of spare actions but land on different things.</p>
 
-<h3>Reaching above your grade</h3>
-<figure><svg viewBox="0 0 620 210" role="img" aria-label="A grade-1 shooter: Fire is free, Aim is a reach, Snipe is locked">
-<rect class="locked" x="20" y="12" width="230" height="48" rx="5"/>
-<text class="rung" x="40" y="42">3 &middot; Snipe</text>
-<text class="sm" x="270" y="34">Two rungs above your grade.</text>
-<text class="sm" x="270" y="52">Nothing reaches it this activation.</text>
-<rect class="reach" x="20" y="76" width="230" height="48" rx="5"/>
-<text class="rung" x="40" y="106">2 &middot; Aim</text>
-<text class="sm" x="270" y="98">One above. Reach for it: Will, less disorder,</text>
-<text class="sm" x="270" y="116">against your own level DC.</text>
-<rect class="free" x="20" y="140" width="230" height="48" rx="5"/>
-<text class="rung" x="40" y="170">1 &middot; Fire</text>
-<text class="sm" x="270" y="162">Your grade. Take it, no roll.</text>
-<text class="sm" x="270" y="180">Grade 2 would take Aim the same way.</text>
-</svg><figcaption>An ordinary troop shoots at grade 1, whatever its effective range: Aim and Snipe swing off that range rather than up a fixed ladder. Critical success on the reach climbs one band further still; failure falls back to the granted rung, and the act happens anyway.</figcaption></figure>
-<p>A unit takes any rung at or below its grade with no roll at all. One rung above is a <strong>reach</strong>: roll d20 + Will, less disorder, against your own level DC, and add 2 when the rung reached for is the third of its ladder. Two rungs above is locked.</p>
-<table>
-<tr><th>Reach</th><th>Result</th></tr>
-<tr><td>Critical success</td><td>Climb one rung further still, to a maximum of 3</td></tr>
-<tr><td>Success</td><td>The rung you reached for</td></tr>
-<tr><td>Failure</td><td>Fall back to your granted rung. The act still happens.</td></tr>
-<tr><td>Critical failure</td><td>Fall back, and take 1 disorder for the botched order</td></tr>
-</table>
+<h3>Reach: climbing above your grade</h3>
+<p>A unit takes any rung at or below its grade with no roll at all. One rung above costs nothing but a d20; two rungs above is out of reach however many actions the unit has left.</p>
+<div class="wrap"><table class="paths">
+<tr><th></th><th>At or below grade</th><th>One rung above &mdash; reach</th><th>Two rungs above</th></tr>
+<tr><td>Cost</td><td>The act's one action, nothing more</td><td>Nothing extra &mdash; the same action pays for it</td><td rowspan="6">Locked. No action, roll or weight reaches it this activation.</td></tr>
+<tr><td>Roll</td><td>None &mdash; it happens</td><td>d20 + Will, less disorder, vs your own level DC (+2 to reach the third rung)</td></tr>
+<tr><td>Critical success</td><td>&mdash;</td><td>Climb one rung further still, to a maximum of 3</td></tr>
+<tr><td>Success</td><td>The rung you took</td><td>The rung you reached for</td></tr>
+<tr><td>Failure</td><td>&mdash;</td><td>Falls back to your grade. The act still happens.</td></tr>
+<tr><td>Critical failure</td><td>&mdash;</td><td>Falls back, and costs 1 disorder for the botched order</td></tr>
+</table></div>
 <p>A reach costs nothing but the risk. The act goes ahead either way, so the question is never whether to act but how high to aim.</p>
 
-<h3 id="weight">Weight</h3>
-<p>Every act costs one action. The actions left over are committed to the same act as <strong>weight</strong>, and each one is worth +2 wherever it lands. There are four places it can land:</p>
-<dl>
-<dt>Roll</dt><dd>The act's own roll: the melee, the shot, the Rally check, the casting, the escape. Guard has no roll of its own.</dd>
-<dt>Push</dt><dd>The reach check, when you are climbing above your grade.</dd>
-<dt>Defence</dt><dd>Guard only. A Guard sets a number outright rather than rolling, and the number is the actions committed to it &times; 2, counting the first: Brace alone is +2 Defence, two actions make it +4, three make it +6.</dd>
-<dt>Distance</dt><dd>Withdraw only. Each action buys another Speed's worth of ground to run (section 7).</dd>
-</dl>
-<p>So a unit with three actions may Strike and put both spare actions on the roll, at +4; or reach for Press with one action on the climb and one on the melee; or dig in at +6 Defence and dare the field to come to it. The rung carries the effect and the actions carry the numbers — that separation is what keeps a weak unit's grade-1 act worth taking at all.</p>
+<h3 id="weight">Weight: spending actions for a number</h3>
+<p>Weight is the other thing a spare action buys: +2, guaranteed, no roll, stacked on the same act as many times as the unit has actions left. It can land in four places:</p>
+<div class="wrap"><table>
+<tr><th>Landing spot</th><th>What it does</th></tr>
+<tr><td>Roll</td><td>The act's own roll: the melee, the shot, the Rally check, the casting, the escape. Guard has no roll of its own.</td></tr>
+<tr><td>Push</td><td>The reach check, when the unit is also climbing above its grade &mdash; weight can back a gamble as easily as a sure thing.</td></tr>
+<tr><td>Defence</td><td>Guard only. A Guard sets a number outright rather than rolling: the actions committed to it &times; 2, counting the first. Brace alone is +2 Defence, two actions make it +4, three make it +6.</td></tr>
+<tr><td>Distance</td><td>Withdraw only. Each action buys another Speed's worth of ground to run (section 7).</td></tr>
+</table></div>
+<p>So a unit with three actions might Strike and put both spare actions on the roll, at +4; or reach for Press with one action on the climb and one on the melee, splitting the two paths; or dig in at +6 Defence and dare the field to come to it. The rung carries the effect and the actions carry the numbers &mdash; that separation is what keeps a weak unit's grade-1 act worth taking at all.</p>
 <div class="key">
 <p><strong>One attack an activation.</strong> Fight, Shoot and a Blast are the same slot. A second attack was the thing that broke the pacing, so the spare actions buy weight instead. Everything else — Guard, Rally, the other spells, moving — may be repeated.</p>
 </div>
@@ -586,15 +576,7 @@
 <p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster itself rolls, and <strong>spell DC</strong>, what a target must beat to resist it. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
 <p>The cast itself is free: no roll, at whichever tree's own base range (below), resolving at Tier 1 of whichever tree you choose. Pushing is what introduces risk. Reaching for extended range, a longer duration, or a stronger effect &mdash; never more than one of the three on a single cast &mdash; commits you to a <strong>cast roll</strong>: d20 + spell attack, less disorder, against your own level DC, +2 when the tier reached for is the third &mdash; the same reach formula every other ladder uses, with spell attack standing in for Will. Crit success climbs one tier further than you reached for, capped at the third; success gets you what you reached for; failure falls back to the free base and the cast still happens, the same as every other ladder's reach; critical failure falls back and costs you 1 disorder.</p>
 <p>Once the cast lands, an enemy-targeted tree &mdash; Blast or Controlling &mdash; needs a second, separate <strong>effect roll</strong> to see how well it bites, decoupled from the cast roll that got it there. Neither is the caster rolling an attack: the target resists instead, the same shape as an Escape check resists a holder's own attack DC. Blast asks for Reflex, Controlling for Will &mdash; the target rolls d20 + that save, less disorder, against the caster's own spell DC. Blast is still the activation's one attack, the same slot a Fight or a Shot uses. An ally-targeted tree &mdash; Healing, or the Offense, Defense or Movement buff &mdash; has nothing to resist, so it simply applies once the cast lands, no second roll.</p>
-<div class="aside">
-<h4>No tree here targets Fortitude yet</h4>
-<p>Blast rolls against Reflex and Controlling against Will, so casting still leaves Fortitude untouched &mdash; its live use is resisting the disorder a wound deals outright (section 8), not a spell effect. A debuff category (poison, exhaustion, disease: the classic Fortitude flavor) is still the obvious candidate for an eighth tree, but adding one to a system that only just settled on six is a real question, not a foregone one.</p>
-</div>
 <p>A caster also draws on a second pool ordinary actions can't touch: <strong>level &divide; 5, rounded down</strong>, spendable only on a Cast push &mdash; 0 below level 5, rising to 4 at level 20. It refreshes every activation, exactly as the ordinary three actions do. Cast carries no grade of its own: there is no second number gating which tiers are free, the way grade still does for Shoot, Fight, Guard and Rally. The pool is the one mechanic deciding how far a push goes, stacked on top of whatever a caster's ordinary three actions also commit to the same cast.</p>
-<div class="aside">
-<h4>Other ways the pool could refresh</h4>
-<p>Deferred rather than built: a flat allocation drawn down across the whole battle instead of refreshing every activation; a recharge roll each turn, closer to how Pathfinder's own recharge works; or a refresh every few turns instead of every one. Simplicity wins for now.</p>
-</div>
 
 <h3>Tradition</h3>
 <p>Each cell below is the highest tier a tradition may ever reach in that tree &mdash; 0 meaning no access at all. Nothing reaches every tree, and nothing sits at 0 in more than two.</p>
@@ -623,7 +605,7 @@
 <tr><td>Offense (buff)</td><td>+1 to the buffed unit's attack</td><td>+1 damage</td><td>+2 to the buffed unit's attack</td><td>If the buffed unit's next act is a Fight, the target does not strike back</td><td>+3 to the buffed unit's attack</td></tr>
 <tr><td>Defense (buff)</td><td>+2 AC</td><td>The buffed unit's next wound taken costs it no disorder</td><td>+4 AC</td><td>&minus;1 from the next damage taken</td><td>+4 AC, +2 saves</td></tr>
 <tr><td>Movement (buff)</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>+2 movement</td><td>Grants a movement type: fly, swim, or water walk</td><td>+3 movement</td></tr>
-</table></div><p>The five named spells this system used to have are retired outright &mdash; every caster now works through the six trees above, not a menu of spells &mdash; but each old name is the tree that replaced it, for anyone tracing the lineage: Blast is the Blast tree, Mend is Healing, Ward is Defense, Compel is Controlling, and Bless is the Offense buff. Only the first four carry their old mechanic forward with any precision (Compel most exactly, as Controlling's own Tier 3); Bless's old effect &mdash; a free rung-climb with no reach check &mdash; doesn't survive in Offense's tier table as written, so the naming is lineage, not a literal carry-over.</p>
+</table></div>
 <p>Three trained tactics still grant a fixed effect to a troop with no magic of its own, unrolled and untiered: battlefield medicine grants Healing's Tier 2 (+1 health), defending allies grants Defense's Tier 1 (+2 AC), and demoralizing grants Controlling's Tier 3 (may not reach above its grade on its next activation).</p>
 
 <h2 id="siege">12. Siege engines</h2>
@@ -637,7 +619,7 @@
 <h3>Dusk</h3>
 <p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
 <h3>The kingdom's checks</h3>
-<p>TODO &mdash; what a battle's outcome buys the kingdom (Fame, Unrest, recovery) is not the engine's concern; <code>BattleState</code> ends at wounds, disorder, destroyed and captured. It belongs here as a kingdom action in whichever system frames the fight, resolved on a PC's own skill check rather than a kingdom rolling a Warfare or Defense skill of its own. Placeholder until that action is designed.</p>
+<p>What a battle's outcome buys the kingdom &mdash; Fame, Unrest, recovery &mdash; is not these rules' concern. A battle ends at wounds, disorder, destroyed and captured; what a wider campaign does with that result is a kingdom action of its own.</p>
 <h3>Back on the kingdom map</h3>
 <p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
 
@@ -689,30 +671,6 @@
 <tr><th>Level</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>12</td><td>14</td><td>16</td><td>18</td><td>20</td></tr>
 <tr><th>DC</th><td>15</td><td>16</td><td>18</td><td>19</td><td>20</td><td>22</td><td>23</td><td>24</td><td>26</td><td>27</td><td>30</td><td>32</td><td>35</td><td>38</td><td>40</td></tr>
 </table></div>
-
-<h2 id="notes">Design notes</h2>
-<h3>The problem</h3>
-<p>Armies in Reignmaker are troop actors with kingdom-level records, and nothing resolved army against army: events applied a condition to a random army, the only path to destruction was upkeep morale, and the war-action data was display-only. The skirmish rules — a five-foot grid, five actions, segments — suit a heroic encounter and fail a GM running three faction armies against four players' armies in one sitting.</p>
-<p>These rules resolve a field battle in well under an hour, give every player a unit to command and a real decision every activation, handle unequal forces with no points system, and reuse the numbers the troop actors already carry. With four players and a GM, a battle is six to nine units and runs three to five rounds. Units only: commanders and player characters are deferred, and the action economy leaves room for them.</p>
-<h3>Principles</h3>
-<ol>
-<li>One dice idiom. Every roll is d20 + modifier against a DC with four degrees, so it posts as an ordinary check and level scaling comes free.</li>
-<li>One number of each kind per unit: one hex of position, one count of wounds, one of disorder. Nothing is tracked pairwise.</li>
-<li>Melee does not lock. A Fight is an exchange, and position changes only by choice.</li>
-<li>The rung carries the effect and the action carries the number. That is what keeps a weak unit's grade-1 act worth taking, and it is why a spare action is never a second attack.</li>
-<li>Every number comes off the actor: Battle DC, Salvo DC and range, AC, saves, Speed, level. There is no second profile to maintain.</li>
-<li>Unequal forces are expected. The level curve, outflanking, ground and walls balance a fight; there are no points.</li>
-</ol>
-<h3>Lineage</h3>
-<div class="wrap"><table>
-<tr><th>Source</th><th>Taken, and what became of it</th></tr>
-<tr><td>Kingmaker war rules</td><td>The engaged / short / medium / long / extreme bands, measured in hexes — a fourth band added once effective range moved off the grade ladder and onto the troop sheet, reserving extreme for siege equipment. Hit points became four wounds; shaken and routed became the two bands of disorder above a per-unit Quality. Weary and mired were dropped — Weakened and the ground cover those cases. Ammunition was dropped.</td></tr>
-<tr><td><em>Dragon Rampant</em></td><td>A half-strength breakpoint, which is Weakened at two wounds, and courage that worsens with losses, which is the half-army check. Its failed order that ends your turn was not adopted: a failed reach still acts, so nobody loses a turn to the dice.</td></tr>
-<tr><td><em>One Page Rules: Fantasy</em></td><td>One morale marker doing all the work, which is disorder. Fatigue was dropped; one attack an activation covers it.</td></tr>
-<tr><td>Pathfinder 2e</td><td>Three actions an activation, the four degrees of success, and the level tables the whole system reads its DCs from. The multiple attack penalty was dropped when a second attack was: spare actions buy weight instead.</td></tr>
-<tr><td><em>Song of Blades and Heroes</em></td><td>The reach itself: a unit acts on its granted rung for free and risks a roll only to climb higher, so failure costs nothing but the escalation. Its push-your-luck is player-chosen, which is what this keeps and Rampant's imposed failure drops.</td></tr>
-</table></div>
-<p>The rules are playable on paper with a d20 and a chessboard's worth of counters, and they ship as a standalone web game. A Foundry or Reignmaker adapter attaches at two seams, the unit card in and the battle state out; neither the rules nor the engine depends on a VTT.</p>
 
 </main>
 </body>

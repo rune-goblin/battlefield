@@ -1,10 +1,12 @@
 import * as PIXI from 'pixi.js';
-import { at, gridOf, type Board, type Grid, type Point } from '../engine/index.js';
+import { at, gridOf, type Board, type Grid, type Point, type Tree } from '../engine/index.js';
 import { BoardApp } from './BoardApp.js';
 import { BoardContainer } from './BoardContainer.js';
 import { brushColour, type Brush } from './brush.js';
 import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, type BoardMode, type Rect } from './Interaction.js';
+import { CastLayer } from './layers/CastLayer.js';
 import { EdgeLayer } from './layers/EdgeLayer.js';
+import { EffectLayer } from './layers/EffectLayer.js';
 import { GridLayer, type GridSettings } from './layers/GridLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
@@ -49,6 +51,12 @@ export interface BoardView {
   /** The shot being aimed: an arc from the shooter's cell over to the target's, drawn above
    * the pieces. Null clears it. */
   setShot(shot: { from: string; to: string } | null): void;
+  /** The cast being aimed: a swirling particle line from the caster's cell out to the
+   * target's, coloured by tree. Null clears it. */
+  setCast(cast: { from: string; to: string; tree: Tree } | null): void;
+  /** A one-shot resolution burst on `cell`, shaped and tinted for `tree` — fired once a cast
+   * actually lands, unlike `setCast`'s held aim line. */
+  burst(cell: string, tree: Tree): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
@@ -132,6 +140,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), opts.theme);
   const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), opts.ticker, opts.theme);
   const shotLayer = new ShotLayer(layers.createLayer('shot', 35), opts.theme);
+  const castLayer = new CastLayer(layers.createLayer('cast', 36), opts.ticker, opts.theme);
+  const effectLayer = new EffectLayer(layers.createLayer('effects', 37), opts.ticker, opts.theme);
   const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), opts.parent);
 
   let currentBoard: Board | null = null;
@@ -156,6 +166,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       labelLayer.clear();
       overlayLayer.setGeometry(null, 0, opts.theme);
       shotLayer.setGeometry(null, 0, opts.theme);
+      castLayer.setGeometry(null, 0, opts.theme);
+      effectLayer.setGeometry(null, 0, opts.theme);
       tokenLayer.setGeometry(null, 0, opts.theme);
       return;
     }
@@ -171,6 +183,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     labelLayer.rescale();
     overlayLayer.setGeometry(grid, size, opts.theme);
     shotLayer.setGeometry(grid, size, opts.theme);
+    castLayer.setGeometry(grid, size, opts.theme);
+    effectLayer.setGeometry(grid, size, opts.theme);
     tokenLayer.setGeometry(grid, size, opts.theme);
     interaction.clamp();
   }
@@ -281,6 +295,12 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     setShot(shot) {
       shotLayer.setShot(shot);
     },
+    setCast(cast) {
+      castLayer.setCast(cast);
+    },
+    burst(cell, tree) {
+      effectLayer.burst(cell, tree);
+    },
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);
     },
@@ -375,6 +395,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       interaction.destroy();
       terrainLayer.destroy();
       tokenLayer.destroy();
+      castLayer.destroy();
+      effectLayer.destroy();
       boardContainer.destroy({ children: true });
     },
   };
