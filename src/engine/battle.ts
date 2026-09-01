@@ -312,8 +312,8 @@ export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
  * formula every other ladder uses (section 11). */
 export const spellAttackModifier = (u: Unit) => (u.stats.spellAttack ?? 0) - u.disorder;
 
-/** What a target resists a Blast or Controlling effect roll against: the caster's own spell
- * DC, plus whatever this cast's push bonused it (section 11's "effect roll" bonus). */
+/** What a target resists a Controlling effect roll against: the caster's own spell DC, plus
+ * whatever this cast's push bonused it (section 11's "effect roll" bonus). */
 export const spellDcFor = (u: Unit, bonus = 0) => (u.stats.spellDc ?? 0) + bonus;
 
 /** Healing's "+1/+2 on the target's next save" is consumed by whichever save comes first,
@@ -963,14 +963,17 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: C
     resolveTree(state, rng, u, target, tree, effectTier, durationTier, 'success');
     return;
   }
-  // Effect's own push sweetens the roll by shaving the target's save (Blast and Controlling's
-  // own Tier 2/3 "Bonus"); range or duration's push instead sweetens it with the flat, generic
-  // bonus every tree shares — nothing to bonus at all on the four ally trees, which never get
-  // here at all.
-  const savePenalty = axis === 'effect' ? (effectTier === 3 ? 2 : effectTier === 2 ? 1 : 0) : 0;
-  const dcBonus = axis !== 'effect' ? (tier === 3 ? 4 : tier === 2 ? 2 : 0) : 0;
-  const saveStat = tree === 'blast' ? target.stats.reflex : target.stats.will;
-  const c = check(rng, saveStat - target.disorder + takeSaveBonus(target) - savePenalty, spellDcFor(u, dcBonus + rollWeight));
+  const effectBonus = axis === 'effect' ? (effectTier === 3 ? 2 : effectTier === 2 ? 1 : 0) : 0;
+  const pushBonus = axis !== 'effect' ? (tier === 3 ? 4 : tier === 2 ? 2 : 0) : 0;
+  if (tree === 'blast') {
+    const c = check(rng, spellAttackModifier(u) + effectBonus + pushBonus + rollWeight, defenceOf(state, target, u, false));
+    log(state, u, `${u.name} Blasts ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+    resolveTree(state, rng, u, target, tree, effectTier, durationTier, c.degree);
+    return;
+  }
+  // Controlling remains a resistance check: its own effect push penalizes the target's Will,
+  // while a range or duration push raises the caster's spell DC.
+  const c = check(rng, target.stats.will - target.disorder + takeSaveBonus(target) - effectBonus, spellDcFor(u, pushBonus + rollWeight));
   log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   resolveTree(state, rng, u, target, tree, effectTier, durationTier, c.degree);
 }
@@ -982,14 +985,14 @@ const durationRounds = (durationTier: CastTier) => durationTier;
 
 /**
  * What a landed cast actually does, tree by tree (section 11's "The six trees" table).
- * `degree` is the target's own effect-roll result for Blast and Controlling — a plain
- * `'success'` for the four ally trees, which never roll one and always land.
+ * `degree` is the caster's attack result for Blast, the target's resistance result for
+ * Controlling, and a plain `'success'` for the four ally trees, which always land.
  */
 function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: Tree, effectTier: CastTier, durationTier: CastTier, degree: Degree) {
   switch (tree) {
     case 'blast': {
-      if (succeeded(degree)) return;
-      let wounds = degree === 'critical-failure' ? 2 : 1;
+      if (!succeeded(degree)) return;
+      let wounds = degree === 'critical-success' ? 2 : 1;
       if (effectTier >= 2) wounds += 1;
       applyWounds(state, rng, target, wounds, `${u.name}'s magic`, u, true);
       if (effectTier >= 3) target.lingering = { tree: 'blast', roundsLeft: durationRounds(durationTier) };
@@ -1247,7 +1250,7 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
   if (offer.type === 'cast') {
     const tree = offer.spell!;
     const reached = reachFor(state, rng, u, 'cast', action.rung, weight, tree);
-    doCastAction(state, rng, u, tree, reached as CastTier, action.axis ?? 'effect', action, spend.roll);
+    doCastAction(state, rng, u, tree, reached as CastTier, action.axis ?? 'effect', action, spend.roll * ACTION_BONUS);
   } else {
     const reached = reachFor(state, rng, u, offer.type, action.rung, weight);
     perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend);

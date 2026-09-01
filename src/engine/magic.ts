@@ -17,8 +17,8 @@ export const TREE_TARGET: Record<Tree, 'enemy' | 'ally'> = {
   healing: 'ally', offense: 'ally', defense: 'ally', movement: 'ally',
 };
 
-/** Blast and Controlling roll a second, separate effect check once the cast lands — the
- * target's own save, not the caster's attack. The other four have nothing to resist. */
+/** Blast and Controlling roll a second, separate effect check once the cast lands: Blast is
+ * the caster's spell attack, Controlling the target's Will save. */
 export const TREE_ROLLS: Record<Tree, boolean> = {
   blast: true, controlling: true, healing: false, offense: false, defense: false, movement: false,
 };
@@ -81,7 +81,7 @@ export const castPoolFor = (level: number) => Math.floor(level / 5);
 export interface CastRung { id: string; label: string; verb: string; detail: string; reachDc: number }
 
 const TIER1_DETAIL: Record<Tree, string> = {
-  blast: "An ordinary hit — the target's Reflex resists.",
+  blast: "A spell attack against the target's Defence; an ordinary hit deals 1 wound.",
   healing: 'Clears 1 disorder.',
   controlling: "−1 movement — the target's Will resists.",
   offense: "+1 to the buffed unit's attack.",
@@ -89,7 +89,7 @@ const TIER1_DETAIL: Record<Tree, string> = {
   movement: '+1 movement.',
 };
 const TIER2_DETAIL: Record<Tree, string> = {
-  blast: "+1 to the damage result, and −1 to the target's save.",
+  blast: '+1 to the damage result, and +1 to the spell attack.',
   healing: '+1 health, and +1 on the target\'s next save.',
   controlling: "−1 action — the target's Will resists.",
   offense: '+2 to the buffed unit\'s attack, and +1 damage on its next hit.',
@@ -97,7 +97,7 @@ const TIER2_DETAIL: Record<Tree, string> = {
   movement: 'Ignores terrain penalties.',
 };
 const TIER3_DETAIL: Record<Tree, string> = {
-  blast: "A lingering wound at the start of the target's next activation, and −2 to the target's save.",
+  blast: "+2 to the spell attack, and a lingering wound at the start of the target's next activation.",
   healing: 'Regenerates 1 wound a round, and +2 on the target\'s next save.',
   controlling: 'May not reach above its grade on its next activation.',
   offense: "+3 to the buffed unit's attack, and its target does not strike back if its next act is a Fight.",

@@ -1490,3 +1490,11 @@ same way `official.ts` already overrides other derived stats.
   decided outright, on the precedent that every other ladder only ever reaches for one rung above
   grade in a single act. Revisit if splitting a caster's pool across two of the three ever comes
   up.
+### Blast spell attack — 2026-08-31
+
+Decision (Mark): Blast no longer asks the target for a Reflex save against spell DC. It now
+uses the ordinary attack shape: the caster rolls spell attack, less its disorder, against the
+target's current Defence. This lets Guard, Defense buffs, exposure, disorder, and outflanking
+affect Blast through the same `defenceOf` calculation as Fight and Shoot. Blast's effect-push
+bonus changes from a -1/-2 save penalty to a +1/+2 attack bonus; range and duration retain
+their generic +2/+4 effect-roll bonus. Controlling remains a target Will save against spell DC.

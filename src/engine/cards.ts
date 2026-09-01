@@ -28,9 +28,9 @@ export interface UnitStats {
   reflex: number;
   fortitude: number;
   perception: number;
-  /** What a caster rolls to push a cast, and what a target resists on Blast or Controlling.
-   * `null` for a non-caster — there is nothing to derive. */
+  /** What a caster rolls to push a cast and attack with Blast. `null` for a non-caster. */
   spellAttack: number | null;
+  /** What a target resists Controlling against. `null` for a non-caster. */
   spellDc: number | null;
 }
 

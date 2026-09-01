@@ -235,6 +235,30 @@ describe('the six trees', () => {
     const s2 = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u0', unit: 'u0', spend: { pool: 1 } }, scriptedRng([10]));
     expect(unit(s2, 'u0').castPool).toBe(0);
   });
+
+  it("rolls the caster's spell attack against Defence for Blast", () => {
+    const blaster: UnitCard = {
+      name: 'Blaster', level: 6, role: 'infantry', caster: true, tradition: 'arcane', tactics: [],
+      overrides: { spellAttack: 10 },
+    };
+    const target: UnitCard = { ...infantry, name: 'Target', overrides: { defence: 20 } };
+    const launch = (roll: number) => {
+      const s = createBattle({
+        units: [{ card: blaster, side: 'attacker', square: 'c2' }, { card: target, side: 'defender', square: 'c7' }],
+        board: openBoard(),
+      });
+      place(s, 'u1', 'c3');
+      return act(s, { type: 'cast', rung: 1, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([roll, 20]));
+    };
+
+    const missed = launch(9);
+    expect(unit(missed, 'u1').wounds).toBe(0);
+    expect(missed.log.find((e) => e.text.includes('Blasts'))?.check).toMatchObject({ modifier: 10, dc: 20, degree: 'failure' });
+
+    const hit = launch(10);
+    expect(unit(hit, 'u1').wounds).toBe(1);
+    expect(hit.log.find((e) => e.text.includes('Blasts'))?.check).toMatchObject({ modifier: 10, dc: 20, degree: 'success' });
+  });
 });
 
 describe('reaching above your grade', () => {
@@ -620,10 +644,10 @@ describe('actions buy weight, not repetition', () => {
       board: openBoard(),
     });
     place(p0, 'u1', 'c3');
-    // 1 base action + 2 push reaches Tier 2 on a 20; the target's Reflex save then rolls a 1
-    // and fails outright, so the push visibly mattered — the point of this case, not the
+    // 1 base action + 2 push reaches Tier 2 on a 20; the spell attack then rolls a 20
+    // and hits outright, so the push visibly mattered — the point of this case, not the
     // exact wound arithmetic, which the disorder/casting-specific tests already cover.
-    const cast = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0', spend: { push: 2 } }, scriptedRng([20, 1]));
+    const cast = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0', spend: { push: 2 } }, scriptedRng([20, 20, 20]));
     expect(cast.activated).toContain('u0');
     expect(unit(cast, 'u1').wounds).toBeGreaterThan(0);
   });
