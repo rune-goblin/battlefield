@@ -1,74 +1,74 @@
 {
   "blast": {
-    "maxAdjacentCentroidDisplacement": 1.933,
+    "maxAdjacentCentroidDisplacement": 2.121,
     "maxBorderAlpha": 0,
     "minFrameFootprint": [
-      56,
-      57
-    ],
-    "maxFrameFootprint": [
-      108,
-      107
-    ]
-  },
-  "heal": {
-    "maxAdjacentCentroidDisplacement": 1.57,
-    "maxBorderAlpha": 0,
-    "minFrameFootprint": [
-      38,
-      33
-    ],
-    "maxFrameFootprint": [
-      77,
-      106
-    ]
-  },
-  "control": {
-    "maxAdjacentCentroidDisplacement": 2.157,
-    "maxBorderAlpha": 0,
-    "minFrameFootprint": [
-      61,
-      59
+      68,
+      66
     ],
     "maxFrameFootprint": [
       109,
-      102
+      110
     ]
   },
-  "buff-attacks": {
-    "maxAdjacentCentroidDisplacement": 2.807,
+  "heal": {
+    "maxAdjacentCentroidDisplacement": 2.258,
     "maxBorderAlpha": 0,
     "minFrameFootprint": [
-      61,
+      35,
+      28
+    ],
+    "maxFrameFootprint": [
+      75,
+      105
+    ]
+  },
+  "control": {
+    "maxAdjacentCentroidDisplacement": 2.479,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      59,
       56
     ],
     "maxFrameFootprint": [
       107,
-      106
+      101
+    ]
+  },
+  "buff-attacks": {
+    "maxAdjacentCentroidDisplacement": 12.435,
+    "maxBorderAlpha": 0,
+    "minFrameFootprint": [
+      46,
+      54
+    ],
+    "maxFrameFootprint": [
+      107,
+      105
     ]
   },
   "buff-defenses": {
-    "maxAdjacentCentroidDisplacement": 3.287,
+    "maxAdjacentCentroidDisplacement": 3.374,
     "maxBorderAlpha": 0,
     "minFrameFootprint": [
-      61,
-      52
+      60,
+      49
     ],
     "maxFrameFootprint": [
-      104,
-      100
+      103,
+      99
     ]
   },
   "buff-movement": {
-    "maxAdjacentCentroidDisplacement": 3.527,
+    "maxAdjacentCentroidDisplacement": 15.015,
     "maxBorderAlpha": 0,
     "minFrameFootprint": [
-      40,
-      21
+      27,
+      19
     ],
     "maxFrameFootprint": [
-      95,
-      61
+      94,
+      58
     ]
   }
 }

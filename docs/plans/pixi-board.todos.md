@@ -705,6 +705,37 @@ final scheme, plus one unrelated addition Mark asked for alongside it:
   Movement draws five live wind ribbons, a brief pair of wings, and directional streaks.
   Random values derive from tree and cell, so repeated playback follows stable paths.
 
+### Spell sprite hybrid — 2026-09-01
+
+- `EffectLayer` now draws the 64f sheets again, as the body of each effect, with the
+  procedural accents kept on top: blast keeps its shockwave + sparks, healing its bubbles,
+  controlling its lock pulse, offense its flash + sparks, defense its impact ring +
+  fragments. The dropped procedural pieces (blast core, heal rings/ribbons/cross, control
+  orb/rings/shards, offense arcs, defense shield/hex cells) duplicated what the sprites
+  already show.
+- Frame index is driven through a per-tree piecewise-linear `FrameCurve`, never linear
+  playback: the sheets bake a slow bloom peaking ~60% in, so the curves rush the growth
+  frames, dwell on the peak band, and spend the tail on decay. Durations kept at the old
+  1.3–1.8 s values. Control's curve stops at frame 54 (grey matte blobs after) and
+  offense's at 58 (cleanup leaves almost nothing in its splatter tail).
+- Blend judgment: buff-attacks and control render additive-only — their baked pale matte
+  halo reads as glow under ADD and as mushy fringe under NORMAL. Blast, heal and defense
+  keep a NORMAL base (smoke/pool/shield need dark tones) plus an additive copy whose alpha
+  bells through the first 75% of the effect.
+- `scripts/clean-spell-vfx.py` (Pillow) crushed sub-56 matte alpha with a smoothstep
+  shoulder and dropped components confined to a 10 px strip at left/right frame edges
+  (clipped neighbor slivers); it rewrote the sheets in place and regenerated
+  `validation.json`. Git holds the pre-clean sheets at commit `acc5e23`.
+- `blast-alpha-fixed.png` was byte-identical to `blast.png` — the fix described in
+  `ALPHA_FIX_PROMPT.md` never landed — so both files are gone.
+- buff-movement stays fully procedural and its sheet is not fetched: near-invisible
+  (peak alpha energy 0.11), tiny footprint, and frames carry misregistered fragments.
+  Regenerate the sheet before wiring it.
+- Sheets load once per page via `PIXI.Assets`, kicked off at layer construction. A cast
+  resolving before the fetch finishes plays accents only — accepted, since the first cast
+  is always many seconds after mount. A failed fetch clears the shared promise so the next
+  mount retries.
+
 For whenever prototype mode ends and a hardening wave runs. `grep -rn "proto:" src` today:
 
 ```

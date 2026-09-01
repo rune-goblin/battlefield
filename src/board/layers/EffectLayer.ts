@@ -13,6 +13,60 @@ const OFFENSE_DURATION = 1300;
 const DEFENSE_DURATION = 1700;
 const MOVEMENT_DURATION = 1400;
 
+const BASE = import.meta.env.BASE_URL;
+const VFX_FRAME = 128;
+
+// movement's sheet is misregistered and nearly invisible (see pixi-board.todos.md), so that
+// tree stays fully procedural and its sheet is not fetched.
+const VFX_SHEET = {
+  blast: 'blast',
+  healing: 'heal',
+  controlling: 'control',
+  offense: 'buff-attacks',
+  defense: 'buff-defenses',
+} as const;
+
+const vfxFrames = new Map<Tree, PIXI.Texture[]>();
+let vfxLoad: Promise<void> | null = null;
+
+// One fetch for the lifetime of the page, shared by every board mount; kicked off at layer
+// construction so the sheets are ready long before the first cast resolves. A cast that lands
+// mid-load just plays its procedural accents without the sprite body.
+function loadVfx(): void {
+  vfxLoad ??= Promise.all(
+    (Object.entries(VFX_SHEET) as [Tree, string][]).map(async ([tree, name]) => {
+      const sheet = await PIXI.Assets.load<PIXI.Spritesheet>(`${BASE}art/spell-vfx-spritesheets-64f/${name}.json`);
+      vfxFrames.set(tree, sheet.animations[name]);
+    }),
+  ).then(() => undefined, () => { vfxLoad = null; });
+}
+
+// [time 0..1, frame] control points, interpolated linearly. The sheets bake a slow linear
+// bloom that peaks ~60% in; rushing the growth frames and dwelling on the peak band is what
+// turns that bloom into snap-and-linger at board tempo.
+type FrameCurve = readonly (readonly [number, number])[];
+
+function frameAt(curve: FrameCurve, t: number): number {
+  for (let i = 1; i < curve.length; i++) {
+    const [t0, f0] = curve[i - 1];
+    const [t1, f1] = curve[i];
+    if (t <= t1) return Math.round(f0 + ((t - t0) / (t1 - t0)) * (f1 - f0));
+  }
+  return Math.round(curve[curve.length - 1][1]);
+}
+
+interface SpriteBody {
+  curve: FrameCurve;
+  scale: number;
+  anchorY?: number;
+  // 'add' renders the sheet additively — buff-attacks and control carry a pale matte halo
+  // that normal blending shows as a mushy fringe but additive turns into glow. 'boost'
+  // keeps a normal base (blast's smoke, heal's pool and defense's shield need dark/opaque
+  // tones) and layers an additive copy whose alpha follows a bell through the energy phase.
+  mode: 'add' | 'boost';
+  boost?: number;
+}
+
 interface Burst {
   container: PIXI.Container;
   elapsed: number;
@@ -41,9 +95,10 @@ interface Bubble {
 }
 
 /**
- * One-shot spell compositions — fire-and-forget, unlike `CastLayer`'s held aim line. Blast
- * and each tree owns a distinct deterministic `Graphics` composition. Sprite-sheet assets
- * stay outside this layer.
+ * One-shot spell compositions — fire-and-forget, unlike `CastLayer`'s held aim line. Each
+ * tree pairs its 64-frame sprite body (frame index driven through `FrameCurve`, never linear
+ * playback) with the procedural accents that sprites can't provide: crisp rings, sparks and
+ * fragments. Movement is the exception and stays fully procedural.
  */
 export class EffectLayer {
   private readonly container: PIXI.Container;
@@ -70,6 +125,7 @@ export class EffectLayer {
     this.container = container;
     this.ticker = ticker;
     this.ticker.add(this.tick);
+    loadVfx();
   }
 
   setGeometry(grid: Grid | null, size: number, _theme: BoardTheme): void {
@@ -96,21 +152,48 @@ export class EffectLayer {
     switch (tree) {
       case 'blast': this.add(this.createBlast(centre, seed)); break;
       case 'healing': this.add(this.createHeal(centre, seed)); break;
-      case 'controlling': this.add(this.createControl(centre, seed)); break;
+      case 'controlling': this.add(this.createControl(centre)); break;
       case 'offense': this.add(this.createOffense(centre, seed)); break;
       case 'defense': this.add(this.createDefense(centre, seed)); break;
       case 'movement': this.add(this.createMovement(centre, seed)); break;
     }
   }
 
+  /** The sheet-driven body of an effect, or null while the atlas is still loading. */
+  private spriteBody(container: PIXI.Container, tree: Tree, body: SpriteBody): ((t: number) => void) | null {
+    const frames = vfxFrames.get(tree);
+    if (!frames) return null;
+    const scale = (this.size * body.scale) / VFX_FRAME;
+    const make = (blend: PIXI.BLEND_MODES): PIXI.Sprite => {
+      const sprite = new PIXI.Sprite(frames[0]);
+      sprite.anchor.set(0.5, body.anchorY ?? 0.5);
+      sprite.scale.set(scale);
+      sprite.blendMode = blend;
+      container.addChild(sprite);
+      return sprite;
+    };
+    const base = make(body.mode === 'add' ? PIXI.BLEND_MODES.ADD : PIXI.BLEND_MODES.NORMAL);
+    const glow = body.mode === 'boost' ? make(PIXI.BLEND_MODES.ADD) : null;
+    return (t) => {
+      const texture = frames[Math.min(frames.length - 1, Math.max(0, frameAt(body.curve, t)))];
+      base.texture = texture;
+      if (glow) {
+        glow.texture = texture;
+        // Bell over the first three quarters: the boost carries the energy phase and is gone
+        // before the sheet's decay/smoke frames, which additive blending would wash out.
+        glow.alpha = (body.boost ?? 0.6) * Math.sin(Math.PI * Math.min(1, t / 0.75));
+      }
+    };
+  }
+
   private createBlast(centre: { x: number; y: number }, seed: number): Burst {
     const container = this.effectContainer('blast', centre);
-    const core = new PIXI.Graphics()
-      .beginFill(0xfff2ad, 1).drawCircle(0, 0, this.size * 0.1).endFill()
-      .beginFill(0xffa21f, 0.72).drawCircle(0, 0, this.size * 0.22).endFill()
-      .beginFill(0xff5a12, 0.32).drawCircle(0, 0, this.size * 0.34).endFill();
-    core.blendMode = PIXI.BLEND_MODES.ADD;
-    container.addChild(core);
+    const sprite = this.spriteBody(container, 'blast', {
+      curve: [[0, 4], [0.25, 34], [0.6, 45], [1, 63]],
+      scale: 1.7,
+      mode: 'boost',
+      boost: 0.7,
+    });
 
     const shockwave = new PIXI.Graphics()
       .lineStyle(this.size * 0.055, 0xffc34d, 1)
@@ -133,7 +216,7 @@ export class EffectLayer {
         angle: random() * Math.PI * 2,
         arc: (random() - 0.5) * this.size * 0.45,
         distance: this.size * (0.65 + random() * 0.85),
-        delay: 0.3 + random() * 0.24,
+        delay: 0.18 + random() * 0.2,
         life: 0.32 + random() * 0.25,
         spin: (random() - 0.5) * 8,
       };
@@ -145,12 +228,8 @@ export class EffectLayer {
       duration: BLAST_DURATION,
       update: (elapsed) => {
         const t = elapsed / BLAST_DURATION;
-        const coreForm = easeOut(clamp01(t / 0.48));
-        const coreFade = 1 - smoothstep(clamp01((t - 0.68) / 0.25));
-        core.scale.set(0.18 + coreForm * 1.25);
-        core.alpha = coreFade;
-        core.rotation = t * 1.8;
-        const waveT = clamp01((t - 0.42) / 0.42);
+        sprite?.(t);
+        const waveT = clamp01((t - 0.2) / 0.35);
         shockwave.scale.set(0.25 + easeOut(waveT) * 2.8);
         shockwave.alpha = Math.sin(waveT * Math.PI) * 0.75;
         for (const spark of sparks) {
@@ -171,39 +250,20 @@ export class EffectLayer {
     };
   }
 
-  private createControl(centre: { x: number; y: number }, seed: number): Burst {
+  private createControl(centre: { x: number; y: number }): Burst {
     const container = this.effectContainer('controlling', centre);
-    const orb = new PIXI.Graphics()
-      .beginFill(0xd5efff, 1).drawCircle(0, 0, this.size * 0.08).endFill()
-      .beginFill(0x3987ff, 0.46).drawCircle(0, 0, this.size * 0.2).endFill();
-    orb.blendMode = PIXI.BLEND_MODES.ADD;
-    container.addChild(orb);
-
-    const rings = [0, 1, 2].map((i) => {
-      const g = new PIXI.Graphics()
-        .lineStyle(this.size * (0.028 - i * 0.004), i === 1 ? 0xffd46b : 0x65b7ff, 0.9)
-        .drawEllipse(0, 0, this.size * (0.3 + i * 0.1), this.size * (0.12 + i * 0.035));
-      g.blendMode = PIXI.BLEND_MODES.ADD;
-      container.addChild(g);
-      return g;
+    // Ends at frame 54: the sheet's last ten frames decay into grey matte blobs.
+    const sprite = this.spriteBody(container, 'controlling', {
+      curve: [[0, 2], [0.35, 30], [0.7, 44], [1, 54]],
+      scale: 1.6,
+      mode: 'add',
     });
+
     const pulse = new PIXI.Graphics()
       .lineStyle(this.size * 0.045, 0xbfe7ff, 0.9)
       .drawCircle(0, 0, this.size * 0.25);
     pulse.blendMode = PIXI.BLEND_MODES.ADD;
     container.addChildAt(pulse, 0);
-
-    const random = mulberry32(seed);
-    const shards = Array.from({ length: 10 }, (_, i) => {
-      const r = this.size * (0.025 + random() * 0.025);
-      const g = new PIXI.Graphics()
-        .beginFill(i % 3 === 0 ? 0xffd46b : 0x80c8ff, 0.92)
-        .drawPolygon([0, -r * 1.8, r, 0, 0, r * 1.8, -r, 0])
-        .endFill();
-      g.blendMode = PIXI.BLEND_MODES.ADD;
-      container.addChild(g);
-      return { g, angle: random() * Math.PI * 2, radius: this.size * (0.36 + random() * 0.2), speed: 0.65 + random() * 0.55 };
-    });
 
     return {
       container,
@@ -211,39 +271,23 @@ export class EffectLayer {
       duration: CONTROL_DURATION,
       update: (elapsed) => {
         const t = elapsed / CONTROL_DURATION;
-        const form = smoothstep(clamp01(t / 0.3));
-        const release = 1 - smoothstep(clamp01((t - 0.76) / 0.24));
-        orb.scale.set(0.3 + form * (0.82 + Math.sin(t * Math.PI * 8) * 0.08));
-        orb.alpha = release;
-        rings.forEach((ring, i) => {
-          ring.scale.set(0.25 + form * (0.9 + i * 0.08));
-          ring.rotation = (i % 2 ? -1 : 1) * t * Math.PI * (1.2 + i * 0.45) + i * Math.PI / 3;
-          ring.alpha = release * (0.55 + 0.3 * Math.sin(t * Math.PI * 4 + i));
-        });
+        sprite?.(t);
         const pulseT = clamp01((t - 0.5) / 0.28);
         pulse.scale.set(0.35 + easeOut(pulseT) * 3.2);
         pulse.alpha = Math.sin(pulseT * Math.PI) * 0.75;
-        for (const shard of shards) {
-          const angle = shard.angle + t * Math.PI * 2 * shard.speed;
-          const radius = shard.radius * (0.4 + form * 0.6);
-          shard.g.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.62);
-          shard.g.rotation = angle + t * Math.PI * 2;
-          shard.g.alpha = form * release;
-        }
       },
     };
   }
 
   private createOffense(centre: { x: number; y: number }, seed: number): Burst {
     const container = this.effectContainer('offense', centre);
-    const arcs = [0, 1].map((i) => {
-      const g = new PIXI.Graphics()
-        .lineStyle(this.size * 0.12, i ? 0xff6a17 : 0xffd36b, 0.9)
-        .arc(0, 0, this.size * (0.38 + i * 0.06), -1.22, 1.22);
-      g.blendMode = PIXI.BLEND_MODES.ADD;
-      container.addChild(g);
-      return g;
+    // Ends at frame 58: the cleanup pass leaves almost nothing in the final splatter frames.
+    const sprite = this.spriteBody(container, 'offense', {
+      curve: [[0, 4], [0.3, 36], [0.65, 44], [1, 58]],
+      scale: 1.6,
+      mode: 'add',
     });
+
     const flash = new PIXI.Graphics()
       .beginFill(0xfff1bd, 1)
       .drawPolygon([0, -this.size * 0.32, this.size * 0.07, -this.size * 0.07, this.size * 0.32, 0, this.size * 0.07, this.size * 0.07, 0, this.size * 0.32, -this.size * 0.07, this.size * 0.07, -this.size * 0.32, 0, -this.size * 0.07, -this.size * 0.07])
@@ -260,7 +304,7 @@ export class EffectLayer {
         .endFill();
       g.blendMode = PIXI.BLEND_MODES.ADD;
       container.addChild(g);
-      return { g, angle: random() * Math.PI * 2, arc: 0, distance: this.size * (0.55 + random() * 0.65), delay: 0.42 + random() * 0.18, life: 0.28 + random() * 0.22, spin: (random() - 0.5) * 6 };
+      return { g, angle: random() * Math.PI * 2, arc: 0, distance: this.size * (0.55 + random() * 0.65), delay: 0.28 + random() * 0.18, life: 0.28 + random() * 0.22, spin: (random() - 0.5) * 6 };
     });
 
     return {
@@ -269,15 +313,8 @@ export class EffectLayer {
       duration: OFFENSE_DURATION,
       update: (elapsed) => {
         const t = elapsed / OFFENSE_DURATION;
-        const sweep = easeOut(clamp01(t / 0.58));
-        const fade = 1 - smoothstep(clamp01((t - 0.68) / 0.3));
-        arcs[0].rotation = -1.15 + sweep * 1.95;
-        arcs[1].rotation = Math.PI + 1.15 - sweep * 1.95;
-        arcs.forEach((arc, i) => {
-          arc.scale.set(0.35 + sweep * (0.9 + i * 0.1));
-          arc.alpha = fade;
-        });
-        const flashT = clamp01(1 - Math.abs(t - 0.53) / 0.11);
+        sprite?.(t);
+        const flashT = clamp01(1 - Math.abs(t - 0.34) / 0.11);
         flash.scale.set(0.25 + easeOut(flashT));
         flash.alpha = smoothstep(flashT) * 0.95;
         for (const spark of sparks) {
@@ -293,23 +330,13 @@ export class EffectLayer {
 
   private createDefense(centre: { x: number; y: number }, seed: number): Burst {
     const container = this.effectContainer('defense', centre);
-    const w = this.size * 0.48;
-    const h = this.size * 0.58;
-    const shieldPoints = [0, -h, w, -h * 0.55, w * 0.82, h * 0.36, 0, h, -w * 0.82, h * 0.36, -w, -h * 0.55];
-    const shield = new PIXI.Graphics()
-      .beginFill(0x397dff, 0.22).drawPolygon(shieldPoints).endFill()
-      .lineStyle(this.size * 0.045, 0x8cd2ff, 0.95).drawPolygon(shieldPoints);
-    shield.blendMode = PIXI.BLEND_MODES.ADD;
-    container.addChild(shield);
+    const sprite = this.spriteBody(container, 'defense', {
+      curve: [[0, 2], [0.4, 32], [0.75, 46], [1, 63]],
+      scale: 1.6,
+      mode: 'boost',
+      boost: 0.45,
+    });
 
-    const cells: PIXI.Graphics[] = [];
-    for (const [x, y] of [[-0.2, -0.25], [0.2, -0.25], [0, 0], [-0.2, 0.25], [0.2, 0.25]] as const) {
-      const g = new PIXI.Graphics().lineStyle(this.size * 0.018, 0x9edcff, 0.65);
-      drawHex(g, x * this.size, y * this.size, this.size * 0.14);
-      g.blendMode = PIXI.BLEND_MODES.ADD;
-      container.addChild(g);
-      cells.push(g);
-    }
     const impact = new PIXI.Graphics()
       .lineStyle(this.size * 0.045, 0xe0f6ff, 1)
       .drawCircle(0, 0, this.size * 0.18);
@@ -331,18 +358,11 @@ export class EffectLayer {
       duration: DEFENSE_DURATION,
       update: (elapsed) => {
         const t = elapsed / DEFENSE_DURATION;
-        const assemble = smoothstep(clamp01(t / 0.38));
-        const breakT = clamp01((t - 0.72) / 0.28);
-        shield.scale.set(0.3 + assemble * 0.75);
-        shield.alpha = (1 - smoothstep(breakT)) * (0.72 + Math.sin(t * Math.PI * 7) * 0.1);
-        cells.forEach((cell, i) => {
-          const cellT = smoothstep(clamp01((t - i * 0.035) / 0.35));
-          cell.alpha = cellT * (1 - breakT) * 0.75;
-          cell.scale.set(0.5 + cellT * 0.5);
-        });
+        sprite?.(t);
         const hitT = clamp01((t - 0.5) / 0.22);
         impact.scale.set(0.25 + easeOut(hitT) * 3.3);
         impact.alpha = Math.sin(hitT * Math.PI) * 0.9;
+        const breakT = clamp01((t - 0.72) / 0.28);
         for (const fragment of fragments) {
           const travel = easeOut(breakT) * fragment.distance;
           fragment.g.position.set(Math.cos(fragment.angle) * travel, Math.sin(fragment.angle) * travel);
@@ -413,31 +433,14 @@ export class EffectLayer {
 
   private createHeal(centre: { x: number; y: number }, seed: number): Burst {
     const container = this.effectContainer('healing', centre);
-    const pool = new PIXI.Container();
-    container.addChild(pool);
-    const rings = [0, 1, 2].map((i) => {
-      const g = new PIXI.Graphics()
-        .lineStyle(this.size * (0.025 - i * 0.004), i === 1 ? 0x9fffb8 : 0xffd45c, 1)
-        .drawEllipse(0, 0, this.size * (0.28 + i * 0.08), this.size * (0.1 + i * 0.025));
-      g.blendMode = PIXI.BLEND_MODES.ADD;
-      pool.addChild(g);
-      return g;
+    // The pool in the sheet sits below frame centre; the lowered anchor grounds it on the cell.
+    const sprite = this.spriteBody(container, 'healing', {
+      curve: [[0, 0], [0.45, 32], [0.75, 46], [1, 63]],
+      scale: 1.8,
+      anchorY: 0.62,
+      mode: 'boost',
+      boost: 0.5,
     });
-
-    const ribbons = [0, Math.PI].map(() => {
-      const g = new PIXI.Graphics();
-      g.blendMode = PIXI.BLEND_MODES.ADD;
-      container.addChild(g);
-      return g;
-    });
-
-    const cross = new PIXI.Graphics()
-      .beginFill(0xd8ffe1, 1)
-      .drawRoundedRect(-this.size * 0.055, -this.size * 0.2, this.size * 0.11, this.size * 0.4, this.size * 0.025)
-      .drawRoundedRect(-this.size * 0.2, -this.size * 0.055, this.size * 0.4, this.size * 0.11, this.size * 0.025)
-      .endFill();
-    cross.blendMode = PIXI.BLEND_MODES.ADD;
-    container.addChild(cross);
 
     const random = mulberry32(seed);
     const bubbles: Bubble[] = Array.from({ length: 18 }, (_, i) => {
@@ -467,32 +470,8 @@ export class EffectLayer {
       duration: HEAL_DURATION,
       update: (elapsed) => {
         const t = elapsed / HEAL_DURATION;
-        const form = smoothstep(clamp01(t / 0.28));
+        sprite?.(t);
         const dissolve = 1 - smoothstep(clamp01((t - 0.72) / 0.28));
-        rings.forEach((ring, i) => {
-          ring.scale.set(0.55 + form * (0.7 + i * 0.18) + Math.sin(t * Math.PI * 4 + i) * 0.035);
-          ring.alpha = dissolve * (0.45 + 0.3 * Math.sin(t * Math.PI * 3 + i));
-          ring.rotation = (i % 2 ? -1 : 1) * t * (0.35 + i * 0.12);
-        });
-
-        const growth = smoothstep(clamp01((t - 0.08) / 0.5));
-        ribbons.forEach((ribbon, i) => {
-          ribbon.clear().lineStyle(this.size * 0.035, i ? 0xffd45c : 0x86ffad, 0.72 * dissolve);
-          const phase = i * Math.PI + t * Math.PI * 2;
-          for (let step = 0; step <= 24; step++) {
-            const s = (step / 24) * growth;
-            const taper = 0.35 + 0.65 * Math.sin(s * Math.PI);
-            const x = Math.sin(s * Math.PI * 3 + phase) * this.size * 0.2 * taper;
-            const y = this.size * 0.28 - s * this.size * 0.95;
-            if (step === 0) ribbon.moveTo(x, y); else ribbon.lineTo(x, y);
-          }
-        });
-
-        const crossT = clamp01(1 - Math.abs(t - 0.58) / 0.14);
-        cross.position.set(0, -this.size * 0.22);
-        cross.alpha = smoothstep(crossT) * 0.9;
-        cross.scale.set(0.5 + easeOut(crossT) * 0.65);
-
         for (const bubble of bubbles) {
           const p = clamp01((t - bubble.delay) / bubble.life);
           bubble.g.position.set(
@@ -565,13 +544,4 @@ function mulberry32(seed: number): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-function drawHex(g: PIXI.Graphics, x: number, y: number, radius: number): void {
-  const points: number[] = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = Math.PI / 6 + i * Math.PI / 3;
-    points.push(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
-  }
-  g.drawPolygon(points);
 }
