@@ -5,20 +5,25 @@
     type ActionOffer, type CastTier, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption, type Tree,
     type RungTarget, type Spend, type SpendDials, type TargetOffer, type TargetRef, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
-  import { actionIconUrl, castIconUrl, troopArtUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
+  import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
   import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import RadialMenu from './RadialMenu.svelte';
+  import ArmyReel from './ArmyReel.svelte';
   import { backToSetup, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
   const b = $derived(game.battle!);
-  const active = $derived(activeUnit(b));
+  // Only an army the player has actually chosen is active. The engine falls back to the first
+  // one still to act, which would pick for them — the carousel exists so they pick.
+  const active = $derived(b.active ? activeUnit(b) : null);
   // The whole engine surface for the active unit in one call: the menu, the movement pool,
   // and where it reaches — `moves`/`charges` drive the drag, `offers` drive the panel.
   const act = $derived(active ? activation(b, active.id) : null);
   const offers = $derived(act?.offers ?? []);
-  const strip = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
+  const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
+  // Once an action is spent the choice is made: the engine refuses a second `select`.
+  const locked = $derived(b.begun);
 
   // One allocation per rung (and one for the withdrawal), so the push dial can be offered
   // only where a reach check actually stands in the way.
@@ -34,6 +39,16 @@
   // Tracks the pointer's own cell while a spell is armed, so its cast line can follow the
   // cursor before a target is picked — see `cast` below.
   let hoveredCell = $state<string | null>(null);
+
+  // The hover runs both ways: a card in the reel rings its miniature, and a miniature under the
+  // pointer lights its card. One unit is hot at a time, whichever end the pointer is at.
+  let hoveredCard = $state<string | null>(null);
+  // Only a piece with a card of its own: the tie is between the two halves of the reel's own
+  // roster, so an enemy under the pointer stays dark.
+  const hoveredPiece = $derived(
+    roster.find((u) => !b.activated.includes(u.id) && notation(u.square) === hoveredCell)?.id ?? null,
+  );
+  const hot = $derived(hoveredCard ?? hoveredPiece);
 
   // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
@@ -718,7 +733,7 @@
       quality: u.quality,
       engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
       prop: propOn(u),
-      ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : null,
+      ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
     })),
     // Abandoned and captured engines stand alone on the square they were left.
     ...b.units.flatMap((u) => u.engines
@@ -799,6 +814,12 @@
     }
   }
   function onToken(e: BoardEventOf<'token'>) {
+    // Before an army is chosen the board is the second way into the army reel.
+    if (!active) {
+      const own = b.units.find((x) => x.id === e.id);
+      if (own) pickUnit(own, false);
+      return;
+    }
     // A charge parks on its approach cell, so clicking the enemy is what confirms it.
     if (pending) {
       if (picked?.kind === 'charge' && picked.enemy === e.id) { commit(); return; }
@@ -834,10 +855,13 @@
     castPick = null;
   }
 
-  function pickUnit(u: Unit) {
+  /** `centre` is off when the pick came off the board: the piece is already under the pointer,
+   * and moving the map out from under a click loses the ground the player was reading. */
+  function pickUnit(u: Unit, centre = true) {
+    if (locked && u.id !== b.active) return;
     if (u.status !== 'active' || u.side !== b.pending || b.activated.includes(u.id)) return;
     selectUnit(u.id);
-    boardRef?.centerOn(notation(u.square));
+    if (centre) boardRef?.centerOn(notation(u.square));
   }
 
   const grantedLabel = (type: Exclude<LadderType, 'cast'>, granted: Grade) => rungOf(type, granted).label;
@@ -882,15 +906,35 @@
   </div>
 {/snippet}
 
+{#snippet result()}
+  <div class="scrim">
+    <div class="card result">
+      <h2>{b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`}</h2>
+      <div class="unitlist">
+        {#each b.units as u (u.id)}
+          <div class="unitrow">
+            <span class={u.side === 'attacker' ? 'side-att' : 'side-def'}>{u.name}</span>
+            <span class="stat">wounds {u.wounds}/{MAX_WOUNDS}</span>
+            <span class="stat">disorder {u.disorder}/{u.quality}</span>
+            <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : 'standing') : u.status}</span>
+          </div>
+        {/each}
+      </div>
+      <p><button class="primary" onclick={backToSetup}>Set up another battle</button></p>
+    </div>
+  </div>
+{/snippet}
+
 <svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} />
 
-<AppShell leftTitle="Battle log" leftWidth={21} rightTitle="Orders" rightWidth={24}>
+<AppShell leftTitle="Orders" leftWidth={24} rightTitle="Battle log" rightWidth={21} modal={b.phase === 'ended' ? result : undefined}>
   {#snippet top()}
     <TopBar>
       {#snippet status()}
         <strong>Round {b.round} / 6</strong>
-        <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span> to activate
-        {#if active}<span class="muted">· {active.name}</span>{/if}
+        <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span>
+        {#if active}<span class="muted">· {active.name}{locked ? ' is committed' : ''}</span>
+        {:else}<span class="muted">· choose an army</span>{/if}
         <span class="muted">· {spec}</span>
       {/snippet}
       {#snippet tools()}
@@ -906,6 +950,17 @@
       army={() => b.units.filter((u) => u.side === (active?.side ?? b.pending) && u.status === 'active').map((u) => notation(u.square))}
       armyLabel="Frame the {active?.side ?? b.pending} force"
     />
+    {#if b.phase === 'battle'}
+      <ArmyReel
+        units={roster}
+        activated={b.activated}
+        selected={active?.id ?? null}
+        {locked}
+        hovered={hoveredPiece}
+        pick={pickUnit}
+        hover={(id) => { hoveredCard = id; }}
+      />
+    {/if}
   {/snippet}
 
   {#snippet map()}
@@ -926,7 +981,7 @@
       draggable={active?.id ?? null}
       onhover={(e) => { hoveredCell = e.cell; }}
       oncell={active ? onCell : undefined}
-      ontoken={active ? onToken : undefined}
+      ontoken={onToken}
       onedge={active ? onEdge : undefined}
       ondrag={active ? onBoardDrag : undefined}
       ondrop={active ? onBoardDrop : undefined}
@@ -1075,135 +1130,97 @@
     {/if}
   {/snippet}
 
-  {#snippet bottom()}
-    <div class="battle-strip">
-    {#each strip as u (u.id)}
-      {@const spent = b.activated.includes(u.id)}
-      <button class="unit-card" class:active={active?.id === u.id} class:spent disabled={spent} onclick={() => pickUnit(u)}>
-        <img src={troopArtUrl(u.name, u.role)} alt="" />
-        <span class="unit-card-name">{u.name}</span>
-        <span class="unit-card-meta">L{u.level} · {notation(u.square)}</span>
-        <span class="pip-row">
-          {#each Array(MAX_WOUNDS) as _, i (i)}<span class="pip square" class:on={i < u.wounds}></span>{/each}
-        </span>
-        <span class="pip-row">
-          {#each Array(u.quality) as _, i (i)}<span class="pip circle" class:on={i < u.disorder}></span>{/each}
-        </span>
-      </button>
-    {:else}
-      <p class="muted">No units left to activate this round.</p>
-    {/each}
-    </div>
-  {/snippet}
-
-  {#snippet right()}
-    {#if b.phase === 'ended'}
-      <div class="card result">
-        <h2>{b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`}</h2>
-        <div class="unitlist">
-          {#each b.units as u (u.id)}
-            <div class="unitrow">
-              <span class={u.side === 'attacker' ? 'side-att' : 'side-def'}>{u.name}</span>
-              <span class="stat">wounds {u.wounds}/{MAX_WOUNDS}</span>
-              <span class="stat">disorder {u.disorder}/{u.quality}</span>
-              <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : 'standing') : u.status}</span>
-            </div>
-          {/each}
-        </div>
-        <p><button class="primary" onclick={backToSetup}>Set up another battle</button></p>
+  {#snippet left()}
+    {#if active && act}
+      <div class="orders-head">
+        <h3 class={active.side === 'attacker' ? 'side-att' : 'side-def'}>{active.name}</h3>
+        <span class="muted">{active.side} · {notation(active.square)}</span>
       </div>
-    {:else if active}
-      <div class="card">
-        <h3 class={active.side === 'attacker' ? 'side-att' : 'side-def'}>{active.name} · {active.side} · {notation(active.square)}</h3>
-        <div class="row action-pips">
-          {#each Array(ACTIONS_PER_ACTIVATION) as _, i (i)}<span class="pip circle" class:on={i < active.actions}></span>{/each}
-          <span class="muted">{active.actions} action{active.actions === 1 ? '' : 's'} left</span>
-          <button class="end-activation" onclick={() => endActivation()}>End activation</button>
-        </div>
-        <table class="stats"><tbody>
-          <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
-          <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
-          <tr><td>Disorder</td><td class="stat">{active.disorder}/{active.quality}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
-          <tr><td>Move</td><td class="stat">{active.speed} ft{act && act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
-          {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
-          {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
-        </tbody></table>
+      <div class="row action-pips">
+        {#each Array(ACTIONS_PER_ACTIVATION) as _, i (i)}<span class="pip circle" class:on={i < active.actions}></span>{/each}
+        <span class="muted">{active.actions} action{active.actions === 1 ? '' : 's'} left</span>
+        <button class="end-activation" onclick={() => endActivation()}>End activation</button>
       </div>
+      <table class="stats"><tbody>
+        <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
+        <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
+        <tr><td>Disorder</td><td class="stat">{active.disorder}/{active.quality}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
+        <tr><td>Move</td><td class="stat">{active.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
+        {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
+        {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
+      </tbody></table>
 
       <!-- Move opens with the selection rather than staying pinned: its bands are the same
            ones the board washes, and the rows track a live drag both ways. -->
-      {#if act}
-        <div class="card move-card">
-          <button
-            class="move-head"
-            aria-expanded={moveOpen}
-            onclick={() => { moveOpen = !moveOpen; if (!moveOpen) hoveredBand = null; }}
+      <div class="move-card">
+        <button
+          class="move-head"
+          aria-expanded={moveOpen}
+          onclick={() => { moveOpen = !moveOpen; if (!moveOpen) hoveredBand = null; }}
+        >
+          <h3>Move</h3>
+          <span class="muted">
+            {#if holders.length}
+              — held in contact
+            {:else if stuck}
+              — {stuck.tag}
+            {:else if moveOpen}
+              — drag the token, or read the bands
+            {:else}
+              — {moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable
+            {/if}
+          </span>
+        </button>
+        {#if moveOpen}
+        {#if holders.length}
+          <p class="move-note">
+            <strong>{holders.map((e) => e.name).join(' and ')}</strong>
+            {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
+            contact — <strong>Withdraw</strong> is the only way off this square, and it costs an
+            Escape check against each of them.
+            {#if act.withdraw}
+              Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
+            {/if}
+          </p>
+        {:else if stuck}
+          <p class="move-note">
+            <img class="row-prop" src={actionIconUrl('no')} alt="" />
+            {stuck.why}
+          </p>
+        {:else}
+        <div class="move-rows">
+          {#each ([1, 2, 3] as const) as n (n)}
+            <div
+              class="move-row band-{n}"
+              class:current={dragBand === n}
+              role="group"
+              onmouseenter={() => { hoveredBand = n; }}
+              onmouseleave={() => { if (hoveredBand === n) hoveredBand = null; }}
+            >
+              <span class="move-row-label">{n} action{n > 1 ? 's' : ''}</span>
+              <span class="muted">{moveBands[n].length} cell{moveBands[n].length === 1 ? '' : 's'} reachable</span>
+            </div>
+          {/each}
+          <div
+            class="move-row band-push"
+            class:current={dragBand === 'push'}
+            role="group"
+            onmouseenter={() => { hoveredBand = 'push'; }}
+            onmouseleave={() => { if (hoveredBand === 'push') hoveredBand = null; }}
           >
-            <h3>Move</h3>
+            <span class="move-row-label">Push</span>
             <span class="muted">
-              {#if holders.length}
-                — held in contact
-              {:else if stuck}
-                — {stuck.tag}
-              {:else if moveOpen}
-                — drag the token, or read the bands
+              {#if preview?.kind === 'push'}
+                DC {preview.dc} · fail and you stop at {preview.fallback}
               {:else}
-                — {moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable
+                DC {pushDcFor(active)} · a fail stops you at the furthest cell you can afford
               {/if}
             </span>
-          </button>
-          {#if moveOpen}
-          {#if holders.length}
-            <p class="move-note">
-              <strong>{holders.map((e) => e.name).join(' and ')}</strong>
-              {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
-              contact — <strong>Withdraw</strong> is the only way off this square, and it costs an
-              Escape check against each of them.
-              {#if act.withdraw}
-                Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
-              {/if}
-            </p>
-          {:else if stuck}
-            <p class="move-note">
-              <img class="row-prop" src={actionIconUrl('no')} alt="" />
-              {stuck.why}
-            </p>
-          {:else}
-          <div class="move-rows">
-            {#each ([1, 2, 3] as const) as n (n)}
-              <div
-                class="move-row band-{n}"
-                class:current={dragBand === n}
-                role="group"
-                onmouseenter={() => { hoveredBand = n; }}
-                onmouseleave={() => { if (hoveredBand === n) hoveredBand = null; }}
-              >
-                <span class="move-row-label">{n} action{n > 1 ? 's' : ''}</span>
-                <span class="muted">{moveBands[n].length} cell{moveBands[n].length === 1 ? '' : 's'} reachable</span>
-              </div>
-            {/each}
-            <div
-              class="move-row band-push"
-              class:current={dragBand === 'push'}
-              role="group"
-              onmouseenter={() => { hoveredBand = 'push'; }}
-              onmouseleave={() => { if (hoveredBand === 'push') hoveredBand = null; }}
-            >
-              <span class="move-row-label">Push</span>
-              <span class="muted">
-                {#if preview?.kind === 'push'}
-                  DC {preview.dc} · fail and you stop at {preview.fallback}
-                {:else}
-                  DC {pushDcFor(active)} · a fail stops you at the furthest cell you can afford
-                {/if}
-              </span>
-            </div>
           </div>
-          {/if}
-          {/if}
         </div>
-      {/if}
-
+        {/if}
+        {/if}
+      </div>
 
       {#if isRouted(active)}
         <p class="muted">
@@ -1220,11 +1237,12 @@
       {:else}
         <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
       {/if}
+    {:else}
+      <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
     {/if}
-
   {/snippet}
 
-  {#snippet left()}
+  {#snippet right()}
     <div class="log" bind:this={logEl}>
       {#each b.log as e, i (i)}
         <p class:round={!e.unit} class={cls(e.check)}>{e.text}</p>
@@ -1236,7 +1254,6 @@
 <style>
   .mapwrap { width: 100%; height: 100%; }
   .mapwrap.aiming { cursor: crosshair; }
-  .battle-strip { display: flex; gap: .5rem; padding: .4rem .75rem; overflow-x: auto; }
   .log { flex: 1; min-height: 8rem; max-height: none; background: none; padding: 0; }
 
   .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }
@@ -1256,8 +1273,8 @@
 
   .drag-hud {
     position: absolute; z-index: 5; max-width: 26rem;
-    top: calc(var(--inset-top, 0px) + .6rem);
-    left: calc(var(--inset-left, 0px) + .6rem);
+    bottom: calc(var(--inset-bottom, 0px) + .85rem);
+    left: calc(var(--inset-left, 0px) + .85rem);
     display: flex; gap: .6rem; align-items: center;
     padding: .35rem .7rem; border-radius: 8px; font-size: .85rem;
     background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
@@ -1287,22 +1304,19 @@
   .popup-foot .muted { margin-right: auto; }
   .popup-foot button { font-size: .8rem; padding: .15rem .5rem; }
 
-  .unit-card {
-    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .2rem;
-    width: 5.5rem; padding: .3rem; background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    cursor: pointer; font: inherit; color: var(--ink); text-align: center;
-  }
-  .unit-card:disabled { cursor: default; }
-  .unit-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
-  .unit-card.spent { filter: grayscale(1); opacity: .5; }
-  .unit-card img { width: 3.4rem; height: 3.4rem; object-fit: cover; border-radius: 6px; background: var(--band); }
-  .unit-card-name { font-size: .78rem; font-weight: 600; line-height: 1.15; }
-  .unit-card-meta { font-size: .7rem; color: var(--muted); }
-  .pip-row { display: flex; gap: 2px; }
   .pip { display: inline-block; width: .5rem; height: .5rem; border: 1px solid var(--rule); background: transparent; }
-  .pip.square { border-radius: 2px; }
   .pip.circle { border-radius: 50%; }
   .pip.on { background: var(--accent); border-color: var(--accent); }
+
+  .scrim {
+    position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem;
+    background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(3px);
+  }
+  .scrim .result { max-width: 34rem; max-height: 100%; overflow: auto; }
+
+  .orders-head { display: flex; align-items: baseline; gap: .5rem; }
+  .orders-head h3 { margin: 0; }
+  .orders-head .muted { font-size: .78rem; }
 
   .action-pips { align-items: center; gap: .3rem; margin: .3rem 0 .1rem; }
   .action-pips .pip { width: .65rem; height: .65rem; }

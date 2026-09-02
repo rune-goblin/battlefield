@@ -3,6 +3,9 @@
   --att:#8f3a2e; --def:#3a5f8f; --good:#3b6e3b; --bad:#9a3a2a;
   /* The move-band amber, one shade per extra action — matches the board's 'moveFar'/'moveFar3'. */
   --warn:#d9a441; --warn2:#a1490c;
+  /* Chrome that floats over the map: readable, but the ground still shows through it. Resolved
+     at the use site, so the dark palette's own --card carries into it. */
+  --glass:color-mix(in srgb, var(--card) 82%, transparent);
 }
 @media (prefers-color-scheme: dark) {
   :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; --card:#23201c; --att:#d9705c; --def:#6f9bd1; --good:#7fb77f; --bad:#e08a78; --warn:#e0a75c; --warn2:#cf6a1f; }
