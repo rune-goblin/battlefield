@@ -1,11 +1,11 @@
 import * as PIXI from 'pixi.js';
 import type { Grid, Point, Tree } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
+import { primTexture } from '../vfx/textures.js';
 
-// proto: colour + circles stand in for the eventual per-tree sprite systems (see the cast
-// effect note in docs/plans) — swirl geometry below is written so swapping a particle's
-// Graphics circle for a sprite is the only thing that will need to change.
 const PARTICLE_COUNT = 16;
+/** Where the glow primitive's falloff reads as its edge, in texture pixels. */
+const GLOW_RADIUS_PX = 30;
 const SWIRL_RADIUS_MIN = 0.05;
 const SWIRL_RADIUS_MAX = 0.16;
 const TRAVEL_SPAN = 0.7;
@@ -16,7 +16,7 @@ const LINE_WIDTH = 0.045;
 const RESOLVE_DURATION = 0.35;
 
 interface Particle {
-  g: PIXI.Graphics;
+  g: PIXI.Sprite;
   along: number;
   phase: number;
   travelSpeed: number;
@@ -72,7 +72,7 @@ export class CastLayer {
       const cy = this.a.y + dy * p.along;
       p.g.position.set(cx + perpX * offset, cy + perpY * offset);
       const visibility = resolveT === null ? 1 : 1 - smoothstep(resolveT);
-      p.g.scale.set((0.55 + 0.45 * (depth * 0.5 + 0.5)) * (1 + converge * 0.8));
+      p.g.scale.set((0.55 + 0.45 * (depth * 0.5 + 0.5)) * (1 + converge * 0.8) * (p.baseSize / GLOW_RADIUS_PX));
       p.g.alpha = (0.35 + 0.65 * (depth * 0.5 + 0.5)) * visibility;
     }
     if (this.line && resolveT !== null) this.line.alpha = 1 - smoothstep(resolveT);
@@ -100,12 +100,15 @@ export class CastLayer {
     this.redraw();
   }
 
-  /** Pulls the live particles into their target and fades the aim line after confirmation. */
-  resolve(): void {
-    if (!this.particles.length || this.resolving !== null) return;
+  /** Pulls the live particles into their target and fades the aim line after confirmation.
+   * Returns the caster's cell, so the resolution effect can fly in from it. */
+  resolve(): string | null {
+    const from = this.cast?.from ?? null;
+    if (!this.particles.length || this.resolving !== null) return from;
     this.cast = null;
     this.resolving = 0;
     for (const p of this.particles) p.resolveAlong = p.along;
+    return from;
   }
 
   private redraw(): void {
@@ -130,7 +133,11 @@ export class CastLayer {
     this.b = b;
     this.particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
       const baseSize = this.size * (PARTICLE_MIN_RADIUS + Math.random() * (PARTICLE_MAX_RADIUS - PARTICLE_MIN_RADIUS));
-      const g = new PIXI.Graphics().beginFill(colour, 1).drawCircle(0, 0, baseSize).endFill();
+      const g = new PIXI.Sprite(primTexture('glow'));
+      g.anchor.set(0.5);
+      g.tint = colour;
+      g.blendMode = PIXI.BLEND_MODES.ADD;
+      g.scale.set(baseSize / GLOW_RADIUS_PX);
       this.container.addChild(g);
       return {
         g,

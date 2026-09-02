@@ -55,8 +55,9 @@ export interface BoardView {
    * target's, coloured by tree. Null clears it. */
   setCast(cast: { from: string; to: string; tree: Tree } | null): void;
   /** A one-shot resolution animation on `cell`, selected by `tree` — fired once a cast
-   * actually lands, unlike `setCast`'s held aim line. */
-  burst(cell: string, tree: Tree): void;
+   * actually lands, unlike `setCast`'s held aim line. `from` is the caster's cell for a
+   * spell that flies in; it defaults to the cast being aimed, if there is one. */
+  burst(cell: string, tree: Tree, from?: string | null): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
@@ -141,11 +142,23 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), opts.ticker, opts.theme);
   const shotLayer = new ShotLayer(layers.createLayer('shot', 35), opts.theme);
   const castLayer = new CastLayer(layers.createLayer('cast', 36), opts.ticker, opts.theme);
-  const effectLayer = new EffectLayer(layers.createLayer('effects', 37), opts.ticker, opts.theme);
+  // Two effect containers: light on the cell, pools and scorch marks sit under the pieces;
+  // flames, frames and sparks over them.
+  const effectLayer = new EffectLayer(
+    layers.createLayer('effectsGround', layers.getDefaultZIndex('tokens') - 1),
+    layers.createLayer('effects', 37),
+    opts.ticker,
+    opts.theme,
+    {
+      onToken: (cell, reaction) => tokenLayer.reactAt(cell, reaction),
+      onShake: (offset) => boardContainer.position.set(boardOrigin.x + offset.x, boardOrigin.y + offset.y),
+    },
+  );
   const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), opts.parent);
 
   let currentBoard: Board | null = null;
   let geometry: { grid: Grid; size: number } | null = null;
+  let boardOrigin: Point = { x: 0, y: 0 };
   const handlers = new Map<BoardEventType, Set<(event: never) => void>>();
 
   function fit(): { grid: Grid; size: number } | null {
@@ -174,7 +187,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     const { grid, size } = geometry;
     const bounds = grid.bounds(size);
     const { width, height } = opts.size();
-    boardContainer.position.set((width - bounds.width) / 2, (height - bounds.height) / 2);
+    boardOrigin = { x: (width - bounds.width) / 2, y: (height - bounds.height) / 2 };
+    boardContainer.position.set(boardOrigin.x, boardOrigin.y);
 
     terrainLayer.draw(opts.renderer, currentBoard, size, opts.theme);
     gridLayer.setGeometry(grid, size, opts.theme);
@@ -298,9 +312,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     setCast(cast) {
       castLayer.setCast(cast);
     },
-    burst(cell, tree) {
-      castLayer.resolve();
-      effectLayer.burst(cell, tree);
+    burst(cell, tree, from) {
+      const origin = castLayer.resolve();
+      effectLayer.burst(cell, tree, from ?? origin);
     },
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);
@@ -445,6 +459,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
 
 export { BoardApp } from './BoardApp.js';
 export { BoardContainer } from './BoardContainer.js';
+export { setVfxTimeScale } from './layers/EffectLayer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the BASE_URL-prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.

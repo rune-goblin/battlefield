@@ -27,8 +27,7 @@ export interface BoardTheme {
     /** The shot arc and the barred X — where colour on the board means danger rather than
      * terrain. */
     shot: number;
-    /** The cast line and its swirling particles, one hue per tree — the only thing telling
-     * two casts apart until sprites replace the particles. */
+    /** The cast line and its swirling glow motes, one hue per tree, while a spell is aimed. */
     cast: Record<Tree, number>;
   };
   token: {

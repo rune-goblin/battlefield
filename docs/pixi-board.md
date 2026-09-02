@@ -97,7 +97,13 @@ src/board/layers/EdgeLayer.ts      walls, breached walls, cliffs
 src/board/layers/OverlayLayer.ts   hover, selection, highlight washes, paint preview
 src/board/layers/TokenLayer.ts     Token sprites, sprite-cache diff, per-tick animation
 src/board/layers/LabelLayer.ts     a–h / 1–8, MapTextUtils lifted, zoom-invariant scale
-src/board/Token.ts              one battlefield piece: base disc, art, badge, pips, rings
+src/board/layers/ShotLayer.ts      the aimed shot's arc
+src/board/layers/CastLayer.ts      the aimed cast's line and glow motes
+src/board/layers/EffectLayer.ts    spell resolutions: plays a vfx recipe on a cell, ground + air containers
+src/board/vfx/textures.ts       the soft white primitives (glow, spark, smoke, ring, streak...) on one atlas
+src/board/vfx/Effect.ts         track specs (particles, painted frames, token reaction, shake) and their runner
+src/board/vfx/recipes.ts        one track list per tree; the painted 16-frame sheets are referenced from here
+src/board/Token.ts              one battlefield piece: base disc, art, badge, pips, rings, spell reactions
 src/board/Interaction.ts        pointer state machine on the host canvas -> BoardEvents
 src/board/hit.ts                pixel -> cell | edge | token
 src/board/brush.ts              paint-mode brush type and its derived colours/erase forms

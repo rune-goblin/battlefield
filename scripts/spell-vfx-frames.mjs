@@ -2,8 +2,8 @@
 // Splits the spell VFX atlases into per-frame PNGs for hand editing and rebuilds
 // an atlas from a frame folder. Round-trips pixel-exactly.
 //
-//   node scripts/spell-vfx-frames.mjs split [--set 64f|16f] [--out DIR]
-//   node scripts/spell-vfx-frames.mjs join  [--set 64f|16f] [--in DIR] [--only NAME,NAME]
+//   node scripts/spell-vfx-frames.mjs split [--set 16f] [--out DIR]
+//   node scripts/spell-vfx-frames.mjs join  [--set 16f] [--in DIR] [--only NAME,NAME]
 //
 // Only 8-bit RGBA, non-interlaced PNGs are handled — everything here is that.
 import { deflateSync, inflateSync } from 'node:zlib';
@@ -13,7 +13,6 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SETS = {
-  '64f': { dir: join(ROOT, 'public/art/spell-vfx-spritesheets-64f'), grid: 8, frame: 128 },
   '16f': { dir: join(ROOT, 'public/art/spell-vfx-spritesheets'), grid: 4, frame: 128 },
 };
 const SHEETS = ['blast', 'heal', 'control', 'buff-attacks', 'buff-defenses', 'buff-movement'];
@@ -127,9 +126,9 @@ const flag = (name, fallback) => {
   const i = rest.indexOf(`--${name}`);
   return i === -1 ? fallback : rest[i + 1];
 };
-const setName = flag('set', '64f');
+const setName = flag('set', '16f');
 const set = SETS[setName];
-if (!set) throw new Error(`unknown set ${setName}; use 64f or 16f`);
+if (!set) throw new Error(`unknown set ${setName}; use 16f`);
 const framesDir = flag(cmd === 'join' ? 'in' : 'out', join(ROOT, `art-src/spell-vfx-${setName}`));
 const only = flag('only', '')?.split(',').filter(Boolean);
 const sheets = only?.length ? only : SHEETS;
@@ -166,6 +165,6 @@ if (cmd === 'split') {
     console.log(`join ${dir} → ${dest}`);
   }
 } else {
-  console.error('usage: spell-vfx-frames.mjs split|join [--set 64f|16f] [--in/--out DIR] [--only name,name]');
+  console.error('usage: spell-vfx-frames.mjs split|join [--set 16f] [--in/--out DIR] [--only name,name]');
   process.exit(1);
 }

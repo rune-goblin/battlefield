@@ -3,6 +3,7 @@ import type { Grid, Point } from '../../engine/index.js';
 import type { TokenBounds } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
 import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel } from '../Token.js';
+import type { TokenReaction } from '../vfx/Effect.js';
 
 /**
  * Token sprites, diffed by id against the previous `setTokens` call — modelled on
@@ -84,6 +85,13 @@ export class TokenLayer {
    * a token that does not exist yet has no move to route. */
   setRoute(id: string, cells: readonly string[]): void {
     this.cache.get(id)?.setRoute(cells);
+  }
+
+  /** A spell's touch on whatever stands on `cell`; an empty cell takes it silently. */
+  reactAt(cell: string, reaction: TokenReaction): void {
+    for (const model of this.models) {
+      if (model.cell === cell) this.cache.get(model.id)?.react(reaction);
+    }
   }
 
   private clearGhost(): void {

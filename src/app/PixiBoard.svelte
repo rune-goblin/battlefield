@@ -57,7 +57,7 @@
   export function cellRadius(cell: string) { return view?.cellRadius(cell) ?? null; }
   export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
   /** Plays a one-shot spell animation on `cell` — see `BoardView.burst`. */
-  export function burst(cell: string, tree: Tree) { view?.burst(cell, tree); }
+  export function burst(cell: string, tree: Tree, from?: string | null) { view?.burst(cell, tree, from); }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
   export function setGrid(settings: Partial<GridSettings>) { view?.setGrid(settings); }

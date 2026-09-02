@@ -782,3 +782,45 @@ deliberately; only round-trip/neighbour-count smoke tests exist). `npm run check
 gated on during any wave but ran clean (0 errors) when tried at the end of Wave 6, for what
 that's worth against six waves of un-gated drift — it doesn't cover `dev/`, which isn't in
 either tsconfig.
+
+### Spell VFX kit — 2026-09-02
+
+- The interpolated 64-frame sheets are gone (`public/art/spell-vfx-spritesheets-64f/`, with
+  `scripts/clean-spell-vfx.py`; git holds them at `7e201a2`). Sixteen unrelated stills
+  cross-dissolved into sixty-four frames is a morph, not motion, and every curve, blend and
+  alpha-crush around them was compensation. The 16-frame originals in
+  `public/art/spell-vfx-spritesheets/` are real key poses and stay: `EffectLayer` now plays
+  runs of them as hard-cut flipbooks (12–18 fps) or holds single frames as decals.
+- `src/board/vfx/`: `textures.ts` paints eight soft white primitives onto one canvas atlas at
+  startup (no asset fetch); `Effect.ts` turns a track list into `ParticleContainer`s, decal
+  sprites, a token reaction and a board shake; `recipes.ts` is one track list per tree. A
+  particle's position is an analytic function of its age (drag as an exponential, gravity as
+  a quadratic), so an effect is a pure function of time: deterministic under the same
+  `hash(tree:cell)` seed, and slow motion is a single multiplier.
+- Blend policy: normal-blended, saturated colour throughout, additive only for brief hot
+  cores. The light theme's cream board turns any large additive glow into a white disc and
+  hides additive fire entirely (first screenshots confirmed it). Each recipe opens with a
+  dark ground wash (`dim`) so the colours have something to sit on there; in the dark theme it
+  reads as a spotlight.
+- Ground vs air: a second effects container sits at `tokens - 1` for the wash, cell light,
+  pools and the blast's scorch, so the piece stands in the effect rather than under it.
+- Token reactions (`Token.react`): a damped-sine squash/pop, a hop through `pivot`, a jitter,
+  and a brightening via a per-token `ColorMatrixFilter` whose `alpha` fades — the filter
+  offsets multiply by the sprite's alpha so transparent pixels stay clear. `applyFilters`
+  composes it with the broken-unit desaturate.
+- Blast flies in: `BoardView.burst` takes an optional `from`, defaulting to the cast being
+  aimed (`CastLayer.resolve` now returns its caster cell). Frame 4 of the blast sheet is the
+  projectile, rotated to the flight (`heading` = π/4, the way the art points), with a glow
+  trail whose births walk the line.
+- `?vfx` opens `VfxGallery.svelte`: six panes, one small board per tree framed on a caster
+  at d3 and a target at d6, a play button per pane (or click the pane, or press its number),
+  ¼×/⅒× slow motion, loop and a from-caster toggle. Six `BoardView`s mount at once, one
+  `PIXI.Application` each. `setVfxTimeScale` is exported from the board index for it and
+  nothing else.
+- Screenshot gate: Playwright (`playwright-core` under the session scratchpad, cached
+  `chromium-1234`, `--use-angle=swiftshader`) drove the lab at ¼× and shot four moments per
+  tree in both colour schemes (`page.emulateMedia`). Effect time lags wall-clock there
+  because PIXI's ticker caps `deltaMS` while a screenshot stalls the frame.
+- Open: cast-line motes are the old swirl on glow sprites, not a recipe yet; no heat-shimmer
+  `DisplacementFilter` under the blast; the flare/ring primitives could use a hand-painted
+  pass; the smoke still sits on the piece for its first half-second.

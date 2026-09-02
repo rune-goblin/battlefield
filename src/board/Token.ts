@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
 import { actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 import type { BoardTheme } from './theme.js';
+import type { TokenReaction } from './vfx/Effect.js';
 
 /** A ring is state, never chrome: the unit acting now, a free strike landing, or the piece a
  * placement stage has hold of. 'active' and 'selected' glow under the piece in its side's
@@ -171,6 +172,11 @@ export class Token extends PIXI.Container {
   private ringKind: TokenRing | null = null;
   private pulseStart = 0;
 
+  private size = 0;
+  private broken = false;
+  private reaction: { spec: TokenReaction; start: number } | null = null;
+  private flashFilter: PIXI.ColorMatrixFilter | null = null;
+
   // Wave 5: a battle move tweens from wherever the token is actually sitting (which may
   // itself be mid-tween from the previous move) to the new cell's centre. `lastCell` is null
   // until the first `place()`, so mounting never tweens in from the origin.
@@ -204,7 +210,9 @@ export class Token extends PIXI.Container {
 
     this.drawShadow(size, theme);
     this.updateArt(model, size);
-    this.filters = broken ? [DESATURATE] : null;
+    this.size = size;
+    this.broken = broken;
+    this.applyFilters();
     this.updateFlag(model.side, size, theme, shaken);
 
     if (model.kind === 'unit') {
@@ -293,6 +301,56 @@ export class Token extends PIXI.Container {
     }
     if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
     else if (this.ringKind) this.breathe();
+    if (this.reaction) this.animateReaction();
+  }
+
+  /** A spell's touch: a short squash, pop, hop, jitter or brightening, then back to rest. A
+   * piece in hand ignores it — the lift already owns its scale. */
+  react(spec: TokenReaction): void {
+    if (this.dragging) return;
+    this.reaction = { spec, start: performance.now() };
+    if (spec.flash) {
+      this.flashFilter ??= new PIXI.ColorMatrixFilter();
+      const r = ((spec.flash >> 16) & 0xff) / 255;
+      const g = ((spec.flash >> 8) & 0xff) / 255;
+      const b = (spec.flash & 0xff) / 255;
+      this.flashFilter.matrix = [1, 0, 0, 0, r * 0.85, 0, 1, 0, 0, g * 0.85, 0, 0, 1, 0, b * 0.85, 0, 0, 0, 1, 0];
+      this.flashFilter.alpha = 1;
+    }
+    this.applyFilters();
+  }
+
+  private animateReaction(): void {
+    const { spec, start } = this.reaction!;
+    const u = Math.min(1, (performance.now() - start) / spec.duration);
+    if (u >= 1) {
+      this.reaction = null;
+      if (!this.dragging) this.scale.set(1);
+      this.pivot.set(0, 0);
+      this.applyFilters();
+      return;
+    }
+    if (this.dragging) return;
+    // A damped ring: one hard push, one overshoot back, settled by the end.
+    const w = Math.exp(-3.5 * u) * Math.sin(u * Math.PI * 2.5);
+    const bounce = Math.sin(u * Math.PI);
+    let sx = 1;
+    let sy = 1;
+    if (spec.squash) { sx += spec.squash * w; sy -= spec.squash * w; }
+    if (spec.pop) { sx += spec.pop * w; sy += spec.pop * w; }
+    this.scale.set(sx, sy);
+    this.pivot.set(
+      spec.shake ? Math.sin(u * 42) * (1 - u) * spec.shake * this.size : 0,
+      spec.hop ? bounce * spec.hop * this.size : 0,
+    );
+    if (this.flashFilter) this.flashFilter.alpha = (1 - u) ** 2;
+  }
+
+  private applyFilters(): void {
+    const list: PIXI.Filter[] = [];
+    if (this.broken) list.push(DESATURATE);
+    if (this.reaction?.spec.flash && this.flashFilter) list.push(this.flashFilter);
+    this.filters = list.length ? list : null;
   }
 
   private place(model: TokenModel, grid: Grid, size: number): void {
