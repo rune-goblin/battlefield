@@ -49,6 +49,7 @@ const targets = (o: ActionOffer, rung: Grade) => o.rungs[rung - 1].targets.map((
 const guardOn = (state: BattleState, id: string, rng = scriptedRng([10])) =>
   act(state, { type: 'guard', rung: 1, unit: id }, rng);
 const moves = (state: BattleState, id: string) => moveReach(state, unit(state, id));
+const said = (state: BattleState, text: string) => state.log.some((e) => e.text.includes(text));
 // An activation always refills to three actions, so spending two on Guard is the only way to
 // reach a push with a single action behind it.
 const oneActionLeft = (state: BattleState, id: string) => guardOn(guardOn(state, id), id);
@@ -261,62 +262,132 @@ describe('the six trees', () => {
   });
 });
 
-describe('reaching above your grade', () => {
-  // Level-6 infantry: Guard 1, Will +17, level DC 22. Rolls 15 / 5 / 4 / 1 give the four degrees.
-  const reachGuard = (roll: number) => {
+describe('climbing above your grade', () => {
+  // Level-6 infantry: Will +17, level DC 22, and Press adds nothing to it. Rolls 15 / 5 / 4 / 1
+  // give the four degrees; the second roll in each script is the melee behind the climb.
+  const engaged = () => {
     const { state } = battle([]);
-    return act(state, { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([roll]));
+    place(state, 'u2', 'c3');
+    return state;
+  };
+  const reachPress = (roll: number, grade: Grade = 1) => {
+    const s = engaged();
+    unit(s, 'u0').grades.fight = grade;
+    return act(s, { type: 'fight', rung: grade + 1 as Grade, target: 'u2', unit: 'u0' }, scriptedRng([roll, 5]));
   };
 
   it('takes a granted rung with no roll at all', () => {
-    const { state } = battle([]);
-    const g = offer(state, 'guard', 'u0');
-    expect(g.granted).toBe(1);
-    expect(g.reachable).toBe(2);
-    expect(g.reachDc).toBe(22);
-    expect(g.rungs.map((r) => r.access)).toEqual(['free', 'reach', 'locked']);
-    const s = guardOn(state, 'u0');
-    expect(s.log.some((e) => e.check)).toBe(false);
-    expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 1 });
+    const s = engaged();
+    unit(s, 'u0').grades.fight = 1;
+    const f = offer(s, 'fight', 'u0');
+    expect(f.granted).toBe(1);
+    expect(f.reachable).toBe(2);
+    expect(f.climb).toBe('roll');
+    expect(f.climbCost).toBe(0);
+    expect(f.rungs.map((r) => r.access)).toEqual(['free', 'reach', 'locked']);
   });
 
   it('critical success climbs one rung further', () => {
-    expect(unit(reachGuard(15), 'u0').guard).toEqual({ defence: 2, rung: 3 });
-  });
-
-  it('success lands on the rung reached for', () => {
-    const s = reachGuard(5);
-    expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 2 });
-    expect(unit(s, 'u0').rooted).toBe(1);
+    expect(said(reachPress(15), 'reaches for Press')).toBe(true);
+    expect(unit(reachPress(15), 'u0').disorder).toBe(0);
   });
 
   it('failure falls back to the granted rung and still acts', () => {
-    const s = reachGuard(4);
-    expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 1 });
+    const s = reachPress(4);
+    expect(said(s, 'falls back to Strike')).toBe(true);
     expect(unit(s, 'u0').disorder).toBe(0);
+    expect(unit(s, 'u0').attacked).toBe(true);
   });
 
-  it('critical failure falls back and costs a point of disorder', () => {
-    const s = reachGuard(1);
-    expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 1 });
+  // The judgment call: a botched order is worth a rung, not just a fallback. A unit with a
+  // rung below its grade drops to it; one already on the bottom has nothing to drop, so it
+  // loses the act instead of taking a second point of disorder.
+  it('critical failure drops a rung below the grade and costs a point of disorder', () => {
+    const s = reachPress(1, 2);
+    expect(said(s, 'drops past Press to Strike')).toBe(true);
     expect(unit(s, 'u0').disorder).toBe(1);
+    expect(unit(s, 'u0').attacked).toBe(true);
   });
 
-  it('a grade-3 unit has nothing to reach for', () => {
+  it('critical failure forfeits the act outright when there is no rung below the grade', () => {
+    const s = reachPress(1, 1);
+    expect(said(s, 'the act is forfeit')).toBe(true);
+    expect(unit(s, 'u0').disorder).toBe(1);
+    expect(unit(s, 'u2').wounds).toBe(0);
+    expect(unit(s, 'u0').attacked).toBe(false);
+  });
+
+  it('a grade-3 unit has nothing to climb to', () => {
+    const s = engaged();
+    unit(s, 'u0').grades.fight = 3;
+    const f = offer(s, 'fight', 'u0');
+    expect(f.reachable).toBeNull();
+    expect(f.rungs.map((r) => r.access)).toEqual(['free', 'free', 'free']);
+  });
+});
+
+describe('what a climb costs, ladder by ladder', () => {
+  const engaged = () => {
     const { state } = battle([]);
-    unit(state, 'u0').grades.guard = 3;
-    const g = offer(state, 'guard', 'u0');
+    place(state, 'u2', 'c3');
+    return state;
+  };
+
+  // Guard's currency is the Defence it sets, so its rungs are postures the grade gates
+  // outright — there is nothing to gamble for and nothing to buy.
+  it('Guard does not climb at all', () => {
+    const g = offer(engaged(), 'guard', 'u0');
+    expect(g.climb).toBe('none');
     expect(g.reachable).toBeNull();
-    expect(g.rungs.map((r) => r.access)).toEqual(['free', 'free', 'free']);
+    expect(g.dials.push).toBe(false);
+    expect(g.rungs.map((r) => r.access)).toEqual(['free', 'locked', 'locked']);
+    expect(() => act(engaged(), { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([10])))
+      .toThrow(/a posture is not climbed for/);
   });
 
-  it('a unit that digs in may not move for the rest of the activation, and moves freely in the next', () => {
-    const { state } = battle([]);
-    let s = act(state, { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([5]));
-    expect(moves(s, 'u0').size).toBe(0);
-    s = endActivation(s);
-    for (const id of ['u2', 'u1', 'u3']) s = burn(s, id);
-    expect(moves(s, 'u0').size).toBeGreaterThan(0);
+  // Aim means taking time: Shoot buys its rung with a further action and never rolls for it.
+  it('Shoot buys its climb with an action and no roll', () => {
+    const start = battle([]).state;
+    place(start, 'u0', 'c5');
+    const s = burn(start, 'u1');
+    const o = offer(s, 'shoot', 'u2');
+    expect(o.climb).toBe('action');
+    expect(o.climbCost).toBe(1);
+    expect(o.dials.push).toBe(false);
+    expect(o.rungs[1].access).toBe('buy');
+
+    const aimed = act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    expect(unit(aimed, 'u2').actions).toBe(1);
+    expect(aimed.log.some((e) => e.text.includes('reaches for'))).toBe(false);
+    expect(said(aimed, 'takes the time for Aim')).toBe(true);
+  });
+
+  it('Rally buys its climb the same way, and refuses it on one action', () => {
+    const s = engaged();
+    unit(s, 'u0').disorder = 2;
+    unit(s, 'u0').grades.rally = 1;
+    const o = offer(s, 'rally', 'u0');
+    expect(o.climb).toBe('action');
+    expect(o.rungs[1].access).toBe('buy');
+    expect(unit(act(s, { type: 'rally', rung: 2, unit: 'u0' }, scriptedRng([15])), 'u0').actions).toBe(1);
+
+    // Actions refill when an activation begins, so the way to one action is to spend two.
+    const low = oneActionLeft(engaged(), 'u0');
+    unit(low, 'u0').disorder = 2;
+    unit(low, 'u0').grades.rally = 1;
+    expect(offer(low, 'rally', 'u0').rungs[1].reason).toBe('needs 2 actions');
+    expect(() => act(low, { type: 'rally', rung: 2, unit: 'u0' }, scriptedRng([15]))).toThrow(/needs 2 actions/);
+  });
+
+  // A bought climb takes its action off the top, so the dials only ever see what is left.
+  it('a bought climb leaves one fewer action for weight', () => {
+    const start = battle([]).state;
+    place(start, 'u0', 'c5');
+    const s = burn(start, 'u1');
+    expect(() => act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2', spend: { roll: 2 } }, scriptedRng([10])))
+      .toThrow(/only 3 actions/);
+    const one = act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2', spend: { roll: 1 } }, scriptedRng([10]));
+    expect(one.activated).toContain('u2');
   });
 });
 
@@ -571,10 +642,12 @@ describe('actions buy weight, not repetition', () => {
   });
 
   it('puts each action after the first on the push check instead', () => {
-    // Guard 1 reaching for Dig in: DC 22 against Will +17, so a 2 needs the full commitment.
-    const reach = (push: number) =>
-      unit(act(engaged(), { type: 'guard', rung: 2, unit: 'u0', spend: { push } }, scriptedRng([2])), 'u0').guard!.rung;
-    expect([reach(0), reach(1), reach(2)]).toEqual([1, 1, 2]);
+    // Fight 2 reaching for Overrun: DC 24 against Will +17, so a 3 needs the full commitment.
+    const reach = (push: number) => {
+      const s = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0', spend: { push } }, scriptedRng([3, 5]));
+      return s.log.some((e) => e.text.includes('falls back')) ? 2 : 3;
+    };
+    expect([reach(0), reach(1), reach(2)]).toEqual([2, 2, 3]);
   });
 
   it('takes 0.50, 0.60 and 0.80 wounds a turn on one, two and three actions in an even matchup', () => {
@@ -597,7 +670,7 @@ describe('actions buy weight, not repetition', () => {
 
   it('refuses a roll dial on Guard, which has no roll of its own', () => {
     expect(offer(engaged(), 'guard', 'u0').dials)
-      .toMatchObject({ roll: false, push: true, defence: true, distance: false, extra: 2, step: 2 });
+      .toMatchObject({ roll: false, push: false, defence: true, distance: false, extra: 2, step: 2 });
     expect(() => act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { roll: 1 } }, scriptedRng([10])))
       .toThrow(/no roll of its own/);
     expect(offer(engaged(), 'fight', 'u0').dials).toMatchObject({ roll: true, push: true, defence: false });
@@ -616,7 +689,7 @@ describe('actions buy weight, not repetition', () => {
     const ends = (s: BattleState) => { expect(s.activated).toContain('u0'); return s; };
 
     ends(act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10, 5])));
-    ends(act(engaged(), { type: 'guard', rung: 2, unit: 'u0', spend: { push: 2 } }, scriptedRng([2])));
+    ends(act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence: 2 } }, scriptedRng([2])));
     ends(act(engaged(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([4])));
 
     const start = battle([]).state;

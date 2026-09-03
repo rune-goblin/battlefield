@@ -12,6 +12,25 @@ import { saveBonus, type Tier } from './tables.js';
 export type LadderType = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
+/**
+ * How a ladder gets above its grade. The four ladders do not mean the same thing by "one rung
+ * up", so they do not pay for it the same way.
+ *
+ * `roll` — the rung is a rider on an act that is happening anyway, so climbing is a free
+ * gamble and the risk is the price (Fight's Press and Overrun; every Cast push).
+ * `action` — the rung is its own outcome, bought outright with a further action and no roll.
+ * Aim means taking time, and Rally's scope is too strong to hand over on a coin flip.
+ * `none` — a posture the grade gates outright. Guard's currency is the Defence it sets, and
+ * spare actions belong there rather than on a climb.
+ */
+export type ClimbMode = 'roll' | 'action' | 'none';
+export const CLIMB: Record<LadderType, ClimbMode> = {
+  fight: 'roll', cast: 'roll', shoot: 'action', rally: 'action', guard: 'none',
+};
+
+/** What the climb costs on an `action` ladder, over and above the act's own one. */
+export const CLIMB_COST = 1;
+
 export type Grade = 1 | 2 | 3;
 export type Grades = Record<Exclude<LadderType, 'cast'>, Grade>;
 

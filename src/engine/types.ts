@@ -1,7 +1,7 @@
 import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
-import type { Grade, Grades, LadderType } from './ladders.js';
+import type { ClimbMode, Grade, Grades, LadderType } from './ladders.js';
 import type { CastAxis, CastBand, CastTier, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
@@ -174,8 +174,9 @@ export interface RungOption {
   index: Grade;
   label: string;
   detail: string;
-  /** `free` needs no roll, `reach` is the gamble, `locked` is out of reach this activation. */
-  access: 'free' | 'reach' | 'locked';
+  /** `free` needs no roll and no further action; `buy` is bought outright with one more
+   * action; `reach` is the free gamble; `locked` is out of reach this activation. */
+  access: 'free' | 'buy' | 'reach' | 'locked';
   legal: boolean;
   reason: string | null;
   needsTarget: boolean;
@@ -190,7 +191,8 @@ export interface SpendDials {
   step: number;
   /** The act has a roll of its own. Guard sets a number outright, so it has none. */
   roll: boolean;
-  /** There is a rung above the granted one and a check standing between. */
+  /** There is a rung above the granted one and a check standing between. False on a ladder
+   * that buys its climb — there is no gamble to weight. */
   push: boolean;
   /** Guard's second dial: Defence, which is the only number a Guard sets. */
   defence: boolean;
@@ -202,8 +204,12 @@ export interface SpendDials {
 
 export interface ActionOffer {
   type: LadderType;
-  /** Actions the act itself costs, before anything the dials take. */
+  /** Actions the act itself costs, before the climb or anything the dials take. */
   cost: number;
+  /** How this ladder gets above its grade — the gamble, the purchase, or not at all. */
+  climb: ClimbMode;
+  /** Actions a `buy` rung costs on top of `cost`. Zero on a ladder that gambles instead. */
+  climbCost: number;
   dials: SpendDials;
   spell: Tree | null;
   label: string;

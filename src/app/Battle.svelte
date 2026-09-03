@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, castRungOf, CELL_FEET, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, castRungOf, CELL_FEET, CLIMB, degreeOf, DIALS, engagedEnemies, guardDefence, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
     offersAt, pushDcFor, pushModifierFor, pushPath, reachOf, routDcFor, rungAccess, rungOf, TREE_TARGET, withdrawTargets,
     type ActionOffer, type CastTier, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption, type Tree,
     type RungTarget, type Spend, type SpendDials, type TargetOffer, type TargetRef, type Unit, type WithdrawOffer,
@@ -68,9 +68,33 @@
   const WITHDRAW_KEY = 'withdraw';
   const used = (sp: Spend) => sp.roll + sp.push + sp.defence + sp.distance;
 
-  /** The push dial bites only on the rung a check stands in front of, never on a granted one. */
-  const rungDials = (offer: ActionOffer, opt: RungOption): SpendDials =>
-    ({ ...offer.dials, push: offer.dials.push && opt.access === 'reach' });
+  /** What climbing to this rung costs before any dial: an action on a ladder that buys its
+   * climb, nothing on one that gambles for it. */
+  const climbCost = (offer: ActionOffer, opt: RungOption) => (opt.access === 'buy' ? offer.climbCost : 0);
+
+  /** The push dial bites only on the rung a check stands in front of, never on a granted one,
+   * and never on a climb that was bought rather than rolled for. A bought climb also comes off
+   * the top of the budget, so the dials are offered only what it leaves. */
+  const rungDials = (offer: ActionOffer, opt: RungOption): SpendDials => ({
+    ...offer.dials,
+    extra: Math.max(0, offer.dials.extra - climbCost(offer, opt)),
+    push: offer.dials.push && opt.access === 'reach',
+  });
+
+  /** The four degrees of a d20 check as shares of twenty, read off the engine's own ladder so
+   * the odds shown are the odds rolled. */
+  function odds(modifier: number, dc: number) {
+    const out = { 'critical-success': 0, success: 0, failure: 0, 'critical-failure': 0 };
+    for (let roll = 1; roll <= 20; roll++) out[degreeOf(roll, modifier, dc)] += 5;
+    return out;
+  }
+
+  const ACCESS_BADGE: Record<RungOption['access'], string> = {
+    free: 'granted', buy: '+1 action', reach: 'gamble', locked: 'locked',
+  };
+  const OUTCOMES = [
+    ['critical-success', 'crit'], ['success', 'won'], ['failure', 'lost'], ['critical-failure', 'botch'],
+  ] as const;
 
   // Actions drain as the activation runs, so a stored allocation is trimmed on read rather
   // than tracked — the panel can never propose more than the unit still has.
@@ -119,7 +143,6 @@
     if (opt.access === 'reach' && offer.reachDc !== null) {
       out.push(`Reach DC ${offer.reachDc} · d20+${offer.reachModifier + (sp.push + sp.pool) * step}`);
     }
-    out.push(`Costs ${offer.cost + used(sp)} of ${u.actions} actions`);
     return out;
   }
 
@@ -585,8 +608,8 @@
         : row.kind === 'withdraw' ? 'Withdraw here' : 'Move here';
   const rowDetail = (row: Preview) =>
     row.kind === 'charge' ? `${actions(row.actions)}, melee included`
-      : row.kind === 'push' ? `DC ${row.dc} · a fail stops you at ${row.fallback}, and it spends every action you have left`
-        : row.kind === 'withdraw' ? 'One Escape check per enemy holding you'
+      : row.kind === 'push' ? `Every action you have left · DC ${row.dc} · a fail stops you at ${row.fallback}`
+        : row.kind === 'withdraw' ? '1 action, plus one Escape check per enemy holding you'
           : actionCost(row.actions);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
 
@@ -597,7 +620,8 @@
       : row.kind === 'push' ? (act?.actions ?? 0)
         : act?.withdraw ? act.withdraw.cost + used(withdrawSpend(row.cell)) : 1;
   const aimCost = (row: AimRow) =>
-    row.offer.cost + used(spendOn(rungKey(row.offer, row.opt), rungDials(row.offer, row.opt)));
+    row.offer.cost + climbCost(row.offer, row.opt)
+    + used(spendOn(rungKey(row.offer, row.opt), rungDials(row.offer, row.opt), active?.castPool ?? 0));
   const cost = $derived(picked ? dropCost(picked) : aimed ? aimCost(aimed) : 0);
   const left = $derived(act?.actions ?? 0);
 
@@ -868,6 +892,11 @@
   const grantedRungLabel = (offer: ActionOffer) =>
     offer.type === 'cast' ? castRungOf(offer.spell!, offer.granted as CastTier).label : rungOf(offer.type, offer.granted).label;
   const aboveLabel = (type: Exclude<LadderType, 'cast'>, index: number) => rungOf(type, Math.min(3, index + 1) as Grade).label;
+  /** Where a botched order lands: one rung under the grade it would otherwise fall back to. */
+  const grantedBelow = (offer: ActionOffer) => {
+    const below = Math.max(1, offer.granted - 1) as Grade;
+    return offer.type === 'cast' ? castRungOf(offer.spell!, below as CastTier).label : rungOf(offer.type, below).label;
+  };
 
   const status = (u: Unit) => [
     isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : '',
@@ -887,6 +916,10 @@
   $effect(() => { void b.log.length; logEl?.scrollTo({ top: logEl.scrollHeight }); });
 </script>
 
+{#snippet chits(n: number)}
+  {#each Array(n) as _, i (i)}<span class="chit"></span>{:else}<span class="chit none"></span>{/each}
+{/snippet}
+
 {#snippet popupHead(label: string)}
   <div class="popup-head">
     <span>{label}</span>
@@ -899,7 +932,7 @@
 {#snippet popupFoot(confirm: () => void)}
   <div class="popup-foot">
     <span class="muted">
-      {cost} of {left} action{left === 1 ? '' : 's'}{cost >= left ? ' — ends the activation' : ''}
+      Spends {cost} of {left} action{left === 1 ? '' : 's'}{cost >= left ? ' — ends the turn' : ''}
     </span>
     <button onclick={stepBack}>Cancel</button>
     <button class="primary" onclick={confirm}>Confirm</button>
@@ -1048,6 +1081,7 @@
                     <span class="dial-n">{sp[dial]}</span>
                     <button class="dial-step" disabled={used(sp) >= w.dials.extra} aria-label="more" onclick={() => setDial(WITHDRAW_KEY, w.dials, dial, sp[dial] + 1)}>+</button>
                     <span class="dial-buys">{perAction(null, dial, w.dials.step, active.speed)}</span>
+                    <span class="cost-chip">1</span>
                     {#if dial === 'distance' && floor > 0}<span class="muted">{row.cell} needs {floor}</span>{/if}
                   </div>
                 {/each}
@@ -1068,7 +1102,7 @@
                   onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
                 >
                   {rungOf('fight', g).label}
-                  {#if access === 'reach'}<span class="chip-note">gamble</span>{/if}
+                  {#if access === 'reach'}<span class="chip-note free">free gamble</span>{/if}
                 </button>
               {/each}
             </div>
@@ -1094,38 +1128,12 @@
           <button class="popup-row" class:on={i === aim.index} onclick={() => aimChoose(i)}>
             <span class="popup-verb">
               {opt.label}
-              {#if opt.access === 'reach'}<span class="chip-note">gamble</span>{/if}
+              <span class="access {opt.access}">{ACCESS_BADGE[opt.access]}</span>
             </span>
             <span class="muted">{opt.detail}</span>
           </button>
-          {#if i === aim.index}
-            {@const d = rungDials(offer, opt)}
-            {@const poolMax = active.castPool}
-            {@const sp = spendOn(rungKey(offer, opt), d, poolMax)}
-            {#if opt.access === 'reach' && offer.reachDc !== null}
-              <p class="popup-gamble">
-                DC {offer.reachDc} · d20{offer.reachModifier >= 0 ? '+' : ''}{offer.reachModifier + (sp.push + sp.pool) * d.step}.
-                Fail → {grantedRungLabel(offer)}.
-              </p>
-            {/if}
-            {#if (d.extra > 0 || (d.pool && poolMax > 0)) && DIALS.some((x) => d[x])}
-              <div class="popup-dials">
-                {#each DIALS.filter((x) => d[x]) as dial (dial)}
-                  <div class="dial">
-                    <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] - 1, poolMax)}>−</button>
-                    <span class="dial-n">{sp[dial]}</span>
-                    <button class="dial-step" disabled={dial === 'pool' ? sp.pool >= poolMax : used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] + 1, poolMax)}>+</button>
-                    <span class="dial-buys">{perAction(offer, dial, d.step, active.speed)}</span>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-            <p class="popup-totals">
-              {#each totals(offer, opt, sp, active) as line (line)}<span class="total">{line}</span>{/each}
-            </p>
-          {/if}
         {/each}
-        {@render popupFoot(takeAim)}
+        <p class="popup-onward">Weight and confirm it in the orders panel.</p>
       </BoardPopup>
     {/if}
   {/snippet}
@@ -1139,8 +1147,101 @@
       <div class="row action-pips">
         {#each Array(ACTIONS_PER_ACTIVATION) as _, i (i)}<span class="pip circle" class:on={i < active.actions}></span>{/each}
         <span class="muted">{active.actions} action{active.actions === 1 ? '' : 's'} left</span>
-        <button class="end-activation" onclick={() => endActivation()}>End activation</button>
       </div>
+      <p class="cost-key">
+        <span class="cost-chip">1</span> each act, each dial step, and the climb on Shoot or Rally.
+        <span class="cost-chip free">free</span> the climb on Fight and Cast, and a caster's own
+        pool — they cost risk, not actions. Guard never climbs: grade gates the rung, and its
+        actions buy Defence.
+      </p>
+      {#if aim && aimed}
+        {@const offer = aimed.offer}
+        {@const opt = aimed.opt}
+        {@const d = rungDials(offer, opt)}
+        {@const poolMax = active.castPool}
+        {@const sp = spendOn(rungKey(offer, opt), d, poolMax)}
+        {@const climb = climbCost(offer, opt)}
+        <div class="order">
+          <div class="order-head">
+            <h3>{offer.label} · {opt.label}</h3>
+            <span class="muted">on {aim.label}</span>
+          </div>
+
+          <!-- Step one. Everything here is certain and everything here is paid for, so it is
+               drawn as a ledger: line items, a rule, a sum. -->
+          <section class="step ledger">
+            <h4 class="step-head"><span class="step-n">1</span> Commit<span class="step-note">actions, spent whatever follows</span></h4>
+            <div class="line">
+              <span class="line-what">{offer.label} — the act itself</span>
+              <span class="chits">{@render chits(offer.cost)}</span>
+            </div>
+            {#if climb}
+              <div class="line">
+                <span class="line-what">{opt.label} — the time it takes to climb</span>
+                <span class="chits">{@render chits(climb)}</span>
+              </div>
+            {/if}
+            <!-- A dial with nothing left to buy is not a choice; it only reads as one. -->
+            {#each DIALS.filter((x) => d[x] && (sp[x] > 0 || (x === 'pool' ? poolMax > 0 : d.extra > used(sp)))) as dial (dial)}
+              <div class="line dial-line" class:spent={sp[dial] > 0}>
+                <span class="dial-set">
+                  <button class="dial-step" disabled={sp[dial] === 0} aria-label="less" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] - 1, poolMax)}>−</button>
+                  <span class="dial-n">{sp[dial]}</span>
+                  <button class="dial-step" disabled={dial === 'pool' ? sp.pool >= poolMax : used(sp) >= d.extra} aria-label="more" onclick={() => setDial(rungKey(offer, opt), d, dial, sp[dial] + 1, poolMax)}>+</button>
+                </span>
+                <span class="line-what">{perAction(offer, dial, d.step, active.speed)}</span>
+                <span class="chits">
+                  {#if dial === 'pool'}<span class="off-ledger">pool</span>{:else}{@render chits(sp[dial])}{/if}
+                </span>
+              </div>
+            {/each}
+            <div class="line sum">
+              <span class="line-what">Spent</span>
+              <span class="chits">{offer.cost + climb + used(sp)} of {active.actions}</span>
+            </div>
+            {#each totals(offer, opt, sp, active) as line (line)}<p class="gets">{line}</p>{/each}
+          </section>
+
+          <!-- Step two, and only where the ladder gambles for its climb. Nothing here costs an
+               action, so it is drawn as a wager slip rather than a ledger. -->
+          {#if opt.access === 'reach' && offer.reachDc !== null}
+            {@const mod = offer.reachModifier + (sp.push + sp.pool) * d.step}
+            {@const o = odds(mod, offer.reachDc)}
+            {@const back = grantedRungLabel(offer)}
+            <section class="step wager">
+              <h4 class="step-head"><span class="step-n">2</span> Risk<span class="cost-chip free">no action</span></h4>
+              <p class="wager-roll"><b>d20{mod >= 0 ? '+' : ''}{mod}</b> against DC {offer.reachDc}</p>
+              <div class="odds" aria-hidden="true">
+                {#each OUTCOMES as [key, cls] (key)}
+                  {#if o[key]}<span class="slice {cls}" style="flex: {o[key]}"></span>{/if}
+                {/each}
+              </div>
+              <dl class="outcomes">
+                <dt class="crit">{o['critical-success']}%</dt>
+                <dd>One rung past {opt.label}.</dd>
+                <dt class="won">{o.success}%</dt>
+                <dd>{opt.label}, as reached for.</dd>
+                <dt class="lost">{o.failure}%</dt>
+                <dd>Back to {back}. The act still happens.</dd>
+                <dt class="botch">{o['critical-failure']}%</dt>
+                <dd>
+                  1 disorder, and
+                  {#if offer.granted > 1}it drops past {back} to {grantedBelow(offer)}.
+                  {:else}nothing below {back} to fall to — <strong>the act is forfeit</strong>.{/if}
+                </dd>
+              </dl>
+            </section>
+          {:else}
+            <p class="step-none">No roll stands in the way — {opt.access === 'buy' ? 'the rung is bought outright' : 'this rung is yours'}.</p>
+          {/if}
+
+          <div class="order-foot">
+            <button onclick={stepBack}>Cancel</button>
+            <button class="primary" onclick={takeAim}>Confirm</button>
+          </div>
+        </div>
+      {/if}
+
       <table class="stats"><tbody>
         <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
         <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
@@ -1208,7 +1309,7 @@
             onmouseenter={() => { hoveredBand = 'push'; }}
             onmouseleave={() => { if (hoveredBand === 'push') hoveredBand = null; }}
           >
-            <span class="move-row-label">Push</span>
+            <span class="move-row-label">Push · every action left</span>
             <span class="muted">
               {#if preview?.kind === 'push'}
                 DC {preview.dc} · fail and you stop at {preview.fallback}
@@ -1233,10 +1334,12 @@
           One more point and it routs.
         </p>
       {:else if !offers.length}
-        <p class="muted">Nothing else to do here — end the activation.</p>
+        <p class="muted">Nothing else to do here — end the turn.</p>
       {:else}
         <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
       {/if}
+
+      <button class="end-turn" onclick={() => endActivation()}>End turn</button>
     {:else}
       <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
     {/if}
@@ -1300,6 +1403,18 @@
   .rung-chip.on { border-color: var(--accent); background: var(--band); }
   .rung-chip:disabled { opacity: .4; cursor: default; }
   .chip-note { font-size: .68rem; color: var(--muted); }
+  .chip-note.free { color: var(--good); }
+
+  /* The badge on a rung row says how that rung is reached before it is chosen: granted, bought
+     with an action, or gambled for. */
+  .access {
+    padding: .02rem .38rem; border-radius: 999px; border: 1px solid currentColor;
+    font-size: .64rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .access.free { color: var(--muted); }
+  .access.buy { color: var(--accent); }
+  .access.reach { color: var(--good); }
+  .access.locked { color: var(--rule); }
   .popup-foot { display: flex; gap: .5rem; align-items: center; padding: .3rem .5rem 0; border-top: 1px solid var(--rule); margin-top: .3rem; }
   .popup-foot .muted { margin-right: auto; }
   .popup-foot button { font-size: .8rem; padding: .15rem .5rem; }
@@ -1320,7 +1435,74 @@
 
   .action-pips { align-items: center; gap: .3rem; margin: .3rem 0 .1rem; }
   .action-pips .pip { width: .65rem; height: .65rem; }
-  .end-activation { margin-left: auto; }
+  .end-turn { width: 100%; margin-top: auto; }
+
+  .cost-key { margin: .2rem 0 .5rem; font-size: .76rem; color: var(--muted); line-height: 1.7; }
+  .cost-chip {
+    display: inline-block; min-width: 1.1rem; padding: .02rem .3rem; border-radius: 999px;
+    border: 1px solid var(--accent); color: var(--accent);
+    font-size: .68rem; font-weight: 600; text-align: center; white-space: nowrap;
+  }
+  .cost-chip.free { border-color: var(--good); color: var(--good); }
+
+  /* --- The order under composition. Two steps, drawn in two idioms on purpose: the purchase
+     is a ruled ledger of things already true, the gamble is a wager slip with a cut edge. --- */
+  .order { border: 1px solid var(--rule); border-radius: 8px; background: var(--card); overflow: hidden; }
+  .order-head {
+    display: flex; align-items: baseline; gap: .4rem; flex-wrap: wrap;
+    padding: .4rem .6rem; background: var(--band); border-bottom: 1px solid var(--rule);
+  }
+  .order-head h3 { margin: 0; font-size: .92rem; }
+  .order-head .muted { font-size: .74rem; }
+
+  .step { padding: .5rem .6rem; }
+  .step-head {
+    display: flex; align-items: center; gap: .4rem; margin: 0 0 .4rem;
+    font-size: .68rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+  }
+  .step-n {
+    display: grid; place-items: center; width: 1.1rem; height: 1.1rem; border-radius: 50%;
+    background: var(--ink); color: var(--paper); font-size: .62rem; letter-spacing: 0;
+  }
+  .step-note { margin-left: auto; font-weight: 400; letter-spacing: .02em; text-transform: none; font-size: .68rem; }
+
+  .ledger .line {
+    display: flex; align-items: center; gap: .4rem;
+    padding: .2rem 0; border-bottom: 1px dotted var(--rule); font-size: .8rem;
+  }
+  .line-what { flex: 1; min-width: 0; }
+  .dial-line { color: var(--muted); }
+  .dial-line.spent { color: var(--ink); }
+  .chits { display: flex; align-items: center; gap: .15rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  /* One filled square an action — a price is counted, not read. */
+  .chit { width: .55rem; height: .55rem; background: var(--accent); border: 1px solid var(--accent); }
+  .chit.none { background: transparent; border-color: var(--rule); }
+  .off-ledger { font-size: .66rem; color: var(--good); border: 1px solid var(--good); border-radius: 999px; padding: 0 .3rem; }
+  .line.sum { border-bottom: 0; border-top: 2px solid var(--rule); margin-top: .15rem; padding-top: .3rem; font-weight: 600; }
+  .gets { margin: .3rem 0 0; font-size: .74rem; color: var(--accent); }
+  .dial-set { display: flex; align-items: center; gap: .2rem; }
+
+  /* The cut edge marks the wager off from the ledger above it at a glance. */
+  .wager { border-top: 1px dashed var(--rule); background: color-mix(in srgb, var(--band) 55%, transparent); }
+  .wager-roll { margin: 0 0 .35rem; font-size: .82rem; }
+  .wager-roll b { font-variant-numeric: tabular-nums; }
+  .odds { display: flex; height: .5rem; gap: 1px; margin-bottom: .4rem; border-radius: 2px; overflow: hidden; }
+  .slice.crit { background: var(--good); }
+  .slice.won { background: color-mix(in srgb, var(--good) 55%, var(--band)); }
+  .slice.lost { background: var(--rule); }
+  .slice.botch { background: var(--bad); }
+  .outcomes { display: grid; grid-template-columns: auto 1fr; gap: .1rem .45rem; margin: 0; font-size: .74rem; }
+  .outcomes dt { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+  .outcomes dd { margin: 0; color: var(--muted); }
+  .outcomes dt.crit { color: var(--good); }
+  .outcomes dt.won { color: var(--good); }
+  .outcomes dt.lost { color: var(--muted); }
+  .outcomes dt.botch { color: var(--bad); }
+  .outcomes dd strong { color: var(--bad); }
+  .step-none { margin: 0; padding: .4rem .6rem; border-top: 1px dashed var(--rule); font-size: .74rem; color: var(--muted); }
+
+  .order-foot { display: flex; gap: .4rem; padding: .45rem .6rem; border-top: 1px solid var(--rule); background: var(--band); }
+  .order-foot button { flex: 1; font-size: .8rem; padding: .25rem .5rem; }
 
   .move-card h3 { margin: 0; font-size: inherit; }
   .move-head {
@@ -1343,7 +1525,7 @@
   .move-row-label { font-weight: 600; font-size: .85rem; white-space: nowrap; }
 
   .hint { font-size: .8rem; }
-  .popup-gamble { padding: 0 .5rem .2rem 1rem; font-size: .78rem; color: var(--accent); }
+  .popup-onward { margin: .3rem .5rem 0; padding-top: .3rem; border-top: 1px solid var(--rule); font-size: .74rem; color: var(--muted); }
   .popup-dials { display: flex; flex-direction: column; gap: .2rem; padding: .1rem .5rem .2rem 1rem; }
   .popup-totals { display: flex; flex-wrap: wrap; gap: .25rem; padding: 0 .5rem .3rem 1rem; margin: 0; }
 

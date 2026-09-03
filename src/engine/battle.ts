@@ -6,7 +6,7 @@ import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type Un
 import { CELL_FEET, pathTo, reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, treesFor,
+  CLIMB, CLIMB_COST, gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, treesFor,
   type Grade, type LadderType, type Rung,
 } from './ladders.js';
 import {
@@ -759,7 +759,10 @@ export function rungAccess(state: BattleState, u: Unit, type: Exclude<LadderType
   const granted = gradeOf(state, u, type);
   if (index <= granted) return 'free';
   if (index > granted + 1) return 'locked';
-  return u.compelled ? 'locked' : 'reach';
+  if (u.compelled) return 'locked';
+  const climb = CLIMB[type];
+  if (climb === 'none') return 'locked';
+  return climb === 'action' ? 'buy' : 'reach';
 }
 
 /**
@@ -781,8 +784,14 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
   const access = type === 'cast' ? castAccess(u, spell!, index) : rungAccess(state, u, type, index);
   const { needsTarget, targets } = targetsFor(state, u, type, index, spell);
   let reason: string | null = blocked ?? (access === 'locked'
-    ? (u.compelled ? 'compelled' : type === 'cast' ? "above your tradition's reach" : 'above your grade')
+    ? (u.compelled ? 'compelled'
+      : type === 'cast' ? "above your tradition's reach"
+        : CLIMB[type] === 'none' ? 'above your grade — a posture is not climbed for'
+          : 'above your grade')
     : null);
+  if (!reason && access === 'buy' && u.actions < BASE_COST + CLIMB_COST) {
+    reason = `needs ${BASE_COST + CLIMB_COST} actions`;
+  }
   if (!reason && needsTarget && !targets.length) reason = 'no target';
   return { rung: rung.id, index, label: rung.label, detail: rung.detail, access, legal: reason === null, reason, needsTarget, targets };
 }
@@ -794,14 +803,18 @@ const BASE_COST = 1;
 function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
   const granted = gradeOf(state, u, type);
   const cap = type === 'cast' ? (u.tradition ? TRADITION_TIERS[u.tradition][spell!] : 1) : 3;
-  const reachable: Grade | null = granted < 3 && !u.compelled && granted < cap ? (granted + 1) as Grade : null;
-  const rolls = reachable !== null;
+  const climb = CLIMB[type];
+  const reachable: Grade | null =
+    granted < 3 && !u.compelled && granted < cap && climb !== 'none' ? (granted + 1) as Grade : null;
+  // Only a gambled climb has a check to weight; a bought one is a flat price.
+  const rolls = reachable !== null && climb === 'roll';
   const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
     : type === 'rally' && !u.disorder && !alliesWithin(state, u, 2).length ? 'no disorder to clear, and nobody near to lift'
       : null;
   const rungs = [1, 2, 3].map((i) => rungOption(state, u, type, i as Grade, spell, granted, blocked)) as [RungOption, RungOption, RungOption];
   return {
     type, spell, cost: BASE_COST,
+    climb, climbCost: climb === 'action' ? CLIMB_COST : 0,
     dials: {
       extra: Math.max(0, u.actions - BASE_COST),
       step: ACTION_BONUS,
@@ -863,19 +876,39 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   return offers;
 }
 
-function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wanted: Grade, weight = 0, tree?: Tree): Grade {
+/**
+ * The gamble, on the two ladders that gamble for their climb. Reaching costs no action: the
+ * price is what a botched order does to you.
+ *
+ * Critical success climbs one further, success takes the rung reached for, plain failure falls
+ * back to the grade with the act still happening. A critical failure is the one that bites —
+ * it drops a rung *below* the grade and costs 1 disorder. A unit already on the bottom rung has
+ * nothing to drop to, so it forfeits the act instead; two disorder for one botched order is
+ * more than the mistake is worth.
+ *
+ * `null` is that forfeit: the actions are spent and nothing happens.
+ */
+function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wanted: Grade, weight = 0, tree?: Tree): Grade | null {
   const granted = gradeOf(state, u, type);
   if (wanted <= granted) return wanted;
-  const label = type === 'cast' ? castRungOf(tree!, wanted as CastTier).label : rungOf(type, wanted).label;
+  const nameOf = (g: Grade) => (type === 'cast' ? castRungOf(tree!, g as CastTier).label : rungOf(type, g).label);
   const modifier = type === 'cast' ? spellAttackModifier(u) : reachModifier(u);
   const c = check(rng, modifier + weight + takeSaveBonus(u), reachDcFor(u, type, wanted, tree));
-  log(state, u, `${u.name} reaches for ${label}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  log(state, u, `${u.name} reaches for ${nameOf(wanted)}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   if (c.degree === 'critical-success') return Math.min(3, wanted + 1) as Grade;
   if (c.degree === 'success') return wanted;
-  const fallbackLabel = type === 'cast' ? castRungOf(tree!, granted as CastTier).label : rungOf(type, granted).label;
-  log(state, u, `${u.name} falls back to ${fallbackLabel}.`);
-  if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a botched order');
-  return granted;
+  if (c.degree === 'failure') {
+    log(state, u, `${u.name} falls back to ${nameOf(granted)}.`);
+    return granted;
+  }
+  addDisorder(state, u, 1, 'a botched order');
+  const dropped = granted - 1;
+  if (dropped < 1) {
+    log(state, u, `${u.name}'s order falls apart — nothing below ${nameOf(granted)} to fall to, and the act is forfeit.`);
+    return null;
+  }
+  log(state, u, `${u.name} drops past ${nameOf(granted)} to ${nameOf(dropped as Grade)}.`);
+  return dropped as Grade;
 }
 
 interface Escape { holder: Unit; degree: Degree }
@@ -1244,18 +1277,25 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
   if (opt.needsTarget && !opt.targets.some((t) => t.id === action.target)) {
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
-  const spend = commit(u, offer.label, offer.dials, offer.cost, action.spend, opt.access === 'reach');
+  // A bought climb is part of the price, not a dial: it comes off the activation before the
+  // dials get to see what is left.
+  const climbCost = opt.access === 'buy' ? offer.climbCost : 0;
+  const spend = commit(u, offer.label, offer.dials, offer.cost + climbCost, action.spend, opt.access === 'reach');
   u.castPool -= spend.pool;
   const weight = (spend.push + spend.pool) * ACTION_BONUS;
+  const total = offer.cost + climbCost + spent(spend);
+  if (climbCost) log(state, u, `${u.name} takes the time for ${opt.label} — ${climbCost} more action.`);
   if (offer.type === 'cast') {
     const tree = offer.spell!;
     const reached = reachFor(state, rng, u, 'cast', action.rung, weight, tree);
+    if (reached === null) return total;
     doCastAction(state, rng, u, tree, reached as CastTier, action.axis ?? 'effect', action, spend.roll * ACTION_BONUS);
   } else {
-    const reached = reachFor(state, rng, u, offer.type, action.rung, weight);
+    const reached = climbCost ? action.rung : reachFor(state, rng, u, offer.type, action.rung, weight);
+    if (reached === null) return total;
     perform(state, rng, u, offer, rungOf(offer.type, reached), action, spend);
   }
-  return offer.cost + spent(spend);
+  return total;
 }
 
 /**
@@ -1341,7 +1381,10 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
     log(state, u, `${u.name}'s charge finds nobody.`);
     return option.actions;
   }
+  // A botched order on the charge still lands the unit in contact — it just arrives with no
+  // exchange to show for the ground it crossed.
   const reached = reachFor(state, rng, u, 'fight', wanted, push * ACTION_BONUS);
+  if (reached === null) return cost;
   melee(state, rng, u, foe, rungOf('fight', reached), roll * ACTION_BONUS);
   return cost;
 }

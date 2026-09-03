@@ -1498,3 +1498,55 @@ target's current Defence. This lets Guard, Defense buffs, exposure, disorder, an
 affect Blast through the same `defenceOf` calculation as Fight and Shoot. Blast's effect-push
 bonus changes from a -1/-2 save penalty to a +1/+2 attack bonus; range and duration retain
 their generic +2/+4 effect-roll bonus. Controlling remains a target Will save against spell DC.
+
+### The per-ladder climb split — 2026-09-03
+
+Decision (Mark): one uniform "reach is a free gamble" rule was wrong, because reaching was never
+a decision. Measured across all 38 combatants against the real `degreeOf`, a reach came out at
+10.5% critical success, 48.8% success, 35.3% failure, 5.4% critical failure — a 59% shot at a
+better rung for an expected cost of ~0.01 disorder, since only a critical failure cost anything
+at all. Nothing on the board made declining correct, so the panel could not make the choice
+legible: there was no choice in it.
+
+The four ladders no longer pay for the climb the same way, because they do not mean the same
+thing by "one rung up" (`CLIMB` in `src/engine/ladders.ts`):
+
+- **Fight — free gamble.** Press and Overrun ride an exchange that is happening anyway.
+- **Cast — free gamble**, plus the caster's own pool. Unchanged; it already had its own economy.
+- **Shoot — one more action, no roll.** Aim means taking time, not taking a chance. This is the
+  change that makes a shooter's second action a real decision: +2 on the shot, or the band.
+- **Rally — one more action, no roll.** Inspire lifts every friendly unit within 2, which is far
+  too strong to hand over on a 59% freebie.
+- **Guard — no climb at all.** A posture is not reached for. Grade gates the rung; Guard's spare
+  actions go where its currency already is, on Defence.
+
+Failure on the two ladders that still gamble now bites (`reachFor`): plain failure falls back to
+grade with the act still happening, and a **critical failure costs 1 disorder and drops a rung
+below the grade**. A unit already on the bottom rung has nothing to drop to, so it **forfeits the
+act** rather than take a second point of disorder — Mark's call, over the alternative of 2
+disorder. For Cast, whose base is always Tier 1, that means a critically failed push always
+forfeits the cast.
+
+Sequencing, also Mark's call: **commit, then gamble, then resolve.** Weight can land on the climb
+check, so the actions have to be committed before the d20 is thrown; committing after would make
+the purchase trivial. The left panel is built to that order.
+
+Judgment calls taken here without asking:
+
+- A charge whose Fight climb critically fails still lands the unit in contact — it arrives with
+  no exchange to show for the ground it crossed, rather than having the movement refunded.
+- A bought climb comes off the top of the activation, before the dials see the budget, so
+  `rungDials` narrows `extra` by `climbCost`. A shooter with 3 actions therefore gets one
+  weight action on an Aim, not two.
+- A bought rung the unit cannot afford reads `needs 2 actions` rather than being hidden, so the
+  price is visible on a rung that is out of reach for want of an action rather than for want of
+  grade.
+
+Open:
+
+- 5.4% is still a rare penalty. If reaching on Fight still feels automatic in play, the next
+  lever is plain failure costing something, not a harsher critical.
+- Withdraw's dials still live in the board popup rather than in the left panel's ledger. Every
+  other act composes on the left now; Withdraw should follow.
+- Shoot and Rally have no use for the `push` dial any more. It is correctly switched off, but
+  that leaves those two ladders with only the roll dial, which may be too thin a menu.
