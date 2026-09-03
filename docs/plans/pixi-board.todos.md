@@ -824,3 +824,40 @@ either tsconfig.
 - Open: cast-line motes are the old swirl on glow sprites, not a recipe yet; no heat-shimmer
   `DisplacementFilter` under the blast; the flare/ring primitives could use a hand-painted
   pass; the smoke still sits on the piece for its first half-second.
+- Sheet registration: the six atlases all declared `anchor: {0.5, 0.5}` per frame, and none of
+  them held it. Measured on a luminance²-weighted core, the per-sheet means ran from
+  (0.485, 0.393) on buff-defenses to (0.558, 0.469) on buff-attacks, and the core wandered
+  0.10–0.20 of a frame *within* a sheet — every one of them creeping upward as the effect
+  grew, because an effect grows more up than down inside a fixed box. `spell-vfx-frames.mjs
+  register` measures each frame and translates it by whole pixels so its core lands on the
+  frame centre; the sheets in `public/art/` are the registered ones and the claim in the JSON
+  is now true (means exactly 0.500, residual spread under one pixel). Judgment calls: the
+  weight is alpha × luminance², so the hot core outvotes the smoke and the outermost sparks;
+  a frame too faint to measure (alpha mass under 0.02 — the first and last of most sheets)
+  carries its neighbour's offset rather than chasing a centroid that rides on a few dozen
+  stray pixels; shifts are held back from pushing content off the frame, which no frame
+  needed — every sheet had margin. The pass is idempotent: a second run measures the centre
+  it just created and shifts by nothing.
+- Stabilizing moved the composition, because a sheet that sat high was buying lift for free.
+  Effects centre on the cell; a piece stands on it (`ART_ANCHOR_Y` = 0.8), so its body is
+  above the cell centre and a centred effect now reads low against it. Defense is where this
+  shows: the ward used to enclose the piece and now sits at its feet, and the `y: [-0.08]`
+  its four tracks already carry is no longer enough on its own. That lift is about the token,
+  not the sheet, so it belongs in the recipe — open.
+- The ward kept wobbling in x after that pass, because a centroid is the wrong landmark for
+  it: the ward's glow is a broad symmetric haze that outweighs the shield and stays put while
+  the shield slides inside it, so the core read as rock-steady (spread 0.007) while the shape
+  moved. Its rim is no better a landmark — the ward shatters right-hand-side first, so a rim
+  centroid slides left whether or not the shield does. `register --sym-x` takes x from the
+  frame's axis of mirror symmetry instead, which is what "centred" means for an object drawn
+  symmetric, and needs no landmark to be found. Frames 3–11 went from an axis spread of 3.5px
+  (61.5–65.0, with a 3px lurch between frames 8 and 9 — and frame 9 is the one the recipe
+  holds for 280ms) to 0.5px (64.0–64.5). y still comes from the core, and x and y are gated
+  separately so a shattering frame keeps its sound centroid height after it has stopped
+  having an axis. Only buff-defenses is registered this way: a crescent and a wing are not
+  symmetric objects, and asking for their axis would be meaningless.
+- Cross-correlating each frame against its neighbour was tried for this and rejected. On an
+  effect that grows it mistakes growth for movement: chained over a sheet it claimed 38px of
+  drift in blast and 8px in control, both of which are correctly registered.
+- Open: buff-movement frame 11 is a dud (alpha mass 0.016 between neighbours at 0.089 and
+  0.030) and `movement()` plays it through `range(10, 12)`, so the wing blinks.
