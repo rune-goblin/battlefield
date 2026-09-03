@@ -89,7 +89,7 @@
     transition: width .16s ease, padding .16s ease, font-size .16s ease, opacity .16s ease;
   }
   .unit-card img {
-    width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: 5px; background: var(--band);
+    width: 2.5rem; height: 2.5rem; object-fit: contain;
     transition: width .16s ease, height .16s ease;
   }
   .unit-card .name { font-weight: 600; line-height: 1.15; }
@@ -119,7 +119,7 @@
     width: 3.2rem; filter: grayscale(1); opacity: .55;
     text-shadow: 0 1px 2px var(--paper);
   }
-  .chit img { width: 2rem; height: 2rem; object-fit: cover; border-radius: 4px; background: var(--band); }
+  .chit img { width: 2rem; height: 2rem; object-fit: contain; }
   .chit .name { font-size: .6rem; line-height: 1.1; text-align: center; }
 
   .pip-row { display: flex; gap: 2px; }

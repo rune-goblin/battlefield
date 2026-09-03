@@ -484,13 +484,15 @@
   .statcell dd { margin: 0; font-size: .92rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .plate { grid-area: plate; display: flex; flex-direction: column; gap: .3rem; }
-  .portrait { position: relative; aspect-ratio: 1; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--band); display: grid; place-items: center; }
-  .portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* The miniature stands on the card itself: the art is cut out, so a plate behind it would
+     only put a box round a piece that has none on the board. */
+  .portrait { position: relative; aspect-ratio: 1; display: grid; place-items: center; }
+  .portrait img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .portrait .cog { font-size: 1.6rem; color: var(--muted); }
   .level {
     position: absolute; top: 0; right: 0; min-width: 1.15rem; padding: .05rem .2rem;
     font-size: .68rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;
-    color: var(--paper); background: var(--side); border-radius: 0 5px 0 6px;
+    color: var(--paper); background: var(--side); border-radius: 4px;
   }
   .deploy { width: 100%; padding: .2rem .1rem; font-size: .8rem; border-radius: 5px; font-variant-numeric: tabular-nums; }
   .deploy:not(.set) { color: var(--accent); border-color: var(--accent); font-weight: 600; }
