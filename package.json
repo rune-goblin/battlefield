@@ -15,7 +15,8 @@
     "import:troops": "node scripts/import-troops.mjs",
     "import:official": "node scripts/import-official.mjs",
     "import:engines": "node scripts/import-engines.mjs",
-    "import:art": "node scripts/import-art.mjs"
+    "import:art": "node scripts/import-art.mjs",
+    "bake:terrain": "node scripts/bake-terrain.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",

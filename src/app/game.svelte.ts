@@ -1,5 +1,5 @@
 import {
-  act, at, COMBATANTS, createBattle, endActivation as endActivationEngine, ENGINES, generateBoard, OFFICIAL, parse, randomRng, select,
+  act, at, COMBATANTS, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, OFFICIAL, parse, randomRng, select,
   type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
 } from '../engine/index.js';
 
@@ -155,6 +155,12 @@ export function takeAction(action: Action) {
 export function selectUnit(id: string) {
   if (!game.battle) return;
   game.battle = select(game.battle, id);
+  save();
+}
+
+export function deselectUnit() {
+  if (!game.battle) return;
+  game.battle = deselect(game.battle);
   save();
 }
 

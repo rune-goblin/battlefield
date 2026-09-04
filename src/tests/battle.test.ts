@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf,
+  act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
   endActivation, isOutflanked, isRouted, isShaken, isStanding, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
   pushReach, rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
@@ -10,7 +10,7 @@ import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
-import type { Grade, LadderType } from '../engine/ladders.js';
+import { CLIMB_STEP, rungOf, type Grade, type LadderType } from '../engine/ladders.js';
 import { levelDc } from '../engine/tables.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
@@ -116,6 +116,13 @@ describe('alternating activation', () => {
     const s = burn(select(state, 'u1'), 'u1');
     expect(s.activated).toEqual(['u1']);
     expect(activeUnit(s)!.side).toBe('defender');
+  });
+
+  it('takes back a pick until an action is spent, then holds it', () => {
+    const { state } = battle([]);
+    expect(deselect(select(state, 'u1')).active).toBe(null);
+    const begun = guardOn(select(state, 'u1'), 'u1');
+    expect(deselect(begun).active).toBe('u1');
   });
 
   it('gives each activation three actions and hands over when they are spent', () => {
@@ -292,29 +299,76 @@ describe('climbing above your grade', () => {
     expect(unit(reachPress(15), 'u0').disorder).toBe(0);
   });
 
-  it('failure falls back to the granted rung and still acts', () => {
+  // A climb either happens or it does not: there is no lesser rung to land on.
+  it('failure loses the act outright, at no further cost', () => {
     const s = reachPress(4);
-    expect(said(s, 'falls back to Strike')).toBe(true);
+    expect(said(s, 'comes to nothing')).toBe(true);
     expect(unit(s, 'u0').disorder).toBe(0);
-    expect(unit(s, 'u0').attacked).toBe(true);
-  });
-
-  // The judgment call: a botched order is worth a rung, not just a fallback. A unit with a
-  // rung below its grade drops to it; one already on the bottom has nothing to drop, so it
-  // loses the act instead of taking a second point of disorder.
-  it('critical failure drops a rung below the grade and costs a point of disorder', () => {
-    const s = reachPress(1, 2);
-    expect(said(s, 'drops past Press to Strike')).toBe(true);
-    expect(unit(s, 'u0').disorder).toBe(1);
-    expect(unit(s, 'u0').attacked).toBe(true);
-  });
-
-  it('critical failure forfeits the act outright when there is no rung below the grade', () => {
-    const s = reachPress(1, 1);
-    expect(said(s, 'the act is forfeit')).toBe(true);
-    expect(unit(s, 'u0').disorder).toBe(1);
     expect(unit(s, 'u2').wounds).toBe(0);
     expect(unit(s, 'u0').attacked).toBe(false);
+  });
+
+  it('critical failure loses the act and costs a point of disorder, at any grade', () => {
+    for (const grade of [1, 2] as Grade[]) {
+      const s = reachPress(1, grade);
+      expect(said(s, 'comes to nothing')).toBe(true);
+      expect(unit(s, 'u0').disorder).toBe(1);
+      expect(unit(s, 'u2').wounds).toBe(0);
+      expect(unit(s, 'u0').attacked).toBe(false);
+    }
+  });
+
+  // Every rung carries the DC of the climb to itself, not the offer's nearest one: a caster may
+  // gamble for two tiers at once, and the further gamble is the dearer by CLIMB_STEP.
+  it('prices the climb to each rung, with a step for every rung past the first', () => {
+    const caster: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
+    const s = createBattle({
+      units: [
+        { card: caster, side: 'attacker', square: 'c2' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    // A tradition caps how high each tree pushes; this needs one the caster may take to Tier 3.
+    const deep = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.rungs[2].access === 'reach')!;
+    const [t1, t2, t3] = deep.rungs;
+    expect(t1.reachDc).toBeNull();
+    expect(t3.reachDc! - t2.reachDc!).toBe(2 + CLIMB_STEP);
+
+    // A ladder only ever offers one rung above the grade, so the step never bites there.
+    const f = availableActions(engaged(), 'u0').find((o) => o.type === 'fight')!;
+    const climbed = f.rungs.find((r) => r.access === 'reach')!;
+    expect(climbed.reachDc).toBe(f.reachDc);
+  });
+
+  // The bite is on the outcome a player actually sees. A one-rung climb fails 35% of the time
+  // and costs nothing for it; a two-rung climb fails nearly half the time and costs disorder,
+  // which is the only way the further gamble reads as a bet rather than a free lottery ticket.
+  it('costs a critically failed cast a point of disorder on top of the cast', () => {
+    const caster: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
+    const start = () => {
+      const s = createBattle({
+        units: [
+          { card: caster, side: 'attacker', square: 'c2' },
+          { card: kobolds, side: 'defender', square: 'c7' },
+        ],
+        board: openBoard(),
+      });
+      place(s, 'u1', 'c3');
+      return s;
+    };
+    const deepest = (s: BattleState) =>
+      availableActions(s, 'u0').find((o) => o.type === 'cast' && o.rungs[2].access === 'reach')!;
+    const cast = (rung: Grade, roll: number) => {
+      const s = start();
+      const o = deepest(s);
+      const target = o.rungs[rung - 1].targets[0]?.id;
+      return unit(act(s, { type: 'cast', rung, spell: o.spell!, target, unit: 'u0' }, scriptedRng([roll, 10, 10])), 'u0');
+    };
+
+    // A natural 1 is a critical failure whatever the DC: the cast is lost and costs 1 disorder.
+    expect(cast(2, 1).disorder).toBe(1);
+    expect(cast(3, 1).disorder).toBe(1);
   });
 
   it('a grade-3 unit has nothing to climb to', () => {
@@ -628,7 +682,7 @@ describe('actions buy weight, not repetition', () => {
       board: openBoard(),
     });
     place(p0, 'u1', 'c3');
-    const blasted = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const blasted = act(p0, { type: 'cast', rung: 1, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(blasted, 'u0').attacked).toBe(true);
     expect(offer(blasted, 'fight', 'u0').rungs[0].legal).toBe(false);
   });
@@ -642,12 +696,13 @@ describe('actions buy weight, not repetition', () => {
   });
 
   it('puts each action after the first on the push check instead', () => {
-    // Fight 2 reaching for Overrun: DC 24 against Will +17, so a 3 needs the full commitment.
-    const reach = (push: number) => {
+    // Fight 2 reaching for Overrun: DC 24 against Will +17, so a 3 needs the full commitment
+    // for the climb to land at all — short of that the act comes to nothing.
+    const lands = (push: number) => {
       const s = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0', spend: { push } }, scriptedRng([3, 5]));
-      return s.log.some((e) => e.text.includes('falls back')) ? 2 : 3;
+      return !s.log.some((e) => e.text.includes('comes to nothing'));
     };
-    expect([reach(0), reach(1), reach(2)]).toEqual([2, 2, 3]);
+    expect([lands(0), lands(1), lands(2)]).toEqual([false, false, true]);
   });
 
   it('takes 0.50, 0.60 and 0.80 wounds a turn on one, two and three actions in an even matchup', () => {

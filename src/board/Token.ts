@@ -10,6 +10,11 @@ import type { TokenReaction } from './vfx/Effect.js';
  * an already-lit piece. */
 export type TokenRing = 'active' | 'selected' | 'flash';
 
+/** Selection-stage emphasis, drawn as the piece's own scale: 'ready' breathes to say this
+ * unit can still be picked to activate, 'spent' sits small and still because its turn has
+ * gone. Both end the moment the activation locks. */
+export type TokenPick = 'ready' | 'spent';
+
 export interface UnitTokenModel {
   kind: 'unit';
   id: string;
@@ -29,6 +34,7 @@ export interface UnitTokenModel {
    * a guarding unit keeps until it acts again. */
   prop: ActionIcon | null;
   ring: TokenRing | null;
+  pick: TokenPick | null;
 }
 
 /** An abandoned or captured siege engine, standing alone on its square. No unit fields. */
@@ -43,8 +49,8 @@ export interface EngineTokenModel {
 
 export type TokenModel = UnitTokenModel | EngineTokenModel;
 
-/** The piece's footprint, as a fraction of cell size: how wide the miniature draws, where the
- * markers hang off it, and TokenLayer's hit-test radius. */
+/** The piece's footprint, as a fraction of cell size: how wide the miniature draws and where
+ * the markers hang off it. Clicks are answered by the hex, not the footprint — see `hit.ts`. */
 export const TOKEN_FOOTPRINT_RATIO = 0.82;
 
 // proto: pf2e-trooper's *_strategy.webp renders put the miniature's own base ellipse about
@@ -74,6 +80,10 @@ const FLAG_TEXT_Y = -0.07;
 const LIFT_SCALE = 1.08;
 const GHOST_ALPHA = 0.26;
 const PULSE_PERIOD_MS = 1400;
+/** The selection breath: slower than the ring's glow, so the two read as separate signals. */
+const PICK_PERIOD_MS = 1800;
+const PICK_SWELL = 0.07;
+const SPENT_SCALE = 0.8;
 const FLASH_PERIOD_MS = 260;
 const MOVE_TWEEN_MS = 200;
 // A routed walk holds a steady pace per cell rather than stretching one tween over the whole
@@ -172,6 +182,11 @@ export class Token extends PIXI.Container {
   private ringKind: TokenRing | null = null;
   private pulseStart = 0;
 
+  private pick: TokenPick | null = null;
+  private pickStart = 0;
+  private pickScale = 1;
+  private reactScale = { x: 1, y: 1 };
+
   private size = 0;
   private broken = false;
   private reaction: { spec: TokenReaction; start: number } | null = null;
@@ -194,6 +209,12 @@ export class Token extends PIXI.Container {
 
   get isDragging(): boolean {
     return this.dragging;
+  }
+
+  /** The cell this piece occupies on the board, which a drag or a move tween does not change
+   * until the model does. Null before its first `draw`. */
+  get cell(): string | null {
+    return this.model?.cell ?? null;
   }
 
   // Named `draw`, not `render` — PIXI.DisplayObject already owns `render(renderer)` as part
@@ -228,6 +249,7 @@ export class Token extends PIXI.Container {
       this.updateProp(null, size);
     }
 
+    this.setPick(model.kind === 'unit' ? model.pick : null);
     this.drawRoutArrow(routed, model.side, size, theme);
     this.drawRing(model.ring, model.side, size, theme);
 
@@ -282,7 +304,7 @@ export class Token extends PIXI.Container {
    * a single snap in practice. No separate tween either way. */
   endDrag(grid: Grid, size: number): void {
     this.dragging = false;
-    this.scale.set(1);
+    this.applyScale();
     this.alpha = 1;
     this.zIndex = 0;
     if (this.model) this.place(this.model, grid, size);
@@ -301,6 +323,7 @@ export class Token extends PIXI.Container {
     }
     if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
     else if (this.ringKind) this.breathe();
+    if (this.pick === 'ready') this.breathePick();
     if (this.reaction) this.animateReaction();
   }
 
@@ -325,7 +348,8 @@ export class Token extends PIXI.Container {
     const u = Math.min(1, (performance.now() - start) / spec.duration);
     if (u >= 1) {
       this.reaction = null;
-      if (!this.dragging) this.scale.set(1);
+      this.reactScale = { x: 1, y: 1 };
+      this.applyScale();
       this.pivot.set(0, 0);
       this.applyFilters();
       return;
@@ -338,12 +362,37 @@ export class Token extends PIXI.Container {
     let sy = 1;
     if (spec.squash) { sx += spec.squash * w; sy -= spec.squash * w; }
     if (spec.pop) { sx += spec.pop * w; sy += spec.pop * w; }
-    this.scale.set(sx, sy);
+    this.reactScale = { x: sx, y: sy };
+    this.applyScale();
     this.pivot.set(
       spec.shake ? Math.sin(u * 42) * (1 - u) * spec.shake * this.size : 0,
       spec.hop ? bounce * spec.hop * this.size : 0,
     );
     if (this.flashFilter) this.flashFilter.alpha = (1 - u) ** 2;
+  }
+
+  private setPick(pick: TokenPick | null): void {
+    if (pick === this.pick) return;
+    this.pick = pick;
+    this.pickStart = performance.now();
+    if (pick === 'ready') this.breathePick();
+    else {
+      this.pickScale = pick === 'spent' ? SPENT_SCALE : 1;
+      this.applyScale();
+    }
+  }
+
+  private breathePick(): void {
+    const t = ((performance.now() - this.pickStart) % PICK_PERIOD_MS) / PICK_PERIOD_MS;
+    this.pickScale = 1 + PICK_SWELL * Math.sin(t * Math.PI * 2);
+    this.applyScale();
+  }
+
+  /** The piece's two scales — the selection breath and a spell's recoil — multiplied into the
+   * one container scale. A piece in hand keeps its lift instead. */
+  private applyScale(): void {
+    if (this.dragging) return;
+    this.scale.set(this.reactScale.x * this.pickScale, this.reactScale.y * this.pickScale);
   }
 
   private applyFilters(): void {

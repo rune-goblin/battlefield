@@ -31,6 +31,14 @@ export const CLIMB: Record<LadderType, ClimbMode> = {
 /** What the climb costs on an `action` ladder, over and above the act's own one. */
 export const CLIMB_COST = 1;
 
+/**
+ * Added to the DC for every rung of climb past the first. The four ladders never offer more
+ * than one rung above a grade, so this only ever bites on Cast, which may push straight from
+ * its free base to Tier 3 — and pushing two tiers in one cast should be markedly harder than
+ * pushing one, not merely the two points Tier 3 carries on its own account.
+ */
+export const CLIMB_STEP = 4;
+
 export type Grade = 1 | 2 | 3;
 export type Grades = Record<Exclude<LadderType, 'cast'>, Grade>;
 

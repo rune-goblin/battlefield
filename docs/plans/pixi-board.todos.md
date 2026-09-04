@@ -861,3 +861,59 @@ either tsconfig.
   drift in blast and 8px in control, both of which are correctly registered.
 - Open: buff-movement frame 11 is a dud (alpha mass 0.016 between neighbours at 0.089 and
   0.030) and `movement()` plays it through `range(10, 12)`, so the wing blinks.
+
+## Terrain scatter (2026-09-04)
+
+Two chroma-keyed sheets replace the procedural tiling patterns. `art-src/terrain/*.png` are the
+sources; `npm run bake:terrain` writes `public/art/terrain/*.webp` and `frames.json`, and only
+the baked files are read at runtime. Judgment calls made while wiring it:
+
+- **The key comes out offline.** The sheets ship as opaque RGB on magenta, which is what makes
+  them editable and exactly what a lossy codec destroys, so keying at load time meant shipping
+  PNG: 4.5MB for the two. Baking the alpha in first lets WebP carry it losslessly beside lossy
+  RGB — 937KB, a 79% cut — and spares every page load a key pass and a flood fill over 1.5M
+  pixels. `WEBP_QUALITY` in the script is the knob. The sheets are also 2.7× oversampled
+  against their on-screen size at a typical zoom, so halving them is the next lever if wanted.
+- **Alpha comes from magenta-ness, not from distance to the key colour.** Distance is not
+  linear in how much key a pixel is mixed with: a half-and-half blend of the near-black outline
+  with magenta still lands 160 away from it, reads as solid, and rims every sprite in purple —
+  which is what the first pass did. `(r + b) / 2 − g`, over the same for the key, is linear in
+  the mix. Both sheets are strongly bimodal on it: art at or below 0.2, background at 0.94 and
+  up, only the antialiased fringe between. The knee at the art end is what keeps the badlands'
+  red-brown — the one part of the palette with real magenta in it — fully opaque.
+- **The transparent background is bled over before encoding.** WebP quantizes RGB everywhere,
+  including where alpha is 0, so a sprite left sitting on raw magenta gets its halo handed back
+  at every edge.
+- **Frames come from the ink, not from the sheets' 8×8 grid.** Several tree crowns overrun
+  their cell: cutting on the pitch clipped them and pulled the neighbour's edge in — six of the
+  sixteen tree frames came out exactly cell-sized, the signature of a clip. Flood-filling every
+  blob and gathering blobs by the cell their centre lands in gives exactly 16 frames per
+  quadrant on both sheets, 88–154px, none touching a cell edge. It also keeps a swamp tuft with
+  its pads and pebbles as the one composition it was drawn as; that quadrant alone is 34 blobs.
+  Sheet 2 was delivered at 1254² rather than the 1536² its geometry was specified at, which
+  cost nothing — nothing in the pipeline reads a fixed pixel size.
+- **Sheet 2's desert, water and plains are ground cover, not props.** They are whole patches of
+  surface and want to overlap into a continuous field, so they take a wider footprint, a
+  smaller gap, no shadow, and paint under everything else — a wood stands on its field rather
+  than under it. Badlands are drawn in three-quarter view with one light direction, so like the
+  swamp reeds they only mirror; every other quadrant is top-down and turns freely.
+- **Terrain mapping.** open → plains, forest → trees, swamp → swamp, water → water, shallows →
+  the water art at a thinner, smaller setting (broken water over the pale bed). Settlement
+  keeps its procedural pattern — there is no art for it. Boulders and mounds hang off elevation
+  rather than terrain, since `SquareTerrain` has no mountain or hill: level 1 gets mounds,
+  level 2 and up gets boulders. Open: whether a level −1 pit should get anything, and whether
+  boulders on a forest cell should thin the trees rather than sit among them.
+- **Desert and badlands have nowhere to land.** Neither is a `SquareTerrain`, and adding one is
+  a rules change — movement, cover, the lot — not a rendering change. Both are baked, named and
+  styled, and go live the moment the vocabulary grows. Open.
+- **Scenery is never masked to its area.** A tree cut in half by a straight line reads as a
+  rendering fault; the same tree leaning over the boundary reads as a wood that spills into the
+  field. Containment is a placement constraint instead: a piece is rejected unless its outline
+  sits inside the area dilated by 16px. The outline sampled is the frame's inscribed ellipse,
+  not its corners — every quadrant is blob-shaped, and the corners of a tree crown's bounds are
+  empty, so testing them pushed scenery needlessly far off every boundary.
+- Placement is seeded per cell (`style:cell`), so a wood grows in the same shape on every
+  redraw and simply scales with the board. Jitter is a fraction of the cell pitch; the 16px
+  allowance is not, so a rejection can flip at the extremes of the zoom range.
+- Dark theme tints scenery to 58% — the sheets' light olive and sand glare against the dark
+  terrain fills at full brightness.

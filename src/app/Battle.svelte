@@ -5,13 +5,13 @@
     type ActionOffer, type CastTier, type ChargeOption, type Dial, type Grade, type LadderType, type MoveReach, type RungOption, type Tree,
     type RungTarget, type Spend, type SpendDials, type TargetOffer, type TargetRef, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
-  import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type UnitTokenModel } from '../board/index.js';
+  import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import RadialMenu from './RadialMenu.svelte';
   import ArmyReel from './ArmyReel.svelte';
-  import { backToSetup, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
+  import { backToSetup, deselectUnit, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
   const b = $derived(game.battle!);
   // Only an army the player has actually chosen is active. The engine falls back to the first
@@ -92,6 +92,9 @@
   const ACCESS_BADGE: Record<RungOption['access'], string> = {
     free: 'granted', buy: '+1 action', reach: 'gamble', locked: 'locked',
   };
+  /** How many rungs of climb this is. One is the cheap gamble; two is the real bet. */
+  // A climb either happens or it does not, so the bar is a two-colour argument: what lands
+  // against what is thrown away. The critical keeps a darker slice because it costs more.
   const OUTCOMES = [
     ['critical-success', 'crit'], ['success', 'won'], ['failure', 'lost'], ['critical-failure', 'botch'],
   ] as const;
@@ -743,6 +746,18 @@
     return u.guard ? 'block' : null;
   }
 
+  // The acting piece's own hex, in its side's colour: once a unit is picked, the board stops
+  // offering the choice and marks the one that was made.
+  const selectedHex = $derived(active ? { cell: notation(active.square), side: active.side } : null);
+
+  /** Which of the acting side's pieces are still yours to pick. It runs only while the
+   * choice is open: the moment a piece is selected the board goes still and every piece
+   * returns to full size, with the selected hex carrying the answer instead. */
+  function pickOn(u: Unit): TokenPick | null {
+    if (b.active || u.side !== b.pending) return null;
+    return b.activated.includes(u.id) ? 'spent' : 'ready';
+  }
+
   const tokens = $derived.by<TokenModel[]>(() => [
     ...b.units.filter((u) => u.status === 'active').map((u): UnitTokenModel => ({
       kind: 'unit',
@@ -757,6 +772,7 @@
       quality: u.quality,
       engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
       prop: propOn(u),
+      pick: pickOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
     })),
     // Abandoned and captured engines stand alone on the square they were left.
@@ -835,7 +851,12 @@
     if (p) {
       if (p.cells.includes(e.cell)) applyProp(p, e.cell);
       else stepBack();
+      return;
     }
+    // Nothing open and bare ground under the click: the pick goes back and the side is
+    // choosing again. A unit that has already spent an action keeps its turn — `deselect`
+    // refuses — so the click reads as a miss rather than losing what was done.
+    deselectUnit();
   }
   function onToken(e: BoardEventOf<'token'>) {
     // Before an army is chosen the board is the second way into the army reel.
@@ -862,6 +883,9 @@
     }
     // Your own piece is the verbs; anyone else's is what you can do to them.
     if (e.id === active?.id) { radial = { cell }; return; }
+    // Until an action is spent, one of your own pieces still waiting to go is a change of
+    // mind, not a target. Verb-first still aims at an ally: `arming` above takes the click.
+    if (u && !locked && u.side === b.pending && !b.activated.includes(u.id)) { pickUnit(u, false); return; }
     aimAt({ kind: 'unit', id: e.id }, cell, u?.name ?? e.id);
   }
   // A wall has no cell of its own; its popup opens over the first of the two it divides.
@@ -892,12 +916,6 @@
   const grantedRungLabel = (offer: ActionOffer) =>
     offer.type === 'cast' ? castRungOf(offer.spell!, offer.granted as CastTier).label : rungOf(offer.type, offer.granted).label;
   const aboveLabel = (type: Exclude<LadderType, 'cast'>, index: number) => rungOf(type, Math.min(3, index + 1) as Grade).label;
-  /** Where a botched order lands: one rung under the grade it would otherwise fall back to. */
-  const grantedBelow = (offer: ActionOffer) => {
-    const below = Math.max(1, offer.granted - 1) as Grade;
-    return offer.type === 'cast' ? castRungOf(offer.spell!, below as CastTier).label : rungOf(offer.type, below).label;
-  };
-
   const status = (u: Unit) => [
     isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : '',
     u.guard ? `${rungOf('guard', u.guard.rung).label.toLowerCase()} +${u.guard.defence} Defence` : '',
@@ -1011,6 +1029,7 @@
       {anchored}
       {shot}
       {cast}
+      selected={selectedHex}
       draggable={active?.id ?? null}
       onhover={(e) => { hoveredCell = e.cell; }}
       oncell={active ? onCell : undefined}
@@ -1131,6 +1150,23 @@
               <span class="access {opt.access}">{ACCESS_BADGE[opt.access]}</span>
             </span>
             <span class="muted">{opt.detail}</span>
+            {#if opt.access === 'reach' && opt.reachDc !== null}
+              {@const o = odds(offer.reachModifier, opt.reachDc)}
+              {@const lands = o['critical-success'] + o.success}
+              <!-- Two gambles on one ladder are not the same gamble. The bar is the whole
+                   argument for choosing between them: how much green, how much red. -->
+              <span class="stake">
+                <span class="odds bar" aria-hidden="true">
+                  {#each OUTCOMES as [key, cls] (key)}
+                    {#if o[key]}<span class="slice {cls}" style="flex: {o[key]}"></span>{/if}
+                  {/each}
+                </span>
+                <span class="stake-dc">DC {opt.reachDc}</span>
+                <span class="won">{lands}% lands</span>
+                <span class="botch">{100 - lands}% loses the {offer.type === 'cast' ? 'cast' : 'act'}</span>
+                <span class="botch">{o['critical-failure']}% of that with 1 disorder</span>
+              </span>
+            {/if}
           </button>
         {/each}
         <p class="popup-onward">Weight and confirm it in the orders panel.</p>
@@ -1204,13 +1240,13 @@
 
           <!-- Step two, and only where the ladder gambles for its climb. Nothing here costs an
                action, so it is drawn as a wager slip rather than a ledger. -->
-          {#if opt.access === 'reach' && offer.reachDc !== null}
+          {#if opt.access === 'reach' && opt.reachDc !== null}
             {@const mod = offer.reachModifier + (sp.push + sp.pool) * d.step}
-            {@const o = odds(mod, offer.reachDc)}
+            {@const o = odds(mod, opt.reachDc)}
             {@const back = grantedRungLabel(offer)}
             <section class="step wager">
               <h4 class="step-head"><span class="step-n">2</span> Risk<span class="cost-chip free">no action</span></h4>
-              <p class="wager-roll"><b>d20{mod >= 0 ? '+' : ''}{mod}</b> against DC {offer.reachDc}</p>
+              <p class="wager-roll"><b>d20{mod >= 0 ? '+' : ''}{mod}</b> against DC {opt.reachDc}</p>
               <div class="odds" aria-hidden="true">
                 {#each OUTCOMES as [key, cls] (key)}
                   {#if o[key]}<span class="slice {cls}" style="flex: {o[key]}"></span>{/if}
@@ -1221,14 +1257,10 @@
                 <dd>One rung past {opt.label}.</dd>
                 <dt class="won">{o.success}%</dt>
                 <dd>{opt.label}, as reached for.</dd>
-                <dt class="lost">{o.failure}%</dt>
-                <dd>Back to {back}. The act still happens.</dd>
+                <dt class="botch">{o.failure}%</dt>
+                <dd><strong>Nothing.</strong> You keep {back} and spend the act reaching past it.</dd>
                 <dt class="botch">{o['critical-failure']}%</dt>
-                <dd>
-                  1 disorder, and
-                  {#if offer.granted > 1}it drops past {back} to {grantedBelow(offer)}.
-                  {:else}nothing below {back} to fall to — <strong>the act is forfeit</strong>.{/if}
-                </dd>
+                <dd><strong>Nothing, and 1 disorder</strong> for the botched order.</dd>
               </dl>
             </section>
           {:else}
@@ -1489,14 +1521,14 @@
   .odds { display: flex; height: .5rem; gap: 1px; margin-bottom: .4rem; border-radius: 2px; overflow: hidden; }
   .slice.crit { background: var(--good); }
   .slice.won { background: color-mix(in srgb, var(--good) 55%, var(--band)); }
-  .slice.lost { background: var(--rule); }
+  .slice.lost { background: color-mix(in srgb, var(--bad) 45%, var(--band)); }
   .slice.botch { background: var(--bad); }
   .outcomes { display: grid; grid-template-columns: auto 1fr; gap: .1rem .45rem; margin: 0; font-size: .74rem; }
   .outcomes dt { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
   .outcomes dd { margin: 0; color: var(--muted); }
   .outcomes dt.crit { color: var(--good); }
   .outcomes dt.won { color: var(--good); }
-  .outcomes dt.lost { color: var(--muted); }
+  .outcomes dt.lost { color: var(--bad); }
   .outcomes dt.botch { color: var(--bad); }
   .outcomes dd strong { color: var(--bad); }
   .step-none { margin: 0; padding: .4rem .6rem; border-top: 1px dashed var(--rule); font-size: .74rem; color: var(--muted); }
@@ -1525,6 +1557,15 @@
   .move-row-label { font-weight: 600; font-size: .85rem; white-space: nowrap; }
 
   .hint { font-size: .8rem; }
+  .stake {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .1rem .4rem;
+    margin-top: .25rem; font-size: .7rem; font-variant-numeric: tabular-nums;
+  }
+  .stake .bar { flex: 0 0 100%; height: .3rem; margin-bottom: .1rem; }
+  .stake-dc { font-weight: 600; }
+  .stake .won { color: var(--good); }
+  .stake .botch { color: var(--bad); }
+
   .popup-onward { margin: .3rem .5rem 0; padding-top: .3rem; border-top: 1px solid var(--rule); font-size: .74rem; color: var(--muted); }
   .popup-dials { display: flex; flex-direction: column; gap: .2rem; padding: .1rem .5rem .2rem 1rem; }
   .popup-totals { display: flex; flex-wrap: wrap; gap: .25rem; padding: 0 .5rem .3rem 1rem; margin: 0; }

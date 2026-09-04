@@ -5,9 +5,12 @@ export type Hit =
   | { kind: 'edge'; id: string }
   | { kind: 'cell'; id: string };
 
-/** A token's clickable disc, in board-local coordinates. Wave 4's TokenLayer supplies these. */
-export interface TokenBounds { id: string; x: number; y: number; radius: number }
-export type TokenBoundsProvider = () => readonly TokenBounds[];
+/** Where a piece stands. A click is answered by the hex it lands in and what that hex holds,
+ * never by the art: the miniature is drawn taller than its own cell and overhangs the one
+ * behind it, so hit-testing its pixels puts part of every piece out of reach and part of the
+ * ground behind it inside a piece. Wave 4's TokenLayer supplies these. */
+export interface TokenPlacement { id: string; cell: string }
+export type TokenPlacementProvider = () => readonly TokenPlacement[];
 
 /** An edge is live within this fraction of a cell of the segment. No handles. */
 export const EDGE_BAND = 0.18;
@@ -17,7 +20,7 @@ export interface HitOptions {
   size: number;
   /** Edges only compete when an edge brush is live, or in view mode. */
   edges?: boolean;
-  tokens?: TokenBoundsProvider;
+  tokens?: TokenPlacementProvider;
 }
 
 function segmentDistance(p: Point, a: Point, b: Point): number {
@@ -60,27 +63,20 @@ export function nearestEdge(point: Point, cell: Cell, grid: Grid, size: number):
   return edgeCandidates(point, cell, grid, size)[0] ?? null;
 }
 
-function tokenAt(point: Point, tokens: TokenBoundsProvider | undefined): string | null {
-  if (!tokens) return null;
-  let best: { id: string; distance: number } | null = null;
-  for (const t of tokens()) {
-    const distance = Math.hypot(point.x - t.x, point.y - t.y);
-    if (distance <= t.radius && (!best || distance < best.distance)) best = { id: t.id, distance };
-  }
-  return best?.id ?? null;
-}
-
-/** Hit priority: token, then edge (only when `edges` is set), then cell. */
+/** Hit priority: token, then edge (only when `edges` is set), then cell. A cell holding both a
+ * unit and an engine left on the ground answers with whichever the layer lists first, which is
+ * the unit — `setTokens` takes them in that order. */
 export function hitTest(point: Point, { grid, size, edges, tokens }: HitOptions): Hit | null {
-  const token = tokenAt(point, tokens);
-  if (token) return { kind: 'token', id: token };
-
   const cell = grid.fromPoint(point, size);
   if (!cell) return null;
+  const key = grid.key(cell);
+
+  const token = tokens?.().find((t) => t.cell === key);
+  if (token) return { kind: 'token', id: token.id };
 
   if (edges) {
     const edge = nearestEdge(point, cell, grid, size);
     if (edge?.inBand) return { kind: 'edge', id: edge.key };
   }
-  return { kind: 'cell', id: grid.key(cell) };
+  return { kind: 'cell', id: key };
 }

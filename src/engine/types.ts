@@ -179,6 +179,10 @@ export interface RungOption {
   access: 'free' | 'buy' | 'reach' | 'locked';
   legal: boolean;
   reason: string | null;
+  /** The DC of the climb to *this* rung, which is not the same for every rung an offer holds —
+   * Cast may gamble for two tiers at once, and the further one is dearer. `null` unless this
+   * rung is gambled for. */
+  reachDc: number | null;
   needsTarget: boolean;
   targets: RungTarget[];
 }

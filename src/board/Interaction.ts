@@ -1,7 +1,7 @@
 import type * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../engine/index.js';
 import { BRUSH_TERRAINS, eraseForm, isEdgeBrush, type Brush } from './brush.js';
-import { edgeCandidates, hitTest, nearestEdge, type Hit, type TokenBoundsProvider } from './hit.js';
+import { edgeCandidates, hitTest, nearestEdge, type Hit, type TokenPlacementProvider } from './hit.js';
 
 export interface Rect { x: number; y: number; width: number; height: number }
 
@@ -63,7 +63,7 @@ export interface InteractionOptions {
   /** The padded board rectangle in `viewport`'s own coordinates. Pan and zoom are clamped so
    * it never leaves the canvas: the map moves inside a window, it does not get lost. */
   content(): Rect | null;
-  tokens: TokenBoundsProvider;
+  tokens: TokenPlacementProvider;
   /** Connected cells of the same terrain as `cell`, for shift-click fill. */
   region(cell: string): string[];
   emit(event: BoardEvent): void;

@@ -4,7 +4,7 @@
     createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
     type GridSettings, type HighlightStyle, type Rect, type TokenModel,
   } from '../board/index.js';
-  import type { Board, Tree } from '../engine/index.js';
+  import type { Board, Side, Tree } from '../engine/index.js';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
@@ -25,7 +25,8 @@
     shot?: { from: string; to: string } | null;
     /** The cast being aimed, caster's cell to target's — see `BoardView.setCast`. */
     cast?: { from: string; to: string; tree: Tree } | null;
-    selected?: string | null;
+    /** The acting piece's hex, washed and outlined in its side's colour. */
+    selected?: { cell: string; side: Side } | null;
     /** In battle mode, the only token a press may pick up. Place mode ignores this. */
     draggable?: string | null;
     /** Full-bleed: fills its container instead of sitting in a capped, square-ish column. */

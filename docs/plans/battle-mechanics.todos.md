@@ -1550,3 +1550,137 @@ Open:
   other act composes on the left now; Withdraw should follow.
 - Shoot and Rally have no use for the `push` dial any more. It is correctly switched off, but
   that leaves those two ladders with only the roll dial, which may be too thin a menu.
+
+### Two gambles are not the same gamble — 2026-09-04
+
+Mark, on the Cast popup: "I just see gamble, gamble... isn't pushing twice as hard as pushing
+once?" Both true, and the second exposed a bug.
+
+**The bug.** `ActionOffer.reachDc` was computed once, for `reachable` (grade + 1), while
+`reachFor` rolled against the DC of the rung actually wanted. Every ladder offers only one rung
+above a grade, so nothing showed — except Cast, which pushes from its free base straight to Tier
+3. The panel displayed the Tier 2 DC while the engine rolled the Tier 3 one. `RungOption` now
+carries its own `reachDc`, and both the popup and the panel read it.
+
+**The rule.** `CLIMB_STEP = 4`, added to the DC for every rung of climb past the first. Only Cast
+can climb two at once, so nothing else moves. Measured on the three casters in the roster, a Tier
+3 push went from 70% lands / 5% botch to 40% lands / 15% botch — the failure rate exactly doubles
+and the botch rate triples, which is the "twice as hard" reading. +2 alone was a 10-point nudge.
+
+**The UI.** A bare GAMBLE badge said nothing about what was being risked. Every gamble row in the
+board popup now carries its own stake, under its own odds bar: the DC, the share that lands, and
+the share that botches with what the botch takes ("15% botched — 1 disorder, and the cast is
+lost"). Two gambles on one ladder now argue for themselves; the choice is the shape of the bar.
+
+Open: the stake phrase collapses the drop-a-rung and forfeit cases into one clause. Fine while
+Cast is the only ladder with two gambles, thin if another ever gets one.
+
+### Making the further gamble bite — 2026-09-04
+
+Mark: "the lost action should only be on critfail, or gamble 2? how can we make that bite? more
+gamble more risk? or the same"
+
+More gamble, more risk — but the critical could never carry it. A one-rung climb critically fails
+5% of the time and a two-rung climb 15%; neither is seen often enough to plan around. Plain
+failure fires at 35% and 45%, and it cost nothing at all. Free failure is what made every gamble
+worth taking regardless of how far it reached.
+
+So the penalty now scales with the distance climbed, on the outcome a player actually sees:
+
+- **Failure.** Falls back to grade, act still happens. Free on a one-rung climb. **1 disorder on
+  a two-rung climb.**
+- **Critical failure.** 1 disorder, and you fall back as far as you reached past — one rung below
+  grade for a one-rung climb, two below for a two-rung climb. No rung that far down means the act
+  is forfeit, as before.
+
+The second rule generalises what was there rather than changing it: only Cast can climb two rungs,
+and its grade is always 1, so a two-rung critical failure forfeited already. The rule now reads as
+one sentence ("you fall back as far as you reached past") instead of a special case.
+
+What this does to a Tier 3 cast, against Tier 2: 40% lands / 45% falls back for 1 disorder / 15%
+botched for 1 disorder and the cast, against 70% / 30% free / 5%. Expected cost goes from ~0.05
+disorder to ~0.60 against a Quality of 3–5. Tier 2 stays the cheap gamble and Tier 3 becomes a
+real bet, which is the contrast that makes choosing between them a decision.
+
+The stake line on each gamble row now prints both halves — "45% falls back — 1 disorder" against
+"30% falls back, free" — because the difference between the two rows is now mostly in that clause
+rather than in the odds bar.
+
+Decision (Mark): **movement Push stays exactly as it is** — same cost (every action left), same
+name. The earlier suggestion to rename it away from the ladder's "push" is dropped; the collision
+is tolerable now that the ladder's version is called a climb in the rules and the UI.
+
+### The climb is binary — 2026-09-04
+
+Mark: "I think it's easier just to say 'action fails' instead of 'reducing effectiveness.'"
+
+Right, and it collapses three rounds of accumulated patching into one sentence. A climb either
+happens or it does not:
+
+- Critical success — one rung further than reached for.
+- Success — the rung reached for.
+- **Failure — the act fails.** No lesser rung to land on; the action is spent regardless.
+- **Critical failure — the act fails, and 1 disorder.**
+
+Deleted with it: the fall-back-to-grade branch, the drop-N-rungs-below-grade branch, the
+forfeit-when-there-is-nothing-below special case, the two-step fallback disorder rule, and the
+`grantedBelow` / `stakeRung` / `stakeOf` helpers the UI needed to describe them. `reachFor` is
+now nine lines. The wager panel lists two failure rows that say the same thing twice, and the
+odds bar became a two-colour argument: what lands against what is thrown away.
+
+`CLIMB_STEP` stays, and is still how "a harder push is a harder check" is expressed — Tier 3
+climbs two rungs at +4 over Tier 2's own +2, so 70% lands becomes 40%.
+
+**The balance consequence, measured and unresolved.** A one-rung climb with no weight lands 59%
+across the roster, so reaching now stakes an entire act on a coin flip. That is a real decision
+where the prize is large (Overrun taking ground, Inspire lifting the army, a Tier 3 Blast) and a
+plainly bad one where it is small — Press adds 1 disorder to the loser of an exchange, which is
+not worth a 41% chance of no attack at all. Fight's climb may be dead at grade 1.
+
+Two dials, if it proves dead in play, in the order I would try them:
+
+1. **Weight is the intended answer** and it now matters properly: 0/1/2 actions on the check give
+   59% / 69% / 79%. The rule may be fine and the habit just has to change — reach *and* back it,
+   or do not reach.
+2. **Lower the climb DC** below the level DC. A −2 would put the unweighted climb near 69%.
+
+Not tried, and worth naming: making the third rung of each ladder a bigger prize, so the stake
+matches. Press being worth so little is arguably the real problem rather than the climb rule.
+
+## Selection breath and the selected hex (2026-09-04)
+
+With no piece picked, the ones you can still activate breathe — ±7% over 1.8s — and the ones
+already spent sit at 80% and still, so the board answers "whose turn is left?" without reading
+the reel. Pick one and the board goes still: every piece back to full size, and the chosen
+piece's hex washed and outlined in its side's colour.
+
+Judgment calls:
+
+- **The window is `active`, not `begun`.** The breath is the question, and it ends the moment it
+  is answered — even though the pick can still be swapped until an action is spent. Two signals
+  at once (everything breathing *and* one hex lit) says less than either alone.
+- **Only the acting side.** The enemy never scales; the signal is about your own choice.
+- **The breath is slower than the ring's glow** (1.8s against 1.4s) so a lit, breathing piece
+  reads as two signals rather than one confused one.
+- **The pick is takeable back, once.** Bare ground under the click drops it, and so does one of
+  your own pieces still waiting to go — that click now switches the selection instead of aiming
+  at an ally. Verb-first aiming at an ally survives: an armed prop takes the click before the
+  switch does, so Aid and the healing trees are reached by picking the verb and then the piece.
+  Clicking the selected piece itself still blooms its ring; that is the whole board interface
+  and toggling it off there would cost more than it gives.
+- **A click is answered by the hex, never by the art.** The hit test was a disc on the cell
+  centre while the miniature is anchored near its feet and drawn a footprint tall, so a click on
+  a figure's chest fell through to the ground behind it — invisible until ground clicks started
+  meaning something, at which point clicking a troop's body deselected instead of switching.
+  `hitTest` now resolves the cell first and asks what stands in it, which is the same model
+  hover has always used. The art overhangs its hex and no longer needs to be measured; the piece
+  owns its whole cell and nothing more.
+- **A wall under an occupied hex is clicked from the empty side.** The piece takes the edge band
+  of its own cell along with the rest, and the shared edge keys the same either way. Both sides
+  occupied leaves that wall unclickable — worth a fix only if it comes up in play.
+- **`deselect` refuses once `begun`.** The engine, not the UI, holds the rule: actions already
+  spent on a unit are that unit's turn, so a stray click reads as a miss.
+- **A side's colour touches the ground only here.** Everywhere else the map owns the palette and
+  reach is ink — the selected hex is the one exception, and it is the flag's own red or blue so
+  the tie to the piece needs no learning. `OverlayLayer.setSelected` used to take a token id and
+  read it as a cell key, which drew nothing; it now takes the cell and the side.

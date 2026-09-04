@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { at, gridOf, type Board, type Grid, type Point, type Tree } from '../engine/index.js';
+import { at, gridOf, type Board, type Grid, type Point, type Side, type Tree } from '../engine/index.js';
 import { BoardApp } from './BoardApp.js';
 import { BoardContainer } from './BoardContainer.js';
 import { brushColour, type Brush } from './brush.js';
@@ -12,6 +12,7 @@ import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
 import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
+import { terrainAtlas } from './terrain-sheet.js';
 import { TokenLayer } from './layers/TokenLayer.js';
 import type { TokenModel } from './Token.js';
 import { currentTheme, type BoardTheme, type HighlightStyle } from './theme.js';
@@ -20,8 +21,8 @@ export type { HighlightStyle } from './theme.js';
 export type { GridSettings } from './layers/GridLayer.js';
 export type { Brush } from './brush.js';
 export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
-export type { TokenBounds } from './hit.js';
-export type { EngineTokenModel, TokenModel, TokenRing, UnitTokenModel } from './Token.js';
+export type { TokenPlacement } from './hit.js';
+export type { EngineTokenModel, TokenModel, TokenPick, TokenRing, UnitTokenModel } from './Token.js';
 
 // Empty board left around the grid on every side, in cell pitches. It holds LabelLayer's
 // coordinate text, and it is what a pan grabs: without it the outermost cells sit against the
@@ -62,7 +63,8 @@ export interface BoardView {
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
   setRoute(id: string, cells: readonly string[]): void;
-  setSelected(id: string | null): void;
+  /** The hex under the acting piece, outlined in its side's colour. */
+  setSelected(selection: { cell: string; side: Side } | null): void;
   /** The one token a press may escalate into a drag in battle mode; place mode ignores this
    * and always allows any token to drag. */
   setDraggable(id: string | null): void;
@@ -134,6 +136,14 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
 
   const layers = boardContainer.layers;
   const terrainLayer = new TerrainLayer(layers.createLayer('terrain', layers.getDefaultZIndex('terrain')));
+  // The scatter sheet decodes and chroma-keys off the main thread's first idle moment; the
+  // board draws its procedural patterns until then and repaints once the scenery is ready.
+  let alive = true;
+  terrainAtlas().then((atlas) => {
+    if (!alive) return;
+    terrainLayer.setAtlas(atlas);
+    redraw();
+  });
   // Above terrain (0) but below edges (10) — the hairline should sit over the elevation wash,
   // not get swallowed by it, but a wall or cliff still draws over the hairline it crosses.
   const gridLayer = new GridLayer(layers.createLayer('grid', 4));
@@ -274,7 +284,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     toLocal: (screen: Point) => boardContainer.toLocal(screen),
     geometry: () => geometry,
     content: contentRect,
-    tokens: () => tokenLayer.bounds(),
+    tokens: () => tokenLayer.placements(),
     region,
     emit,
     onHover: (cell, edge) => overlayLayer.setHover(cell, edge),
@@ -319,8 +329,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);
     },
-    setSelected(id) {
-      overlayLayer.setSelected(id);
+    setSelected(selection) {
+      overlayLayer.setSelected(selection);
     },
     setDraggable(id) {
       interaction.setDraggable(id);
@@ -407,6 +417,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     // `Interaction`'s listeners on `opts.canvas`. `opts.parent`, `opts.canvas` and
     // `opts.ticker` are the host's; it destroys them itself.
     destroy() {
+      alive = false;
       interaction.destroy();
       terrainLayer.destroy();
       tokenLayer.destroy();

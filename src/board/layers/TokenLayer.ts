@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../../engine/index.js';
-import type { TokenBounds } from '../hit.js';
+import type { TokenPlacement } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
-import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel } from '../Token.js';
+import { Token, type TokenModel } from '../Token.js';
 import type { TokenReaction } from '../vfx/Effect.js';
 
 /**
@@ -49,11 +49,12 @@ export class TokenLayer {
     this.renderAll();
   }
 
-  /** Discs in board-local coordinates, for `Interaction`'s hit test. */
-  bounds(): TokenBounds[] {
-    if (!this.size) return [];
-    const radius = (this.size * TOKEN_FOOTPRINT_RATIO) / 2;
-    return [...this.cache.values()].map((token) => ({ id: token.id, x: token.x, y: token.y, radius }));
+  /** The cell each piece stands on, for `Interaction`'s hit test. In model order, so a unit
+   * is found before an engine left on the same ground. */
+  placements(): TokenPlacement[] {
+    return this.models
+      .map((m) => ({ id: m.id, cell: m.cell }))
+      .filter((p) => this.cache.has(p.id));
   }
 
   /** `Interaction`'s board-internal token drag: `point` in board-local coordinates while

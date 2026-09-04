@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import type { Grid } from '../../engine/index.js';
+import type { Grid, Side } from '../../engine/index.js';
 import { actionIconUrl } from '../art.js';
 import type { BoardTheme, HighlightStyle } from '../theme.js';
 
@@ -31,6 +31,10 @@ const HEAD_INSET = 0.2;
 const HEAD_LENGTH = 0.22;
 const HEAD_HALF_WIDTH = 0.13;
 
+/** The selected piece's own hex, washed and outlined in its side's colour — the one place a
+ * side's colour touches the ground rather than a flag. */
+const SELECT_WASH = 0.16;
+
 /** The barred X's box, as a fraction of cell size. It marks the whole cell, so it sits nearer
  * the shot's bullseye than the badge-sized props hung off a piece. */
 const BAR_RATIO = 0.52;
@@ -49,7 +53,7 @@ export class OverlayLayer {
   private readonly highlights = new Map<HighlightStyle, Set<string>>();
   private hoverCell: string | null = null;
   private hoverEdge: string | null = null;
-  private selectedCell: string | null = null;
+  private selection: { cell: string; side: Side } | null = null;
   private paintPreview: { cells: string[]; edges: string[]; colour: number } | null = null;
   /** The drag-to-move trace, unit's own cell first — a thin trail on top of the highlight
    * wash so a fanned-out hex reach still reads as one path rather than a region. */
@@ -80,11 +84,9 @@ export class OverlayLayer {
     this.redraw();
   }
 
-  // proto: Wave 2 has no tokens yet, so `id` is read as a cell key. A key that doesn't parse
-  // to an in-bounds cell (a future token id, say) just draws nothing here — once TokenLayer
-  // (Wave 4) exists the token itself carries the selection ring instead.
-  setSelected(id: string | null): void {
-    this.selectedCell = id;
+  /** The hex under the piece whose turn is being taken, marked in that side's colour. */
+  setSelected(selection: { cell: string; side: Side } | null): void {
+    this.selection = selection;
     this.redraw();
   }
 
@@ -139,7 +141,11 @@ export class OverlayLayer {
 
     if (this.hoverCell) this.strokeCell(g, this.hoverCell, this.theme.overlay.hover, 0.6, 2);
     if (this.hoverEdge) this.strokeEdge(g, this.hoverEdge, this.theme.overlay.selected, 0.9, 5);
-    if (this.selectedCell) this.strokeCell(g, this.selectedCell, this.theme.overlay.selected, 1, 3);
+    if (this.selection) {
+      const colour = this.selection.side === 'attacker' ? this.theme.attacker : this.theme.defender;
+      this.fillCell(g, this.selection.cell, colour, SELECT_WASH);
+      this.strokeCell(g, this.selection.cell, colour, 1, 3.5);
+    }
 
     this.container.addChild(g);
     this.drawBarred();

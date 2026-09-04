@@ -20,7 +20,7 @@ interface BoardView {
   setBoard(board: Board | null): void;
   setTokens(tokens: TokenModel[]): void;
   setHighlight(cells: string[], style: HighlightStyle): void;   // 'deploy' | 'move' | 'attack'
-  setSelected(id: string | null): void;                          // a cell key, not a token id — see below
+  setSelected(sel: { cell: string; side: Side } | null): void;   // a cell, not a token id — see below
   setMode(mode: BoardMode): void;                                 // 'view' | 'paint' | 'place' | 'battle'
   setBrush(brush: Brush | null): void;                            // paint mode only
   on<T extends BoardEventType>(event: T, handler: (e: BoardEventOf<T>) => void): () => void;
@@ -33,10 +33,11 @@ interface BoardView {
 
 Differences from the plan's sketch, and why:
 
-- **`setSelected(id)` takes a cell key, not a token id.** It predates `TokenLayer` (Wave 2);
+- **`setSelected` takes a cell and a side, not a token id.** It predates `TokenLayer` (Wave 2);
   by the time tokens existed (Wave 4) the selection ring had moved onto the token itself
-  (`Token`'s `ring` field), so nothing needed `setSelected` to mean "token" instead. It still
-  reads a cell key today — Battle/Place never call it with anything else.
+  (`Token`'s `ring` field), so nothing needed `setSelected` to mean "token" instead. It marks
+  the acting piece's own hex, washed and outlined in that side's colour — the one place a
+  side's colour touches the ground.
 - **`setBrush` and `cellAt` are real methods**, not in the plan's sketch at all. `setBrush`
   is how a stage's palette drives paint mode; `cellAt` is how a native HTML5 `DragEvent`
   (a sidebar tray item, in Place) resolves to a cell without going through `Interaction`,
@@ -105,7 +106,7 @@ src/board/vfx/Effect.ts         track specs (particles, painted frames, token re
 src/board/vfx/recipes.ts        one track list per tree; the painted 16-frame sheets are referenced from here
 src/board/Token.ts              one battlefield piece: base disc, art, badge, pips, rings, spell reactions
 src/board/Interaction.ts        pointer state machine on the host canvas -> BoardEvents
-src/board/hit.ts                pixel -> cell | edge | token
+src/board/hit.ts                pixel -> cell, then what that cell holds: token | edge | cell
 src/board/brush.ts              paint-mode brush type and its derived colours/erase forms
 src/board/theme.ts              light/dark palettes
 src/board/art.ts                BASE_URL-prefixed art paths (src/engine/art.ts stays Vite-free)

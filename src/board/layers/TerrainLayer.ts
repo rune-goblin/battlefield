@@ -1,7 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { at, gridOf, type Board, type Grid, type Square, type SquareTerrain } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
-import { shade } from './color.js';
+import type { ScatterKind, TerrainAtlas } from '../terrain-sheet.js';
+import { isGround, scatterGroup, type ScatterStyle } from './TerrainScatter.js';
 
 const TEXTURE_TILE = 32;
 // Elevation reads as a fill wash plus a contour outline drawn only where elevation actually
@@ -40,6 +41,22 @@ function elevationLabelStyle(theme: BoardTheme, size: number): Partial<PIXI.ITex
   };
 }
 
+// Which terrain reads as which quadrant of the scatter sheets. Shallows takes the water art at
+// its own thinner setting — broken water over the pale bed, against open water's full cover.
+// Boulders and mounds hang off elevation rather than terrain: this board has no mountain or
+// hill terrain type, and height is what that art is drawing. The sheets' desert and badlands
+// quadrants have no terrain to land on yet. proto: see docs/plans/pixi-board.todos.md.
+interface Scenery { kind: ScatterKind; style?: ScatterStyle }
+const SCATTER_TERRAIN: Partial<Record<SquareTerrain, Scenery>> = {
+  open: { kind: 'plains' },
+  forest: { kind: 'trees' },
+  swamp: { kind: 'swamp' },
+  water: { kind: 'water' },
+  shallows: { kind: 'water', style: 'shallows' },
+};
+const scatterForElevation = (level: number): Scenery | null =>
+  level >= 2 ? { kind: 'boulders' } : level === 1 ? { kind: 'mounds' } : null;
+
 /**
  * Cell fills, procedural texture overlays, and elevation tint/outline/numerals. One
  * `PIXI.Graphics` per terrain type present on the board, grouped the way Reignmaker's
@@ -51,9 +68,16 @@ function elevationLabelStyle(theme: BoardTheme, size: number): Partial<PIXI.ITex
 export class TerrainLayer {
   private readonly container: PIXI.Container;
   private readonly textureCache = new Map<SquareTerrain, PIXI.Texture>();
+  private atlas: TerrainAtlas | null = null;
 
   constructor(container: PIXI.Container) {
     this.container = container;
+  }
+
+  /** The scatter sheet, once it has loaded. Until then — and if it fails to load at all —
+   * every terrain falls back to its procedural pattern. The caller redraws. */
+  setAtlas(atlas: TerrainAtlas | null): void {
+    this.atlas = atlas;
   }
 
   draw(renderer: PIXI.IRenderer, board: Board, size: number, theme: BoardTheme): void {
@@ -80,6 +104,8 @@ export class TerrainLayer {
       fill.name = `Terrain_${terrain}`;
       this.container.addChild(fill);
 
+      if (this.atlas && SCATTER_TERRAIN[terrain]) continue; // scenery replaces the pattern
+
       const texture = this.textureFor(renderer, terrain, theme);
       if (texture) {
         const bounds = grid.bounds(size);
@@ -95,10 +121,38 @@ export class TerrainLayer {
       }
     }
 
-    this.drawElevation(grid, board, size, theme);
+    const labels = this.drawElevation(grid, board, size, theme);
+    // Over the elevation wash, under its numerals: a wood on high ground should still read as
+    // a wood rather than as trees behind frosted glass, and the numeral has to stay findable.
+    this.drawScatter(grid, board, size, theme);
+    this.container.addChild(labels);
   }
 
-  private drawElevation(grid: Grid, board: Board, size: number, theme: BoardTheme): void {
+  private drawScatter(grid: Grid, board: Board, size: number, theme: BoardTheme): void {
+    const atlas = this.atlas;
+    if (!atlas) return;
+    const groups = new Map<ScatterStyle, { scenery: Scenery; cells: Square[] }>();
+    const add = (scenery: Scenery, sq: Square) => {
+      const style = scenery.style ?? scenery.kind;
+      const group = groups.get(style);
+      if (group) group.cells.push(sq); else groups.set(style, { scenery, cells: [sq] });
+    };
+    for (const sq of grid.cells()) {
+      const cell = at(board, sq);
+      const terrain = SCATTER_TERRAIN[cell.terrain];
+      if (terrain) add(terrain, sq);
+      const height = scatterForElevation(cell.elevation);
+      if (height) add(height, sq);
+    }
+    // Ground cover first, then props: a wood should stand on its field, not under it.
+    const ordered = [...groups].sort(([a], [b]) => Number(isGround(b)) - Number(isGround(a)));
+    for (const [style, { scenery, cells }] of ordered) {
+      const painted = scatterGroup(grid, size, { kind: scenery.kind, style, cells }, atlas, theme);
+      if (painted) this.container.addChild(painted);
+    }
+  }
+
+  private drawElevation(grid: Grid, board: Board, size: number, theme: BoardTheme): PIXI.Container {
     const tint = new PIXI.Graphics();
     tint.name = 'Terrain_elevation';
     const labels = new PIXI.Container();
@@ -146,7 +200,7 @@ export class TerrainLayer {
     }
 
     this.container.addChild(tint);
-    this.container.addChild(labels);
+    return labels;
   }
 
   private textureFor(renderer: PIXI.IRenderer, type: SquareTerrain, theme: BoardTheme): PIXI.Texture | null {

@@ -6,7 +6,7 @@ import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type Un
 import { CELL_FEET, pathTo, reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  CLIMB, CLIMB_COST, gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, treesFor,
+  CLIMB, CLIMB_COST, CLIMB_STEP, gradesFor, LADDERS, OWN_ROLL, qualityFor, rungOf, treesFor,
   type Grade, type LadderType, type Rung,
 } from './ladders.js';
 import {
@@ -150,6 +150,15 @@ export function select(input: BattleState, id: string): BattleState {
   }
   if (state.begun && state.active !== id) throw new Error('an activation is already under way');
   state.active = id;
+  return state;
+}
+
+/** Put the pick back so the side is choosing again. Once the activation has begun the actions
+ * are already spent on that unit, so the choice stands and this does nothing. */
+export function deselect(input: BattleState): BattleState {
+  if (input.begun || input.active === null) return input;
+  const state = clone(input);
+  state.active = null;
   return state;
 }
 
@@ -301,9 +310,11 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
 /** The DC a unit rolls against to reach one rung above its grade. `tree` is required, and
  * `rungOf` never consulted, when `type` is `'cast'` — Cast's rungs are per-tree (see
  * `castRungOf` in magic.ts), not a fixed ladder. */
-export function reachDcFor(u: Unit, type: LadderType, rung: Grade, tree?: Tree): number {
+/** The DC of climbing from `granted` to `rung`: the level DC, what that rung costs on its own
+ * account, and `CLIMB_STEP` for every rung of climb past the first. */
+export function reachDcFor(u: Unit, type: LadderType, rung: Grade, tree?: Tree, granted = (rung - 1) as Grade): number {
   const bonus = type === 'cast' ? castRungOf(tree!, rung as CastTier).reachDc : rungOf(type, rung).reachDc;
-  return levelDc(u.level) + bonus;
+  return levelDc(u.level) + bonus + Math.max(0, rung - granted - 1) * CLIMB_STEP;
 }
 
 export const reachModifier = (u: Unit) => u.stats.will - u.disorder;
@@ -793,7 +804,8 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
     reason = `needs ${BASE_COST + CLIMB_COST} actions`;
   }
   if (!reason && needsTarget && !targets.length) reason = 'no target';
-  return { rung: rung.id, index, label: rung.label, detail: rung.detail, access, legal: reason === null, reason, needsTarget, targets };
+  const reachDc = access === 'reach' ? reachDcFor(u, type, index, spell ?? undefined, granted) : null;
+  return { rung: rung.id, index, label: rung.label, detail: rung.detail, access, legal: reason === null, reason, reachDc, needsTarget, targets };
 }
 
 /** Every act costs one action. What separates the rungs is grade, and what a further action
@@ -827,7 +839,7 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | n
     label: spell ? TREE_LABEL[spell] : type[0].toUpperCase() + type.slice(1),
     detail: type === 'cast' ? castRungOf(spell!, 1).detail : LADDERS[type][granted - 1].detail,
     granted, reachable,
-    reachDc: rolls ? reachDcFor(u, type, reachable!, spell ?? undefined) : null,
+    reachDc: rolls ? reachDcFor(u, type, reachable!, spell ?? undefined, granted) : null,
     reachModifier: type === 'cast' ? spellAttackModifier(u) : reachModifier(u),
     rungs,
   };
@@ -878,37 +890,27 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
 
 /**
  * The gamble, on the two ladders that gamble for their climb. Reaching costs no action: the
- * price is what a botched order does to you.
+ * price is the act itself.
  *
- * Critical success climbs one further, success takes the rung reached for, plain failure falls
- * back to the grade with the act still happening. A critical failure is the one that bites —
- * it drops a rung *below* the grade and costs 1 disorder. A unit already on the bottom rung has
- * nothing to drop to, so it forfeits the act instead; two disorder for one botched order is
- * more than the mistake is worth.
+ * Critical success climbs one rung further than asked for; success takes the rung reached for.
+ * Either failure loses the act outright — you reached past what you were owed and came away
+ * with nothing — and a critical failure costs 1 disorder on top. There is no falling back to a
+ * lesser rung: a climb either happens or it does not, which is one rule instead of a table.
  *
- * `null` is that forfeit: the actions are spent and nothing happens.
+ * `null` is that loss: the actions are spent and nothing happens.
  */
 function reachFor(state: BattleState, rng: Rng, u: Unit, type: LadderType, wanted: Grade, weight = 0, tree?: Tree): Grade | null {
   const granted = gradeOf(state, u, type);
   if (wanted <= granted) return wanted;
   const nameOf = (g: Grade) => (type === 'cast' ? castRungOf(tree!, g as CastTier).label : rungOf(type, g).label);
   const modifier = type === 'cast' ? spellAttackModifier(u) : reachModifier(u);
-  const c = check(rng, modifier + weight + takeSaveBonus(u), reachDcFor(u, type, wanted, tree));
+  const c = check(rng, modifier + weight + takeSaveBonus(u), reachDcFor(u, type, wanted, tree, granted));
   log(state, u, `${u.name} reaches for ${nameOf(wanted)}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   if (c.degree === 'critical-success') return Math.min(3, wanted + 1) as Grade;
   if (c.degree === 'success') return wanted;
-  if (c.degree === 'failure') {
-    log(state, u, `${u.name} falls back to ${nameOf(granted)}.`);
-    return granted;
-  }
-  addDisorder(state, u, 1, 'a botched order');
-  const dropped = granted - 1;
-  if (dropped < 1) {
-    log(state, u, `${u.name}'s order falls apart — nothing below ${nameOf(granted)} to fall to, and the act is forfeit.`);
-    return null;
-  }
-  log(state, u, `${u.name} drops past ${nameOf(granted)} to ${nameOf(dropped as Grade)}.`);
-  return dropped as Grade;
+  log(state, u, `${u.name} overreaches for ${nameOf(wanted)} and the ${type === 'cast' ? 'cast' : 'act'} comes to nothing.`);
+  if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a botched order');
+  return null;
 }
 
 interface Escape { holder: Unit; degree: Degree }

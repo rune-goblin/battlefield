@@ -36,8 +36,15 @@ describe.each([['square', squareGrid], ['hex', hexGrid]] as [string, Grid][])('%
     expect(hitTest(point, { grid, size: SIZE })).toEqual({ kind: 'cell', id: 'd4' });
   });
 
-  it('gives a token priority over both', () => {
-    const tokens = () => [{ id: 'unit-1', x: centre.x, y: centre.y, radius: SIZE * 0.4 }];
-    expect(hitTest(centre, { grid, size: SIZE, edges: true, tokens })).toEqual({ kind: 'token', id: 'unit-1' });
+  it('answers the whole occupied hex with its piece, edge band included', () => {
+    const tokens = () => [{ id: 'unit-1', cell: 'd4' }];
+    for (const point of [centre, towardCentre(EDGE_BAND * 0.5), towardCentre(EDGE_BAND * 1.5)]) {
+      expect(hitTest(point, { grid, size: SIZE, edges: true, tokens })).toEqual({ kind: 'token', id: 'unit-1' });
+    }
+  });
+
+  it('leaves an empty hex to its own edges and ground', () => {
+    const tokens = () => [{ id: 'unit-1', cell: 'a1' }];
+    expect(hitTest(centre, { grid, size: SIZE, edges: true, tokens })).toEqual({ kind: 'cell', id: 'd4' });
   });
 });

@@ -73,6 +73,7 @@
       quality: qualityFor(u.card),
       engine: u.engines[0] ?? null,
       prop: null,
+      pick: null,
       ring: selected?.kind === 'unit' && selected.i === i ? 'selected' as const : null,
     }] : []),
     ...emplacements.flatMap((e, i) => e.square ? [{
@@ -438,8 +439,9 @@
     grid-template-areas: 'head plate' 'stats plate' 'details details';
     column-gap: .65rem;
     padding: .5rem .6rem .45rem .75rem;
-    background: var(--card);
-    border: 1px solid var(--rule);
+    background-color: color-mix(in srgb, var(--side) 22%, var(--card));
+    background-image: linear-gradient(to right, color-mix(in srgb, var(--side) 16%, transparent), transparent 60%);
+    border: 1px solid color-mix(in srgb, var(--side) 55%, var(--rule));
     border-radius: 8px;
     cursor: grab;
     transition: border-color .15s, box-shadow .15s, opacity .15s;
@@ -454,10 +456,12 @@
   }
   .piece:not(.down) {
     border-style: dashed;
-    background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--rule) 18%, transparent) 7px 8px);
+    background-image:
+      repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--side) 30%, transparent) 7px 8px),
+      linear-gradient(to right, color-mix(in srgb, var(--side) 16%, transparent), transparent 60%);
   }
-  .piece:hover { border-color: var(--accent); }
-  .piece.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .piece:hover { border-color: var(--hi); }
+  .piece.sel { border-color: var(--hi); box-shadow: 0 0 0 2px var(--hi); }
   .piece.lift { opacity: .4; }
   .piece:active { cursor: grabbing; }
 
@@ -465,7 +469,7 @@
   .piece.engine::before { background: repeating-linear-gradient(to bottom, var(--side) 0 5px, transparent 5px 9px); }
 
   .head { grid-area: head; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: .4rem; }
-  .unitlist { gap: .5rem; }
+  .unitlist { gap: .5rem; --hi: color-mix(in srgb, var(--side) 65%, var(--ink)); }
   .grip {
     display: block;
     width: .6rem; height: 1.05rem; margin-top: .15rem; align-self: center;
@@ -474,12 +478,12 @@
     color: var(--rule);
     cursor: grab;
   }
-  .piece:hover .grip { color: var(--accent); }
+  .piece:hover .grip { color: var(--hi); }
   .name { margin: 0; font-size: .95rem; font-weight: 600; line-height: 1.15; }
   .meta { margin: .1rem 0 0; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 
   .stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .4rem; margin: .5rem 0 0; }
-  .statcell { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--rule) 50%, transparent); padding-left: .35rem; }
+  .statcell { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--side) 60%, transparent); padding-left: .35rem; }
   .statcell dt { font-size: .55rem; letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
   .statcell dd { margin: 0; font-size: .92rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -495,12 +499,13 @@
     color: var(--paper); background: var(--side); border-radius: 4px;
   }
   .deploy { width: 100%; padding: .2rem .1rem; font-size: .8rem; border-radius: 5px; font-variant-numeric: tabular-nums; }
-  .deploy:not(.set) { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .deploy:not(.set) { color: var(--hi); border-color: var(--hi); font-weight: 600; }
+  .deploy:hover:not(:disabled) { border-color: var(--hi); }
   .deploy.set { color: var(--muted); }
   .undo { margin-left: .25rem; opacity: .35; }
   .deploy.set:hover .undo { opacity: 1; }
 
-  .details { grid-area: details; margin-top: .5rem; padding-top: .35rem; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); }
+  .details { grid-area: details; margin-top: .5rem; padding-top: .35rem; border-top: 1px solid color-mix(in srgb, var(--side) 55%, transparent); }
   .line { margin: 0; font-size: .72rem; line-height: 1.4; color: var(--muted); font-variant-numeric: tabular-nums; }
   .where { color: var(--ink); }
   .piece:not(.down) .where { font-style: italic; color: var(--muted); }
