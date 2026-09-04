@@ -1684,3 +1684,60 @@ Judgment calls:
   reach is ink — the selected hex is the one exception, and it is the flag's own red or blue so
   the tie to the piece needs no learning. `OverlayLayer.setSelected` used to take a token id and
   read it as a cell key, which drew nothing; it now takes the cell and the side.
+
+## Rungs are priced, the gamble and weight are gone, and a Fight is one roll (2026-09-05)
+
+Mark, on the orders panel: "clear decisions, not a menu" and, on the free climb, "it's coming
+from another system, and I'm beginning to question its relevance in the Pathfinder world."
+Then: "the interesting benefits are not the +2" — bonuses are boring. Three decisions followed,
+in this order, and each deleted the machinery of the last.
+
+**1. Movement Push is gone.** This reverses the 2026-09-04 note that it stays. Every hex has a
+price in actions and nothing else; the drag arrow and the three bands are the whole of Move.
+
+**2. The gamble and weight are both gone.** Every ladder is priced the same way: the rung at the
+grade costs one action, each rung above it one more, two above costs three (so a grade-1 levy
+can Overrun with its whole activation, and "locked" leaves the game except for a compelled
+unit and a tradition's cap). Nothing rolls for a rung, and nothing turns an action into +2 —
+actions left over buy other acts. This is PF2e's one/two/three-action Heal shape. Cast tiers
+cost 1/2/3 and the caster's pool became Cast-only actions, spent first. Rungs are cumulative:
+Overrun includes Press, Shieldwall includes Dig in (rooted and all). A rung that is not "more
+of the same" is a separate verb or tree, never a rung.
+
+Deleted with it: `CLIMB`/`CLIMB_COST`/`CLIMB_STEP`/`OWN_ROLL`, `reachDc`, `reachFor`, the
+`Spend`/`Dial`/`SpendDials` types and the `commit` allocation reader, the wager panel, the
+ledger, every dial, the odds bar, `pushReach`/`doPush`/`PushAction`, and the 'push' highlight.
+Withdraw keeps one number: further actions on distance, since ground is a real effect.
+
+**3. A Fight is one roll, one way.** Mark: "instead of automatically taking a hit, if you fail
+the exchange, you should roll for disorder instead of both taking injuries." The symmetric
+exchange gave melee two wound events a round to a shot's one, and drew even ~40% of the time.
+Now: a hit wounds and the target makes a Fortitude save or takes 1 disorder (the shot rule,
+unchanged); a miss *repulses* the attacker, which makes a Will save against the target's level
+DC or takes 1 disorder; a critical miss still exposes. Nobody strikes back. Press = the hit's
+disorder needs no save (Intimidating Strike, two actions, hit → Frightened 1, no save, is the
+level-2 ancestor). Overrun = Press plus a shove one hex directly away, attacker
+takes the ground (Shove: "push 5 feet, you can Stride after it in the same direction");
+nowhere to go = hold and take 1 disorder. A Defense buff's "next wound costs no disorder" still
+beats a Press. The Offense buff's Tier 3 "no strike back" became "the next Fight's miss cannot
+repulse it".
+
+Measured, per attack, off the roster: Line Infantry into Kobolds hits 70% and risks 6%
+attacker disorder; even (into Heavy Cavalry) 35% / 29%; Kobolds up into Line Infantry 20% /
+48%. Strike alone loses the morale trade at parity (7% target disorder vs 29%); Press flips it
+(35% vs 29%). That is the intended shape: the jab wins wounds and risks heart, the committed
+blow breaks lines, and a grade-2 unit's every attack is a Press for one action.
+
+Judgment calls:
+
+- **Repulse fires on any miss**, not only a critical one (which would give 1 / 9 / 21) and
+  without the critical costing a point outright (10 / 40 / 62).
+- **The shove goes directly away from the attacker**, as Pathfinder's Shove does (Mark: "matching
+  shove"). The target chooses nothing, and one blocked hex is enough to crush it for the point.
+- **Wound throughput in melee halves.** Rout will decide more battles than destruction. Levers,
+  untouched until a played battle: dusk at eight rounds, or three wounds instead of four.
+- **The board popup takes the rung on touch.** The price is on the row as a Pathfinder action
+  glyph (◆ ◆◆ ◆◆◆, from ReignMaker's SVGs, in `ActionCost.svelte`); there is no orders card any
+  more, and the panel is pips, stats and the Move bands.
+- **Spells were not revisited** beyond the two riders above; Mark: "we need to look at spells
+  as well."

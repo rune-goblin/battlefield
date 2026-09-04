@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { COMBATANTS } from '../engine/combatants.js';
-import { gradesFor, LADDERS, qualityFor, treesFor } from '../engine/ladders.js';
+import { gradesFor, LADDERS, qualityFor, rungCost, treesFor } from '../engine/ladders.js';
 import { deriveStats, speedOf } from '../engine/cards.js';
 import { OFFICIAL } from '../engine/official.js';
 import { ROSTER } from '../engine/roster.js';
 import type { UnitCard } from '../engine/cards.js';
-import type { Grades } from '../engine/ladders.js';
+import type { Grade, Grades } from '../engine/ladders.js';
 
 const troop = (name: string) => [...COMBATANTS, ...OFFICIAL, ...ROSTER].find((c) => c.name === name)!;
 
@@ -13,13 +13,15 @@ const troop = (name: string) => [...COMBATANTS, ...OFFICIAL, ...ROSTER].find((c)
 const GRADED_TYPES = Object.keys(LADDERS) as (keyof Grades)[];
 
 describe('the ladders', () => {
-  it('gives every graded type three rungs that climb', () => {
+  it('gives every graded type three rungs, each priced by its distance above the grade', () => {
     for (const type of GRADED_TYPES) {
       const rungs = LADDERS[type];
       expect(rungs.map((r) => r.index), type).toEqual([1, 2, 3]);
       expect(rungs.map((r) => r.type), type).toEqual([type, type, type]);
-      expect(rungs.map((r) => r.reachDc), type).toEqual([0, 0, 2]);
     }
+    expect([1, 2, 3].map((i) => rungCost(1, i as Grade))).toEqual([1, 2, 3]);
+    expect([1, 2, 3].map((i) => rungCost(2, i as Grade))).toEqual([1, 1, 2]);
+    expect([1, 2, 3].map((i) => rungCost(3, i as Grade))).toEqual([1, 1, 1]);
   });
 });
 

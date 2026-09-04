@@ -6,38 +6,14 @@ import { saveBonus, type Tier } from './tables.js';
 // twice or three times is what March and Charge used to name. A Withdraw rolls the escaping
 // unit's Reflex against whoever is holding it, and the four degrees say what Scatter, Break
 // off and Fighting retreat used to name — see `doWithdraw` in `battle.ts`. Cast keeps its slot
-// in `LadderType` (the offer menu still groups by it) but carries no grade of its own: Tier 1
-// of every tree a caster's tradition grants is free, and its own push pool decides how far a
-// push reaches — see `magic.ts` and `doCast` in `battle.ts`.
+// in `LadderType` (the offer menu still groups by it) but carries no grade of its own: every
+// tier is priced at its own number of actions — see `magic.ts` and `doRung` in `battle.ts`.
 export type LadderType = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
-/**
- * How a ladder gets above its grade. The four ladders do not mean the same thing by "one rung
- * up", so they do not pay for it the same way.
- *
- * `roll` — the rung is a rider on an act that is happening anyway, so climbing is a free
- * gamble and the risk is the price (Fight's Press and Overrun; every Cast push).
- * `action` — the rung is its own outcome, bought outright with a further action and no roll.
- * Aim means taking time, and Rally's scope is too strong to hand over on a coin flip.
- * `none` — a posture the grade gates outright. Guard's currency is the Defence it sets, and
- * spare actions belong there rather than on a climb.
- */
-export type ClimbMode = 'roll' | 'action' | 'none';
-export const CLIMB: Record<LadderType, ClimbMode> = {
-  fight: 'roll', cast: 'roll', shoot: 'action', rally: 'action', guard: 'none',
-};
-
-/** What the climb costs on an `action` ladder, over and above the act's own one. */
-export const CLIMB_COST = 1;
-
-/**
- * Added to the DC for every rung of climb past the first. The four ladders never offer more
- * than one rung above a grade, so this only ever bites on Cast, which may push straight from
- * its free base to Tier 3 — and pushing two tiers in one cast should be markedly harder than
- * pushing one, not merely the two points Tier 3 carries on its own account.
- */
-export const CLIMB_STEP = 4;
+/** What a rung costs in actions: one at or below the grade, and one more for every rung above
+ * it. Every ladder pays the same way, and nothing rolls for a rung. */
+export const rungCost = (grade: Grade, index: Grade): number => 1 + Math.max(0, index - grade);
 
 export type Grade = 1 | 2 | 3;
 export type Grades = Record<Exclude<LadderType, 'cast'>, Grade>;
@@ -48,14 +24,15 @@ export type RungId =
   | 'brace' | 'dig-in' | 'shieldwall'
   | 'steady' | 'rally' | 'inspire';
 
-export interface FightEffect { disorderOnLoss: number; takeGround: boolean }
-/** A Guard's Defence comes from the actions committed to it, never from the rung. The rung
- * carries the effect: `blunt` caps a hit at one wound, so a critical lands as an ordinary one,
- * and `braces` gives adjacent allies what one action of Guard buys. */
+/** Each rung includes everything below it. `press`: a hit's disorder needs no save. `drive`: a
+ * hit shoves the target one hex and the attacker takes its ground. */
+export interface FightEffect { press: boolean; drive: boolean }
+/** Every Guard rung sets the same Defence; the rung carries the effect on top. `blunt` caps a
+ * hit at one wound, so a critical lands as an ordinary one, and `braces` gives adjacent allies
+ * what a Guard buys. Each rung includes everything below it. */
 export interface GuardEffect { blunt: boolean; braces: boolean; rooted: boolean }
 /** The rung carries scope, never amount — how much clears comes off the Quality check's
- * degree instead (see `doRung`'s 'rally' case in `battle.ts`), which is what keeps the roll
- * dial live at every rung rather than only at Steady.
+ * degree instead (see `perform`'s 'rally' case in `battle.ts`).
  *
  * `heart` is the second scope: who takes heart from the order, which is what gives Rally a use
  * on a unit with no disorder to clear. It reaches one rung further out than `scope` at the
@@ -71,8 +48,6 @@ export interface Rung {
   label: string;
   verb: string;
   detail: string;
-  /** Added to the level DC when a unit reaches for this rung. Rung 1 is never reached for. */
-  reachDc: number;
   fight?: FightEffect;
   guard?: GuardEffect;
   rally?: RallyEffect;
@@ -84,36 +59,28 @@ export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = 
   // effective range, in whichever direction the target actually is. See `shootHome` and its
   // callers in battle.ts.
   shoot: [
-    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'Your effective range.', reachDc: 0 },
-    { id: 'aim', verb: 'aims', type: 'shoot', index: 2, label: 'Aim', detail: 'One band off your effective range, either direction.', reachDc: 0 },
-    { id: 'snipe', verb: 'snipes', type: 'shoot', index: 3, label: 'Snipe', detail: 'Two bands off your effective range, either direction.', reachDc: 2 },
+    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'Your effective range.' },
+    { id: 'aim', verb: 'aims', type: 'shoot', index: 2, label: 'Aim', detail: 'One band off your effective range, either direction.' },
+    { id: 'snipe', verb: 'snipes', type: 'shoot', index: 3, label: 'Snipe', detail: 'Two bands off your effective range, either direction.' },
   ],
   fight: [
-    { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'A plain melee exchange.', reachDc: 0, fight: { disorderOnLoss: 0, takeGround: false } },
-    { id: 'press', verb: 'presses into', type: 'fight', index: 2, label: 'Press', detail: 'The loser of the exchange takes 1 more disorder.', reachDc: 0, fight: { disorderOnLoss: 1, takeGround: false } },
-    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Take their ground if they break.', reachDc: 2, fight: { disorderOnLoss: 0, takeGround: true } },
+    { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'One roll against their Defence. A miss can cost you heart.', fight: { press: false, drive: false } },
+    { id: 'press', verb: 'presses', type: 'fight', index: 2, label: 'Press', detail: 'A hit disorders them with no save.', fight: { press: true, drive: false } },
+    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Press, and a hit drives them back a hex. You take their ground.', fight: { press: true, drive: true } },
   ],
   guard: [
-    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence, like raising shields.', reachDc: 0, guard: { blunt: false, braces: false, rooted: false } },
-    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: '+2 Defence, and critical hits against you land as ordinary ones. Rooted for the rest of the activation.', reachDc: 0, guard: { blunt: true, braces: false, rooted: true } },
-    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: '+2 Defence, and adjacent allies count as braced.', reachDc: 2, guard: { blunt: false, braces: true, rooted: false } },
+    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence, like raising shields.', guard: { blunt: false, braces: false, rooted: false } },
+    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Brace, and critical hits against you land as ordinary ones. Rooted for the rest of the activation.', guard: { blunt: true, braces: false, rooted: true } },
+    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: 'Dig in, and adjacent allies count as braced.', guard: { blunt: true, braces: true, rooted: true } },
   ],
   rally: [
-    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit, and one adjacent ally takes heart.', reachDc: 0, rally: { scope: 'self', heart: 'adjacent' } },
-    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1 and takes heart.', reachDc: 0, rally: { scope: 'adjacent', heart: 'adjacent' } },
-    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1 and takes heart.', reachDc: 2, rally: { scope: 'nearby', heart: 'nearby' } },
+    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit, and one adjacent ally takes heart.', rally: { scope: 'self', heart: 'adjacent' } },
+    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1 and takes heart.', rally: { scope: 'adjacent', heart: 'adjacent' } },
+    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1 and takes heart.', rally: { scope: 'nearby', heart: 'nearby' } },
   ],
 };
 
 export const rungOf = (type: Exclude<LadderType, 'cast'>, index: Grade): Rung => LADDERS[type][index - 1];
-
-/** Which types have a roll of their own for a committed action to weight. Guard has none: a
- * committed action there feeds the push check or Defence instead. Cast always does — every
- * push is a roll — so it reads `true` here too, even though it shares no other machinery with
- * `rungOf`'s four ladders. */
-export const OWN_ROLL: Record<LadderType, boolean> = {
-  shoot: true, fight: true, guard: false, rally: true, cast: true,
-};
 
 // Grades come from the statblock, never from a curated list. Two measurements over all 162
 // published troops decide which numbers may be trusted: AC spreads 3.2 points within a level
@@ -166,8 +133,8 @@ export function gradesFor(card: UnitCard): Grades {
   const willB = willBand(stats, l);
 
   const grades: Grades = {
-    // Reach only picks the effective range Fire is free at; every troop starts able to swing
-    // one band off it before it needs a push check, same as an untrained shot at anything else.
+    // Reach only picks the effective range Fire covers; every troop pays the same one action
+    // more to swing a band off it, same as an untrained shot at anything else.
     shoot: 1,
     fight: stats.strike === null ? 1 : has('melee-drill') || fear ? 3 : 2,
     guard: cap(1 + (has('formation') ? 1 : 0) + (has('shielded') || has('magic-ward') ? 1 : 0)),

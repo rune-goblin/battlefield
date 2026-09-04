@@ -1,6 +1,6 @@
 import type { Tradition } from './cards.js';
 
-// Six trees, four traditions, a caster's own push pool — rules.html section 11. This module
+// Six trees, four traditions, a caster's own Cast-only actions — rules.html section 11. This module
 // holds the reference data only; resolving a cast against it lives in battle.ts alongside
 // every other act.
 
@@ -68,17 +68,16 @@ export function treesForTradition(tradition: Tradition): Tree[] {
   return TREES.filter((t) => TRADITION_TIERS[tradition][t] > 0);
 }
 
-/** A caster's push-only pool: level ÷ 5, rounded down. Refreshes every activation, exactly as
- * the ordinary three actions do — see `begin` in battle.ts. */
+/** A caster's Cast-only actions: level ÷ 5, rounded down, spent on a tier before its ordinary
+ * three are. Refreshes every activation — see `begin` in battle.ts. */
 export const castPoolFor = (level: number) => Math.floor(level / 5);
 
 /**
- * Display-only stand-in for a `Rung` (see ladders.ts), one per tree per tier. `battle.ts`
- * reads `reachDc` through the same reach formula every other ladder uses — Tier 3 costs +2,
- * same as a third rung anywhere else — but resolves the actual mechanics itself; nothing here
- * is read back out except for the menu.
+ * Display-only stand-in for a `Rung` (see ladders.ts), one per tree per tier. A tier costs its
+ * own number of actions; `battle.ts` resolves the actual mechanics itself, and nothing here is
+ * read back out except for the menu.
  */
-export interface CastRung { id: string; label: string; verb: string; detail: string; reachDc: number }
+export interface CastRung { id: string; label: string; verb: string; detail: string }
 
 const TIER1_DETAIL: Record<Tree, string> = {
   blast: "A spell attack against the target's Defence; an ordinary hit deals 1 wound.",
@@ -100,16 +99,16 @@ const TIER3_DETAIL: Record<Tree, string> = {
   blast: "+2 to the spell attack, and a lingering wound at the start of the target's next activation.",
   healing: 'Regenerates 1 wound a round, and +2 on the target\'s next save.',
   controlling: 'May not reach above its grade on its next activation.',
-  offense: "+3 to the buffed unit's attack, and its target does not strike back if its next act is a Fight.",
+  offense: "+3 to the buffed unit's attack, and a miss on its next Fight cannot repulse it.",
   defense: '+4 Defence, +2 saves, and −1 from the next damage it takes.',
   movement: 'Grants a movement type: fly, swim, or water walk.',
 };
 
 export const CAST_RUNGS: Record<Tree, [CastRung, CastRung, CastRung]> = Object.fromEntries(
   TREES.map((tree) => [tree, [
-    { id: `${tree}-1`, label: 'Tier 1', verb: 'casts', detail: TIER1_DETAIL[tree], reachDc: 0 },
-    { id: `${tree}-2`, label: 'Tier 2', verb: 'pushes', detail: TIER2_DETAIL[tree], reachDc: 0 },
-    { id: `${tree}-3`, label: 'Tier 3', verb: 'pushes', detail: TIER3_DETAIL[tree], reachDc: 2 },
+    { id: `${tree}-1`, label: 'Tier 1', verb: 'casts', detail: TIER1_DETAIL[tree] },
+    { id: `${tree}-2`, label: 'Tier 2', verb: 'casts', detail: TIER2_DETAIL[tree] },
+    { id: `${tree}-3`, label: 'Tier 3', verb: 'casts', detail: TIER3_DETAIL[tree] },
   ]]),
 ) as Record<Tree, [CastRung, CastRung, CastRung]>;
 

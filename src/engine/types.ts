@@ -1,7 +1,7 @@
 import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
-import type { ClimbMode, Grade, Grades, LadderType } from './ladders.js';
+import type { Grade, Grades, LadderType } from './ladders.js';
 import type { CastAxis, CastBand, CastTier, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
@@ -10,8 +10,8 @@ export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 /** PF2e's economy, unchanged: Move, Move, Move, or Move, Shoot, Guard. */
 export const ACTIONS_PER_ACTIVATION = 3;
-/** What one action after the first is worth. The system's single increment: Outflanked, a
- * Ward and the mounted push bonus are all the same number. */
+/** The system's single increment: a Guard's Defence, Outflanked, a Ward and taking heart are
+ * all the same number. */
 export const ACTION_BONUS = 2;
 /** The disorder a troop of ordinary discipline absorbs before it routs; `Unit.quality` varies it. */
 export const ROUTED_AT = 3;
@@ -44,9 +44,8 @@ export interface Unit {
   speed: number;
   /** A flier ignores terrain cost and blocked edges. */
   flying: boolean;
-  /** Read off the 'mounted' signal (Mounted Troop / First-class Charge). Feeds the push
-   * bonus alongside the cavalry-charge tactic — both went inert when Move's grade was
-   * dropped; see "Move bands notes" in the todos. */
+  /** Read off the 'mounted' signal (Mounted Troop / First-class Charge). Inert since the
+   * movement push was retired; kept on the sheet for whatever a charge comes to mean. */
   mounted: boolean;
   /** Read off the 'no-retreat' signal. Such a troop follows an enemy that withdraws from it,
    * one free Move, to re-establish contact — it is a hold on others, not on itself. */
@@ -60,13 +59,13 @@ export interface Unit {
   /** Every tree this unit may cast at all, Tier 1 included — the caster's whole tradition, or
    * the one tree a non-caster's tactic grants (section 11). */
   trees: Tree[];
-  /** The caster's own push-only pool: level ÷ 5, refreshed every activation. 0 for a
-   * non-caster or a tactic-granted tree, which never pushes at all. */
+  /** The caster's Cast-only actions: level ÷ 5, refreshed every activation, spent on a tier
+   * before its ordinary three are. 0 for a non-caster or a tactic-granted tree. */
   castPool: number;
   quality: number;
   /** Actions left in this activation; back to three between activations. */
   actions: number;
-  /** A unit attacks once per activation. Further actions buy weight, never a second attack. */
+  /** A unit attacks once per activation. Further actions buy other acts, never a second attack. */
   attacked: boolean;
   /** Movement banked by Move actions already taken and not yet spent, in feet. */
   feet: number;
@@ -75,8 +74,7 @@ export interface Unit {
   wounds: number;
   disorder: number;
   status: 'active' | 'destroyed' | 'left';
-  /** The Guard in force until this unit next activates. `defence` is bought outright with
-   * committed actions; `rung` says which damage reduction the rung itself carries. */
+  /** The Guard in force until this unit next activates; `rung` says which effects it carries. */
   guard: { defence: number; rung: Grade } | null;
   /** Activations left before the unit may move again. Digging in sets two: this one and the next. */
   rooted: number;
@@ -92,7 +90,7 @@ export interface Unit {
   defense: { bonus: number; noWoundDisorder: boolean; damageReduction: number };
   /** Offense buff and Controlling's action penalty apply *during* the buffed or compelled
    * unit's own next activation, not before it — cleared at `finish`. */
-  offense: { bonus: number; damage: number; noStrikeBack: boolean };
+  offense: { bonus: number; damage: number; noRepulse: boolean };
   movementBuff: { bonusFeet: number; flies: boolean };
   /** Controlling Tier 1/2. Tier 3 is `compelled`, above. */
   control: { movementPenaltyFeet: number; actionPenalty: boolean };
@@ -107,55 +105,28 @@ export interface Unit {
 /** Which unit acts. Defaults to `activeUnit(state)`. */
 interface Acts { unit?: string }
 
-/**
- * How the player allocates the actions committed beyond the one the act itself costs. Each
- * point is one action and is worth `ACTION_BONUS` where it lands, so
- * `roll + push + cost === actions committed`.
- */
-export interface Spend {
-  /** Fed to the act's own roll — the attack, the shot, the casting, Rally's check, the escape. */
-  roll: number;
-  /** Fed to the push check that climbs to a rung above the unit's grade. */
-  push: number;
-  /** Guard only: +2 Defence each. The rung adds none of its own. */
-  defence: number;
-  /** Withdraw only: another Speed's worth of ground, as a Move action buys. */
-  distance: number;
-  /** Cast only: points off the caster's own push pool, stacked on top of `push` — see
-   * `castPool` on `Unit`. */
-  pool: number;
-}
-
-export type Dial = keyof Spend;
-export const DIALS: Dial[] = ['roll', 'push', 'defence', 'distance', 'pool'];
-
 export interface RungAction extends Acts {
   type: LadderType;
   rung: Grade;
   target?: string;
   spell?: Tree;
-  /** Cast only: which of range, duration or effect this push reaches for — never more than
-   * one. Defaults to `'effect'`, the only axis the graphical menu ever offers; range and
-   * duration pushes are reachable through this same action, just not from the board yet. */
+  /** Cast only: which of range, duration or effect a tier above the first buys — never more
+   * than one. Defaults to `'effect'`, the only axis the graphical menu ever offers; range and
+   * duration are reachable through this same action, just not from the board yet. */
   axis?: CastAxis;
-  spend?: Partial<Spend>;
 }
 
 /** Stride to `to`, spending as many Move actions as the route costs. */
 export interface MoveAction extends Acts { type: 'move'; to: string }
 
-/** Break contact: one Escape check per enemy holding the unit, then move. */
-export interface WithdrawAction extends Acts { type: 'withdraw'; to?: string; spend?: Partial<Spend> }
+/** Break contact: one Escape check per enemy holding the unit, then move. `distance` is the
+ * further actions spent on ground, another Speed's worth each. */
+export interface WithdrawAction extends Acts { type: 'withdraw'; to?: string; distance?: number }
 
-/** Move into contact and fight: the movement's actions, plus one for the melee, plus whatever
- * the melee is weighted with. */
-export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade; spend?: Partial<Spend> }
+/** Move into contact and fight: the movement's actions, plus the rung's own. */
+export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade }
 
-/** Reach for a cell beyond every action the unit has — a Quality check against the level DC.
- * Success lands on `to`; failure lands on `PushReach.fallback` instead. */
-export interface PushAction extends Acts { type: 'push'; to: string }
-
-export type Action = RungAction | MoveAction | WithdrawAction | ChargeAction | PushAction;
+export type Action = RungAction | MoveAction | WithdrawAction | ChargeAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -174,54 +145,21 @@ export interface RungOption {
   index: Grade;
   label: string;
   detail: string;
-  /** `free` needs no roll and no further action; `buy` is bought outright with one more
-   * action; `reach` is the free gamble; `locked` is out of reach this activation. */
-  access: 'free' | 'buy' | 'reach' | 'locked';
+  /** Actions this rung costs: one at or below the grade, one more for each rung above it.
+   * `null` when no number of actions reaches it — above a tradition's cap, or compelled. */
+  cost: number | null;
   legal: boolean;
   reason: string | null;
-  /** The DC of the climb to *this* rung, which is not the same for every rung an offer holds —
-   * Cast may gamble for two tiers at once, and the further one is dearer. `null` unless this
-   * rung is gambled for. */
-  reachDc: number | null;
   needsTarget: boolean;
   targets: RungTarget[];
 }
 
-/** Which dials an offer will take, and what each action put on one is worth. */
-export interface SpendDials {
-  /** Actions this offer can absorb beyond the one it costs. */
-  extra: number;
-  /** What one of them buys, wherever it lands. */
-  step: number;
-  /** The act has a roll of its own. Guard sets a number outright, so it has none. */
-  roll: boolean;
-  /** There is a rung above the granted one and a check standing between. False on a ladder
-   * that buys its climb — there is no gamble to weight. */
-  push: boolean;
-  /** Guard's second dial: Defence, which is the only number a Guard sets. */
-  defence: boolean;
-  /** Withdraw's second dial: another Speed's worth of ground to run. */
-  distance: boolean;
-  /** Cast's own second dial: the caster's push-only pool, on top of `push`. */
-  pool: boolean;
-}
-
 export interface ActionOffer {
   type: LadderType;
-  /** Actions the act itself costs, before the climb or anything the dials take. */
-  cost: number;
-  /** How this ladder gets above its grade — the gamble, the purchase, or not at all. */
-  climb: ClimbMode;
-  /** Actions a `buy` rung costs on top of `cost`. Zero on a ladder that gambles instead. */
-  climbCost: number;
-  dials: SpendDials;
   spell: Tree | null;
   label: string;
   detail: string;
   granted: Grade;
-  reachable: Grade | null;
-  reachDc: number | null;
-  reachModifier: number;
   rungs: [RungOption, RungOption, RungOption];
 }
 
@@ -239,11 +177,12 @@ export interface EscapeCheck {
  * Scatter, Break off and Fighting retreat used to name. */
 export interface WithdrawOffer {
   cost: number;
-  dials: SpendDials;
-  /** The unit's Reflex, less disorder, before anything the dials add. */
+  /** Further actions the unit could put on distance, another Speed's worth each. */
+  extra: number;
+  /** The unit's Reflex, less disorder. */
   modifier: number;
   escapes: EscapeCheck[];
-  /** Cells to leave for, at the full distance the dials could buy. */
+  /** Cells to leave for, at the full distance `extra` could buy. */
   targets: RungTarget[];
 }
 
@@ -266,19 +205,6 @@ export interface ChargeOption {
   actions: number;
 }
 
-/** A cell beyond every action the unit has — reachable only by gambling a Quality check.
- * Bounded to one further action's worth of movement past `MoveReach`'s own budget. */
-export interface PushReach {
-  /** Feet from where the unit stands. */
-  feet: number;
-  /** The cell this one was reached from, for path reconstruction; may itself be another push
-   * cell, an affordable `MoveReach` cell, or the unit's own square. */
-  from: string | null;
-  /** Where a failed reach actually lands: the furthest cell along this same route the unit
-   * could pay for outright. */
-  fallback: string;
-}
-
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */
 export interface Activation {
   unit: string;
@@ -293,8 +219,6 @@ export interface Activation {
   /** Offered in contact, and to a routed unit. `null` when there is nothing to break from. */
   withdraw: WithdrawOffer | null;
   moves: Map<string, MoveReach>;
-  /** Beyond every affordable cell — a reach, not a Stride. See `pushReach`. */
-  push: Map<string, PushReach>;
   charges: ChargeOption[];
 }
 

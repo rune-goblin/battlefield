@@ -5,7 +5,7 @@ import type { BoardTheme, HighlightStyle } from '../theme.js';
 
 export type { HighlightStyle } from '../theme.js';
 
-const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'push', 'attack'];
+const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'attack'];
 
 /** Reach reads as ink, never colour: the terrain keeps the board's only palette, so a band is
  * a wash the map shows straight through. Three levels, and the cheaper the ground the more
@@ -14,14 +14,13 @@ const FAINT = 0.08;
 const MID = 0.16;
 const STRONG = 0.24;
 
-/** `push` and `attack` also take a thin outline: both mean something the wash alone cannot
- * say — ground past every action you have, and ground under threat. */
+/** `attack` also takes a thin outline: ground under threat is something the wash alone
+ * cannot say. */
 const SHADE: Record<HighlightStyle, { wash: number; outline: boolean }> = {
   deploy: { wash: MID, outline: false },
   move: { wash: STRONG, outline: false },
   moveFar: { wash: MID, outline: false },
   moveFar3: { wash: FAINT, outline: false },
-  push: { wash: FAINT, outline: true },
   attack: { wash: STRONG, outline: true },
 };
 

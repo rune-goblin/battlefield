@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
-  endActivation, isOutflanked, isRouted, isShaken, isStanding, movementBudget, moveReach, movePath, PUSH_BONUS, pushModifierFor,
-  pushReach, rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
+  endActivation, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
+  rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -10,7 +10,7 @@ import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
-import { CLIMB_STEP, rungOf, type Grade, type LadderType } from '../engine/ladders.js';
+import { rungOf, type Grade, type LadderType } from '../engine/ladders.js';
 import { levelDc } from '../engine/tables.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
@@ -50,8 +50,8 @@ const guardOn = (state: BattleState, id: string, rng = scriptedRng([10])) =>
   act(state, { type: 'guard', rung: 1, unit: id }, rng);
 const moves = (state: BattleState, id: string) => moveReach(state, unit(state, id));
 const said = (state: BattleState, text: string) => state.log.some((e) => e.text.includes(text));
-// An activation always refills to three actions, so spending two on Guard is the only way to
-// reach a push with a single action behind it.
+// An activation always refills to three actions, so spending two on Guard is the way to a
+// unit with a single action left.
 const oneActionLeft = (state: BattleState, id: string) => guardOn(guardOn(state, id), id);
 // A routed unit is offered no ladder at all, only the withdrawal, so burning its activation
 // takes both. One action leaves two unspent, so the activation is ended by hand unless the
@@ -199,8 +199,8 @@ describe('the six trees', () => {
     // movement 0 — no Movement row at all, and Blast locked at Tier 1.
     expect(availableActions(s, 'u0').filter((o) => o.type === 'cast').map((o) => o.spell))
       .toEqual(['blast', 'healing', 'controlling', 'offense', 'defense']);
-    expect(castOffer(s, 'blast').rungs.map((r) => r.access)).toEqual(['free', 'locked', 'locked']);
-    expect(castOffer(s, 'healing').rungs.map((r) => r.access)).toEqual(['free', 'reach', 'reach']);
+    expect(castOffer(s, 'blast').rungs.map((r) => r.cost)).toEqual([1, null, null]);
+    expect(castOffer(s, 'healing').rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
   });
 
   it("anchors each tree's Tier 1 range at its own base band, and only a range push extends it", () => {
@@ -222,26 +222,13 @@ describe('the six trees', () => {
     expect(castOffer(s, 'healing').rungs[0].targets.map((t) => t.id)).toEqual(['u0', 'u1']);
     expect(castOffer(s, 'healing').rungs[2].targets.map((t) => t.id)).toContain('u2');
 
-    // Pushing effect instead of range still can't carry to u2, even reaching Tier 3 outright.
-    const pushedEffect = act(s, { type: 'cast', rung: 3, spell: 'healing', target: 'u2', unit: 'u0', spend: { push: 2 } }, scriptedRng([15]));
-    expect(unit(pushedEffect, 'u2').disorder).toBe(1);
+    // Buying effect instead of range still can't carry to u2, even at Tier 3.
+    const boughtEffect = act(s, { type: 'cast', rung: 3, spell: 'healing', target: 'u2', unit: 'u0' }, scriptedRng([15]));
+    expect(unit(boughtEffect, 'u2').disorder).toBe(1);
 
-    // Pushing range instead reaches it, at Tier 1's own effect (clears 1 disorder).
-    const pushedRange = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u2', unit: 'u0', axis: 'range', spend: { push: 1 } }, scriptedRng([15]));
-    expect(unit(pushedRange, 'u2').disorder).toBe(0);
-  });
-
-  it('spends the caster\'s own pool on a push, on top of any ordinary actions committed', () => {
-    const s = createBattle({
-      units: [{ card: cleric, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
-      board: openBoard(),
-    });
-    // Level 6 ÷ 5, rounded down: 1 point in the pool.
-    expect(unit(s, 'u0').castPool).toBe(1);
-    expect(() => act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u0', unit: 'u0', spend: { pool: 2 } }, scriptedRng([10])))
-      .toThrow(/only 1 in its push pool/);
-    const s2 = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u0', unit: 'u0', spend: { pool: 1 } }, scriptedRng([10]));
-    expect(unit(s2, 'u0').castPool).toBe(0);
+    // Buying range instead reaches it, at Tier 1's own effect (clears 1 disorder).
+    const boughtRange = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u2', unit: 'u0', axis: 'range' }, scriptedRng([15]));
+    expect(unit(boughtRange, 'u2').disorder).toBe(0);
   });
 
   it("rolls the caster's spell attack against Defence for Blast", () => {
@@ -269,179 +256,81 @@ describe('the six trees', () => {
   });
 });
 
-describe('climbing above your grade', () => {
-  // Level-6 infantry: Will +17, level DC 22, and Press adds nothing to it. Rolls 15 / 5 / 4 / 1
-  // give the four degrees; the second roll in each script is the melee behind the climb.
+describe('paying for a rung', () => {
+  // Level-6 infantry: Fight 2 / Guard 1 / Rally 3 / Shoot 1.
   const engaged = () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
     return state;
   };
-  const reachPress = (roll: number, grade: Grade = 1) => {
-    const s = engaged();
-    unit(s, 'u0').grades.fight = grade;
-    return act(s, { type: 'fight', rung: grade + 1 as Grade, target: 'u2', unit: 'u0' }, scriptedRng([roll, 5]));
-  };
+  const costs = (o: ActionOffer) => o.rungs.map((r) => r.cost);
 
-  it('takes a granted rung with no roll at all', () => {
+  it('prices a rung at one action at or below the grade, and one more for each rung above', () => {
+    const s = engaged();
+    for (const [grade, expected] of [[1, [1, 2, 3]], [2, [1, 1, 2]], [3, [1, 1, 1]]] as [Grade, number[]][]) {
+      unit(s, 'u0').grades.fight = grade;
+      expect(costs(offer(s, 'fight', 'u0'))).toEqual(expected);
+    }
+    // Every ladder pays the same way, Guard included.
+    expect(costs(offer(s, 'guard', 'u0'))).toEqual([1, 2, 3]);
+    expect(costs(offer(s, 'rally', 'u0'))).toEqual([1, 1, 1]);
+  });
+
+  it('rolls nothing for a rung: the act simply happens at the price', () => {
     const s = engaged();
     unit(s, 'u0').grades.fight = 1;
-    const f = offer(s, 'fight', 'u0');
-    expect(f.granted).toBe(1);
-    expect(f.reachable).toBe(2);
-    expect(f.climb).toBe('roll');
-    expect(f.climbCost).toBe(0);
-    expect(f.rungs.map((r) => r.access)).toEqual(['free', 'reach', 'locked']);
+    const pressed = act(s, { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    expect(unit(pressed, 'u0').actions).toBe(1);
+    expect(said(pressed, 'commits 2 actions to Press')).toBe(true);
+    expect(pressed.log.some((e) => e.text.includes('reaches for'))).toBe(false);
+    const over = act(s, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    expect(over.activated).toContain('u0');
   });
 
-  it('critical success climbs one rung further', () => {
-    expect(said(reachPress(15), 'reaches for Press')).toBe(true);
-    expect(unit(reachPress(15), 'u0').disorder).toBe(0);
+  it('refuses a rung the actions left cannot pay for, and says what it needs', () => {
+    const low = oneActionLeft(engaged(), 'u0');
+    unit(low, 'u0').grades.fight = 1;
+    expect(offer(low, 'fight', 'u0').rungs.map((r) => r.reason)).toEqual([null, 'needs 2 actions', 'needs 3 actions']);
+    expect(() => act(low, { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([10]))).toThrow(/needs 2 actions/);
   });
 
-  // A climb either happens or it does not: there is no lesser rung to land on.
-  it('failure loses the act outright, at no further cost', () => {
-    const s = reachPress(4);
-    expect(said(s, 'comes to nothing')).toBe(true);
-    expect(unit(s, 'u0').disorder).toBe(0);
-    expect(unit(s, 'u2').wounds).toBe(0);
-    expect(unit(s, 'u0').attacked).toBe(false);
+  it('Shoot and Rally pay the same way: Aim is two actions, and Rally two at grade 1', () => {
+    const start = battle([]).state;
+    place(start, 'u0', 'c5');
+    const s = burn(start, 'u1');
+    expect(costs(offer(s, 'shoot', 'u2'))).toEqual([1, 2, 3]);
+    const aimed = act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2' }, scriptedRng([10, 10]));
+    expect(unit(aimed, 'u2').actions).toBe(1);
+
+    const r = engaged();
+    unit(r, 'u0').disorder = 2;
+    unit(r, 'u0').grades.rally = 1;
+    expect(costs(offer(r, 'rally', 'u0'))).toEqual([1, 2, 3]);
+    expect(unit(act(r, { type: 'rally', rung: 2, unit: 'u0' }, scriptedRng([15])), 'u0').actions).toBe(1);
   });
 
-  it('critical failure loses the act and costs a point of disorder, at any grade', () => {
-    for (const grade of [1, 2] as Grade[]) {
-      const s = reachPress(1, grade);
-      expect(said(s, 'comes to nothing')).toBe(true);
-      expect(unit(s, 'u0').disorder).toBe(1);
-      expect(unit(s, 'u2').wounds).toBe(0);
-      expect(unit(s, 'u0').attacked).toBe(false);
-    }
+  it('a compelled unit cannot pay for a rung above its grade', () => {
+    const s = engaged();
+    unit(s, 'u0').compelled = true;
+    expect(costs(offer(s, 'fight', 'u0'))).toEqual([1, 1, null]);
+    expect(offer(s, 'fight', 'u0').rungs[2].reason).toBe('compelled');
   });
 
-  // Every rung carries the DC of the climb to itself, not the offer's nearest one: a caster may
-  // gamble for two tiers at once, and the further gamble is the dearer by CLIMB_STEP.
-  it('prices the climb to each rung, with a step for every rung past the first', () => {
-    const caster: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
+  it("a caster's tiers cost their own number, paid from its own actions first", () => {
+    const cleric: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
     const s = createBattle({
-      units: [
-        { card: caster, side: 'attacker', square: 'c2' },
-        { card: kobolds, side: 'defender', square: 'c7' },
-      ],
+      units: [{ card: cleric, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
       board: openBoard(),
     });
-    // A tradition caps how high each tree pushes; this needs one the caster may take to Tier 3.
-    const deep = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.rungs[2].access === 'reach')!;
-    const [t1, t2, t3] = deep.rungs;
-    expect(t1.reachDc).toBeNull();
-    expect(t3.reachDc! - t2.reachDc!).toBe(2 + CLIMB_STEP);
-
-    // A ladder only ever offers one rung above the grade, so the step never bites there.
-    const f = availableActions(engaged(), 'u0').find((o) => o.type === 'fight')!;
-    const climbed = f.rungs.find((r) => r.access === 'reach')!;
-    expect(climbed.reachDc).toBe(f.reachDc);
-  });
-
-  // The bite is on the outcome a player actually sees. A one-rung climb fails 35% of the time
-  // and costs nothing for it; a two-rung climb fails nearly half the time and costs disorder,
-  // which is the only way the further gamble reads as a bet rather than a free lottery ticket.
-  it('costs a critically failed cast a point of disorder on top of the cast', () => {
-    const caster: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
-    const start = () => {
-      const s = createBattle({
-        units: [
-          { card: caster, side: 'attacker', square: 'c2' },
-          { card: kobolds, side: 'defender', square: 'c7' },
-        ],
-        board: openBoard(),
-      });
-      place(s, 'u1', 'c3');
-      return s;
-    };
-    const deepest = (s: BattleState) =>
-      availableActions(s, 'u0').find((o) => o.type === 'cast' && o.rungs[2].access === 'reach')!;
-    const cast = (rung: Grade, roll: number) => {
-      const s = start();
-      const o = deepest(s);
-      const target = o.rungs[rung - 1].targets[0]?.id;
-      return unit(act(s, { type: 'cast', rung, spell: o.spell!, target, unit: 'u0' }, scriptedRng([roll, 10, 10])), 'u0');
-    };
-
-    // A natural 1 is a critical failure whatever the DC: the cast is lost and costs 1 disorder.
-    expect(cast(2, 1).disorder).toBe(1);
-    expect(cast(3, 1).disorder).toBe(1);
-  });
-
-  it('a grade-3 unit has nothing to climb to', () => {
-    const s = engaged();
-    unit(s, 'u0').grades.fight = 3;
-    const f = offer(s, 'fight', 'u0');
-    expect(f.reachable).toBeNull();
-    expect(f.rungs.map((r) => r.access)).toEqual(['free', 'free', 'free']);
-  });
-});
-
-describe('what a climb costs, ladder by ladder', () => {
-  const engaged = () => {
-    const { state } = battle([]);
-    place(state, 'u2', 'c3');
-    return state;
-  };
-
-  // Guard's currency is the Defence it sets, so its rungs are postures the grade gates
-  // outright — there is nothing to gamble for and nothing to buy.
-  it('Guard does not climb at all', () => {
-    const g = offer(engaged(), 'guard', 'u0');
-    expect(g.climb).toBe('none');
-    expect(g.reachable).toBeNull();
-    expect(g.dials.push).toBe(false);
-    expect(g.rungs.map((r) => r.access)).toEqual(['free', 'locked', 'locked']);
-    expect(() => act(engaged(), { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([10])))
-      .toThrow(/a posture is not climbed for/);
-  });
-
-  // Aim means taking time: Shoot buys its rung with a further action and never rolls for it.
-  it('Shoot buys its climb with an action and no roll', () => {
-    const start = battle([]).state;
-    place(start, 'u0', 'c5');
-    const s = burn(start, 'u1');
-    const o = offer(s, 'shoot', 'u2');
-    expect(o.climb).toBe('action');
-    expect(o.climbCost).toBe(1);
-    expect(o.dials.push).toBe(false);
-    expect(o.rungs[1].access).toBe('buy');
-
-    const aimed = act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2' }, scriptedRng([10]));
-    expect(unit(aimed, 'u2').actions).toBe(1);
-    expect(aimed.log.some((e) => e.text.includes('reaches for'))).toBe(false);
-    expect(said(aimed, 'takes the time for Aim')).toBe(true);
-  });
-
-  it('Rally buys its climb the same way, and refuses it on one action', () => {
-    const s = engaged();
-    unit(s, 'u0').disorder = 2;
-    unit(s, 'u0').grades.rally = 1;
-    const o = offer(s, 'rally', 'u0');
-    expect(o.climb).toBe('action');
-    expect(o.rungs[1].access).toBe('buy');
-    expect(unit(act(s, { type: 'rally', rung: 2, unit: 'u0' }, scriptedRng([15])), 'u0').actions).toBe(1);
-
-    // Actions refill when an activation begins, so the way to one action is to spend two.
-    const low = oneActionLeft(engaged(), 'u0');
-    unit(low, 'u0').disorder = 2;
-    unit(low, 'u0').grades.rally = 1;
-    expect(offer(low, 'rally', 'u0').rungs[1].reason).toBe('needs 2 actions');
-    expect(() => act(low, { type: 'rally', rung: 2, unit: 'u0' }, scriptedRng([15]))).toThrow(/needs 2 actions/);
-  });
-
-  // A bought climb takes its action off the top, so the dials only ever see what is left.
-  it('a bought climb leaves one fewer action for weight', () => {
-    const start = battle([]).state;
-    place(start, 'u0', 'c5');
-    const s = burn(start, 'u1');
-    expect(() => act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2', spend: { roll: 2 } }, scriptedRng([10])))
-      .toThrow(/only 3 actions/);
-    const one = act(s, { type: 'shoot', rung: 2, target: 'u0', unit: 'u2', spend: { roll: 1 } }, scriptedRng([10]));
-    expect(one.activated).toContain('u2');
+    const tree = (state: BattleState, spell: string) => availableActions(state, 'u0').find((o) => o.type === 'cast' && o.spell === spell)!;
+    expect(costs(tree(s, 'healing'))).toEqual([1, 2, 3]);
+    // Level 6 ÷ 5: one action of its own, so Tier 3 leaves one of the ordinary three.
+    expect(unit(s, 'u0').castPool).toBe(1);
+    const deep = act(s, { type: 'cast', rung: 3, spell: 'healing', target: 'u0', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(deep, 'u0').castPool).toBe(0);
+    expect(unit(deep, 'u0').actions).toBe(1);
+    // Blast is capped at Tier 1 for a divine caster: no price reaches further.
+    expect(costs(tree(s, 'blast'))).toEqual([1, null, null]);
   });
 });
 
@@ -554,102 +443,7 @@ describe('movement points', () => {
   });
 });
 
-describe('the push band', () => {
-  it('is bounded to one action\'s worth of movement beyond what the unit can afford', () => {
-    const { state } = battle([]);
-    const u = unit(state, 'u0');
-    const affordable = moveReach(state, u);
-    const budget = movementBudget(u);
-    const push = pushReach(state, u);
-    expect(push.size).toBeGreaterThan(0);
-    for (const [cell, p] of push) {
-      expect(affordable.has(cell)).toBe(false);
-      expect(p.feet).toBeGreaterThan(budget);
-      expect(p.feet).toBeLessThanOrEqual(budget + u.speed);
-      // A failed reach must have somewhere affordable to land.
-      expect(affordable.has(p.fallback)).toBe(true);
-    }
-  });
-
-  it('critical success reaches the cell, spending every action and no disorder', () => {
-    const { state } = battle([]);
-    const [cell] = [...pushReach(state, unit(state, 'u0')).keys()];
-    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([20]));
-    expect(unit(s, 'u0').square).toEqual(parse(cell));
-    expect(unit(s, 'u0').disorder).toBe(0);
-    // Spent every action left, win or lose, so the activation always ends here.
-    expect(s.activated).toEqual(['u0']);
-    expect(s.pending).toBe('defender');
-  });
-
-  it('success reaches the cell', () => {
-    const { state } = battle([]);
-    const [cell] = [...pushReach(state, unit(state, 'u0')).keys()];
-    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([10]));
-    expect(unit(s, 'u0').square).toEqual(parse(cell));
-    expect(unit(s, 'u0').disorder).toBe(0);
-  });
-
-  it('failure stops at the furthest affordable cell along the route, no disorder', () => {
-    const state = oneActionLeft(battle([]).state, 'u0');
-    const push = pushReach(state, unit(state, 'u0'));
-    const [cell] = [...push.keys()];
-    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([4]));
-    expect(unit(s, 'u0').square).toEqual(parse(push.get(cell)!.fallback));
-    expect(unit(s, 'u0').disorder).toBe(0);
-  });
-
-  it('critical failure stops at the fallback and gains 1 disorder', () => {
-    const state = oneActionLeft(battle([]).state, 'u0');
-    const push = pushReach(state, unit(state, 'u0'));
-    const [cell] = [...push.keys()];
-    const s = act(state, { type: 'push', to: cell, unit: 'u0' }, scriptedRng([1]));
-    expect(unit(s, 'u0').square).toEqual(parse(push.get(cell)!.fallback));
-    expect(unit(s, 'u0').disorder).toBe(1);
-  });
-
-  it('mounted and cavalry-charge grant a bonus that helps a push succeed', () => {
-    const plain = unit(battle([]).state, 'u0');
-    expect(pushModifierFor(plain)).toBe(plain.stats.will);
-
-    const mountedCard: UnitCard = { name: 'Dragoons', level: 6, role: 'infantry', tactics: [], signals: ['mounted'] };
-    const chargerCard: UnitCard = { name: 'Charger', level: 6, role: 'cavalry', tactics: ['cavalry-charge'] };
-    for (const card of [mountedCard, chargerCard]) {
-      const s0 = createBattle({ units: [{ card, side: 'attacker', square: 'c2' }], board: openBoard() }, scriptedRng([10]));
-      const u = unit(s0, 'u0');
-      expect(pushModifierFor(u)).toBe(u.stats.will + PUSH_BONUS);
-    }
-
-    // Wired end to end on a one-action push, so the commitment bonus is zero and the mount is
-    // the only thing in play: mod 17 vs DC 22 rolls 21 and fails, 23 with the bonus and lands.
-    const infState = oneActionLeft(battle([]).state, 'u0');
-    const [infCell] = [...pushReach(infState, unit(infState, 'u0')).keys()];
-    const infResult = act(infState, { type: 'push', to: infCell, unit: 'u0' }, scriptedRng([4]));
-    expect(unit(infResult, 'u0').square).not.toEqual(parse(infCell));
-
-    const mState = oneActionLeft(createBattle({ units: [{ card: mountedCard, side: 'attacker', square: 'c2' }], board: openBoard() }, scriptedRng([10])), 'u0');
-    const [mCell] = [...pushReach(mState, unit(mState, 'u0')).keys()];
-    const mResult = act(mState, { type: 'push', to: mCell, unit: 'u0' }, scriptedRng([4]));
-    expect(unit(mResult, 'u0').square).toEqual(parse(mCell));
-  });
-
-  it('every action after the first weights the push check', () => {
-    expect(pushModifierFor(unit(battle([]).state, 'u0'), 3)).toBe(17 + 2 * ACTION_BONUS);
-
-    const one = oneActionLeft(battle([]).state, 'u0');
-    const [oneCell] = [...pushReach(one, unit(one, 'u0')).keys()];
-    expect(unit(act(one, { type: 'push', to: oneCell, unit: 'u0' }, scriptedRng([4])), 'u0').square)
-      .not.toEqual(parse(oneCell));
-
-    // The same roll, with all three actions behind it: 4 + 17 + 4 = 25 against DC 22.
-    const all = battle([]).state;
-    const [allCell] = [...pushReach(all, unit(all, 'u0')).keys()];
-    expect(unit(act(all, { type: 'push', to: allCell, unit: 'u0' }, scriptedRng([4])), 'u0').square)
-      .toEqual(parse(allCell));
-  });
-});
-
-describe('actions buy weight, not repetition', () => {
+describe('one attack an activation, and actions buy acts', () => {
   // Level-6 infantry: strike +11, Will +17, Reflex +14, level DC 22, Fight 2 / Guard 1.
   const engaged = () => {
     const { state } = battle([]);
@@ -687,110 +481,6 @@ describe('actions buy weight, not repetition', () => {
     expect(offer(blasted, 'fight', 'u0').rungs[0].legal).toBe(false);
   });
 
-  it('puts each action after the first on the roll as +2', () => {
-    for (const extra of [0, 1, 2]) {
-      const s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: extra } }, scriptedRng([10, 5]));
-      expect(strikeMod(s)).toBe(11 + extra * ACTION_BONUS);
-      expect(unit(s, 'u0').actions).toBe(s.activated.includes('u0') ? 3 : 2 - extra);
-    }
-  });
-
-  it('puts each action after the first on the push check instead', () => {
-    // Fight 2 reaching for Overrun: DC 24 against Will +17, so a 3 needs the full commitment
-    // for the climb to land at all — short of that the act comes to nothing.
-    const lands = (push: number) => {
-      const s = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0', spend: { push } }, scriptedRng([3, 5]));
-      return !s.log.some((e) => e.text.includes('comes to nothing'));
-    };
-    expect([lands(0), lands(1), lands(2)]).toEqual([false, false, true]);
-  });
-
-  it('takes 0.50, 0.60 and 0.80 wounds a turn on one, two and three actions in an even matchup', () => {
-    const rate = (extra: number, rung: Grade = 1) => {
-      let wounds = 0;
-      for (let roll = 1; roll <= 20; roll++) {
-        const s0 = engaged();
-        // The published medians run parallel, so an even matchup needs 12+ at any level.
-        unit(s0, 'u2').stats.defence = strikeModifier(s0, unit(s0, 'u0'), unit(s0, 'u2')) + 12;
-        const s = act(s0, { type: 'fight', rung, target: 'u2', unit: 'u0', spend: { roll: extra } }, scriptedRng([roll, 1]));
-        wounds += unit(s, 'u2').wounds;
-      }
-      return wounds / 20;
-    };
-    expect([rate(0), rate(1), rate(2)]).toEqual([0.5, 0.6, 0.8]);
-    // The same table on Press, which is what says the rung adds no number of its own — the
-    // old +2 read 0.60 / 0.80 / 1.00 here.
-    expect([rate(0, 2), rate(1, 2), rate(2, 2)]).toEqual([0.5, 0.6, 0.8]);
-  });
-
-  it('refuses a roll dial on Guard, which has no roll of its own', () => {
-    expect(offer(engaged(), 'guard', 'u0').dials)
-      .toMatchObject({ roll: false, push: false, defence: true, distance: false, extra: 2, step: 2 });
-    expect(() => act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { roll: 1 } }, scriptedRng([10])))
-      .toThrow(/no roll of its own/);
-    expect(offer(engaged(), 'fight', 'u0').dials).toMatchObject({ roll: true, push: true, defence: false });
-    expect(() => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { defence: 1 } }, scriptedRng([10, 5])))
-      .toThrow(/no Defence to raise/);
-  });
-
-  it('refuses more actions than the unit has, and a push dial on a rung it is granted', () => {
-    expect(() => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: 3 } }, scriptedRng([10, 5])))
-      .toThrow(/only 3 actions/);
-    expect(() => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { push: 1 } }, scriptedRng([10, 5])))
-      .toThrow(/needs no push check/);
-  });
-
-  it('lets every type absorb a full three-action commitment', () => {
-    const ends = (s: BattleState) => { expect(s.activated).toContain('u0'); return s; };
-
-    ends(act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10, 5])));
-    ends(act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence: 2 } }, scriptedRng([2])));
-    ends(act(engaged(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([4])));
-
-    const start = battle([]).state;
-    place(start, 'u0', 'c5');
-    const shooter = burn(start, 'u1');
-    const shot = act(shooter, { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([10]));
-    expect(strikeMod(shot)).toBe(7);
-    expect(unit(shot, 'u2').actions).toBe(2);
-    const heavy = act(shooter, { type: 'shoot', rung: 1, target: 'u0', unit: 'u2', spend: { roll: 2 } }, scriptedRng([10]));
-    expect(strikeMod(heavy)).toBe(7 + 2 * ACTION_BONUS);
-    expect(heavy.activated).toContain('u2');
-
-    // Rally is a Quality check against the rout DC; the same natural roll fails unweighted but
-    // succeeds once two spare actions weight it — the roll dial is live, not dead weight.
-    const shaken = engaged();
-    unit(shaken, 'u0').disorder = 3;
-    const steady = act(shaken, { type: 'rally', rung: 1, unit: 'u0', spend: { roll: 2 } }, scriptedRng([3]));
-    ends(steady);
-    expect(unit(steady, 'u0').disorder).toBe(1);
-    expect(unit(act(shaken, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([3])), 'u0').disorder).toBe(2);
-
-    const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
-    const p0 = createBattle({
-      units: [{ card: priest, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
-      board: openBoard(),
-    });
-    place(p0, 'u1', 'c3');
-    // 1 base action + 2 push reaches Tier 2 on a 20; the spell attack then rolls a 20
-    // and hits outright, so the push visibly mattered — the point of this case, not the
-    // exact wound arithmetic, which the disorder/casting-specific tests already cover.
-    const cast = act(p0, { type: 'cast', rung: 2, spell: 'blast', target: 'u1', unit: 'u0', spend: { push: 2 } }, scriptedRng([20, 20, 20]));
-    expect(cast.activated).toContain('u0');
-    expect(unit(cast, 'u1').wounds).toBeGreaterThan(0);
-  });
-
-  it('buys Defence on Guard, +2 an action counting the first', () => {
-    const brace = (defence: number) =>
-      unit(act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence } }, scriptedRng([10])), 'u0').guard;
-    expect(brace(0)).toEqual({ defence: 2, rung: 1 });
-    expect(brace(1)).toEqual({ defence: 4, rung: 1 });
-    expect(brace(2)).toEqual({ defence: 6, rung: 1 });
-    // It raises Defence itself, so it is what the next attack rolls against.
-    const held = act(engaged(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence: 2 } }, scriptedRng([10]));
-    expect(defenceOf(held, unit(held, 'u0'), null, false)).toBe(unit(held, 'u0').stats.defence + 6);
-  });
-
   it('leaves Move buying ground, and a Strike affordable after it', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c4');
@@ -803,25 +493,30 @@ describe('actions buy weight, not repetition', () => {
     expect(unit(s, 'u0').actions).toBe(1);
   });
 
-  it('lets a Fight-2 troop Strike for one action, Press for two, or reach Overrun with three', () => {
+  it('lets a Fight-2 troop Strike or Press for one action, and Overrun for two', () => {
     const fight = offer(engaged(), 'fight', 'u0');
     expect(fight.granted).toBe(2);
-    expect(fight.rungs.map((r) => r.access)).toEqual(['free', 'free', 'reach']);
-    expect(fight.cost).toBe(1);
-    expect(fight.dials.extra).toBe(2);
+    expect(fight.rungs.map((r) => r.cost)).toEqual([1, 1, 2]);
 
     const strike = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(strikeMod(strike)).toBe(11);
     expect(unit(strike, 'u0').actions).toBe(2);
 
-    const press = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0', spend: { roll: 1 } }, scriptedRng([10, 5]));
-    expect(strikeMod(press)).toBe(11 + ACTION_BONUS);
-    expect(unit(press, 'u0').actions).toBe(1);
+    // The rung is not a number: Press rolls exactly what Strike rolls.
+    const press = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    expect(strikeMod(press)).toBe(11);
+    expect(unit(press, 'u0').actions).toBe(2);
 
-    // Overrun is DC 24 against Will +17: a 4 needs both spare actions on the push check.
-    const overrun = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0', spend: { push: 2 } }, scriptedRng([4, 20, 5]));
+    const overrun = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(overrun.log.some((e) => e.text.includes('overruns'))).toBe(true);
-    expect(overrun.activated).toContain('u0');
+    expect(unit(overrun, 'u0').actions).toBe(1);
+  });
+
+  it('spends the rest on other acts: a Strike and then a Brace', () => {
+    let s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    s = act(s, { type: 'guard', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 1 });
+    expect(unit(s, 'u0').actions).toBe(1);
   });
 });
 
@@ -845,18 +540,6 @@ describe('Rally: the roll carries the amount, the rung carries the scope', () =>
     expect(rallyOn(3, 6).disorder).toBe(1); // success clears 2
     expect(rallyOn(3, 2).disorder).toBe(2); // failure still clears 1 — degrade, never cancel
     expect(rallyOn(3, 1).disorder).toBe(4); // critical failure (a natural 1) clears nothing, and adds 1
-  });
-
-  it('the roll dial changes the outcome at every rung, not just Steady', () => {
-    // Under the old rule Rally and Inspire cleared everything outright, so this natural roll
-    // would land on the same result with or without the dial at rungs 2 and 3.
-    for (const rung of [1, 2, 3] as Grade[]) {
-      const base = () => { const s = engaged(); unit(s, 'u0').disorder = 3; return s; };
-      const bare = unit(act(base(), { type: 'rally', rung, unit: 'u0' }, scriptedRng([2])), 'u0');
-      const weighted = unit(act(base(), { type: 'rally', rung, unit: 'u0', spend: { roll: 2 } }, scriptedRng([2])), 'u0');
-      expect(bare.disorder).toBe(2); // failure clears 1
-      expect(weighted.disorder).toBe(1); // the same roll, weighted +4, succeeds and clears 2 instead
-    }
   });
 
   it('reads the rout DC off the highest-level enemy within close range, falling back to the field', () => {
@@ -901,7 +584,7 @@ describe('Rally: the roll carries the amount, the rung carries the scope', () =>
     expect(unit(inspired, 'u3').disorder).toBe(2); // beyond Inspire's radius, untouched
   });
 
-  it('lends heart to a neighbour with nothing to clear, worth one action of weight', () => {
+  it('lends heart to a neighbour with nothing to clear', () => {
     const levy: UnitCard = { name: 'Levy', level: 6, role: 'infantry', tactics: [] };
     const state = createBattle({
       units: [
@@ -929,88 +612,74 @@ describe('Rally: the roll carries the amount, the rung carries the scope', () =>
   });
 });
 
-describe('rungs carry effects, actions carry numbers', () => {
-  // Level-6 infantry: strike +11, Will +17, Reflex +14, level DC 22, Fight 2 / Guard 1.
-  const STRIKE = 11;
-  const WILL = 17;
-  const REFLEX = 14;
+describe('rungs carry effects', () => {
   const engaged = () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
     return state;
   };
-  const mods = (s: BattleState) => s.log.filter((e) => e.check).map((e) => e.check!.modifier);
 
-  it('never puts more than +4 on a roll, whatever the rung', () => {
-    expect((ACTIONS_PER_ACTIVATION - 1) * ACTION_BONUS).toBe(4);
-
-    // Strike and Press weigh the same, and two spare actions are the ceiling on both.
-    for (const rung of [1, 2] as Grade[]) {
-      const s = act(engaged(), { type: 'fight', rung, target: 'u2', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10, 5]));
-      expect(mods(s)[0]).toBe(STRIKE + ACTION_BONUS * 2);
-    }
-
-    // Overrun: the commitment weights the reach check, and the strike behind it is bare.
-    const over = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0', spend: { push: 2 } }, scriptedRng([10, 10, 5]));
-    expect(mods(over).slice(0, 2)).toEqual([WILL + 4, STRIKE]);
-
-    // The other rolls a commitment can weight. The shot and the Blast are asserted at +4 in
-    // 'lets every type absorb a full three-action commitment'.
-    const away = act(engaged(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
-    expect(mods(away)[0]).toBe(REFLEX + 4);
-    const shaken = engaged();
-    unit(shaken, 'u0').disorder = 2;
-    // The check runs against the unweakened disorder — Rally no longer clears a point before
-    // rolling, so nothing has reduced it yet.
-    const rallied = act(shaken, { type: 'rally', rung: 1, unit: 'u0', spend: { roll: 2 } }, scriptedRng([10]));
-    expect(mods(rallied)[0]).toBe(WILL - 2 + 4);
+  it('Overrun drives a hit target back a hex and takes its ground; a miss moves nobody', () => {
+    const state = engaged();
+    unit(state, 'u0').grades.fight = 3;
+    const s = act(state, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
+    expect(notation(unit(s, 'u0').square)).toBe('c3');
+    expect(notation(unit(s, 'u2').square)).toBe('c4');
+    expect(said(s, 'drives Kobolds back')).toBe(true);
+    const miss = act(state, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([2, 10]));
+    expect(notation(unit(miss, 'u0').square)).toBe('c2');
+    expect(notation(unit(miss, 'u2').square)).toBe('c3');
   });
 
-  it('takes their ground on an Overrun that breaks them', () => {
+  it('Overrun takes the ground of a target it destroys; a Strike leaves it', () => {
     const state = engaged();
     unit(state, 'u0').grades.fight = 3;
     unit(state, 'u2').wounds = MAX_WOUNDS - 1;
     const s = act(state, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('destroyed');
     expect(notation(unit(s, 'u0').square)).toBe('c3');
-    // A Strike leaves the ground where it lies.
     const strike = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10]));
     expect(notation(unit(strike, 'u0').square)).toBe('c2');
   });
 
-  // Guard's Defence is bought with actions, the first one included; its rung is orthogonal and
-  // carries only the effect. u2 attacks at +7 into a Defence set for an even matchup.
-  const guarded = (rung: Grade, defence: number) => {
+  it('Press skips the Fortitude save: a hit disorders outright, and a miss gives nothing extra', () => {
+    const hit = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
+    expect(unit(hit, 'u2').wounds).toBe(1);
+    expect(unit(hit, 'u2').disorder).toBe(1);
+    expect(said(hit, 'no save')).toBe(true);
+    // The same 20 on a Strike is a save made, and no disorder.
+    const strike = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
+    expect(unit(strike, 'u2').disorder).toBe(0);
+    const miss = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([2, 20]));
+    expect(unit(miss, 'u2').disorder).toBe(0);
+  });
+
+  // Every Guard sets +2 Defence; the rung carries the effect. u2 attacks at +7 into a Defence
+  // set for an even matchup.
+  const guarded = (rung: Grade) => {
     const state = engaged();
     unit(state, 'u0').grades.guard = 3;
     unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 12;
-    const s = act(state, { type: 'guard', rung, unit: 'u0', spend: { defence } }, scriptedRng([10]));
-    return s.activated.includes('u0') ? s : endActivation(s, 'u0');
+    return endActivation(act(state, { type: 'guard', rung, unit: 'u0' }, scriptedRng([10])), 'u0');
   };
   const struck = (s: BattleState, roll: number) =>
     unit(act(s, { type: 'fight', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([roll, 1])), 'u0').wounds;
 
-  it('scales Guard +2, +4 and +6 Defence on one, two and three actions', () => {
-    expect([0, 1, 2].map((d) => unit(guarded(1, d), 'u0').guard!.defence)).toEqual([2, 4, 6]);
-    // Which is 0.40, 0.30 and 0.20 wounds an attack against the bare 0.50 — one action, a tenth.
-    const rate = (rung: Grade, defence: number) => {
-      let wounds = 0;
-      for (let roll = 1; roll <= 20; roll++) wounds += struck(guarded(rung, defence), roll);
-      return wounds / 20;
-    };
-    expect([rate(1, 0), rate(1, 1), rate(1, 2)]).toEqual([0.4, 0.3, 0.2]);
+  it('every Guard is +2 Defence, whatever the rung', () => {
+    for (const rung of [1, 2, 3] as Grade[]) {
+      const s = guarded(rung);
+      expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung });
+      expect(defenceOf(s, unit(s, 'u0'), null, false)).toBe(unit(s, 'u0').stats.defence + 2);
+    }
   });
 
   it('lands criticals as ordinary hits on a unit that has dug in, and nowhere else', () => {
-    // Defence +6 either way: the rung and the action count are independent.
-    expect(unit(guarded(1, 2), 'u0').guard).toEqual({ defence: 6, rung: 1 });
-    expect(unit(guarded(2, 2), 'u0').guard).toEqual({ defence: 6, rung: 2 });
     // A natural 20 is a critical at that Defence, so it is exactly the hit Dig in blunts.
-    expect(struck(guarded(1, 2), 20)).toBe(2);
-    expect(struck(guarded(2, 2), 20)).toBe(1);
+    expect(struck(guarded(1), 20)).toBe(2);
+    expect(struck(guarded(2), 20)).toBe(1);
     // An ordinary hit is untouched, and so is a miss.
-    expect(struck(guarded(2, 2), 19)).toBe(1);
-    expect(struck(guarded(2, 2), 17)).toBe(0);
+    expect(struck(guarded(2), 19)).toBe(1);
+    expect(struck(guarded(2), 13)).toBe(0);
   });
 
   it('braces the allies beside a shieldwall, and nobody further off', () => {
@@ -1074,48 +743,49 @@ describe('shooting', () => {
   });
 });
 
-describe('melee is one exchange', () => {
-  it('the attacker rolls, the defender rolls back, and the loser gains disorder', () => {
+describe('a Fight is one roll', () => {
+  // Level-6 infantry at +11 into the Kobolds' Defence 18: 7+ hits. Will +17 against their
+  // level DC 18 fails only on a natural 1.
+  const engaged = () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
-    const s = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
-    expect(unit(s, 'u2').wounds).toBe(1);
-    expect(unit(s, 'u0').wounds).toBe(0);
-    expect(unit(s, 'u2').disorder).toBe(1);
-    expect(unit(s, 'u0').disorder).toBe(0);
+    return state;
+  };
+  const fight = (rolls: number[]) => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng(rolls));
+
+  it('a hit wounds, and the target saves against the disorder or takes it', () => {
+    const failed = fight([10, 5]);
+    expect(unit(failed, 'u2').wounds).toBe(1);
+    expect(unit(failed, 'u2').disorder).toBe(1);
+    expect(unit(failed, 'u0').wounds).toBe(0);
+    expect(unit(failed, 'u0').disorder).toBe(0);
+    const saved = fight([10, 20]);
+    expect(unit(saved, 'u2').wounds).toBe(1);
+    expect(unit(saved, 'u2').disorder).toBe(0);
   });
+
+  it("a miss repulses the attacker: a Will save against the target's level DC, or 1 disorder", () => {
+    const shaken = fight([2, 1]);
+    expect(unit(shaken, 'u2').wounds).toBe(0);
+    expect(unit(shaken, 'u0').disorder).toBe(1);
+    expect(said(shaken, 'repulsed')).toBe(true);
+    const held = fight([2, 2]);
+    expect(unit(held, 'u0').disorder).toBe(0);
+    // The target never strikes back: its answer waits for its own activation.
+    expect(unit(held, 'u0').wounds).toBe(0);
+    expect(held.log.filter((e) => e.check)).toHaveLength(2);
+  });
+
   it('a critical hit deals two wounds and a critical miss exposes the striker', () => {
-    const { state } = battle([]);
-    place(state, 'u2', 'c3');
-    const crit = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([20, 1]));
+    const crit = fight([20, 1]);
     expect(unit(crit, 'u2').wounds).toBe(2);
+    const state = engaged();
     unit(state, 'u2').stats.defence = 40;
-    const miss = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([1, 1]));
+    const miss = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([1, 20]));
     expect(unit(miss, 'u0').exposed).toBe(true);
     expect(defenceOf(miss, unit(miss, 'u0'), null, false)).toBe(unit(miss, 'u0').stats.defence - 2);
   });
-  it('Press adds nothing to the roll and costs the loser of the exchange a further disorder', () => {
-    const pressed = (rolls: number[], rung: Grade = 2) => {
-      const { state } = battle([]);
-      place(state, 'u2', 'c3');
-      return act(state, { type: 'fight', rung, target: 'u2', unit: 'u0' }, scriptedRng(rolls));
-    };
-    // The rung is not a number: Press rolls exactly what Strike rolls.
-    expect(pressed([10, 5]).log[1].check!.modifier).toBe(pressed([10, 5], 1).log[1].check!.modifier);
 
-    // Won: the defender takes the exchange's point and Press's on top.
-    const won = pressed([10, 1]);
-    expect(unit(won, 'u2').disorder).toBe(2);
-    expect(unit(won, 'u0').disorder).toBe(0);
-    expect(unit(pressed([10, 1], 1), 'u2').disorder).toBe(1);
-
-    // Lost: the presser pays the same doubled price. A drawn exchange costs neither side.
-    const lost = pressed([1, 20]);
-    expect(unit(lost, 'u0').disorder).toBe(2);
-    const drawn = pressed([1, 1]);
-    expect(unit(drawn, 'u0').disorder).toBe(0);
-    expect(unit(drawn, 'u2').disorder).toBe(0);
-  });
   it('striking uphill or out of a swamp costs −1, and outflanking costs the target −2 Defence', () => {
     const board = openBoard();
     board.squares[2][2].elevation = 1;
@@ -1177,36 +847,21 @@ describe('withdrawal', () => {
     expect(where(s)).toBe('c1');
   });
 
-  it('puts each action after the first on the escape check as +2', () => {
-    // 8 + 14 = 22 misses the Trolls' DC 23; the same roll with two more actions makes it.
-    const two = () => held({ u3: 'c3' });
-    const bare = act(two(), { type: 'withdraw', to: 'c1', unit: 'u0' }, scriptedRng([8, 20]));
-    expect(wounds(bare)).toBe(1);
-    const heavy = act(two(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2 } }, scriptedRng([8, 20]));
-    expect(wounds(heavy)).toBe(0);
-    expect(heavy.activated).toContain('u0');
-  });
-
-  it('buys distance with the other dial, and refuses a cell further than it bought', () => {
+  it('buys distance with further actions, and refuses a cell further than it bought', () => {
     const one = activation(held(), 'u0')!.withdraw!;
     // Two spare actions at a square each, so the far cells are on offer up front.
-    expect(one.dials).toMatchObject({ roll: true, push: false, defence: false, distance: true, extra: 2 });
+    expect(one.extra).toBe(2);
     expect(one.targets.map((t) => t.id)).toContain('b1');
     expect(() => act(held(), { type: 'withdraw', to: 'b1', unit: 'u0' }, scriptedRng([5])))
       .toThrow(/further than 0 committed actions/);
-    const far = act(held(), { type: 'withdraw', to: 'b1', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
+    const far = act(held(), { type: 'withdraw', to: 'b1', unit: 'u0', distance: 2 }, scriptedRng([5]));
     expect(where(far)).toBe('b1');
+    expect(far.activated).toContain('u0');
   });
 
-  it('refuses an allocation past the actions left, on either dial', () => {
-    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 3 } }, scriptedRng([5])))
-      .toThrow(/only 3 actions/);
-    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { roll: 2, distance: 1 } }, scriptedRng([5])))
-      .toThrow(/only 3 actions/);
-    expect(() => act(held(), { type: 'guard', rung: 1, unit: 'u0', spend: { defence: 3 } }, scriptedRng([10])))
-      .toThrow(/only 3 actions/);
-    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', spend: { push: 1 } }, scriptedRng([5])))
-      .toThrow(/needs no push check/);
+  it('refuses more distance than the actions left', () => {
+    expect(() => act(held(), { type: 'withdraw', to: 'c1', unit: 'u0', distance: 3 }, scriptedRng([5])))
+      .toThrow(/only 2 actions to put on distance/);
   });
 
   it('consults no grade — the check is the holder, not the troop\'s profile', () => {
@@ -1254,7 +909,7 @@ describe('no retreat', () => {
   it('cannot follow a unit that outruns its single move', () => {
     // Two committed actions carry the Pace unit four squares, out to e4. The Line's one move
     // covers a square, which puts no cell adjacent to e4 inside its reach.
-    const s = act(chased(cavalry), { type: 'withdraw', to: 'e4', unit: 'u0', spend: { distance: 2 } }, scriptedRng([5]));
+    const s = act(chased(cavalry), { type: 'withdraw', to: 'e4', unit: 'u0', distance: 2 }, scriptedRng([5]));
     expect(notation(unit(s, 'u0').square)).toBe('e4');
     expect(notation(unit(s, 'u1').square)).toBe('c3');
   });

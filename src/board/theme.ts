@@ -1,12 +1,11 @@
 import type { SquareTerrain, Tree } from '../engine/index.js';
 
-// The standing move-band wash (selecting a unit, before any drag): 'move' is the free band
-// (one action), 'moveFar'/'moveFar3' are the costed band at two and three actions — one shade
-// per extra action — and 'push' is beyond every action the unit has, reachable only by
-// gambling a check. The drag preview reuses 'move'/'moveFar' for its near/far path cells.
-// The washes themselves are ink at three alphas; see `OverlayLayer`.
-export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3' | 'push';
-export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3', 'push'];
+// The standing move-band wash (selecting a unit, before any drag): 'move' is the one-action
+// band, 'moveFar'/'moveFar3' the costed band at two and three actions — one shade per extra
+// action. The drag preview reuses 'move'/'moveFar' for its near/far path cells. The washes
+// themselves are ink at three alphas; see `OverlayLayer`.
+export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3';
+export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3'];
 
 export interface BoardTheme {
   mode: 'light' | 'dark';
