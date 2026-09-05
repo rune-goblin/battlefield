@@ -1,5 +1,8 @@
 # Action review (2026-09-05)
 
+> Superseded the same day by `ladder-review.md`, which is the prompt to resume from. This file
+> stays as the record of where Fight landed and how the process was first written.
+
 The Fight ladder was rebuilt over one long conversation. This file records where it landed and
 turns the way it was decided into a process short enough to run on each remaining action in a
 fresh session, with the table first and the prose second.
