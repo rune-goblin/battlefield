@@ -511,7 +511,7 @@
       : row.kind === 'withdraw' ? 'Withdraw here' : 'Move here';
   const rowDetail = (row: Preview) =>
     row.kind === 'charge' ? `${actions(row.actions)}, melee included`
-      : row.kind === 'withdraw' ? 'One Escape check per enemy holding you'
+      : row.kind === 'withdraw' ? 'One Disengage check per enemy holding you'
         : actionCost(row.actions);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
 
@@ -1105,7 +1105,7 @@
             <strong>{holders.map((e) => e.name).join(' and ')}</strong>
             {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
             contact — <strong>Withdraw</strong> is the only way off this square, and it costs an
-            Escape check against each of them.
+            Disengage check against each of them.
             {#if act.withdraw}
               Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
             {/if}

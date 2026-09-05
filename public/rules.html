@@ -452,9 +452,9 @@
 <h3>Charge</h3>
 <p>A charge is the movement it takes plus the Fight rung's own price, and the melee is an ordinary Fight. It is one act, so it spends the activation's attack.</p>
 <h3>Withdraw</h3>
-<p>Withdrawing is the only way out of contact, and it is the only way a shaken or routed unit moves at all &mdash; neither may Stride. It costs one action, and it is not a ladder: it is one <strong>Escape check</strong> against each enemy holding you — d20 + Reflex, less disorder, against that enemy's attack DC, which is its Strike plus 10. An enemy with no melee attack holds nobody.</p>
+<p>Withdrawing is the only way out of contact, and it is the only way a shaken or routed unit moves at all &mdash; neither may Stride. It costs one action, and it is not a ladder: it is one <strong>Disengage check</strong> against each enemy holding you — d20 + Reflex, less disorder, against that enemy's attack DC, which is its Strike plus 10. An enemy with no melee attack holds nobody.</p>
 <table>
-<tr><th>Escape</th><th>Result</th></tr>
+<tr><th>Disengage</th><th>Result</th></tr>
 <tr><td>Critical success</td><td>Clean break. A pursuer that gives no retreat is thrown off outright.</td></tr>
 <tr><td>Success</td><td>Clean break</td></tr>
 <tr><td>Failure</td><td>That enemy lands a free strike: one wound at most, never a critical</td></tr>
@@ -515,7 +515,7 @@
 <tr><td>Nowhere to give ground before an Overrun</td><td>1</td></tr>
 <tr><td>Coming to grips with something you fear</td><td>1, when one side of the contact has a fear aura and the other does not</td></tr>
 <tr><td>A critically failed Rally</td><td>1</td></tr>
-<tr><td>A critically failed escape</td><td>1, and you do not get away</td></tr>
+<tr><td>A critically failed Disengage</td><td>1, and you do not get away</td></tr>
 <tr><td>Half your army gone</td><td>1 to every unit of that side still standing, once per battle</td></tr>
 </table></div>
 <h3>Rally</h3>
@@ -630,13 +630,13 @@
 <tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at −2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
 <tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: −2 to everything it rolls until the start of your next activation.</td></tr>
-<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: to Move or Charge on its next activation it must first pass an Escape check against your attack DC, Volley + 10, as if breaking contact. A failure spends the action and it stays where it is; a critical failure costs it 1 disorder as well. Nothing strikes it, since nobody is in contact.</td></tr>
+<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: to Move or Charge on its next activation it must first pass a Disengage check against your attack DC, Volley + 10, as if breaking contact. A failure spends the action and it stays where it is; a critical failure costs it 1 disorder as well. Nothing strikes it, since nobody is in contact.</td></tr>
 </table></div>
 <ul>
 <li><strong>Changed:</strong> every cell. Aim and Snipe go, and with them the swing nearer, the three-action shot at a target two hexes away. Height counting a band closer becomes a −2 not taken. Artillery already shoots at grade 3 from its own reach, so a gun crew Pins for one action.</li>
 <li><strong>Ancestors:</strong> the range-increment rule, −2 per increment beyond the first, is Fire's penalty verbatim; −4 was considered and would put a medium-reach troop at −8 into extreme, a shot nobody takes. The volley trait charges a −2 for shooting too near, on the weapons that carry it, so nearness is a unit ability if it is anything and no troop pays it here. Frightened is a status penalty to every check that fades on its own: Suppress. Pin has none in ranged form; Tumble Through's failure, the move ending where the check failed, is its shape.</li>
 <li>Suppress bites hit or miss because volume fire works by volume; a rung that only lands on a hit is Press again. Suppressed is disorder's temporary cousin, two points that lift on their own, and the two stack.</li>
-<li>Pin was first drafted as outright: the target may not Move or Charge. Mark: "It's probably just too strong a control. I would make them roll as if they needed to disengage, even though it's a ranged attack." The check is the Escape check by name, so a unit already engaged rolls once against each holder and once against the pin.</li>
+<li>Pin was first drafted as outright: the target may not Move or Charge. Mark: "It's probably just too strong a control. I would make them roll as if they needed to disengage, even though it's a ranged attack." The check is the Disengage check by name, so a unit already engaged rolls once against each holder and once against the pin. It is Reflex against an attack DC, as breaking contact is; nothing here asks for a skill a troop may not carry.</li>
 <li>Pin does not touch Withdraw. A pinned unit may still break contact, fall back or flee; covering fire stops an advance, and a retreat is what it is for.</li>
 <li>A unit with the covering-fire tactic sits at grade 3 and Pins for one action, which is the first time the tactic's name has described its effect.</li>
 </ul>
@@ -673,17 +673,17 @@
 </ul>
 
 <h3>Withdraw</h3>
-<p>The Escape check stays exactly as section 7 has it, free strike and no retreat included: one check per holder against its Strike + 10. What changes is the shape of the rest. The distance dial becomes rungs, so the popup reads as one ladder, and the ladder gets a grade.</p>
+<p>The Disengage check stays exactly as section 7 has it, free strike and no retreat included: one check per holder against its Strike + 10. What changes is the shape of the rest. The distance dial becomes rungs, so the popup reads as one ladder, and the ladder gets a grade.</p>
 <div class="wrap"><table>
 <tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Break off</td><td>◆</td><td>The Escape check against each holder. On a clean break, one hex clear of everything you were engaged with.</td></tr>
+<tr><td>Break off</td><td>◆</td><td>The Disengage check against each holder. On a clean break, one hex clear of everything you were engaged with.</td></tr>
 <tr><td>Fall back</td><td>◆◆</td><td>Break off, then a Speed's worth of ground.</td></tr>
 <tr><td>Flee</td><td>◆◆◆</td><td>Fall back, then another Speed's worth.</td></tr>
 </table></div>
 <ul>
 <li><strong>Changed:</strong> the price is what it was; the extra actions bought the same ground. The grade is new: 1 for every troop, 2 for a troop with pace, so cavalry and fliers Fall back for one action. A routed unit's run for the edge is priced the same way.</li>
 <li><strong>Ancestors:</strong> Tumble Through is a check per enemy passed, and a failure ends the move and draws the reaction. Step is a short move that draws nothing. Reactive Strike is the free strike, and it stays the one reaction in the game, because a line breaking contact is the one moment a reaction is the whole story.</li>
-<li>The escape check is one roll per holder, and each further rung buys ground only; nothing rolls twice.</li>
+<li>The Disengage check is one roll per holder, and each further rung buys ground only; nothing rolls twice.</li>
 </ul>
 
 <h3>Charge</h3>
@@ -779,12 +779,12 @@
 <tr><th>Tier</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Sure footing</td><td>◆</td><td>Every hex costs the ally 1 on its next activation: forest, swamp, shallows and a climb are open ground to it.</td></tr>
 <tr><td>Wings</td><td>◆◆</td><td>Sure footing, and it flies: water, walls and cliffs are crossed.</td></tr>
-<tr><td>Freedom</td><td>◆◆◆</td><td>Wings, and it breaks contact without an Escape check: nothing strikes it and nothing follows.</td></tr>
+<tr><td>Freedom</td><td>◆◆◆</td><td>Wings, and it breaks contact without a Disengage check: nothing strikes it and nothing follows.</td></tr>
 </table></div>
 <ul>
 <li><strong>Changed:</strong> +1, +2 and +3 movement all go. Tier 1 is today's Tier 2, Tier 2 is today's Tier 3 with the choice of type removed (flight covers the other two on this board), and Freedom is new.</li>
 <li><strong>Ancestors:</strong> Tailwind (+10 feet; the shape we leave). Fly and Water Walk. Freedom of Movement, under which the target automatically Escapes.</li>
-<li>Freedom is the one buff that touches the Withdraw ladder: Break off is still paid for, and the check is simply passed.</li>
+<li>Freedom is the one buff that touches the Withdraw ladder: Break off is still paid for, and the check is simply passed. Pathfinder's Escape is an Athletics check, which is why the word is not borrowed here.</li>
 </ul>
 
 <h3>Walls and siege engines</h3>

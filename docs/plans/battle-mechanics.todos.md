@@ -1817,7 +1817,7 @@ The guesses, in one line each, so the review has a list to strike from:
   or should we say -4? And then just detach the range changing entirely from the actions."
   So: Fire at −2 a band beyond effective range (the range-increment rule; −4 rejected as a shot
   nobody takes), nearer bands free; Suppress, −2 to everything the target rolls until the
-  shooter's next activation, hit or miss (Mark's own); Pin, the target must pass an Escape check
+  shooter's next activation, hit or miss (Mark's own); Pin, the target must pass a Disengage check
   against Volley + 10 to Move or Charge next activation. Pin was drafted as outright and Mark
   softened it: "It's probably just too strong a control. I would make them roll as if they
   needed to disengage." Barrage (Press for shooters) and Spread (the roll read against a
@@ -1850,7 +1850,12 @@ The guesses, in one line each, so the review has a list to strike from:
   point) / Slow (an action) / Hold (rooted). Offense: Sure strike (roll twice) / Wrath (the
   hit needs no save) / Haste (an extra action, never a second attack). Defense: Ward (no
   disorder from the next wound) / Stoneskin (cap) / Aegis (the first hit is turned).
-  Movement: Sure footing (terrain is open) / Wings (flies) / Freedom (no Escape check).
+  Movement: Sure footing (terrain is open) / Wings (flies) / Freedom (no Disengage check).
 - Tactic grants move with the trees: demoralize → Dread, battlefield medicine → Heal;
   defending allies grants the Guard share instead of a Defense tier.
 - **Free strike, no retreat, walls and siege engines** are left as they are.
+- **The check is called Disengage now**, in the rules and the popup. Mark: "Escape checks are
+  Athletics specifically in Pathfinder, so we need to be careful there because many units may
+  not have Athletics as a stat." It never was Athletics here (Reflex against Strike + 10, every
+  troop has a Reflex), so only the word changed. The engine's `escapeModifier`/`escapeDcFor`
+  keep their names for now; `// proto:` rename when the Withdraw ladder is built.
