@@ -533,9 +533,6 @@ export const moveActionsFor = (u: Unit, feet: number) =>
 export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
   if (u.speed === 0 || u.rooted > 0 || u.actions <= 0 || u.status !== 'active') return out;
-  // A shaken unit leaves a cell by withdrawing and no other way, which is what keeps a rout
-  // running for its own edge instead of striding wherever it likes.
-  if (isShaken(u)) return out;
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = reachable(state.board, u.square, {
@@ -775,8 +772,7 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | n
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  // A routed unit is offered nothing but the withdrawal, which is no longer a ladder. A shaken
-  // one is offered Rally beside it — the one act that can bring it back down.
+  // A routed unit is offered no ladder, a shaken one Rally alone; both still Move and withdraw.
   if (isRouted(u)) return [];
   if (isShaken(u)) return [offerFor(state, u, 'rally', null)];
   const contact = engagedEnemies(state, u).length > 0;

@@ -429,7 +429,7 @@
 <tr><td>Guard</td><td><strong>Brace</strong> — +2 Defence</td><td><strong>Dig in</strong> — Brace, and criticals against you land as ordinary hits; you may not move again this activation</td><td><strong>Shieldwall</strong> — Dig in, and adjacent allies count as braced</td></tr>
 <tr><td>Rally</td><td><strong>Steady</strong> — yourself, and one adjacent ally takes heart</td><td><strong>Rally</strong> — and that ally clears 1 as well</td><td><strong>Inspire</strong> — every friendly unit within 2 clears 1 and takes heart</td></tr>
 </table></div>
-<p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one nothing at all. Rally is otherwise always offered, and a caster adds a row for each of the six trees its tradition grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
+<p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one no ladder at all; both may still Move and withdraw. Rally is otherwise always offered, and a caster adds a row for each of the six trees its tradition grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
 
 <h3 id="price">The price: how each ladder gets above its grade</h3>
 <p>Every ladder pays the same way. A rung at or below the grade costs one action. One rung above costs two, and two above costs three. Nothing is rolled for a rung, and nothing converts an action into a bonus: what an action buys is always a different effect, never a bigger number on the same one. This is Pathfinder's own shape — the one-, two- and three-action versions of Heal — and it makes a grade what it should be. A grade-3 troop takes the whole ladder for one action and has two left for other acts. A grade-1 troop can reach the same rung, and it costs it the activation.</p>
@@ -452,7 +452,7 @@
 <h3>Charge</h3>
 <p>A charge is the movement it takes plus the Fight rung's own price, and the melee is an ordinary Fight. It is one act, so it spends the activation's attack.</p>
 <h3>Withdraw</h3>
-<p>Withdrawing is the only way out of contact, and it is the only way a shaken or routed unit moves at all &mdash; neither may Stride. It costs one action, and it is not a ladder: it is one <strong>Disengage check</strong> against each enemy holding you — d20 + Reflex, less disorder, against that enemy's attack DC, which is its Strike plus 10. An enemy with no melee attack holds nobody.</p>
+<p>Withdrawing is the only way out of contact. A shaken or routed unit in the open Moves like any other; in contact it withdraws like any other. It costs one action, and it is not a ladder: it is one <strong>Disengage check</strong> against each enemy holding you — d20 + Reflex, less disorder, against that enemy's attack DC, which is its Strike plus 10. An enemy with no melee attack holds nobody.</p>
 <table>
 <tr><th>Disengage</th><th>Result</th></tr>
 <tr><td>Critical success</td><td>Clean break. A pursuer that gives no retreat is thrown off outright.</td></tr>
@@ -505,8 +505,8 @@
 
 <h2 id="disorder">9. Disorder and rout</h2>
 <p>Morale is one number: <strong>disorder</strong>. Each point is &minus;1 to everything the unit rolls and &minus;1 to its Defence. Morale runs one point past Quality, and the two bands above it are different things.</p>
-<p>When disorder <em>reaches</em> the unit's Quality (section 2) the unit is <strong>shaken</strong>: it may do nothing but Rally or withdraw. It holds its hex if it wants to, it still counts as standing, and Rally is a real way back &mdash; a shaken unit that clears a point is a unit again.</p>
-<p>One point <em>past</em> Quality and it is <strong>routed</strong>: nothing but the withdrawal, it runs for its own edge, and it leaves the field when it reaches it. Disorder stops there; a routed unit cannot be driven further. Its own Rally is gone, so the only way back is an adjacent ally's Rally or an Inspire within 2 &mdash; which is what makes the troop beside a breaking one worth keeping there.</p>
+<p>When disorder <em>reaches</em> the unit's Quality (section 2) the unit is <strong>shaken</strong>: it may do nothing but Rally, Move or withdraw. It holds its hex if it wants to, it still counts as standing, and Rally is a real way back &mdash; a shaken unit that clears a point is a unit again.</p>
+<p>One point <em>past</em> Quality and it is <strong>routed</strong>: nothing but Move and the withdrawal, and it leaves the field when it reaches its own edge. A withdrawal it makes runs for that edge. Disorder stops there; a routed unit cannot be driven further. Its own Rally is gone, so the only way back is an adjacent ally's Rally or an Inspire within 2 &mdash; which is what makes the troop beside a breaking one worth keeping there.</p>
 <div class="wrap"><table>
 <tr><th>Disorder comes from</th><th>Points</th></tr>
 <tr><td>A wound taken, on a failed Fortitude save against the attacker's level DC</td><td>1</td></tr>
@@ -519,7 +519,7 @@
 <tr><td>Half your army gone</td><td>1 to every unit of that side still standing, once per battle</td></tr>
 </table></div>
 <h3>Rally</h3>
-<p><strong>Every unit that is not routed may Rally</strong>, whatever else its situation allows: in contact or in the open, in good order or shaken. A shaken unit has Rally and the withdrawal and nothing else, which is what makes the act its way back. The rout is the only thing that takes it away, and then only the unit's own &mdash; an ally's Rally still reaches it.</p>
+<p><strong>Every unit that is not routed may Rally</strong>, whatever else its situation allows: in contact or in the open, in good order or shaken. A shaken unit has Rally, Move and the withdrawal and nothing else, which is what makes the act its way back. The rout is the only thing that takes it away, and then only the unit's own &mdash; an ally's Rally still reaches it.</p>
 <p>Rally is the only thing that clears disorder. Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
 <table>
 <tr><th>Rally</th><th>Clears</th></tr>
@@ -807,7 +807,7 @@
 <tr><th>Modifier</th><th>Value</th></tr>
 <tr><td>Distance</td><td>1 engaged &middot; 2 short &middot; 3&ndash;4 medium &middot; 5&ndash;6 long &middot; 7&ndash;8 extreme &middot; 9+ out of range (never occurs on this board)</td></tr>
 <tr><td>One attack an activation</td><td>Fight, Shoot and Blast share the slot</td></tr>
-<tr><td>Disorder</td><td>&minus;1 a point on every roll and on Defence. At Quality, shaken &mdash; Rally or withdraw only. One past it, routed &mdash; withdraw only, and it runs for its edge.</td></tr>
+<tr><td>Disorder</td><td>&minus;1 a point on every roll and on Defence. At Quality, shaken &mdash; Rally, Move or withdraw only. One past it, routed &mdash; Move or withdraw only, and it leaves by its own edge.</td></tr>
 <tr><td>Quality</td><td>2 to 6, from the Will save: below low 2, low 3, moderate 4, high 5, extreme 6</td></tr>
 <tr><td>Outflanked</td><td>&minus;2 Defence while engaged with two or more enemies</td></tr>
 <tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike, until the unit acts again</td></tr>

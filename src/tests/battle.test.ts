@@ -970,7 +970,7 @@ describe('disorder', () => {
     expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(before - 2);
     expect(defenceOf(state, unit(state, 'u0'), null, false)).toBe(unit(state, 'u0').stats.defence - 2);
   });
-  it('at Quality a unit is shaken: Rally or withdraw, and it still counts as standing', () => {
+  it('at Quality a unit is shaken: Rally, Move or withdraw, and it still counts as standing', () => {
     const { state } = battle([]);
     const k = unit(state, 'u2');
     expect(k.quality).toBe(5);
@@ -980,7 +980,7 @@ describe('disorder', () => {
     expect(isStanding(k)).toBe(true);
     expect(types(state, 'u2')).toEqual(['rally']);
     expect(activation(state, 'u2')!.withdraw).not.toBeNull();
-    expect(moveReach(state, k).size).toBe(0);
+    expect(moveReach(state, k).size).toBeGreaterThan(0);
   });
   it('one point past Quality a unit routs, and disorder stops there', () => {
     const { state } = battle([]);

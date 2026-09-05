@@ -572,14 +572,6 @@
       tag: 'held in contact',
       why: 'A Stride is closed while you are in contact. Withdraw is the only way off this square.',
     };
-    if (isRouted(active)) return {
-      tag: 'routed',
-      why: 'A routed unit runs for its own edge and no other way. The withdrawal is the only thing it is offered, and it leaves the field when it gets there.',
-    };
-    if (isShaken(active)) return {
-      tag: 'shaken',
-      why: 'A shaken unit leaves a square by withdrawing and no other way. Its only other act is Rally — clear a point and it is a unit again.',
-    };
     if (active.rooted > 0) return {
       tag: 'rooted',
       why: 'Digging in roots you where you stand: no Stride for the rest of this activation. Your remaining actions still fight, shoot, rally and cast.',
@@ -1136,13 +1128,13 @@
 
       {#if isRouted(active)}
         <p class="muted">
-          Routed at {active.disorder}/{active.quality} — nothing but the withdrawal, and it runs
-          for its own edge. Only an adjacent ally's Rally can bring it back.
+          Routed at {active.disorder}/{active.quality} — it may Move or withdraw, nothing else, and
+          it leaves the field at its own edge. Only an adjacent ally's Rally can bring it back.
         </p>
       {:else if isShaken(active)}
         <p class="muted">
-          Shaken at {active.disorder}/{active.quality} — it may Rally or withdraw, nothing else.
-          One more point and it routs.
+          Shaken at {active.disorder}/{active.quality} — it may Rally, Move or withdraw, nothing
+          else. One more point and it routs.
         </p>
       {:else if !offers.length}
         <p class="muted">Nothing else to do here — end the turn.</p>

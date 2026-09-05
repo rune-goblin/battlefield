@@ -1863,3 +1863,9 @@ The guesses, in one line each, so the review has a list to strike from:
   cast and then effect." Section 11's cast roll followed by a separate effect roll goes when
   the trees are built; each tree's one gate is already the row above its table in section 15.
   The six trees are listed as ladders of their own in `ladder-review.md`.
+- **Shaken and routed units may Move** (2026-09-05). Mark: "Section 7 is wrong. I think a
+  shaken or routed unit should be able to move." Sections 6, 7 and 9 and the quick reference
+  now say so, and `moveReach` no longer bars them. Judgment call: a routed unit's Move is
+  unrestricted; only its withdrawal still runs for its own edge, and it still leaves the field
+  when it reaches that edge. The withdrawal's ground-buying actions are now redundant for every
+  unit, which is the Withdraw review's open question.
