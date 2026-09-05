@@ -1812,9 +1812,22 @@ under each. Nothing in it is implemented; section 6 and the engine still agree.
 
 The guesses, in one line each, so the review has a list to strike from:
 
-- **Guard** loses the +2 everywhere. Brace caps hits at one wound (Shield Block), Hold cannot
-  be shoved and repulses a miss with no save (Press turned round; no ancestor, the cell to
-  watch), Shieldwall shares Brace (Shield Warden).
+- **Guard** keeps the +2. Mark: "Brace should be shield block. +2 to AC. This is an exception
+  to the no numbers rule. This is just increasing your defenses. On the next level, you gain
+  crit immunity. On the final level, you cannot be pushed and are rooted." Then, on the turtle:
+  "if we should give 'take cover': 'brace, dig in and take cover.' Greater cover gives you +4 to
+  AC and saving throws versus reflex. Let's also give the dig in level the +2 bonus to reflex
+  saves." Then the Reflex half withdrawn: "The reflex save, I guess, isn't meaningful, so
+  remove that benefit. It's already included in that the cast blast action will be resolving
+  using an attack roll, so the + to AC will affect it." So Brace +2 Defence; Dig in caps
+  criticals (standard cover); Take cover +4 Defence (greater cover), cannot be shoved, rooted.
+  The root moves up a rung. Drafted and
+  dropped on the way: Bulwark, a hit turned outright ("complete immunity to the next hit sounds
+  too strong"), and Repel, a miss repulsed with no save. On Shieldwall: "an individual benefit
+  would be better because adjacency may not be common, and that could be better off as a unit
+  ability than a generally available ability." So the share moves to the defend-allies tactic
+  (Shield Warden), whose one roster owner is the troop named Shield Wall; formation, on 31
+  troops, was too common to carry it.
 - **Rally**'s heart becomes "the next point of disorder does not land" and stops being +2.
 - **Withdraw** keeps its check and free strike; the distance dial becomes Break off / Fall
   back / Flee, grade 1, grade 2 with pace.
@@ -1828,6 +1841,6 @@ The guesses, in one line each, so the review has a list to strike from:
   hit needs no save) / Haste (an extra action, never a second attack). Defense: Ward (no
   disorder from the next wound) / Stoneskin (cap) / Aegis (the first hit is turned).
   Movement: Sure footing (terrain is open) / Wings (flies) / Freedom (no Escape check).
-- Tactic grants move with the trees: demoralize → Dread, defending allies → Ward,
-  battlefield medicine → Heal.
+- Tactic grants move with the trees: demoralize → Dread, battlefield medicine → Heal;
+  defending allies grants the Guard share instead of a Defense tier.
 - **Free strike, no retreat, walls and siege engines** are left as they are.
