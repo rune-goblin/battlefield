@@ -1888,3 +1888,16 @@ The guesses, in one line each, so the review has a list to strike from:
   unrestricted; only its withdrawal still runs for its own edge, and it still leaves the field
   when it reaches that edge. The withdrawal's ground-buying actions are now redundant for every
   unit, which is the Withdraw review's open question.
+- **Withdraw review** (2026-09-05). Ground rungs are dropped. Mark: "there's no reason to fall
+  back or flee because I can break off, and if I'm successful, I can move speed." Then: "What
+  if, for two actions, they get the space without the roll, and instead the enemy must roll to
+  see if they can move the following turn?" Written as Slip away: each holder rolls Reflex less
+  disorder against the withdrawer's level DC, a failure roots it for its next activation and
+  stops it following. Proposed for the top rung, not decided: Feigned retreat, a failing holder
+  also takes 1 disorder. Names Slip away and Feigned retreat are mine.
+- **Withdraw named** (2026-09-05). Mark: "I think the effects are okay", and "Let's go with
+  break off, disengage, and fighting retreat." Break off makes the Disengage check; the rung
+  Disengage is the sure break with the enemy's roll. Dropped names: Fall back and Flee (ground
+  rungs), Slip away, Feigned retreat ("they are actually retreating, so it's not entirely
+  feigned"), Give ground, Draw them on, Lure, Overreach. Every rung leaves the unit one hex
+  clear; further ground is a Move.
