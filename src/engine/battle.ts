@@ -796,6 +796,8 @@ interface Escape { holder: Unit; degree: Degree }
  * enemy's own attack DC — and the four degrees are what Scatter, Break off and Fighting
  * retreat used to name. A critical failure is the one that pins the unit where it stands.
  * `distance` is the further actions spent on ground, another Speed's worth each.
+ * proto: section 7 now says one check against the highest holder, read for every holder, with a
+ * free Move on a critical. This still rolls per holder until the Withdraw ladder is built.
  */
 function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction, distance: number) {
   const escapes: Escape[] = [];

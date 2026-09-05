@@ -452,13 +452,13 @@
 <h3>Charge</h3>
 <p>A charge is the movement it takes plus the Fight rung's own price, and the melee is an ordinary Fight. It is one act, so it spends the activation's attack.</p>
 <h3>Withdraw</h3>
-<p>Withdrawing is the only way out of contact. A shaken or routed unit in the open Moves like any other; in contact it withdraws like any other. It costs one action, and it is not a ladder: it is one <strong>Disengage check</strong> against each enemy holding you — d20 + Reflex, less disorder, against that enemy's attack DC, which is its Strike plus 10. An enemy with no melee attack holds nobody.</p>
+<p>Withdrawing is the only way out of contact. A shaken or routed unit in the open Moves like any other; in contact it withdraws like any other. It costs one action, and it is not a ladder: it is one <strong>Disengage check</strong>, however many enemies hold you — d20 + Reflex, less disorder, against the highest attack DC among them, which is a holder's Strike plus 10. The one roll is read for every holder. An enemy with no melee attack holds nobody.</p>
 <table>
 <tr><th>Disengage</th><th>Result</th></tr>
-<tr><td>Critical success</td><td>Clean break. A pursuer that gives no retreat is thrown off outright.</td></tr>
-<tr><td>Success</td><td>Clean break</td></tr>
-<tr><td>Failure</td><td>That enemy lands a free strike: one wound at most, never a critical</td></tr>
-<tr><td>Critical failure</td><td>The free strike, 1 disorder, and its grip holds — you stay where you stand</td></tr>
+<tr><td>Critical success</td><td>Clean break, and a free Move of your Speed. Every pursuer that gives no retreat is thrown off outright.</td></tr>
+<tr><td>Success</td><td>Clean break, one hex clear</td></tr>
+<tr><td>Failure</td><td>Every holder lands a free strike: one wound at most, never a critical</td></tr>
+<tr><td>Critical failure</td><td>The free strikes, 1 disorder, and their grip holds — you stay where you stand</td></tr>
 </table>
 <p>Having broken away, the unit moves one hex clear of everything it was engaged with, and each further action put on the run buys another Speed's worth of ground. A unit with nowhere clear to go is offered the rest rather than being stuck. A troop that gives <em>no retreat</em> follows: one free move of its own Speed to re-establish contact, dealing no damage. Outrunning it is the only way clear.</p>
 
@@ -630,14 +630,13 @@
 <tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at −2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
 <tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: −2 to everything it rolls until the start of your next activation.</td></tr>
-<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: to Move or Charge on its next activation it must first pass a Disengage check against your attack DC, Volley + 10, as if breaking contact. A failure spends the action and it stays where it is; a critical failure costs it 1 disorder as well. Nothing strikes it, since nobody is in contact.</td></tr>
+<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Withdraw as if in contact, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
 </table></div>
 <ul>
 <li><strong>Changed:</strong> every cell. Aim and Snipe go, and with them the swing nearer, the three-action shot at a target two hexes away. Height counting a band closer becomes a −2 not taken. Artillery already shoots at grade 3 from its own reach, so a gun crew Pins for one action.</li>
 <li><strong>Ancestors:</strong> the range-increment rule, −2 per increment beyond the first, is Fire's penalty verbatim; −4 was considered and would put a medium-reach troop at −8 into extreme, a shot nobody takes. The volley trait charges a −2 for shooting too near, on the weapons that carry it, so nearness is a unit ability if it is anything and no troop pays it here. Frightened is a status penalty to every check that fades on its own: Suppress. Pin has none in ranged form; Tumble Through's failure, the move ending where the check failed, is its shape.</li>
 <li>Suppress bites hit or miss because volume fire works by volume; a rung that only lands on a hit is Press again. Suppressed is disorder's temporary cousin, two points that lift on their own, and the two stack.</li>
-<li>Pin was first drafted as outright: the target may not Move or Charge. Mark: "It's probably just too strong a control. I would make them roll as if they needed to disengage, even though it's a ranged attack." The check is the Disengage check by name, so a unit already engaged rolls once against each holder and once against the pin. It is Reflex against an attack DC, as breaking contact is; nothing here asks for a skill a troop may not carry.</li>
-<li>Pin does not touch Withdraw. A pinned unit may still break contact, fall back or flee; covering fire stops an advance, and a retreat is what it is for.</li>
+<li>Pin was first drafted as outright: the target may not Move or Charge. Mark: "It's probably just too strong a control. I would make them roll as if they needed to disengage, even though it's a ranged attack." Then: "if a pin effect is being applied by a shoot action, that's just counted as one of the holders." So a pinned unit is held, its one Disengage check is against the highest DC among everything holding it, and the shooter is one of the holders the Disengage rung makes roll. It is Reflex against an attack DC, as breaking contact is; nothing here asks for a skill a troop may not carry.</li>
 <li>A unit with the covering-fire tactic sits at grade 3 and Pins for one action, which is the first time the tactic's name has described its effect.</li>
 </ul>
 
@@ -685,15 +684,17 @@
 <p>Ground is never a rung: once clear, a unit Moves like any other, so a rung that bought a Speed bought nothing. The rungs change who rolls. At the first the withdrawing unit rolls to get away; above it, it simply goes, and the enemy left holding air rolls instead.</p>
 <div class="wrap"><table>
 <tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Break off</td><td>◆</td><td>The Disengage check against each holder, as section 7 has it. On a clean break, one hex clear of everything you were engaged with.</td></tr>
+<tr><td>Break off</td><td>◆</td><td>One Disengage check against the highest holder, as section 7 has it. On a success, one hex clear of everything holding you; on a critical, a free Move of your Speed.</td></tr>
 <tr><td>Disengage</td><td>◆◆</td><td>No check and no free strike: you are one hex clear. Instead each holder rolls d20 + Reflex, less disorder, against your level DC. On a failure it may not Move, Charge or Withdraw on its next activation, and it does not follow.</td></tr>
 <tr><td>Fighting retreat</td><td>◆◆◆</td><td>Disengage, and a holder that fails its roll takes 1 disorder as well, drawn out of its line.</td></tr>
 </table></div>
 <ul>
 <li><strong>Changed:</strong> Fall back and Flee are gone. Section 7's ground-buying actions go with them, since a shaken or routed unit now Moves. Disengage is the sure break: two actions for the ground, and the roll passes to the enemy. Fighting retreat adds one thing, a point of disorder on the holder that fails, which is the Fight's repulse from the other side.</li>
-<li><strong>One roll.</strong> At Break off the withdrawing unit rolls once per holder. Above it, each holder rolls once, and both rungs read off that one roll: rooted at Disengage, rooted and disordered at Fighting retreat. Nothing rolls twice.</li>
+<li><strong>One roll.</strong> At Break off the withdrawing unit rolls once, whatever holds it, and the roll is read for every holder: a failure is a free strike from each. Above it, each holder rolls once, and both rungs read off that one roll: rooted at Disengage, rooted and disordered at Fighting retreat. Nothing rolls twice.</li>
 <li><strong>Grade:</strong> 1 for every troop, 2 for a troop with pace, so cavalry and fliers Disengage for one action.</li>
 <li><strong>Ancestors:</strong> Trip is the shape of the enemy rolling: a check against the target's Reflex DC, and a failure leaves it unable to move until it acts. Rooted is the word Guard and Hold already use. Reactive Strike is the free strike, and it stays the one reaction in the game. Break off makes the Disengage check of section 7; the rung named Disengage is the one that needs no check, as Rally's rung 2 shares the ladder's name.</li>
+<li><strong>The critical.</strong> Break off is the gamble and Disengage the sure thing, so the critical is where the ground is: a free Move of your Speed, the one way a rung of Withdraw ever buys distance. Nothing rolled for a rung and nothing for sale.</li>
+<li><strong>A pin is a holder.</strong> A unit under Pin (Shoot, above) counts the shooter among what holds it, at Volley + 10, and leaves its hex by this ladder. The shooter lands no free strike. At Disengage and Fighting retreat the shooter rolls like any holder, and a failure roots it.</li>
 <li>A troop that gives no retreat still follows a Break off as section 7 has it. Against Disengage it follows only if it passes its roll.</li>
 </ul>
 

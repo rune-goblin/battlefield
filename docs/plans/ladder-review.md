@@ -53,7 +53,8 @@ the review section first or the file duplicates itself.
   spell attack, Controlling's Will save, and none for the trees that touch an ally.
 - **No skill checks.** Troops have no Athletics. The check to break contact or a pin is the
   **Disengage check**: Reflex, less disorder, against an attack DC (Strike or Volley + 10).
-  Never call it Escape.
+  Never call it Escape. It is one check against the highest holder, read for every holder, and
+  a pin counts as a holder. Its critical is a free Move of your Speed.
 - **A share with adjacent allies is a unit ability**, never a rung: "adjacency may not be
   common". It lives on the defend-allies tactic.
 - **Range is a penalty, never a rung**: −2 a band beyond effective range.
@@ -70,10 +71,10 @@ Five are updated: Fight, Shoot, Guard, Rally and Withdraw. Seven wait.
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
 | Fight | Section 6: Strike / Press / Overrun | ✓ | Reviewed and built 2026-09-05, commit 5ec6ad3. One roll, Press skips the save, Overrun drives and takes ground. Not in section 15. |
-| Shoot | Section 6: Fire / Aim / Snipe | ✓ | Decided 2026-09-05: Fire / Suppress / Pin, range as a −2 a band penalty. In section 15, not yet built. |
+| Shoot | Section 6: Fire / Aim / Snipe | ✓ | Decided 2026-09-05: Fire / Suppress / Pin, range as a −2 a band penalty. Pin makes the shooter a holder for Withdraw. In section 15, not yet built. |
 | Guard | Section 6: Brace / Dig in / Shieldwall | ✓ | Decided 2026-09-05: Brace / Dig in / Take cover, the share moved to the defend-allies tactic. In section 15, not yet built. |
 | Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In section 15, not yet built. Rung 3's name is open. |
-| Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In section 15, not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
+| Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. One check against the highest holder, a free Move on a critical, a pin is a holder. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In section 15, not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
 | Charge | Section 7 | | Next. Draft in section 15: two Speeds and the Fight rung for ◆◆; cavalry charge and mounted as riders. |
 | Cast: Blast | Section 11: long range, the activation's attack | | Draft in section 15: Bolt / Burst / Storm. One spell attack, read against every adjacent enemy at ◆◆, a burn at ◆◆◆. |
 | Cast: Healing | Section 11: touch | | Draft in section 15: Soothe / Heal / Mass heal. No roll. A wound cleared for ◆◆ is the number to watch. |

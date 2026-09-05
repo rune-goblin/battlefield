@@ -1901,3 +1901,12 @@ The guesses, in one line each, so the review has a list to strike from:
   rungs), Slip away, Feigned retreat ("they are actually retreating, so it's not entirely
   feigned"), Give ground, Draw them on, Lure, Overreach. Every rung leaves the unit one hex
   clear; further ground is a Move.
+- **One Disengage check, and a pin is a holder** (2026-09-05). Mark, on Break off's critical:
+  "I'm considering giving them an entire move instead of only one square." Then: "What if we
+  just made it one check against the highest holder instead of multiple checks?" Then: "if a
+  pin effect is being applied by a shoot action, that's just counted as one of the holders."
+  Section 7 now reads one check against the highest attack DC, read for every holder: a failure
+  is a free strike from each, a critical a free Move of your Speed with every pursuer thrown
+  off. Pin no longer has its own check; the shooter is a holder at Volley + 10 and lands no
+  strike. The engine still rolls per holder, marked `// proto:` in `doWithdraw`, until Withdraw
+  is built.
