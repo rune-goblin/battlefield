@@ -1741,3 +1741,62 @@ Judgment calls:
   more, and the panel is pips, stats and the Move bands.
 - **Spells were not revisited** beyond the two riders above; Mark: "we need to look at spells
   as well."
+
+## Shoot review: a missed volley stays free, the extreme −2 goes (2026-09-05)
+
+The first action through the process in `action-review.md`. Mark's brief for the session was
+"proceed with the action review for the remaining actions"; the two questions were the ones the
+queue already carried, and both calls below are mine.
+
+The rule as it stood, in `shootAt` and `shootModifier`:
+
+| Result | The target | The actor |
+|---|---|---|
+| Critical success | 2 wounds, Fortitude save or 1 disorder | — |
+| Success | 1 wound, Fortitude save or 1 disorder | — |
+| Failure | — | — |
+| Critical failure | — | — |
+
+| Rung | Cost | Adds |
+|---|---|---|
+| Fire | ◆ | The effective range band |
+| Aim | ◆◆ | One band off it, either way |
+| Snipe | ◆◆◆ | Two bands off it, either way |
+
+Plus one number outside the table: a troop's own volley took −2 into the extreme band, and
+artillery ignored it. Shooting downhill counted the range one band closer, but that shift only
+ever cancelled the −2: the reach check itself ignored height.
+
+**Ancestors.** A ranged Strike that misses costs nothing in Pathfinder, and nothing in it
+rebuffs a shooter. Range increments are the ancestor of the ladder: "−2 per range increment
+beyond the first", and Hunt Prey buys off exactly one of them ("you also ignore the penalty for
+making ranged attacks within your second range increment"). Aim is the second increment and
+Snipe the third, priced in actions rather than −2s. The nearer swing's ancestor is the volley
+trait ("less effective at close distances... a −2 penalty"). Point-Blank Stance waives that.
+
+**Numbers.** Volley equals Strike for nearly every troop on the roster, so Shoot and Fight land
+identically and Shoot carries no repulse. The −2 at extreme, per attack: Line Infantry down
+into Kobolds 0.90 → 0.70 wounds; even, 0.40 → 0.30; up, 0.25 → 0.15; an Archer Regiment (L12,
+long reach, one of two troops that reach extreme by Aim) into Frost Giants (L14) 15% hits →
+5%, for its whole activation.
+
+Decisions:
+
+- **A missed volley stays free.** The ancestor says so, and the repulse is a thing that
+  happens in contact. The cost of a shot is positional: the shooter is out of contact, holds
+  no ground, and eats −4 into a melee, while Fight buys Press for one action at grade 2 and
+  Shoot never buys a rider. Nothing in the table changed.
+- **The extreme −2 is gone.** Actions are the only currency, and a troop already pays two or
+  three of them to reach extreme: the −2 was a second charge on one band, in the shape Mark
+  had rejected ("the interesting benefits are not the +2"). With it goes artillery's
+  exemption, which was a special case of a special case.
+- **Height now buys a band.** With the −2 gone, "shooting downward counts the range one band
+  closer" had nowhere to land, and the reach check had never honoured it. It does now
+  (`shotRank` in `battle.ts`): a short-reach troop on a hill Fires at medium for one action.
+  No Pathfinder ancestor; the justification is that hills otherwise give a shooter only cover
+  denial, and a band is worth exactly one action, so the rule is priced in the same coin.
+- **The nearer swing stays**, untested by play. A long-reach troop shooting at short pays Snipe,
+  three actions, where the volley trait costs a Pathfinder longbow −2. It is the same price a
+  short-reach troop pays at long, and only two roster troops have long reach. Open for play:
+  if it reads as a trap, Fire covers everything at or under effective range and only distance
+  is bought.

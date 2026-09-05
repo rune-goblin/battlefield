@@ -709,6 +709,20 @@ describe('shooting', () => {
     expect(targets(far, 1)).toEqual([]);
     expect(targets(far, 2)).toEqual(['u0']);
   });
+  it('a shooter on higher ground counts the band one closer, so Fire reaches medium', () => {
+    const board = openBoard();
+    board.squares[6][2].elevation = 1;
+    const { state } = battle([], board);
+    place(state, 'u0', 'c4');
+    expect(targets(offer(state, 'shoot', 'u2'), 1)).toEqual(['u0']);
+  });
+  it("a troop's own volley pays nothing beyond the rung at extreme", () => {
+    const hex = battle([], openBoard('hex')).state;
+    place(hex, 'u0', 'c2');
+    place(hex, 'u2', 'c9');
+    expect(rangeBetween(hex, unit(hex, 'u2'), unit(hex, 'u0'))).toBe('extreme');
+    expect(shootModifier(hex, unit(hex, 'u2'), unit(hex, 'u0'))).toBe(unit(hex, 'u2').stats.volley);
+  });
   it('is −4 into a melee and +1 from behind a standing wall', () => {
     const board = openBoard();
     board.walls[edgeKey(parse('c6'), parse('c7'))] = { tier: 2, boxes: 3, remaining: 3 };

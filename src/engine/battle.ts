@@ -269,9 +269,11 @@ const rangeRank = (r: Range) => (r === 'short' ? 1 : r === 'medium' ? 2 : r === 
 /** Whether a bare rank (1-4) names a real band rather than engaged (0) or beyond (5). */
 const inRange = (r: number) => r >= 1 && r <= 4;
 
-function volleyRank(state: BattleState, u: Unit, target: Unit): number {
-  const rank = Math.min(4, bandRank(state, dist(state, u.square, target.square)));
-  return elevation(state, u) > elevation(state, target) ? rank - 1 : rank;
+/** The band a shot at this target is priced in: the true band, one closer for a shooter that
+ * stands higher. Engaged (0) and beyond (5) stay where they are. */
+function shotRank(state: BattleState, u: Unit, target: Unit): number {
+  const r = rangeRank(rangeBetween(state, u, target));
+  return inRange(r) && r > 1 && elevation(state, u) > elevation(state, target) ? r - 1 : r;
 }
 
 /** What an ally's Rally is worth to the unit that took heart from it, on its attacks. */
@@ -296,7 +298,6 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
   if (u.offense.bonus) m += u.offense.bonus;
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
-  if (!e && volleyRank(state, u, target) >= 4) m -= 2;
   m -= Math.max(0, elevation(state, target) - elevation(state, u));
   if (state.units.some((a) => a.side === u.side && a.id !== u.id && isEngaged(state, target, a))) m -= 4;
   if (garrisoned(state, u)) m += 1;
@@ -672,7 +673,7 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
     case 'shoot': {
       const home = shootHome(state, u);
       const offset = index - 1;
-      const inBand = (e: Unit) => { const r = rangeRank(rangeBetween(state, u, e)); return inRange(r) && Math.abs(r - home) <= offset; };
+      const inBand = (e: Unit) => { const r = shotRank(state, u, e); return inRange(r) && Math.abs(r - home) <= offset; };
       const targets: RungTarget[] = enemies.filter(inBand).map(unitTarget);
       if (u.side === 'attacker' && crewedArtillery(state, u)) {
         targets.push(...wallKeys(state).filter((k) => { const r = wallRank(state, u, k); return inRange(r) && Math.abs(r - home) <= offset; }).map(wallTarget));
@@ -983,7 +984,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
         break;
       }
       const target = unit(state, action.target!);
-      if (outOfBand(rangeRank(rangeBetween(state, u, target)))) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
+      if (outOfBand(shotRank(state, u, target))) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
       shootAt(state, rng, u, target, rung);
       break;
     }
