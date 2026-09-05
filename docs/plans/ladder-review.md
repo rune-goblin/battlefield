@@ -1,6 +1,6 @@
 # Ladder review, one ladder at a time
 
-Start a session with: **"Read docs/plans/ladder-review.md and review the Rally ladder."**
+Start a session with: **"Read docs/plans/ladder-review.md and review the Withdraw ladder."**
 Nothing else needs to be in context. Change the ladder's name to pick the next one; a Cast tree
 is named by its tree, "review the Blast tree".
 
@@ -65,15 +65,15 @@ the review section first or the file duplicates itself.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Three are updated: Fight, Shoot and Guard. Nine wait.
+Four are updated: Fight, Shoot, Guard and Rally. Eight wait.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
 | Fight | Section 6: Strike / Press / Overrun | ✓ | Reviewed and built 2026-09-05, commit 5ec6ad3. One roll, Press skips the save, Overrun drives and takes ground. Not in section 15. |
 | Shoot | Section 6: Fire / Aim / Snipe | ✓ | Decided 2026-09-05: Fire / Suppress / Pin, range as a −2 a band penalty. In section 15, not yet built. |
 | Guard | Section 6: Brace / Dig in / Shieldwall | ✓ | Decided 2026-09-05: Brace / Dig in / Take cover, the share moved to the defend-allies tactic. In section 15, not yet built. |
-| Rally | Sections 6 and 9: Steady / Rally / Inspire | | Next. Draft in section 15: heart becomes a point of disorder not taken. |
-| Withdraw | Section 7 | | Draft in section 15: Break off / Fall back / Flee, grade 2 with pace. |
+| Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In section 15, not yet built. Rung 3's name is open. |
+| Withdraw | Section 7 | | Next. Draft in section 15: Break off / Fall back / Flee, grade 2 with pace. |
 | Charge | Section 7 | | Draft in section 15: two Speeds and the Fight rung for ◆◆; cavalry charge and mounted as riders. |
 | Cast: Blast | Section 11: long range, the activation's attack | | Draft in section 15: Bolt / Burst / Storm. One spell attack, read against every adjacent enemy at ◆◆, a burn at ◆◆◆. |
 | Cast: Healing | Section 11: touch | | Draft in section 15: Soothe / Heal / Mass heal. No roll. A wound cleared for ◆◆ is the number to watch. |

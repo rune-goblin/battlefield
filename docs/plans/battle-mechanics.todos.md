@@ -1863,6 +1863,25 @@ The guesses, in one line each, so the review has a list to strike from:
   cast and then effect." Section 11's cast roll followed by a separate effect roll goes when
   the trees are built; each tree's one gate is already the row above its table in section 15.
   The six trees are listed as ladders of their own in `ladder-review.md`.
+- **Rally review** (2026-09-05). Heart is renamed and widened, and the draft's "a point of
+  disorder not taken" is dropped. Mark: "take heart is +2. What if we just made it +2 to your
+  next roll instead of attacks? It's a status bonus And I feel like we need a better name.
+  Inspired is probably it for the condition that gets applied: 'You are inspired. Get +2 to
+  your next roll.'" Whether rung 3 keeps the name Inspire is left open: "Whether this means we
+  need to change the name of the last, we can decide."
+- **Rally, second pass** (2026-09-05). The roll goes and one effect runs through every rung.
+  Mark: "the steady behavior should be Recover 1 point of disordered. If you are not
+  disordered or have 0 disorder, then become inspired. Then rally is the same effect on a
+  single target. Then inspire is that effect on everyone within the range. So you can't
+  become inspired if you are still in disorder." Written with the rules' verb, clears, for his
+  recover. Read as no roll: section 9's rout-DC roll, its four degrees and the critically
+  failed Rally's point go when Rally is built. Flagged: Steady on a unit in good order is one
+  action for +2 on its next roll, which "nothing turns an action into a bonus" had ruled out.
+- **Rally, third pass** (2026-09-05). The roll stays. Mark: "we still need to roll and success
+  grid for all actions. That's just the success result." So clear 1 or inspired is the success
+  row. Proposed around it, not yet decided: critical success clears 2 and inspires if none is
+  left; failure nothing; critical failure nothing and 1 more on the rallying unit; one roll
+  read for every unit the rung reaches.
 - **Shaken and routed units may Move** (2026-09-05). Mark: "Section 7 is wrong. I think a
   shaken or routed unit should be able to move." Sections 6, 7 and 9 and the quick reference
   now say so, and `moveReach` no longer bars them. Judgment call: a routed unit's Move is
