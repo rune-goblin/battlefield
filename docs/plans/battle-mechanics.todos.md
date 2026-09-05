@@ -1800,3 +1800,34 @@ Decisions:
   short-reach troop pays at long, and only two roster troops have long reach. Open for play:
   if it reads as a trap, Fire covers everything at or under effective range and only distance
   is bought.
+
+## Every remaining ladder proposed in one pass, for review in the rules (2026-09-05)
+
+Mark: "take your best guess then on all of them and write them as ladders in the rules.html,
+and I'll review them there. Remember that we want meaningful effects over flat bonuses." So the
+one-action-per-session process is set aside for a draft: `public/rules.html` section 15,
+"Proposed ladders, under review", holds a ladder for Guard, Rally, Withdraw, Charge and each
+Cast tree, in the section-6 shape, with the changed cells, the ancestors and the edge cases
+under each. Nothing in it is implemented; section 6 and the engine still agree.
+
+The guesses, in one line each, so the review has a list to strike from:
+
+- **Guard** loses the +2 everywhere. Brace caps hits at one wound (Shield Block), Hold cannot
+  be shoved and repulses a miss with no save (Press turned round; no ancestor, the cell to
+  watch), Shieldwall shares Brace (Shield Warden).
+- **Rally**'s heart becomes "the next point of disorder does not land" and stops being +2.
+- **Withdraw** keeps its check and free strike; the distance dial becomes Break off / Fall
+  back / Flee, grade 1, grade 2 with pace.
+- **Charge** is two Speeds and the Fight rung for two actions (Sudden Charge's discount).
+  Cavalry charge makes the hit need no save; mounted makes it shove. Both together is an
+  Overrun for two actions.
+- **Cast** drops the range/duration/effect axis and every +N. Blast: Bolt / Burst (one roll
+  read against the target's neighbours) / Storm (burns). Healing: Soothe / Heal (a wound) /
+  Mass heal (adjacent allies; the throughput number is flagged). Controlling: Dread (Fear's
+  point) / Slow (an action) / Hold (rooted). Offense: Sure strike (roll twice) / Wrath (the
+  hit needs no save) / Haste (an extra action, never a second attack). Defense: Ward (no
+  disorder from the next wound) / Stoneskin (cap) / Aegis (the first hit is turned).
+  Movement: Sure footing (terrain is open) / Wings (flies) / Freedom (no Escape check).
+- Tactic grants move with the trees: demoralize → Dread, defending allies → Ward,
+  battlefield medicine → Heal.
+- **Free strike, no retreat, walls and siege engines** are left as they are.
