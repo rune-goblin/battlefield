@@ -624,6 +624,23 @@
 <p><strong>Nothing in this section is in force.</strong> Section 6 is the rule and the engine plays it. What follows is a proposal for every ladder the Fight rework left standing, written in the same shape so it reads against them. Each ladder is judged by the four tests from the Fight review: a rung buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. Under each table: the cells that changed, the Pathfinder ancestor, and the edge cases. Rungs stay cumulative and priced as section 6 prices them.</p>
 </div>
 
+<h3>Shoot</h3>
+<p>Today the rungs buy range: Fire is the effective range, Aim one band off it and Snipe two, either direction. That is three prices for one thing. Range comes off the ladder and onto the roll, which is Pathfinder's own rule, and the rungs buy what volume fire does to the troop under it.</p>
+<div class="wrap"><table>
+<tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
+<tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at −2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
+<tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: −2 to everything it rolls until the start of your next activation.</td></tr>
+<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: to Move or Charge on its next activation it must first pass an Escape check against your attack DC, Volley + 10, as if breaking contact. A failure spends the action and it stays where it is; a critical failure costs it 1 disorder as well. Nothing strikes it, since nobody is in contact.</td></tr>
+</table></div>
+<ul>
+<li><strong>Changed:</strong> every cell. Aim and Snipe go, and with them the swing nearer, the three-action shot at a target two hexes away. Height counting a band closer becomes a −2 not taken. Artillery already shoots at grade 3 from its own reach, so a gun crew Pins for one action.</li>
+<li><strong>Ancestors:</strong> the range-increment rule, −2 per increment beyond the first, is Fire's penalty verbatim; −4 was considered and would put a medium-reach troop at −8 into extreme, a shot nobody takes. The volley trait charges a −2 for shooting too near, on the weapons that carry it, so nearness is a unit ability if it is anything and no troop pays it here. Frightened is a status penalty to every check that fades on its own: Suppress. Pin has none in ranged form; Tumble Through's failure, the move ending where the check failed, is its shape.</li>
+<li>Suppress bites hit or miss because volume fire works by volume; a rung that only lands on a hit is Press again. Suppressed is disorder's temporary cousin, two points that lift on their own, and the two stack.</li>
+<li>Pin was first drafted as outright: the target may not Move or Charge. Mark: "It's probably just too strong a control. I would make them roll as if they needed to disengage, even though it's a ranged attack." The check is the Escape check by name, so a unit already engaged rolls once against each holder and once against the pin.</li>
+<li>Pin does not touch Withdraw. A pinned unit may still break contact, fall back or flee; covering fire stops an advance, and a retreat is what it is for.</li>
+<li>A unit with the covering-fire tactic sits at grade 3 and Pins for one action, which is the first time the tactic's name has described its effect.</li>
+</ul>
+
 <h3>Guard</h3>
 <p>Today every rung is +2 Defence, Dig in blunts criticals and roots, and Shieldwall braces the neighbours. The +2 stays, and it is the one exception to the rule against numbers: a raised shield is nothing but a harder unit to hit, and cover is the same thing again. The rungs above it are Pathfinder's own two grades of cover, and the sharing goes to the troops built for it.</p>
 <div class="wrap"><table>
@@ -638,254 +655,6 @@
 <li><strong>The share becomes a unit ability.</strong> Adjacency is not something every troop can count on, so bracing the neighbours belongs to the troops built for it. The <em>defend allies</em> tactic grants it: that unit's Guard, at any rung, gives every adjacent ally what Brace buys. The one roster troop with the tactic is Shield Wall, which carries raised shields and a shield block besides, and that is the unit the old rung was describing. Formation, which 31 roster troops carry, keeps raising the grade and grants nothing else. Shield Warden, the feat that extends a Shield Block to an adjacent ally, is the ancestor.</li>
 <li>The cap touches the wound and nothing else, so a Press against a dug-in unit still lands its point. Against a unit under cover an Overrun is a Press: the shove fails, the attacker stays where it is, and the target takes nothing for it.</li>
 <li>Two other rungs were drafted and dropped: a hit turned outright ("complete immunity to the next hit sounds too strong"), and a repulse with no save against a Fight that misses you.</li>
-<li>Guard lasts until the unit next acts, as today, and the root with it.</li>
-</ul>
-
-<h3>Rally</h3>
-<p><strong>Every unit that is not routed may Rally</strong>, whatever else its situation allows: in contact or in the open, in good order or shaken. A shaken unit has Rally and the withdrawal and nothing else, which is what makes the act its way back. The rout is the only thing that takes it away, and then only the unit's own &mdash; an ally's Rally still reaches it.</p>
-<p>Rally is the only thing that clears disorder. Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
-<table>
-<tr><th>Rally</th><th>Clears</th></tr>
-<tr><td>Critical success</td><td>All of it</td></tr>
-<tr><td>Success</td><td>2</td></tr>
-<tr><td>Failure</td><td>1</td></tr>
-<tr><td>Critical failure</td><td>Nothing, and 1 more</td></tr>
-</table>
-<p>The roll says how much clears; the rung says who else it reaches. Every rung lets an ally <strong>take heart</strong> — +2 on its attacks until it has acted — and from Rally upward the ally clears a point as well. This is why a unit with nothing to clear still has a use for the act: a levy's Steady is a poor self-rally and a real gift to the troop beside it.</p>
-
-<h2 id="ground">10. Ground, height and walls</h2>
-<p>Three layers shape the field. Terrain fills a hex and changes what checks cost; height decides who has the advantage; barriers sit on edges and decide where units may go. Forest hides, swamp slows, water blocks, height commands, walls hold.</p>
-<h3>Terrain</h3>
-<div class="wrap"><table>
-<tr><th>Terrain</th><th>To enter</th><th>Effect</th></tr>
-<tr><td>Open</td><td>1</td><td>&mdash;</td></tr>
-<tr><td>Settlement</td><td>1</td><td>A road through the walls; no cover of its own</td></tr>
-<tr><td>Forest</td><td>2</td><td>Cover: +1 Defence against a shot, unless the shooter stands higher</td></tr>
-<tr><td>Shallows</td><td>2</td><td>A ford or a marsh edge: &minus;1 to Strike from it</td></tr>
-<tr><td>Swamp</td><td>3</td><td>&minus;1 to Strike from it</td></tr>
-<tr><td>Water</td><td>&mdash;</td><td>Impassable. Shots cross it.</td></tr>
-</table></div>
-<h3>Height</h3>
-<p>Every hex stands at height 0, 1 or 2. Count the difference between the two hexes:</p>
-<ul>
-<li>Attacking upward, in melee or with a shot, costs &minus;1 for each level of difference.</li>
-<li>Shooting downward counts the range one band closer, and the target's forest cover does not apply.</li>
-<li>Climbing costs 1 a level on top of the terrain.</li>
-<li>An edge with a difference of 2 is a <strong>cliff</strong>: nobody crosses it, and nobody is engaged across it.</li>
-</ul>
-<h3>Walls</h3>
-<p>A wall sits on the edge between two hexes. Nobody crosses it until it is breached, but units on either side are engaged across it and shots cross it freely. An attacker striking across a standing wall takes &minus;2. A defender standing beside a wall of its own is <strong>garrisoned</strong> and shoots at +1.</p>
-<p>Only the attacker attacks a wall, and each segment has wound boxes equal to its tier plus one. Fight a segment on an edge of your own hex, or bombard one within your rung's band with artillery. The DC is 10 + the wall's tier + the level of the highest defender still standing; a hit takes one box, a critical two, and a segment with no boxes left is breached and gone. A ram rolls at +2 and is good for nothing else. Walls are repaired through fortification maintenance, never during a battle.</p>
-<p>A fort is a block of settlement hexes against the defender's edge, walled on its front and flanks with the segments its tier allows: four edges at tier 0, up to seven at tier 3. A short budget leaves a gate open on one flank. Whatever the fortification gives the garrison in Defence and saves is already on its sheet.</p>
-
-<h2 id="magic">11. Magic</h2>
-<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>, and every caster belongs to one of magic's four traditions: <strong>arcane</strong>, <strong>divine</strong>, <strong>occult</strong>, <strong>primal</strong>. A tradition does not carry every kind of magic &mdash; see Tradition, below.</p>
-
-<h3>Casting</h3>
-<p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
-<p>A cast is priced like every other ladder: Tier 1 of whichever tree you choose costs one action, Tier 2 two and Tier 3 three, at the tree's own base range (below). A tier above the first buys one of three things &mdash; extended range, a longer duration, or a stronger effect &mdash; and never more than one on a single cast. Nothing is rolled to reach a tier.</p>
-<p>Once the cast lands, an enemy-targeted tree &mdash; Blast or Controlling &mdash; needs a second, separate <strong>effect roll</strong> to see how well it bites, decoupled from the cast roll that got it there. Blast is a spell attack: the caster rolls d20 + spell attack, less disorder, against the target's Defence. It is still the activation's one attack, the same slot a Fight or a Shot uses. Controlling remains resistance: the target rolls d20 + Will, less disorder, against the caster's spell DC. An ally-targeted tree &mdash; Healing, or the Offense, Defense or Movement buff &mdash; has nothing to resist, so it simply applies once the cast lands, no second roll.</p>
-<p>A caster also carries actions of its own that nothing but a cast can spend: <strong>level &divide; 5, rounded down</strong> &mdash; 0 below level 5, rising to 4 at level 20. They refresh every activation, exactly as the ordinary three do, and they go first, so a Tier 3 cast leaves a level-10 caster one ordinary action for something else. Cast carries no grade: the tradition's cap (below) is the only thing deciding which tiers are for sale.</p>
-
-<h3>Tradition</h3>
-<p>Each cell below is the highest tier a tradition may ever reach in that tree &mdash; 0 meaning no access at all. Nothing reaches every tree, and nothing sits at 0 in more than two.</p>
-<div class="wrap"><table>
-<tr><th>Tree</th><th>Arcane</th><th>Divine</th><th>Occult</th><th>Primal</th></tr>
-<tr><td>Blast</td><td>3</td><td>1</td><td>2</td><td>2</td></tr>
-<tr><td>Healing</td><td>0</td><td>3</td><td>1</td><td>2</td></tr>
-<tr><td>Controlling</td><td>2</td><td>2</td><td>3</td><td>1</td></tr>
-<tr><td>Offense (buff)</td><td>1</td><td>2</td><td>3</td><td>1</td></tr>
-<tr><td>Defense (buff)</td><td>2</td><td>2</td><td>1</td><td>1</td></tr>
-<tr><td>Movement (buff)</td><td>2</td><td>0</td><td>0</td><td>3</td></tr>
-<tr><td><em>Total</em></td><td><em>10</em></td><td><em>10</em></td><td><em>10</em></td><td><em>10</em></td></tr>
-</table></div>
-<p>Every column sums to 10 &mdash; a budget check, not proof of equal power. A 3 in Blast and a 3 in Movement aren't worth the same at the table, so this only rules out one tradition being flatly starved next to the other three.</p>
-
-<h3>The six trees</h3>
-<p>A tier is a different kind of thing, not a bigger number on the same thing &mdash; the same rule every rung already follows. Cast &middot; range and Cast &middot; duration aren't trees a tradition gates; every caster buys them the same way regardless of tradition. Buying either where the tree it would improve has nothing to use it &mdash; a duration push on a Blast still at Tier 1, either push on an ally-targeted tree once its own effect roll doesn't exist to bonus, or a second band of range on a Blast already pushed one band from long to extreme, the board's own ceiling &mdash; is legal and simply buys nothing.</p>
-<div class="wrap"><table>
-<tr><th rowspan="2">Tree</th><th rowspan="2">Tier 1 &middot; one action</th><th colspan="2">Tier 2 &middot; two actions</th><th colspan="2">Tier 3 &middot; three actions</th></tr>
-<tr><th>Effect</th><th>Bonus</th><th>Effect</th><th>Bonus</th></tr>
-<tr><td>Cast &middot; range</td><td>Engaged for Healing; short for the three buffs; medium for Controlling; long for Blast</td><td>One band out</td><td>+2 effect roll</td><td>Two bands out</td><td>+4 effect roll</td></tr>
-<tr><td>Cast &middot; duration</td><td>Instant</td><td>Lasts 2 rounds</td><td>+2 effect roll</td><td>Lasts 3 rounds</td><td>+4 effect roll</td></tr>
-<tr><td>Blast</td><td>A spell attack against Defence; an ordinary hit deals 1 wound, a critical 2</td><td>+1 to the damage result</td><td>+1 to the spell attack</td><td>A lingering wound: 1 wound at the start of the target's next activation, no roll &mdash; ticks again each round the cast's duration still covers</td><td>+2 to the spell attack</td></tr>
-<tr><td>Healing</td><td>&minus;1 disorder</td><td>+1 health</td><td>+1 on the target's next save</td><td>Regeneration: 1 wound cleared at the start of each of the target's own activations, for as long as the cast's duration lasts</td><td>+2 on the target's next save</td></tr>
-<tr><td>Controlling</td><td>&minus;1 movement</td><td>&minus;1 action</td><td>&minus;1 to the target's save against the effect</td><td>May not pay for a rung above its grade on its next activation</td><td>&minus;2 to the target's save against the effect</td></tr>
-<tr><td>Offense (buff)</td><td>+1 to the buffed unit's attack</td><td>+1 damage</td><td>+2 to the buffed unit's attack</td><td>A miss on the buffed unit's next Fight cannot repulse it</td><td>+3 to the buffed unit's attack</td></tr>
-<tr><td>Defense (buff)</td><td>+2 AC</td><td>The buffed unit's next wound taken costs it no disorder</td><td>+4 AC</td><td>&minus;1 from the next damage taken</td><td>+4 AC, +2 saves</td></tr>
-<tr><td>Movement (buff)</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>+2 movement</td><td>Grants a movement type: fly, swim, or water walk</td><td>+3 movement</td></tr>
-</table></div>
-<p>Three trained tactics still grant a fixed effect to a troop with no magic of its own, unrolled and untiered: battlefield medicine grants Healing's Tier 2 (+1 health), defending allies grants Defense's Tier 1 (+2 AC), and demoralizing grants Controlling's Tier 3 (may not pay for a rung above its grade on its next activation).</p>
-
-<h2 id="siege">12. Siege engines</h2>
-<p>An engine is <strong>attached</strong> to a unit and rides with it, or <strong>emplaced</strong> on a hex of its own. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>
-<p>A loaded artillery piece replaces its unit's shooting profile, effective range and all: the unit shoots with the engine's launch bonus, from the engine's own Reach rather than its own, and always at grade 3 &mdash; a gun crew works its whole engineered spread without paying the actions an ordinary troop spends climbing to the same band. An engine's Reach may be extreme, which no troop's own Salvo ever is; that is what siege equipment is for. No engine may fire while its crew is engaged, because nobody shoots in contact. A ram fights walls at +2 and does nothing else. Each engine fires once a round, whoever works it; where two friendly units both stand beside an emplacement, the crew is the first in deployment order.</p>
-<p>An emplaced engine never moves, so an emplaced ram can only ever batter a wall on an edge of the hex it deployed in. A ram is normally attached.</p>
-<p>A unit that is destroyed or routs abandons its engines where it stands. An emplacement left with only the enemy beside it changes hands at the end of the round — the engine is taken by standing on it, not by winning a fight over it — and an abandoned engine beside an enemy still standing at the end of the battle is captured.</p>
-
-<h2 id="end">13. Ending the battle</h2>
-<p>The battle ends at the end of a round: when a side has no unit still standing, or after the sixth round, whichever comes first. A unit is standing when it is neither destroyed nor routed nor gone from the field; a shaken unit still counts, so a side reduced to shaken units has not yet lost.</p>
-<h3>Dusk</h3>
-<p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
-<h3>The kingdom's checks</h3>
-<p>What a battle's outcome buys the kingdom &mdash; Fame, Unrest, recovery &mdash; is not these rules' concern. A battle ends at wounds, disorder, destroyed and captured; what a wider campaign does with that result is a kingdom action of its own.</p>
-<h3>Back on the kingdom map</h3>
-<p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
-
-<h2 id="odds">14. Fighting against the odds</h2>
-<p>There are no points. Four things decide an uneven fight:</p>
-<ul>
-<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive. Level sets the DC of the saves made against you: a wound from a high-level troop is harder to shrug off, and a line it repulses is harder to steady.</li>
-<li><strong>Quality.</strong> A troop with a poor Will save is shaken at 2 disorder, which is two disordering hits, and routed at 3. Trolls hit harder than almost anything at their level and break faster than a militia.</li>
-<li><strong>Numbers.</strong> Outflanking pays only when it reaches a second side of the enemy, and a ridge or a river decides where that second side is. Three lesser units grind down one greater one through disorder, not through wounds.</li>
-<li><strong>Ground and time.</strong> Forest, high ground and walls favour the defender. Six rounds and the half-army check reward a decisive attacker and punish a hesitant one.</li>
-</ul>
-<p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
-
-<h2 id="review">15. Proposed ladders, under review</h2>
-<div class="key">
-<p><strong>Nothing in this section is in force.</strong> Section 6 is the rule and the engine plays it. What follows is a proposal for every ladder the Fight rework left standing, written in the same shape so it reads against them. Each ladder is judged by the four tests from the Fight review: a rung buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. Under each table: the cells that changed, the Pathfinder ancestor, and the edge cases. Rungs stay cumulative and priced as section 6 prices them.</p>
-</div>
-
-<h3>Guard</h3>
-<p>Today every rung is +2 Defence, Dig in blunts criticals and roots, and Shieldwall braces the neighbours. The +2 stays, and it is the one exception to the rule against numbers: a raised shield is nothing but a harder unit to hit. The rungs above it buy the blow turned and the ground kept, and the sharing goes to the troops built for it.</p>
-<div class="wrap"><table>
-<tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Brace</td><td>◆</td><td>Shields up: +2 Defence until you next act.</td></tr>
-<tr><td>Dig in</td><td>◆◆</td><td>Brace, and every hit against you lands as an ordinary hit: a critical is capped at one wound. Shots included.</td></tr>
-<tr><td>Hold</td><td>◆◆◆</td><td>Dig in, and you hold your ground: an Overrun cannot drive you back. You may not move again this activation.</td></tr>
-</table></div>
-<ul>
-<li><strong>Changed:</strong> Brace and Dig in are what they are today, less the root, which moves up. Hold replaces Shieldwall: the root becomes the price of the ground it keeps, and nothing on the ladder reaches a neighbour.</li>
-<li><strong>Ancestors:</strong> Raise a Shield is a circumstance bonus to AC: Brace. Shield Block is the reaction that absorbs a hit: Dig in. Hold has none.</li>
-<li><strong>The share becomes a unit ability.</strong> Adjacency is not something every troop can count on, so bracing the neighbours belongs to the troops built for it. The <em>defend allies</em> tactic grants it: that unit's Guard, at any rung, gives every adjacent ally what Brace buys. The one roster troop with the tactic is Shield Wall, which carries raised shields and a shield block besides, and that is the unit the old rung was describing. Formation, which 31 roster troops carry, keeps raising the grade and grants nothing else. Shield Warden, the feat that extends a Shield Block to an adjacent ally, is the ancestor.</li>
-<li>Dig in caps the wound and touches nothing else, so a Press against a dug-in unit still lands its point.</li>
-<li>Against a held unit an Overrun is a Press: the shove fails, the attacker stays where it is, and the held unit takes nothing for it.</li>
-<li>Two other rungs were drafted and dropped: a hit turned outright ("complete immunity to the next hit sounds too strong"), and a repulse with no save against a Fight that misses you.</li>
-<li>Guard lasts until the unit next acts, as today, and the root with it.</li>
-</ul>
-
-<h3>Rally</h3>
-<p><strong>Every unit that is not routed may Rally</strong>, whatever else its situation allows: in contact or in the open, in good order or shaken. A shaken unit has Rally and the withdrawal and nothing else, which is what makes the act its way back. The rout is the only thing that takes it away, and then only the unit's own &mdash; an ally's Rally still reaches it.</p>
-<p>Rally is the only thing that clears disorder. Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
-<table>
-<tr><th>Rally</th><th>Clears</th></tr>
-<tr><td>Critical success</td><td>All of it</td></tr>
-<tr><td>Success</td><td>2</td></tr>
-<tr><td>Failure</td><td>1</td></tr>
-<tr><td>Critical failure</td><td>Nothing, and 1 more</td></tr>
-</table>
-<p>The roll says how much clears; the rung says who else it reaches. Every rung lets an ally <strong>take heart</strong> — +2 on its attacks until it has acted — and from Rally upward the ally clears a point as well. This is why a unit with nothing to clear still has a use for the act: a levy's Steady is a poor self-rally and a real gift to the troop beside it.</p>
-
-<h2 id="ground">10. Ground, height and walls</h2>
-<p>Three layers shape the field. Terrain fills a hex and changes what checks cost; height decides who has the advantage; barriers sit on edges and decide where units may go. Forest hides, swamp slows, water blocks, height commands, walls hold.</p>
-<h3>Terrain</h3>
-<div class="wrap"><table>
-<tr><th>Terrain</th><th>To enter</th><th>Effect</th></tr>
-<tr><td>Open</td><td>1</td><td>&mdash;</td></tr>
-<tr><td>Settlement</td><td>1</td><td>A road through the walls; no cover of its own</td></tr>
-<tr><td>Forest</td><td>2</td><td>Cover: +1 Defence against a shot, unless the shooter stands higher</td></tr>
-<tr><td>Shallows</td><td>2</td><td>A ford or a marsh edge: &minus;1 to Strike from it</td></tr>
-<tr><td>Swamp</td><td>3</td><td>&minus;1 to Strike from it</td></tr>
-<tr><td>Water</td><td>&mdash;</td><td>Impassable. Shots cross it.</td></tr>
-</table></div>
-<h3>Height</h3>
-<p>Every hex stands at height 0, 1 or 2. Count the difference between the two hexes:</p>
-<ul>
-<li>Attacking upward, in melee or with a shot, costs &minus;1 for each level of difference.</li>
-<li>Shooting downward counts the range one band closer, and the target's forest cover does not apply.</li>
-<li>Climbing costs 1 a level on top of the terrain.</li>
-<li>An edge with a difference of 2 is a <strong>cliff</strong>: nobody crosses it, and nobody is engaged across it.</li>
-</ul>
-<h3>Walls</h3>
-<p>A wall sits on the edge between two hexes. Nobody crosses it until it is breached, but units on either side are engaged across it and shots cross it freely. An attacker striking across a standing wall takes &minus;2. A defender standing beside a wall of its own is <strong>garrisoned</strong> and shoots at +1.</p>
-<p>Only the attacker attacks a wall, and each segment has wound boxes equal to its tier plus one. Fight a segment on an edge of your own hex, or bombard one within your rung's band with artillery. The DC is 10 + the wall's tier + the level of the highest defender still standing; a hit takes one box, a critical two, and a segment with no boxes left is breached and gone. A ram rolls at +2 and is good for nothing else. Walls are repaired through fortification maintenance, never during a battle.</p>
-<p>A fort is a block of settlement hexes against the defender's edge, walled on its front and flanks with the segments its tier allows: four edges at tier 0, up to seven at tier 3. A short budget leaves a gate open on one flank. Whatever the fortification gives the garrison in Defence and saves is already on its sheet.</p>
-
-<h2 id="magic">11. Magic</h2>
-<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>, and every caster belongs to one of magic's four traditions: <strong>arcane</strong>, <strong>divine</strong>, <strong>occult</strong>, <strong>primal</strong>. A tradition does not carry every kind of magic &mdash; see Tradition, below.</p>
-
-<h3>Casting</h3>
-<p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
-<p>A cast is priced like every other ladder: Tier 1 of whichever tree you choose costs one action, Tier 2 two and Tier 3 three, at the tree's own base range (below). A tier above the first buys one of three things &mdash; extended range, a longer duration, or a stronger effect &mdash; and never more than one on a single cast. Nothing is rolled to reach a tier.</p>
-<p>Once the cast lands, an enemy-targeted tree &mdash; Blast or Controlling &mdash; needs a second, separate <strong>effect roll</strong> to see how well it bites, decoupled from the cast roll that got it there. Blast is a spell attack: the caster rolls d20 + spell attack, less disorder, against the target's Defence. It is still the activation's one attack, the same slot a Fight or a Shot uses. Controlling remains resistance: the target rolls d20 + Will, less disorder, against the caster's spell DC. An ally-targeted tree &mdash; Healing, or the Offense, Defense or Movement buff &mdash; has nothing to resist, so it simply applies once the cast lands, no second roll.</p>
-<p>A caster also carries actions of its own that nothing but a cast can spend: <strong>level &divide; 5, rounded down</strong> &mdash; 0 below level 5, rising to 4 at level 20. They refresh every activation, exactly as the ordinary three do, and they go first, so a Tier 3 cast leaves a level-10 caster one ordinary action for something else. Cast carries no grade: the tradition's cap (below) is the only thing deciding which tiers are for sale.</p>
-
-<h3>Tradition</h3>
-<p>Each cell below is the highest tier a tradition may ever reach in that tree &mdash; 0 meaning no access at all. Nothing reaches every tree, and nothing sits at 0 in more than two.</p>
-<div class="wrap"><table>
-<tr><th>Tree</th><th>Arcane</th><th>Divine</th><th>Occult</th><th>Primal</th></tr>
-<tr><td>Blast</td><td>3</td><td>1</td><td>2</td><td>2</td></tr>
-<tr><td>Healing</td><td>0</td><td>3</td><td>1</td><td>2</td></tr>
-<tr><td>Controlling</td><td>2</td><td>2</td><td>3</td><td>1</td></tr>
-<tr><td>Offense (buff)</td><td>1</td><td>2</td><td>3</td><td>1</td></tr>
-<tr><td>Defense (buff)</td><td>2</td><td>2</td><td>1</td><td>1</td></tr>
-<tr><td>Movement (buff)</td><td>2</td><td>0</td><td>0</td><td>3</td></tr>
-<tr><td><em>Total</em></td><td><em>10</em></td><td><em>10</em></td><td><em>10</em></td><td><em>10</em></td></tr>
-</table></div>
-<p>Every column sums to 10 &mdash; a budget check, not proof of equal power. A 3 in Blast and a 3 in Movement aren't worth the same at the table, so this only rules out one tradition being flatly starved next to the other three.</p>
-
-<h3>The six trees</h3>
-<p>A tier is a different kind of thing, not a bigger number on the same thing &mdash; the same rule every rung already follows. Cast &middot; range and Cast &middot; duration aren't trees a tradition gates; every caster buys them the same way regardless of tradition. Buying either where the tree it would improve has nothing to use it &mdash; a duration push on a Blast still at Tier 1, either push on an ally-targeted tree once its own effect roll doesn't exist to bonus, or a second band of range on a Blast already pushed one band from long to extreme, the board's own ceiling &mdash; is legal and simply buys nothing.</p>
-<div class="wrap"><table>
-<tr><th rowspan="2">Tree</th><th rowspan="2">Tier 1 &middot; one action</th><th colspan="2">Tier 2 &middot; two actions</th><th colspan="2">Tier 3 &middot; three actions</th></tr>
-<tr><th>Effect</th><th>Bonus</th><th>Effect</th><th>Bonus</th></tr>
-<tr><td>Cast &middot; range</td><td>Engaged for Healing; short for the three buffs; medium for Controlling; long for Blast</td><td>One band out</td><td>+2 effect roll</td><td>Two bands out</td><td>+4 effect roll</td></tr>
-<tr><td>Cast &middot; duration</td><td>Instant</td><td>Lasts 2 rounds</td><td>+2 effect roll</td><td>Lasts 3 rounds</td><td>+4 effect roll</td></tr>
-<tr><td>Blast</td><td>A spell attack against Defence; an ordinary hit deals 1 wound, a critical 2</td><td>+1 to the damage result</td><td>+1 to the spell attack</td><td>A lingering wound: 1 wound at the start of the target's next activation, no roll &mdash; ticks again each round the cast's duration still covers</td><td>+2 to the spell attack</td></tr>
-<tr><td>Healing</td><td>&minus;1 disorder</td><td>+1 health</td><td>+1 on the target's next save</td><td>Regeneration: 1 wound cleared at the start of each of the target's own activations, for as long as the cast's duration lasts</td><td>+2 on the target's next save</td></tr>
-<tr><td>Controlling</td><td>&minus;1 movement</td><td>&minus;1 action</td><td>&minus;1 to the target's save against the effect</td><td>May not pay for a rung above its grade on its next activation</td><td>&minus;2 to the target's save against the effect</td></tr>
-<tr><td>Offense (buff)</td><td>+1 to the buffed unit's attack</td><td>+1 damage</td><td>+2 to the buffed unit's attack</td><td>A miss on the buffed unit's next Fight cannot repulse it</td><td>+3 to the buffed unit's attack</td></tr>
-<tr><td>Defense (buff)</td><td>+2 AC</td><td>The buffed unit's next wound taken costs it no disorder</td><td>+4 AC</td><td>&minus;1 from the next damage taken</td><td>+4 AC, +2 saves</td></tr>
-<tr><td>Movement (buff)</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>+2 movement</td><td>Grants a movement type: fly, swim, or water walk</td><td>+3 movement</td></tr>
-</table></div>
-<p>Three trained tactics still grant a fixed effect to a troop with no magic of its own, unrolled and untiered: battlefield medicine grants Healing's Tier 2 (+1 health), defending allies grants Defense's Tier 1 (+2 AC), and demoralizing grants Controlling's Tier 3 (may not pay for a rung above its grade on its next activation).</p>
-
-<h2 id="siege">12. Siege engines</h2>
-<p>An engine is <strong>attached</strong> to a unit and rides with it, or <strong>emplaced</strong> on a hex of its own. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>
-<p>A loaded artillery piece replaces its unit's shooting profile, effective range and all: the unit shoots with the engine's launch bonus, from the engine's own Reach rather than its own, and always at grade 3 &mdash; a gun crew works its whole engineered spread without paying the actions an ordinary troop spends climbing to the same band. An engine's Reach may be extreme, which no troop's own Salvo ever is; that is what siege equipment is for. No engine may fire while its crew is engaged, because nobody shoots in contact. A ram fights walls at +2 and does nothing else. Each engine fires once a round, whoever works it; where two friendly units both stand beside an emplacement, the crew is the first in deployment order.</p>
-<p>An emplaced engine never moves, so an emplaced ram can only ever batter a wall on an edge of the hex it deployed in. A ram is normally attached.</p>
-<p>A unit that is destroyed or routs abandons its engines where it stands. An emplacement left with only the enemy beside it changes hands at the end of the round — the engine is taken by standing on it, not by winning a fight over it — and an abandoned engine beside an enemy still standing at the end of the battle is captured.</p>
-
-<h2 id="end">13. Ending the battle</h2>
-<p>The battle ends at the end of a round: when a side has no unit still standing, or after the sixth round, whichever comes first. A unit is standing when it is neither destroyed nor routed nor gone from the field; a shaken unit still counts, so a side reduced to shaken units has not yet lost.</p>
-<h3>Dusk</h3>
-<p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
-<h3>The kingdom's checks</h3>
-<p>What a battle's outcome buys the kingdom &mdash; Fame, Unrest, recovery &mdash; is not these rules' concern. A battle ends at wounds, disorder, destroyed and captured; what a wider campaign does with that result is a kingdom action of its own.</p>
-<h3>Back on the kingdom map</h3>
-<p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
-
-<h2 id="odds">14. Fighting against the odds</h2>
-<p>There are no points. Four things decide an uneven fight:</p>
-<ul>
-<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive. Level sets the DC of the saves made against you: a wound from a high-level troop is harder to shrug off, and a line it repulses is harder to steady.</li>
-<li><strong>Quality.</strong> A troop with a poor Will save is shaken at 2 disorder, which is two disordering hits, and routed at 3. Trolls hit harder than almost anything at their level and break faster than a militia.</li>
-<li><strong>Numbers.</strong> Outflanking pays only when it reaches a second side of the enemy, and a ridge or a river decides where that second side is. Three lesser units grind down one greater one through disorder, not through wounds.</li>
-<li><strong>Ground and time.</strong> Forest, high ground and walls favour the defender. Six rounds and the half-army check reward a decisive attacker and punish a hesitant one.</li>
-</ul>
-<p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
-
-<h2 id="review">15. Proposed ladders, under review</h2>
-<div class="key">
-<p><strong>Nothing in this section is in force.</strong> Section 6 is the rule and the engine plays it. What follows is a proposal for every ladder the Fight rework left standing, written in the same shape so it reads against them. Each ladder is judged by the four tests from the Fight review: a rung buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. Under each table: the cells that changed, the Pathfinder ancestor, and the edge cases. Rungs stay cumulative and priced as section 6 prices them.</p>
-</div>
-
-<h3>Guard</h3>
-<p>Today every rung is +2 Defence, Dig in blunts criticals and roots, and Shieldwall braces the neighbours. The +2 goes, and so does the sharing: every rung is a benefit to the unit that paid for it. What a shield does is turn a blow, what a line does is hold its ground, and what a held line does to the troop that fails against it is the third thing.</p>
-<div class="wrap"><table>
-<tr><th>Rung</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Brace</td><td>◆</td><td>Shields up. Until you next act, every hit against you lands as an ordinary hit: a critical is capped at one wound. Shots included.</td></tr>
-<tr><td>Hold</td><td>◆◆</td><td>Brace, and you hold your ground: an Overrun cannot drive you back. You may not move again this activation.</td></tr>
-<tr><td>Repel</td><td>◆◆◆</td><td>Hold, and a Fight that misses you repulses the attacker with <strong>no save</strong>.</td></tr>
-</table></div>
-<ul>
-<li><strong>Changed:</strong> the +2 Defence leaves every rung. Brace takes Dig in's cap down a rung. Hold is new and buys the ground alone. Repel replaces Shieldwall, and it is Press turned round: attacking a repelling line at parity costs the attacker a point 65% of the time instead of 29%, and attacking it from below 80% instead of 48%. A grade-1 troop spends its activation on it; a troop with raised shields does it for one action.</li>
-<li><strong>Ancestors:</strong> Raise a Shield is a bonus to AC and is the shape we are leaving. Shield Block is the reaction that absorbs a hit: Brace. Hold and Repel have none; Repel's number above is its justification, and it is the one cell to watch in play.</li>
-<li><strong>The share becomes a unit ability.</strong> Adjacency is not something every troop can count on, so bracing the neighbours belongs to the troops built for it. The <em>defend allies</em> tactic grants it: that unit's Guard, at any rung, gives every adjacent ally what Brace buys. The one roster troop with the tactic is Shield Wall, which carries raised shields and a shield block besides, and that is the unit the old rung was describing. Formation, which 31 roster troops carry, keeps raising the grade and grants nothing else. Shield Warden, the feat that extends a Shield Block to an adjacent ally, is the ancestor.</li>
-<li>Brace caps the wound and touches nothing else, so a Press against a braced unit still lands its point.</li>
-<li>Against a held unit an Overrun is a Press: the shove fails, the attacker stays where it is, and the held unit takes nothing for it.</li>
-<li>A hit turned outright, at any rung, was tried and dropped: immunity to the next hit is too strong for a ladder every troop can climb.</li>
 <li>Guard lasts until the unit next acts, as today, and the root with it.</li>
 </ul>
 

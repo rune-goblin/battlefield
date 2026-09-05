@@ -1812,6 +1812,16 @@ under each. Nothing in it is implemented; section 6 and the engine still agree.
 
 The guesses, in one line each, so the review has a list to strike from:
 
+- **Shoot**, revisited after the morning's review. Mark: "this is super boring. The additional
+  range is not interesting at all... Why don't we just apply a -2 for every range category off,
+  or should we say -4? And then just detach the range changing entirely from the actions."
+  So: Fire at −2 a band beyond effective range (the range-increment rule; −4 rejected as a shot
+  nobody takes), nearer bands free; Suppress, −2 to everything the target rolls until the
+  shooter's next activation, hit or miss (Mark's own); Pin, the target must pass an Escape check
+  against Volley + 10 to Move or Charge next activation. Pin was drafted as outright and Mark
+  softened it: "It's probably just too strong a control. I would make them roll as if they
+  needed to disengage." Barrage (Press for shooters) and Spread (the roll read against a
+  neighbour) were offered for the top rung and not taken.
 - **Guard** keeps the +2. Mark: "Brace should be shield block. +2 to AC. This is an exception
   to the no numbers rule. This is just increasing your defenses. On the next level, you gain
   crit immunity. On the final level, you cannot be pushed and are rooted." Then, on the turtle:
