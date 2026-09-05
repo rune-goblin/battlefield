@@ -1,6 +1,6 @@
 # Ladder review, one ladder at a time
 
-Start a session with: **"Read docs/plans/ladder-review.md and review the Charge ladder."**
+Start a session with: **"Read docs/plans/ladder-review.md and review the Blast tree."**
 Nothing else needs to be in context. Change the ladder's name to pick the next one; a Cast tree
 is named by its tree, "review the Blast tree".
 
@@ -59,6 +59,17 @@ the review section first or the file duplicates itself.
   common". It lives on the defend-allies tactic.
 - **Range is a penalty, never a rung**: −2 a band beyond effective range.
 - **Complete immunity to the next hit is too strong** for a ladder every troop can climb.
+- **Grades are gone.** Every rung costs its own number of actions for every troop: Strike 1,
+  Press 2, Overrun 3. What a better troop gets is **one extra action**, four in the activation,
+  in quickened's shape: one action however many sources, each source naming the ladder it may
+  buy. Never write "grade" into a ladder; write what the extra action buys. The source table is
+  in section 15 under "Grades become the extra action" and is open until Mark confirms it.
+- **Charge is for everyone.** One action of movement buys two Speeds when it ends in a Fight;
+  the Strike is at +2 and the charger is exposed until it next acts; cavalry differs by reach
+  and by the cavalry-charge impact, never by owning the verb. The +2 is the second flat bonus
+  allowed, after Guard's.
+- **Melee words:** Fight is the verb, engaged the state, Disengage the check. Never exchange or
+  engagement.
 - A miss is free at range; a Fight's miss repulses. Suppress (−2 to everything, until the
   shooter's next activation, hit or miss) is the precedent for a temporary penalty.
 
@@ -66,7 +77,7 @@ the review section first or the file duplicates itself.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Five are updated: Fight, Shoot, Guard, Rally and Withdraw. Seven wait.
+Six are updated: Fight, Shoot, Guard, Rally, Withdraw and Charge. Six wait.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -75,7 +86,7 @@ Five are updated: Fight, Shoot, Guard, Rally and Withdraw. Seven wait.
 | Guard | Section 6: Brace / Dig in / Shieldwall | ✓ | Decided 2026-09-05: Brace / Dig in / Take cover, the share moved to the defend-allies tactic. In section 15, not yet built. |
 | Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In section 15, not yet built. Rung 3's name is open. |
 | Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. One check against the highest holder, a free Move on a critical, a pin is a holder. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In section 15, not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
-| Charge | Section 7 | | Next. Draft in section 15: two Speeds and the Fight rung for ◆◆; cavalry charge and mounted as riders. |
+| Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In section 15, not yet built. The extra-action source table beside it is open. |
 | Cast: Blast | Section 11: long range, the activation's attack | | Draft in section 15: Bolt / Burst / Storm. One spell attack, read against every adjacent enemy at ◆◆, a burn at ◆◆◆. |
 | Cast: Healing | Section 11: touch | | Draft in section 15: Soothe / Heal / Mass heal. No roll. A wound cleared for ◆◆ is the number to watch. |
 | Cast: Controlling | Section 11: medium range, Will save against spell DC | | Draft in section 15: Dread / Slow / Hold. The target's one save gates every tier. |

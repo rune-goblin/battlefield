@@ -1910,3 +1910,50 @@ The guesses, in one line each, so the review has a list to strike from:
   off. Pin no longer has its own check; the shooter is a holder at Volley + 10 and lands no
   strike. The engine still rolls per holder, marked `// proto:` in `doWithdraw`, until Withdraw
   is built.
+- **Grades go, the extra action replaces them** (2026-09-05). Mark: "One thing I think we need
+  to remove is the grades. It's a concept that came with pushing, and I don't think it fits any
+  longer." Challenged: grade is the whole price rule, `rungCost = 1 + max(0, rung − grade)`, and
+  every tactic and signal acts by raising one. Mark: "rather than grade-reducing costs, I think
+  it would be easier just for a higher-grade unit to get an extra action." So every rung costs
+  its own number for every troop and a better troop has four actions. Proposed, not decided:
+  the extra action is quickened's, one action restricted to the ladder its source names (fear
+  and melee drill Fight, formation and shields Guard, covering fire Shoot, pace movement, Haste
+  anything), never two. High Will grants nothing, since it already sets Quality. Section 15
+  holds the table under "Grades become the extra action"; the build removes section 6's price
+  table and `gradesFor`.
+- **Charge review** (2026-09-05). Cavalry-only was proposed and dropped. Mark: "Just thinking
+  from a wargame perspective, how does that fit with most tactical games?" It does not: every
+  unit charges in the genre, and cavalry differs by reach and impact. Mark: "Okay, so charge for
+  everyone, and that leaves us back at: two speeds of movement and an ordinary attack; two
+  speeds of movement and a press; two speeds of movement and an overrun." One action of
+  movement buys two Speeds when it ends in a Fight, then the Fight rung at its flat price, so
+  Charge and Overrun is four actions and needs the extra action. Judgment calls: cavalry charge
+  is the impact (no save on the charge's hit), the mounted signal goes, leftover charge
+  movement does not bank, a pinned unit cannot charge. Dropped: the mounted rider's drive on
+  any hit.
+- **Charge has an edge** (2026-09-05). Mark: "how do we differentiate it from just a plain
+  attack, though? That's kind of boring." Proposed: "+2 attack for the charging unit, -2 to the
+  charging unit's AC, -2 to the target's disorder check." The −2 Defence is section 6's
+  exposed, so the charger is exposed until it next acts: "if we already have a condition for
+  that, then yeah, we should just give it `exposed`." The save penalty is dropped as doubling
+  up on the same hit: "Let's take that out, and instead we'll go the other way. It's always
+  easier to increase than to take things away." The +2 to hit stays and is the second flat
+  bonus after Guard's; the save penalty is the first thing to add if charging proves weak.
+- **Charge and ground** (2026-09-05). Straight line dropped: a two-hex charge cannot bend
+  meaningfully and the approach already takes the cheapest path. Mark: "Yes, add the terrain
+  line." A charge whose path enters forest, swamp or shallows, or climbs, lands no +2; the
+  discount and the exposure stand. Mark: "What if we give the save penalty on a downhill
+  charge?" Taken, and read from the start: "That would require that the charging unit start its
+  charge from a hex that is at a higher elevation than the target." A charge whose starting
+  hex stands above the target's puts the target's save against disorder at −2, whatever hex it
+  ends on. Height had no melee value downward before this.
+- **Charge table reads on its own** (2026-09-05). Mark: "I don't like having to look up what
+  press is in the charge table, so let's move that rule over so we see clearly what the bonus
+  is." Press and Overrun are spelled out in their rows. The melee's word stays Fight: it is the
+  menu verb and section 6's; engaged is the state, Disengage the check. "Exchange" and
+  "engagement" each appear once in the rules, in passing, and neither is a term.
+- **Melee vocabulary** (2026-09-05). Mark: "Let's then stamp out exchange and engagement to
+  make sure that we have clear terminology." Fight is the verb, engaged the state, Disengage
+  the check. The two stray uses are gone: "two bad exchanges" is "two bad Fights" in section 2,
+  and the cliff row of the quick reference says "nobody is engaged across it", section 10's
+  own words.
