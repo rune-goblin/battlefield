@@ -1,7 +1,8 @@
 # Ladder review, one ladder at a time
 
 Start a session with: **"Read docs/plans/ladder-review.md and review the Rally ladder."**
-Nothing else needs to be in context. Change the ladder's name to pick the next one.
+Nothing else needs to be in context. Change the ladder's name to pick the next one; a Cast tree
+is named by its tree, "review the Blast tree".
 
 ## What to read, and nothing more
 
@@ -46,7 +47,10 @@ the review section first or the file duplicates itself.
 - **Actions are the only currency.** The rung at the grade costs one action, each rung above it
   one more. Nothing rolls for a rung and nothing turns an action into a bonus.
 - **One gate.** An effect passes through one roll. Control is gated on a check: outright
-  "may not Move" was "too strong a control".
+  "may not Move" was "too strong a control". A cast is one roll too: "we're going back to a
+  single roll instead of a cast and then effect", so section 11's cast roll followed by a
+  separate effect roll goes. Each tree's one roll is the row above it in section 15: Blast's
+  spell attack, Controlling's Will save, and none for the trees that touch an ally.
 - **No skill checks.** Troops have no Athletics. The check to break contact or a pin is the
   **Disengage check**: Reflex, less disorder, against an attack DC (Strike or Volley + 10).
   Never call it Escape.
@@ -59,8 +63,9 @@ the review section first or the file duplicates itself.
 
 ## Every ladder, and which are updated
 
-Seven ladders. Fight was reviewed first and is already built; it set the four tests the rest
-are judged by. Three are updated: Fight, Shoot and Guard. Four wait.
+Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
+Fight was reviewed first and is already built; it set the four tests the rest are judged by.
+Three are updated: Fight, Shoot and Guard. Nine wait.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -70,7 +75,12 @@ are judged by. Three are updated: Fight, Shoot and Guard. Four wait.
 | Rally | Sections 6 and 9: Steady / Rally / Inspire | | Next. Draft in section 15: heart becomes a point of disorder not taken. |
 | Withdraw | Section 7 | | Draft in section 15: Break off / Fall back / Flee, grade 2 with pace. |
 | Charge | Section 7 | | Draft in section 15: two Speeds and the Fight rung for ◆◆; cavalry charge and mounted as riders. |
-| Cast | Section 11: six trees, tiers 1 to 3 | | Draft in section 15, tree by tree: Blast, Healing, Controlling, Offense, Defense, Movement. |
+| Cast: Blast | Section 11: long range, the activation's attack | | Draft in section 15: Bolt / Burst / Storm. One spell attack, read against every adjacent enemy at ◆◆, a burn at ◆◆◆. |
+| Cast: Healing | Section 11: touch | | Draft in section 15: Soothe / Heal / Mass heal. No roll. A wound cleared for ◆◆ is the number to watch. |
+| Cast: Controlling | Section 11: medium range, Will save against spell DC | | Draft in section 15: Dread / Slow / Hold. The target's one save gates every tier. |
+| Cast: Offense | Section 11: short range, an ally | | Draft in section 15: Sure strike / Wrath / Haste. Roll twice, a Press for a unit without one, one more action. |
+| Cast: Defense | Section 11: short range, an ally | | Draft in section 15: Ward / Stoneskin / Aegis. Aegis turns a whole hit, which the held decisions say is too strong. |
+| Cast: Movement | Section 11: short range, an ally | | Draft in section 15: Sure footing / Wings / Freedom. Freedom passes the Disengage check. |
 
 Move carries no rungs and is not under review. Section 15 also holds two blocks that are not
 ladders, "Free strike and no retreat" and "Walls and siege engines"; both say the rule is

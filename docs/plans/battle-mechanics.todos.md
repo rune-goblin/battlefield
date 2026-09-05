@@ -1859,3 +1859,7 @@ The guesses, in one line each, so the review has a list to strike from:
   not have Athletics as a stat." It never was Athletics here (Reflex against Strike + 10, every
   troop has a Reflex), so only the word changed. The engine's `escapeModifier`/`escapeDcFor`
   keep their names for now; `// proto:` rename when the Withdraw ladder is built.
+- **A cast is one roll** (2026-09-05). Mark: "we're going back to a single roll instead of a
+  cast and then effect." Section 11's cast roll followed by a separate effect roll goes when
+  the trees are built; each tree's one gate is already the row above its table in section 15.
+  The six trees are listed as ladders of their own in `ladder-review.md`.
