@@ -1983,3 +1983,37 @@ The guesses, in one line each, so the review has a list to strike from:
   level ÷ 5 actions paid for a two-roll cast; with one roll a caster has the three actions
   every unit has, and a level-15 arcane caster no longer Bursts for free. Written into the
   Cast intro in section 15; section 11 stands until the build.
+- **Healing: Mass heal dropped** (2026-09-06). Heal on yourself and every adjacent ally undid
+  seventeen attacks' worth of wounds with six neighbours, for three actions and no roll. Mark:
+  "Healing all adjacent is too powerful." Dropped, and it was the second share with adjacent
+  allies proposed as a rung after Shieldwall's. Rung 3 is open; Regenerate, one more wound
+  cleared at the start of the ally's next activation, is proposed.
+- **Restore is a choice** (2026-09-06). Three fillers offered: regeneration, a cleanse, and
+  Heal read as a critical (2 and 2), the last a bigger number and set aside. Mark: "What if
+  it's both? We have clear one condition or Clear a wound next round." Restore is Heal, and
+  either one condition ended now (exposed, suppressed, pinned or rooted) or 1 more wound at
+  the start of the ally's next activation, the caster choosing.
+- **Blocks dropped** (2026-09-06). Mark: "We treat conditions and wounds as the same thing, each
+  worth one block, and then we award a number of blocks?" Soothe / Heal / Restore as 1, 2 and 3
+  blocks, a block being a point of disorder, a wound or a condition. Set aside by Mark: "I
+  don't think it's great. I feel like it's nicer if it's soothe." Soothe, Heal and Restore
+  stand.
+- **Healing rolls** (2026-09-06). No roll was recommended and Mark overruled it: "I think it's
+  interesting if healing has to roll ... a low-level caster shouldn't be able to easily heal a
+  high-level monster or a high-level army. In the individual-level game, a first-level priest
+  that casts his best heal on a 15th-level warrior is going to make a small dent in his
+  wounds." The roll is the caster's spell attack against the healed unit's own level DC, the
+  board's stand-in for a Medicine check, since troops have no skills. Degrees proposed: a
+  critical clears 1 more wound, a success the rung, a failure 1 disorder only (the dent), a
+  critical failure nothing. Open until Mark confirms.
+- **Healing's degrees are Mark's** (2026-09-06). "On a crit fail, no effect. On a fail, clear 1
+  disorder. On a success, clear disorder, heal 1. On a critical, clear 1 disorder, heal 1, and
+  remove a condition or heal another." He saw the cost: "that doesn't actually leave anything
+  for the ladder?" Proposed in answer, Rally's split: the roll says how much, the rung how
+  many units, one, two, three, each yourself or an adjacent ally, one roll read against each
+  unit's own level DC. Open until Mark confirms.
+- **Healing is a count at touch** (2026-09-06). Mark: "let's do the count, and it's always
+  adjacent, right? Up to 3 units, self or adjacent with 3 actions." Soothe one unit, Heal two,
+  Restore three, each yourself or an adjacent ally, one roll read against each unit's own level
+  DC. The ceiling and the DC-shift fillers are dropped. Open from this review: what
+  battlefield medicine grants now, and whether a caster casts once an activation altogether.
