@@ -68,6 +68,9 @@ the review section first or the file duplicates itself.
   the Strike is at +2 and the charger is exposed until it next acts; cavalry differs by reach
   and by the cavalry-charge impact, never by owning the verb. The +2 is the second flat bonus
   allowed, after Guard's.
+- **Casters have three actions.** Section 11's Cast-only actions (level ÷ 5) go: "we remove
+  the extra actions awarded to casters now that we have only 1 tree to perform, previously we
+  had cast then effect." A tree is cast once an activation; once altogether is open.
 - **Melee words:** Fight is the verb, engaged the state, Disengage the check. Never exchange or
   engagement.
 - A miss is free at range; a Fight's miss repulses. Suppress (−2 to everything, until the
@@ -77,7 +80,7 @@ the review section first or the file duplicates itself.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Six are updated: Fight, Shoot, Guard, Rally, Withdraw and Charge. Six wait.
+Seven are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge and Blast. Five wait.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -87,7 +90,7 @@ Six are updated: Fight, Shoot, Guard, Rally, Withdraw and Charge. Six wait.
 | Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In section 15, not yet built. Rung 3's name is open. |
 | Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. One check against the highest holder, a free Move on a critical, a pin is a holder. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In section 15, not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
 | Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In section 15, not yet built. The extra-action source table beside it is open. |
-| Cast: Blast | Section 11: long range, the activation's attack | | Draft in section 15: Bolt / Burst / Storm. One spell attack, read against every adjacent enemy at ◆◆, a burn at ◆◆◆. |
+| Cast: Blast | Section 11: long range, the activation's attack | ✓ | Decided 2026-09-06: Missile / Line / Burst. One spell attack read against a shape in hexes: one, two on a straight line from the caster, three at a corner; every hex a full target. The Cast-only actions go with it. In section 15, not yet built. |
 | Cast: Healing | Section 11: touch | | Draft in section 15: Soothe / Heal / Mass heal. No roll. A wound cleared for ◆◆ is the number to watch. |
 | Cast: Controlling | Section 11: medium range, Will save against spell DC | | Draft in section 15: Dread / Slow / Hold. The target's one save gates every tier. |
 | Cast: Offense | Section 11: short range, an ally | | Draft in section 15: Sure strike / Wrath / Haste. Roll twice, a Press for a unit without one, one more action. |

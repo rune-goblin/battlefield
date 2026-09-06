@@ -1957,3 +1957,29 @@ The guesses, in one line each, so the review has a list to strike from:
   the check. The two stray uses are gone: "two bad exchanges" is "two bad Fights" in section 2,
   and the cliff row of the quick reference says "nobody is engaged across it", section 10's
   own words.
+- **Blast: shapes in hexes, no area** (2026-09-06). The draft's Burst read one roll against
+  every enemy adjacent to the target: 2.50 wounds expected inside a block for two actions.
+  Mark: "on a battlefield map, that's a lot of hexes." A save for the neighbours was raised and
+  set aside as a second gate. Blazing Bolt's shape taken instead, one more hex per action:
+  "missile, line, and burst." Missile is one hex, Line two in a straight line, "line needs to be
+  direct from the caster," and Burst three: "What if we said that the last one could be
+  three? We still leave it to hexes." Only the target takes 2 on a critical. Dropped: the
+  full-ring area, and Storm's burn (1 wound at the start of the target's next activation).
+- **Line is two full targets** (2026-09-06). Mark: "two hexes in a line from caster, either can
+  be hit or crit. user specifies." The caster picks two hexes on one of the six straight lines
+  out from its own hex; the one roll is read against each in full, 1 wound on a hit, 2 on a
+  critical. The "directly beyond the target" reading is dropped.
+- **Burst is a corner** (2026-09-06). Mark: "Maybe we say you pick one corner and get all
+  three adjacent hexes?" The caster names a corner of the grid within range and the roll is
+  read against the three hexes meeting there. Every hex is a full target, as Line's are; Mark
+  confirmed: "You could crit on each." The "never 2" cap on the extras is gone with it. Blast is the activation's attack, so it was already once an
+  activation.
+- **A tree is cast once an activation** (2026-09-06). Mark: "I think you can only cast once per
+  round? Or, at the very least, you cant cast the same tree." The weaker form is written into
+  the Cast intro in section 15; section 6 today lets "the other spells" repeat. Whether a
+  caster casts once an activation altogether is open.
+- **Cast-only actions go** (2026-09-06). Mark: "we remove the extra actions awrded to casters
+  now that we have only 1 tree to perform, previously we had cast then effect." Section 11's
+  level ÷ 5 actions paid for a two-roll cast; with one roll a caster has the three actions
+  every unit has, and a level-15 arcane caster no longer Bursts for free. Written into the
+  Cast intro in section 15; section 11 stands until the build.
