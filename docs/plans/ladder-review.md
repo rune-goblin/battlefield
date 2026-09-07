@@ -76,6 +76,9 @@ the review section first or the file duplicates itself.
 - **Casters have three actions.** Section 11's Cast-only actions (level ÷ 5) go: "we remove
   the extra actions awarded to casters now that we have only 1 tree to perform, previously we
   had cast then effect." A tree is cast once an activation; once altogether is open.
+- **Frightened is a condition**, a light disorder that wears off: −1 to everything the unit
+  rolls and to its Defence until the end of its next activation. Conditions Healing's Restore
+  can end: exposed, suppressed, pinned, rooted, frightened.
 - **Melee words:** Fight is the verb, engaged the state, Disengage the check. Never exchange or
   engagement.
 - A miss is free at range; a Fight's miss repulses. Suppress (−2 to everything, until the
@@ -85,7 +88,7 @@ the review section first or the file duplicates itself.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Eight are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast and Healing. Four wait.
+Nine are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing and Controlling. Three wait.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -97,7 +100,7 @@ Eight are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast and Heali
 | Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In section 15, not yet built. The extra-action source table beside it is open. |
 | Cast: Blast | Section 11: long range, the activation's attack | ✓ | Decided 2026-09-06: Missile / Line / Burst. One spell attack read against a shape in hexes: one, two on a straight line from the caster, three at a corner; every hex a full target. The Cast-only actions go with it. In section 15, not yet built. |
 | Cast: Healing | Section 11: touch | ✓ | Decided 2026-09-06: Soothe / Heal / Restore, one, two and three units, each yourself or an adjacent ally. One roll, spell attack against each unit's own level DC: a failure clears 1 disorder, a success 1 disorder and 1 wound, a critical one more thing, a condition ended or a second wound. In section 15, not yet built. |
-| Cast: Controlling | Section 11: medium range, Will save against spell DC | | Draft in section 15: Dread / Slow / Hold. The target's one save gates every tier. |
+| Cast: Controlling | Section 11: medium range, Will save against spell DC | ✓ | Decided 2026-09-06: Dread / Stun / Hold. One Will save: a success frightens (−1 to rolls and Defence until the end of its next activation), a failure the rung, a critical failure the rung with 2 disorder. Stun is one action fewer, Hold rooted. In section 15, not yet built. |
 | Cast: Offense | Section 11: short range, an ally | | Draft in section 15: Sure strike / Wrath / Haste. Roll twice, a Press for a unit without one, one more action. |
 | Cast: Defense | Section 11: short range, an ally | | Draft in section 15: Ward / Stoneskin / Aegis. Aegis turns a whole hit, which the held decisions say is too strong. |
 | Cast: Movement | Section 11: short range, an ally | | Draft in section 15: Sure footing / Wings / Freedom. Freedom passes the Disengage check. |

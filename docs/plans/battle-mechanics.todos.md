@@ -2017,3 +2017,19 @@ The guesses, in one line each, so the review has a list to strike from:
   Restore three, each yourself or an adjacent ally, one roll read against each unit's own level
   DC. The ceiling and the DC-shift fillers are dropped. Open from this review: what
   battlefield medicine grants now, and whether a caster casts once an activation altogether.
+- **Controlling: the grade gate is void** (2026-09-06). Mark: "Section 11 may not pay for a rung
+  above his grade. Grade has been removed. So that no longer applies. Remember we said that
+  for grade, if we wanted to improve a unit, we would give it extra actions, so there is no
+  more gating." Rooted stands at the top; Slow's lost action is the mirror of the extra
+  action. The draft's Fear reading was wrong and is corrected: a success is Frightened 1.
+- **Controlling: Stun, and frightened on a success** (2026-09-06). Mark: "We could just use
+  stunned one instead of slow one because slow one is persistent. Stunned one is next round,
+  so I think we should change the middle tier to stun. On a success, we could give it
+  frightened 1." Slow is renamed Stun, same effect. A success at every rung frightens: −1 to
+  everything the target rolls and to its Defence until the end of its next activation,
+  "a light version of disorder". Frightened joins the condition list Healing's Restore can
+  end. Dropped: frightened standing for disorder generally; disorder stays the failure's
+  effect.
+- **Controlling's critical failure** (2026-09-06). Mark: "a crit fail will give it 2 points of
+  disorder, no matter what tier it's cast at. That seems enough." The rung above and a
+  two-activation Hold are dropped. Open, with the other two tactics: what demoralize grants.
