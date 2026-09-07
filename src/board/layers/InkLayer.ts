@@ -1,7 +1,8 @@
 import * as PIXI from 'pixi.js';
-import { gridOf, type Board } from '../../engine/index.js';
-import type { InkAtlas } from '../ink-sheet.js';
-import { inkSprite, type InkMapSettings } from '../ink-map.js';
+import { gridOf, type Board, type Cell } from '../../engine/index.js';
+import { FILL_CELL, type InkAtlas, type InkFrames } from '../ink-sheet.js';
+import { inkPatch, type InkMapSettings } from '../ink-map.js';
+import { connectedCells } from '../terrain-regions.js';
 import { terrainGroup, type TerrainGroup } from '../terrain-textures.js';
 import { mix } from './color.js';
 import { drawElevationMarks, elevationLabelStyle } from '../map-lines.js';
@@ -16,10 +17,11 @@ export interface InkMapAppearance {
 }
 
 /**
- * The illustrated map: one faint wash per hex and one pencil drawing standing on it. The
- * sprites are alpha stencils on flat white (see `scripts/bake-ink.mjs`), so the ink's colour is
- * a sprite tint — a vertex colour, which keeps the whole map to a single draw call — rather
- * than a multiply blend, which would fix the ink at the graphite the art was drawn in.
+ * The illustrated map: one faint wash per hex, and over each connected patch of a terrain,
+ * treated as one canvas, a few pencil drawings standing on a scatter of small marks. The sprites
+ * are alpha stencils on flat white (see `scripts/bake-ink.mjs`), so the ink's colour is a
+ * sprite tint — a vertex colour, which keeps each atlas to a single draw call — rather than a
+ * multiply blend, which would fix the ink at the graphite the art was drawn in.
  */
 export class InkLayer {
   private readonly container: PIXI.Container;
@@ -41,29 +43,40 @@ export class InkLayer {
     wash.name = 'Ink_wash';
     const sprites = new PIXI.Container();
     sprites.name = 'Ink_sprites';
-    sprites.alpha = settings.ink.opacity;
+    const patches = new Map<TerrainGroup, Cell[]>();
     for (const cell of grid.cells()) {
       const group = appearance.groups?.[grid.key(cell)] ?? terrainGroup(board, cell);
-      const terrain = settings.terrains[group];
-      const placed = inkSprite(grid, cell, size, settings.ink, terrain.scale);
-      const ground = mix(settings.paper, terrain.colour, settings.wash);
-      const shaded = mix(ground, placed.shade > 0 ? 0xffffff : 0x000000, settings.variation * Math.abs(placed.shade));
-      wash.beginFill(shaded, 1).drawPolygon(grid.vertices(cell, size)).endFill();
-
-      const frames = this.atlas?.[group];
-      if (!frames?.length) continue;
-      const frame = frames[Math.min(frames.length - 1, Math.floor(placed.variant * frames.length))];
-      const sprite = new PIXI.Sprite(frame);
-      sprite.name = `Ink_${grid.key(cell)}`;
-      sprite.anchor.set(0.5);
-      sprite.position.copyFrom(placed.position);
-      sprite.tint = settings.ink.colour;
-      const scale = placed.width / frame.width;
-      sprite.scale.set(scale, scale);
-      sprites.addChild(sprite);
+      patches.set(group, [...(patches.get(group) ?? []), cell]);
     }
-    // Back to front, so a peak drawn on one hex stands in front of whatever is behind it
-    // rather than being sliced by it.
+    for (const [group, cells] of patches) {
+      const terrain = settings.terrains[group];
+      const ground = mix(settings.paper, terrain.colour, settings.wash);
+      const heroFrames = this.atlas?.hero[group];
+      const fillFrames = this.atlas?.fill[group];
+      for (const patch of connectedCells(grid, cells)) {
+        const drawn = inkPatch(grid, patch, size, settings, terrain.scale);
+        const shaded = mix(ground, drawn.shade > 0 ? 0xffffff : 0x000000, settings.variation * Math.abs(drawn.shade));
+        for (const cell of patch) wash.beginFill(shaded, 1).drawPolygon(grid.vertices(cell, size)).endFill();
+        if (fillFrames?.length) {
+          for (const mark of drawn.fills) {
+            const sprite = this.sprite(pick(fillFrames, mark.variant), settings.ink.colour, settings.fill.opacity);
+            sprite.position.copyFrom(mark.position);
+            sprite.scale.set(mark.cell / FILL_CELL);
+            sprites.addChild(sprite);
+          }
+        }
+        if (!heroFrames?.length) continue;
+        for (const hero of drawn.heroes) {
+          const frame = pick(heroFrames, hero.variant);
+          const sprite = this.sprite(frame, settings.ink.colour, settings.ink.opacity);
+          sprite.position.copyFrom(hero.position);
+          sprite.scale.set(hero.width / frame.width);
+          sprites.addChild(sprite);
+        }
+      }
+    }
+    // Back to front, marks and drawings together, so a tree in front overlaps one behind
+    // whichever kind each is.
     sprites.children.sort((a, b) => a.y - b.y);
     this.container.addChild(wash, sprites);
     if (!appearance.elevationMarks) return;
@@ -73,7 +86,18 @@ export class InkLayer {
     this.container.addChild(tint, drawElevationMarks(tint, grid, board, size, style));
   }
 
+  private sprite(frame: PIXI.Texture, tint: number, alpha: number): PIXI.Sprite {
+    const sprite = new PIXI.Sprite(frame);
+    sprite.anchor.set(0.5);
+    sprite.tint = tint;
+    sprite.alpha = alpha;
+    return sprite;
+  }
+
   clear(): void {
     for (const child of this.container.removeChildren()) child.destroy({ children: true });
   }
 }
+
+const pick = (frames: NonNullable<InkFrames[TerrainGroup]>, variant: number): PIXI.Texture =>
+  frames[Math.min(frames.length - 1, Math.floor(variant * frames.length))];

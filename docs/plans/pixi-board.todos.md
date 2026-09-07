@@ -1321,3 +1321,46 @@ saves its own under its own storage key.
   running across a battlement — it was cutting every block in half.
 - **The map lines stayed on top.** They are few and they mark where the ground changes, so a
   piece standing on an elevation step must not be what hides the step.
+
+## The illustrated map fills its patches (2026-09-07)
+
+- **Fill marks are a second stencil atlas, not more frames in the first.** `bake-ink.mjs` bakes
+  `art-src/terrain/ink-fills/` to `fill.webp` + `fill.json` at their own pixel scale, one gain
+  shared with the hero sheets so a pebble keeps its weight against the boulder it was cut from.
+  The 128 marks were cropped to 96×96 cells (ocean 160) from the 128 edition; the four mountain
+  peaks were 99–104 px wide and were shrunk by 0.88–0.93 to fit, every other mark is a plain
+  crop.
+- **A patch always stands at least one drawing, and the count is drawn.** Every hex has one
+  chance in `perHexes` of standing one, floored at one, so a nine-hex wood stands one to five
+  trees and three on average, and a lone mountain hex still gets a peak. Drawings are placed
+  farthest-first from eight points sampled over the whole patch, not on hex centres, so a wood
+  reads as one canvas rather than a hex of trees; they take their variants without replacement.
+  A drawing's whole foot, an ellipse half its width by a third, must lie on the patch: the
+  first drawing takes the deepest of sixteen candidates, the rest the farthest from those
+  standing, and a patch too thin for any foot takes its deepest point regardless. Free sampling
+  alone left dunes cut by the board's edge. The Wander slider went with the hex centres;
+  `ink.jitter` stays in the settings so saved maps still normalize.
+- **Fills keep clear of the drawings.** Heroes place first; a fill candidate whose own half-cell
+  reaches into a hero's body, an ellipse half its width each way, is skipped, and a mark with no
+  clear candidate is dropped rather than moved. Testing the bare centre against the foot alone
+  left reeds through the trees.
+- **Fills are a Poisson disc, not a preference.** Best-of-six by distance still let stumps sit
+  on trees; a candidate within the two marks' radii, 0.36 of a cell each, is now refused, and
+  the most open of twenty that clear everything wins. Density is a ceiling: a crowded patch
+  fills to what fits. A Voronoi relaxation would give the same even spread for more machinery.
+- **Fills spill by at most half a mark.** Their centres sit within 0.85 of the way from a hex's
+  centre to its edge and they are never masked, on the same reasoning as the textured scatter:
+  a mark cut by a straight line reads as a fault.
+- **Water and shallows now carry art.** They have fill marks and no drawing; the panel's "no
+  pencil art" case is settlement alone.
+- **Marks at 0.4 hex.** 0.28 would match the pixel scale they were cut at, but that was dust
+  on a real map; 0.6 made a reed as tall as a tree. Density 5, weight 90%, and a drawing per
+  two hexes. Fills and
+  drawings share one container sorted by y, so a tree in front overlaps one behind whichever
+  kind each is.
+- **The wash's shade draw is per patch, not per hex.** Per hex it made every wood a mosaic of
+  tiles louder than the drawing on them; per patch two woods still differ. Default 0.02.
+- **Settings carry a version.** The retuned dials — variation, fill, heroes — take the new
+  defaults when a saved set is behind; colours and lines stay the user's.
+- Open for play: whether the stamps want a 2× generation once they draw at native size when
+  zoomed in.

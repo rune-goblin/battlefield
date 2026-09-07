@@ -12,8 +12,9 @@
   }
   let { settings = $bindable(), selected = $bindable(), elevationLevel = $bindable(), count }: Props = $props();
 
-  // Which terrain the pencil library actually draws. Water, shallows and settlement have no
-  // art in it, and are carried by their wash alone.
+  // Which terrain the pencil library draws. Every terrain but settlement has fill marks; water
+  // and shallows have no standing drawing, and settlement is carried by its wash alone.
+  const FILLED: TerrainGroup[] = ['plains', 'desert', 'forest', 'swamp', 'water', 'shallows', 'hills', 'mountain'];
   const DRAWN: TerrainGroup[] = ['plains', 'desert', 'forest', 'swamp', 'hills', 'mountain'];
   const ELEVATION_LEVELS = [2, 1, 0, -1, -2];
   let tab = $state<'terrain' | 'global' | 'lines'>('terrain');
@@ -35,10 +36,14 @@
   <div class="section-title"><h2>{TERRAIN_LABELS[selected]}</h2><span>{count} sample hexes</span></div>
   <LchColour label="Wash colour" id="ink-colour-{selected}" bind:value={settings.terrains[selected].colour} />
   <p class="description">The hex's own hue, printed onto the paper at the wash strength every terrain shares. Lightness and chroma are the two that matter here: the wash has to sit under a pencil drawing without competing with it.</p>
-  {#if DRAWN.includes(selected)}
+  {#if FILLED.includes(selected)}
     <label class="slider" for="ink-scale-{selected}"><span>Drawing size</span><output>{settings.terrains[selected].scale.toFixed(2)}×</output></label>
     <input id="ink-scale-{selected}" type="range" min="0.2" max="2.5" step="0.05" bind:value={settings.terrains[selected].scale} />
-    <p class="description">Sixteen pencil variants; each hex keeps the one its own coordinate draws. This size multiplies the pencil's own, so one terrain can stand taller than the rest without moving the whole board.</p>
+    {#if DRAWN.includes(selected)}
+      <p class="description">Sixteen fill marks and sixteen drawings. This size multiplies the pencil's own for both, so one terrain can stand taller than the rest without moving the whole board.</p>
+    {:else}
+      <p class="description">Sixteen fill marks and no standing drawing. This size multiplies the pencil's own.</p>
+    {/if}
   {:else}
     <div class="no-art">No pencil art — this terrain reads by its colour alone.</div>
   {/if}
@@ -51,9 +56,9 @@
     <LchColour label="Paper" id="ink-paper" bind:value={settings.paper} />
     <label class="slider" for="ink-wash"><span>Wash strength</span><output>{Math.round(settings.wash * 100)}%</output></label>
     <input id="ink-wash" type="range" min="0" max="1" step="0.01" bind:value={settings.wash} />
-    <label class="slider" for="ink-variation"><span>Hex-to-hex variation</span><output>±{Math.round(settings.variation * 100)}%</output></label>
+    <label class="slider" for="ink-variation"><span>Patch-to-patch variation</span><output>±{Math.round(settings.variation * 100)}%</output></label>
     <input id="ink-variation" type="range" min="0" max="0.4" step="0.01" bind:value={settings.variation} />
-    <p class="description">Each hex draws its own shade once, so a run of one terrain is not a flat plate.</p>
+    <p class="description">Each patch of a terrain draws its own shade once, so two woods are not one flat plate and one wood is not a mosaic.</p>
   </section>
   <section aria-label="Pencil settings">
     <div class="section-title"><h2>Pencil</h2><span>Every drawing on the board</span></div>
@@ -64,11 +69,23 @@
     <input id="ink-size" type="range" min="0.2" max="2" step="0.05" bind:value={settings.ink.scale} />
     <label class="slider" for="ink-size-variation"><span>Size variation</span><output>±{Math.round(settings.ink.variation * 100)}%</output></label>
     <input id="ink-size-variation" type="range" min="0" max="1" step="0.01" bind:value={settings.ink.variation} />
-    <label class="slider" for="ink-jitter"><span>Wander</span><output>{settings.ink.jitter.toFixed(2)} hex</output></label>
-    <input id="ink-jitter" type="range" min="0" max="0.5" step="0.01" bind:value={settings.ink.jitter} />
     <label class="slider" for="ink-lift"><span>Lift</span><output>{settings.ink.lift.toFixed(2)} hex</output></label>
     <input id="ink-lift" type="range" min="-0.4" max="0.4" step="0.01" bind:value={settings.ink.lift} />
-    <p class="description">The ink is a tint over an alpha stencil, so the whole map is one pass whatever colour it is set to. Lift raises a drawing off its hex, which puts a peak in front of the ground behind it.</p>
+    <label class="slider" for="ink-hero-hexes"><span>Hexes per drawing</span><output>{settings.heroes.perHexes}</output></label>
+    <input id="ink-hero-hexes" type="range" min="1" max="12" step="1" bind:value={settings.heroes.perHexes} />
+    <p class="description">The ink is a tint over an alpha stencil, so the whole map is one pass whatever colour it is set to. Lift raises a drawing off its hex, which puts a peak in front of the ground behind it. Each hex of a patch adds one chance in this many of a drawing, and every patch stands at least one; the drawings then fall wherever in the patch keeps them farthest apart, with no regard for the hexes.</p>
+  </section>
+  <section aria-label="Fill settings">
+    <div class="section-title"><h2>Fill</h2><span>The small marks under the drawings</span></div>
+    <label class="slider" for="ink-fill-density"><span>Density</span><output>{settings.fill.density} per hex</output></label>
+    <input id="ink-fill-density" type="range" min="0" max="20" step="1" bind:value={settings.fill.density} />
+    <label class="slider" for="ink-fill-size"><span>Size</span><output>{settings.fill.scale.toFixed(2)} hex</output></label>
+    <input id="ink-fill-size" type="range" min="0.05" max="1" step="0.01" bind:value={settings.fill.scale} />
+    <label class="slider" for="ink-fill-variation"><span>Size variation</span><output>±{Math.round(settings.fill.variation * 100)}%</output></label>
+    <input id="ink-fill-variation" type="range" min="0" max="1" step="0.01" bind:value={settings.fill.variation} />
+    <label class="slider" for="ink-fill-opacity"><span>Weight</span><output>{Math.round(settings.fill.opacity * 100)}%</output></label>
+    <input id="ink-fill-opacity" type="range" min="0" max="1" step="0.01" bind:value={settings.fill.opacity} />
+    <p class="description">Every patch of a terrain scatters its own marks, seeded by where it sits, so no two patches share a scatter. The marks keep clear of the ground under each drawing.</p>
   </section>
   <section aria-label="Elevation brush">
     <div class="section-title"><h2>Elevation</h2><span>What makes hills and mountains</span></div>

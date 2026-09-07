@@ -286,10 +286,21 @@ knowing before reusing this pattern in v8, where masking is reworked.
 ## The illustrated map
 
 `setInkMap(appearance)` swaps `TerrainLayer`'s textured surfaces for `InkLayer`'s: a faint wash
-per hex, and one pencil drawing standing on it. Only one of the two layers ever holds anything;
-setting an appearance clears the other. The sprites come from
-`public/art/terrain/ink/ink.webp`, baked by `scripts/bake-ink.mjs` (`npm run bake:ink`) out of
-the white-page sheets in `art-src/terrain/ink-sprites/`.
+shaded once per connected patch of a terrain, a scatter of pencil marks over the patch, and a
+drawing standing for every couple of hexes of it. Only one of the two layers ever holds anything; setting an
+appearance clears the other. The sprites come from two atlases under `public/art/terrain/ink/`,
+`ink.webp` for the drawings and `fill.webp` for the marks, both baked by `scripts/bake-ink.mjs`
+(`npm run bake:ink`) out of the white-page sheets in `art-src/terrain/ink-sprites/` and
+`art-src/terrain/ink-fills/`.
+
+`inkPatch` in `ink-map.ts` places a patch as one canvas: the patch's cells sorted by key, its
+lowest key the seed, so a patch keeps its scatter while the board resizes and no two patches
+share one. Each hex adds one chance in `heroes.perHexes` of a drawing, at least one per patch;
+the first drawing stands at the deepest of sixteen points sampled over the whole patch, the
+rest at the one farthest from those standing, and every drawing's foot must lie wholly on the
+patch, with no regard for hex centres. Fills are then sampled
+the same way as a Poisson disc: of twenty candidates, any within a standing mark's radius or a
+drawing's body is refused, and the most open of the rest wins.
 
 The bake turns graphite into **alpha over flat white RGB**, so a sprite carries coverage and no
 colour of its own. That is what lets the ink take any colour the board sets: `sprite.tint` is a
