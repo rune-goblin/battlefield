@@ -1,6 +1,7 @@
 <script lang="ts">
   import { FEATURES, HEX_TERRAINS, type GridKind } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
+  import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
   import { game, generate, rerollSeed, save } from './game.svelte.js';
@@ -26,7 +27,8 @@
   {/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} board={game.setup.board} fill />
+    <PixiBoard bind:this={boardRef} board={game.setup.board} fill
+      terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 
   {#snippet float()}

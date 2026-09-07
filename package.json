@@ -16,7 +16,8 @@
     "import:official": "node scripts/import-official.mjs",
     "import:engines": "node scripts/import-engines.mjs",
     "import:art": "node scripts/import-art.mjs",
-    "bake:terrain": "node scripts/bake-terrain.mjs"
+    "bake:terrain": "node scripts/bake-terrain.mjs",
+    "bake:ink": "node scripts/bake-ink.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
@@ -28,6 +29,8 @@
     "vitest": "^4.1.5"
   },
   "dependencies": {
+    "@pixi/filter-bevel": "^5.1.1",
+    "@pixi/filter-drop-shadow": "^5.2.0",
     "pixi.js": "^7.4.3"
   }
 }

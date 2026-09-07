@@ -917,3 +917,407 @@ the baked files are read at runtime. Judgment calls made while wiring it:
   allowance is not, so a rejection can flip at the extremes of the zoom range.
 - Dark theme tints scenery to 58% — the sheets' light olive and sand glare against the dark
   terrain fills at full brightness.
+
+## Texture lab: board chrome toggles and cast shadows (2026-09-06)
+
+- **Three checkboxes, not one.** "Show the hex grid, including the impassable borders" reads as
+  one control, but grid hairlines, wall/cliff art and the elevation wash answer three different
+  questions about a texture. They toggle separately: hex grid (off), walls and cliffs (on),
+  elevation marks (off). Elevation marks default off because the cast shadow is the thing being
+  judged and the white wash, the contour and the numerals all sit on top of it.
+- **The sample board grew height and walls.** It forced every cell to elevation 0 and cleared
+  `board.walls`, so hills and mountain were art groups with nothing raised about them, and
+  there was no impassable border to show. Hills are now level 1, mountain level 2, and the
+  settlement patch carries a ring of tier-2 wall with one stretch breached — enough to see
+  masonry, rubble and the cliff teeth a two-level drop makes.
+- **Shadows are lab-only.** They hang off `TerrainAppearance`, which only the lab passes, so the
+  game board draws exactly as before. If the shadow wins, it moves into `TerrainLayer.draw`'s
+  other path and elevation loses (or keeps) its wash then — that is the question the lab is
+  asking.
+- **Level 1's region includes level 2.** Each level's shadow is cast by everything at or above
+  it, so a mountain inside hills throws its own shadow onto the shelf and the shelf throws one
+  onto the plain. Distance and softness are in hex pitches, so a shadow holds its shape through
+  zoom; the angle is shared, since two light directions on one board reads as a mistake.
+- **The shadow is clipped out of the ground that casts it.** PIXI has no inverse mask, so the
+  shadow is one raster clipped by its own complement. (It began as polygon geometry with the
+  raised region punched out of the board rectangle as an earcut hole — worth knowing if that
+  ever comes back: the rectangle has to be a `drawPolygon`, since `buildRectangle.triangulate`
+  ignores holes entirely and silently returns the solid rectangle.)
+- **A pit is the same light inside out.** Sunken ground takes an inner shadow rather than a
+  second set of controls: the surrounding ground, shifted by the same vector and clipped to the
+  pit, darkens the inside of the rim the light falls over. So level 1's distance and softness
+  serve −1, and level 2's serve −2 — one light over the board, and depth reading as the mirror
+  of height rather than as its own dial.
+- **The lab paints height with the board's own paint mode.** Rather than a bespoke click
+  handler, the elevation buttons set `mode='paint'` with the existing `{ kind: 'elevation' }`
+  brush, which brings drag strokes, the preview wash, shift-fill, right-drag back to 0 and the
+  Q/W/E/A/S keys along with it. The cost is that terrain selection by click stops while the
+  brush is down, which the map hint says.
+- The lab's board is `$state.raw`: it is handed straight to Pixi, so a stroke announces itself
+  by replacing the object rather than by being proxied cell by cell.
+- Settlement textures landed 2026-09-06. A lab saved before they existed has settlement on
+  "Plain fill", since a null texture is a real choice and normalising cannot tell the two
+  apart; pick one from the grid.
+- **The texture listing is a virtual module, not a `define`.** Vite 8 leaves `define`
+  identifiers alone in dev, so the lab came up with an empty library on every group while the
+  production build was fine. `virtual:terrain-textures` scans the folder in the plugin's
+  `load`, which dev, `vite build` and vitest all go through. The plugin also watches the folder
+  and restarts the server when art appears, so a dropped file needs no restart by hand.
+- **Desert is a lab group with no engine terrain.** Plains, hills and mountain already draw on
+  `open` — desert joins them through `GROUP_TERRAIN`, so the art is exhibitable without a
+  movement cost, a brush, or a line in `rules.html`. Giving armies desert to cross is a rules
+  question and belongs to `rules.html` first. Its base fill is open ground's, which shows only
+  under "Plain fill".
+- **The sample board seeds moved for the ninth patch.** Plains went c8 → b8 and desert took d8,
+  which keeps every group at six to eight hexes in one connected region and leaves the
+  settlement patch and its wall ring untouched.
+- **The top bar links to both labs, under `import.meta.env.DEV`.** They are plain anchors, not
+  state toggles: the VFX gallery reads `?vfx` once at module load, and the game survives the
+  navigation through its localStorage save. The production bundle drops the block entirely.
+  Linking the gallery meant giving it a way out, so it now carries the same "← Game board" the
+  texture lab has.
+- **Area mode scatters a wood as one patch.** `areaTrees` walks the group's cells into
+  edge-connected patches and plants each patch as a whole, so the hex grid stops showing
+  through as a row of little clumps. Counts stay per hex and are summed over the patch, so both
+  modes plant the same number and the switch changes only the arrangement — which is the
+  comparison the lab is for. Sampling a random cell and then a random point inside it is exactly
+  uniform over the patch, since every hex has the same area, and it needs no polygon or hole
+  handling. Default is off; the old per-hex path is untouched and still spaces each cell against
+  the whole wood.
+- Trees are the only illustrations the textured path draws, so the switch reaches nothing else
+  yet. Scenery for the other terrains still goes through `drawScatter` on the plain path.
+- Open: shadow opacity is fixed at 45%. Add a control only if the angle/distance/softness three
+  turn out not to be enough to settle it.
+
+
+## Elevation wins the blend, and the shadow follows it (2026-09-06)
+
+- **Height is stacking, not mixing.** The lower texture creeping over a step read as a fault: a
+  hillside does not lap over the cliff above it. Each height is now its own layer, drawn lowest
+  first and masked by its own coverage, so it covers everything below outright — terrain groups
+  blend within a level and never across one. Dropping the lower surface from a single shared
+  mixture was tried first and left the wander cutting both ways, which put low ground inside
+  high hexes wherever the noise pulled the boundary inwards.
+- **A level's coverage is grown by the warp's own reach before it is used.** Dilating by the
+  noise amplitude means the irregular boundary can only ever wander outwards, so a level always
+  holds its own cells and the step never eats into the ground above it. Coverage is then
+  stepped rather than ramped (`smooth` over 0.35–0.65): a change in height is an edge, and a
+  gradient there reads as one surface dissolving into the other. The two tests in
+  `src/tests/terrain-textures.test.ts` are that rule — full coverage on its own cells, spill
+  past them, and under 2% of the board partially covered.
+- **A surface is a terrain group at a height, not a terrain group.** That is what gives the
+  blend a height to compare. A group painted across two levels becomes two surfaces sharing one
+  texture, and the surfaces draw lowest first. The cost is that the distance field is keyed on
+  heights too, so an elevation stroke rebuilds it — ~130ms on the 61-cell board, measured.
+- **The shadow reads the same coverage the stacking does.** It was hex-outline geometry, which
+  drew a straight-edged shadow under an irregular boundary. Each level now bakes two rasters
+  from that coverage — the ground it is cast from, and the ground left for it to fall on — so the
+  shadow traces exactly the edge the eye sees, in hard mode as well (where coverage is just the
+  hex outline). The rasters cover the grid's bounding box, so the whole shadow layer is masked
+  by the board outline; without it a shadow lands in the empty corners past the hexes.
+- **Tree shadows are one layer, not one filter per tree.** Every crown is drawn a second time
+  in black, offset a fifth of its own width along the shared light, and the whole layer takes a
+  single blur. A filter per sprite would be a render pass per tree.
+- **Logs and bare crowns are drawn a fifth as often.** They are the eight shortest frames on
+  `trees02.webp` — a canopy spreads, a fallen trunk does not — and at even odds a wood filled
+  up with deadfall. They are keyed by where each frame sits on the sheet, so re-baking survives
+  a reorder; new art would silently stop matching, which is the failure worth knowing about.
+- Open: the tree shadow has no controls of its own (fixed at a fifth of the crown's width, 38%
+  black, shared light angle). Give it sliders only if the fixed look turns out to be wrong.
+
+
+## Hex grid controls in the texture lab (2026-09-06)
+
+- `GridSettings` is now three line styles — `base`, `level1`, `level2` — each with `width`,
+  `opacity` and `colour`, plus the one `visible` flag. Defaults are black at 50%: 1px base, 1px
+  at level ±1, 2px at level ±2, the numbers Mark gave.
+- **Each hex is traced once**, in the style `gridLayerFor` picks from its own height, rather
+  than the base grid being drawn under a second elevation pass. Two strokes of the same black
+  50% would have doubled the alpha on exactly the hexes meant to be emphasised, and the
+  emphasis is the thickness. Judgment call: a level is `|elevation|`, so a pit two levels down
+  takes the same line as a mesa two up — a step is a step in either direction.
+- The lab's grid state rides in `TerrainTextureSettings.grid`, so it saves, normalizes and
+  resets with everything else in the lab's one blob. `TerrainLayer` ignores it; the lab passes
+  it to `PixiBoard.setGrid` itself. Slightly off-name for a "texture settings" object, but the
+  alternative was a second storage key and a second normalizer for three sliders.
+- `MapControls`' single "Line weight" slider now writes all three widths — `w`, `w`, `2w` —
+  keeping the defaults' ratio, so raising the game grid's weight doesn't leave the level lines
+  lighter than the base one. The game dialog keeps its checkbox and one slider; opacity and
+  colour are lab-only until they turn out to be wanted in play.
+- `GridLayer` no longer takes the theme: the colour is a setting now, so `setGeometry` takes
+  the board (for elevation) instead of `BoardTheme`.
+- The grid layer moved from z-index 4 (above terrain, under edges) to 45, the top of the stack
+  above labels (40). A reference grid is read against everything on the board, so a wall, a
+  cliff, a highlight wash or a token no longer breaks the line where it crosses; the opacity
+  slider is what keeps it from shouting.
+- Open: the grid still doesn't survive a reload in the game (`MapControls` state is session
+  only); in the lab it does, through the lab's own storage key.
+
+## Thinner walls, opaque, with a shadow of their own (2026-09-06)
+
+- `COURSE` drops from 0.062 to 0.0207 of the cell pitch — one third — and the visibility floor
+  with it (2.4px → 0.8px), so a wall thins by the same factor at every zoom. The block and
+  mortar fractions are unchanged, so the coursing pattern scales with the band rather than
+  being redrawn at a new density.
+- The masonry bed is opaque now. It was black at 50%, which put terrain in every mortar joint
+  and made a wall read as a fence rather than as stone. The old bed was also offset half a
+  course to fake depth; that offset is gone, since the wall has a real shadow.
+- **Every wall throws one**: the bar's silhouette in black, offset along the board's light and
+  blurred, with a single `BlurFilter` over the whole shadow container — a filter per bar would
+  be a render pass per bar, the same trap the tree shadows avoid. Distance 0.05 and blur 0.018
+  of the pitch at 45% are judgment calls; the wall is a low thing, so it throws less than the
+  ground does at level 1 (0.07/0.05).
+- `EdgeLayer.draw` takes the light angle now, and `createBoardView` keeps it from the terrain
+  appearance (defaulting to `DEFAULT_ELEVATION_SHADOWS.angle` for the game stages, which set
+  none). Dragging the lab's light slider redraws the edges as well as the terrain, so one sun
+  moves every shadow on the board.
+- The cliff teeth are untouched, including their 0.9 alpha — the note was about walls. Give
+  them the same treatment if they turn out to read as translucent beside an opaque wall.
+- The lab's sidebar splits into two tabs: **Textures** (the terrain palette, the selected
+  group's texture and scale, and the forest's tree sliders — everything set per terrain type)
+  and **Global** (borders and marks, edge blending, elevation with its shadows and contour, the
+  hex grid). The rule is Mark's: anything shared between terrain types or layers is global.
+  The three display toggles stay over the map as well as in the Global tab; they are the same
+  state in two places, and losing the quick toggle beside the board was not worth the tidiness.
+- The elevation contour picked up the controls it never had — weight and opacity per level,
+  where it was a hardcoded 2px at 25% per level. `TerrainLayer.drawElevation` takes a
+  `ContourLine` and falls back to `DEFAULT_CONTOUR_LINE` on the game board, which sets no
+  appearance.
+- Edge blending was already shared across every terrain and every level: one settings object,
+  one distance field, one warp, so both sides of a boundary follow the same wander. Nothing
+  changed there — the fix was that the panel didn't say so.
+
+## Tree size spread and a per-tree wash (2026-09-06)
+
+- **Size variation is a slider now**, where it was a hardcoded ±10% around the crown size. The
+  default keeps that ±10%, so the wood looks the same until the slider moves, and it runs to
+  ±100% for a wood of saplings and old growth.
+- **Colour variation is `sprite.tint`, deliberately.** Tint is a vertex colour in Pixi, so a
+  hundred differently-washed crowns still batch into one draw call; a `ColorMatrixFilter` per
+  sprite would be a render pass per sprite, which is the prohibitive version of this feature.
+  The price of tint is that it multiplies: it can deepen and shift a colour but never lighten
+  or brighten one. For foliage that is the right direction anyway.
+- Three controls, off by default (`strength: 0`) so the art is untouched until asked: strength
+  (how much wash the deepest-tinted tree takes), hue (the direction it pulls, default 110° —
+  green), and hue spread (how far either side of it a tree may fall, default ±25°). Each tree
+  draws its own place in the spread and its own depth, so the variation is per tree rather than
+  one flat wash over the wood.
+- `ForestTree` carries two more stable draws (`hue`, `shade`) for that. Adding them to the
+  per-cell random stream reshuffled the existing tree positions once — the placement is still
+  stable across texture, scale and viewport edits, it is just a different wood than yesterday's.
+- The shadow is not tinted. It is the crown in black, and a green shadow is not a thing.
+- Open: no control for the tree shadow itself (still 0.2 of the crown's width, 38% black, on
+  the shared light).
+
+## The illustrated map (2026-09-06)
+
+A second map style, switched from the lab's header: **Textured** is everything above, and
+**Illustrated** is a faint wash per hex under one pencil drawing. The two share the sample
+board, the terrain groups, the elevation brush and the walls; they share no settings, and each
+saves its own under its own storage key.
+
+- **Stencil, not multiply.** The library ships as neutral graphite on opaque white, which
+  multiply-blends correctly and does nothing else: the ink is whatever grey it was drawn in,
+  forever. `scripts/bake-ink.mjs` turns the graphite into alpha over flat white RGB, so the ink
+  is a `sprite.tint` — the same trick the forest's colour wash uses, a vertex colour that keeps
+  the whole map to one draw call — and its colour is a slider. The bake also trims each cell to
+  its own ink (the sheets leave wide white margins, and a sprite carrying them cannot be
+  centred on a hex) and packs all ninety-six frames onto one 2304×1536 texture, since one base
+  texture is one batch.
+- **One shared gain over every sheet**, not one per sheet. The art draws plains faint and
+  mountains heavy on purpose; normalising each sheet to its own darkest pixel would have
+  flattened six drawings into six equally black ones. The divisor is the darkest ink anywhere
+  in the library (0.82 of black), so the heaviest stroke reaches full alpha and everything else
+  keeps its weight relative to it.
+- **Half size.** The sheets are 384px a cell; the atlas is 192. A hex is rarely wider than
+  140 screen pixels, and the full-size art would cost four times the video memory.
+- **One drawing per hex**, placed from the cell's key alone — same coordinate, same variant,
+  same wander, whatever else on the board changes. Sixteen variants per terrain, mirrored half
+  the time, so thirty-two.
+- **The wash is the terrain, the drawing is what stands on it.** Nine colours, printed onto the
+  paper at one shared strength (55%), with a per-hex lightness wobble so a run of one terrain is
+  not a flat plate. Water and shallows carry the only real saturation, because they are the only
+  terrain with no sprite to name them.
+- **No elevation wash, contour or numerals here.** Height *is* the terrain in this style: +1
+  draws hills, +2 draws mountains, and the drawing says how high the ground is. The elevation
+  brush stays, so a hill can be painted and watched.
+- The source library moved out of `public/art/terrain/ink-sprites/` to
+  `art-src/terrain/ink-sprites/`, matching the textured sheets: `art-src/` holds what a bake
+  reads, `public/` holds what it writes. It was 8.5 MB of sheets and per-sprite PNGs shipping
+  in every build for a 483 KB atlas.
+- The panel's per-terrain section shows no sprite thumbnails for the same reason — the map
+  itself is the preview, and the strip would have meant shipping 3.5 MB of source art.
+- Open: water, shallows and settlement have no pencil art. Water especially wants some — a
+  drawn shoreline or a few ripples would carry it better than a blue plate.
+- Open: nothing casts a shadow in this style, and a mountain drawn flat on its wash sits on the
+  page rather than on the ground. Worth trying the tree shadow's treatment once the palette
+  settles.
+## The map style in the game (2026-09-06)
+
+- The game board draws in whichever style the top bar's segmented control names: **Plain**, the
+  flat theme fill it had; **Textured**, now the default; **Illustrated**, the ink map. All three
+  are the same three the lab shows.
+- `src/app/map-style.svelte.ts` holds the lab's two settings blobs and the chosen style, and the
+  lab edits them in place. The lab is reachable from the game without a page load, so a settings
+  file each side reads on mount would have let the board and the lab disagree.
+- The game board passes no `groups`: `terrainGroup()` reads the real board, so hills and
+  mountains come from elevation and the rest from terrain. Only the lab exhibits art groups the
+  engine has no terrain for.
+- The grid stays with `MapControls`. The lab's grid settings ride in the same saved blob, but
+  the board takes the grid it is set through `setGrid`, and a map style should not move it.
+
+## Colour dials and the three map lines (2026-09-06)
+
+- **The illustrated map's colours are set in LCh**, not by a hex picker: lightness 0–100, chroma,
+  hue, with the picker kept above them for grabbing a colour outright. The wash has to sit under
+  a pencil drawing across nine terrains, and only a perceptual space lets one terrain be lightened
+  without also becoming the loudest thing on the page. The three sliders are held in the control
+  rather than re-derived from the colour each time: chroma 0 is the same grey at every hue, and a
+  round trip would forget which hue the slider was on. Past the sRGB gamut the swatch clips and
+  the control says so.
+- Every colour on both panels — grid lines included — is that same swatch-plus-sliders control.
+- **The textures take an HSB grade per terrain**, not one over the whole map: the art is a
+  library of other people's textures, and matching a desert to a plains is a per-texture
+  correction. It is a `ColorMatrixFilter` on the tiling sprite alone, so the opaque fill under it
+  keeps the theme's terrain colour, and one filter is kept per group across redraws. Saturation
+  is luminance-weighted (Rec. 709), so 0 gives the greys the art was painted in rather than
+  PIXI's own `saturate()`, which takes a pure red to black.
+- **Three lines, three dials, on a Lines tab in both styles**: the terrain areas' outline, the
+  contour where height changes, and the reference hex grid. Each style keeps its own settings —
+  the illustrated map is drawn in pencil and wants its own weights, and its contour is off by
+  default, since height is already the terrain there.
+- Area outlines are new. One line around a wood, not around each of its hexes: the region
+  outlines `terrain-regions.ts` already computes for the blend masks, with every segment drawn
+  once so the border two areas share does not come out at double weight.
+- The contour's colour stays off the panel. White above and black below is what the line is
+  saying, and a dial there would let it say the wrong thing.
+- Judgment call: one Lines tab holding three sections, rather than three tabs. Five tabs in a
+  23rem panel is a scroll either way, and the three lines are read against each other.
+- Both lines are drawn by each style's own layer (`TerrainLayer`, `InkLayer`) through the shared
+  helpers in `src/board/map-lines.ts`, not by a layer of their own: the contour belongs under the
+  trees and over the wash, which is a different place in each style's stack.
+
+## Edges answer only the gesture that asked for one (2026-09-06)
+
+- The edge hover was showing on every board in `view` mode — a red bar over whichever wall the
+  pointer passed — for a wall-inspection gesture no stage ever listened for.
+- `setPickableEdges` now names the edges a press may take. Battle passes the walls the armed
+  action can actually hit, read off its own rungs' `wall` targets, so the bar appears while a ram
+  or a bombard is armed and never otherwise. A wall brush still paints any edge.
+- `hitTest`'s `edges` went from a boolean to a predicate for the same reason: whether an edge
+  competes for a hit is a question about that edge, not about the mode.
+
+## The lines move to the top (2026-09-06)
+
+- **Every line is drawn above every other layer**: `MapLineLayer` at z-index 44, under the hex
+  grid at 45 and over labels, pieces, effects and walls. A line that says where a step is has to
+  be readable with a piece standing on the step. The terrain layers no longer draw any line at
+  all — `TerrainLayer` keeps the elevation wash and its numerals, `InkLayer` its wash and
+  drawings.
+- **The hex grid is one weight for every hex.** The per-level styles are gone: height has its
+  own rings now, so a grid that also thickened at a step was saying the same thing twice, and
+  worse, saying it in a different place. `GridSettings` collapses to a single `MapLine`, and
+  `gridLayerFor` with it.
+- **Elevation is drawn as areas, not boundaries.** Each band — |level| 1, and 2-or-more — is
+  outlined the way a terrain area is: the ring around the whole shelf, holes included, rather
+  than a stroke on the stretches where two neighbours happen to differ. A shelf that runs to the
+  board's own rim used to stop there; now it closes.
+- Each band takes a full `MapLine`: visible, thickness, opacity, colour. The old rule — white
+  above, black below, opacity multiplied by the level — is gone with it. Direction is still in
+  the elevation wash (light above, dark below); if a ring has to say which way the ground goes,
+  that is what its own colour is now for. Level 2 is drawn last, so where the two rings run
+  alongside each other the higher step is on top.
+- A mesa inside a shelf is a hole in the shelf's ring, which is what `terrainRegions` already
+  gives — the same geometry the blend masks are built from.
+
+## The step wanders both ways (2026-09-06)
+
+- **A level's coverage is no longer dilated by the warp's reach.** Growing it meant the
+  irregular boundary could only ever wander outwards, and that read as higher ground
+  overhanging its neighbours: rock hanging half a hex out over the sand and the water, with the
+  hex edge nowhere near the middle of the wander. The dilation is gone, so the warped boundary
+  is centred on the hex edge and bites into a level's own cells as far as it spills out of them.
+- The cost is the thing the dilation was bought to prevent: a corner of a raised hex can now
+  show the ground beside it, up to the noise amplitude (`irregularity * 0.35` of a hex). At the
+  default 0.2 that is about 7% of a hex; at the top of the slider, a third of one. Turn
+  irregularity down if a level has to hold every one of its own cells.
+- `coverage` no longer takes `EdgeBlending` — nothing in it depended on the settings once the
+  dilation went — and `dilate` went with it.
+
+## A raised step is embossed (2026-09-06)
+
+- **Raised ground takes a white inner highlight to go with its cast shadow.** The ground beside
+  the level, in white, clipped to the level's own coverage. It is the *same* shift along the
+  *same* light as the shadow — swapping which shape is cast and which clips is what puts the two
+  on opposite edges. The shadow leaves by the far edge; the white reaches in across the near one,
+  the edge the light comes from. Offsetting the highlight against the light instead was tried
+  first and stacked both on the same edge, which reads as a smudge rather than a step.
+- It shares the level's own distance and softness, so one pair of sliders still sets the depth.
+- `ElevationShadows.emboss` is its opacity, one slider in the lab for both levels, default 0.25.
+  Zero leaves the old one-sided lighting; the shadow-off button kills it too, since a step with
+  no distance and no softness throws nothing either way.
+- **Sunken ground gets none of it.** A pit's lit wall is the one *away* from the light, and the
+  masks in hand — the surrounding ground and the pit — do not describe it. Left open: whether a
+  pit wants the mirror of this or nothing at all.
+- `castPixels` grew a tone and an invert so the same coverage can be cast as white and
+  inside-out; `ShadowMask` is now baked twice per raised level, four small rasters instead of two.
+
+## The step is a bevel and a drop shadow (2026-09-06)
+
+- **Both hand-rolled effects are gone, replaced by `pixi-filters`.** `BevelFilter` lights the
+  level's own edge and `DropShadowFilter` throws it onto the ground below, both applied to the
+  level container itself. The filters read the level's rendered alpha, which is its stack mask —
+  the blend's irregular coverage — so they still follow the edge the eye sees, with no rasters
+  of their own. `ShadowMask`, `castPixels` and the whole cast/clip sprite pair went with them,
+  along with the `Elevation_shadows` container.
+- **A drop shadow lands under, never on.** The filter draws the shadow behind the level and the
+  level over it, and each level is drawn over the ones below, so the shadow falls on lower ground
+  and the surface it belongs to stays untouched. That is also what shades a pit now, with no
+  special case: the ground standing above the floor casts down into it.
+- **The relief goes on a wrapper container.** A filter and a mask on the same object leave the
+  shadow clipped to the level's own shape, which is the one place it must never land.
+- **A level's shadow is sized by the rise over the level below it, not by its own height.** A
+  mesa on a shelf is a one-step rise and takes `level1`; the old rule read `|level|` and gave it
+  the two-step shadow. Settings: `angle`, `opacity` for the drop shadow, and `bevel`
+  (`thickness` in hex pitches, `light` and `shadow` intensities), with distance and softness
+  still per rise. Five sliders in the lab; "Turn relief off" zeroes the three intensities.
+- Dependencies are `@pixi/filter-bevel` and `@pixi/filter-drop-shadow` rather than the whole
+  `pixi-filters` bundle, which does not tree-shake: 782kB against 849kB.
+
+## The boundary ripples instead of creeping (2026-09-06)
+
+- **Two causes of the contraction, both in `coverage`.** Dropping the dilation centred the warp
+  but left the boundary eating inwards, and measuring it on a raised blob gave 294 texels bitten
+  against 234 spilled at irregularity 0.5.
+- **The claims are no longer normalized across the whole board.** `blendWeights` divided every
+  group's weight by the total of all groups at that texel. On a hex edge two claims sum to 1 and
+  the boundary sits at 0.5; at a vertex where three meet they sum to 1.5, so a surface's own
+  claim on its own corner fell to 0.33 and every junction was cut off. Nothing wanted that
+  normalization: `shareOf` divides by its own members' total, which is the same answer either
+  way, and `coverage` wants the raw claim.
+- **Coverage is cut at the level that preserves the set's area.** Instead of a fixed 0.5, a
+  histogram finds the claim at which the set covers exactly as many texels as it owns. Whatever
+  the warp takes out of one stretch of edge it must give back along another, so the boundary
+  ripples along the hex edge and neither creeps outwards nor shrinks back. Hard and soft edges
+  skip the search — an unwarped claim is 0 or 1 either side, and there is no level to find.
+- The residual bias is the warp's own curvature: a convex patch loses a little more than it
+  gains at second order. Measured after the fix, the stack is balanced to a texel, and a border
+  between two large same-level patches leans by the noise's own low frequencies rather than
+  systematically. Left alone: the mixture between two surfaces of one level takes no balancing,
+  since there is no single set whose area could be preserved.
+
+## The stack is one list, and the grid sits under the pieces (2026-09-06)
+
+- **`LAYER_ORDER` in `LayerManager` is the whole z-order, and the only place it is written.**
+  Twelve `createLayer` calls carried hand-picked literals (`1`, `35`, `36`, `37`, `44`, `45`)
+  slotted between the five names `getDefaultZIndex` knew about; a layer's index is now its place
+  in the list. A name missing from the list falls to the ground rather than onto the board.
+- **The hex grid moved out of the top band to just under the pieces.** It was drawn over
+  everything so that no wall, wash or token could break a line it crossed, but a lattice ruled
+  across every piece on the board reads as a cage over them. It still crosses terrain and the
+  washes, and only a piece covers it. One line of `LAYER_ORDER` puts it back.
+- **Walls and cliffs then went above the grid too.** `edges` is the last of the ground band. A
+  wall is built on the ground rather than drawn on it, so the reference line has no business
+  running across a battlement — it was cutting every block in half.
+- **The map lines stayed on top.** They are few and they mark where the ground changes, so a
+  piece standing on an elevation step must not be what hides the step.

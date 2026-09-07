@@ -18,8 +18,9 @@ export const EDGE_BAND = 0.18;
 export interface HitOptions {
   grid: Grid;
   size: number;
-  /** Edges only compete when an edge brush is live, or in view mode. */
-  edges?: boolean;
+  /** Which edges compete for the hit at all. Unset, none do: an edge is only ever a target
+   * for the gesture that asked for one — a wall brush, or an armed action that can hit a wall. */
+  edges?: (key: string) => boolean;
   tokens?: TokenPlacementProvider;
 }
 
@@ -63,7 +64,7 @@ export function nearestEdge(point: Point, cell: Cell, grid: Grid, size: number):
   return edgeCandidates(point, cell, grid, size)[0] ?? null;
 }
 
-/** Hit priority: token, then edge (only when `edges` is set), then cell. A cell holding both a
+/** Hit priority: token, then edge (only those `edges` admits), then cell. A cell holding both a
  * unit and an engine left on the ground answers with whichever the layer lists first, which is
  * the unit — `setTokens` takes them in that order. */
 export function hitTest(point: Point, { grid, size, edges, tokens }: HitOptions): Hit | null {
@@ -76,7 +77,7 @@ export function hitTest(point: Point, { grid, size, edges, tokens }: HitOptions)
 
   if (edges) {
     const edge = nearestEdge(point, cell, grid, size);
-    if (edge?.inBand) return { kind: 'edge', id: edge.key };
+    if (edge?.inBand && edges(edge.key)) return { kind: 'edge', id: edge.key };
   }
   return { kind: 'cell', id: key };
 }

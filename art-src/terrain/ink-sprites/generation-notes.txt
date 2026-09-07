@@ -1,0 +1,116 @@
+Complete pencil terrain library — generation notes
+
+Final library: 96 sprites, sixteen each for hills, swamps, forests, plains, desert and mountains.
+This revision adds 36 new drawings: four per biome and sixteen new mountain formations. The prior 60 biome sprites remain unchanged.
+All six sheets use 4 x 4 cells at 384 x 384 pixels; each sheet is 1536 x 1536 pixels. Every cell has at least 24 pixels of pure-white padding. All individual PNGs match their atlas slices exactly.
+Created with built-in imagegen. The final new sources were normalized to neutral grayscale and pure white, then packed into uniform cells with proportions intact. Mountain cut boundaries account for the source drawings' unequal widths.
+
+HILLS — NEW VARIANTS 13–16
+
+Create FOUR NEW fantasy-map terrain compositions in exactly TWO columns and TWO rows on a square 1024x1024 opaque pure-white canvas. The reference shows the approved art style and existing variants. Add four different compositions; do not copy or repeat the reference designs.
+Match the reference closely: thin neutral-gray hand-drawn pencil contours, spare short hatching, mostly white interiors, soft irregular tapering edges, common aerial-oblique map viewpoint, compatible scale, consistent light direction. Elements occupy genuine ground footprints with depth and diagonal alignments. Keep the drawings simple and readable at small scale.
+Each entire composition sits inside its own equal square cell with generous blank margins and no overlap. Vary number, spacing, relative height and alignment naturally within one terrain family. No visible grid, labels, borders or text.
+Background and all unmarked areas: perfectly flat pure white RGB 255,255,255. Neutral grayscale only. This is an opaque Multiply layer, not transparent artwork. No parchment, beige, texture wash, paper grain, gradients, dark fills, alpha, checkerboard, ground disks, buildings or roads.
+
+Draw HILLS ONLY: rounded low relief with gently sloping shoulders and subtle short grass marks, matching the reference. Four compositions in reading order:
+1. Two low asymmetrical hills offset across a broad shallow hollow, with a tiny third rise near the front.
+2. A broad soft hill with a long gently descending shoulder and two subdued rear knolls.
+3. Four unequal low knolls on a shallow crescent, with an open side and sparse grass.
+4. Three narrow rounded hill crests receding diagonally, one higher middle hill and wide low saddles.
+Keep them low and rounded; no jagged mountains, rock cliffs or water.
+
+SWAMPS — NEW VARIANTS 13–16
+
+Create FOUR NEW fantasy-map terrain compositions in exactly TWO columns and TWO rows on a square 1024x1024 opaque pure-white canvas. The reference shows the approved art style and existing variants. Add four different compositions; do not copy or repeat the reference designs.
+Match the reference closely: thin neutral-gray hand-drawn pencil contours, spare short hatching, mostly white interiors, soft irregular tapering edges, common aerial-oblique map viewpoint, compatible scale, consistent light direction. Elements occupy genuine ground footprints with depth and diagonal alignments. Keep the drawings simple and readable at small scale.
+Each entire composition sits inside its own equal square cell with generous blank margins and no overlap. Vary number, spacing, relative height and alignment naturally within one terrain family. No visible grid, labels, borders or text.
+Background and all unmarked areas: perfectly flat pure white RGB 255,255,255. Neutral grayscale only. This is an opaque Multiply layer, not transparent artwork. No parchment, beige, texture wash, paper grain, gradients, dark fills, alpha, checkerboard, ground disks, buildings or roads.
+
+Draw SWAMPS ONLY, matching the reference's white-water pools, thin water strokes, reeds and wet grasses. Four compositions:
+1. A long irregular marsh channel widening into a small pool at one end, with sparse sedges on one bank.
+2. Three unequal grassy islets within a shallow broken marsh basin, reeds clustered at one rear edge.
+3. Two narrow offset marsh hollows with a low reed-covered bank between them and an open foreground shore.
+4. A wide shallow wetland with a short forked inlet, several low grass clumps and a small curved fallen branch near one edge.
+Water remains white with very sparse horizontal marks. Organic interrupted shorelines and modest plants. No solid water fill, deep lakes, waterfalls, boats or buildings.
+
+FORESTS — NEW VARIANTS 13–16
+
+Create FOUR NEW fantasy-map terrain compositions in exactly TWO columns and TWO rows on a square 1024x1024 opaque pure-white canvas. The reference shows the approved art style and existing variants. Add four different compositions; do not copy or repeat the reference designs.
+Match the reference closely: thin neutral-gray hand-drawn pencil contours, spare short hatching, mostly white interiors, soft irregular tapering edges, common aerial-oblique map viewpoint, compatible scale, consistent light direction. Elements occupy genuine ground footprints with depth and diagonal alignments. Keep the drawings simple and readable at small scale.
+Each entire composition sits inside its own equal square cell with generous blank margins and no overlap. Vary number, spacing, relative height and alignment naturally within one terrain family. No visible grid, labels, borders or text.
+Background and all unmarked areas: perfectly flat pure white RGB 255,255,255. Neutral grayscale only. This is an opaque Multiply layer, not transparent artwork. No parchment, beige, texture wash, paper grain, gradients, dark fills, alpha, checkerboard, ground disks, buildings or roads.
+
+Draw FOREST CLUSTERS ONLY, matching the reference's pencil trees with white canopy interiors and restrained hatching. Four compositions:
+1. A compact young deciduous woodland of about eleven uneven trees, several small saplings at its edges and one open gap.
+2. A loose stand of five tall conifers and three much smaller conifers, staggered diagonally with plenty of open ground.
+3. A bent diagonal strip of mixed broadleaf trees and firs, denser at one end and tapering to a few small trees at the other.
+4. A lopsided grove of about seven broadleaf trees with varied spreading and narrow crowns, one taller rear tree and a low foreground sapling.
+Same aerial-oblique view, visible trunks, compatible tree scale. Natural differences in density, count and footprint. No solid dark crowns, standalone-tree-only tiles, water or buildings.
+
+PLAINS — NEW VARIANTS 13–16
+
+Create FOUR NEW fantasy-map terrain compositions in exactly TWO columns and TWO rows on a square 1024x1024 opaque pure-white canvas. The reference shows the approved art style and existing variants. Add four different compositions; do not copy or repeat the reference designs.
+Match the reference closely: thin neutral-gray hand-drawn pencil contours, spare short hatching, mostly white interiors, soft irregular tapering edges, common aerial-oblique map viewpoint, compatible scale, consistent light direction. Elements occupy genuine ground footprints with depth and diagonal alignments. Keep the drawings simple and readable at small scale.
+Each entire composition sits inside its own equal square cell with generous blank margins and no overlap. Vary number, spacing, relative height and alignment naturally within one terrain family. No visible grid, labels, borders or text.
+Background and all unmarked areas: perfectly flat pure white RGB 255,255,255. Neutral grayscale only. This is an opaque Multiply layer, not transparent artwork. No parchment, beige, texture wash, paper grain, gradients, dark fills, alpha, checkerboard, ground disks, buildings or roads.
+
+Draw OPEN GRASSLAND PLAINS ONLY, with the sparse tufts and almost-flat contours in the reference. Four compositions:
+1. A wide shallow diagonal swale with small uneven grass clusters concentrated along one side.
+2. A broad open plain with a few tiny rises indicated by short broken arcs and sparse low tufts.
+3. An irregular elongated patch of short grass, tapering at both ends, with a very low lateral contour.
+4. Two loose clusters of tiny grass tufts separated by open white ground, joined by a shallow broken ground curve.
+Keep relief barely perceptible and vegetation short. Enough marks to remain legible, plenty of white space, no enclosing patch border. No trees, dunes, hills, prominent rocks, water, flowers or farmland rows.
+
+DESERT — NEW VARIANTS 13–16
+
+Create FOUR NEW fantasy-map terrain compositions in exactly TWO columns and TWO rows on a square 1024x1024 opaque pure-white canvas. The reference shows the approved art style and existing variants. Add four different compositions; do not copy or repeat the reference designs.
+Match the reference closely: thin neutral-gray hand-drawn pencil contours, spare short hatching, mostly white interiors, soft irregular tapering edges, common aerial-oblique map viewpoint, compatible scale, consistent light direction. Elements occupy genuine ground footprints with depth and diagonal alignments. Keep the drawings simple and readable at small scale.
+Each entire composition sits inside its own equal square cell with generous blank margins and no overlap. Vary number, spacing, relative height and alignment naturally within one terrain family. No visible grid, labels, borders or text.
+Background and all unmarked areas: perfectly flat pure white RGB 255,255,255. Neutral grayscale only. This is an opaque Multiply layer, not transparent artwork. No parchment, beige, texture wash, paper grain, gradients, dark fills, alpha, checkerboard, ground disks, buildings or roads.
+
+Draw SAND DUNES ONLY, matching the reference's curved crests and spare directional hatching on white faces. Four compositions:
+1. Two unequal dunes forming a broad open bend, one long horn and one low trailing drift.
+2. A gently winding sand ridge with three subdued crests receding into the map.
+3. One broad dune behind three tiny low foreground drifts, staggered at unequal distances.
+4. A compact pair of overlapping dunes with a low side ridge curving away on the opposite diagonal.
+Keep common wind logic, smooth sand, white faces and modest hatch detail. No plants, cactus, rocks, pyramids or angular mountains.
+
+MOUNTAINS — NEW VARIANTS 1–16
+
+Create SIXTEEN NEW MOUNTAIN TERRAIN COMPOSITIONS as a cohesive set in exactly FOUR columns and FOUR rows on a square 1536x1536 pure-white canvas. One complete composition in each equal square cell. No labels or gridlines, ample separation.
+
+Use the supplied references carefully:
+Image 1 shows the approved pencil hills and other biomes: match its restrained pencil weight, quiet shading, white space and economical detail.
+Image 2 shows mountain map fragments: use its irregular ground footprints, peaks staggered in depth, angular slope vocabulary and simple broken ridge strokes.
+These sixteen new compositions should feel like mountain counterparts to the approved hills, swamps and forests. The mountains form one Colorado/Rocky-Mountain-inspired geological family. Different numbers, heights, spacing and alignments produce the variety. All pieces should be compatible when placed together into a mountain range.
+
+Sixteen compositions, in reading order:
+ROW 1:
+1. One modest broad angular mountain with an uneven summit and a long low shoulder.
+2. Two unequal mountains joined by a shallow saddle, staggered diagonally in depth.
+3. Three peaks stepping down from a taller rear summit toward the foreground.
+4. A low rugged ridge with three small irregular summits and broad open shoulders.
+ROW 2:
+5. One taller asymmetric peak with a low branching side spur.
+6. Two broad mountains widely separated by a long low saddle.
+7. A bent chain of four modest unequal peaks receding on a diagonal.
+8. A compact twin summit with one small rear peak and long tapering slopes.
+ROW 3:
+9. Three medium peaks around an open shallow valley, at uneven distances.
+10. One low angular mountain with a very long lateral shoulder.
+11. Two overlapping peaks, one much taller, on the opposite diagonal from tile 2.
+12. Four small staggered summits with broad gaps and one low connected ridge.
+ROW 4:
+13. One broad mountain mass with two subdued summit notches and a low front shoulder.
+14. A tall rear summit with two unequal smaller foreground mountains, roughly triangular ground footprint.
+15. Two medium peaks in a gently bent connected ridge with one long tapered end.
+16. A broad low-to-medium massif of four unequal peaks, open on one side and denser on the other.
+
+Terrain occupies a real two-dimensional map footprint: peaks can stand behind and in front of one another rather than all forming a horizontal skyline. Maintain a common aerial-oblique camera view, scale, rock type and light direction. Different heights remain visibly different. Avoid copying the same twin-peak stamp or normalizing all compositions to the same silhouette. Use related angular slopes and shoulders throughout. Tiny stones may appear sparingly at some bases but stay subordinate.
+No unique geological spectacles: no mesas, sheer wall specimens, canyon-only tiles, tall isolated needles, volcanoes, craters, rubble-only patches, snow fills, trees or buildings.
+
+DRAWING STYLE: SIMPLE quiet cartographic pencil linework. Thin neutral medium-gray contours, a few confident irregular creases along ridges, large mostly unmarked rock faces, occasional sparse short parallel hatch strokes. The level of detail and shading should match the approved biome sheet. Avoid dense engraving, micro-hatching, heavy outlines, dark filled shadows, photorealism or 3D shading.
+Soft broken foothill contours taper into white. No enclosed ground disks or hard baselines.
+
+TECHNICAL: sixteen equal 384x384 cells in a 4x4 atlas, target 1536x1536 pixels. Every complete terrain drawing must fit inside its cell with at least 24 pixels of blank padding, no clipping or overlap. Natural proportions.
+BACKGROUND: completely flat opaque pure white RGB 255,255,255. All unmarked ground and rock faces white. Neutral grayscale marks only, ready for Multiply blending. No parchment, beige, paper grain, texture wash, fog, gradients, ground shadows, alpha, checkerboard, grid, borders, numbers or text.

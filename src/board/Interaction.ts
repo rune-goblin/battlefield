@@ -101,6 +101,8 @@ export class Interaction {
   private hoverCell: string | null = null;
   private hoverEdge: string | null = null;
   private wallTier = 0;
+  /** The edges a press may take, from `setPickableEdges`. Empty means none. */
+  private pickableEdges = new Set<string>();
   private lastPainted: Point | null = null;
 
   constructor(options: InteractionOptions) {
@@ -128,6 +130,11 @@ export class Interaction {
 
   setDraggable(id: string | null): void {
     this.draggableId = id;
+  }
+
+  setPickableEdges(keys: readonly string[]): void {
+    this.pickableEdges = new Set(keys);
+    if (!this.pickableEdges.has(this.hoverEdge ?? '')) this.setHover(this.hoverCell, null);
   }
 
   /** Freeze the board while something else is the menu. The hover is cleared on the way in,
@@ -223,17 +230,20 @@ export class Interaction {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
-  // Edges compete for hits in view mode (wall inspection) and battle mode (wall-target
-  // actions like a ram/bombard); paint mode only cares about edges under an edge brush, since
-  // otherwise every cell near a boundary would fight the terrain brush for the click.
-  private edgesLive(): boolean {
-    return isEdgeBrush(this.brush) || this.mode === 'view' || this.mode === 'battle';
+  // Which edges answer a press at all. An edge brush paints any of them; otherwise only the
+  // walls the stage has named — in battle, the ones the armed action can actually hit. With
+  // nothing named, no edge competes, so a cell near a wall goes to the cell and the wall is
+  // scenery like any other.
+  private edgePicker(): ((key: string) => boolean) | undefined {
+    if (isEdgeBrush(this.brush)) return () => true;
+    if (!this.pickableEdges.size) return undefined;
+    return (key) => this.pickableEdges.has(key);
   }
 
   private hitAt(screen: Point): Hit | null {
     const geometry = this.o.geometry();
     if (!geometry) return null;
-    return hitTest(this.o.toLocal(screen), { ...geometry, edges: this.edgesLive(), tokens: this.o.tokens });
+    return hitTest(this.o.toLocal(screen), { ...geometry, edges: this.edgePicker(), tokens: this.o.tokens });
   }
 
   private applyCursor(): void {
@@ -516,10 +526,11 @@ export class Interaction {
     if (!cell) return this.setHover(null, null);
 
     let edge: string | null = null;
-    if (isEdgeBrush(this.brush) || this.mode === 'view' || this.mode === 'battle') {
+    const picker = this.edgePicker();
+    if (picker) {
       const candidate = nearestEdge(point, cell, geometry.grid, geometry.size);
       // With a wall brush the nearest edge is always what a click paints, so always show it.
-      if (candidate && (isEdgeBrush(this.brush) || candidate.inBand)) edge = candidate.key;
+      if (candidate && picker(candidate.key) && (isEdgeBrush(this.brush) || candidate.inBand)) edge = candidate.key;
     }
     this.setHover(geometry.grid.key(cell), edge);
   }

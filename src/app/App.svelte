@@ -1,4 +1,6 @@
 <script lang="ts">
+  import TextureLab from './TextureLab.svelte';
+  import { textureLab } from './texture-lab.svelte.js';
   import BoardSetup from './BoardSetup.svelte';
   import Paint from './Paint.svelte';
   import Place from './Place.svelte';
@@ -13,7 +15,9 @@
 
 <!-- Every stage mounts its own AppShell: the shell is the layout, the stage says what goes in
      its layers. App itself only decides which stage is on. -->
-{#if vfxLab}
+{#if import.meta.env.DEV && textureLab.open}
+  <TextureLab />
+{:else if vfxLab}
   <VfxGallery />
 {:else if game.stage === 'battle' && game.battle}
   <Battle />

@@ -23,6 +23,7 @@ interface BoardView {
   setSelected(sel: { cell: string; side: Side } | null): void;   // a cell, not a token id — see below
   setMode(mode: BoardMode): void;                                 // 'view' | 'paint' | 'place' | 'battle'
   setBrush(brush: Brush | null): void;                            // paint mode only
+  setPickableEdges(keys: readonly string[]): void;                // the walls a press may take
   on<T extends BoardEventType>(event: T, handler: (e: BoardEventOf<T>) => void): () => void;
   cellAt(clientX: number, clientY: number): string | null;       // native DragEvent -> cell key
   resetView(): void;                                              // undo pan/zoom
@@ -42,6 +43,11 @@ Differences from the plan's sketch, and why:
   is how a stage's palette drives paint mode; `cellAt` is how a native HTML5 `DragEvent`
   (a sidebar tray item, in Place) resolves to a cell without going through `Interaction`,
   which only sees pointer events already inside the canvas.
+- **An `edge` event only ever arrives for an edge the host asked for.** `setPickableEdges` is
+  the whole list a press may hit: in battle the walls the armed action can reach, and nothing
+  otherwise. A wall brush is the one exception — it paints any edge — so `view` and `place`
+  stages have no edge hover and no edge hit at all, and a wall there is scenery like the rest
+  of the board.
 - **No `BoardEvent` members for brush or drag state.** The plan's `BoardEvent` union is fixed
   and deliberately narrow (`hover`, `cell`, `edge`, `token`, `paint`, `drop`); keyboard brush
   changes and board-internal token drags reach the host through two constructor options
@@ -92,9 +98,12 @@ at each call site.
 ```
 src/board/BoardApp.ts          owns PIXI.Application, canvas, resize, theme — the in-app board only
 src/board/BoardContainer.ts    a plain PIXI.Container + LayerManager; mountable anywhere
-src/board/layers/LayerManager.ts   lifted from Reignmaker; terrain/edges/overlay/tokens/labels z-order
+src/board/layers/LayerManager.ts   lifted from Reignmaker; owns LAYER_ORDER, the board's whole z-order
 src/board/layers/TerrainLayer.ts   cell fills, procedural texture overlays, elevation, slope hatching
+src/board/layers/InkLayer.ts       the illustrated map: one wash per hex under one pencil drawing
 src/board/layers/EdgeLayer.ts      walls, breached walls, cliffs
+src/board/layers/MapLineLayer.ts   terrain-area and elevation rings, above every other layer with the grid
+src/board/layers/GridLayer.ts      the reference hex outline, one weight for every hex
 src/board/layers/OverlayLayer.ts   hover, selection, highlight washes, paint preview
 src/board/layers/TokenLayer.ts     Token sprites, sprite-cache diff, per-tick animation
 src/board/layers/LabelLayer.ts     a–h / 1–8, MapTextUtils lifted, zoom-invariant scale
@@ -108,6 +117,9 @@ src/board/Token.ts              one battlefield piece: base disc, art, badge, pi
 src/board/Interaction.ts        pointer state machine on the host canvas -> BoardEvents
 src/board/hit.ts                pixel -> cell, then what that cell holds: token | edge | cell
 src/board/brush.ts              paint-mode brush type and its derived colours/erase forms
+src/board/ink-map.ts            the illustrated map's settings and its stable per-hex placement
+src/board/map-lines.ts          the outlines both styles share: a ring around each terrain area and each height
+src/board/ink-sheet.ts          loads the baked pencil atlas (scripts/bake-ink.mjs)
 src/board/theme.ts              light/dark palettes
 src/board/art.ts                BASE_URL-prefixed art paths (src/engine/art.ts stays Vite-free)
 src/board/index.ts              createBoardView / mountBoardView (the mount seam, see below)
@@ -270,6 +282,23 @@ child and a mask at once. The fix is a *second* `Graphics` of the same polygon, 
 layer but used only as the mask, never drawn for its own sake
 (`src/board/layers/TerrainLayer.ts`'s `shapeOf`, called twice per textured terrain type). Worth
 knowing before reusing this pattern in v8, where masking is reworked.
+
+## The illustrated map
+
+`setInkMap(appearance)` swaps `TerrainLayer`'s textured surfaces for `InkLayer`'s: a faint wash
+per hex, and one pencil drawing standing on it. Only one of the two layers ever holds anything;
+setting an appearance clears the other. The sprites come from
+`public/art/terrain/ink/ink.webp`, baked by `scripts/bake-ink.mjs` (`npm run bake:ink`) out of
+the white-page sheets in `art-src/terrain/ink-sprites/`.
+
+The bake turns graphite into **alpha over flat white RGB**, so a sprite carries coverage and no
+colour of its own. That is what lets the ink take any colour the board sets: `sprite.tint` is a
+vertex colour in Pixi, so a whole map of differently-tinted drawings still batches into one
+draw call. Multiply-blending the sheets as they ship would have been cheaper to prepare and
+would have fixed the ink at the graphite it was drawn in. All ninety-six frames sit on one
+2304×1536 texture for the same reason — one base texture is one batch.
+
+Water, shallows and settlement have no art in the library and are carried by their wash alone.
 
 ## Sizing `public/art/`
 

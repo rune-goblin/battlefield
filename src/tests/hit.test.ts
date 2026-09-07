@@ -22,13 +22,18 @@ describe.each([['square', squareGrid], ['hex', hexGrid]] as [string, Grid][])('%
   it('takes the edge just inside the band', () => {
     const point = towardCentre(EDGE_BAND * 0.8);
     expect(nearestEdge(point, cell, grid, SIZE)?.inBand).toBe(true);
-    expect(hitTest(point, { grid, size: SIZE, edges: true })).toEqual({ kind: 'edge', id: grid.edgeKey(cell, neighbour) });
+    expect(hitTest(point, { grid, size: SIZE, edges: () => true })).toEqual({ kind: 'edge', id: grid.edgeKey(cell, neighbour) });
   });
 
   it('takes the cell just outside the band', () => {
     const point = towardCentre(EDGE_BAND * 1.6);
     expect(nearestEdge(point, cell, grid, SIZE)?.inBand).toBe(false);
-    expect(hitTest(point, { grid, size: SIZE, edges: true })).toEqual({ kind: 'cell', id: 'd4' });
+    expect(hitTest(point, { grid, size: SIZE, edges: () => true })).toEqual({ kind: 'cell', id: 'd4' });
+  });
+
+  it('takes the cell inside the band when the edge is not one the gesture can pick', () => {
+    const point = towardCentre(EDGE_BAND * 0.8);
+    expect(hitTest(point, { grid, size: SIZE, edges: () => false })).toEqual({ kind: 'cell', id: 'd4' });
   });
 
   it('takes the cell inside the band when edges are not live', () => {
@@ -39,12 +44,12 @@ describe.each([['square', squareGrid], ['hex', hexGrid]] as [string, Grid][])('%
   it('answers the whole occupied hex with its piece, edge band included', () => {
     const tokens = () => [{ id: 'unit-1', cell: 'd4' }];
     for (const point of [centre, towardCentre(EDGE_BAND * 0.5), towardCentre(EDGE_BAND * 1.5)]) {
-      expect(hitTest(point, { grid, size: SIZE, edges: true, tokens })).toEqual({ kind: 'token', id: 'unit-1' });
+      expect(hitTest(point, { grid, size: SIZE, edges: () => true, tokens })).toEqual({ kind: 'token', id: 'unit-1' });
     }
   });
 
   it('leaves an empty hex to its own edges and ground', () => {
     const tokens = () => [{ id: 'unit-1', cell: 'a1' }];
-    expect(hitTest(centre, { grid, size: SIZE, edges: true, tokens })).toEqual({ kind: 'cell', id: 'd4' });
+    expect(hitTest(centre, { grid, size: SIZE, edges: () => true, tokens })).toEqual({ kind: 'cell', id: 'd4' });
   });
 });

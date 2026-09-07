@@ -31,7 +31,7 @@ interface KindStyle {
   foot: number;
   spread: number;
   /** Top-down art turns freely. The swamp reeds are drawn standing up and the badlands mesas
-   * in three-quarter view, both with one light direction, so those only mirror. */
+   * in three-quarter view, both lit from one side, so those stand as drawn. */
   turns: boolean;
   shadow: number;
   /** Minimum spacing between two pieces, as a fraction of their reach. Ground cover wants to
@@ -130,8 +130,7 @@ export function scatterGroup(
       sprite.anchor.set(0.5);
       sprite.position.set(at.x, at.y);
       sprite.rotation = turn;
-      const mirror = !style.turns && random() < 0.5;
-      sprite.scale.set(mirror ? -scale : scale, scale);
+      sprite.scale.set(scale, scale);
       sprite.tint = grey(dim * (0.92 + 0.14 * random()));
       pieces.addChild(sprite);
     }

@@ -2033,3 +2033,29 @@ The guesses, in one line each, so the review has a list to strike from:
 - **Controlling's critical failure** (2026-09-06). Mark: "a crit fail will give it 2 points of
   disorder, no matter what tier it's cast at. That seems enough." The rung above and a
   two-activation Hold are dropped. Open, with the other two tactics: what demoralize grants.
+- **Buffs are a menu** (2026-09-06). Wrath was read as an action bought for the ally; Mark:
+  "Wrath doesn't buy an action. It gives them sure strike and no save on the disorder, which
+  I'm not saying is right, but it doesn't give them an extra action." And on shape: "For the
+  buffs, we might want to use unique rather than cumulative ... I wonder if we can instead
+  provide a bit more diversity at different costs." Offense is written as three standalone
+  effects: Sure strike ◆, Wrath ◆◆ (no save on the hit's disorder, no repulse on a miss),
+  Haste ◆◆◆. Proposed, open until Mark confirms.
+- **Range and duration out of section 11** (2026-09-06). Mark: "Remove `cast` from the rules.
+  We don't use that anymore. Cast range and cast duration are both removed." The two rows and
+  the two paragraphs about the push axis are gone from section 11; each tree's range sits in
+  its row. The engine still carries the push axes (`CastAxis` in `src/engine/magic.ts`) until
+  the build.
+- **Decided ladders move home, legacy marked** (2026-09-06). Mark, on seeing section 11 still
+  carry the old table: "the entire tree section that you said that you updated isn't
+  updated. I want to see these exact tables for each action with the updated results and
+  the legacy results marked as legacy." Then: "All of the actions are out of date." Every
+  decided ladder now stands in its own section as the rule, with the old rule in a
+  `<div class="legacy">` beside it: sections 2, 6, 7, 8, 9, 11 and the quick reference.
+  Section 15 keeps only what is open: the extra-action source table, Offense's argument,
+  the Defense and Movement drafts. The review bullets for decided ladders (ancestors, what
+  changed) are dropped from the rules and live in this file and in git history. The engine
+  plays the legacy blocks until the build.
+- **Legacy only where nothing replaced it** (2026-09-06). Mark: "You can remove the old rule
+  from the updated entries. Just keep them where there is no update." Eight Legacy blocks
+  deleted; two remain: the Offense, Defense and Movement rows of the old tree table, and the
+  three tactics' grants.

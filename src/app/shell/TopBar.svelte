@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { MAP_STYLES, MAP_STYLE_LABELS, mapSettings, setMapStyle } from '../map-style.svelte.js';
   import { setDock, toggleDock, ui } from './layout.svelte.js';
 
   interface Props {
@@ -17,6 +18,16 @@
   {#if status}<div class="status">{@render status()}</div>{/if}
   <div class="tools">
     {#if tools}{@render tools()}{/if}
+    <div class="styles" role="group" aria-label="Map style">
+      {#each MAP_STYLES as style (style)}
+        <button
+          class:on={mapSettings.style === style}
+          aria-pressed={mapSettings.style === style}
+          title="Draw the map in the {MAP_STYLE_LABELS[style].toLowerCase()} style"
+          onclick={() => setMapStyle(style)}
+        >{MAP_STYLE_LABELS[style]}</button>
+      {/each}
+    </div>
     <div class="docks">
       {#each ['left', 'right'] as const as side (side)}
         <button
@@ -31,6 +42,12 @@
       {/each}
     </div>
     <nav>
+      <!-- The labs are otherwise reachable only by typing the query param. Both read it once
+           on load, so these are real navigations; the game survives one through localStorage. -->
+      {#if import.meta.env.DEV}
+        <a href="?textures" title="Terrain texture lab">Textures</a>
+        <a href="?vfx" title="Spell effect gallery">Effects</a>
+      {/if}
       <a href="rules.html" target="_blank" rel="noopener">Rules</a>
       <a href="https://github.com/rune-goblin/battlefield" target="_blank" rel="noopener">Source</a>
     </nav>
@@ -48,6 +65,20 @@
   nav { display: flex; }
   nav a { color: var(--muted); font-size: .82rem; margin-left: .7rem; }
   nav a:hover { color: var(--ink); }
+
+  /* One control, not three buttons: the segments share a border and only the chosen one is filled. */
+  .styles { display: flex; }
+  .styles button {
+    padding: .15rem .5rem; font-size: .78rem; border-radius: 0;
+    color: var(--muted); background: none;
+  }
+  .styles button:first-child { border-radius: 4px 0 0 4px; }
+  .styles button:last-child { border-radius: 0 4px 4px 0; }
+  .styles button + button { border-left-width: 0; }
+  .styles button:hover { color: var(--ink); }
+  .styles button.on { color: var(--paper); background: var(--accent); border-color: var(--accent); }
+  /* The filled segment owns the border it shares with the segment after it. */
+  .styles button.on + button { border-left: 1px solid var(--accent); }
 
   /* Two little page glyphs: a filled edge is a panel that is showing. */
   .docks { display: flex; gap: .25rem; }

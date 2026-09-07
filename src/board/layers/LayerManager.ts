@@ -16,20 +16,40 @@
 // (2026-08-24) for backport parity. Changes: added the PIXI import (Reignmaker relies on
 // Foundry's ambient global), inlined LayerId/MapLayer here instead of importing Reignmaker's
 // kingdom-map ../types (those types carry Foundry icon paths that don't apply to a battle
-// board), dropped the unused `logger` import, and rewrote getDefaultZIndex's switch for this
-// board's own layer names.
+// board), dropped the unused `logger` import, and replaced getDefaultZIndex's switch with
+// LAYER_ORDER, this board's own stack.
 import * as PIXI from 'pixi.js';
 
 /**
  * Predefined and custom layer identifiers
  */
-export type LayerId =
-  | 'terrain'    // cell fills, elevation, procedural textures (bottom layer)
-  | 'edges'      // walls, breached walls, cliffs
-  | 'overlay'    // hover, selection, highlight sets, paint preview
-  | 'tokens'     // unit and engine sprites
-  | 'labels'     // coordinate labels
-  | string;      // custom layer IDs
+export type LayerId = typeof LAYER_ORDER[number] | string;
+
+/**
+ * The board's stack, bottom to top. Three bands, and every layer belongs to one of them:
+ * the ground and everything painted on it, then the pieces standing on that ground, then
+ * everything thrown over the pieces — spell effects, labels and the reference lines.
+ *
+ * A layer's z-index is its place in this list, so the order is stated here and nowhere else.
+ * Adding a layer means putting its name in the band it belongs to.
+ */
+export const LAYER_ORDER = [
+  // The ground.
+  'terrain',        // cell fills, elevation, procedural textures
+  'ink',            // the illustrated map, in place of the textured surfaces
+  'overlay',        // hover, selection, highlight sets, paint preview
+  'effectsGround',  // pools and scorch marks, which lie on the ground the pieces stand on
+  'grid',           // the reference hex outline
+  'edges',          // walls, breached walls, cliffs — built on the ground, so over the line of it
+  // The pieces.
+  'tokens',         // unit and engine sprites
+  // Over the pieces.
+  'shot',           // the aimed shot's arc
+  'cast',           // the aimed cast's line and motes
+  'effects',        // flames, frames and sparks
+  'labels',         // coordinate labels
+  'mapLines',       // terrain-area outlines and elevation rings
+] as const;
 
 /**
  * Internal layer metadata
@@ -63,7 +83,7 @@ export class LayerManager {
    * @param zIndex - Z-index for rendering order (only used when creating new layer)
    * @returns The layer's PIXI container
    */
-  createLayer(id: LayerId, zIndex: number = 0): PIXI.Container {
+  createLayer(id: LayerId, zIndex: number = this.getDefaultZIndex(id)): PIXI.Container {
     // SINGLETON: Return existing layer if it already exists
     if (this.layers.has(id)) {
       const existingLayer = this.layers.get(id)!;
@@ -217,20 +237,10 @@ export class LayerManager {
    * @returns Default z-index for the layer type
    */
   getDefaultZIndex(layerId: LayerId): number {
-    switch (layerId) {
-      case 'terrain':
-        return 0; // Cell fills at the bottom
-      case 'edges':
-        return 10; // Walls and cliffs above terrain
-      case 'overlay':
-        return 20; // Hover/selection/highlight/paint preview
-      case 'tokens':
-        return 30; // Units and engines
-      case 'labels':
-        return 40; // Coordinate labels on top
-      default:
-        return 0; // Default z-index
-    }
+    const place = (LAYER_ORDER as readonly string[]).indexOf(layerId);
+    // A layer nobody placed sits on the ground rather than over the pieces: a stray name must
+    // not land on top of the board.
+    return place < 0 ? 0 : (place + 1) * 10;
   }
 
   /**

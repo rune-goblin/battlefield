@@ -3,12 +3,14 @@
 // ship as opaque RGB on a magenta key, which is what makes them editable, and exactly what a
 // lossy codec destroys — so the key comes out here, once, and the shipped file has an alpha
 // channel WebP stores losslessly. Doing it offline also spares every page load a chroma-key
-// pass and a flood fill over 1.5M pixels.
-// Usage: node scripts/bake-terrain.mjs      (needs cwebp: brew install webp)
+// pass and a flood fill over 1.5M pixels. Sheets that already carry alpha ship untouched and
+// are read only for their frames — see PREKEYED.
+// Usage: node scripts/bake-terrain.mjs      (needs cwebp/dwebp: brew install webp)
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
-import { inflateSync, deflateSync } from 'node:zlib';
 import { join } from 'node:path';
+
+import { decodePng, encodePng } from './lib/png.mjs';
 
 // Which quadrant of each sheet is which scenery, reading left to right, top row then bottom.
 const SHEETS = {
@@ -17,6 +19,13 @@ const SHEETS = {
 };
 const COLS = 4;
 const ROWS = 4;
+// Sheets that arrive with their alpha already cut, and ship as they are. Only the frames are
+// wanted, so these are read straight out of public/ and never re-encoded. A kind listed here
+// wins over the same kind on a keyed sheet: trees02 supersedes terrain-sheet's tree quadrant,
+// which stays baked into that file unused.
+const PREKEYED = {
+  'trees02.webp': { quadrants: [['trees']], cols: 8, rows: 8 },
+};
 // How much magenta is in a pixel, as a fraction: 1 is the bare key, 0 is art with none of it.
 // The measure is `(r + b) / 2 - g` over the same for the key itself, which is linear in how
 // much key a pixel is mixed with — distance to the key colour is not, and keyed on distance
@@ -52,7 +61,7 @@ function main() {
     const image = decodePng(readFileSync(new URL(file, srcDir)));
     const key = keyColour(image);
     chromaKey(image, key);
-    const frames = findFrames(image, quadrants);
+    const frames = findFrames(image, quadrants, COLS, ROWS, true);
     bleed(image);
 
     const name = file.replace(/\.png$/, '.webp');
@@ -65,7 +74,22 @@ function main() {
     const counts = Object.entries(frames).map(([k, r]) => `${k} ${r.length}`).join(', ');
     console.log(`${file} -> ${name} (key ${key.join(',')}; ${counts})`);
   }
+  for (const [name, { quadrants, cols, rows }] of Object.entries(PREKEYED)) {
+    const image = decodeWebp(new URL(name, outDir));
+    const frames = findFrames(image, quadrants, cols, rows, false);
+    for (const [kind, rects] of Object.entries(frames)) manifest[kind] = { sheet: name, frames: rects };
+    const counts = Object.entries(frames).map(([k, r]) => `${k} ${r.length}`).join(', ');
+    console.log(`${name} (pre-keyed; ${counts})`);
+  }
   writeFileSync(new URL('frames.json', outDir), `${JSON.stringify(manifest)}\n`);
+}
+
+function decodeWebp(url) {
+  const temp = join(process.env.TMPDIR ?? '/tmp', `bake-${Date.now()}.png`);
+  execFileSync('dwebp', ['-quiet', url.pathname, '-o', temp]);
+  const image = decodePng(readFileSync(temp));
+  rmSync(temp);
+  return image;
 }
 
 /** The most common colour in the sheet, which is the key by a wide margin — read from the art
@@ -114,13 +138,13 @@ const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
  * the cell their centre lands in — which keeps a swamp tuft with its pads and pebbles as the
  * one composition it was drawn as, and leaves the discrete quadrants at one blob per frame.
  */
-function findFrames({ width: w, height: h, px }, quadrants) {
+function findFrames({ width: w, height: h, px }, quadrants, cols, rows, rules) {
   const ink = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) ink[i] = px[i * 4 + 3] > 8 ? 1 : 0;
-  eraseRules(ink, w, h);
+  if (rules) eraseRules(ink, w, h);
 
-  const pitchX = w / (COLS * 2);
-  const pitchY = h / (ROWS * 2);
+  const pitchX = w / (cols * quadrants[0].length);
+  const pitchY = h / (rows * quadrants.length);
   const cells = new Map();
   const stack = new Int32Array(w * h);
   for (let start = 0; start < w * h; start++) {
@@ -161,7 +185,7 @@ function findFrames({ width: w, height: h, px }, quadrants) {
   for (const [kind] of quadrants.flatMap((r) => r.map((k) => [k]))) frames[kind] = [];
   for (const [key, [x0, y0, x1, y1]] of cells) {
     const [col, row] = key.split(',').map(Number);
-    frames[quadrants[Math.floor(row / ROWS)][Math.floor(col / COLS)]].push([x0, y0, x1 - x0 + 1, y1 - y0 + 1]);
+    frames[quadrants[Math.floor(row / rows)][Math.floor(col / cols)]].push([x0, y0, x1 - x0 + 1, y1 - y0 + 1]);
   }
   return frames;
 }
@@ -216,97 +240,6 @@ function bleed({ width: w, height: h, px }) {
     if (filled[i]) continue;
     px[i * 4] = 128; px[i * 4 + 1] = 128; px[i * 4 + 2] = 128;
   }
-}
-
-function decodePng(buf) {
-  let off = 8, width = 0, height = 0, depth = 0, type = 0;
-  const idat = [];
-  while (off < buf.length) {
-    const len = buf.readUInt32BE(off);
-    const tag = buf.toString('ascii', off + 4, off + 8);
-    const data = buf.subarray(off + 8, off + 8 + len);
-    if (tag === 'IHDR') {
-      width = data.readUInt32BE(0); height = data.readUInt32BE(4);
-      depth = data[8]; type = data[9];
-      if (depth !== 8 || (type !== 2 && type !== 6) || data[12] !== 0) {
-        throw new Error(`unsupported PNG: depth ${depth} type ${type} interlace ${data[12]}`);
-      }
-    }
-    if (tag === 'IDAT') idat.push(data);
-    off += len + 12;
-  }
-  const bpp = type === 6 ? 4 : 3;
-  const stride = width * bpp;
-  const raw = inflateSync(Buffer.concat(idat));
-  const lines = Buffer.alloc(height * stride);
-  let p = 0;
-  for (let y = 0; y < height; y++) {
-    const filter = raw[p++];
-    const line = raw.subarray(p, p + stride);
-    p += stride;
-    const cur = lines.subarray(y * stride, (y + 1) * stride);
-    const prev = y ? lines.subarray((y - 1) * stride, y * stride) : Buffer.alloc(stride);
-    for (let x = 0; x < stride; x++) {
-      const a = x >= bpp ? cur[x - bpp] : 0;
-      const b = prev[x];
-      const c = x >= bpp ? prev[x - bpp] : 0;
-      let v = line[x];
-      if (filter === 1) v += a;
-      else if (filter === 2) v += b;
-      else if (filter === 3) v += (a + b) >> 1;
-      else if (filter === 4) {
-        const guess = a + b - c;
-        const pa = Math.abs(guess - a), pb = Math.abs(guess - b), pc = Math.abs(guess - c);
-        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-      }
-      cur[x] = v & 255;
-    }
-  }
-  const px = Buffer.alloc(width * height * 4, 255);
-  for (let i = 0; i < width * height; i++) {
-    px[i * 4] = lines[i * bpp];
-    px[i * 4 + 1] = lines[i * bpp + 1];
-    px[i * 4 + 2] = lines[i * bpp + 2];
-    if (bpp === 4) px[i * 4 + 3] = lines[i * bpp + 3];
-  }
-  return { width, height, px };
-}
-
-function encodePng({ width, height, px }) {
-  const stride = width * 4;
-  const raw = Buffer.alloc(height * (stride + 1));
-  for (let y = 0; y < height; y++) {
-    raw[y * (stride + 1)] = 0;
-    px.copy(raw, y * (stride + 1) + 1, y * stride, (y + 1) * stride);
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; ihdr[9] = 6;
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw, { level: 6 })), chunk('IEND', Buffer.alloc(0)),
-  ]);
-}
-
-function chunk(tag, data) {
-  const head = Buffer.alloc(8);
-  head.writeUInt32BE(data.length, 0);
-  head.write(tag, 4, 'ascii');
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])), 0);
-  return Buffer.concat([head, data, crc]);
-}
-
-const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
-  let c = n;
-  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-  return c >>> 0;
-});
-function crc32(buf) {
-  let c = 0xffffffff;
-  for (const b of buf) c = CRC_TABLE[(c ^ b) & 255] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
 }
 
 main();

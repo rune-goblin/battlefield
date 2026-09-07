@@ -56,6 +56,7 @@ export class BoardApp {
   }
 
   destroy(): void {
-    this.app.destroy(false, { children: true, texture: true, baseTexture: true });
+    // Atlases and terrain textures belong to the shared Assets cache across board mounts.
+    this.app.destroy(false, { children: true });
   }
 }

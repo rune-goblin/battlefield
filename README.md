@@ -8,6 +8,22 @@ A fast abstract battle game for armies. A hexagon of sixty-one hexes, three acti
 - **The PIXI board:** [`docs/pixi-board.md`](docs/pixi-board.md) — the board library's API, its grid abstraction (square and hex), and how to mount it somewhere else (Foundry, Reignmaker)
 - **History:** [`docs/plans/`](docs/plans) — the wave plans and the judgment calls behind them. History, not rules.
 
+## Terrain texture lab
+
+Run `npm run dev`, then use **Terrain texture lab** in the map controls or open `/?textures`.
+Click a sample hex or a terrain palette button to select its group. The right panel offers
+texture thumbnails and a scale slider. Scale measures image width in hex pitches; adjacent
+hexes share a continuous polygon mask and texture origin. Forests add 3–8 tree sprites per
+hex by default, with minimum and maximum sliders from 0 to 20 and a button to turn trees off.
+
+The lab saves preferences in browser storage and uses its own sample board. **Game board**
+returns to the current game. The lab is available during development only.
+
+Add JPG, PNG, or WebP images under `public/art/terrain/textures/<group>/` and restart the dev
+server to refresh the catalog. Groups are `plains`, `forest`, `swamp`, `water`, `hills`,
+`mountain`, and `settlement`. Shallows share the water library. Settlement uses a plain fill
+until its folder contains art.
+
 ## The game in one paragraph
 
 Each army is a unit on a hexagon of sixty-one hexes: the attacker deploys on ranks 1–3, the defender on 7–9, and the board between them is generated from the hex's terrain and painted by the GM. The sides alternate, and an activation is three actions. A unit does one of five things — Shoot, Fight, Guard, Rally, Cast — or it moves; each of the five is a ladder of three rungs, and the unit's grade on that ladder is the rung it takes for free. The rung above is a reach, a Will check against its own level DC; the rung above that is out of range. Actions left over buy weight, +2 each, on the roll, on the reach, on the Defence a Guard sets or on the ground a Withdraw covers. Forest hides, swamp slows, water blocks, high ground commands, walls hold. Every roll is a d20 check against a DC using numbers off the troop sheet. Hits deal wounds, one or two at a time; four wounds destroy a unit. Losing an exchange, taking a shot or watching half the army fall costs disorder, and a unit whose disorder reaches its Quality routs. The battle ends when one side has nothing standing, or at dusk after six rounds.

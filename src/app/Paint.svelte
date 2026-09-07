@@ -2,6 +2,7 @@
   import { BRUSH_TERRAINS, sameBrush, type BoardEventOf, type Brush } from '../board/index.js';
   import { parse, type Board } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
+  import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
   import { game, generate, save } from './game.svelte.js';
@@ -70,7 +71,8 @@
   {/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} board={game.setup.board} mode="paint" fill {brush} onpaint={apply} onbrush={(b) => (brush = b)} />
+    <PixiBoard bind:this={boardRef} board={game.setup.board} mode="paint" fill {brush} onpaint={apply} onbrush={(b) => (brush = b)}
+      terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 
   {#snippet float()}

@@ -9,6 +9,7 @@
   import ActionCost from './ActionCost.svelte';
   import BoardPopup from './BoardPopup.svelte';
   import PixiBoard from './PixiBoard.svelte';
+  import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import RadialMenu from './RadialMenu.svelte';
   import ArmyReel from './ArmyReel.svelte';
@@ -166,6 +167,8 @@
     style: HighlightStyle;
     /** Everything this verb can touch right now. */
     cells: string[];
+    /** The walls among them, by edge key: a wall has no cell of its own to light. */
+    edges: string[];
   }
 
   const cellOf = (id: string) => {
@@ -174,6 +177,9 @@
   };
   const targetCell = (t: RungTarget): string | null =>
     t.kind === 'cell' ? t.id : t.kind === 'wall' ? t.id.split('|')[0] : cellOf(t.id);
+
+  const offerEdges = (offer: ActionOffer): string[] =>
+    offer.rungs.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);
 
   /** Where an offer can land, with the unit's own square first when a rung needs no target. */
   function offerCells(offer: ActionOffer): string[] {
@@ -203,6 +209,7 @@
           key, icon: 'withdraw', label: 'Withdraw', type: null, style: 'move',
           legal: !!w && w.targets.length > 0,
           cells: w ? w.targets.map((t) => t.id) : [],
+          edges: [],
         };
       }
       const type: LadderType = key === 'melee' ? 'fight' : key;
@@ -213,6 +220,7 @@
           key, icon: 'charge', label: 'Charge', type: null, style: 'attack',
           legal: charges.length > 0,
           cells: charges,
+          edges: [],
         };
       }
       // One slice per verb, so a caster's whole book sits behind Cast — the aim popup already
@@ -222,6 +230,7 @@
         key, icon: ICON_FOR[type], label, type, style: SLOT_STYLE[key],
         legal: cells.length > 0,
         cells,
+        edges: [...new Set(offers.flatMap(offerEdges))],
       };
     });
   });
@@ -785,10 +794,13 @@
     if (u && !locked && u.side === b.pending && !b.activated.includes(u.id)) { pickUnit(u, false); return; }
     aimAt({ kind: 'unit', id: e.id }, cell, u?.name ?? e.id);
   }
-  // A wall has no cell of its own; its popup opens over the first of the two it divides.
+  // A wall has no cell of its own; its popup opens over the first of the two it divides. Only
+  // an armed verb that can hit a wall makes one pickable at all, so the edge is always that
+  // verb's own target.
   function onEdge(e: BoardEventOf<'edge'>) {
-    if (pending || aim || arming || castPick) { stepBack(); return; }
-    aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '));
+    const p = arming;
+    if (!p) { stepBack(); return; }
+    aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '), p.type);
   }
 
   /** The ring is the menu while it is open: the board answers nothing (`frozen`), and a press
@@ -911,6 +923,8 @@
       {tokens}
       mode="battle"
       fill
+      terrainAppearance={gameMap.terrainAppearance}
+      inkMap={gameMap.inkMap}
       frozen={radial !== null || castPick !== null}
       {highlights}
       dragPath={previewPath}
@@ -920,6 +934,7 @@
       {cast}
       selected={selectedHex}
       draggable={active?.id ?? null}
+      pickableEdges={arming?.edges ?? []}
       onhover={(e) => { hoveredCell = e.cell; }}
       oncell={active ? onCell : undefined}
       ontoken={onToken}

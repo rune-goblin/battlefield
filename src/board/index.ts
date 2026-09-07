@@ -7,18 +7,25 @@ import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, t
 import { CastLayer } from './layers/CastLayer.js';
 import { EdgeLayer } from './layers/EdgeLayer.js';
 import { EffectLayer } from './layers/EffectLayer.js';
-import { GridLayer, type GridSettings } from './layers/GridLayer.js';
+import { GridLayer, type GridUpdate } from './layers/GridLayer.js';
+import { DEFAULT_MAP_LINES, MapLineLayer } from './layers/MapLineLayer.js';
+import { InkLayer, type InkMapAppearance } from './layers/InkLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
 import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
+import { inkAtlas } from './ink-sheet.js';
+import type { TerrainAppearance } from './terrain-textures.js';
 import { terrainAtlas } from './terrain-sheet.js';
 import { TokenLayer } from './layers/TokenLayer.js';
 import type { TokenModel } from './Token.js';
 import { currentTheme, type BoardTheme, type HighlightStyle } from './theme.js';
 
 export type { HighlightStyle } from './theme.js';
-export type { GridSettings } from './layers/GridLayer.js';
+export type { GridSettings, GridUpdate } from './layers/GridLayer.js';
+export { DEFAULT_GRID_SETTINGS } from './layers/GridLayer.js';
+export type { ElevationLines, MapLine } from './map-lines.js';
+export type { InkMapAppearance } from './layers/InkLayer.js';
 export type { Brush } from './brush.js';
 export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
 export type { TokenPlacement } from './hit.js';
@@ -38,6 +45,10 @@ export type { Rect } from './Interaction.js';
 
 export interface BoardView {
   setBoard(board: Board | null): void;
+  setTerrainAppearance(appearance: TerrainAppearance | null): void;
+  /** The illustrated map — a faint wash per hex under one pencil drawing — in place of the
+   * textured surfaces. Set, it is what the board draws; null returns it to the textures. */
+  setInkMap(appearance: InkMapAppearance | null): void;
   setTokens(tokens: TokenModel[]): void;
   setHighlight(cells: string[], style: HighlightStyle): void;
   /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
@@ -68,14 +79,20 @@ export interface BoardView {
   /** The one token a press may escalate into a drag in battle mode; place mode ignores this
    * and always allows any token to drag. */
   setDraggable(id: string | null): void;
+  /** The edges a press may take — in battle, the walls the armed action can actually hit.
+   * Empty leaves every wall as scenery, which is what a stage with no wall verb wants. */
+  setPickableEdges(keys: readonly string[]): void;
   setMode(mode: BoardMode): void;
   /** Ignore every pointer, key, hover and zoom until unfrozen — for a DOM menu that owns the
    * board while it is open. */
   setFrozen(frozen: boolean): void;
   setBrush(brush: Brush | null): void;
-  /** The faint reference hex outline, off by default — the map controls' settings dialog owns
-   * its state, not any of the game/battle stages. */
-  setGrid(settings: Partial<GridSettings>): void;
+  /** The reference hex outline, off by default, one line style per height — the map controls'
+   * settings dialog and the texture lab own its state, not any of the game/battle stages. */
+  setGrid(settings: GridUpdate): void;
+  /** Walls, breached walls and cliffs — every impassable border, shown unless hidden. The
+   * texture lab drops them to judge a surface with nothing drawn over it. */
+  setBorders(visible: boolean): void;
   on<T extends BoardEventType>(event: T, handler: (event: BoardEventOf<T>) => void): () => void;
   /** Screen point (e.g. from a native `DragEvent`) to a cell key, for drag-drop from outside
    * the canvas — a DOM tray item dropped onto the board. */
@@ -135,7 +152,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   opts.parent.addChild(boardContainer);
 
   const layers = boardContainer.layers;
-  const terrainLayer = new TerrainLayer(layers.createLayer('terrain', layers.getDefaultZIndex('terrain')));
+  const terrainLayer = new TerrainLayer(layers.createLayer('terrain'));
   // The scatter sheet decodes and chroma-keys off the main thread's first idle moment; the
   // board draws its procedural patterns until then and repaints once the scenery is ready.
   let alive = true;
@@ -144,19 +161,25 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     terrainLayer.setAtlas(atlas);
     redraw();
   });
-  // Above terrain (0) but below edges (10) — the hairline should sit over the elevation wash,
-  // not get swallowed by it, but a wall or cliff still draws over the hairline it crosses.
-  const gridLayer = new GridLayer(layers.createLayer('grid', 4));
-  const edgeLayer = new EdgeLayer(layers.createLayer('edges', layers.getDefaultZIndex('edges')));
-  const overlayLayer = new OverlayLayer(layers.createLayer('overlay', layers.getDefaultZIndex('overlay')), opts.theme);
-  const tokenLayer = new TokenLayer(layers.createLayer('tokens', layers.getDefaultZIndex('tokens')), opts.ticker, opts.theme);
-  const shotLayer = new ShotLayer(layers.createLayer('shot', 35), opts.theme);
-  const castLayer = new CastLayer(layers.createLayer('cast', 36), opts.ticker, opts.theme);
+  // Above the terrain fill and below the walls: the illustrated map replaces the surfaces
+  // rather than sitting over them, so only one of the two ever has anything in it.
+  const inkLayer = new InkLayer(layers.createLayer('ink'));
+  // The grid rules the ground a piece stands on, so it crosses terrain and washes but never a
+  // piece — nor a wall, which is built on the ground rather than drawn on it.
+  const gridLayer = new GridLayer(layers.createLayer('grid'));
+  // The map lines top the stack: they say where an area ends and where the ground steps, and a
+  // piece standing on the step must not hide the step. Their opacity keeps them out of the way.
+  const mapLineLayer = new MapLineLayer(layers.createLayer('mapLines'));
+  const edgeLayer = new EdgeLayer(layers.createLayer('edges'));
+  const overlayLayer = new OverlayLayer(layers.createLayer('overlay'), opts.theme);
+  const tokenLayer = new TokenLayer(layers.createLayer('tokens'), opts.ticker, opts.theme);
+  const shotLayer = new ShotLayer(layers.createLayer('shot'), opts.theme);
+  const castLayer = new CastLayer(layers.createLayer('cast'), opts.ticker, opts.theme);
   // Two effect containers: light on the cell, pools and scorch marks sit under the pieces;
   // flames, frames and sparks over them.
   const effectLayer = new EffectLayer(
-    layers.createLayer('effectsGround', layers.getDefaultZIndex('tokens') - 1),
-    layers.createLayer('effects', 37),
+    layers.createLayer('effectsGround'),
+    layers.createLayer('effects'),
     opts.ticker,
     opts.theme,
     {
@@ -164,9 +187,11 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       onShake: (offset) => boardContainer.position.set(boardOrigin.x + offset.x, boardOrigin.y + offset.y),
     },
   );
-  const labelLayer = new LabelLayer(layers.createLayer('labels', layers.getDefaultZIndex('labels')), opts.parent);
+  const labelLayer = new LabelLayer(layers.createLayer('labels'), opts.parent);
 
   let currentBoard: Board | null = null;
+  let inkMap: InkMapAppearance | null = null;
+  let terrain: TerrainAppearance | null = null;
   let geometry: { grid: Grid; size: number } | null = null;
   let boardOrigin: Point = { x: 0, y: 0 };
   const handlers = new Map<BoardEventType, Set<(event: never) => void>>();
@@ -180,11 +205,22 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     return { grid, size };
   }
 
+  /** The outlines belong to the style that is on: each keeps its own weights, and a board with
+   * no appearance at all takes the defaults. */
+  function applyLines(): void {
+    const settings = inkMap?.settings ?? terrain?.settings;
+    mapLineLayer.setSettings(settings
+      ? { area: settings.area, elevation: settings.elevation, groups: (inkMap ?? terrain)?.groups }
+      : DEFAULT_MAP_LINES);
+  }
+
   function redraw(): void {
     geometry = fit();
     if (!currentBoard || !geometry) {
       terrainLayer.clear();
-      gridLayer.setGeometry(null, 0, opts.theme);
+      inkLayer.clear();
+      gridLayer.setGeometry(null, 0);
+      mapLineLayer.setGeometry(null, 0);
       edgeLayer.clear();
       labelLayer.clear();
       overlayLayer.setGeometry(null, 0, opts.theme);
@@ -200,9 +236,16 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     boardOrigin = { x: (width - bounds.width) / 2, y: (height - bounds.height) / 2 };
     boardContainer.position.set(boardOrigin.x, boardOrigin.y);
 
-    terrainLayer.draw(opts.renderer, currentBoard, size, opts.theme);
-    gridLayer.setGeometry(grid, size, opts.theme);
-    edgeLayer.draw(currentBoard, size, opts.theme);
+    if (inkMap) {
+      terrainLayer.clear();
+      inkLayer.draw(currentBoard, size, inkMap);
+    } else {
+      inkLayer.clear();
+      terrainLayer.draw(opts.renderer, currentBoard, size, opts.theme);
+    }
+    gridLayer.setGeometry(grid, size);
+    mapLineLayer.setGeometry(currentBoard, size);
+    edgeLayer.draw(currentBoard, size, opts.theme, inkMap ? { pencil: inkMap.settings.ink.colour, paper: inkMap.settings.paper } : null);
     labelLayer.draw(grid, size, opts.theme);
     labelLayer.rescale();
     overlayLayer.setGeometry(grid, size, opts.theme);
@@ -300,6 +343,28 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       currentBoard = board;
       redraw();
     },
+    setTerrainAppearance(appearance) {
+      const loading = terrainLayer.setAppearance(appearance);
+      terrain = appearance;
+      applyLines();
+      if (currentBoard && geometry) terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+      void loading.then(() => {
+        if (alive && currentBoard && geometry) terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+      });
+    },
+    setInkMap(appearance) {
+      const first = !inkMap && !!appearance;
+      inkMap = appearance;
+      applyLines();
+      redraw();
+      // The atlas decodes on the first switch to the illustrated map and never again; the wash
+      // is drawn meanwhile and the sprites arrive on the repaint.
+      if (first) void inkAtlas().then((atlas) => {
+        if (!alive) return;
+        inkLayer.setAtlas(atlas);
+        if (inkMap) redraw();
+      });
+    },
     setTokens(tokens) {
       tokenLayer.setTokens(tokens);
     },
@@ -335,6 +400,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     setDraggable(id) {
       interaction.setDraggable(id);
     },
+    setPickableEdges(keys) {
+      interaction.setPickableEdges(keys);
+    },
     setMode(mode) {
       interaction.setMode(mode);
     },
@@ -346,6 +414,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     setGrid(settings) {
       gridLayer.setSettings(settings);
+    },
+    setBorders(visible) {
+      if (visible) layers.showLayer('edges'); else layers.hideLayer('edges');
     },
     on(event, handler) {
       const set = handlers.get(event) ?? new Set();
@@ -420,6 +491,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       alive = false;
       interaction.destroy();
       terrainLayer.destroy();
+      inkLayer.clear();
       tokenLayer.destroy();
       castLayer.destroy();
       effectLayer.destroy();

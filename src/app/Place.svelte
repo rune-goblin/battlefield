@@ -2,6 +2,7 @@
   import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, qualityFor, RADIUS, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
+  import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
   import { game, resetSetup, save, type SetupUnit } from './game.svelte.js';
@@ -282,7 +283,8 @@
   {/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} {board} {tokens} mode="place" fill highlights={[{ style: 'deploy', cells: highlightCells }]} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop} />
+    <PixiBoard bind:this={boardRef} {board} {tokens} mode="place" fill highlights={[{ style: 'deploy', cells: highlightCells }]} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop}
+      terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 
   {#snippet left()}

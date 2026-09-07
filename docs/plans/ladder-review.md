@@ -6,11 +6,13 @@ is named by its tree, "review the Blast tree".
 
 ## What to read, and nothing more
 
-1. `public/rules.html`, section 15 "Proposed ladders, under review": the named ladder's own
-   `<h3>` block only. That is the draft under discussion.
-2. Section 6 (and the section the ladder lives in: 7 for Withdraw and Charge, 9 for Rally, 11
-   for Cast) for the rule in force. The engine plays section 6; section 15 is never implemented
-   until Mark says so.
+1. `public/rules.html`: the named ladder's own block in the section it lives in (Shoot and
+   Guard in 8, Rally in 9, Withdraw and Charge in 7, each Cast tree under its `<h4>` in 11).
+   Since 2026-09-06 a decided ladder stands there as the rule and the old rule is deleted. A
+   `<div class="legacy">` marks only a rule nothing has replaced yet: the unreviewed buff
+   trees' rows in section 11 and the three tactics. A draft not yet decided is in section 15,
+   "Under review", which holds only open items.
+3. The engine plays the rules as they stood before the review until the build.
 3. The engine function behind it, quoted by name: `LADDERS` in `src/engine/ladders.ts`,
    `perform` in `src/engine/battle.ts`, `CAST_RUNGS` in `src/engine/magic.ts`.
 4. Pathfinder ancestors from `~/Documents/repos/pf2e/packs/pf2e/{feats,actions,spells,
@@ -31,14 +33,15 @@ Open by putting the ladder in front of Mark in this exact shape, then stop and w
 Under it: what changed against the rule in force, the ancestor, and any number that decides a
 cell (`MATCHUP=1 npx vitest run src/tests/matchup.test.ts` regenerates `docs/plans/matchups.md`).
 Mark decides cell by cell in conversation. After each of his messages, rewrite the ladder's
-block in section 15 to say exactly what he said, quote the sentence that decided it in a dated
+block in its home section to say exactly what he said (a draft still in section 15 moves
+home when it is decided and the old rule goes), quote the sentence that decided it in a dated
 entry appended to `docs/plans/battle-mechanics.todos.md`, and show him the table again. Record
 ideas he drops, in one line, so they are not proposed twice. Commit only when he says so, one
 commit per ladder.
 
-When editing section 15, replace the block between the ladder's `<h3>` and the next `<h3>` in
-section 15. `<h3>Rally</h3>` and `<h3>Charge</h3>` also exist in sections 9 and 7: anchor on
-the review section first or the file duplicates itself.
+Mark wants the same three tables in the rules that he reads in chat: the rung table, the
+degree table where there is a roll, and the numbers table. Section 15's `<h4>` for a Cast
+tree and section 11's share a name: anchor on the section first.
 
 ## What Mark has decided so far, and holds for every ladder
 
@@ -93,14 +96,14 @@ Nine are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing a
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
 | Fight | Section 6: Strike / Press / Overrun | ✓ | Reviewed and built 2026-09-05, commit 5ec6ad3. One roll, Press skips the save, Overrun drives and takes ground. Not in section 15. |
-| Shoot | Section 6: Fire / Aim / Snipe | ✓ | Decided 2026-09-05: Fire / Suppress / Pin, range as a −2 a band penalty. Pin makes the shooter a holder for Withdraw. In section 15, not yet built. |
-| Guard | Section 6: Brace / Dig in / Shieldwall | ✓ | Decided 2026-09-05: Brace / Dig in / Take cover, the share moved to the defend-allies tactic. In section 15, not yet built. |
-| Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In section 15, not yet built. Rung 3's name is open. |
-| Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. One check against the highest holder, a free Move on a critical, a pin is a holder. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In section 15, not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
-| Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In section 15, not yet built. The extra-action source table beside it is open. |
-| Cast: Blast | Section 11: long range, the activation's attack | ✓ | Decided 2026-09-06: Missile / Line / Burst. One spell attack read against a shape in hexes: one, two on a straight line from the caster, three at a corner; every hex a full target. The Cast-only actions go with it. In section 15, not yet built. |
-| Cast: Healing | Section 11: touch | ✓ | Decided 2026-09-06: Soothe / Heal / Restore, one, two and three units, each yourself or an adjacent ally. One roll, spell attack against each unit's own level DC: a failure clears 1 disorder, a success 1 disorder and 1 wound, a critical one more thing, a condition ended or a second wound. In section 15, not yet built. |
-| Cast: Controlling | Section 11: medium range, Will save against spell DC | ✓ | Decided 2026-09-06: Dread / Stun / Hold. One Will save: a success frightens (−1 to rolls and Defence until the end of its next activation), a failure the rung, a critical failure the rung with 2 disorder. Stun is one action fewer, Hold rooted. In section 15, not yet built. |
+| Shoot | Section 6: Fire / Aim / Snipe | ✓ | Decided 2026-09-05: Fire / Suppress / Pin, range as a −2 a band penalty. Pin makes the shooter a holder for Withdraw. In its section; engine not yet built. |
+| Guard | Section 6: Brace / Dig in / Shieldwall | ✓ | Decided 2026-09-05: Brace / Dig in / Take cover, the share moved to the defend-allies tactic. In its section; engine not yet built. |
+| Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In its section; engine not yet built. Rung 3's name is open. |
+| Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. One check against the highest holder, a free Move on a critical, a pin is a holder. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In its section; engine not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
+| Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In its section; engine not yet built. The extra-action source table beside it is open. |
+| Cast: Blast | Section 11: long range, the activation's attack | ✓ | Decided 2026-09-06: Missile / Line / Burst. One spell attack read against a shape in hexes: one, two on a straight line from the caster, three at a corner; every hex a full target. The Cast-only actions go with it. In its section; engine not yet built. |
+| Cast: Healing | Section 11: touch | ✓ | Decided 2026-09-06: Soothe / Heal / Restore, one, two and three units, each yourself or an adjacent ally. One roll, spell attack against each unit's own level DC: a failure clears 1 disorder, a success 1 disorder and 1 wound, a critical one more thing, a condition ended or a second wound. In its section; engine not yet built. |
+| Cast: Controlling | Section 11: medium range, Will save against spell DC | ✓ | Decided 2026-09-06: Dread / Stun / Hold. One Will save: a success frightens (−1 to rolls and Defence until the end of its next activation), a failure the rung, a critical failure the rung with 2 disorder. Stun is one action fewer, Hold rooted. In its section; engine not yet built. |
 | Cast: Offense | Section 11: short range, an ally | | Draft in section 15: Sure strike / Wrath / Haste. Roll twice, a Press for a unit without one, one more action. |
 | Cast: Defense | Section 11: short range, an ally | | Draft in section 15: Ward / Stoneskin / Aegis. Aegis turns a whole hit, which the held decisions say is too strong. |
 | Cast: Movement | Section 11: short range, an ally | | Draft in section 15: Sure footing / Wings / Freedom. Freedom passes the Disengage check. |
@@ -109,5 +112,5 @@ Move carries no rungs and is not under review. Section 15 also holds two blocks 
 ladders, "Free strike and no retreat" and "Walls and siege engines"; both say the rule is
 unchanged and need no review.
 
-After the last review comes the build: implement section 15 into section 6 and the engine, one
-commit per ladder, then delete section 15.
+After the last review comes the build: implement each ladder's rule into the engine, one
+commit per ladder, then delete section 15 and the last Legacy blocks.

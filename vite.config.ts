@@ -1,8 +1,33 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
+const texturesDir = fileURLToPath(new URL('./public/art/terrain/textures/', import.meta.url));
+const VIRTUAL_ID = 'virtual:terrain-textures';
+
+// The board reads the terrain art out of `public/`, which no bundler graph covers, so the
+// listing has to come from a scan of the folder. A `define` would not do: Vite 8 leaves those
+// untouched in dev, and the lab came up with an empty texture library.
+const terrainTextures = (): Plugin => ({
+  name: 'terrain-textures',
+  resolveId: id => (id === VIRTUAL_ID ? `\0${VIRTUAL_ID}` : null),
+  load(id) {
+    if (id !== `\0${VIRTUAL_ID}`) return null;
+    const files = readdirSync(texturesDir, { recursive: true })
+      .filter((path): path is string => typeof path === 'string' && /\.(jpe?g|png|webp)$/i.test(path));
+    return `export default ${JSON.stringify(files.sort())};`;
+  },
+  configureServer(server) {
+    server.watcher.add(texturesDir);
+    // A restart is what re-runs the scan; art lands here rarely enough to afford one.
+    const rescan = (path: string) => { if (path.startsWith(texturesDir)) void server.restart(); };
+    server.watcher.on('add', rescan).on('unlink', rescan);
+  },
+});
+
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), terrainTextures()],
   base: './',
   build: { target: 'es2022' },
   test: { include: ['src/tests/**/*.test.ts'] },

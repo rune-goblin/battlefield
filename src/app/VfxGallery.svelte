@@ -96,6 +96,7 @@
     <label><input type="checkbox" bind:checked={loop} /> loop</label>
     <label><input type="checkbox" bind:checked={fromCaster} /> from caster</label>
     <span class="hint">Click a pane or press its number to play it.</span>
+    <a class="back" href="./">← Game board</a>
   </div>
 </div>
 
@@ -110,6 +111,8 @@
   .board { min-height: 0; min-width: 0; overflow: hidden; cursor: pointer; }
   .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; padding: 0.5rem 0.75rem; background: #181818; border-top: 1px solid #333; }
   .hint { color: #888; }
+  .back { margin-left: auto; color: #888; }
+  .back:hover { color: #ddd; }
   button { padding: 0.25rem 0.6rem; border: 1px solid #555; border-radius: 4px; background: #222; color: #ddd; cursor: pointer; }
   button:hover { background: #333; }
   label { display: inline-flex; gap: 0.3rem; align-items: center; }

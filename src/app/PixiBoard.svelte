@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import type { TerrainAppearance } from '../board/terrain-textures.js';
   import {
     createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
-    type GridSettings, type HighlightStyle, type Rect, type TokenModel,
+    type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
   } from '../board/index.js';
   import type { Board, Side, Tree } from '../engine/index.js';
 
@@ -10,6 +11,9 @@
 
   interface Props {
     board: Board | null;
+    terrainAppearance?: TerrainAppearance | null;
+    /** The illustrated map, in place of the textured surfaces — see `BoardView.setInkMap`. */
+    inkMap?: InkMapAppearance | null;
     tokens?: TokenModel[];
     mode?: BoardMode;
     brush?: Brush | null;
@@ -29,6 +33,8 @@
     selected?: { cell: string; side: Side } | null;
     /** In battle mode, the only token a press may pick up. Place mode ignores this. */
     draggable?: string | null;
+    /** The walls a press may take — see `BoardView.setPickableEdges`. */
+    pickableEdges?: string[];
     /** Full-bleed: fills its container instead of sitting in a capped, square-ish column. */
     fill?: boolean;
     /** The board answers nothing while something else is the menu — see `BoardView.setFrozen`. */
@@ -45,13 +51,13 @@
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
   }
   let {
-    board, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, fill = false, frozen = false,
+    board, terrainAppearance = null, inkMap = null, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
   }: Props = $props();
 
   let container: HTMLDivElement;
   let canvas: HTMLCanvasElement;
-  let view: BoardView | undefined;
+  let view: BoardView | undefined = $state();
 
   export function centerOn(cell: string) { view?.centerOn(cell); }
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
@@ -61,7 +67,8 @@
   export function burst(cell: string, tree: Tree, from?: string | null) { view?.burst(cell, tree, from); }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
-  export function setGrid(settings: Partial<GridSettings>) { view?.setGrid(settings); }
+  export function setGrid(settings: GridUpdate) { view?.setGrid(settings); }
+  export function setBorders(visible: boolean) { view?.setBorders(visible); }
 
   onMount(() => {
     view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });
@@ -81,6 +88,18 @@
   });
 
   $effect(() => { view?.setBoard(board); });
+  $effect(() => {
+    // Read every setting here: Pixi retains plain state and cannot subscribe to nested
+    // Svelte mutations. Give it a fresh snapshot for each texture, scale, or tree edit.
+    const appearance = terrainAppearance ? $state.snapshot(terrainAppearance) : null;
+    const target = view;
+    untrack(() => target?.setTerrainAppearance(appearance));
+  });
+  $effect(() => {
+    const appearance = inkMap ? $state.snapshot(inkMap) : null;
+    const target = view;
+    untrack(() => target?.setInkMap(appearance));
+  });
   $effect(() => { view?.setTokens(tokens); });
   $effect(() => { view?.setMode(mode); });
   $effect(() => { view?.setBrush(brush); });
@@ -102,6 +121,7 @@
   $effect(() => { view?.setCast(cast); });
   $effect(() => { view?.setSelected(selected); });
   $effect(() => { view?.setDraggable(draggable); });
+  $effect(() => { view?.setPickableEdges(pickableEdges); });
   $effect(() => { view?.setFrozen(frozen); });
 </script>
 
