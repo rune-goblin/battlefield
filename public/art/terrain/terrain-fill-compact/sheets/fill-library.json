@@ -1,0 +1,2674 @@
+{
+  "swamp_fill": {
+    "sheet": "swamp-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 92,
+    "items": [
+      {
+        "index": 0,
+        "name": "cattail-single",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          33,
+          14,
+          30,
+          67
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "cattail-pair",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          27,
+          9,
+          41,
+          78
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "sedge-left",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          29,
+          24,
+          37,
+          48
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "cattails-right",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          29,
+          9,
+          38,
+          78
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "bent-rushes",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          18,
+          25,
+          60,
+          45
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "reed-head",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          31,
+          6,
+          33,
+          83
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "squat-sedge",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          25,
+          49,
+          46
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "curved-cattail",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          29,
+          2,
+          38,
+          92
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "puddle-small",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          15,
+          34,
+          64,
+          27
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "puddle-long",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          12,
+          28,
+          71,
+          39
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "puddle-broken",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          18,
+          36,
+          59,
+          24
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "wet-ripples",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          26,
+          40,
+          43,
+          14
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "moss-single",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          21,
+          38,
+          53,
+          19
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "moss-pair",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          9,
+          38,
+          77,
+          19
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "wet-lines",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          22,
+          35,
+          52,
+          26
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "wet-ticks",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          20,
+          37,
+          55,
+          21
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  },
+  "plains_fill": {
+    "sheet": "plains-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 61,
+    "items": [
+      {
+        "index": 0,
+        "name": "grass-tall",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          31,
+          23,
+          34,
+          50
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "grass-narrow",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          34,
+          23,
+          28,
+          50
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "grass-left",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          31,
+          31,
+          34,
+          33
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "grass-forked",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          31,
+          26,
+          33,
+          42
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "grass-wide",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          26,
+          32,
+          44,
+          31
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "grass-trailing",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          20,
+          28,
+          56,
+          40
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "grass-low",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          32,
+          32,
+          30,
+          31
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "grass-right",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          34,
+          27,
+          28,
+          42
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "ground-dashes",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          34,
+          44,
+          27,
+          7
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "ground-arcs",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          42,
+          49,
+          10
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "grass-ticks",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          24,
+          39,
+          46,
+          17
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "ground-curve",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          17,
+          42,
+          61,
+          12
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "grass-squat",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          32,
+          38,
+          31,
+          19
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "grass-shoots",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          27,
+          40,
+          41,
+          16
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "grass-slim",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          32,
+          29,
+          30,
+          38
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "grass-ground",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          34,
+          31,
+          28,
+          32
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  },
+  "ocean_fill": {
+    "sheet": "ocean-fill-compact-4x4.webp",
+    "cell": [
+      160,
+      160
+    ],
+    "sheetSize": [
+      640,
+      640
+    ],
+    "maximumMarkExtent": 149,
+    "items": [
+      {
+        "index": 0,
+        "name": "swell-1",
+        "frame": [
+          0,
+          0,
+          160,
+          160
+        ],
+        "markBounds": [
+          6,
+          67,
+          146,
+          26
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 1,
+        "name": "swell-2",
+        "frame": [
+          160,
+          0,
+          160,
+          160
+        ],
+        "markBounds": [
+          9,
+          66,
+          141,
+          27
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 2,
+        "name": "swell-3",
+        "frame": [
+          320,
+          0,
+          160,
+          160
+        ],
+        "markBounds": [
+          18,
+          68,
+          123,
+          24
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 3,
+        "name": "swell-4",
+        "frame": [
+          480,
+          0,
+          160,
+          160
+        ],
+        "markBounds": [
+          10,
+          67,
+          139,
+          26
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 4,
+        "name": "swell-5",
+        "frame": [
+          0,
+          160,
+          160,
+          160
+        ],
+        "markBounds": [
+          6,
+          68,
+          147,
+          23
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 5,
+        "name": "swell-6",
+        "frame": [
+          160,
+          160,
+          160,
+          160
+        ],
+        "markBounds": [
+          8,
+          67,
+          143,
+          25
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 6,
+        "name": "swell-7",
+        "frame": [
+          320,
+          160,
+          160,
+          160
+        ],
+        "markBounds": [
+          17,
+          66,
+          126,
+          27
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 7,
+        "name": "swell-8",
+        "frame": [
+          480,
+          160,
+          160,
+          160
+        ],
+        "markBounds": [
+          13,
+          68,
+          132,
+          24
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 8,
+        "name": "swell-9",
+        "frame": [
+          0,
+          320,
+          160,
+          160
+        ],
+        "markBounds": [
+          14,
+          66,
+          130,
+          28
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 9,
+        "name": "swell-10",
+        "frame": [
+          160,
+          320,
+          160,
+          160
+        ],
+        "markBounds": [
+          8,
+          68,
+          143,
+          23
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 10,
+        "name": "swell-11",
+        "frame": [
+          320,
+          320,
+          160,
+          160
+        ],
+        "markBounds": [
+          14,
+          67,
+          131,
+          26
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 11,
+        "name": "swell-12",
+        "frame": [
+          480,
+          320,
+          160,
+          160
+        ],
+        "markBounds": [
+          5,
+          70,
+          149,
+          19
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 12,
+        "name": "swell-13",
+        "frame": [
+          0,
+          480,
+          160,
+          160
+        ],
+        "markBounds": [
+          6,
+          69,
+          147,
+          22
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 13,
+        "name": "swell-14",
+        "frame": [
+          160,
+          480,
+          160,
+          160
+        ],
+        "markBounds": [
+          20,
+          67,
+          119,
+          25
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 14,
+        "name": "swell-15",
+        "frame": [
+          320,
+          480,
+          160,
+          160
+        ],
+        "markBounds": [
+          13,
+          67,
+          133,
+          25
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      },
+      {
+        "index": 15,
+        "name": "swell-16",
+        "frame": [
+          480,
+          480,
+          160,
+          160
+        ],
+        "markBounds": [
+          10,
+          66,
+          140,
+          27
+        ],
+        "anchor": [
+          80,
+          80
+        ]
+      }
+    ]
+  },
+  "shallows_fill": {
+    "sheet": "shallows-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 71,
+    "items": [
+      {
+        "index": 0,
+        "name": "ripples-1",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          29,
+          36,
+          36,
+          23
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "ripples-2",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          31,
+          48,
+          34
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "ripples-3",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          24,
+          41,
+          47,
+          13
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "ripples-4",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          13,
+          40,
+          69,
+          16
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "ripples-5",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          25,
+          32,
+          45,
+          31
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "ripples-6",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          24,
+          35,
+          48,
+          26
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "ripples-7",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          17,
+          35,
+          61,
+          24
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "ripples-8",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          19,
+          41,
+          57,
+          14
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "ticks-staggered",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          21,
+          37,
+          54,
+          23
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "partial-arcs",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          30,
+          40,
+          36,
+          17
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "tiny-dashes",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          43,
+          50,
+          10
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "broken-ripple",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          12,
+          41,
+          71,
+          14
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "sand-fleck",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          17,
+          40,
+          61,
+          15
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "sand-fleck-thin",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          42,
+          49,
+          12
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "curved-strokes",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          27,
+          37,
+          40,
+          22
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "paired-arcs",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          17,
+          44,
+          61,
+          7
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  },
+  "mountains_fill": {
+    "sheet": "mountains-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 94,
+    "items": [
+      {
+        "index": 0,
+        "name": "peak-1",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          2,
+          16,
+          92,
+          64
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "peak-2",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          2,
+          16,
+          92,
+          63
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "peak-3",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          2,
+          16,
+          92,
+          64
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "peak-4",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          2,
+          17,
+          92,
+          61
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "cliff-1",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          3,
+          24,
+          90,
+          48
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "cliff-2",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          1,
+          25,
+          94,
+          45
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "crevice-1",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          24,
+          20,
+          47,
+          56
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "crevice-2",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          14,
+          37,
+          69,
+          21
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "boulder-round",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          17,
+          23,
+          63,
+          48
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "boulder-wedge",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          6,
+          26,
+          84,
+          43
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "boulder-tall",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          12,
+          13,
+          71,
+          70
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "boulder-slab",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          3,
+          31,
+          91,
+          34
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "rock-small",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          27,
+          37,
+          41,
+          23
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "rock-medium",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          12,
+          24,
+          71,
+          47
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "stone-pair",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          5,
+          31,
+          86,
+          35
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "rock-chips",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          13,
+          35,
+          71,
+          25
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  },
+  "forest_fill": {
+    "sheet": "forest-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 76,
+    "items": [
+      {
+        "index": 0,
+        "name": "tree-broad",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          15,
+          19,
+          65,
+          58
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "tree-narrow",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          28,
+          12,
+          39,
+          70
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "tree-left",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          19,
+          11,
+          58,
+          73
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "tree-right",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          19,
+          13,
+          58,
+          70
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "spruce",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          30,
+          21,
+          35,
+          54
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "fir",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          28,
+          10,
+          39,
+          76
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "pine",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          28,
+          14,
+          40,
+          66
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "young-conifer",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          33,
+          19,
+          30,
+          56
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "sapling-1",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          36,
+          27,
+          24,
+          42
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "sapling-2",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          32,
+          25,
+          31,
+          45
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "shrub",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          26,
+          28,
+          43,
+          39
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "bush",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          30,
+          49,
+          35
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "twig",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          19,
+          33,
+          57,
+          29
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "branch",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          20,
+          35,
+          56,
+          26
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "stump",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          26,
+          30,
+          43,
+          35
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "fern",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          19,
+          30,
+          57,
+          36
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  },
+  "hills_fill": {
+    "sheet": "hills-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 94,
+    "items": [
+      {
+        "index": 0,
+        "name": "hill-1",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          5,
+          34,
+          86,
+          27
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "hill-2",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          1,
+          33,
+          94,
+          29
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "hill-3",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          3,
+          35,
+          88,
+          25
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "hill-4",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          4,
+          34,
+          88,
+          28
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "shoulder",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          2,
+          39,
+          91,
+          17
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "saddle",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          5,
+          41,
+          85,
+          13
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "slope-crease",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          17,
+          37,
+          61,
+          21
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "mound",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          3,
+          35,
+          90,
+          26
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "stone-1",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          24,
+          35,
+          47,
+          25
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "stone-pair",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          20,
+          37,
+          55,
+          22
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "earth-lip",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          8,
+          39,
+          79,
+          18
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "stone-2",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          27,
+          37,
+          41,
+          22
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "grass-1",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          28,
+          32,
+          39,
+          31
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "grass-2",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          29,
+          29,
+          37,
+          38
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "grassy-knoll",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          18,
+          33,
+          60,
+          30
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "slope-lines",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          15,
+          23,
+          65,
+          50
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  },
+  "desert_fill": {
+    "sheet": "desert-fill-compact-4x4.webp",
+    "cell": [
+      96,
+      96
+    ],
+    "sheetSize": [
+      384,
+      384
+    ],
+    "maximumMarkExtent": 86,
+    "items": [
+      {
+        "index": 0,
+        "name": "sand-ripples-1",
+        "frame": [
+          0,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          28,
+          49,
+          40
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 1,
+        "name": "sand-ripples-2",
+        "frame": [
+          96,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          18,
+          28,
+          58,
+          40
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 2,
+        "name": "sand-ripples-3",
+        "frame": [
+          192,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          18,
+          31,
+          59,
+          33
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 3,
+        "name": "sand-ripples-4",
+        "frame": [
+          288,
+          0,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          31,
+          49,
+          34
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 4,
+        "name": "sand-crest-1",
+        "frame": [
+          0,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          15,
+          37,
+          64,
+          21
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 5,
+        "name": "sand-crest-2",
+        "frame": [
+          96,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          12,
+          35,
+          70,
+          26
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 6,
+        "name": "sand-crest-3",
+        "frame": [
+          192,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          16,
+          40,
+          63,
+          16
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 7,
+        "name": "sand-crest-4",
+        "frame": [
+          288,
+          96,
+          96,
+          96
+        ],
+        "markBounds": [
+          16,
+          34,
+          64,
+          27
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 8,
+        "name": "pebble",
+        "frame": [
+          0,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          34,
+          42,
+          26,
+          12
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 9,
+        "name": "angular-stone",
+        "frame": [
+          96,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          32,
+          40,
+          32,
+          15
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 10,
+        "name": "pebble-pair",
+        "frame": [
+          192,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          24,
+          40,
+          47,
+          15
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 11,
+        "name": "grit",
+        "frame": [
+          288,
+          192,
+          96,
+          96
+        ],
+        "markBounds": [
+          23,
+          41,
+          48,
+          13
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 12,
+        "name": "wind-line",
+        "frame": [
+          0,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          8,
+          38,
+          78,
+          20
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 13,
+        "name": "sand-arcs",
+        "frame": [
+          96,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          5,
+          38,
+          86,
+          20
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 14,
+        "name": "ground-crack",
+        "frame": [
+          192,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          21,
+          34,
+          53,
+          27
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      },
+      {
+        "index": 15,
+        "name": "sand-stipple",
+        "frame": [
+          288,
+          288,
+          96,
+          96
+        ],
+        "markBounds": [
+          7,
+          38,
+          81,
+          20
+        ],
+        "anchor": [
+          48,
+          48
+        ]
+      }
+    ]
+  }
+}
