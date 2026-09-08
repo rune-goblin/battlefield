@@ -4,7 +4,7 @@ import {
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { reachable, stepFeet } from './path.js';
-import { check, succeeded, type CheckResult, type Degree } from './check.js';
+import { check, readCheck, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
   type Grade, type LadderType, type Rung,
@@ -612,10 +612,17 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
 
 const homewardStep = (u: Unit) => Math.sign(homeRank(u.side) - u.square.rank) || -1;
 
+/** What a shot off this unit rolls: a crewed artillery piece stands in for a Volley the crew
+ * may not have, loaded or not — a pinning crew holds its target with the shot it already made. */
+const volleyOf = (state: BattleState, u: Unit) => {
+  const e = enginesOf(state, u).find((x) => x.status === 'crewed' && x.kind === 'artillery');
+  return e ? e.launch : (u.stats.volley ?? 0);
+};
+
 /** The DC to break from a holder: its attack DC, its strike bonus plus ten — or, for a pinning
  * shooter, its Volley plus ten, since nobody is in contact to strike. */
-export const escapeDcFor = (holder: Unit, target: Unit) =>
-  ((holder.id === target.pinnedBy ? holder.stats.volley : holder.stats.strike) ?? 0) + 10;
+export const escapeDcFor = (state: BattleState, holder: Unit, target: Unit) =>
+  (holder.id === target.pinnedBy ? volleyOf(state, holder) : (holder.stats.strike ?? 0)) + 10;
 
 /** Reflex is the widest-spreading defensive stat on a troop sheet (5.6 points within a level
  * against AC's 3.2), so it is the one that tells troops apart. */
@@ -731,9 +738,6 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
   return { rung: rung.id, index, label: rung.label, detail: rung.detail, cost, legal: reason === null, reason, needsTarget, targets };
 }
 
-/** The one action a withdrawal costs before any ground bought on top of it. */
-const BASE_COST = 1;
-
 function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
   const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
     : type === 'rally' && !u.disorder && !alliesWithin(state, u, 2).length ? 'no disorder to clear, and nobody near to lift'
@@ -768,56 +772,130 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   return offers;
 }
 
-interface Escape { holder: Unit; degree: Degree }
+/** Withdraw's three activities. No table in `ladders.ts` holds them — Withdraw is not one of
+ * the five verbs a menu offers — but they are priced and read like any other: cost is index. */
+const WITHDRAW: { id: string; label: string; detail: string }[] = [
+  {
+    id: 'break-off', label: 'Break off',
+    detail: 'One Disengage check against the highest holder. A success takes you one hex clear; a critical adds a free Move of your Speed and throws off every pursuer. A failure lets each holder whose grip the roll missed strike free, one wound at most; a critical failure adds 1 disorder and you stay.',
+  },
+  {
+    id: 'disengage', label: 'Disengage',
+    detail: 'No check and no free strike: you are one hex clear. Each holder rolls Reflex against your level DC instead, and one that fails is rooted on its next activation and does not follow.',
+  },
+  {
+    id: 'fighting-retreat', label: 'Fighting retreat',
+    detail: 'Disengage, and a holder that fails its roll takes 1 disorder as well, drawn out of its line.',
+  },
+];
+
+/** What the withdrawal did: whether the unit leaves its hex, whether a free Move carries it
+ * further than one, and which holders are still on its heels. */
+interface Break { leaves: boolean; far: boolean; chasers: Unit[] }
 
 /**
- * Breaking contact. One Escape check per holder — the withdrawing unit's Reflex against that
- * enemy's own attack DC — and the four degrees are what Scatter, Break off and Fighting
- * retreat used to name. A critical failure is the one that pins the unit where it stands.
- * `distance` is the further actions spent on ground, another Speed's worth each.
- * proto: section 7 now says one check against the highest holder, read for every holder, with a
- * free Move on a critical. This still rolls per holder until the Withdraw ladder is built.
+ * Break contact. The activity decides who rolls: at Break off the withdrawing unit rolls to get
+ * away, above it the enemy left holding air rolls instead.
  */
-function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction, distance: number) {
-  const escapes: Escape[] = [];
-  let pinned = false;
-  for (const holder of holdersOf(state, u)) {
-    if (u.status !== 'active') break;
-    const c = roll(state, rng, u, escapeModifier(u), escapeDcFor(holder, u));
-    log(state, u, `${u.name} breaks from ${holder.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-    escapes.push({ holder, degree: c.degree });
-    if (succeeded(c.degree)) continue;
-    // A pinning shooter is not in contact, so a failed roll costs no free strike from it.
-    if (holder.id !== u.pinnedBy) resolveStrike(state, rng, holder, u, { free: true, label: 'strikes the withdrawing' });
-    if (c.degree !== 'critical-failure' || u.status !== 'active') continue;
-    addDisorder(state, u, 1, `${holder.name}'s grip`);
-    pinned = true;
-  }
+function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction) {
+  const holders = holdersOf(state, u);
+  // Read before anything moves: breaking away clears the pin, and a pinning shooter never chases.
+  const chasers = holders.filter((h) => h.noRetreat && h.id !== u.pinnedBy);
+  const result = action.rung === 1
+    ? breakOff(state, rng, u, holders, chasers)
+    : disengage(state, rng, u, holders, chasers, action.rung === 3);
   if (u.status !== 'active') return;
-  if (pinned) {
+  if (!result.leaves) {
     log(state, u, `${u.name} cannot break contact and stays where it stands.`);
     return;
   }
-  const options = withdrawTargets(state, u, distance * u.speed);
-  const chosen = action.to ? options.find((sq) => notation(sq) === action.to) ?? null : options[0] ?? null;
-  if (chosen) {
-    moveTo(state, u, chosen);
-    log(state, u, `${u.name} withdraws to ${notation(chosen)}.`);
-  } else log(state, u, `${u.name} has nowhere to go and holds where it stands.`);
-  follow(state, u, escapes);
+  withdrawTo(state, u, action.to, result.far);
+  follow(state, u, result.chasers);
   if (isRouted(u) && u.square.rank === homeRank(u.side)) leaveField(state, u);
+}
+
+/**
+ * One Disengage check, however many enemies hold the unit: Reflex against the highest attack DC
+ * among them. The same roll is then read against each holder's own DC, so a grip it cleared
+ * lands no free strike even when the highest one held.
+ */
+function breakOff(state: BattleState, rng: Rng, u: Unit, holders: Unit[], chasers: Unit[]): Break {
+  if (!holders.length) return { leaves: true, far: false, chasers: [] };
+  const dc = Math.max(...holders.map((h) => escapeDcFor(state, h, u)));
+  const c = roll(state, rng, u, escapeModifier(u), dc);
+  log(state, u, `${u.name} breaks off: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  if (succeeded(c.degree)) {
+    const clean = c.degree === 'critical-success';
+    if (clean && chasers.length) log(state, u, `${u.name} is away clean: ${chasers.map((h) => h.name).join(' and ')} cannot keep up.`);
+    return { leaves: true, far: clean, chasers: clean ? [] : chasers };
+  }
+  for (const h of holders) {
+    if (u.status !== 'active') break;
+    // A pinning shooter stands at range, so no grip of its own lands a blow.
+    if (h.id === u.pinnedBy) continue;
+    if (succeeded(readCheck(c.roll, c.modifier, escapeDcFor(state, h, u)).degree)) continue;
+    resolveStrike(state, rng, h, u, { free: true, label: 'strikes the withdrawing' });
+  }
+  if (u.status !== 'active') return { leaves: false, far: false, chasers: [] };
+  if (c.degree !== 'critical-failure') return { leaves: true, far: false, chasers };
+  addDisorder(state, u, 1, 'a grip that held');
+  return { leaves: false, far: false, chasers: [] };
+}
+
+/**
+ * The unit simply goes. Every holder rolls its own Reflex against the withdrawing unit's level
+ * DC to keep hold of it, and one that fails is left rooted where it stands — and, at Fighting
+ * retreat, drawn out of its line for a point of disorder.
+ */
+function disengage(state: BattleState, rng: Rng, u: Unit, holders: Unit[], chasers: Unit[], fighting: boolean): Break {
+  const passed = new Set<string>();
+  for (const h of holders) {
+    const c = roll(state, rng, h, escapeModifier(h), levelDc(u.level));
+    log(state, h, `${h.name} keeps hold of ${u.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+    if (succeeded(c.degree)) { passed.add(h.id); continue; }
+    h.rooted = 1;
+    log(state, h, `${h.name} is left holding air: no Move, Charge or Withdraw on its next activation.`);
+    if (fighting) addDisorder(state, h, 1, `${u.name}'s fighting retreat`);
+  }
+  return { leaves: true, far: false, chasers: chasers.filter((h) => passed.has(h.id)) };
+}
+
+/**
+ * One hex clear of everything that held the unit — or, on a critical Break off, anywhere a free
+ * Move of its Speed reaches. proto: a `to` the break cannot carry to lands on whichever legal
+ * cell lies nearest it, so a short break still goes the way the player pointed.
+ */
+function withdrawTo(state: BattleState, u: Unit, to: string | undefined, far: boolean) {
+  const options = withdrawTargets(state, u, far ? u.speed : 0);
+  if (!options.length) {
+    log(state, u, `${u.name} has nowhere to go and holds where it stands.`);
+    return;
+  }
+  const g = grid(state);
+  const wanted = to ? parse(to) : null;
+  const chosen = !wanted ? options[0]
+    : options.find((sq) => sameSquare(sq, wanted))
+      ?? options.reduce((best, sq) => (g.distance(sq, wanted) < g.distance(best, wanted) ? sq : best));
+  moveTo(state, u, chosen);
+  log(state, u, `${u.name} withdraws to ${notation(chosen)}${far ? ' — a free Move on the clean break' : ''}.`);
+  // Section 7: the unit is clear of everything that held it, and any further ground is an
+  // ordinary Move. A pin that survived the break would leave it stuck one hex over.
+  if (u.pinnedBy) {
+    const pinner = state.units.find((e) => e.id === u.pinnedBy);
+    u.pinnedBy = null;
+    log(state, u, `${u.name} is out from under ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
+  }
 }
 
 /**
  * A `no-retreat` holder gives chase: one free Move of its own Speed, through the ordinary
  * terrain costs, to a cell touching wherever the withdrawal ended. It deals no damage — it
- * only keeps contact, so outrunning it is the only way clear. A critical success on the
- * Escape check shakes it off outright.
+ * only keeps contact, so outrunning it is the only way clear.
  */
-function follow(state: BattleState, u: Unit, escapes: Escape[]) {
-  for (const { holder, degree } of escapes) {
-    if (degree === 'critical-success' || u.status !== 'active') continue;
-    if (!holder.noRetreat || isShaken(holder) || !isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
+function follow(state: BattleState, u: Unit, chasers: Unit[]) {
+  for (const holder of chasers) {
+    if (u.status !== 'active') return;
+    if (isShaken(holder) || !isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
     if (isEngaged(state, holder, u)) continue;
     const reach = reachable(state.board, holder.square, {
       budget: holder.speed, flying: holder.flying, occupied: occupiedBy(state, holder),
@@ -1104,33 +1182,44 @@ export function offersAt(state: BattleState, target: TargetRef, unitId?: string)
   return out;
 }
 
-/** Withdraw is offered in contact, and to a shaken unit whichever way it faces. */
+/** Withdraw is offered in contact, and to a shaken unit whichever way it faces. A rooted unit
+ * is offered nothing: no Move, no Charge and no Withdraw while the root stands. */
 export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffer | null {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
-  if (!u || state.phase !== 'battle' || u.status !== 'active') return null;
+  if (!u || state.phase !== 'battle' || u.status !== 'active' || u.rooted > 0) return null;
   const holders = holdersOf(state, u);
   if (!holders.length && !isShaken(u)) return null;
-  const extra = u.speed > 0 && u.rooted === 0 ? Math.max(0, u.actions - BASE_COST) : 0;
+  const rungs = ([1, 2, 3] as Grade[]).map((index): RungOption => {
+    const w = WITHDRAW[index - 1];
+    // Above Break off the holders are the ones who roll, so with none there is nothing to buy.
+    const reason = index > u.actions ? `needs ${index} actions`
+      : index > 1 && !holders.length ? 'nothing holds you' : null;
+    return {
+      rung: w.id, index, label: w.label, detail: w.detail, cost: index,
+      legal: reason === null, reason, needsTarget: false, targets: [],
+    };
+  }) as [RungOption, RungOption, RungOption];
   return {
-    cost: BASE_COST,
-    extra,
+    rungs,
     modifier: escapeModifier(u),
-    escapes: holders.map((e) => ({ unit: e.id, name: e.name, dc: escapeDcFor(e, u), follows: e.noRetreat })),
-    targets: withdrawTargets(state, u, extra * u.speed).map((sq) => cellTarget(notation(sq))),
+    dc: Math.max(0, ...holders.map((h) => escapeDcFor(state, h, u))),
+    holders: holders.map((h) => ({
+      unit: h.id, name: h.name, dc: escapeDcFor(state, h, u),
+      pinning: h.id === u.pinnedBy, follows: h.noRetreat && h.id !== u.pinnedBy,
+    })),
+    targets: withdrawTargets(state, u, u.speed).map((sq) => cellTarget(notation(sq))),
   };
 }
 
 function doWithdrawAction(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction): number {
   const offer = withdrawOffer(state, u.id);
   if (!offer) throw new Error(`${u.name} has nothing to withdraw from`);
-  const distance = Math.max(0, Math.trunc(action.distance ?? 0));
-  if (distance > offer.extra) throw new Error(`${u.name} has only ${offer.extra} action${offer.extra === 1 ? '' : 's'} to put on distance`);
+  const option = offer.rungs[action.rung - 1];
+  if (!option) throw new Error(`${u.name} has no withdrawal ${action.rung}`);
+  if (!option.legal) throw new Error(`${u.name} cannot ${option.label.toLowerCase()}: ${option.reason}`);
   if (action.to && !offer.targets.some((t) => t.id === action.to)) throw new Error(`${u.name} cannot withdraw to ${action.to}`);
-  if (action.to && !withdrawTargets(state, u, distance * u.speed).some((sq) => notation(sq) === action.to)) {
-    throw new Error(`${action.to} is further than ${distance} committed action${distance === 1 ? '' : 's'} carries ${u.name}`);
-  }
-  doWithdraw(state, rng, u, action, distance);
-  return offer.cost + distance;
+  doWithdraw(state, rng, u, action);
+  return action.rung;
 }
 
 const spendMovement = (u: Unit, m: { feet: number; actions: number }) => {

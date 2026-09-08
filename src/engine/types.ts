@@ -115,9 +115,9 @@ export interface RungAction extends Acts {
 /** Stride to `to`, spending as many Move actions as the route costs. */
 export interface MoveAction extends Acts { type: 'move'; to: string }
 
-/** Break contact: one Escape check per enemy holding the unit, then move. `distance` is the
- * further actions spent on ground, another Speed's worth each. */
-export interface WithdrawAction extends Acts { type: 'withdraw'; to?: string; distance?: number }
+/** Break contact by one of the three activities, then move. `to` is the cell to leave for; a
+ * critical Break off is the only one that carries further than a single hex. */
+export interface WithdrawAction extends Acts { type: 'withdraw'; rung: Grade; to?: string }
 
 /** Move into contact and fight: the movement's actions, plus the rung's own. */
 export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade }
@@ -158,26 +158,31 @@ export interface ActionOffer {
   rungs: [RungOption, RungOption, RungOption];
 }
 
-/** One enemy holding the unit, and what breaking from it costs. */
-export interface EscapeCheck {
+/** One enemy holding the unit: what the Break off roll is read against for it, and what it
+ * does about the withdrawal. */
+export interface Holder {
   unit: string;
   name: string;
-  /** That enemy's attack DC — its strike bonus plus ten, or a pinning shooter's Volley plus ten. */
+  /** Its attack DC — its strike bonus plus ten, or a pinning shooter's Volley plus ten. */
   dc: number;
-  /** A `no-retreat` holder follows a withdrawal that is not a critical success. */
+  /** Holding at range, by a Pin: it lands no free strike and never gives chase. */
+  pinning: boolean;
+  /** A `no-retreat` holder follows a Break off that is not a critical success, and a Disengage
+   * or Fighting retreat it passes its own roll against. */
   follows: boolean;
 }
 
-/** Withdraw is not a ladder: it is one Escape check per holder, and the four degrees are what
- * Scatter, Break off and Fighting retreat used to name. */
+/** Withdraw is not a ladder, but it offers three activities like one: Break off, Disengage,
+ * Fighting retreat. Ground is never for sale — a withdrawal is one hex clear, and only a
+ * critical Break off carries further. */
 export interface WithdrawOffer {
-  cost: number;
-  /** Further actions the unit could put on distance, another Speed's worth each. */
-  extra: number;
-  /** The unit's Reflex, less disorder. */
+  rungs: [RungOption, RungOption, RungOption];
+  /** The unit's Reflex, less disorder: what Break off rolls. */
   modifier: number;
-  escapes: EscapeCheck[];
-  /** Cells to leave for, at the full distance `extra` could buy. */
+  /** The highest attack DC among the holders, which Break off rolls against. */
+  dc: number;
+  holders: Holder[];
+  /** Cells to leave for. Beyond the first hex they are the reach of a critical's free Move. */
   targets: RungTarget[];
 }
 

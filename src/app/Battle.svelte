@@ -1,9 +1,9 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, reachOf, rungOf, TREE_TARGET, withdrawTargets,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
+    offersAt, reachOf, rungOf, TREE_TARGET,
     type ActionOffer, type ChargeOption, type Grade, type LadderType, type MoveReach, type RungOption,
-    type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type WithdrawOffer,
+    type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
   import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
@@ -35,9 +35,6 @@
   let hoveredBand = $state<MoveBand | null>(null);
   let moveOpen = $state(true);
 
-  // Further actions a withdrawal puts on ground, another Speed's worth each.
-  let runDistance = $state(0);
-
   // Tracks the pointer's own cell while a spell is armed, so its cast line can follow the
   // cursor before a target is picked — see `cast` below.
   let hoveredCell = $state<string | null>(null);
@@ -66,28 +63,11 @@
   $effect(() => () => { for (const t of flashTimers) clearTimeout(t); });
   const flashSet = $derived(new Set(flashing));
 
-  /** The fewest further actions whose run reaches `cell`. `withdrawOffer.targets` is the reach
-   * at *full* commitment, so a destination picked off that wash needs its own price quoting —
-   * `doWithdrawAction` refuses one the committed distance does not carry. */
-  function withdrawNeeds(u: Unit, w: WithdrawOffer, cell: string): number {
-    for (let n = 0; n <= w.extra; n++) {
-      if (withdrawTargets(b, u, n * u.speed).some((sq) => notation(sq) === cell)) return n;
-    }
-    return w.extra;
-  }
-  /** What a withdrawal to `cell` puts on ground: the stepper as set, floored at what the
-   * destination needs. */
-  const withdrawDistance = (cell?: string) => {
-    const w = act?.withdraw;
-    if (!w || !active) return 0;
-    return Math.min(w.extra, Math.max(runDistance, cell ? withdrawNeeds(active, w, cell) : 0));
-  };
-
   const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}`;
 
   // A new unit drops every open popup and any in-flight drag preview — all of it is
   // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; runDistance = 0; });
+  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return TREE_TARGET[offer.spell] === 'enemy' ? 'attack' : 'deploy';
@@ -460,7 +440,7 @@
     if (active) boardRef?.setRoute(active.id, row.path);
     if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, rung: p.rung ?? undefined });
     else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
-    else if (act?.withdraw) performWithdraw(act.withdraw, row.cell);
+    else if (act?.withdraw) performWithdraw(p.rung ?? 1, row.cell);
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -520,13 +500,15 @@
       : row.kind === 'withdraw' ? 'Withdraw here' : 'Move here';
   const rowDetail = (row: Preview) =>
     row.kind === 'charge' ? `${actions(row.actions)}, melee included`
-      : row.kind === 'withdraw' ? 'One Disengage check per enemy holding you'
+      : row.kind === 'withdraw' ? 'Break off, Disengage or Fighting retreat'
         : actionCost(row.actions);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
-  const FIGHT_RUNGS: Grade[] = [1, 2, 3];
+  // Withdraw's own three ride the same picker.
+  const RUNGS: Grade[] = [1, 2, 3];
   const chargeRung = $derived(pending?.rung ?? 1);
+  const withdrawRung = $derived(pending?.rung ?? 1);
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
   const chargeCost = (c: ChargePreview, rung: Grade) => c.actions - 1 + rung;
 
@@ -534,7 +516,7 @@
   const dropCost = (row: Preview): number =>
     row.kind === 'move' ? row.actions
       : row.kind === 'charge' ? chargeCost(row, chargeRung)
-        : (act?.withdraw?.cost ?? 1) + withdrawDistance(row.cell);
+        : act?.withdraw?.rungs[withdrawRung - 1].cost ?? withdrawRung;
   const cost = $derived(picked ? dropCost(picked) : aimed ? aimed.cost ?? 0 : 0);
   const left = $derived(act?.actions ?? 0);
 
@@ -579,7 +561,7 @@
     };
     if (active.rooted > 0) return {
       tag: 'rooted',
-      why: 'Digging in roots you where you stand: no Stride for the rest of this activation. Your remaining actions still fight, shoot, rally and cast.',
+      why: 'Rooted where you stand: no Stride, no Charge and no Withdraw. Your remaining actions still fight, shoot, rally and cast.',
     };
     if (active.speed === 0) return { tag: 'no speed', why: 'This piece has Speed 0. It holds the ground it was placed on.' };
     if (act.actions <= 0) return { tag: 'out of actions', why: 'No actions left to spend — end the activation.' };
@@ -685,11 +667,10 @@
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 
-  function performWithdraw(w: WithdrawOffer, to?: string) {
+  function performWithdraw(rung: Grade, to?: string) {
     const before = game.battle!.log.length;
-    takeAction({ type: 'withdraw', to, distance: withdrawDistance(to) });
+    takeAction({ type: 'withdraw', rung, to });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
-    runDistance = 0;
   }
 
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
@@ -977,45 +958,49 @@
             <span class="popup-verb">
               {#if row.kind === 'charge'}<img class="row-prop" src={actionIconUrl('charge')} alt="" />{/if}
               {rowLabel(row)}
-              <span class="row-cost"><ActionCost n={row.kind === 'withdraw' ? 1 : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
+              <span class="row-cost"><ActionCost n={row.kind === 'withdraw' ? withdrawRung : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
             </span>
             <span class="muted">{rowDetail(row)}</span>
           </button>
           {#if i === pending.index && row.kind === 'withdraw' && act?.withdraw && active}
             {@const w = act.withdraw}
-            {@const needs = withdrawNeeds(active, w, row.cell)}
-            {@const distance = withdrawDistance(row.cell)}
             <div class="popup-escapes">
-              {#each w.escapes as e (e.unit)}
+              {#each w.holders as h (h.unit)}
                 <p class="escape">
-                  <span class="escape-name">{e.name}</span>
-                  <span class="muted">DC {e.dc} · d20+{w.modifier}</span>
-                  {#if e.follows}<span class="tag">gives no retreat — follows you</span>{/if}
+                  <span class="escape-name">{h.name}</span>
+                  <span class="muted">DC {h.dc}{h.pinning ? ' · pinning at range, no free strike' : ''}</span>
+                  {#if h.follows}<span class="tag">gives no retreat — follows you</span>{/if}
                 </p>
               {:else}
                 <p class="muted">Nothing holds you. Run for your own edge.</p>
               {/each}
-              <p class="muted rung-detail">
-                Crit → away, and unfollowed. Success → away clean. Fail → that enemy strikes
-                free. Crit fail → it strikes free, you gain 1 disorder, and you do not break
-                contact.
-              </p>
+              {#if w.holders.length}
+                <p class="muted rung-detail">
+                  Break off is one roll, d20+{w.modifier} against DC {w.dc}, the highest of them,
+                  read again for each. Above it they roll instead, against DC {levelDc(active.level)}.
+                </p>
+              {/if}
             </div>
-            {#if w.extra > 0}
-              <div class="popup-dials">
-                <div class="dial">
-                  <button class="dial-step" disabled={distance <= needs} aria-label="less" onclick={() => { runDistance = Math.max(needs, distance - 1); }}>−</button>
-                  <span class="dial-n">{distance}</span>
-                  <button class="dial-step" disabled={distance >= w.extra} aria-label="more" onclick={() => { runDistance = Math.min(w.extra, distance + 1); }}>+</button>
-                  <span class="dial-buys">run another {active.speed / CELL_FEET} square{active.speed > CELL_FEET ? 's' : ''} for <ActionCost n={1} /> each</span>
-                </div>
-                <p class="muted rung-detail">Runs up to {((1 + distance) * active.speed) / CELL_FEET} squares{needs > 0 ? ` · ${row.cell} needs ${needs}` : ''}</p>
-              </div>
-            {/if}
+            <div class="rung-chips">
+              {#each RUNGS as g (g)}
+                {@const opt = w.rungs[g - 1]}
+                <button
+                  class="rung-chip"
+                  class:on={withdrawRung === g}
+                  disabled={!opt.legal}
+                  title={opt.reason ?? ''}
+                  onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
+                >
+                  {opt.label}
+                  <ActionCost n={opt.cost ?? g} />
+                </button>
+              {/each}
+            </div>
+            <p class="muted rung-detail popup-escapes">{w.rungs[withdrawRung - 1].detail}</p>
           {/if}
           {#if i === pending.index && row.kind === 'charge' && active}
             <div class="rung-chips">
-              {#each FIGHT_RUNGS as g (g)}
+              {#each RUNGS as g (g)}
                 {@const total = chargeCost(row, g)}
                 {@const can = total <= active.actions}
                 <button
@@ -1112,8 +1097,8 @@
           <p class="move-note">
             <strong>{holders.map((e) => e.name).join(' and ')}</strong>
             {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
-            contact — <strong>Withdraw</strong> is the only way off this square, and it costs an
-            Disengage check against each of them.
+            contact — <strong>Withdraw</strong> is the only way off this square. Break off rolls
+            once against the highest of them; pay more and they roll instead.
             {#if act.withdraw}
               Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
             {/if}
@@ -1265,19 +1250,8 @@
 
   .hint { font-size: .8rem; }
 
-  .popup-dials { display: flex; flex-direction: column; gap: .2rem; padding: .1rem .5rem .2rem 1rem; }
-
   .rung-detail { margin: .1rem 0; }
   .popup-escapes { padding: .1rem .5rem .2rem 1rem; font-size: .8rem; }
-
-  .dial { display: flex; align-items: center; gap: .3rem; margin-top: .25rem; font-size: .8rem; }
-  .dial-step {
-    width: 1.35rem; height: 1.35rem; padding: 0; line-height: 1;
-    border: 1px solid var(--rule); border-radius: 4px; background: var(--card); color: var(--ink); cursor: pointer;
-  }
-  .dial-step:disabled { opacity: .35; cursor: default; }
-  .dial-n { min-width: .8rem; text-align: center; font-weight: 600; }
-  .dial-buys { color: var(--muted); }
 
   .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: .82rem; }
   .escape-name { font-weight: 600; }

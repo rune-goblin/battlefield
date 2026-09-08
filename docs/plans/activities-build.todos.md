@@ -24,12 +24,6 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - Whether artillery needs a cheaper Pin now that the gun crew has no extra action (section 12).
 - Whether a Cast tree may be cast more than once a battle. Once an activation is built.
 - Rally's three-action activity is still named Inspire, the same word as the condition.
-- Whether a pin survives a successful Break off: `pinnedBy` stands until the shooter's own
-  `begin`, so a unit that breaks off one hex still cannot Move that activation, and section 7's
-  "any further ground is an ordinary Move" was written with melee holders in mind. Wave 5's.
-- What a pinner's escape DC is when the crew has no Volley of its own: `escapeDcFor` reads
-  `holder.stats.volley ?? 0`, so a volley-less crew Pinning with a catapult gives `0 + 10` —
-  should the engine's own launch stand in for the crew's missing Volley instead? Wave 5's.
 
 ## Wave 0 (2026-09-08)
 
@@ -147,3 +141,44 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - The wall test's second unit (`u3`) had to move from `d6` to `c6` alongside the target: square
   grid distance is Manhattan, not Chebyshev, so `d6` stopped being adjacent to the target's new
   `c5` and the melee malus the test asserts stopped applying.
+
+## Wave 5 (2026-09-08)
+
+- **A pin does not survive a withdrawal that gets clear.** Section 7's "one hex clear of
+  everything that held it, and any further ground is an ordinary Move" holds for the pinning
+  shooter too, and section 8 makes Withdraw the way a pinned unit "leaves its hex" — a pin that
+  outlived the break would make that one hex the whole activation, every activation. So
+  `withdrawTo` clears `pinnedBy` once the unit actually moves; a critical failure that keeps it
+  in place keeps the pin. `rules.html` section 7 gained the clause, since nothing said it.
+- **A pinner's escape DC is its engine's launch + 10 when the crew has no Volley of its own.**
+  Section 12: a loaded artillery piece "replaces its unit's shooting profile ... the unit shoots
+  with the engine's launch bonus", so the crew's Volley *is* the launch, and the pin's DC is the
+  attack the shot actually rolled. `volleyOf` reads the crewed piece whether or not it is loaded
+  again — the pin was bought with a shot already made, and `fired` only gates the next one.
+- **The one Break off roll decides the getaway against the highest holder and each free strike
+  against that holder's own DC.** Section 7 says both "against the highest attack DC among them"
+  and "the one roll is read for every holder"; reading the degree per holder is the only way the
+  second sentence does any work, and it keeps the old per-holder rolls' outcome (a weak holder
+  the roll beat lands nothing) with one d20 instead of several.
+- **`rooted` closes Withdraw as well as Move and Charge**, so `withdrawOffer` returns null while
+  it stands — the condition table and section 7's own Disengage row both say "no Move, Charge or
+  Withdraw", and this wave is the first to root anyone but a unit that took cover.
+- **`WithdrawOffer.targets` is the reach of a critical's free Move, not of a guaranteed step**,
+  because the destination is chosen before the roll is made. `// proto:` a `to` the result cannot
+  carry to lands on whichever legal cell lies nearest it, so a plain success still goes the way
+  the player pointed rather than somewhere alphabetical.
+- **The three withdraw activities live in a table in `battle.ts`, not in `ladders.ts`.** Withdraw
+  is not a `LadderType` — no menu offers it, it has its own offer and its own action — and adding
+  it to `LADDERS` would ripple through `availableActions`, `offersAt` and the whole aim popup for
+  three label strings.
+- **Disengage and Fighting retreat read "nothing holds you" when there is no holder**: above
+  Break off the holders are the ones who roll, so with none the extra actions buy nothing. A
+  routed unit running for its own edge still takes Break off for one action, as it always did.
+- Three tests, not the two the wave names: the third pins the critical's free Move and the
+  nearest-cell fallback above. It replaces the two distance tests the wave deleted, so the
+  block is the same size as before.
+- The Wave 2 follow bug is closed: `follow` now takes an explicit list of chasers, built in
+  `doWithdraw` before the pin clears, so a pinning shooter never walks up to re-establish
+  contact and `withdrawOffer` reports `follows: noRetreat && id !== pinnedBy`.
+- Renamed the wound-cap test to say the cap, not Dig in alone: Take cover carries `cap` too,
+  since Wave 3.
