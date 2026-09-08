@@ -16,6 +16,11 @@ export type Reach = 'short' | 'medium' | 'long' | 'extreme';
 // costs the same for every unit, so nothing else has anything left to change.
 export type Signal = 'mounted' | 'melee-drill' | 'shielded' | 'formation' | 'magic-ward' | 'no-retreat';
 
+// Five of these change anything the engine plays: cavalry-charge is a charge's impact
+// (`melee`'s `impact` option, battle.ts), defend-allies shares a Guard's +2 with a neighbour
+// (`auraOn`), battlefield-medicine and demoralize each grant a fixed Cast activity
+// (`TACTIC_TREE`, ladders.ts), and ambush buys an extra deploy rank (`deployRanks`). Every
+// other tactic here is inert.
 export type Tactic =
   | 'cavalry-charge' | 'reactive-attack' | 'raise-shields' | 'shield-block' | 'defend-allies'
   | 'feint' | 'dirty-fighting' | 'demoralize' | 'covering-fire' | 'battlefield-medicine' | 'ambush';

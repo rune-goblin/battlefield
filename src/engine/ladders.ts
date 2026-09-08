@@ -90,12 +90,13 @@ export function qualityFor(card: UnitCard): number {
   return quality;
 }
 
-// A tactic grants its tree's Tier 1 as a fixed, untiered effect to a troop with no magic of
-// its own (section 11) — it never unlocks a push, so which tradition would have gated it is
-// moot. See `resolveTree` in battle.ts for the fixed tier each one grants.
+// A tactic grants one tree's one-action activity to a troop with no magic of its own (section
+// 11): battlefield medicine reaches Soothe, demoralize reaches Dread, both capped at index 1
+// since a non-caster has no tradition to raise the cap (`castCostFor` in battle.ts). Each rolls
+// off the troop's own Will or level DC there, not a spell number it doesn't have. Defend allies
+// grants no tree — its Guard share is `auraOn`'s, not a cast.
 export const TACTIC_TREE: Partial<Record<Tactic, Tree>> = {
   'battlefield-medicine': 'healing',
-  'defend-allies': 'defense',
   'demoralize': 'controlling',
 };
 

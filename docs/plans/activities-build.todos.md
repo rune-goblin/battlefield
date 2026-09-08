@@ -550,3 +550,23 @@ top of Wave 11.
   sentence, since the text implied it by structure and said it nowhere.
 - One test beyond the wave's two, for the pass: it settles what "on its next activation" means
   when an activation does nothing.
+
+## Wave 13 (2026-09-08)
+
+- **`TACTIC_TREE` drops `'defend-allies': 'defense'`.** It never belonged: defend allies grants
+  the Guard share `auraOn` already builds, not access to the Defense Cast tree (Ward/Stoneskin/
+  Aegis), and nothing in rules.html ever said a non-caster with this tactic could ward an ally.
+  Before this wave a Shield Wall troop could "cast" Ward at a spell-attack modifier of flat 0
+  (`spellAttackModifier`'s `?? 0` fallback), a bug this wave closes by removing the grant rather
+  than by fixing the roll under it.
+- **`healingModifier`/`controllingDc` actually substitute Will/level DC for a tactic-granted
+  cast.** `spellAttackModifier(u)` and `spellDcFor(u)` read `u.stats.spellAttack ?? 0` and
+  `u.stats.spellDc ?? 0`, both null for a non-caster — so battlefield medicine's Soothe and
+  demoralize's Dread were rolling off a flat 0, not the troop's Will or level DC the rules
+  promise. Fixed by branching on `spellAttack`/`spellDc` being `null` rather than by threading a
+  "is this a tactic grant" flag through `resolveTree`, since null already means exactly that.
+- **`docs/adapter-contract.md` names five tactics that do something, not the four the wave's own
+  text counts.** `ambush` buys an extra deploy rank (`deployRanks`) alongside cavalry-charge,
+  defend-allies, battlefield-medicine and demoralize; leaving it out of the sentence would have
+  been inaccurate. Flagged rather than silently corrected in the plan, since the plan's own
+  count is what changed.

@@ -340,6 +340,14 @@ export const spellAttackModifier = (u: Unit) => (u.stats.spellAttack ?? 0) - u.d
 /** What a target rolls its Will save against: the caster's own spell DC (section 11). */
 export const spellDcFor = (u: Unit) => u.stats.spellDc ?? 0;
 
+/** Healing's roll: a caster's spell attack, or battlefield medicine's own Will where the troop
+ * casting has none (section 11). */
+const healingModifier = (u: Unit) => (u.stats.spellAttack === null ? willModifier(u) : spellAttackModifier(u));
+
+/** Controlling's DC: a caster's spell DC, or demoralize's own level DC where the troop casting
+ * has none (section 11). */
+const controllingDc = (u: Unit) => (u.stats.spellDc === null ? levelDc(u.level) : spellDcFor(u));
+
 /** The level DC of the strongest enemy nearby — the highest-level enemy within close range,
  * or across the whole field if none is close. Rallying under a dragon's eye is harder than
  * rallying beside a levy. */
@@ -1262,7 +1270,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       const targets = action.target!.split('+').map((id) => unit(state, id));
       const activity = castRungOf('healing', index);
       log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`);
-      const modifier = spellAttackModifier(u);
+      const modifier = healingModifier(u);
       const cast = roll(state, rng, u, modifier, levelDc(targets[0].level));
       for (const target of targets) {
         const c = readCheck(cast.roll, modifier, levelDc(target.level));
@@ -1274,7 +1282,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
     case 'controlling': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      const c = roll(state, rng, target, willModifier(target), spellDcFor(u));
+      const c = roll(state, rng, target, willModifier(target), controllingDc(u));
       log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       if (c.degree === 'critical-success') break;
       if (c.degree === 'success') {
