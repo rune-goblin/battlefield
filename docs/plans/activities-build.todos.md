@@ -537,6 +537,15 @@ top of Wave 11.
 - One test beyond the two gates allow: `flies` crosses water in transit (a two-action Move
   still reaches a cell on the far side, at the flying cost) but never appears as a destination
   itself, where a native `flying` unit already had its own test for landing there.
+- **`movePath` no longer walks `moveReach`'s own filtered map.** That map holds destinations —
+  `canEndOn` already drops any hex a `flies`-only unit may not stop on — so a cheapest
+  route running *through* one of those hexes (crossing water to dry land beyond it) had no entry
+  to walk back through, and the reconstructed path broke off mid-board instead of starting at
+  the unit's own cell. `MoveReach` drops its `from` link; `movePath(state, u, to)` now asks
+  `reachable` directly for the unfiltered chain (the same job `path.ts`'s own `pathTo` already
+  does) and returns each step's cost as `PathStep[]`, so a route and a set of destinations stay
+  two different questions instead of one map answering both. Battle.svelte's `classify` reads
+  the returned per-step costs directly rather than looking a path cell back up in `moves`.
 
 ## Wave 12 (2026-09-08)
 

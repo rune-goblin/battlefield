@@ -189,8 +189,14 @@ export interface MoveReach {
   feet: number;
   /** Move actions this destination costs, counting movement already banked. */
   actions: number;
-  /** The cell it was reached from, for path reconstruction; `null` on the unit's own cell. */
-  from: string | null;
+}
+
+/** One cell of a route `movePath` walked back, with what it cost to reach — including a cell
+ * that is not itself a legal `MoveReach` destination, such as water a flier only crosses. */
+export interface PathStep {
+  cell: string;
+  feet: number;
+  actions: number;
 }
 
 export interface ChargeOption {

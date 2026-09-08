@@ -2,7 +2,7 @@
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
     offersAt, reachOf, targetMatches, TREE_TARGET,
-    type ActionOffer, type ChargeOption, type Grade, type LadderType, type MoveReach, type RungOption,
+    type ActionOffer, type ChargeOption, type Grade, type LadderType, type PathStep, type RungOption,
     type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
   import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
@@ -342,10 +342,10 @@
     if (o) chooseTree(o);
   };
 
-  function classify(moves: Map<string, MoveReach>, path: string[]): { near: string[]; far: string[] } {
+  function classify(path: PathStep[]): { near: string[]; far: string[] } {
     const near: string[] = [];
     const far: string[] = [];
-    for (const cell of path.slice(1)) (moves.get(cell)!.actions > 1 ? far : near).push(cell);
+    for (const step of path.slice(1)) (step.actions > 1 ? far : near).push(step.cell);
     return { near, far };
   }
 
@@ -356,7 +356,7 @@
   }
 
   const chargeRow = (c: ChargeOption): ChargePreview =>
-    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: movePath(act!.moves, c.cell) });
+    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: movePath(b, active!, c.cell).map((s) => s.cell) });
 
   /** Every reading of a drop on `cell`, in the order the popup offers them. One drag chains as
    * many Move actions as the route costs — `MoveReach.actions` counts them, and a row quotes
@@ -366,8 +366,8 @@
     const rows: Preview[] = [];
     const m = act.moves.get(cell);
     if (m) {
-      const path = movePath(act.moves, cell);
-      rows.push({ kind: 'move', cell, feet: m.feet, actions: m.actions, path, ...classify(act.moves, path) });
+      const path = movePath(b, active, cell);
+      rows.push({ kind: 'move', cell, feet: m.feet, actions: m.actions, path: path.map((s) => s.cell), ...classify(path) });
     }
     // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
     for (const c of act.charges) if (c.cell === cell) rows.push(chargeRow(c));

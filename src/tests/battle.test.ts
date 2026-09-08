@@ -509,7 +509,7 @@ describe('movement points', () => {
     expect(u.actions).toBe(2);
     expect(u.feet).toBe(0);
     expect(moveReach(s, u).get('c5')).toMatchObject({ feet: 20, actions: 2 });
-    expect(movePath(moveReach(s, u), 'c5')).toEqual(['c3', 'c4', 'c5']);
+    expect(movePath(s, u, 'c5').map((p) => p.cell)).toEqual(['c3', 'c4', 'c5']);
   });
 
   it('banks the half-action a Pace unit leaves in a single open square', () => {
@@ -571,6 +571,17 @@ describe('movement points', () => {
     const reach = moves(state, 'u0');
     expect(reach.has('c3')).toBe(false);
     expect(reach.get('c4')).toMatchObject({ feet: 20 });
+  });
+
+  it("carries the cheapest route to a hex beyond water whole, even though the water it crosses is not itself a destination", () => {
+    const board = openBoard();
+    board.squares[2][2].terrain = 'water';
+    const { state } = battle([], board);
+    const u = unit(state, 'u0');
+    u.flies = true;
+    u.actions = 2;
+    expect(movePath(state, u, 'c4').map((p) => p.cell)).toEqual(['c2', 'c3', 'c4']);
+    expect(moveReach(state, u).has('c3')).toBe(false);
   });
 
   it('a unit in contact leaves by withdrawing, not by striding', () => {

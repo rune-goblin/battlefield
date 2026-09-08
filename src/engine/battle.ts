@@ -3,7 +3,7 @@ import {
   type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { CELL_FEET, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
+import { CELL_FEET, pathTo, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
 import { check, readCheck, readTwice, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
@@ -17,7 +17,7 @@ import { levelDc } from './tables.js';
 import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK,
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
-  type ChargeOption, type EngineState, type MoveAction, type MoveReach,
+  type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep,
   type Range, type RungAction, type RungOption, type RungTarget, type Side,
   type TargetOffer, type TargetRef, type Unit, type WithdrawAction, type WithdrawOffer,
 } from './types.js';
@@ -606,31 +606,38 @@ export const movementBudget = (u: Unit) => Math.max(0, u.feet + u.actions * u.sp
 export const moveActionsFor = (u: Unit, feet: number) =>
   feet <= u.feet ? 0 : Math.ceil((feet - u.feet) / u.speed);
 
+// Shared by moveReach and movePath: the one Stride ever asks the same question, "how far does
+// this budget carry, and through what". Where it may end is a separate question, asked after.
+const strideReach = (state: BattleState, u: Unit): ReachMap =>
+  reachable(state.board, u.square, { budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u) });
+
 /** Every cell the unit can still Stride to, what it costs in feet, and in Move actions. */
 export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
   if (u.speed === 0 || u.rooted > 0 || u.pinnedBy || u.actions <= 0 || u.status !== 'active') return out;
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
-  const reach = reachable(state.board, u.square, {
-    budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u),
-  });
+  const reach = strideReach(state, u);
   const home = notation(u.square);
   for (const [key, entry] of reach) {
     if (key === home || !canEndOn(u, state.board, parse(key))) continue;
-    out.set(key, { feet: entry.feet, actions: moveActionsFor(u, entry.feet), from: entry.from });
+    out.set(key, { feet: entry.feet, actions: moveActionsFor(u, entry.feet) });
   }
   return out;
 }
 
-/** The route to `to`, the unit's own cell first. Empty when `to` is out of reach. */
-export function movePath(moves: Map<string, MoveReach>, to: string): string[] {
-  if (!moves.has(to)) return [];
-  const out: string[] = [];
-  let key: string | null = to;
-  while (key !== null && moves.has(key)) { out.unshift(key); key = moves.get(key)!.from; }
-  if (key !== null) out.unshift(key);
-  return out;
+/** The route to `to`, the unit's own cell first, with the cost of each step — including a hex
+ * a flier only crosses. `moveReach`'s map holds destinations, not the road between them, so a
+ * cheapest route that runs through a hex the unit may not stop on would otherwise break the
+ * walk back; this asks `reachable` directly instead of the destinations that were filtered
+ * from it. Empty when `to` is not itself a legal destination. */
+export function movePath(state: BattleState, u: Unit, to: string): PathStep[] {
+  if (!moveReach(state, u).has(to)) return [];
+  const reach = strideReach(state, u);
+  return pathTo(reach, to).map((cell) => {
+    const feet = reach.get(cell)!.feet;
+    return { cell, feet, actions: moveActionsFor(u, feet) };
+  });
 }
 
 // Contact across a standing wall holds (section 10), but nobody charges over one, so a charge
