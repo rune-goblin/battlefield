@@ -1,9 +1,10 @@
 # Ladder review, one ladder at a time
 
 The review is complete as of 2026-09-08: every verb and every Cast tree stands in its own
-section of `public/rules.html`. What remains is the build, one commit per verb, then deleting
-section 15 and the last Legacy block. Start a build session with: **"Read
-docs/plans/ladder-review.md and build Shoot."** The standing decisions below still bind.
+section of `public/rules.html`. The build is planned in `docs/plans/activities-build.md`, one
+wave per verb or tree, with its judgment calls in `activities-build.todos.md`. Start a build
+session with: **"Read docs/plans/activities-build.md and execute Wave 0."** The standing
+decisions below still bind the build; this file is otherwise history.
 
 ## What to read, and nothing more
 
