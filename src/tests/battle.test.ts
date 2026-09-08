@@ -578,10 +578,10 @@ describe('shooting', () => {
     const board = openBoard();
     board.walls[edgeKey(parse('c6'), parse('c7'))] = { tier: 2, boxes: 3, remaining: 3 };
     const { state } = battle([], board);
-    place(state, 'u0', 'c6');
+    place(state, 'u0', 'c5');
     const k = unit(state, 'u2');
     expect(shootModifier(state, k, unit(state, 'u0'))).toBe(k.stats.volley! + 1);
-    place(state, 'u3', 'd6');
+    place(state, 'u3', 'c6');
     expect(shootModifier(state, k, unit(state, 'u0'))).toBe(k.stats.volley! + 1 - 4);
   });
   it('caps the top band on hex, where a ring is true range', () => {

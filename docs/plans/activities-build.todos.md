@@ -24,6 +24,12 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - Whether artillery needs a cheaper Pin now that the gun crew has no extra action (section 12).
 - Whether a Cast tree may be cast more than once a battle. Once an activation is built.
 - Rally's three-action activity is still named Inspire, the same word as the condition.
+- Whether a pin survives a successful Break off: `pinnedBy` stands until the shooter's own
+  `begin`, so a unit that breaks off one hex still cannot Move that activation, and section 7's
+  "any further ground is an ordinary Move" was written with melee holders in mind. Wave 5's.
+- What a pinner's escape DC is when the crew has no Volley of its own: `escapeDcFor` reads
+  `holder.stats.volley ?? 0`, so a volley-less crew Pinning with a catapult gives `0 + 10` —
+  should the engine's own launch stand in for the crew's missing Volley instead? Wave 5's.
 
 ## Wave 0 (2026-09-08)
 
@@ -119,3 +125,25 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   shared `battle()`/`engaged()` fixtures, since none of those cards carry a tactic.
 - Fixed a stale comment on `Unit.rooted` left from Wave 1 ("Digging in sets two"): Dig in never
   sets `rooted` under this wave's table, only Take cover does, and to 1, not 2.
+
+## Wave 4 (2026-09-08)
+
+- Rally's own roll reads the same modifier and DC for every unit reached (the rallying unit's
+  own Will and rout DC, not each target's), so a fresh `readCheck` per ally would be
+  definitionally identical to the roll already made; the degree is read off `c.degree` directly
+  instead of re-deriving it once per unit.
+- Critical success's "if none is left" (rules.html) is read off disorder *after* the 2-point
+  clear; a plain success's "or if it has none" is read off disorder *before* the roll — so a
+  unit sitting at exactly 1 disorder that clears it on a plain success is not inspired, only one
+  that had none to begin with, or that a critical clears out to none, is. The two rows use
+  different tenses on purpose.
+- `offerFor`'s Rally block ("no disorder to clear, and nobody near to lift") is left exactly as
+  it stood, per the wave's "offers Rally as now" — even though a solitary unit at 0 disorder
+  with no ally within 2 is denied even Steady, whose own value (a chance at `inspired`) needs no
+  ally at all. Rules and plan pull apart here; flagged, not resolved.
+- Rally's and Inspire's `detail` strings in `ladders.ts` now name the inspired outcome ("or is
+  inspired if it has none") instead of just "clears 1", to match rules.html's own wording now
+  that the branch is real.
+- The wall test's second unit (`u3`) had to move from `d6` to `c6` alongside the target: square
+  grid distance is Manhattan, not Chebyshev, so `d6` stopped being adjacent to the target's new
+  `c5` and the melee malus the test asserts stopped applying.

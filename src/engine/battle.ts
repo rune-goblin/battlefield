@@ -661,9 +661,9 @@ const wallTarget = (key: string): RungTarget => ({ kind: 'wall', id: key, label:
 interface TargetSet { needsTarget: boolean; targets: RungTarget[] }
 
 /** The cumulative hex reach of a Cast band: how far Engaged/Short/Medium/Long/Extreme carries,
- * the same thresholds Shooting's own bands use. Unlike a shot's Aim/Snipe (an offset window
- * either side of effective range), a spell's range is a ceiling — anything from the caster's
- * own hex out to the band counts, the way "range: 30 feet" reads on any other statblock. */
+ * the same thresholds Shooting's own bands use. A spell's range is a ceiling — anything from
+ * the caster's own hex out to the band counts, the way "range: 30 feet" reads on any other
+ * statblock. */
 function castCeiling(state: BattleState, band: CastBand): number {
   return band === 'engaged' ? 1 : BANDS[state.board.grid][band];
 }

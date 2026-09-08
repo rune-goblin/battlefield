@@ -32,8 +32,7 @@ export type CastAxis = 'range' | 'duration' | 'effect';
 export type CastBand = 'engaged' | 'short' | 'medium' | 'long' | 'extreme';
 const BAND_ORDER: CastBand[] = ['engaged', 'short', 'medium', 'long', 'extreme'];
 
-/** `steps` bands further out than `base`, capped at Extreme — the board's own ceiling, same
- * cap a long-reach troop's own Snipe already runs into. */
+/** `steps` bands further out than `base`, capped at Extreme — the board's own ceiling. */
 export const bandOut = (base: CastBand, steps: number): CastBand =>
   BAND_ORDER[Math.min(BAND_ORDER.length - 1, BAND_ORDER.indexOf(base) + steps)];
 
