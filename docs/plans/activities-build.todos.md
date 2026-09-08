@@ -705,3 +705,6 @@ bullets struck above recorded the opposite ban and are history now.
 - `magic.ts` still exports `CastTier` (and `castActivityOf(tree, tier)`), the one activity-word
   "tier" Wave 14's sweep left in the code. Flagged, not renamed: it is Wave 14's territory, not
   this change's.
+- 2026-09-08: `CastTier` became `CastActivityIndex` and `castActivityOf`'s parameter `tier`
+  became `index`, closing the last activity-word "tier" Wave 14's sweep left in the code. The
+  fort's and the wall's tiers stay: those are physical constructions, not activities.

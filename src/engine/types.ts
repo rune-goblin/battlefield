@@ -2,7 +2,7 @@ import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
 import type { ActivityIndex, Verb } from './ladders.js';
-import type { CastTier, Tree } from './magic.js';
+import type { CastActivityIndex, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
 export const SIDES: Side[] = ['attacker', 'defender'];
@@ -134,7 +134,7 @@ export interface TargetRef { kind: TargetKind; id: string }
 export interface TargetOffer { offer: ActionOffer; activities: ActivityOption[] }
 
 export interface ActivityOption {
-  /** An `ActivityId` for the four verbs with a table; `${Tree}-${CastTier}` (e.g. `blast-2`) for Cast. */
+  /** An `ActivityId` for the four verbs with a table; `${Tree}-${CastActivityIndex}` (e.g. `blast-2`) for Cast. */
   activity: string;
   index: ActivityIndex;
   label: string;
