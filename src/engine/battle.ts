@@ -227,9 +227,9 @@ export function roll(state: BattleState, rng: Rng, u: Unit, modifier: number, dc
   return c;
 }
 
-/** Every attack roll — a Strike, a shot, a Blast, a swing at a wall — goes through here, not
- * `roll` directly, so Sure strike and Ward can send it to `rollTwice` without skipping `roll`'s
- * own `inspired` spend. Both flags are consumed by the roll they touch, so a Ward and a Sure
+/** Every attack roll — a Strike, a shot, a swing at a wall — goes through here, not `roll`
+ * directly, so Sure strike and Ward can send it to `rollTwice` without skipping `roll`'s own
+ * `inspired` spend. Both flags are consumed by the roll they touch, so a Ward and a Sure
  * strike on the same attack cancel to the one plain roll below rather than two doubled ones.
  * A null target is a wall segment: it has a Defence of sorts but no ward to read. */
 export function attackRoll(state: BattleState, rng: Rng, attacker: Unit, target: Unit | null, modifier: number, dc: number): CheckResult {

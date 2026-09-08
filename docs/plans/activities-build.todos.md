@@ -570,3 +570,27 @@ top of Wave 11.
   defend-allies, battlefield-medicine and demoralize; leaving it out of the sentence would have
   been inaccurate. Flagged rather than silently corrected in the plan, since the plan's own
   count is what changed.
+- **Deleting section 15 left one dangling cross-reference.** Section 2's "no retreat... (section
+  15)" pointed at the block this wave removes; repointed to section 7, where Withdraw actually
+  spells out what "no retreat" does. The only other "(section 15)" was the tactics paragraph
+  this wave's own commit 1 already rewrote.
+- **The quick reference's Modifier table gained seven rows it never had: Sure strike, Persistent
+  damage, Ward, Stoneskin, Aegis, Sure footing, Flying.** These are Offense/Defense/Movement's
+  own conditions (Waves 10–12), structurally the same kind of thing as Suppressed, Pinned and
+  Frightened already listed there, and none of the six had ever reached the quick reference at
+  all — the "patched twice in passing" the wave names. Placed after Frightened, in tree order.
+- **The quick reference's own Suppressed row gained "and to its Defence."** It read "−2 to
+  everything the unit rolls," which is what its own source cell in section 8 still says, but
+  `defenceOf` applies the −2 to Defence too (the same shape as Frightened, whose quick-reference
+  row already says both) — flagged as the same gap in section 8's own Suppress cell rather than
+  fixed there, since editing that prose is outside this wave's named targets.
+- Fixed "Dig in and Take cover are Pathfinder's two grades of cover" (section 8) to "two degrees
+  of cover": the only non-physical, non-historical use of a banned word left in the document
+  once the Legacy block was gone, and a one-word fix.
+- Deleted the now-unused `.legacy` CSS rules alongside the last `.legacy` div (removed in commit
+  1): dead style rules for a block type the document no longer has.
+- **Two banned-word hits remain, both in section 2, both left alone.** "There is no unit grade"
+  and "fed the grades" (the recurring-action-name paragraph) explain the old grade system's
+  removal; they are historical/explanatory, not a current rule, and section 2 is not among this
+  wave's named edit targets (section 11's tactics/Legacy, section 15, section 6, quick
+  reference). Flagged rather than fixed.

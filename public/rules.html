@@ -23,9 +23,6 @@
   .key { background:var(--band); border-left:4px solid var(--accent); padding:.75rem 1rem; margin:1rem 0; }
   .aside { border:1px dashed var(--rule); padding:.75rem 1rem; margin:1.25rem 0; font-size:.95rem; }
   .aside h4 { margin:0 0 .35rem; font-size:1rem; color:var(--accent); }
-  .legacy { border:1px dashed var(--rule); padding:.6rem 1rem; margin:1rem 0 1.5rem; font-size:.92rem; color:var(--muted); }
-  .legacy h4 { margin:0 0 .35rem; font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
-  .legacy th { background:transparent; }
   dl { margin:.5rem 0; } dt { font-weight:600; margin-top:.6rem; } dd { margin:0 0 0 1.25rem; }
   ol, ul { padding-left:1.4rem; } li { margin:.25rem 0; }
   .toc { columns:2; column-gap:2rem; font-size:.95rem; } .toc a { color:var(--ink); text-decoration:none; } .toc a:hover { text-decoration:underline; }
@@ -69,7 +66,6 @@
 <a href="#siege">12. Siege engines</a><br>
 <a href="#end">13. Ending the battle</a><br>
 <a href="#odds">14. Fighting against the odds</a><br>
-<a href="#review">15. Under review</a><br>
 <a href="#ref">Quick reference</a>
 </nav>
 
@@ -101,7 +97,7 @@
 
 <h3>Three actions</h3>
 <p>Every unit has three actions in its activation, and every activity costs its own number of them for every unit: one, two or three (section 6). There is no unit grade. A better troop is better by its numbers, never by a cheaper activity or a longer activation. The one thing that grants a fourth is Haste (section 11).</p>
-<p>An importer reads <em>no retreat</em> straight off the recurring action names on a statblock (section 15). <em>Melee drill</em>, <em>shields</em>, <em>formation</em> and <em>magic ward</em> fed the grades and are no longer read. <em>Mounted</em> is no longer read: pace already carries the charge.</p>
+<p>An importer reads <em>no retreat</em> straight off the recurring action names on a statblock (section 7). <em>Melee drill</em>, <em>shields</em>, <em>formation</em> and <em>magic ward</em> fed the grades and are no longer read. <em>Mounted</em> is no longer read: pace already carries the charge.</p>
 <div class="aside">
 <h4>Armour Class and attack DC say nothing about a troop</h4>
 <p>Across all 162 published troops, Armour Class spreads 3.2 points within a level and attack DC 2.6 — at level 12 every troop shares one attack DC. Both are functions of level, so neither says anything about a troop's character. Will spreads 5.1 and Speed falls across seven bands, so those two are read numerically, and the recurring action names carry the rest.</p>
@@ -433,9 +429,6 @@
 <div class="key">
 <p><strong>One attack an activation.</strong> Fight, Shoot and a Blast are the same slot. A second attack was the thing that broke the pacing, so the spare actions buy other acts instead. Everything else &mdash; Guard, Rally, the other spells, moving &mdash; may be repeated, and a Cast tree once an activation.</p>
 </div>
-<div class="key">
-<p><strong>The engine is not yet rebuilt.</strong> It plays the rules as they stood before this review; the document is ahead of it until the build. A block marked Legacy is a rule nothing has replaced yet.</p>
-</div>
 
 <h2 id="move">7. Moving and breaking away</h2>
 <h3>Move</h3>
@@ -522,7 +515,7 @@
 
 
 <h3>Guard</h3>
-<p>Guard lasts until the unit next acts. Its +2 is the one number an activity sells: a raised shield is nothing but a harder unit to hit, and cover is the same thing again. Dig in and Take cover are Pathfinder's two grades of cover.</p>
+<p>Guard lasts until the unit next acts. Its +2 is the one number an activity sells: a raised shield is nothing but a harder unit to hit, and cover is the same thing again. Dig in and Take cover are Pathfinder's two degrees of cover.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Brace</td><td>◆</td><td>Shields up: +2 Defence until you next act.</td></tr>
@@ -710,7 +703,7 @@
 <tr><td>Aegis ◆◆◆</td><td>35% of attacks wasted against spell DC 21; a level-15 caster's DC wastes most</td></tr>
 </table>
 <p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on an ally already under it is nothing.</p>
-<p>A Blast is one attack over several hexes. A ward on any unit caught, or a sure strike on the caster, throws a second die for the shape, and each unit reads that pair against its own Defence: a warded unit keeps the worse, and the rest keep the better under a sure strike, the first die otherwise. An aegis on any unit in the shape gates the cast as a whole, and a failed save wastes the whole activity, actions and all.</p>
+<p>A Blast is one attack over several hexes. A ward on any unit caught, or a sure strike on the caster, throws a second die for the shape, and each unit reads that pair against its own Defence: a warded unit keeps the worse, or the first die alone when the caster also has a sure strike; the rest keep the better under a sure strike, the first die otherwise. An aegis on any unit in the shape gates the cast as a whole, and a failed save wastes the whole activity, actions and all.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range &middot; an ally</h4>
 <p>Three separate things, bought one at a time; Fly covers ground because flight does. Translocate is the one buff that happens at cast time.</p>
@@ -759,17 +752,6 @@
 </ul>
 <p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
 
-<h2 id="review">15. Under review</h2>
-<div class="key">
-<p><strong>What is decided lives in its own section.</strong> Shoot and Guard in section 8, Rally in section 9, Charge and Withdraw in section 7, and the six Cast trees in section 11. A block marked Legacy is a rule nothing has replaced yet. Each verb was judged by the four tests from the Fight review: an activity buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. What follows is still open. The reasoning behind the decided verbs is in <code>docs/plans/battle-mechanics.todos.md</code> and in this file's history.</p>
-</div>
-
-<h3>Free strike and no retreat</h3>
-<p>Unchanged. The free strike is a hit capped at one wound with the Fortitude save as usual, and a troop that gives no retreat follows a withdrawal for one free Move. Neither is an activity with a price.</p>
-
-<h3>Walls and siege engines</h3>
-<p>Untouched by the Fight rework and priced as before. Nothing here proposes a change to them.</p>
-
 <h2 id="ref">Quick reference</h2>
 <div class="wrap"><table class="ref">
 <tr><th>Act</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
@@ -793,10 +775,17 @@
 <tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike or a charge, until the unit acts again</td></tr>
 <tr><td>Weakened (2 wounds)</td><td>&minus;2 to Strike and Volley. Broken (3 wounds) is the same.</td></tr>
 <tr><td>Inspired</td><td>+2 on the unit's next roll of any kind; a status bonus</td></tr>
-<tr><td>Suppressed</td><td>&minus;2 to everything the unit rolls until the shooter's next activation</td></tr>
+<tr><td>Suppressed</td><td>&minus;2 to everything the unit rolls and to its Defence until the shooter's next activation</td></tr>
 <tr><td>Pinned</td><td>Held by the shooter at Volley + 10; leaves its hex by Withdraw, which ends the pin once it gets clear; cannot charge</td></tr>
 <tr><td>Rooted</td><td>No Move, Charge or Withdraw on its next activation</td></tr>
 <tr><td>Frightened</td><td>&minus;1 to everything the unit rolls and to its Defence until the end of its next activation</td></tr>
+<tr><td>Sure strike</td><td>Its next attack rolls twice and keeps the better; spent by that attack, or when it next acts</td></tr>
+<tr><td>Persistent damage</td><td>Set by a Wrath hit: 1 more wound at the end of its next activation, then Fortitude against the attacker's level DC or 1 disorder, as any wound</td></tr>
+<tr><td>Ward</td><td>The next attack against it rolls twice and the attacker keeps the worse; spent by that attack, or when it next acts</td></tr>
+<tr><td>Stoneskin</td><td>Every hit against it caps at one wound and costs it no disorder, until it next acts</td></tr>
+<tr><td>Aegis</td><td>An attacker rolls Will against the caster's spell DC before it attacks; a failure wastes the attempt, actions and all. Ends when it next acts</td></tr>
+<tr><td>Sure footing</td><td>Every hex costs it 1 on its next activation, and a charge through rough ground still lands the +2</td></tr>
+<tr><td>Flying</td><td>1 a hex on its next activation, crossing water, cliffs and standing walls; nothing engages it across an edge it crosses</td></tr>
 <tr><td>Forest</td><td>+1 Defence against a shot, unless the shooter stands higher</td></tr>
 <tr><td>Swamp or shallows</td><td>&minus;1 to Strike from it</td></tr>
 <tr><td>Height</td><td>&minus;1 a level attacking upward. Shooting downward counts one band closer and beats cover. A charge from above puts the target's save at &minus;2.</td></tr>
