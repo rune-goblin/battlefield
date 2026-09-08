@@ -647,3 +647,6 @@ top of Wave 11.
   removal; they are historical/explanatory, not a current rule, and section 2 is not among this
   wave's named edit targets (section 11's tactics/Legacy, section 15, section 6, quick
   reference). Flagged rather than fixed.
+- 2026-09-08: a charge lands only where the charger could stand: `approach` asks `canEndOn` of
+  the contact hex, so a troop carrying an unspent Fly cannot end its run on water and be left
+  there when `finish` takes the flight away. A native flier still lands wherever it likes.

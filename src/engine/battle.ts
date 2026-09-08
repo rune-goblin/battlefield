@@ -685,7 +685,7 @@ function chargeBonus(state: BattleState, u: Unit, cell: string): number {
 function approach(state: BattleState, u: Unit, e: Unit, reach: ReachMap): ChargeOption | null {
   let best: ChargeOption | null = null;
   for (const [cell, entry] of reach) {
-    if (!touching(state, parse(cell), e, true)) continue;
+    if (!touching(state, parse(cell), e, true) || !canEndOn(u, state.board, parse(cell))) continue;
     if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) {
       best = { unit: e.id, cell, feet: entry.feet, actions: CHARGE_ACTIONS };
     }
