@@ -18,8 +18,9 @@ const TEXTURE_TILE = 32;
 // Which terrain reads as which quadrant of the scatter sheets. Shallows takes the water art at
 // its own thinner setting — broken water over the pale bed, against open water's full cover.
 // Boulders and mounds hang off elevation rather than terrain: this board has no mountain or
-// hill terrain type, and height is what that art is drawing. The sheets' desert and badlands
-// quadrants have no terrain to land on yet. proto: see docs/plans/pixi-board.todos.md.
+// hill terrain type, and height is what that art is drawing.
+// proto: the sheets' desert and badlands quadrants have no terrain to land on yet — see
+// docs/plans/pixi-board.todos.md.
 interface Scenery { kind: ScatterKind; style?: ScatterStyle }
 const SCATTER_TERRAIN: Partial<Record<SquareTerrain, Scenery>> = {
   open: { kind: 'plains' },

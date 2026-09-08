@@ -277,9 +277,9 @@ describe('Controlling', () => {
     return act(s, { type: 'cast', spell: 'controlling', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng(rolls));
   };
 
-  // Divine spell DC 21 against a level-6 troop's Will +13 — rules.html's own parity example.
+  // Divine spell DC 21 against a level-6 troop's Will +17.
   it('frightens the target on a success, and costs it nothing else', () => {
-    const s = dread([8]); // total 21: a plain success
+    const s = dread([8]); // total 25: a plain success
     expect(unit(s, 'u1').frightened).toBe(true);
     expect(unit(s, 'u1').disorder).toBe(0);
   });

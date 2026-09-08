@@ -155,9 +155,12 @@
     const u = b.units.find((x) => x.id === id);
     return u ? notation(u.square) : null;
   };
-  // A Blast's Line and Burst arrive as one target holding two or three hexes, joined by '+'.
+  // A Blast's Line and Burst, and a Heal or Restore's set, arrive as one target holding two or
+  // three parts joined by '+' — a unit-kind id needs the same split a cell-kind id already gets.
   const targetCells = (t: RungTarget): string[] =>
-    t.kind === 'cell' ? t.id.split('+') : t.kind === 'wall' ? [t.id.split('|')[0]] : [cellOf(t.id)].filter((x): x is string => x !== null);
+    t.kind === 'cell' ? t.id.split('+')
+      : t.kind === 'wall' ? [t.id.split('|')[0]]
+        : t.id.split('+').map(cellOf).filter((x): x is string => x !== null);
 
   const offerEdges = (offer: ActionOffer): string[] =>
     offer.rungs.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);

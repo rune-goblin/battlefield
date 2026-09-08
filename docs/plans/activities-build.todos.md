@@ -32,6 +32,16 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   false, so the charger may still Fight this activation. Section 7 says both "it is the
   activation's attack" and "the charge then costs its movement alone" — the two read as one
   promise until the charge actually whiffs. Pre-existing, not a Wave 6 or Wave 8 regression.
+- `public/rules.html`'s Controlling parity example quotes a level-6 troop's Will as +13 and
+  15/50/30/5 odds off spell DC 21; the engine derives +17 for the same troop (`willModifier`
+  on a level-6 infantry card), which shifts every one of those odds. A player checking the
+  worked example against the board would find them disagree. Flagged in Wave 10's session,
+  not fixed there.
+- A stunned unit whose activation ends with no `act()` call at all (a pure pass, `endActivation`
+  with nothing spent) never runs `begin`, so `stunned` carries over untouched to the activation
+  it actually next acts in, not literally "its next activation" if that included a no-op turn.
+  Defensible under the rule's own wording, but worth a second look once a real pass exists in
+  the UI rather than only in test helpers.
 
 ## Wave 0 (2026-09-08)
 
@@ -317,3 +327,60 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - No disagreement between the plan and rules.html section 11 "Controlling": the wave's two
   tables (activity cost/effect, save outcome) match the rules text word for word, so
   `public/rules.html` needed no edit for this wave.
+
+## Wave 10 (2026-09-08)
+
+- **`attackRoll(state, rng, attacker, target, modifier, dc)` spends `inspired` itself on the
+  twice-roll branch**, rather than extending `roll()`'s own signature: the two flags cancel to
+  a plain `roll()` call (which spends `inspired` as always), and only the genuinely-doubled
+  branch needs the extra line — `attacker.inspired = false` right before `rollTwice`, matching
+  what `roll()` would have done. No signature on `roll()` changed.
+- **`applyWounds` consumes `attacker.wrath` and sets `target.persistent` on any landing hit**,
+  including one that destroys the target outright: the ally's "next hit" has happened either
+  way, and a persistent mark on a unit about to be `MAX_WOUNDS`-destroyed is simply never read
+  again (a destroyed unit's own `finish` never runs).
+- **`landPersistent` takes no attacker**: Wrath's DC is fixed at hit time (`levelDc(attacker.level)`
+  stored on `persistent.dc`), so the wound's own landing and Fortitude save at `finish` need
+  only the target and the stored number. It skips the wound entirely (but still clears the
+  field) on a target that is no longer `active`, mirroring how `addDisorder` and the rest of
+  the wound path treat a unit already gone.
+- **`finish` and `endActivation` now take an `rng`**, since a Wrath wound can roll a Fortitude
+  save at exactly the moment a unit's activation ends. Every caller (`act`'s auto-finish,
+  `game.svelte.ts`'s `endActivation`, and every test helper that called `endActivation`) was
+  updated to pass one; `game.svelte.ts` uses the same `randomRng` it already hands `act`.
+- **A second Wrath on an already-`wrath`-true ally gets no explicit "already" guard**, unlike
+  Sure strike and Haste: rules.html states the "second X is nothing" rule for those two by
+  name and not for Wrath, and re-setting a boolean already `true` is a no-op on its own, so no
+  branch was needed to make it one.
+- **Haste's second-cast guard checks `target.haste > 0` before writing `2`**, not just before
+  logging: unlike Sure strike's boolean, overwriting an in-progress `haste` (say, at 1, one
+  activation spent) back to 2 would silently extend it, which "a second Haste on a hasted ally
+  is nothing" forbids. Flagged by the coordinator ahead of the gate; the fix landed in the same
+  commit as everything else Wave 10 touches, not as a follow-up.
+- **`begin` sets the hasted total (`ACTIONS_PER_ACTIVATION + (haste > 0 ? 1 : 0)`) before the
+  stun subtracts**, so the two compose by ordinary arithmetic (4 − 1 = 3) rather than one
+  write-then-overwrite race. Verified directly: a unit with both flags set gets three actions,
+  not four.
+- Blast's one d20 now goes through `attackRoll` against the first caught hex's Defence, same as
+  before `roll`; Sure strike or Ward on the caster affects the whole shape's one roll, not a
+  per-hex reroll, which matches "one d20 for the whole shape" already standing from Wave 7.
+- Wall attacks (`attackWall`, both the shoot and Fight branches) still call `roll` directly, not
+  `attackRoll`: the wave's own list is "a Strike, a shot, a Blast", and a wall is none of the
+  three — it has no `Unit` target for `target.ward` to read.
+- Fixed a stale wording bug the coordinator traced past Wave 9's own review: Controlling's
+  frightened log line said "until it acts again" (the idiom this codebase reserves for
+  `begin`-cleared conditions), where `frightened` is cleared by `finish` and rules.html says
+  "until the end of its next activation". Only the log text changed; the field's own lifecycle
+  was already right.
+- Fixed a stale test comment past the same review: the Controlling parity test's own comment
+  quoted rules.html's own worked numbers (Will +13, total 21) rather than what the fixture's
+  level-6 infantry card actually derives (Will +17, so 8 totals 25 and 1 totals 18). The
+  assertions were always reading the right degrees off the real numbers; only the comment lied.
+  The rules-vs-engine gap behind it is recorded under "Open, for play" rather than fixed here.
+- `src/app/Battle.svelte`'s `targetCells` now splits a `kind: 'unit'` target's id on `+` before
+  looking each part up with `cellOf`, the way the `kind: 'cell'` branch already did: arming Cast
+  now lights every hex of a Heal or Restore set, not just a target whose id happened to be a
+  single unit's own.
+- `src/board/layers/TerrainLayer.ts`'s one inline `proto:` (mid-sentence, not after its own
+  `//`) moved onto its own `// proto:` line, so `grep -rn "// proto:"` finds all three markers
+  in this file instead of two.

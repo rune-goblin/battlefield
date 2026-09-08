@@ -1178,7 +1178,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       if (c.degree === 'critical-success') break;
       if (c.degree === 'success') {
         target.frightened = true;
-        log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until it acts again.`);
+        log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until the end of its next activation.`);
         break;
       }
       addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${TREE_LABEL[tree]}`);
