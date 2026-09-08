@@ -131,16 +131,20 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   unit sitting at exactly 1 disorder that clears it on a plain success is not inspired, only one
   that had none to begin with, or that a critical clears out to none, is. The two rows use
   different tenses on purpose.
-- `offerFor`'s Rally block ("no disorder to clear, and nobody near to lift") is left exactly as
-  it stood, per the wave's "offers Rally as now" — even though a solitary unit at 0 disorder
-  with no ally within 2 is denied even Steady, whose own value (a chance at `inspired`) needs no
-  ally at all. Rules and plan pull apart here; flagged, not resolved.
+- `offerFor`'s Rally block ("no disorder to clear, and nobody near to lift") is deleted, so
+  `blocked` is the one-attack rule alone: rules.html says "Rally is otherwise always offered"
+  (section 6) and "this is why a unit with nothing to clear still has a use for the act"
+  (section 9), because `inspired` gives Steady a value with no disorder and no ally near.
+  Settled 2026-09-08, in Wave 5's session.
 - Rally's and Inspire's `detail` strings in `ladders.ts` now name the inspired outcome ("or is
   inspired if it has none") instead of just "clears 1", to match rules.html's own wording now
   that the branch is real.
 - The wall test's second unit (`u3`) had to move from `d6` to `c6` alongside the target: square
   grid distance is Manhattan, not Chebyshev, so `d6` stopped being adjacent to the target's new
   `c5` and the melee malus the test asserts stopped applying.
+- Waves 10 and 11 must reach `rollTwice` through `roll()`, or through a sibling that spends
+  `inspired` the same way: called directly, Sure strike and Ward would roll twice and silently
+  skip the spend, and the +2 would ride on to the next roll.
 
 ## Wave 5 (2026-09-08)
 

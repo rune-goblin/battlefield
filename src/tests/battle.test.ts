@@ -872,6 +872,8 @@ describe('disorder', () => {
     expect(willModifier(inspired)).toBe(inspired.stats.will + ACTION_BONUS);
     const spent = act(steadied, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([2]));
     const after = unit(spent, 'u0');
+    expect(spent.log.slice(steadied.log.length).find((e) => e.check)!.check!.modifier)
+      .toBe(after.stats.will + ACTION_BONUS);
     expect(after.inspired).toBe(false);
     expect(willModifier(after)).toBe(after.stats.will);
   });

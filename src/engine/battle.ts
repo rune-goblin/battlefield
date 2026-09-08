@@ -739,9 +739,7 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
 }
 
 function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
-  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
-    : type === 'rally' && !u.disorder && !alliesWithin(state, u, 2).length ? 'no disorder to clear, and nobody near to lift'
-      : null;
+  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation' : null;
   const rungs = [1, 2, 3].map((i) => rungOption(state, u, type, i as Grade, spell, blocked)) as [RungOption, RungOption, RungOption];
   return {
     type, spell,
