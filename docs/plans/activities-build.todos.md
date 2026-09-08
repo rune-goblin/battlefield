@@ -302,3 +302,18 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - Three `// proto:` markers sat inside `/** */` blocks rather than on their own line
   (`chargeBonus`, `volleyOf`, `withdrawTo` in battle.ts), so `grep -rn "// proto:"` missed them;
   moved each onto its own `// proto:` line above the function it marks, per CLAUDE.md.
+
+## Wave 9 (2026-09-08)
+
+- Stun and Hold read as `index >= 2` and `index >= 3` on one failed-save branch, so Dread's
+  disorder always lands first and Stun's action and Hold's root are additions on top of it,
+  matching the rules' own "Dread, and..." / "Stun, and..." phrasing rather than three separate
+  branches that would have to repeat the disorder line.
+- `begin(u)`'s consumption of `stunned` (Wave 1) needed no change: read, not rebuilt, and the
+  gate's green suite is the check that it still spends one action and clears the flag.
+- **Pinned "a tree is cast once an activation" with a Controlling test**, per the wave's own
+  invitation: Controlling buys no attack slot, so the second cast trips `castTrees.includes`
+  and throws "already cast this activation" with the one-attack rule never in the way.
+- No disagreement between the plan and rules.html section 11 "Controlling": the wave's two
+  tables (activity cost/effect, save outcome) match the rules text word for word, so
+  `public/rules.html` needed no edit for this wave.

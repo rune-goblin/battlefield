@@ -1153,11 +1153,21 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       if (!target) break;
       const c = roll(state, rng, target, willModifier(target), spellDcFor(u));
       log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-      if (succeeded(c.degree)) break;
-      // proto: the action and movement penalties went with their fields. Section 9's disorder
-      // table is the part of Controlling that still stands, so that is what lands until Wave 9
-      // builds Dread, Stun and Hold.
+      if (c.degree === 'critical-success') break;
+      if (c.degree === 'success') {
+        target.frightened = true;
+        log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until it acts again.`);
+        break;
+      }
       addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${TREE_LABEL[tree]}`);
+      if (index >= 2) {
+        target.stunned = true;
+        log(state, target, `${target.name} is stunned: one action fewer on its next activation.`);
+      }
+      if (index >= 3) {
+        target.rooted = 1;
+        log(state, target, `${target.name} is held: rooted on its next activation.`);
+      }
       break;
     }
     // proto: Offense, Defense and Movement each become a menu of three named activities in

@@ -263,6 +263,40 @@ describe('Cast', () => {
   });
 });
 
+describe('Controlling', () => {
+  const cleric: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
+  const dread = (rolls: number[]) => {
+    const s = createBattle({
+      units: [
+        { card: cleric, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    place(s, 'u1', 'c4');
+    return act(s, { type: 'cast', spell: 'controlling', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng(rolls));
+  };
+
+  // Divine spell DC 21 against a level-6 troop's Will +13 — rules.html's own parity example.
+  it('frightens the target on a success, and costs it nothing else', () => {
+    const s = dread([8]); // total 21: a plain success
+    expect(unit(s, 'u1').frightened).toBe(true);
+    expect(unit(s, 'u1').disorder).toBe(0);
+  });
+
+  it("costs 2 disorder on a critical failure, in place of Dread's 1", () => {
+    const s = dread([1]); // a natural 1 drops a failure to a critical one
+    expect(unit(s, 'u1').disorder).toBe(2);
+    expect(unit(s, 'u1').frightened).toBe(false);
+  });
+
+  it('is cast once an activation, Controlling as much as any other tree', () => {
+    const s = dread([10]);
+    expect(() => act(s, { type: 'cast', spell: 'controlling', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10])))
+      .toThrow(/already cast this activation/);
+  });
+});
+
 describe('movement points', () => {
   it('one Move action carries a troop one square, and a Pace unit two', () => {
     const { state } = battle([]);
