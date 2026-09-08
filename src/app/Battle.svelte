@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, reachOf, TREE_TARGET,
+    offersAt, reachOf, targetMatches, TREE_TARGET,
     type ActionOffer, type ChargeOption, type Grade, type LadderType, type MoveReach, type RungOption,
     type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
@@ -111,7 +111,7 @@
     const t = aim.target;
     const own = t.kind === 'unit' && t.id === active.id;
     return aimGroup.offer.rungs.filter((o) => o.cost !== null
-      && (o.targets.some((x) => x.kind === t.kind && x.id === t.id) || (own && !o.needsTarget)));
+      && (o.targets.some((x) => targetMatches(b, x, t)) || (own && !o.needsTarget)));
   });
   const aimed = $derived(aimRungs[aim?.index ?? -1] ?? null);
   let anchor = $state<{ x: number; y: number } | null>(null);
@@ -712,9 +712,11 @@
     armed = null;
     armedTree = null;
     // The id goes through only where the rung actually names it: Guard takes none, and a
-    // Rally on your own piece must not arrive carrying your own id as its ally.
-    const names = row.targets.some((t) => t.kind === a.target.kind && t.id === a.target.id);
-    performRung(group.offer, row, names ? a.target.id : undefined);
+    // Rally on your own piece must not arrive carrying your own id as its ally. A matched
+    // target's own id goes through, not the touched ref's: a shape or a set is named by its
+    // full encoded id, whichever part was actually touched.
+    const named = row.targets.find((t) => targetMatches(b, t, a.target));
+    performRung(group.offer, row, named?.id);
     // A cast's resolution burst lands on the clicked cell — the same square the aim popup was
     // anchored on — regardless of what the roll behind it did; a miss still means the spell
     // went off, just not to effect.

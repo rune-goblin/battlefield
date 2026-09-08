@@ -24,9 +24,14 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - Whether artillery needs a cheaper Pin now that the gun crew has no extra action (section 12).
 - Whether a Cast tree may be cast more than once a battle. Once an activation is built.
 - Rally's three-action activity is still named Inspire, the same word as the condition.
-- How a shape is picked on the board. Line and Burst (Wave 7) and Healing's pairs and triples
-  (Wave 8) are offered as encoded targets, and `offersAt` matches an id exactly, so no plan wave
-  makes them clickable: the aim popup would have to carry a shape rather than a hex.
+- ~~How a shape is picked on the board.~~ Closed in Wave 8: `targetMatches` finds an encoded
+  target (`d3+d4`, `u1+u2`) by any one of its parts, cross-kind through the touched unit's own
+  square when the part touched is occupied, so Line, Burst, Heal and Restore are all clickable
+  with no popup change.
+- A charge that finds nobody (fear on contact routed the target mid-run) leaves `attacked`
+  false, so the charger may still Fight this activation. Section 7 says both "it is the
+  activation's attack" and "the charge then costs its movement alone" — the two read as one
+  promise until the charge actually whiffs. Pre-existing, not a Wave 6 or Wave 8 regression.
 
 ## Wave 0 (2026-09-08)
 
@@ -260,3 +265,40 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - The `the six trees` block became `Cast`: the tradition-cap test survives, rewritten to actions
   and now pinning the activity names, the range-push test went with the axis it bought, and the
   Blast test became the Line one.
+
+## Wave 8 (2026-09-08)
+
+- Healing's own targets are combinations, not a fixed list: `healPool` is the caster plus its
+  adjacent allies, and Soothe/Heal/Restore draw 1, 2 or 3 of them at a time, so Restore has no
+  legal target (and is refused with "no target") when fewer than three units stand in the pool
+  — the rules name "three units", not "up to three".
+- Ties in `healTargets`' need-first ordering (every unit fresh, at 0 disorder and 0 wounds) fall
+  back to `combinations`' own generation order — caster-first, then allies in deployment order —
+  since JS's sort is stable and nothing in the rules says otherwise.
+- Rules.html's Healing critical lists its six conditions in prose ("exposed, suppressed, pinned,
+  rooted, frightened or persistent damage"), not as a priority order; this is not a disagreement
+  with the plan's own order (pinned, rooted, suppressed, exposed, frightened, persistent damage,
+  already decided and carried over unchanged), only a reminder that the prose list and the
+  engine's tie-break order read differently on purpose.
+- **Closed the clickability bug the reviewer traced past Wave 7's own note.** Two things
+  conspired: `offersAt` compared a `RungTarget.id` to the touched ref's id exactly, and
+  `applyProp` turns a touch on an *occupied* hex into a `{kind:'unit'}` ref rather than a
+  `{kind:'cell'}` one, so a Blast shape (`kind:'cell'`) touched through the enemy standing in it
+  never matched by kind, let alone by id. `targetMatches` (battle.ts, `// proto:`) treats an id
+  containing '+' as its parts and matches by membership; for a cross-kind touch (a `'unit'` ref
+  against a `'cell'` target) it resolves through the touched unit's own square. The same helper
+  replaced `Battle.svelte`'s parallel copy of the exact-match test in `aimRungs`, and `takeAim`
+  now sends the *matched* target's own id (the full `d3+d4` or `u1+u2`) rather than the touched
+  ref's id, which only ever named one part. Verified by probe: Line is found by touching either
+  hex of it, including one holding an enemy, and Heal/Restore are found by touching any unit in
+  the set, including the caster's own token.
+- **Correction to the Wave 7 entry above** ("Blast is written out; the other five keep Wave 1's
+  stopgap bodies"): Controlling's own roll silently dropped the old per-tier Will penalty
+  (`effectBonus`, −1 at index 2, −2 at index 3) along with the axes — `willModifier(target)`
+  alone, no bonus, same as `spellDcFor`'s already-documented drop of `pushBonus`. The plan
+  sanctions it (no such penalty is in rules.html's Controlling table), but the Wave 7 entry
+  overstated how much of the old body survived. Wave 9 starts Controlling from plain
+  `willModifier` and `spellDcFor`, not from anything the deleted axes bonused.
+- Three `// proto:` markers sat inside `/** */` blocks rather than on their own line
+  (`chargeBonus`, `volleyOf`, `withdrawTo` in battle.ts), so `grep -rn "// proto:"` missed them;
+  moved each onto its own `// proto:` line above the function it marks, per CLAUDE.md.

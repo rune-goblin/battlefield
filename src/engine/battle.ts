@@ -584,10 +584,12 @@ function chargeReach(state: BattleState, u: Unit): ReachMap {
   });
 }
 
-/** The +2, unless the run crossed rough going or climbed for it. proto: read off the cheapest
- * route alone, where the rules allow any path the movement affords — a charge denied its +2
- * here might have kept it by a longer way round. Sure footing (Wave 12) restores it outright. */
 const ROUGH: SquareTerrain[] = ['forest', 'swamp', 'shallows'];
+
+// proto: reads off the cheapest route alone, where the rules allow any path the movement
+// affords — a charge denied its +2 here might have kept it by a longer way round. Sure footing
+// (Wave 12) restores it outright.
+/** The +2, unless the run crossed rough going or climbed for it. */
 function chargeBonus(state: BattleState, path: string[]): number {
   for (let i = 1; i < path.length; i++) {
     const here = at(state.board, parse(path[i]));
@@ -653,10 +655,10 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
 
 const homewardStep = (u: Unit) => Math.sign(homeRank(u.side) - u.square.rank) || -1;
 
+// proto: reads the piece even when another unit fired it and the crew pinned with its own
+// Volley, so the escape DC can say launch + 10 for a shot that rolled Volley.
 /** What a shot off this unit rolls: a crewed artillery piece stands in for a Volley the crew
- * may not have, loaded or not — a pinning crew holds its target with the shot it already made.
- * proto: it reads the piece even when another unit fired it and the crew pinned with its own
- * Volley, so the escape DC can say launch + 10 for a shot that rolled Volley. */
+ * may not have, loaded or not — a pinning crew holds its target with the shot it already made. */
 const volleyOf = (state: BattleState, u: Unit) => {
   const e = enginesOf(state, u).find((x) => x.status === 'crewed' && x.kind === 'artillery');
   return e ? e.launch : (u.stats.volley ?? 0);
@@ -979,10 +981,11 @@ function disengage(state: BattleState, rng: Rng, u: Unit, holders: Unit[], chase
   return { leaves: true, far: false, chasers: chasers.filter((h) => passed.has(h.id)) };
 }
 
+// proto: a `to` the break cannot carry to lands on whichever legal cell lies nearest it, so a
+// short break still goes the way the player pointed.
 /**
  * One hex clear of everything that held the unit — or, on a critical Break off, anywhere a free
- * Move of its Speed reaches. proto: a `to` the break cannot carry to lands on whichever legal
- * cell lies nearest it, so a short break still goes the way the player pointed.
+ * Move of its Speed reaches.
  */
 function withdrawTo(state: BattleState, u: Unit, to: string | undefined, far: boolean) {
   const options = withdrawTargets(state, u, far ? u.speed : 0);
@@ -1352,6 +1355,18 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
  * target of its own (Guard, and Rally's own unit) belongs to the acting unit's own piece,
  * which is where its popup opens.
  */
+// proto: Line, Burst, Heal and Restore arrive as one target holding several parts joined by
+// '+' (`d3+d4`, `u1+u2`). A touch on a cell resolves to `{kind:'unit'}` when something stands
+// there (`applyProp`), so a shape target is found by the touched unit's own square as well as
+// by a bare cell id; touching any one part finds the whole target.
+export function targetMatches(state: BattleState, t: RungTarget, ref: TargetRef): boolean {
+  const parts = t.id.split('+');
+  if (t.kind === ref.kind) return parts.includes(ref.id);
+  if (t.kind !== 'cell' || ref.kind !== 'unit') return false;
+  const found = state.units.find((x) => x.id === ref.id);
+  return found !== undefined && parts.includes(notation(found.square));
+}
+
 export function offersAt(state: BattleState, target: TargetRef, unitId?: string): TargetOffer[] {
   const u = unitId ? state.units.find((x) => x.id === unitId) : activeUnit(state);
   if (!u) return [];
@@ -1359,7 +1374,7 @@ export function offersAt(state: BattleState, target: TargetRef, unitId?: string)
   const out: TargetOffer[] = [];
   for (const offer of availableActions(state, u.id)) {
     const rungs = offer.rungs.filter((o) => o.legal
-      && (o.targets.some((t) => t.kind === target.kind && t.id === target.id) || (own && !o.needsTarget)));
+      && (o.targets.some((t) => targetMatches(state, t, target)) || (own && !o.needsTarget)));
     if (rungs.length) out.push({ offer, rungs });
   }
   return out;
