@@ -186,3 +186,31 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   contact and `withdrawOffer` reports `follows: noRetreat && id !== pinnedBy`.
 - Renamed the wound-cap test to say the cap, not Dig in alone: Take cover carries `cap` too,
   since Wave 3.
+
+## Wave 6 (2026-09-08)
+
+- **The charge's budget is two Speeds and nothing else.** Banked feet neither add to it nor are
+  spent by it: the run is one action's headlong movement, and "leftover charge movement does not
+  bank" is about the run's own leftover, so an earlier Move's banked feet survive the charge.
+- **`touching` grew a `charging` flag rather than refusing every wall.** Contact across a
+  standing wall holds (section 10) and a no-retreat pursuer may still end across one; only the
+  charge refuses that edge, per section 7's "a charge cannot end across a standing wall or a
+  cliff".
+- **The +2 is read off the cheapest route alone**, which is the one `reachable` returns, where
+  section 7 says "the path is any path the movement allows" — so a charge whose cheapest way in
+  clips a forest loses a +2 the rules would have let it keep by going round. Marked `// proto:`
+  on `chargeBonus`; closing it needs a second search that bans rough ground and climbs, which is
+  Wave 12's `MoveOpts.surefooted` in all but name.
+- **The charger is exposed the moment the run lands, before the Fight**, so a charge that finds
+  nobody (fear routs it, the target is gone) is exposed all the same, and Wave 11's refused
+  charge will find the field already set. `resolveStrike` now sets and logs the exposure of a
+  critical failure only when it is not already exposed, so the line is never logged twice.
+- **`ChargeOption.actions` stays in the shape and is always 1**, so `Battle.svelte` needed no
+  arithmetic: its chip already prices a charge at `actions - 1 + index`, which is now 1 + index.
+  Charge and Overrun's 4 simply exceeds three actions, so the chip disables itself until Haste.
+- The charge chips are labelled Charge / Charge and Press / Charge and Overrun, the names in
+  section 7, in place of the Fight row's Strike / Press / Overrun: it is the one place the three
+  charge activities are named to the player, and the price shown beside them is the charge's.
+- The impact folds into `melee`'s effect, not into the ladder row: `press || impact` and
+  `drive || (impact && press)`, so an Overrun bought with the tactic is still an Overrun —
+  nothing stands above it.

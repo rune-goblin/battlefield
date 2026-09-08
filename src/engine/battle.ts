@@ -1,9 +1,9 @@
 import {
   at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
-  type Board, type Square, type Wall,
+  type Board, type Square, type SquareTerrain, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { reachable, stepFeet } from './path.js';
+import { pathTo, reachable, stepFeet, type ReachMap } from './path.js';
 import { check, readCheck, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
@@ -362,9 +362,9 @@ function clearAsShooter(state: BattleState, shooterId: string) {
 /**
  * Wounds that actually land, after the target's Guard. A wound then asks a Fortitude save
  * against the attacker's level DC before it disorders anyone. `pressed` skips that save: the
- * disorder simply lands.
+ * disorder simply lands. `saveShift` bends it — a charge from above is −2 on it.
  */
-function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false): number {
+function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false, saveShift = 0): number {
   const n = reduceWounds(target, raw);
   if (n < raw) log(state, target, `${target.name} has dug in: the critical lands as an ordinary hit.`);
   if (n <= 0) return 0;
@@ -375,7 +375,7 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
   if (pressed) {
     addDisorder(state, target, 1, 'a pressed hit, no save');
   } else {
-    const c = roll(state, rng, target, fortitudeModifier(target), levelDc(attacker.level));
+    const c = roll(state, rng, target, fortitudeModifier(target) + saveShift, levelDc(attacker.level));
     log(state, target, `${target.name} braces against the wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a wound taken');
   }
@@ -417,30 +417,40 @@ function inspire(state: BattleState, u: Unit) {
   log(state, u, `${u.name} is inspired: +2 to its next roll.`);
 }
 
-interface StrikeOpts { free?: boolean; pressed?: boolean; label: string }
+interface StrikeOpts { free?: boolean; pressed?: boolean; bonus?: number; saveShift?: number; label: string }
 
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree {
-  const c = roll(state, rng, u, strikeModifier(state, u, target), defenceOf(state, target, u, false));
+  const c = roll(state, rng, u, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
-  applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false);
-  if (c.degree === 'critical-failure' && !opts.free) {
+  applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0);
+  // A charger is exposed already, so the critical miss has nothing left to take.
+  if (c.degree === 'critical-failure' && !opts.free && !u.exposed) {
     u.exposed = true;
     log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
   }
   return c.degree;
 }
 
+/** What a charge carries into the Fight: `bonus` on the attack roll, `saveShift` on the
+ * target's save against the wound, and `impact` — a cavalry charge's hit needs no save, so a
+ * Strike lands as a Press and a Press as an Overrun, at the price paid. */
+export interface MeleeOpts { bonus?: number; saveShift?: number; impact?: boolean }
+
 // A Fight is one roll, one way. A hit wounds, and the target's Fortitude save decides its
 // disorder; a miss repulses the attacker, whose Will save against the target's level DC
 // decides its own. The rung adds no number to the roll: Press skips the target's save, and
 // Overrun drives it back a hex besides.
-function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung) {
+function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, opts: MeleeOpts = {}) {
   const eff = rung.fight!;
+  const impact = opts.impact ?? false;
+  const drive = eff.drive || (impact && eff.press);
   u.attacked = true;
-  const degree = resolveStrike(state, rng, u, target, { pressed: eff.press, label: rung.verb });
+  const degree = resolveStrike(state, rng, u, target, {
+    pressed: eff.press || impact, bonus: opts.bonus, saveShift: opts.saveShift, label: rung.verb,
+  });
   if (succeeded(degree)) {
-    if (eff.drive && u.status === 'active') giveGround(state, u, target);
+    if (drive && u.status === 'active') giveGround(state, u, target);
     return;
   }
   const c = roll(state, rng, u, willModifier(u), levelDc(target.level));
@@ -553,16 +563,49 @@ export function movePath(moves: Map<string, MoveReach>, to: string): string[] {
   return out;
 }
 
-const touching = (state: BattleState, sq: Square, e: Unit) =>
-  dist(state, sq, e.square) === 1 && barrierBetween(state.board, sq, e.square)?.kind !== 'cliff';
+// Contact across a standing wall holds (section 10), but nobody charges over one, so a charge
+// asks for a clear edge where a pursuer only asks for no cliff.
+const touching = (state: BattleState, sq: Square, e: Unit, charging = false) => {
+  if (dist(state, sq, e.square) !== 1) return false;
+  const barrier = barrierBetween(state.board, sq, e.square);
+  return barrier === null || (barrier.kind === 'wall' && !charging);
+};
+
+/** A charge is one action of movement however far it carries, and that action buys two Speeds
+ * at the ordinary terrain prices — the discount the verb sells. */
+const CHARGE_ACTIONS = 1;
+const CHARGE_SPEEDS = 2;
+
+/** Every cell the run can end on. Empty for a unit that may not charge at all: one in contact
+ * (that is a Fight), pinned, rooted, or with nothing left to spend. */
+function chargeReach(state: BattleState, u: Unit): ReachMap {
+  if (u.status !== 'active' || u.speed === 0 || u.rooted > 0 || u.pinnedBy) return new Map();
+  if (u.actions <= 0 || engagedEnemies(state, u).length) return new Map();
+  return reachable(state.board, u.square, {
+    budget: CHARGE_SPEEDS * u.speed, flying: u.flying, occupied: occupiedBy(state, u),
+  });
+}
+
+/** The +2, unless the run crossed rough going or climbed for it. proto: read off the cheapest
+ * route alone, where the rules allow any path the movement affords — a charge denied its +2
+ * here might have kept it by a longer way round. Sure footing (Wave 12) restores it outright. */
+const ROUGH: SquareTerrain[] = ['forest', 'swamp', 'shallows'];
+function chargeBonus(state: BattleState, path: string[]): number {
+  for (let i = 1; i < path.length; i++) {
+    const here = at(state.board, parse(path[i]));
+    if (ROUGH.includes(here.terrain)) return 0;
+    if (here.elevation > at(state.board, parse(path[i - 1])).elevation) return 0;
+  }
+  return ACTION_BONUS;
+}
 
 /** The cheapest cell within reach from which `u` can fight `e`. */
-function approach(state: BattleState, u: Unit, e: Unit, moves: Map<string, MoveReach>): ChargeOption | null {
+function approach(state: BattleState, u: Unit, e: Unit, reach: ReachMap): ChargeOption | null {
   let best: ChargeOption | null = null;
-  for (const [cell, m] of moves) {
-    if (!touching(state, parse(cell), e)) continue;
-    if (!best || m.feet < best.feet || (m.feet === best.feet && cell < best.cell)) {
-      best = { unit: e.id, cell, feet: m.feet, actions: m.actions };
+  for (const [cell, entry] of reach) {
+    if (!touching(state, parse(cell), e, true)) continue;
+    if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) {
+      best = { unit: e.id, cell, feet: entry.feet, actions: CHARGE_ACTIONS };
     }
   }
   return best;
@@ -570,11 +613,11 @@ function approach(state: BattleState, u: Unit, e: Unit, moves: Map<string, MoveR
 
 /** Enemies this unit can both reach and afford the melee against. */
 export function chargeTargets(state: BattleState, u: Unit): ChargeOption[] {
-  if (u.stats.strike === null || u.attacked || u.pinnedBy) return [];
-  const moves = moveReach(state, u);
+  if (u.stats.strike === null || u.attacked) return [];
+  const reach = chargeReach(state, u);
   const out: ChargeOption[] = [];
   for (const e of state.units.filter((x) => x.side !== u.side && x.status === 'active')) {
-    const option = approach(state, u, e, moves);
+    const option = approach(state, u, e, reach);
     if (option && option.actions + 1 <= u.actions) out.push(option);
   }
   return out;
@@ -1234,26 +1277,37 @@ function doStride(state: BattleState, u: Unit, action: MoveAction): number {
   return m.actions;
 }
 
-// A Charge is not a rung: it is the movement it takes, plus the Fight activity's own price —
-// a Strike unless the action names another.
+// A Charge is not a rung: it is one action of movement, plus the Fight activity's own price —
+// a Strike unless the action names another. The run's leftover feet never bank.
 function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): number {
   const foe = unit(state, action.target);
   if (u.stats.strike === null) throw new Error(`${u.name} has no melee`);
   if (u.attacked) throw new Error(`${u.name} has already attacked this activation`);
-  const option = approach(state, u, foe, moveReach(state, u));
+  const reach = chargeReach(state, u);
+  const option = approach(state, u, foe, reach);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
   const wanted = action.rung ?? 1;
-  const cost = option.actions + wanted;
+  const cost = CHARGE_ACTIONS + wanted;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
-  spendMovement(u, option);
+  const bonus = chargeBonus(state, pathTo(reach, option.cell));
+  // Read from the hex the charge starts in, whatever hex it ends on.
+  const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
+  const impact = u.tactics.includes('cavalry-charge');
   moveTo(state, u, parse(option.cell));
-  log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}.`);
+  const carried = [
+    bonus ? `+${bonus} on the Fight` : 'no +2: the going was rough',
+    saveShift ? `${foe.name}'s save is at −${ACTION_BONUS}, charged from above` : '',
+    impact ? 'the impact needs no save' : '',
+  ].filter(Boolean);
+  log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}, ${carried.join(', ')}.`);
+  u.exposed = true;
+  log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
   fearOnContact(state, u);
   if (u.status !== 'active' || !isEngaged(state, u, foe)) {
     log(state, u, `${u.name}'s charge finds nobody.`);
-    return option.actions;
+    return CHARGE_ACTIONS;
   }
-  melee(state, rng, u, foe, rungOf('fight', wanted));
+  melee(state, rng, u, foe, rungOf('fight', wanted), { bonus, saveShift, impact });
   return cost;
 }
 

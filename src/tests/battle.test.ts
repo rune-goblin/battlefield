@@ -332,14 +332,38 @@ describe('movement points', () => {
     expect(chargeTargets(state, unit(state, 'u0'))).toEqual([]);
   });
 
-  it('a Charge costs the movement plus one, and the melee is a Fight rung', () => {
+  it('a Charge is one action of movement, up to two Speeds, and the Fight it ends in', () => {
     const { state } = battle([]);
-    place(state, 'u2', 'c4');
-    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c3', feet: 10, actions: 1 }]);
+    place(state, 'u2', 'c5');
+    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c4', feet: 20, actions: 1 }]);
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 1]));
-    expect(unit(s, 'u0').square).toEqual(parse('c3'));
+    expect(unit(s, 'u0').square).toEqual(parse('c4'));
     expect(unit(s, 'u0').actions).toBe(1);
+    expect(unit(s, 'u0').exposed).toBe(true);
     expect(unit(s, 'u2').wounds).toBeGreaterThanOrEqual(1);
+  });
+
+  it('lands its +2 over open ground and loses it through forest', () => {
+    const strikeMod = (s: BattleState) => s.log.find((e) => e.check)!.check!.modifier;
+    const open = battle([]).state;
+    place(open, 'u2', 'c4');
+    expect(strikeMod(act(open, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(13);
+
+    const board = openBoard();
+    board.squares[2][2].terrain = 'forest';
+    const wooded = battle([], board).state;
+    place(wooded, 'u2', 'c4');
+    expect(strikeMod(act(wooded, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(11);
+  });
+
+  it('a charge from a higher hex puts the target’s save at −2', () => {
+    const board = openBoard();
+    board.squares[1][2].elevation = 1;
+    const { state } = battle([], board);
+    place(state, 'u2', 'c4');
+    const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 10]));
+    const save = s.log.find((e) => e.text.includes('braces against the wound'))!.check!;
+    expect(save.modifier).toBe(unit(s, 'u2').stats.fortitude - 2);
   });
 
   it('three actions cover a stride and then a charge, and no more', () => {

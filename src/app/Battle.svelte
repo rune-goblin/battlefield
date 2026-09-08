@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, reachOf, rungOf, TREE_TARGET,
+    offersAt, reachOf, TREE_TARGET,
     type ActionOffer, type ChargeOption, type Grade, type LadderType, type MoveReach, type RungOption,
     type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
@@ -507,6 +507,8 @@
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
   // Withdraw's own three ride the same picker.
   const RUNGS: Grade[] = [1, 2, 3];
+  // The three the rules name, since a charge's Fight is bought at the charge's own price.
+  const CHARGES = ['Charge', 'Charge and Press', 'Charge and Overrun'];
   const chargeRung = $derived(pending?.rung ?? 1);
   const withdrawRung = $derived(pending?.rung ?? 1);
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
@@ -1010,7 +1012,7 @@
                   title={can ? '' : `needs ${total} actions`}
                   onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
                 >
-                  {rungOf('fight', g).label}
+                  {CHARGES[g - 1]}
                   <ActionCost n={total} />
                 </button>
               {/each}
