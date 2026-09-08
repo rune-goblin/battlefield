@@ -186,6 +186,8 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   contact and `withdrawOffer` reports `follows: noRetreat && id !== pinnedBy`.
 - Renamed the wound-cap test to say the cap, not Dig in alone: Take cover carries `cap` too,
   since Wave 3.
+- The third withdraw test pins the `// proto:` nearest-cell fallback in `withdrawTo`, so
+  whoever replaces that shortcut with a real destination rule must revisit the test with it.
 
 ## Wave 6 (2026-09-08)
 

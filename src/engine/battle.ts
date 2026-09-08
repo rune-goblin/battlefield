@@ -656,7 +656,9 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
 const homewardStep = (u: Unit) => Math.sign(homeRank(u.side) - u.square.rank) || -1;
 
 /** What a shot off this unit rolls: a crewed artillery piece stands in for a Volley the crew
- * may not have, loaded or not — a pinning crew holds its target with the shot it already made. */
+ * may not have, loaded or not — a pinning crew holds its target with the shot it already made.
+ * proto: it reads the piece even when another unit fired it and the crew pinned with its own
+ * Volley, so the escape DC can say launch + 10 for a shot that rolled Volley. */
 const volleyOf = (state: BattleState, u: Unit) => {
   const e = enginesOf(state, u).find((x) => x.status === 'crewed' && x.kind === 'artillery');
   return e ? e.launch : (u.stats.volley ?? 0);

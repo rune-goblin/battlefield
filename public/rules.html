@@ -471,7 +471,7 @@
 <tr><th>Disengage</th><th>Result</th></tr>
 <tr><td>Critical success</td><td>Clean break, and a free Move of your Speed. Every pursuer that gives no retreat is thrown off outright.</td></tr>
 <tr><td>Success</td><td>Clean break, one hex clear</td></tr>
-<tr><td>Failure</td><td>Every holder lands a free strike: one wound at most, never a critical</td></tr>
+<tr><td>Failure</td><td>Every holder whose own DC the roll missed lands a free strike: one wound at most, never a critical</td></tr>
 <tr><td>Critical failure</td><td>The free strikes, 1 disorder, and their grip holds — you stay where you stand</td></tr>
 </table>
 <p>Having broken away, the unit is one hex clear of everything that held it &mdash; a pin included, so a unit that gets clear is pinned no longer &mdash; and any further ground is an ordinary Move. A unit with nowhere clear to go is offered the rest rather than being stuck. A troop that gives <em>no retreat</em> follows a Break off: one free move of its own Speed to re-establish contact, dealing no damage. Against Disengage or Fighting retreat it follows only if it passes its roll. A pinning shooter lands no free strike, and above Break off it rolls like any holder.</p>
@@ -516,7 +516,7 @@
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at &minus;2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
 <tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: &minus;2 to everything it rolls until the start of your next activation.</td></tr>
-<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Withdraw as if in contact, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
+<tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Withdraw as if in contact; a withdrawal that gets clear ends the pin, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
 </table></div>
 <p>Suppress bites hit or miss, because volume fire works by volume. Suppressed is disorder's temporary cousin, two points that lift on their own, and the two stack. A pinned unit is held (section 7), and it cannot charge.</p>
 
@@ -778,7 +778,7 @@
 <tr><th>Act</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
 <tr><td>Move</td><td>1 per Speed's worth</td><td>&mdash;</td><td>1 open or settlement, 2 forest or shallows, 3 swamp, +1 a level climbed. Movement banks across the activation. Not while engaged.</td></tr>
 <tr><td>Charge</td><td>2 &middot; 3 with Press &middot; 4 with Overrun</td><td>Strike + 2 vs Defence on arrival</td><td>Up to two Speeds ending in contact. Exposed until you next act. No +2 through difficult ground; from above, the target's save at &minus;2. Spends the activation's attack.</td></tr>
-<tr><td>Withdraw</td><td>1 Break off &middot; 2 Disengage &middot; 3 Fighting retreat</td><td>Break off: Reflex &minus; disorder vs the highest holder's attack DC. Above it, each holder's Reflex &minus; disorder vs your level DC</td><td>Break off: failure a free strike from each holder, critical a free Move. Disengage: no check; a holder that fails is rooted. Fighting retreat: and it takes 1 disorder. Then one hex clear.</td></tr>
+<tr><td>Withdraw</td><td>1 Break off &middot; 2 Disengage &middot; 3 Fighting retreat</td><td>Break off: Reflex &minus; disorder vs the highest holder's attack DC. Above it, each holder's Reflex &minus; disorder vs your level DC</td><td>Break off: failure a free strike from each holder the roll missed, critical a free Move. Disengage: no check; a holder that fails is rooted. Fighting retreat: and it takes 1 disorder. Then one hex clear.</td></tr>
 <tr><td>Shoot</td><td>1 Fire &middot; 2 Suppress &middot; 3 Pin</td><td>Volley &minus; disorder vs Defence, &minus;2 a band beyond effective range</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude &minus; disorder vs your level DC or takes 1 disorder. Suppress: &minus;2 to everything, hit or miss, until your next activation. Pin: you are a holder at Volley + 10.</td></tr>
 <tr><td>Fight</td><td>1 Strike &middot; 2 Press &middot; 3 Overrun</td><td>Strike vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude or takes 1 disorder &middot; a miss sends you to a Will save vs the target's level DC or 1 disorder &middot; critical failure exposes you. Press: the hit's disorder needs no save. Overrun: drives them back a hex and takes their ground.</td></tr>
 <tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at one wound. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
@@ -797,7 +797,7 @@
 <tr><td>Weakened (2 wounds)</td><td>&minus;2 to Strike and Volley. Broken (3 wounds) is the same.</td></tr>
 <tr><td>Inspired</td><td>+2 on the unit's next roll of any kind; a status bonus</td></tr>
 <tr><td>Suppressed</td><td>&minus;2 to everything the unit rolls until the shooter's next activation</td></tr>
-<tr><td>Pinned</td><td>Held by the shooter at Volley + 10; leaves its hex by Withdraw, cannot charge</td></tr>
+<tr><td>Pinned</td><td>Held by the shooter at Volley + 10; leaves its hex by Withdraw, which ends the pin once it gets clear; cannot charge</td></tr>
 <tr><td>Rooted</td><td>No Move, Charge or Withdraw on its next activation</td></tr>
 <tr><td>Frightened</td><td>&minus;1 to everything the unit rolls and to its Defence until the end of its next activation</td></tr>
 <tr><td>Forest</td><td>+1 Defence against a shot, unless the shooter stands higher</td></tr>
