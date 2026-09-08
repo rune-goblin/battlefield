@@ -74,9 +74,9 @@ export interface Unit {
   exposed: boolean;
   /** +2 on the unit's next roll of any kind. Never set while disorder stands. */
   inspired: boolean;
-  /** The shooter's id: −2 to every roll and to Defence until that shooter acts again. */
+  /** The shooter's id: −2 to every roll and to Defence until that shooter acts again or leaves play. */
   suppressedBy: string | null;
-  /** The shooter's id: it holds this unit at Volley + 10 until it acts again. */
+  /** The shooter's id: it holds this unit at Volley + 10 until it acts again or leaves play. */
   pinnedBy: string | null;
   frightened: boolean;
   /** One action fewer on its next activation. */
@@ -161,7 +161,7 @@ export interface ActionOffer {
 export interface EscapeCheck {
   unit: string;
   name: string;
-  /** That enemy's attack DC — its strike bonus plus ten. */
+  /** That enemy's attack DC — its strike bonus plus ten, or a pinning shooter's Volley plus ten. */
   dc: number;
   /** A `no-retreat` holder follows a withdrawal that is not a critical success. */
   follows: boolean;

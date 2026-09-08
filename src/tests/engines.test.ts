@@ -40,7 +40,7 @@ describe('siege engines', () => {
     const shoot = offer(s0, 'shoot');
     expect(shoot.rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
     expect(shoot.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
-    expect(shoot.rungs[0].targets).toEqual([]);
+    expect(shoot.rungs[0].targets.map((t) => t.id)).toEqual(['u1']);
     const s1 = act(s0, { type: 'shoot', rung: 3, target: 'u1' }, scriptedRng([10]));
     expect(unit(s1, 'u1').wounds).toBe(1);
     expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(engine('Catapult').launch);

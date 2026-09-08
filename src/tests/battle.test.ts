@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
-  endActivation, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
+  endActivation, holdersOf, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, notation, parse } from '../engine/board.js';
@@ -536,43 +536,40 @@ describe('rungs carry effects', () => {
 });
 
 describe('shooting', () => {
-  it('Fire reaches effective range and Aim one band off it', () => {
+  it('every shoot rung reaches the same target, whatever the band', () => {
     const { state } = battle([]);
-    place(state, 'u0', 'c5');
+    unit(state, 'u1').status = 'destroyed';
+    place(state, 'u0', 'c4');
     const s = offer(state, 'shoot', 'u2');
     expect(targets(s, 1)).toEqual(['u0']);
-    place(state, 'u0', 'c4');
-    const far = offer(state, 'shoot', 'u2');
-    expect(targets(far, 1)).toEqual([]);
-    expect(targets(far, 2)).toEqual(['u0']);
+    expect(targets(s, 2)).toEqual(['u0']);
+    expect(targets(s, 3)).toEqual(['u0']);
   });
-  it('a shooter on higher ground counts the band one closer, so Fire reaches medium', () => {
+  it('a shot two bands beyond effective range is at −4', () => {
+    const { state } = battle([]);
+    expect(rangeBetween(state, unit(state, 'u2'), unit(state, 'u0'))).toBe('long');
+    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley! - 4);
+  });
+  it('a shooter on higher ground counts the band one closer, so the penalty lifts', () => {
     const board = openBoard();
     board.squares[6][2].elevation = 1;
     const { state } = battle([], board);
     place(state, 'u0', 'c4');
-    expect(targets(offer(state, 'shoot', 'u2'), 1)).toEqual(['u0']);
-  });
-  it("a troop's own volley pays nothing beyond the rung at extreme", () => {
-    const hex = battle([], openBoard('hex')).state;
-    place(hex, 'u0', 'c2');
-    place(hex, 'u2', 'c9');
-    expect(rangeBetween(hex, unit(hex, 'u2'), unit(hex, 'u0'))).toBe('extreme');
-    expect(shootModifier(hex, unit(hex, 'u2'), unit(hex, 'u0'))).toBe(unit(hex, 'u2').stats.volley);
+    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley);
   });
   it('is −4 into a melee and +1 from behind a standing wall', () => {
     const board = openBoard();
     board.walls[edgeKey(parse('c6'), parse('c7'))] = { tier: 2, boxes: 3, remaining: 3 };
     const { state } = battle([], board);
-    place(state, 'u0', 'c4');
-    place(state, 'u1', 'c5');
+    place(state, 'u0', 'c6');
     const k = unit(state, 'u2');
     expect(shootModifier(state, k, unit(state, 'u0'))).toBe(k.stats.volley! + 1);
-    place(state, 'u3', 'd4');
+    place(state, 'u3', 'd6');
     expect(shootModifier(state, k, unit(state, 'u0'))).toBe(k.stats.volley! + 1 - 4);
   });
   it('caps the top band on hex, where a ring is true range', () => {
     const hex = battle([], openBoard('hex')).state;
+    unit(hex, 'u1').status = 'destroyed';
     place(hex, 'u0', 'c2');
     const bandAt = (cell: string) => {
       place(hex, 'u2', cell);
@@ -582,15 +579,30 @@ describe('shooting', () => {
     expect(bandAt('c6')).toBe('medium');
     expect(bandAt('c8')).toBe('long');
     expect(bandAt('c9')).toBe('extreme');
-    // Kobolds are short-reach; even Snipe's ±2 swing tops out at long, so extreme (from c9)
-    // is still out of reach. Beyond itself never occurs on this board — its own radius caps
-    // extreme at 8, which is already the farthest two hexes can ever be.
-    expect(targets(offer(hex, 'shoot', 'u2'), 3)).toEqual([]);
+    // Every shoot rung reaches an extreme target now — the offset window is gone, and the
+    // ceiling is the band itself. Beyond never occurs on this board: its own radius already
+    // caps extreme at 8, the farthest two hexes can ever be.
+    expect(targets(offer(hex, 'shoot', 'u2'), 1)).toEqual(['u0']);
     // Manhattan distance already over-counts a square diagonal, so square keeps no cap.
     const sq = battle([], openBoard('square')).state;
     place(sq, 'u0', 'a1');
     place(sq, 'u2', 'h8');
     expect(rangeBetween(sq, unit(sq, 'u0'), unit(sq, 'u2'))).toBe('extreme');
+  });
+  it('Suppress bites on a miss', () => {
+    const { state } = battle([]);
+    unit(state, 'u0').stats.defence = 99;
+    const s = act(burn(state, 'u1'), { type: 'shoot', rung: 2, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    expect(unit(s, 'u0').wounds).toBe(0);
+    expect(unit(s, 'u0').suppressedBy).toBe('u2');
+  });
+  it('a pinned unit cannot Move and its pinner is a holder', () => {
+    const { state } = battle([]);
+    const s = act(burn(state, 'u1'), { type: 'shoot', rung: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    const target = unit(s, 'u0');
+    expect(target.pinnedBy).toBe('u2');
+    expect(moveReach(s, target).size).toBe(0);
+    expect(holdersOf(s, target).some((h) => h.id === 'u2')).toBe(true);
   });
 });
 

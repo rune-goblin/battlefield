@@ -259,9 +259,9 @@ const crewedArtillery = (state: BattleState, u: Unit): EngineState | null =>
 const crewedRam = (state: BattleState, u: Unit): EngineState | null =>
   enginesOf(state, u).find((e) => e.status === 'crewed' && !e.fired && e.kind === 'ram') ?? null;
 
-/** The band a Shoot act is centred on: Fire is free here, Aim one band off it either way,
- * Snipe two. A crewed engine replaces the unit's own shooting profile, effective range and
- * all, while it is loaded — but it buys no cheaper activity than anyone else's. */
+/** The band a shot costs nothing extra to reach; every band beyond it is −2 on the roll
+ * (`shootModifier`). A crewed engine replaces the unit's own shooting profile, effective range
+ * and all, while it is loaded — but it buys no cheaper activity than anyone else's. */
 export function shootHome(state: BattleState, u: Unit): number {
   const e = crewedArtillery(state, u);
   const reach = e ? e.reach : u.stats.reach;
@@ -298,6 +298,7 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   m -= Math.max(0, elevation(state, target) - elevation(state, u));
+  m -= 2 * Math.max(0, shotRank(state, u, target) - shootHome(state, u));
   if (state.units.some((a) => a.side === u.side && a.id !== u.id && isEngaged(state, target, a))) m -= 4;
   if (garrisoned(state, u)) m += 1;
   return m;
@@ -342,6 +343,14 @@ export function reduceWounds(target: Unit, n: number): number {
 /** The target's Fortitude, less its own disorder, the way every other save reads it. */
 export const fortitudeModifier = (u: Unit) => u.stats.fortitude - u.disorder + rollBonus(u);
 
+// A suppression or a pin also lifts when its shooter leaves play — dead or fled fires no more.
+function clearAsShooter(state: BattleState, shooterId: string) {
+  for (const o of state.units) {
+    if (o.suppressedBy === shooterId) o.suppressedBy = null;
+    if (o.pinnedBy === shooterId) o.pinnedBy = null;
+  }
+}
+
 /**
  * Wounds that actually land, after the target's Guard. A wound then asks a Fortitude save
  * against the attacker's level DC before it disorders anyone. `pressed` skips that save: the
@@ -354,7 +363,7 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
-  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); return n; }
+  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return n; }
   if (pressed) {
     addDisorder(state, target, 1, 'a pressed hit, no save');
   } else {
@@ -457,6 +466,16 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung
   if (e) e.fired = true;
   log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
+  const eff = rung.shoot!;
+  // Suppress bites hit or miss — volume fire works by volume, not by landing.
+  if (target.status === 'active' && eff.suppress) {
+    target.suppressedBy = u.id;
+    log(state, target, `${target.name} is suppressed: −2 to everything until ${u.name} next acts.`);
+  }
+  if (target.status === 'active' && eff.pin) {
+    target.pinnedBy = u.id;
+    log(state, target, `${target.name} is pinned by ${u.name} until it next acts.`);
+  }
 }
 
 const wallDc = (state: BattleState, wall: Wall) =>
@@ -490,7 +509,7 @@ export const moveActionsFor = (u: Unit, feet: number) =>
 /** Every cell the unit can still Stride to, what it costs in feet, and in Move actions. */
 export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
-  if (u.speed === 0 || u.rooted > 0 || u.actions <= 0 || u.status !== 'active') return out;
+  if (u.speed === 0 || u.rooted > 0 || u.pinnedBy || u.actions <= 0 || u.status !== 'active') return out;
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = reachable(state.board, u.square, {
@@ -531,7 +550,7 @@ function approach(state: BattleState, u: Unit, e: Unit, moves: Map<string, MoveR
 
 /** Enemies this unit can both reach and afford the melee against. */
 export function chargeTargets(state: BattleState, u: Unit): ChargeOption[] {
-  if (u.stats.strike === null || u.attacked) return [];
+  if (u.stats.strike === null || u.attacked || u.pinnedBy) return [];
   const moves = moveReach(state, u);
   const out: ChargeOption[] = [];
   for (const e of state.units.filter((x) => x.side !== u.side && x.status === 'active')) {
@@ -573,16 +592,22 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
 
 const homewardStep = (u: Unit) => Math.sign(homeRank(u.side) - u.square.rank) || -1;
 
-/** The DC to break from a holder: its attack DC, which is its strike bonus plus ten. */
-export const escapeDcFor = (holder: Unit) => (holder.stats.strike ?? 0) + 10;
+/** The DC to break from a holder: its attack DC, its strike bonus plus ten — or, for a pinning
+ * shooter, its Volley plus ten, since nobody is in contact to strike. */
+export const escapeDcFor = (holder: Unit, target: Unit) =>
+  ((holder.id === target.pinnedBy ? holder.stats.volley : holder.stats.strike) ?? 0) + 10;
 
 /** Reflex is the widest-spreading defensive stat on a troop sheet (5.6 points within a level
  * against AC's 3.2), so it is the one that tells troops apart. */
 export const escapeModifier = (u: Unit) => u.stats.reflex - u.disorder + rollBonus(u);
 
-/** Enemies that can actually hold a unit. One with no melee strike cannot. */
-export const holdersOf = (state: BattleState, u: Unit) =>
-  engagedEnemies(state, u).filter((e) => e.stats.strike !== null);
+/** Enemies that can actually hold a unit: one with no melee strike cannot, but an active
+ * pinning shooter holds it at range regardless. */
+export const holdersOf = (state: BattleState, u: Unit): Unit[] => {
+  const engaged = engagedEnemies(state, u).filter((e) => e.stats.strike !== null);
+  const pinner = u.pinnedBy ? state.units.find((e) => e.id === u.pinnedBy && e.status === 'active') : undefined;
+  return pinner && !engaged.some((e) => e.id === pinner.id) ? [...engaged, pinner] : engaged;
+};
 
 function moveTo(state: BattleState, u: Unit, to: Square) {
   u.square = to;
@@ -591,6 +616,7 @@ function moveTo(state: BattleState, u: Unit, to: Square) {
 
 function leaveField(state: BattleState, u: Unit) {
   u.status = 'left';
+  clearAsShooter(state, u.id);
   log(state, u, `${u.name} leaves the field.`);
 }
 
@@ -626,12 +652,9 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
   switch (type) {
     case 'shoot': {
-      const home = shootHome(state, u);
-      const offset = index - 1;
-      const inBand = (e: Unit) => { const r = shotRank(state, u, e); return inRange(r) && Math.abs(r - home) <= offset; };
-      const targets: RungTarget[] = enemies.filter(inBand).map(unitTarget);
+      const targets: RungTarget[] = enemies.filter((e) => inRange(shotRank(state, u, e))).map(unitTarget);
       if (u.side === 'attacker' && crewedArtillery(state, u)) {
-        targets.push(...wallKeys(state).filter((k) => { const r = wallRank(state, u, k); return inRange(r) && Math.abs(r - home) <= offset; }).map(wallTarget));
+        targets.push(...wallKeys(state).filter((k) => inRange(wallRank(state, u, k))).map(wallTarget));
       }
       return { needsTarget: true, targets };
     }
@@ -740,11 +763,12 @@ function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawActio
   let pinned = false;
   for (const holder of holdersOf(state, u)) {
     if (u.status !== 'active') break;
-    const c = check(rng, escapeModifier(u), escapeDcFor(holder));
+    const c = check(rng, escapeModifier(u), escapeDcFor(holder, u));
     log(state, u, `${u.name} breaks from ${holder.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     escapes.push({ holder, degree: c.degree });
     if (succeeded(c.degree)) continue;
-    resolveStrike(state, rng, holder, u, { free: true, label: 'strikes the withdrawing' });
+    // A pinning shooter is not in contact, so a failed roll costs no free strike from it.
+    if (holder.id !== u.pinnedBy) resolveStrike(state, rng, holder, u, { free: true, label: 'strikes the withdrawing' });
     if (c.degree !== 'critical-failure' || u.status !== 'active') continue;
     addDisorder(state, u, 1, `${holder.name}'s grip`);
     pinned = true;
@@ -870,16 +894,14 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: 
 function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: RungAction) {
   switch (rung.type) {
     case 'shoot': {
-      const home = shootHome(state, u);
-      const offset = rung.index - 1;
-      const outOfBand = (r: number) => !inRange(r) || Math.abs(r - home) > offset;
+      const outOfBand = (r: number) => !inRange(r);
       if (action.target && action.target.includes('|')) {
         const e = crewedArtillery(state, u);
         if (!e) { log(state, u, `${u.name} has nothing that can batter a wall from here.`); break; }
         if (outOfBand(wallRank(state, u, action.target))) { log(state, u, `${u.name}'s shot falls short of the wall.`); break; }
         e.fired = true;
         u.attacked = true;
-        attackWall(state, rng, u, action.target, e.launch - u.disorder - (isWeakened(u) ? 2 : 0), 'bombards');
+        attackWall(state, rng, u, action.target, e.launch - u.disorder - (isWeakened(u) ? 2 : 0) + rollBonus(u), 'bombards');
         break;
       }
       const target = unit(state, action.target!);
@@ -892,7 +914,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
         const ram = crewedRam(state, u);
         if (ram) ram.fired = true;
         u.attacked = true;
-        const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + (ram ? 2 : 0);
+        const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + (ram ? 2 : 0) + rollBonus(u);
         attackWall(state, rng, u, action.target, bonus, ram ? 'rams' : 'hacks at');
         break;
       }
@@ -982,10 +1004,7 @@ function begin(state: BattleState, u: Unit) {
     u.stunned = false;
     log(state, u, `${u.name} is stunned: one fewer action this activation.`);
   }
-  for (const o of state.units) {
-    if (o.suppressedBy === u.id) o.suppressedBy = null;
-    if (o.pinnedBy === u.id) o.pinnedBy = null;
-  }
+  clearAsShooter(state, u.id);
 }
 
 // What was laid on the unit's next activation is spent by this one and cleared at the end.
@@ -1072,7 +1091,7 @@ export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffe
     cost: BASE_COST,
     extra,
     modifier: escapeModifier(u),
-    escapes: holders.map((e) => ({ unit: e.id, name: e.name, dc: escapeDcFor(e), follows: e.noRetreat })),
+    escapes: holders.map((e) => ({ unit: e.id, name: e.name, dc: escapeDcFor(e, u), follows: e.noRetreat })),
     targets: withdrawTargets(state, u, extra * u.speed).map((sq) => cellTarget(notation(sq))),
   };
 }

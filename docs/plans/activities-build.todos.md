@@ -74,3 +74,28 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   is never thrown away for the higher number.
 - `act`'s guard for a unit destroyed at `begin` went with `tickLingering`: nothing at `begin`
   can destroy a unit now, and Wrath's wound lands at `finish` instead.
+
+## Wave 2 (2026-09-08)
+
+- `holdersOf` folds a pinner into the same array as engaged holders rather than returning a
+  separate list: `escapeDcFor` now takes the withdrawing unit too, so it can tell a pinner's
+  Volley DC from a melee holder's Strike DC by checking `holder.id === target.pinnedBy`.
+- The one legacy per-holder roll in `doWithdraw` (Wave 5's rewrite) skips the free strike when
+  the holder is the pinner, since the rules give it none; this reads `holder.id === u.pinnedBy`
+  rather than a field on the holder, so it needs no new state.
+- Suppress and Pin's clearing on "the shooter leaves play" is one helper, `clearAsShooter`,
+  called from `begin` (its old spot), from a wound that destroys the target, and from
+  `leaveField`; nothing else changes a unit's `status` away from `active`.
+- Every enemy in bands 1 to 4 is now a legal shoot target regardless of which of the three
+  activities is bought, per "targetsFor('shoot') offers every enemy at a band of 1 to 4". This
+  changed two tests outside the wave's named files that encoded the old offset-window rule:
+  `offers.test.ts`'s "drops a shoot rung once the target walks out of its band" and
+  `engines.test.ts`'s catapult test, both rewritten to the new, wider target set.
+- `battle.test.ts`'s "shooting" describe block keeps four tests beyond the three the wave names
+  (elevation closing the band, the melee/wall modifier, the hex top-band cap) with updated
+  numbers or squares, rather than dropping them: they assert mechanics this wave leaves standing
+  (elevation, garrison, engagement, the hex ring cap), only now interacting with the new −2-a-
+  band penalty or the removed offset window.
+- Per the coordinator's note, both wall-attack inline modifiers (`shoot`'s bombard and `fight`'s
+  hack/ram) now add `rollBonus(u)`, closing the gap Wave 1 left where a suppressed unit battered
+  a wall unmodified.

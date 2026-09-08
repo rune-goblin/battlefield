@@ -41,22 +41,17 @@ describe('what a target affords', () => {
     expect(mine).not.toContain('fight');
   });
 
-  // The rungs *are* the range: a shot is offered from a rung whose swing off effective range
-  // reaches that far, so walking a target away drops rungs off the bottom rather than greying
-  // out one Shoot button.
-  it('drops a shoot rung once the target walks out of its band', () => {
+  // A shot reaches any band 1 to 4: nothing narrows the target list from one shoot rung to
+  // the next, only the roll's own −2-a-band penalty (`shootModifier`).
+  it('offers the same shoot rungs whatever the band', () => {
     const { state, me, foe } = battle();
     const rungsAt = (square: string) => {
       unit(state, foe).square = parse(square);
       const shoot = offersAt(state, { kind: 'unit', id: foe }, me).find((o) => o.offer.type === 'shoot');
       return shoot?.rungs.map((r) => r.label) ?? [];
     };
-    const close = rungsAt('c5');
-    const far = rungsAt('c7');
-    expect(close).toContain('Fire');
-    expect(far).not.toContain('Fire');
-    expect(far.length).toBeGreaterThan(0);
-    expect(far.every((r) => close.includes(r))).toBe(true);
+    expect(rungsAt('c5')).toEqual(['Fire', 'Suppress', 'Pin']);
+    expect(rungsAt('c7')).toEqual(['Fire', 'Suppress', 'Pin']);
   });
 
   it('offers nothing at an empty cell — movement is not a rung', () => {

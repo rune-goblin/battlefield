@@ -13,7 +13,7 @@ export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', '
 export type Grade = 1 | 2 | 3;
 
 export type RungId =
-  | 'fire' | 'aim' | 'snipe'
+  | 'fire' | 'suppress' | 'pin'
   | 'strike' | 'press' | 'overrun'
   | 'brace' | 'dig-in' | 'shieldwall'
   | 'steady' | 'rally' | 'inspire';
@@ -21,6 +21,10 @@ export type RungId =
 /** Each rung includes everything below it. `press`: a hit's disorder needs no save. `drive`: a
  * hit shoves the target one hex and the attacker takes its ground. */
 export interface FightEffect { press: boolean; drive: boolean }
+/** Each rung includes everything below it. `suppress` sets the target's `suppressedBy`, hit or
+ * miss; `pin` also sets `pinnedBy`, which makes the shooter one of the target's holders (see
+ * `holdersOf` in battle.ts). Both clear at the shooter's own `begin`, or its leaving play. */
+export interface ShootEffect { suppress: boolean; pin: boolean }
 /** Every Guard rung sets the same Defence; the rung carries the effect on top. `blunt` caps a
  * hit at one wound, so a critical lands as an ordinary one, and `braces` gives adjacent allies
  * what a Guard buys. Each rung includes everything below it. */
@@ -38,19 +42,20 @@ export interface Rung {
   verb: string;
   detail: string;
   fight?: FightEffect;
+  shoot?: ShootEffect;
   guard?: GuardEffect;
   rally?: RallyEffect;
 }
 
 export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = {
-  // A troop's effective range (its Reach) is the band Fire reaches for free. Aim and Snipe do
-  // not climb toward a fixed far band — they buy one, then two bands of swing away from that
-  // effective range, in whichever direction the target actually is. See `shootHome` and its
-  // callers in battle.ts.
+  // A troop's effective range (its Reach) is `shootHome`, what Fire reaches for free; every
+  // band beyond it costs −2 on the roll (`shootModifier`), the same whichever of the three a
+  // unit buys. Suppress and Pin reach exactly as far as Fire does — they add an effect on the
+  // hit, not more range. See `shootHome` and its callers in battle.ts.
   shoot: [
-    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'Your effective range.' },
-    { id: 'aim', verb: 'aims', type: 'shoot', index: 2, label: 'Aim', detail: 'One band off your effective range, either direction.' },
-    { id: 'snipe', verb: 'snipes', type: 'shoot', index: 3, label: 'Snipe', detail: 'Two bands off your effective range, either direction.' },
+    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'A volley at any target you can see, −2 for every band beyond your effective range.', shoot: { suppress: false, pin: false } },
+    { id: 'suppress', verb: 'suppresses', type: 'shoot', index: 2, label: 'Suppress', detail: 'Fire, and hit or miss the target is suppressed: −2 to everything until your next activation.', shoot: { suppress: true, pin: false } },
+    { id: 'pin', verb: 'pins', type: 'shoot', index: 3, label: 'Pin', detail: 'Suppress, and the target is pinned: you count as one of its holders, at Volley + 10, until your next activation.', shoot: { suppress: true, pin: true } },
   ],
   fight: [
     { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'One roll against their Defence. A miss can cost you heart.', fight: { press: false, drive: false } },
