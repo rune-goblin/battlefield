@@ -11,8 +11,9 @@ export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
 export type Reach = 'short' | 'medium' | 'long' | 'extreme';
 
 // Structural signals an importer reads straight off a statblock: recurring action names that
-// differentiate troops where the level tables do not. AC and attack DC are essentially f(level)
-// across all 162 published troops, so they carry no grade information; these do.
+// differentiate troops where the level tables do not. The vocabulary is closed and the importer
+// still writes all six, but the engine reads only `no-retreat` (section 2): every activity
+// costs the same for every unit, so nothing else has anything left to change.
 export type Signal = 'mounted' | 'melee-drill' | 'shielded' | 'formation' | 'magic-ward' | 'no-retreat';
 
 export type Tactic =

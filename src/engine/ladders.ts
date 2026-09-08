@@ -1,22 +1,16 @@
-import { cardTraits, deriveStats, type Signal, type Tactic, type UnitCard, type UnitStats } from './cards.js';
+import { cardTraits, deriveStats, type Tactic, type UnitCard } from './cards.js';
 import { treesForTradition, type Tree } from './magic.js';
 import { saveBonus, type Tier } from './tables.js';
 
-// Two types have no ladder. A Move action spends the troop's Speed in feet, and taking it
-// twice or three times is what March and Charge used to name. A Withdraw rolls the escaping
-// unit's Reflex against whoever is holding it, and the four degrees say what Scatter, Break
-// off and Fighting retreat used to name — see `doWithdraw` in `battle.ts`. Cast keeps its slot
-// in `LadderType` (the offer menu still groups by it) but carries no grade of its own: every
-// tier is priced at its own number of actions — see `magic.ts` and `doRung` in `battle.ts`.
+// Two verbs have no table of their own. A Move action spends the troop's Speed in feet, and
+// Withdraw rolls the escaping unit's Reflex against whoever is holding it — see `doWithdraw`
+// in `battle.ts`. Cast keeps its slot in `LadderType` (the offer menu still groups by it) and
+// its own six trees live in `magic.ts`.
 export type LadderType = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
-/** What a rung costs in actions: one at or below the grade, and one more for every rung above
- * it. Every ladder pays the same way, and nothing rolls for a rung. */
-export const rungCost = (grade: Grade, index: Grade): number => 1 + Math.max(0, index - grade);
-
+/** Which of a verb's three activities: the index is also the price in actions. */
 export type Grade = 1 | 2 | 3;
-export type Grades = Record<Exclude<LadderType, 'cast'>, Grade>;
 
 export type RungId =
   | 'fire' | 'aim' | 'snipe'
@@ -82,70 +76,18 @@ export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = 
 
 export const rungOf = (type: Exclude<LadderType, 'cast'>, index: Grade): Rung => LADDERS[type][index - 1];
 
-// Grades come from the statblock, never from a curated list. Two measurements over all 162
-// published troops decide which numbers may be trusted: AC spreads 3.2 points within a level
-// and attack DC 2.6 (at level 12 every troop shares one attack DC), so both are f(level) and
-// carry no grade information. Will spreads 5.1 and Speed spreads across seven bands, so those
-// two are read numerically; the rest come from the recurring action names an importer can see
-// on any troop ever published. Tactics, where a card carries them, only raise a grade.
+// Quality comes off the statblock, never from a curated list: of everything an importer can
+// read, the Will save is the one that spreads (5.1 points within a level, against AC's 3.2).
 const TIERS: Tier[] = ['low', 'moderate', 'high', 'extreme'];
-type Band = 'below' | Tier;
 
-export function tierOf(value: number, level: number, table: (l: number, t: Tier) => number): Band {
-  let band: Band = 'below';
-  for (const t of TIERS) if (value >= table(level, t)) band = t;
-  return band;
-}
-
-const RANK: Record<Band, number> = { below: -1, low: 0, moderate: 1, high: 2, extreme: 3 };
-const atLeast = (band: Band, t: Tier) => RANK[band] >= RANK[t];
-
-export const willBand = (stats: UnitStats, level: number): Band => tierOf(stats.will, level, saveBonus);
-
-/** How much disorder a unit absorbs before it routs. Discipline is its Will band. */
-const QUALITY: Record<Band, number> = { below: 2, low: 3, moderate: 4, high: 5, extreme: 6 };
+/** The disorder a unit absorbs before it is shaken, by Will band: 2 below low, 6 at extreme. */
+const QUALITY = [2, 3, 4, 5, 6];
 
 export function qualityFor(card: UnitCard): number {
-  return QUALITY[willBand(deriveStats(card), card.level)];
-}
-
-const raise = (g: Grade, to: Grade): Grade => (to > g ? to : g);
-const cap = (n: number): Grade => Math.max(1, Math.min(3, n)) as Grade;
-
-// A tactic is a hand-authored hint that a statblock's numbers do not carry. Every grade below
-// is already decided without one.
-const TACTIC_GRADE: Partial<Record<Tactic, [Exclude<LadderType, 'cast'>, Grade]>> = {
-  'covering-fire': ['shoot', 3],
-  'reactive-attack': ['fight', 3],
-  'dirty-fighting': ['fight', 3],
-  'feint': ['fight', 3],
-  'raise-shields': ['guard', 3],
-  'shield-block': ['guard', 3],
-  'defend-allies': ['rally', 3],
-  'battlefield-medicine': ['rally', 3],
-};
-
-export function gradesFor(card: UnitCard): Grades {
-  const stats = deriveStats(card);
-  const { fear, tactics, signals } = cardTraits(card);
-  const l = card.level;
-  const has = (s: Signal) => signals.includes(s);
-  const willB = willBand(stats, l);
-
-  const grades: Grades = {
-    // Reach only picks the effective range Fire covers; every troop pays the same one action
-    // more to swing a band off it, same as an untrained shot at anything else.
-    shoot: 1,
-    fight: stats.strike === null ? 1 : has('melee-drill') || fear ? 3 : 2,
-    guard: cap(1 + (has('formation') ? 1 : 0) + (has('shielded') || has('magic-ward') ? 1 : 0)),
-    rally: atLeast(willB, 'high') ? 3 : atLeast(willB, 'moderate') ? 2 : 1,
-  };
-
-  for (const t of tactics) {
-    const bump = TACTIC_GRADE[t];
-    if (bump) grades[bump[0]] = raise(grades[bump[0]], bump[1]);
-  }
-  return grades;
+  const will = deriveStats(card).will;
+  let quality = QUALITY[0];
+  TIERS.forEach((t, i) => { if (will >= saveBonus(card.level, t)) quality = QUALITY[i + 1]; });
+  return quality;
 }
 
 // A tactic grants its tree's Tier 1 as a fixed, untiered effect to a troop with no magic of

@@ -6,11 +6,11 @@ import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type Un
 import { CELL_FEET, reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  gradesFor, LADDERS, qualityFor, rungCost, rungOf, treesFor,
+  LADDERS, qualityFor, rungOf, treesFor,
   type Grade, type LadderType, type Rung,
 } from './ladders.js';
 import {
-  bandOut, castPoolFor, castRungOf, TRADITION_TIERS, TREE_LABEL, TREE_RANGE, TREE_ROLLS,
+  bandOut, castRungOf, TRADITION_TIERS, TREE_LABEL, TREE_RANGE, TREE_ROLLS,
   TREE_TARGET, type CastAxis, type CastBand, type CastTier, type Tree,
 } from './magic.js';
 import type { Rng } from './rng.js';
@@ -55,17 +55,15 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     return {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
-      grades: gradesFor(d.card),
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card),
-      castPool: traits.caster ? castPoolFor(d.card.level) : 0,
       quality: qualityFor(d.card),
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
-      mounted: traits.signals.includes('mounted'), noRetreat: traits.signals.includes('no-retreat'),
+      noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e) => engineState(e, d.side, sq, false)),
       square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
-      guard: null, rooted: 0, exposed: false, heartened: false, compelled: false,
+      guard: null, rooted: 0, exposed: false, heartened: false,
       defense: { bonus: 0, noWoundDisorder: false, damageReduction: 0 },
       offense: { bonus: 0, damage: 0, noRepulse: false },
       movementBuff: { bonusFeet: 0, flies: false },
@@ -248,14 +246,9 @@ const crewedArtillery = (state: BattleState, u: Unit): EngineState | null =>
 const crewedRam = (state: BattleState, u: Unit): EngineState | null =>
   enginesOf(state, u).find((e) => e.status === 'crewed' && !e.fired && e.kind === 'ram') ?? null;
 
-/** A crewed engine replaces the unit's own shooting profile, effective range and all, while it
- * is loaded: a gun crew works its piece across its whole engineered spread for one action. */
-export function shootGrade(state: BattleState, u: Unit): Grade {
-  return crewedArtillery(state, u) ? 3 : u.grades.shoot;
-}
-
 /** The band a Shoot act is centred on: Fire is free here, Aim one band off it either way,
- * Snipe two. A crewed engine's own reach overrides the unit's, same as its grade above. */
+ * Snipe two. A crewed engine replaces the unit's own shooting profile, effective range and
+ * all, while it is loaded — but it buys no cheaper activity than anyone else's. */
 export function shootHome(state: BattleState, u: Unit): number {
   const e = crewedArtillery(state, u);
   const reach = e ? e.reach : u.stats.reach;
@@ -706,55 +699,35 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
   }
 }
 
-const gradeOf = (state: BattleState, u: Unit, type: LadderType): Grade =>
-  (type === 'shoot' ? shootGrade(state, u) : type === 'cast' ? 1 : u.grades[type]);
-
 /** Fight, Shoot and a Blast are the one attack an activation gets. Everything else may be
  * repeated; a second attack was the thing that broke the pacing. */
 const isAttack = (type: LadderType, spell: Tree | null) =>
   type === 'fight' || type === 'shoot' || (type === 'cast' && spell === 'blast');
 
-/** What a rung costs this unit in actions, or `null` when no number of actions reaches it. A
- * charge carries a Fight rung of its own, with no `ActionOffer` around it, so the rule lives
- * here rather than inside `rungOption`. */
-export function rungCostFor(state: BattleState, u: Unit, type: Exclude<LadderType, 'cast'>, index: Grade): number | null {
-  const granted = gradeOf(state, u, type);
-  if (index > granted && u.compelled) return null;
-  return rungCost(granted, index);
-}
-
 /**
- * Cast's own price: a tier costs its own number of actions, capped by how far the caster's own
- * tradition may ever reach in that tree (0 meaning no access, section 11). A tactic-granted
- * tree with no tradition behind it stops at Tier 1.
+ * Cast's own price: an activity costs its own index, capped by how far the caster's tradition
+ * may ever reach in that tree (0 meaning no access, section 11). A tactic-granted tree with no
+ * tradition behind it stops at the one-action activity.
  */
 function castCostFor(u: Unit, tree: Tree, index: Grade): number | null {
-  if (index === 1) return 1;
-  if (u.compelled) return null;
   const cap = u.tradition ? TRADITION_TIERS[u.tradition][tree] : 1;
   return index <= cap ? index : null;
 }
 
-/** What a unit can put toward a rung: its actions, and for a cast its own Cast-only ones. */
-const affordable = (u: Unit, type: LadderType) => u.actions + (type === 'cast' ? u.castPool : 0);
-
 function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null, blocked: string | null): RungOption {
   const rung = type === 'cast' ? castRungOf(spell!, index as CastTier) : rungOf(type, index);
-  const cost = type === 'cast' ? castCostFor(u, spell!, index) : rungCostFor(state, u, type, index);
+  const cost = type === 'cast' ? castCostFor(u, spell!, index) : index;
   const { needsTarget, targets } = targetsFor(state, u, type, index, spell);
-  let reason: string | null = blocked ?? (cost === null
-    ? (u.compelled ? 'compelled' : "above your tradition's reach")
-    : null);
-  if (!reason && cost !== null && cost > affordable(u, type)) reason = `needs ${cost} actions`;
+  let reason: string | null = blocked ?? (cost === null ? "above your tradition's reach" : null);
+  if (!reason && cost !== null && cost > u.actions) reason = `needs ${cost} actions`;
   if (!reason && needsTarget && !targets.length) reason = 'no target';
   return { rung: rung.id, index, label: rung.label, detail: rung.detail, cost, legal: reason === null, reason, needsTarget, targets };
 }
 
-/** The act itself, before any rung above the grade. */
+/** The one action a withdrawal costs before any ground bought on top of it. */
 const BASE_COST = 1;
 
 function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
-  const granted = gradeOf(state, u, type);
   const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
     : type === 'rally' && !u.disorder && !alliesWithin(state, u, 2).length ? 'no disorder to clear, and nobody near to lift'
       : null;
@@ -762,8 +735,7 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | n
   return {
     type, spell,
     label: spell ? TREE_LABEL[spell] : type[0].toUpperCase() + type.slice(1),
-    detail: type === 'cast' ? castRungOf(spell!, 1).detail : LADDERS[type][granted - 1].detail,
-    granted,
+    detail: type === 'cast' ? castRungOf(spell!, 1).detail : LADDERS[type][0].detail,
     rungs,
   };
 }
@@ -934,10 +906,6 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: 
         target.control.actionPenalty = true;
         log(state, u, `${u.name} compels ${target.name} further: -1 action on its next activation.`);
       }
-      if (effectTier >= 3) {
-        target.compelled = true;
-        log(state, u, `${u.name} compels ${target.name} fully: it may not reach above its grade.`);
-      }
       break;
     }
     case 'offense': {
@@ -1086,7 +1054,7 @@ function tickLingering(state: BattleState, u: Unit) {
 }
 
 // What lasted "until this unit acts again" ends when it starts acting. What was laid on its
-// next activation — rooted, compelled, Controlling's action penalty — is spent by this one and
+// next activation — rooted, Controlling's action penalty — is spent by this one and
 // cleared at the end (or, for the action penalty, consumed right here).
 function begin(state: BattleState, u: Unit) {
   if (state.begun && state.active === u.id) return;
@@ -1098,7 +1066,6 @@ function begin(state: BattleState, u: Unit) {
   u.guard = null;
   u.exposed = false;
   u.defense = { bonus: 0, noWoundDisorder: false, damageReduction: 0 };
-  u.castPool = castPoolFor(u.level);
   if (u.control.actionPenalty) {
     u.actions -= 1;
     u.control.actionPenalty = false;
@@ -1113,7 +1080,6 @@ function finish(state: BattleState, u: Unit) {
   u.feet = 0;
   u.rooted = Math.max(0, u.rooted - 1);
   u.heartened = false;
-  u.compelled = false;
   u.offense = { bonus: 0, damage: 0, noRepulse: false };
   u.movementBuff = { bonusFeet: 0, flies: false };
   u.control.movementPenaltyFeet = 0;
@@ -1151,15 +1117,11 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
   const price = opt.cost!;
-  // A caster's own actions go first, so a tier leaves as many of the ordinary three as it can.
-  const fromPool = offer.type === 'cast' ? Math.min(u.castPool, price) : 0;
-  const cost = price - fromPool;
-  if (cost > u.actions) throw new Error(`${opt.label} needs ${price} actions`);
-  u.castPool -= fromPool;
+  if (price > u.actions) throw new Error(`${opt.label} needs ${price} actions`);
   if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}.`);
   if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.rung as CastTier, action.axis ?? 'effect', action);
   else perform(state, rng, u, rungOf(offer.type, action.rung), action);
-  return cost;
+  return price;
 }
 
 /**
@@ -1224,17 +1186,16 @@ function doStride(state: BattleState, u: Unit, action: MoveAction): number {
   return m.actions;
 }
 
-// A Charge is not a rung: it is the movement it takes, plus the Fight rung's own price.
+// A Charge is not a rung: it is the movement it takes, plus the Fight activity's own price —
+// a Strike unless the action names another.
 function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): number {
   const foe = unit(state, action.target);
   if (u.stats.strike === null) throw new Error(`${u.name} has no melee`);
   if (u.attacked) throw new Error(`${u.name} has already attacked this activation`);
   const option = approach(state, u, foe, moveReach(state, u));
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
-  const wanted = action.rung ?? gradeOf(state, u, 'fight');
-  const price = rungCostFor(state, u, 'fight', wanted);
-  if (price === null) throw new Error(`${rungOf('fight', wanted).label} is out of reach`);
-  const cost = option.actions + price;
+  const wanted = action.rung ?? 1;
+  const cost = option.actions + wanted;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
   spendMovement(u, option);
   moveTo(state, u, parse(option.cell));

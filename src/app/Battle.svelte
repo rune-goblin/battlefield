@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, engagedEnemies, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, reachOf, rungCostFor, rungOf, TREE_TARGET, withdrawTargets,
+    offersAt, reachOf, rungOf, TREE_TARGET, withdrawTargets,
     type ActionOffer, type ChargeOption, type Grade, type LadderType, type MoveReach, type RungOption,
     type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type WithdrawOffer,
   } from '../engine/index.js';
@@ -524,23 +524,19 @@
         : actionCost(row.actions);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
 
-  // A charge carries a Fight rung of its own; `doCharge` takes the granted one unless told.
+  // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
   const FIGHT_RUNGS: Grade[] = [1, 2, 3];
-  const chargeRung = $derived(pending?.rung ?? active?.grades.fight ?? 1);
-  const chargeCost = (c: ChargePreview, rung: Grade) => {
-    const price = active ? rungCostFor(b, active, 'fight', rung) : null;
-    return price === null ? null : c.actions - 1 + price;
-  };
+  const chargeRung = $derived(pending?.rung ?? 1);
+  // `c.actions` already counts one action for the melee; the activity's own price replaces it.
+  const chargeCost = (c: ChargePreview, rung: Grade) => c.actions - 1 + rung;
 
   /** What each reading of a drop actually costs. */
   const dropCost = (row: Preview): number =>
     row.kind === 'move' ? row.actions
-      : row.kind === 'charge' ? (chargeCost(row, chargeRung) ?? row.actions)
+      : row.kind === 'charge' ? chargeCost(row, chargeRung)
         : (act?.withdraw?.cost ?? 1) + withdrawDistance(row.cell);
   const cost = $derived(picked ? dropCost(picked) : aimed ? aimed.cost ?? 0 : 0);
   const left = $derived(act?.actions ?? 0);
-  // A caster's own actions stretch what its ordinary three can buy.
-  const purse = $derived((act?.actions ?? 0) + (aimGroup?.offer.type === 'cast' ? active?.castPool ?? 0 : 0));
 
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
     if (!preview) return [];
@@ -706,10 +702,9 @@
     // second choice of tree.
     if (only === 'cast' && armedTree) groups = groups.filter((g) => g.offer.spell === armedTree);
     aim = groups.length ? { cell, target, label, groups, group: 0, index: 0 } : null;
-    // The granted rung is the one to land on first: it is the cheapest, and the one the
-    // player most often wants.
+    // The cheapest legal row is the one to land on: it is the one the player most often wants.
     if (aim) {
-      const i = aimRungs.findIndex((o) => o.index === aim!.groups[0].offer.granted && o.legal);
+      const i = aimRungs.findIndex((o) => o.legal);
       if (i >= 0) aim = { ...aim, index: i };
     }
   }
@@ -829,7 +824,6 @@
     u.defense.bonus ? `defended +${u.defense.bonus}` : '',
     u.offense.bonus ? `offense +${u.offense.bonus}` : '',
     u.heartened ? `heartened +${HEART_BONUS}` : '',
-    u.compelled ? 'compelled' : '',
     b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
   ].filter(Boolean).join(' · ');
 
@@ -1012,16 +1006,16 @@
             <div class="rung-chips">
               {#each FIGHT_RUNGS as g (g)}
                 {@const total = chargeCost(row, g)}
-                {@const can = total !== null && total <= active.actions}
+                {@const can = total <= active.actions}
                 <button
                   class="rung-chip"
                   class:on={chargeRung === g}
                   disabled={!can}
-                  title={total === null ? 'out of reach' : !can ? `needs ${total} actions` : ''}
+                  title={can ? '' : `needs ${total} actions`}
                   onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
                 >
                   {rungOf('fight', g).label}
-                  {#if total !== null}<ActionCost n={total} />{/if}
+                  <ActionCost n={total} />
                 </button>
               {/each}
             </div>
@@ -1046,16 +1040,13 @@
         {#each aimRungs as opt, i (opt.rung)}
           <button class="popup-row rung-row" class:on={i === aim.index} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => aimChoose(i)}>
             <span class="popup-verb">
-              <span class="row-cost" class:over={(opt.cost ?? 0) > purse}><ActionCost n={opt.cost ?? 0} size="1.15em" /></span>
+              <span class="row-cost" class:over={(opt.cost ?? 0) > active.actions}><ActionCost n={opt.cost ?? 0} size="1.15em" /></span>
               {opt.label}
               {#if !opt.legal && opt.reason}<span class="reason">{opt.reason}</span>{/if}
             </span>
             <span class="muted">{opt.detail}</span>
           </button>
         {/each}
-        {#if aimGroup.offer.type === 'cast' && active.castPool > 0}
-          <p class="popup-onward">Your own <ActionCost n={active.castPool} /> for casting go first.</p>
-        {/if}
       </BoardPopup>
     {/if}
   {/snippet}
@@ -1068,11 +1059,11 @@
       </div>
       <div class="row action-pips">
         {#if active.actions > 0}<ActionCost n={active.actions} size="1.3em" />{/if}
-        <span class="muted">{active.actions} of {ACTIONS_PER_ACTIVATION} left{active.castPool ? ` · ${active.castPool} more for casting` : ''}</span>
+        <span class="muted">{active.actions} of {ACTIONS_PER_ACTIVATION} left</span>
       </div>
       <p class="cost-key">
-        <ActionCost n={1} /> the rung at your grade. Each rung above it costs <ActionCost n={1} /> more,
-        and nothing is rolled for it. One attack an activation.
+        Every activity costs the same for every unit: <ActionCost n={1} />, <ActionCost n={2} /> or
+        <ActionCost n={3} />, and nothing is rolled for it. One attack an activation.
       </p>
 
       <table class="stats"><tbody>
@@ -1080,7 +1071,6 @@
         <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
         <tr><td>Disorder</td><td class="stat">{active.disorder}/{active.quality}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
         <tr><td>Move</td><td class="stat">{active.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
-        <tr><td>Grades</td><td colspan="3">Fight {active.grades.fight} · Shoot {active.grades.shoot} · Guard {active.grades.guard} · Rally {active.grades.rally}</td></tr>
         {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
         {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
       </tbody></table>
@@ -1264,7 +1254,6 @@
 
   .hint { font-size: .8rem; }
 
-  .popup-onward { margin: .3rem .5rem 0; padding-top: .3rem; border-top: 1px solid var(--rule); font-size: .74rem; color: var(--muted); }
   .popup-dials { display: flex; flex-direction: column; gap: .2rem; padding: .1rem .5rem .2rem 1rem; }
 
   .rung-detail { margin: .1rem 0; }

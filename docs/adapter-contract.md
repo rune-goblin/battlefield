@@ -12,7 +12,7 @@ This file is the code seam and nothing else. The rules are in `public/rules.html
 
 Roles match the skirmish rules: infantry and cavalry, with siege engines as a separate class (`SiegeEngineCard`, attached to a unit or emplaced on a cell of its own). `deriveStats(card)` fills Strike, Volley (when `salvo` is set), reach, Defence, Will, Reflex and Perception from the PF2e level tables for the role. An adapter that has real numbers passes them in `overrides` and the raw statblock in `sheet`; a fully overridden card is a troop sheet. Reflex is read off `sheet` when there is one, and it is the only stat breaking contact consults. Perception is derived and displayed but no rule reads it — there is no initiative roll.
 
-`gradesFor(card)` then derives the five ladder grades — Shoot, Fight, Guard, Rally, Cast, each 1 to 3 — and `qualityFor(card)` the disorder a unit absorbs before it routs, so no troop needs hand-authoring. `signals` is the closed vocabulary of structural cues an importer reads off a statblock — `mounted`, `melee-drill`, `shielded`, `formation`, `magic-ward`, `no-retreat` — and `caster` marks spellcasting. `tactics` stays an optional override that only raises a grade.
+`qualityFor(card)` derives the disorder a unit absorbs before it routs, off the Will save, so no troop needs hand-authoring. Every activity costs the same for every unit (section 6), so nothing else is derived from the card. `signals` is the closed vocabulary of structural cues an importer reads off a statblock — `mounted`, `melee-drill`, `shielded`, `formation`, `magic-ward`, `no-retreat` — of which the engine reads `no-retreat`; `caster` marks spellcasting, and `tactics` stays an optional hand-authored list.
 
 | Source | Mapping |
 |---|---|

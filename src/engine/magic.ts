@@ -98,7 +98,9 @@ const TIER2_DETAIL: Record<Tree, string> = {
 const TIER3_DETAIL: Record<Tree, string> = {
   blast: "+2 to the spell attack, and a lingering wound at the start of the target's next activation.",
   healing: 'Regenerates 1 wound a round, and +2 on the target\'s next save.',
-  controlling: 'May not reach above its grade on its next activation.',
+  // proto: the third activity repeats the second until Wave 9 builds Hold — the old "may not
+  // reach above its grade" effect went out with the grades themselves.
+  controlling: "−1 action — the target's Will resists.",
   offense: "+3 to the buffed unit's attack, and a miss on its next Fight cannot repulse it.",
   defense: '+4 Defence, +2 saves, and −1 from the next damage it takes.',
   movement: 'Grants a movement type: fly, swim, or water walk.',

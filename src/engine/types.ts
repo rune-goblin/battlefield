@@ -1,7 +1,7 @@
 import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
-import type { Grade, Grades, LadderType } from './ladders.js';
+import type { Grade, LadderType } from './ladders.js';
 import type { CastAxis, CastBand, CastTier, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
@@ -44,24 +44,17 @@ export interface Unit {
   speed: number;
   /** A flier ignores terrain cost and blocked edges. */
   flying: boolean;
-  /** Read off the 'mounted' signal (Mounted Troop / First-class Charge). Inert since the
-   * movement push was retired; kept on the sheet for whatever a charge comes to mean. */
-  mounted: boolean;
   /** Read off the 'no-retreat' signal. Such a troop follows an enemy that withdraws from it,
    * one free Move, to re-establish contact — it is a hold on others, not on itself. */
   noRetreat: boolean;
   fear: boolean;
   tactics: Tactic[];
-  grades: Grades;
   /** `null` for a non-caster and for a caster with no tradition set (there is none, per
    * `cardTraits`' own fallback — see cards.ts). Gates which trees `trees` may ever hold. */
   tradition: Tradition | null;
   /** Every tree this unit may cast at all, Tier 1 included — the caster's whole tradition, or
    * the one tree a non-caster's tactic grants (section 11). */
   trees: Tree[];
-  /** The caster's Cast-only actions: level ÷ 5, refreshed every activation, spent on a tier
-   * before its ordinary three are. 0 for a non-caster or a tactic-granted tree. */
-  castPool: number;
   quality: number;
   /** Actions left in this activation; back to three between activations. */
   actions: number;
@@ -82,17 +75,14 @@ export interface Unit {
   /** Took heart from an ally's Rally: +2 on its attacks until the end of its next activation.
    * The support half of the rally ladder — see `RallyEffect.heart`. */
   heartened: boolean;
-  /** Controlling Tier 3: may not reach above its grade on its next activation. Cleared at
-   * `finish`, the same as `heartened`. */
-  compelled: boolean;
   /** Defense buff, applied the moment it's cast: protects the target through whatever comes
    * before its own next activation, the way the old Ward spell did — cleared at `begin`. */
   defense: { bonus: number; noWoundDisorder: boolean; damageReduction: number };
-  /** Offense buff and Controlling's action penalty apply *during* the buffed or compelled
-   * unit's own next activation, not before it — cleared at `finish`. */
+  /** Offense buff and Controlling's action penalty apply *during* the buffed unit's own next
+   * activation, not before it — cleared at `finish`. */
   offense: { bonus: number; damage: number; noRepulse: boolean };
   movementBuff: { bonusFeet: number; flies: boolean };
-  /** Controlling Tier 1/2. Tier 3 is `compelled`, above. */
+  /** Controlling's hold on the target's next activation. */
   control: { movementPenaltyFeet: number; actionPenalty: boolean };
   /** Blast's lingering wound or Healing's regeneration: ticks at the start of the target's own
    * activation (`begin`), for as many of its own activations as `roundsLeft` still covers. */
@@ -145,8 +135,8 @@ export interface RungOption {
   index: Grade;
   label: string;
   detail: string;
-  /** Actions this rung costs: one at or below the grade, one more for each rung above it.
-   * `null` when no number of actions reaches it — above a tradition's cap, or compelled. */
+  /** Actions this rung costs: its own index, the same for every unit. `null` when no number of
+   * actions reaches it — above a tradition's cap. */
   cost: number | null;
   legal: boolean;
   reason: string | null;
@@ -159,7 +149,6 @@ export interface ActionOffer {
   spell: Tree | null;
   label: string;
   detail: string;
-  granted: Grade;
   rungs: [RungOption, RungOption, RungOption];
 }
 

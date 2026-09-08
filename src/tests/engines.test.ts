@@ -33,13 +33,12 @@ describe('siege engines', () => {
     expect(engine('Battering Ram').kind).toBe('ram');
   });
 
-  // A crewed engine replaces the unit's own shooting profile, effective range and all, and
-  // always gets the full grade-3 spread free — a gun crew works its whole engineered range
-  // without the gamble an ordinary troop's own Reach check carries.
+  // A crewed engine replaces the unit's own shooting profile, effective range and all. It buys
+  // no cheaper activity than anyone else: the piece is the profile, not the price.
   it('a catapult shoots at extreme range with no roll to reach it, once per round', () => {
     const s0 = battle(['Catapult']);
     const shoot = offer(s0, 'shoot');
-    expect(shoot.granted).toBe(3);
+    expect(shoot.rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
     expect(shoot.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
     expect(shoot.rungs[0].targets).toEqual([]);
     const s1 = act(s0, { type: 'shoot', rung: 3, target: 'u1' }, scriptedRng([10]));
@@ -48,11 +47,9 @@ describe('siege engines', () => {
     expect(unit(s1, 'u0').engines[0].fired).toBe(true);
   });
 
-  it('a ballista also gets the full grade-3 spread once crewed, medium reach and all', () => {
+  it("a ballista's own reach carries the crew as far, once it is crewed", () => {
     const s0 = battle(['Ballista']);
-    const shoot = offer(s0, 'shoot');
-    expect(shoot.granted).toBe(3);
-    expect(shoot.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
+    expect(offer(s0, 'shoot').rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
   });
 
   it('a ram only works against a wall it stands beside, and adds +2', () => {
