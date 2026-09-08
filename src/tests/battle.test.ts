@@ -10,7 +10,7 @@ import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
-import { rungOf, type Grade, type LadderType } from '../engine/ladders.js';
+import { activityOf, type ActivityIndex, type Verb } from '../engine/ladders.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
@@ -34,7 +34,7 @@ function battle(rolls: number[], board = openBoard()) {
 const place = (state: BattleState, id: string, sq: string) => { unit(state, id).square = parse(sq); };
 // Emplacement status follows position, and nothing but an action recomputes it — a test that
 // moves a unit by hand has to run one to see the consequence.
-const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', rung: 1 }, scriptedRng([10])), scriptedRng([10]));
+const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', activity: 1 }, scriptedRng([10])), scriptedRng([10]));
 /** Burn every unit's activation so `endRound` runs, which is where an engine changes hands. */
 const runRound = (state: BattleState) => {
   let s = state;
@@ -42,20 +42,20 @@ const runRound = (state: BattleState) => {
   return s;
 };
 const types = (state: BattleState, id?: string) => availableActions(state, id).map((o) => o.type);
-const offer = (state: BattleState, type: LadderType, id?: string) =>
+const offer = (state: BattleState, type: Verb, id?: string) =>
   availableActions(state, id).find((o) => o.type === type) as ActionOffer;
-const targets = (o: ActionOffer, rung: Grade) => o.rungs[rung - 1].targets.map((t) => t.id);
+const targets = (o: ActionOffer, activity: ActivityIndex) => o.activities[activity - 1].targets.map((t) => t.id);
 const guardOn = (state: BattleState, id: string, rng = scriptedRng([10])) =>
-  act(state, { type: 'guard', rung: 1, unit: id }, rng);
+  act(state, { type: 'guard', activity: 1, unit: id }, rng);
 const moves = (state: BattleState, id: string) => moveReach(state, unit(state, id));
 const said = (state: BattleState, text: string) => state.log.some((e) => e.text.includes(text));
-// A routed unit is offered no ladder at all, only the withdrawal, so burning its activation
+// A routed unit is offered no verb at all, only the withdrawal, so burning its activation
 // takes both. One action leaves two unspent, so the activation is ended by hand unless the
 // action ended it.
 const burn = (state: BattleState, id: string) => {
   const s = availableActions(state, id).some((o) => o.type === 'guard')
     ? guardOn(state, id)
-    : act(state, { type: 'withdraw', rung: 1, unit: id }, scriptedRng([10]));
+    : act(state, { type: 'withdraw', activity: 1, unit: id }, scriptedRng([10]));
   return s.phase === 'battle' && s.active === id ? endActivation(s, scriptedRng([10])) : s;
 };
 
@@ -224,16 +224,16 @@ describe('Cast', () => {
     // movement 0 — no Movement row at all, and Blast stops at the one-action activity.
     expect(availableActions(s, 'u0').filter((o) => o.type === 'cast').map((o) => o.spell))
       .toEqual(['blast', 'healing', 'controlling', 'offense', 'defense']);
-    expect(castOffer(s, 'blast').rungs.map((r) => r.cost)).toEqual([1, null, null]);
-    expect(castOffer(s, 'blast').rungs.map((r) => r.label)).toEqual(['Missile', 'Line', 'Burst']);
-    expect(castOffer(s, 'healing').rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
+    expect(castOffer(s, 'blast').activities.map((r) => r.cost)).toEqual([1, null, null]);
+    expect(castOffer(s, 'blast').activities.map((r) => r.label)).toEqual(['Missile', 'Line', 'Burst']);
+    expect(castOffer(s, 'healing').activities.map((r) => r.cost)).toEqual([1, 2, 3]);
   });
 
   it('reads one Line roll against the Defence in each of its two hexes', () => {
     const s = blastField([20, 10]);
-    expect(castOffer(s, 'blast').rungs[1].targets.map((t) => t.id)).toContain('d3+d4');
+    expect(castOffer(s, 'blast').activities[1].targets.map((t) => t.id)).toContain('d3+d4');
     // 10 + 10 = 20: a success against 20, a critical against 10.
-    const cast = act(s, { type: 'cast', rung: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10]));
+    const cast = act(s, { type: 'cast', activity: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10]));
     expect(unit(cast, 'u2').wounds).toBe(1);
     expect(unit(cast, 'u3').wounds).toBe(2);
     expect(cast.log.filter((e) => e.text.startsWith('Line catches'))).toHaveLength(2);
@@ -244,7 +244,7 @@ describe('Cast', () => {
     unit(s, 'u3').ward = true;
     // 10 totals 20: a success against 20 and a critical against 10. The ward's second die, a 3,
     // totals 13 — still a success against 10, so the critical is the thing it takes away.
-    const cast = act(s, { type: 'cast', rung: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10, 3]));
+    const cast = act(s, { type: 'cast', activity: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10, 3]));
     expect(unit(cast, 'u2').wounds).toBe(1);
     expect(unit(cast, 'u3').wounds).toBe(1);
     expect(unit(cast, 'u3').ward).toBe(false);
@@ -253,7 +253,7 @@ describe('Cast', () => {
   it('wastes the whole Blast on an aegis anywhere in the shape', () => {
     const s = blastField([20, 10]);
     unit(s, 'u3').aegis = { dc: 50 };
-    const cast = act(s, { type: 'cast', rung: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([1]));
+    const cast = act(s, { type: 'cast', activity: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([1]));
     expect(unit(cast, 'u2').wounds).toBe(0);
     expect(unit(cast, 'u3').wounds).toBe(0);
     expect(unit(cast, 'u0').attacked).toBe(true);
@@ -262,7 +262,7 @@ describe('Cast', () => {
 
   it('draws a Burst on the three hexes that meet at one corner', () => {
     const s = blastField([20], ['d4']);
-    const shapes = castOffer(s, 'blast').rungs[2].targets.map((t) => t.id);
+    const shapes = castOffer(s, 'blast').activities[2].targets.map((t) => t.id);
     // Six corners meet at the enemy's own hex, so six shapes cover it.
     expect(shapes).toContain('d4+e4+e5');
     expect(shapes).toHaveLength(6);
@@ -286,7 +286,7 @@ describe('Cast', () => {
     });
     // Level-6 divine spell attack +11. Roll 15 totals 26: against level 2's DC 16 that clears
     // dc + 10, a critical success; against level 15's DC 34 it falls short, a plain failure.
-    const cast = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u1+u2', unit: 'u0' }, scriptedRng([15]));
+    const cast = act(s, { type: 'cast', activity: 2, spell: 'healing', target: 'u1+u2', unit: 'u0' }, scriptedRng([15]));
     expect(cast.log.find((e) => e.text.startsWith('Heal reaches Levy'))!.check!.degree).toBe('critical-success');
     expect(cast.log.find((e) => e.text.startsWith('Heal reaches Champion'))!.check!.degree).toBe('failure');
   });
@@ -303,7 +303,7 @@ describe('Controlling', () => {
       board: openBoard(),
     });
     place(s, 'u1', 'c4');
-    return act(s, { type: 'cast', spell: 'controlling', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng(rolls));
+    return act(s, { type: 'cast', spell: 'controlling', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng(rolls));
   };
 
   // Divine spell DC 21 against a level-6 troop's Will +17.
@@ -321,7 +321,7 @@ describe('Controlling', () => {
 
   it('is cast once an activation, Controlling as much as any other tree', () => {
     const s = dread([10]);
-    expect(() => act(s, { type: 'cast', spell: 'controlling', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10])))
+    expect(() => act(s, { type: 'cast', spell: 'controlling', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng([10])))
       .toThrow(/already cast this activation/);
   });
 });
@@ -340,11 +340,11 @@ describe('Offense', () => {
     });
     place(s, 'u1', 'c3');
     place(s, 'u2', 'c4');
-    const cast = act(s, { type: 'cast', spell: 'offense', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const cast = act(s, { type: 'cast', spell: 'offense', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(cast, 'u1').sureStrike).toBe(true);
     const passed = endActivation(endActivation(cast, scriptedRng([10])), scriptedRng([10]), 'u2');
     // 8 totals 19, a plain success; 3 totals 14, a failure. Sure strike keeps the 8.
-    const struck = act(passed, { type: 'fight', rung: 1, target: 'u2', unit: 'u1' }, scriptedRng([8, 3]));
+    const struck = act(passed, { type: 'fight', activity: 1, target: 'u2', unit: 'u1' }, scriptedRng([8, 3]));
     expect(unit(struck, 'u2').wounds).toBe(1);
     expect(unit(struck, 'u1').sureStrike).toBe(false);
     expect(said(struck, 'rolls twice under sure strike')).toBe(true);
@@ -354,7 +354,7 @@ describe('Offense', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
     unit(state, 'u0').wrath = true;
-    const hit = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([8]));
+    const hit = act(state, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([8]));
     expect(unit(hit, 'u2').persistent).not.toBeNull();
     expect(unit(hit, 'u0').wrath).toBe(false);
     const passed = endActivation(hit, scriptedRng([10]));
@@ -375,8 +375,8 @@ describe('Offense', () => {
       board: openBoard(),
     });
     const offense = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.spell === 'offense')!;
-    expect(offense.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
-    expect(() => act(s, { type: 'cast', spell: 'offense', rung: 3, target: 'u0', unit: 'u0' }, scriptedRng([10])))
+    expect(offense.activities[2].targets.map((t) => t.id)).toEqual(['u1']);
+    expect(() => act(s, { type: 'cast', spell: 'offense', activity: 3, target: 'u0', unit: 'u0' }, scriptedRng([10])))
       .toThrow('not a target');
   });
 
@@ -389,12 +389,12 @@ describe('Offense', () => {
       ],
       board: openBoard(),
     });
-    s = act(s, { type: 'cast', spell: 'offense', rung: 3, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    s = act(s, { type: 'cast', spell: 'offense', activity: 3, target: 'u1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u1').haste).toBe(2);
     const grants: number[] = [];
     for (let i = 0; i < 3; i++) {
       while (activeUnit(s)!.id !== 'u1') s = endActivation(s, scriptedRng([10]), activeUnit(s)!.id);
-      s = act(s, { type: 'guard', rung: 1, unit: 'u1' }, scriptedRng([10]));
+      s = act(s, { type: 'guard', activity: 1, unit: 'u1' }, scriptedRng([10]));
       grants.push(unit(s, 'u1').actions + 1);
       s = endActivation(s, scriptedRng([10]), 'u1');
     }
@@ -418,13 +418,13 @@ describe('Defense', () => {
     place(s, 'u1', 'c3');
     place(s, 'u2', 'c5');
     place(s, 'u3', 'c4');
-    const cast = act(s, { type: 'cast', spell: 'offense', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const cast = act(s, { type: 'cast', spell: 'offense', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
     const afterU0 = endActivation(cast, scriptedRng([10]));
-    const warded = act(afterU0, { type: 'cast', spell: 'defense', rung: 1, target: 'u3', unit: 'u2' }, scriptedRng([10]));
+    const warded = act(afterU0, { type: 'cast', spell: 'defense', activity: 1, target: 'u3', unit: 'u2' }, scriptedRng([10]));
     expect(unit(warded, 'u3').ward).toBe(true);
     const afterU2 = endActivation(warded, scriptedRng([10]));
     // 8 totals 19, a plain success, the same single roll either flag alone would have made.
-    const struck = act(afterU2, { type: 'fight', rung: 1, target: 'u3', unit: 'u1' }, scriptedRng([8, 3]));
+    const struck = act(afterU2, { type: 'fight', activity: 1, target: 'u3', unit: 'u1' }, scriptedRng([8, 3]));
     expect(unit(struck, 'u3').wounds).toBe(1);
     expect(unit(struck, 'u1').sureStrike).toBe(false);
     expect(unit(struck, 'u3').ward).toBe(false);
@@ -438,7 +438,7 @@ describe('Defense', () => {
     // No tradition's cap reaches Aegis (defense index 3; see the Wave 11 todos), so the mark is
     // set directly, the same way the Wrath test sets `wrath` rather than casting Offense 2.
     unit(state, 'u2').aegis = { dc: 50 };
-    const gated = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([1]));
+    const gated = act(state, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([1]));
     expect(unit(gated, 'u0').attacked).toBe(true);
     expect(unit(gated, 'u0').actions).toBe(2);
     expect(unit(gated, 'u2').wounds).toBe(0);
@@ -463,7 +463,7 @@ describe('Movement', () => {
       board,
     });
     expect(moves(s, 'u1').get('c4')).toMatchObject({ feet: 30, actions: 3 });
-    const cast = act(s, { type: 'cast', spell: 'movement', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const cast = act(s, { type: 'cast', spell: 'movement', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(cast, 'u1').sureFooting).toBe(true);
     expect(moves(cast, 'u1').get('c4')).toMatchObject({ feet: 10, actions: 1 });
   });
@@ -479,8 +479,8 @@ describe('Movement', () => {
     });
     place(s, 'u2', 'c4');
     const movement = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.spell === 'movement')!;
-    expect(movement.rungs[2].targets.map((t) => t.id)).toContain('c3+b3');
-    const cast = act(s, { type: 'cast', spell: 'movement', rung: 3, target: 'c3+b3', unit: 'u0' }, scriptedRng([10]));
+    expect(movement.activities[2].targets.map((t) => t.id)).toContain('c3+b3');
+    const cast = act(s, { type: 'cast', spell: 'movement', activity: 3, target: 'c3+b3', unit: 'u0' }, scriptedRng([10]));
     expect(unit(cast, 'u1').square).toEqual(parse('b3'));
     expect(unit(cast, 'u1').wounds).toBe(0);
     expect(unit(cast, 'u1').actions).toBe(ACTIONS_PER_ACTIVATION);
@@ -654,22 +654,22 @@ describe('one attack an activation, and actions buy acts', () => {
   const strikeMod = (s: BattleState) => s.log.find((e) => e.check)!.check!.modifier;
 
   it('gives a unit one attack an activation, however many actions are left', () => {
-    const s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    const s = act(engaged(), { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(unit(s, 'u0').actions).toBe(2);
     expect(unit(s, 'u0').attacked).toBe(true);
-    expect(offer(s, 'fight', 'u0').rungs.map((r) => r.legal)).toEqual([false, false, false]);
-    expect(offer(s, 'fight', 'u0').rungs[0].reason).toBe('already attacked this activation');
-    expect(() => act(s, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))
+    expect(offer(s, 'fight', 'u0').activities.map((r) => r.legal)).toEqual([false, false, false]);
+    expect(offer(s, 'fight', 'u0').activities[0].reason).toBe('already attacked this activation');
+    expect(() => act(s, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))
       .toThrow(/already attacked/);
     // Everything that is not an attack is still on offer.
-    expect(offer(s, 'guard', 'u0').rungs[0].legal).toBe(true);
+    expect(offer(s, 'guard', 'u0').activities[0].legal).toBe(true);
   });
 
   it('spends the same one attack on a shot or a blast', () => {
     const { state } = battle([]);
     place(state, 'u0', 'c5');
-    const shot = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([10]));
-    expect(offer(shot, 'shoot', 'u2').rungs[0].legal).toBe(false);
+    const shot = act(burn(state, 'u1'), { type: 'shoot', activity: 1, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    expect(offer(shot, 'shoot', 'u2').activities[0].legal).toBe(false);
 
     const priest: UnitCard = { name: 'Priests', level: 9, role: 'infantry', caster: true, tactics: [] };
     const p0 = createBattle({
@@ -677,9 +677,9 @@ describe('one attack an activation, and actions buy acts', () => {
       board: openBoard(),
     });
     place(p0, 'u1', 'c3');
-    const blasted = act(p0, { type: 'cast', rung: 1, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const blasted = act(p0, { type: 'cast', activity: 1, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(blasted, 'u0').attacked).toBe(true);
-    expect(offer(blasted, 'fight', 'u0').rungs[0].legal).toBe(false);
+    expect(offer(blasted, 'fight', 'u0').activities[0].legal).toBe(false);
   });
 
   it('leaves Move buying ground, and a Strike affordable after it', () => {
@@ -689,23 +689,23 @@ describe('one attack an activation, and actions buy acts', () => {
     expect(unit(s, 'u0').actions).toBe(2);
     expect(unit(s, 'u0').feet).toBe(0);
     expect(unit(s, 'u0').attacked).toBe(false);
-    s = act(s, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    s = act(s, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(strikeMod(s)).toBe(11);
     expect(unit(s, 'u0').actions).toBe(1);
   });
 
   it('costs one action for a Strike, two for a Press and three for an Overrun, each the same roll', () => {
-    expect(offer(engaged(), 'fight', 'u0').rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
+    expect(offer(engaged(), 'fight', 'u0').activities.map((r) => r.cost)).toEqual([1, 2, 3]);
 
-    const strike = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    const strike = act(engaged(), { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(strikeMod(strike)).toBe(11);
     expect(unit(strike, 'u0').actions).toBe(2);
 
-    const press = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    const press = act(engaged(), { type: 'fight', activity: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(strikeMod(press)).toBe(11);
     expect(unit(press, 'u0').actions).toBe(1);
 
-    const overrun = act(engaged(), { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    const overrun = act(engaged(), { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     expect(overrun.log.some((e) => e.text.includes('overruns'))).toBe(true);
     expect(overrun.activated).toContain('u0');
   });
@@ -722,20 +722,20 @@ describe('one attack an activation, and actions buy acts', () => {
     });
     place(s, 'u1', 'c3');
     for (const id of ['u0', 'u1']) {
-      expect(offer(s, 'fight', id).rungs.map((r) => r.cost), id).toEqual([1, 2, 3]);
-      expect(offer(s, 'guard', id).rungs.map((r) => r.cost), id).toEqual([1, 2, 3]);
+      expect(offer(s, 'fight', id).activities.map((r) => r.cost), id).toEqual([1, 2, 3]);
+      expect(offer(s, 'guard', id).activities.map((r) => r.cost), id).toEqual([1, 2, 3]);
     }
   });
 
   it('spends the rest on other acts: a Strike and then a Brace', () => {
-    let s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
-    s = act(s, { type: 'guard', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    let s = act(engaged(), { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
+    s = act(s, { type: 'guard', activity: 1, unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').guard).toEqual({ defence: 2, cap: false, holds: false });
     expect(unit(s, 'u0').actions).toBe(1);
   });
 });
 
-describe('rungs carry effects', () => {
+describe('activities carry effects', () => {
   const engaged = () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
@@ -744,11 +744,11 @@ describe('rungs carry effects', () => {
 
   it('Overrun drives a hit target back a hex and takes its ground; a miss moves nobody', () => {
     const state = engaged();
-    const s = act(state, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
+    const s = act(state, { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
     expect(notation(unit(s, 'u0').square)).toBe('c3');
     expect(notation(unit(s, 'u2').square)).toBe('c4');
     expect(said(s, 'drives Kobolds back')).toBe(true);
-    const miss = act(state, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([2, 10]));
+    const miss = act(state, { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([2, 10]));
     expect(notation(unit(miss, 'u0').square)).toBe('c2');
     expect(notation(unit(miss, 'u2').square)).toBe('c3');
   });
@@ -756,43 +756,43 @@ describe('rungs carry effects', () => {
   it('Overrun takes the ground of a target it destroys; a Strike leaves it', () => {
     const state = engaged();
     unit(state, 'u2').wounds = MAX_WOUNDS - 1;
-    const s = act(state, { type: 'fight', rung: 3, target: 'u2', unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('destroyed');
     expect(notation(unit(s, 'u0').square)).toBe('c3');
-    const strike = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10]));
+    const strike = act(state, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10]));
     expect(notation(unit(strike, 'u0').square)).toBe('c2');
   });
 
   it('Press skips the Fortitude save: a hit disorders outright, and a miss gives nothing extra', () => {
-    const hit = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
+    const hit = act(engaged(), { type: 'fight', activity: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
     expect(unit(hit, 'u2').wounds).toBe(1);
     expect(unit(hit, 'u2').disorder).toBe(1);
     expect(said(hit, 'no save')).toBe(true);
     // The same 20 on a Strike is a save made, and no disorder.
-    const strike = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
+    const strike = act(engaged(), { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
     expect(unit(strike, 'u2').disorder).toBe(0);
-    const miss = act(engaged(), { type: 'fight', rung: 2, target: 'u2', unit: 'u0' }, scriptedRng([2, 20]));
+    const miss = act(engaged(), { type: 'fight', activity: 2, target: 'u2', unit: 'u0' }, scriptedRng([2, 20]));
     expect(unit(miss, 'u2').disorder).toBe(0);
   });
 
-  // Defence off the rung: +2 for Brace and Dig in, +4 for Take cover. The +12 buffer keeps an
+  // Defence off the activity: +2 for Brace and Dig in, +4 for Take cover. The +12 buffer keeps an
   // ordinary hit out of reach, so only a natural 20's degree shift can land one.
-  const guarded = (rung: Grade) => {
+  const guarded = (activity: ActivityIndex) => {
     const state = engaged();
     unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 12;
     // Take cover spends all three actions, which ends the activation on its own.
-    const s = act(state, { type: 'guard', rung, unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'guard', activity, unit: 'u0' }, scriptedRng([10]));
     return s.active === 'u0' ? endActivation(s, scriptedRng([10]), 'u0') : s;
   };
   const struck = (s: BattleState, roll: number) =>
-    unit(act(s, { type: 'fight', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([roll, 1])), 'u0').wounds;
+    unit(act(s, { type: 'fight', activity: 1, target: 'u0', unit: 'u2' }, scriptedRng([roll, 1])), 'u0').wounds;
 
   it('Brace and Dig in are +2 Defence; Take cover is +4', () => {
-    const defenceByRung: Record<Grade, 2 | 4> = { 1: 2, 2: 2, 3: 4 };
-    for (const rung of [1, 2, 3] as Grade[]) {
-      const s = guarded(rung);
-      expect(unit(s, 'u0').guard?.defence).toBe(defenceByRung[rung]);
-      expect(defenceOf(s, unit(s, 'u0'), null, false)).toBe(unit(s, 'u0').stats.defence + defenceByRung[rung]);
+    const defenceByActivity: Record<ActivityIndex, 2 | 4> = { 1: 2, 2: 2, 3: 4 };
+    for (const activity of [1, 2, 3] as ActivityIndex[]) {
+      const s = guarded(activity);
+      expect(unit(s, 'u0').guard?.defence).toBe(defenceByActivity[activity]);
+      expect(defenceOf(s, unit(s, 'u0'), null, false)).toBe(unit(s, 'u0').stats.defence + defenceByActivity[activity]);
     }
   });
 
@@ -808,8 +808,8 @@ describe('rungs carry effects', () => {
   it('Take cover holds against an Overrun: the shove fails and the attacker stays put', () => {
     const state = engaged();
     unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 5;
-    const covered = act(state, { type: 'guard', rung: 3, unit: 'u0' }, scriptedRng([10]));
-    const s = act(covered, { type: 'fight', rung: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    const covered = act(state, { type: 'guard', activity: 3, unit: 'u0' }, scriptedRng([10]));
+    const s = act(covered, { type: 'fight', activity: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
     expect(notation(unit(s, 'u0').square)).toBe('c2');
     expect(notation(unit(s, 'u2').square)).toBe('c3');
     expect(unit(s, 'u0').wounds).toBe(1);
@@ -827,16 +827,16 @@ describe('rungs carry effects', () => {
       ],
       board: openBoard(),
     });
-    const shared = act(s, { type: 'guard', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    const shared = act(s, { type: 'guard', activity: 1, unit: 'u0' }, scriptedRng([10]));
     expect(defenceOf(shared, unit(shared, 'u1'), null, false)).toBe(unit(shared, 'u1').stats.defence + ACTION_BONUS);
 
-    const plain = act(s, { type: 'guard', rung: 1, unit: 'u1' }, scriptedRng([10]));
+    const plain = act(s, { type: 'guard', activity: 1, unit: 'u1' }, scriptedRng([10]));
     expect(defenceOf(plain, unit(plain, 'u0'), null, false)).toBe(unit(plain, 'u0').stats.defence);
   });
 });
 
 describe('shooting', () => {
-  it('every shoot rung reaches the same target, whatever the band', () => {
+  it('every shoot activity reaches the same target, whatever the band', () => {
     const { state } = battle([]);
     unit(state, 'u1').status = 'destroyed';
     place(state, 'u0', 'c4');
@@ -879,7 +879,7 @@ describe('shooting', () => {
     expect(bandAt('c6')).toBe('medium');
     expect(bandAt('c8')).toBe('long');
     expect(bandAt('c9')).toBe('extreme');
-    // Every shoot rung reaches an extreme target now — the offset window is gone, and the
+    // Every shoot activity reaches an extreme target now — the offset window is gone, and the
     // ceiling is the band itself. Beyond never occurs on this board: its own radius already
     // caps extreme at 8, the farthest two hexes can ever be.
     expect(targets(offer(hex, 'shoot', 'u2'), 1)).toEqual(['u0']);
@@ -892,13 +892,13 @@ describe('shooting', () => {
   it('Suppress bites on a miss', () => {
     const { state } = battle([]);
     unit(state, 'u0').stats.defence = 99;
-    const s = act(burn(state, 'u1'), { type: 'shoot', rung: 2, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    const s = act(burn(state, 'u1'), { type: 'shoot', activity: 2, target: 'u0', unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u0').wounds).toBe(0);
     expect(unit(s, 'u0').suppressedBy).toBe('u2');
   });
   it('a pinned unit cannot Move and its pinner is a holder', () => {
     const { state } = battle([]);
-    const s = act(burn(state, 'u1'), { type: 'shoot', rung: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    const s = act(burn(state, 'u1'), { type: 'shoot', activity: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
     const target = unit(s, 'u0');
     expect(target.pinnedBy).toBe('u2');
     expect(moveReach(s, target).size).toBe(0);
@@ -914,7 +914,7 @@ describe('a Fight is one roll', () => {
     place(state, 'u2', 'c3');
     return state;
   };
-  const fight = (rolls: number[]) => act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng(rolls));
+  const fight = (rolls: number[]) => act(engaged(), { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng(rolls));
 
   it('a hit wounds, and the target saves against the disorder or takes it', () => {
     const failed = fight([10, 5]);
@@ -944,7 +944,7 @@ describe('a Fight is one roll', () => {
     expect(unit(crit, 'u2').wounds).toBe(2);
     const state = engaged();
     unit(state, 'u2').stats.defence = 40;
-    const miss = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([1, 20]));
+    const miss = act(state, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([1, 20]));
     expect(unit(miss, 'u0').exposed).toBe(true);
     expect(defenceOf(miss, unit(miss, 'u0'), null, false)).toBe(unit(miss, 'u0').stats.defence - 2);
   });
@@ -973,11 +973,11 @@ describe('withdrawal', () => {
   const wounds = (s: BattleState, id = 'u0') => unit(s, id).wounds;
   const where = (s: BattleState, id = 'u0') => notation(unit(s, id).square);
   const breakOff = (state: BattleState, rolls: number[], to = 'c1', id = 'u0') =>
-    act(state, { type: 'withdraw', rung: 1, to, unit: id }, scriptedRng(rolls));
+    act(state, { type: 'withdraw', activity: 1, to, unit: id }, scriptedRng(rolls));
 
   it('offers three activities at their own price, and one check against the highest holder', () => {
     const w = activation(held({ u2: 'c3', u3: 'b2' }), 'u0')!.withdraw!;
-    expect(w.rungs.map((r) => [r.label, r.cost])).toEqual([['Break off', 1], ['Disengage', 2], ['Fighting retreat', 3]]);
+    expect(w.activities.map((r) => [r.label, r.cost])).toEqual([['Break off', 1], ['Disengage', 2], ['Fighting retreat', 3]]);
     expect(w.modifier).toBe(14);
     expect(w.dc).toBe(23);
     expect(w.holders).toEqual([
@@ -1035,7 +1035,7 @@ describe('withdrawal', () => {
     const w = activation(state, 'u0')!.withdraw!;
     expect(w.holders).toHaveLength(1);
     expect(w.targets).toEqual([]);
-    const s = act(state, { type: 'withdraw', rung: 1, unit: 'u0' }, scriptedRng([5]));
+    const s = act(state, { type: 'withdraw', activity: 1, unit: 'u0' }, scriptedRng([5]));
     expect(notation(unit(s, 'u0').square)).toBe('a1');
   });
 });
@@ -1056,7 +1056,7 @@ describe('no retreat', () => {
   };
 
   it('follows a withdrawal it can reach, and deals no damage doing it', () => {
-    const s = act(chased(), { type: 'withdraw', rung: 1, to: 'c1', unit: 'u0' }, scriptedRng([5]));
+    const s = act(chased(), { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([5]));
     expect(notation(unit(s, 'u0').square)).toBe('c1');
     expect(notation(unit(s, 'u1').square)).toBe('c2');
     expect(unit(s, 'u0').wounds).toBe(0);
@@ -1065,29 +1065,29 @@ describe('no retreat', () => {
 
   it('is shaken off outright by a critical success', () => {
     // Reflex +14 against the Line's DC 21 crits on 17 or better.
-    const s = act(chased(), { type: 'withdraw', rung: 1, to: 'c1', unit: 'u0' }, scriptedRng([17]));
+    const s = act(chased(), { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([17]));
     expect(notation(unit(s, 'u0').square)).toBe('c1');
     expect(notation(unit(s, 'u1').square)).toBe('c3');
   });
 
   it('keeps its grip on a critical failure, on top of the free strike', () => {
-    const pinned = act(chased(), { type: 'withdraw', rung: 1, to: 'c1', unit: 'u0' }, scriptedRng([1, 20]));
+    const pinned = act(chased(), { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([1, 20]));
     expect(notation(unit(pinned, 'u0').square)).toBe('c2');
     expect(unit(pinned, 'u0').wounds).toBe(1);
   });
 
   it('is rooted and does not follow when it fails its own Disengage roll', () => {
     // The Line rolls Reflex +14 against the level-6 runner's DC 22: 8 or better holds on.
-    const failed = act(chased(), { type: 'withdraw', rung: 2, to: 'c1', unit: 'u0' }, scriptedRng([1]));
+    const failed = act(chased(), { type: 'withdraw', activity: 2, to: 'c1', unit: 'u0' }, scriptedRng([1]));
     expect(unit(failed, 'u1').rooted).toBe(1);
     expect(notation(unit(failed, 'u1').square)).toBe('c3');
     expect(unit(failed, 'u0').wounds).toBe(0);
 
-    const passed = act(chased(), { type: 'withdraw', rung: 2, to: 'c1', unit: 'u0' }, scriptedRng([10]));
+    const passed = act(chased(), { type: 'withdraw', activity: 2, to: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(passed, 'u1').rooted).toBe(0);
     expect(notation(unit(passed, 'u1').square)).toBe('c2');
 
-    const fighting = act(chased(), { type: 'withdraw', rung: 3, to: 'c1', unit: 'u0' }, scriptedRng([1]));
+    const fighting = act(chased(), { type: 'withdraw', activity: 3, to: 'c1', unit: 'u0' }, scriptedRng([1]));
     expect(unit(fighting, 'u1').disorder).toBe(1);
   });
 });
@@ -1097,17 +1097,17 @@ describe('disorder', () => {
     const { state } = battle([]);
     place(state, 'u0', 'c5');
     // 20 crits the shot; 1 auto-fails the Fortitude save against it, so the wound disorders.
-    const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20, 1]));
+    const hit = act(burn(state, 'u1'), { type: 'shoot', activity: 1, target: 'u0', unit: 'u2' }, scriptedRng([20, 1]));
     expect(unit(hit, 'u0').wounds).toBe(2);
     expect(unit(hit, 'u0').disorder).toBe(1);
-    const rallied = act(endActivation(hit, scriptedRng([10])), { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    const rallied = act(endActivation(hit, scriptedRng([10])), { type: 'rally', activity: 1, unit: 'u0' }, scriptedRng([10]));
     expect(unit(rallied, 'u0').disorder).toBe(0);
   });
   it('a Fortitude save that succeeds shrugs the wound off with no disorder at all', () => {
     const { state } = battle([]);
     place(state, 'u0', 'c5');
     // 20 crits the shot; 20 also crit-succeeds the save, so the wound lands with no disorder.
-    const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20]));
+    const hit = act(burn(state, 'u1'), { type: 'shoot', activity: 1, target: 'u0', unit: 'u2' }, scriptedRng([20]));
     expect(unit(hit, 'u0').wounds).toBe(2);
     expect(unit(hit, 'u0').disorder).toBe(0);
   });
@@ -1144,16 +1144,16 @@ describe('disorder', () => {
     const { state } = battle([]);
     const k = unit(state, 'u2');
     k.disorder = k.quality;
-    const s = act(burn(state, 'u0'), { type: 'rally', rung: 1, unit: 'u2' }, scriptedRng([18]));
+    const s = act(burn(state, 'u0'), { type: 'rally', activity: 1, unit: 'u2' }, scriptedRng([18]));
     expect(isShaken(unit(s, 'u2'))).toBe(false);
   });
   it('a success on a steady unit inspires it, and the +2 is spent by its next roll', () => {
     const { state } = battle([]);
-    const steadied = act(state, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    const steadied = act(state, { type: 'rally', activity: 1, unit: 'u0' }, scriptedRng([10]));
     const inspired = unit(steadied, 'u0');
     expect(inspired.inspired).toBe(true);
     expect(willModifier(inspired)).toBe(inspired.stats.will + ACTION_BONUS);
-    const spent = act(steadied, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([2]));
+    const spent = act(steadied, { type: 'rally', activity: 1, unit: 'u0' }, scriptedRng([2]));
     const after = unit(spent, 'u0');
     expect(spent.log.slice(steadied.log.length).find((e) => e.check)!.check!.modifier)
       .toBe(after.stats.will + ACTION_BONUS);
@@ -1162,7 +1162,7 @@ describe('disorder', () => {
   });
   it('a critical failure costs the rallier 1 disorder', () => {
     const { state } = battle([]);
-    const s = act(state, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([1]));
+    const s = act(state, { type: 'rally', activity: 1, unit: 'u0' }, scriptedRng([1]));
     expect(unit(s, 'u0').disorder).toBe(1);
     expect(unit(s, 'u0').inspired).toBe(false);
   });
@@ -1171,10 +1171,10 @@ describe('disorder', () => {
     place(state, 'u2', 'c8');
     const shaken = structuredClone(state);
     unit(shaken, 'u2').disorder = unit(shaken, 'u2').quality;
-    expect(unit(act(burn(shaken, 'u0'), { type: 'withdraw', rung: 1, unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
+    expect(unit(act(burn(shaken, 'u0'), { type: 'withdraw', activity: 1, unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
 
     unit(state, 'u2').disorder = unit(state, 'u2').quality + 1;
-    const s = act(burn(state, 'u0'), { type: 'withdraw', rung: 1, unit: 'u2' }, scriptedRng([10]));
+    const s = act(burn(state, 'u0'), { type: 'withdraw', activity: 1, unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
   });
   it('fear disorders whoever comes to grips with it', () => {

@@ -6,11 +6,11 @@ import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type Un
 import { CELL_FEET, pathTo, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
 import { check, readCheck, readTwice, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  LADDERS, qualityFor, rungOf, treesFor,
-  type Grade, type LadderType, type Rung,
+  VERBS, qualityFor, activityOf, treesFor,
+  type ActivityIndex, type Verb, type Activity,
 } from './ladders.js';
 import {
-  castRungOf, TRADITION_CAP, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
+  castActivityOf, TRADITION_CAP, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from './magic.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
@@ -18,7 +18,7 @@ import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK,
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
   type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep,
-  type Range, type RungAction, type RungOption, type RungTarget, type Side,
+  type Range, type ActivityAction, type ActivityOption, type ActivityTarget, type Side,
   type TargetOffer, type TargetRef, type Unit, type WithdrawAction, type WithdrawOffer,
 } from './types.js';
 
@@ -490,15 +490,15 @@ export interface MeleeOpts { bonus?: number; saveShift?: number; impact?: boolea
 
 // A Fight is one roll, one way. A hit wounds, and the target's Fortitude save decides its
 // disorder; a miss repulses the attacker, whose Will save against the target's level DC
-// decides its own. The rung adds no number to the roll: Press skips the target's save, and
+// decides its own. The activity adds no number to the roll: Press skips the target's save, and
 // Overrun drives it back a hex besides.
-function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, opts: MeleeOpts = {}) {
-  const eff = rung.fight!;
+function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Activity, opts: MeleeOpts = {}) {
+  const eff = activity.fight!;
   const impact = opts.impact ?? false;
   const drive = eff.drive || (impact && eff.press);
   u.attacked = true;
   const degree = resolveStrike(state, rng, u, target, {
-    pressed: eff.press || impact, bonus: opts.bonus, saveShift: opts.saveShift, label: rung.verb,
+    pressed: eff.press || impact, bonus: opts.bonus, saveShift: opts.saveShift, label: activity.verb,
   });
   if (degree === null) return;
   if (succeeded(degree)) {
@@ -544,16 +544,16 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
   log(state, u, `${u.name} drives ${target.name} back to ${notation(away)} and takes ${notation(ground)}.`);
 }
 
-function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung) {
+function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Activity) {
   const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
   if (!attackGate(state, rng, u, target)) return;
   const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true));
   if (e) e.fired = true;
-  log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  log(state, u, `${u.name} ${activity.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
-  const eff = rung.shoot!;
+  const eff = activity.shoot!;
   // Suppress bites hit or miss — volume fire works by volume, not by landing.
   if (target.status === 'active' && eff.suppress) {
     target.suppressedBy = u.id;
@@ -615,7 +615,7 @@ const strideReach = (state: BattleState, u: Unit): ReachMap =>
 export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
   if (u.speed === 0 || u.rooted > 0 || u.pinnedBy || u.actions <= 0 || u.status !== 'active') return out;
-  // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
+  // A unit in contact leaves by withdrawing, which is its own verb and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = strideReach(state, u);
   const home = notation(u.square);
@@ -788,11 +788,11 @@ const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameSqu
 const wallRank = (state: BattleState, u: Unit, key: string) =>
   bandRank(state, Math.min(...wallCells(key).map((c) => dist(state, u.square, c))));
 
-const cellTarget = (id: string): RungTarget => ({ kind: 'cell', id, label: id });
-const unitTarget = (u: Unit): RungTarget => ({ kind: 'unit', id: u.id, label: u.name });
-const wallTarget = (key: string): RungTarget => ({ kind: 'wall', id: key, label: key.replace('|', ' / ') });
+const cellTarget = (id: string): ActivityTarget => ({ kind: 'cell', id, label: id });
+const unitTarget = (u: Unit): ActivityTarget => ({ kind: 'unit', id: u.id, label: u.name });
+const wallTarget = (key: string): ActivityTarget => ({ kind: 'wall', id: key, label: key.replace('|', ' / ') });
 
-interface TargetSet { needsTarget: boolean; targets: RungTarget[] }
+interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
 
 /** How far a tree's own range carries, in hexes: the same thresholds Shooting's bands use. A
  * spell's range is a ceiling — anything from the caster's own hex out to the band counts, the
@@ -847,7 +847,7 @@ function burstShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
 }
 
 /** Missile names the enemy itself, as every other attack does; Line and Burst name a shape. */
-function blastTargets(state: BattleState, u: Unit, index: Grade, ceiling: number): RungTarget[] {
+function blastTargets(state: BattleState, u: Unit, index: ActivityIndex, ceiling: number): ActivityTarget[] {
   if (index === 1) {
     return state.units
       .filter((e) => e.side !== u.side && e.status === 'active' && dist(state, e.square, u.square) <= ceiling)
@@ -872,9 +872,9 @@ function combinations<T>(pool: T[], size: number): T[][] {
 }
 
 /** Every group Soothe, Heal or Restore may reach: the caster and its adjacent allies, `index`
- * at a time. Heaviest need first, so the cheapest legal row (`rungOption`'s own pick) lands on
+ * at a time. Heaviest need first, so the cheapest legal row (`activityOption`'s own pick) lands on
  * the group that most wants it. */
-function healTargets(state: BattleState, u: Unit, index: Grade): RungTarget[] {
+function healTargets(state: BattleState, u: Unit, index: ActivityIndex): ActivityTarget[] {
   const need = (t: Unit) => t.disorder + t.wounds;
   return combinations(healPool(state, u), index)
     .sort((a, b) => b.reduce((n, t) => n + need(t), 0) - a.reduce((n, t) => n + need(t), 0))
@@ -891,9 +891,9 @@ const standable = (state: BattleState, u: Unit, sq: Square) =>
 // finds it, and touching one that several pairs share lands on the first of them.
 /** Every placement Translocate offers: each ally, and each empty hex within that ally's own
  * Speed of it, whatever lies between. */
-function translocateTargets(state: BattleState, allies: Unit[]): RungTarget[] {
+function translocateTargets(state: BattleState, allies: Unit[]): ActivityTarget[] {
   const g = grid(state);
-  const out: RungTarget[] = [];
+  const out: ActivityTarget[] = [];
   for (const a of allies) {
     const hexes = Math.floor(a.speed / CELL_FEET);
     for (const sq of g.cells()) {
@@ -905,25 +905,25 @@ function translocateTargets(state: BattleState, allies: Unit[]): RungTarget[] {
   return out;
 }
 
-function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null): TargetSet {
+function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityIndex, spell: Tree | null): TargetSet {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
   switch (type) {
     case 'shoot': {
-      const targets: RungTarget[] = enemies.filter((e) => inRange(shotRank(state, u, e))).map(unitTarget);
+      const targets: ActivityTarget[] = enemies.filter((e) => inRange(shotRank(state, u, e))).map(unitTarget);
       if (u.side === 'attacker' && crewedArtillery(state, u)) {
         targets.push(...wallKeys(state).filter((k) => inRange(wallRank(state, u, k))).map(wallTarget));
       }
       return { needsTarget: true, targets };
     }
     case 'fight': {
-      const targets: RungTarget[] = engagedEnemies(state, u).map(unitTarget);
+      const targets: ActivityTarget[] = engagedEnemies(state, u).map(unitTarget);
       if (u.side === 'attacker') targets.push(...wallKeys(state).filter((k) => bordersWall(u, k)).map(wallTarget));
       return { needsTarget: true, targets };
     }
     case 'guard':
       return { needsTarget: false, targets: [] };
     case 'rally': {
-      if (rungOf('rally', index).rally!.scope !== 'adjacent') return { needsTarget: false, targets: [] };
+      if (activityOf('rally', index).rally!.scope !== 'adjacent') return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
         && dist(state, a.square, u.square) === 1);
       return { needsTarget: false, targets: allies.map(unitTarget) };
@@ -947,7 +947,7 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
 
 /** Fight, Shoot and a Blast are the one attack an activation gets. Everything else may be
  * repeated; a second attack was the thing that broke the pacing. */
-const isAttack = (type: LadderType, spell: Tree | null) =>
+const isAttack = (type: Verb, spell: Tree | null) =>
   type === 'fight' || type === 'shoot' || (type === 'cast' && spell === 'blast');
 
 /**
@@ -955,30 +955,30 @@ const isAttack = (type: LadderType, spell: Tree | null) =>
  * may ever reach in that tree (0 meaning no access, section 11). A tactic-granted tree with no
  * tradition behind it stops at the one-action activity.
  */
-function castCostFor(u: Unit, tree: Tree, index: Grade): number | null {
+function castCostFor(u: Unit, tree: Tree, index: ActivityIndex): number | null {
   const cap = u.tradition ? TRADITION_CAP[u.tradition][tree] : 1;
   return index <= cap ? index : null;
 }
 
-function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null, blocked: string | null): RungOption {
-  const rung = type === 'cast' ? castRungOf(spell!, index) : rungOf(type, index);
+function activityOption(state: BattleState, u: Unit, type: Verb, index: ActivityIndex, spell: Tree | null, blocked: string | null): ActivityOption {
+  const activity = type === 'cast' ? castActivityOf(spell!, index) : activityOf(type, index);
   const cost = type === 'cast' ? castCostFor(u, spell!, index) : index;
   const { needsTarget, targets } = targetsFor(state, u, type, index, spell);
   let reason: string | null = blocked ?? (cost === null ? "above your tradition's reach" : null);
   if (!reason && cost !== null && cost > u.actions) reason = `needs ${cost} actions`;
   if (!reason && needsTarget && !targets.length) reason = 'no target';
-  return { rung: rung.id, index, label: rung.label, detail: rung.detail, cost, legal: reason === null, reason, needsTarget, targets };
+  return { activity: activity.id, index, label: activity.label, detail: activity.detail, cost, legal: reason === null, reason, needsTarget, targets };
 }
 
-function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
+function offerFor(state: BattleState, u: Unit, type: Verb, spell: Tree | null): ActionOffer {
   const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
     : spell && u.castTrees.includes(spell) ? 'already cast this activation' : null;
-  const rungs = [1, 2, 3].map((i) => rungOption(state, u, type, i as Grade, spell, blocked)) as [RungOption, RungOption, RungOption];
+  const activities = [1, 2, 3].map((i) => activityOption(state, u, type, i as ActivityIndex, spell, blocked)) as [ActivityOption, ActivityOption, ActivityOption];
   return {
     type, spell,
     label: spell ? TREE_LABEL[spell] : type[0].toUpperCase() + type.slice(1),
-    detail: type === 'cast' ? castRungOf(spell!, 1).detail : LADDERS[type][0].detail,
-    rungs,
+    detail: type === 'cast' ? castActivityOf(spell!, 1).detail : VERBS[type][0].detail,
+    activities,
   };
 }
 
@@ -986,11 +986,11 @@ function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | n
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  // A routed unit is offered no ladder, a shaken one Rally alone; both still Move and withdraw.
+  // A routed unit is offered no verb, a shaken one Rally alone; both still Move and withdraw.
   if (isRouted(u)) return [];
   if (isShaken(u)) return [offerFor(state, u, 'rally', null)];
   const contact = engagedEnemies(state, u).length > 0;
-  const types: LadderType[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
+  const types: Verb[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
   // A wall is a thing to fight even when nobody defends it.
   if (!contact && u.side === 'attacker' && wallKeys(state).some((k) => bordersWall(u, k))) types.push('fight');
   // Rally is offered whether or not there is disorder to clear: with none, it is the order
@@ -1032,9 +1032,9 @@ function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawActio
   const holders = holdersOf(state, u);
   // Read before anything moves: breaking away clears the pin, and a pinning shooter never chases.
   const chasers = holders.filter((h) => h.noRetreat && h.id !== u.pinnedBy);
-  const result = action.rung === 1
+  const result = action.activity === 1
     ? breakOff(state, rng, u, holders, chasers)
-    : disengage(state, rng, u, holders, chasers, action.rung === 3);
+    : disengage(state, rng, u, holders, chasers, action.activity === 3);
   if (u.status !== 'active') return;
   if (!result.leaves) {
     log(state, u, `${u.name} cannot break contact and stays where it stands.`);
@@ -1145,13 +1145,13 @@ function follow(state: BattleState, u: Unit, chasers: Unit[]) {
 }
 
 /** One cast: the tree is spent for this activation, and its own case resolves it. */
-function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: Grade, action: RungAction) {
+function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: ActivityIndex, action: ActivityAction) {
   u.castTrees.push(tree);
   resolveTree(state, rng, u, tree, index, action);
 }
 
 /** The one unit an ally tree or a Controlling cast lands on, or null when it is out of range. */
-function castTarget(state: BattleState, u: Unit, tree: Tree, action: RungAction): Unit | null {
+function castTarget(state: BattleState, u: Unit, tree: Tree, action: ActivityAction): Unit | null {
   const target = action.target ? unit(state, action.target) : u;
   // Every buff tree names "an ally", never the caster — Healing alone reads "yourself or an
   // adjacent ally", and it never comes through here. Self-cast would also cost the buff an
@@ -1172,8 +1172,8 @@ function castTarget(state: BattleState, u: Unit, tree: Tree, action: RungAction)
  * in each hex of the shape. A hit is 1 wound, a critical 2, and the wound asks the Fortitude
  * save as any other does.
  */
-function blast(state: BattleState, rng: Rng, u: Unit, index: Grade, action: RungAction) {
-  const activity = castRungOf('blast', index);
+function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, action: ActivityAction) {
+  const activity = castActivityOf('blast', index);
   const shape = index === 1 ? [unit(state, action.target!).square] : action.target!.split('+').map(parse);
   const caught = enemiesIn(state, u, shape);
   u.attacked = true;
@@ -1264,7 +1264,7 @@ function healOne(state: BattleState, target: Unit, degree: Degree) {
 /** Translocate, the one buff that happens at cast time: the ally is set down whatever lies
  * between, and the leap is none of its own actions. No check, and no free strike from anything
  * it was in contact with. */
-function translocate(state: BattleState, u: Unit, label: string, action: RungAction) {
+function translocate(state: BattleState, u: Unit, label: string, action: ActivityAction) {
   const [home, landing] = (action.target ?? '').split('+');
   const ally = unitAt(state, parse(home));
   if (!ally || !landing) { log(state, u, `${u.name}'s ${label} finds nobody to move.`); return; }
@@ -1279,14 +1279,14 @@ function translocate(state: BattleState, u: Unit, label: string, action: RungAct
  * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
  * and its own effect; `index` is the activity bought, which is also its price.
  */
-function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: Grade, action: RungAction) {
+function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: ActivityIndex, action: ActivityAction) {
   switch (tree) {
     case 'blast':
       blast(state, rng, u, index, action);
       break;
     case 'healing': {
       const targets = action.target!.split('+').map((id) => unit(state, id));
-      const activity = castRungOf('healing', index);
+      const activity = castActivityOf('healing', index);
       log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`);
       const modifier = healingModifier(u);
       const cast = roll(state, rng, u, modifier, levelDc(targets[0].level));
@@ -1322,7 +1322,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
     case 'offense': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      const activity = castRungOf('offense', index);
+      const activity = castActivityOf('offense', index);
       log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
       if (index === 1) {
         if (target.sureStrike) { log(state, target, `${target.name} is already rolling its next attack twice.`); break; }
@@ -1341,7 +1341,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
     case 'defense': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      const activity = castRungOf('defense', index);
+      const activity = castActivityOf('defense', index);
       log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
       if (index === 1) {
         if (target.ward) { log(state, target, `${target.name} is already warded.`); break; }
@@ -1359,7 +1359,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       break;
     }
     case 'movement': {
-      const activity = castRungOf('movement', index);
+      const activity = castActivityOf('movement', index);
       if (index === 3) { translocate(state, u, activity.label, action); break; }
       const target = castTarget(state, u, tree, action);
       if (!target) break;
@@ -1376,8 +1376,8 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
   }
 }
 
-function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: RungAction) {
-  switch (rung.type) {
+function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, action: ActivityAction) {
+  switch (activity.type) {
     case 'shoot': {
       const outOfBand = (r: number) => !inRange(r);
       if (action.target && action.target.includes('|')) {
@@ -1391,7 +1391,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
       }
       const target = unit(state, action.target!);
       if (outOfBand(shotRank(state, u, target))) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
-      shootAt(state, rng, u, target, rung);
+      shootAt(state, rng, u, target, activity);
       break;
     }
     case 'fight': {
@@ -1405,11 +1405,11 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
       }
       const target = unit(state, action.target!);
       if (!isEngaged(state, u, target)) { log(state, u, `${u.name} is not in contact with ${target.name}.`); break; }
-      melee(state, rng, u, target, rung);
+      melee(state, rng, u, target, activity);
       break;
     }
     case 'guard': {
-      const eff = rung.guard!;
+      const eff = activity.guard!;
       u.guard = { defence: eff.defence, cap: eff.cap, holds: eff.holds };
       // One: the rest of this activation, and no further. `finish` clears it. The Guard
       // bonus itself dies when the unit acts again, so a root outliving it would be a penalty
@@ -1421,13 +1421,13 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
         eff.holds ? 'holds its ground against an Overrun' : '',
         eff.rooted ? 'may not move again this activation' : '',
       ].filter(Boolean);
-      log(state, u, `${u.name} ${rung.verb}: ${parts.join(', ')}.`);
+      log(state, u, `${u.name} ${activity.verb}: ${parts.join(', ')}.`);
       break;
     }
     case 'rally': {
       // One roll, d20 + Will vs the rallying unit's own rout DC, read for every unit reached:
       // Steady is u alone, Rally adds one adjacent ally, Inspire every ally within 2.
-      const eff = rung.rally!;
+      const eff = activity.rally!;
       const reached: Unit[] = [u];
       if (eff.scope === 'adjacent' && action.target) {
         const ally = unit(state, action.target);
@@ -1436,16 +1436,16 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
         reached.push(...alliesWithin(state, u, 2));
       }
       const c = roll(state, rng, u, willModifier(u), routDcFor(state, u));
-      log(state, u, `${u.name} ${rung.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      log(state, u, `${u.name} ${activity.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       for (const a of reached) {
         // Critical success reads "if none is left" (after the 2-point clear); a plain success
         // reads "if it has none" (before the roll) — a unit sitting at exactly 1 disorder
         // clears to 0 on a success without being inspired, only on a critical.
         if (c.degree === 'critical-success') {
-          clearDisorder(state, a, 2, rung.label.toLowerCase());
+          clearDisorder(state, a, 2, activity.label.toLowerCase());
           if (a.disorder === 0) inspire(state, a);
         } else if (c.degree === 'success') {
-          if (a.disorder > 0) clearDisorder(state, a, 1, rung.label.toLowerCase());
+          if (a.disorder > 0) clearDisorder(state, a, 1, activity.label.toLowerCase());
           else inspire(state, a);
         }
       }
@@ -1565,25 +1565,25 @@ export function endActivation(input: BattleState, rng: Rng, unitId?: string): Ba
   return state;
 }
 
-function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): number {
+function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityAction): number {
   const offer = availableActions(state, u.id).find((o) => o.type === action.type && o.spell === (action.spell ?? null));
   if (!offer) throw new Error(`${action.type} is not available to ${u.name}`);
-  const opt = offer.rungs[action.rung - 1];
-  if (!opt || !opt.legal) throw new Error(`${offer.label} ${action.rung} is not available to ${u.name}${opt?.reason ? ` — ${opt.reason}` : ''}`);
+  const opt = offer.activities[action.activity - 1];
+  if (!opt || !opt.legal) throw new Error(`${offer.label} ${action.activity} is not available to ${u.name}${opt?.reason ? ` — ${opt.reason}` : ''}`);
   if (opt.needsTarget && !opt.targets.some((t) => t.id === action.target)) {
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
   const price = opt.cost!;
   if (price > u.actions) throw new Error(`${opt.label} needs ${price} actions`);
   if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}.`);
-  if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.rung, action);
-  else perform(state, rng, u, rungOf(offer.type, action.rung), action);
+  if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.activity, action);
+  else perform(state, rng, u, activityOf(offer.type, action.activity), action);
   return price;
 }
 
 /**
- * Every rung that can act on one board object, grouped by its offer — the one answer to
- * "what can this unit do to *that*", and the only thing the popups read. A rung that names no
+ * Every activity that can act on one board object, grouped by its offer — the one answer to
+ * "what can this unit do to *that*", and the only thing the popups read. A activity that names no
  * target of its own (Guard, and Rally's own unit) belongs to the acting unit's own piece,
  * which is where its popup opens.
  */
@@ -1591,7 +1591,7 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
 // '+' (`d3+d4`, `u1+u2`). A touch on a cell resolves to `{kind:'unit'}` when something stands
 // there (`applyProp`), so a shape target is found by the touched unit's own square as well as
 // by a bare cell id; touching any one part finds the whole target.
-export function targetMatches(state: BattleState, t: RungTarget, ref: TargetRef): boolean {
+export function targetMatches(state: BattleState, t: ActivityTarget, ref: TargetRef): boolean {
   const parts = t.id.split('+');
   if (t.kind === ref.kind) return parts.includes(ref.id);
   if (t.kind !== 'cell' || ref.kind !== 'unit') return false;
@@ -1605,9 +1605,9 @@ export function offersAt(state: BattleState, target: TargetRef, unitId?: string)
   const own = target.kind === 'unit' && target.id === u.id;
   const out: TargetOffer[] = [];
   for (const offer of availableActions(state, u.id)) {
-    const rungs = offer.rungs.filter((o) => o.legal
+    const activities = offer.activities.filter((o) => o.legal
       && (o.targets.some((t) => targetMatches(state, t, target)) || (own && !o.needsTarget)));
-    if (rungs.length) out.push({ offer, rungs });
+    if (activities.length) out.push({ offer, activities });
   }
   return out;
 }
@@ -1619,18 +1619,18 @@ export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffe
   if (!u || state.phase !== 'battle' || u.status !== 'active' || u.rooted > 0) return null;
   const holders = holdersOf(state, u);
   if (!holders.length && !isShaken(u)) return null;
-  const rungs = ([1, 2, 3] as Grade[]).map((index): RungOption => {
+  const activities = ([1, 2, 3] as ActivityIndex[]).map((index): ActivityOption => {
     const w = WITHDRAW[index - 1];
     // Above Break off the holders are the ones who roll, so with none there is nothing to buy.
     const reason = index > u.actions ? `needs ${index} actions`
       : index > 1 && !holders.length ? 'nothing holds you' : null;
     return {
-      rung: w.id, index, label: w.label, detail: w.detail, cost: index,
+      activity: w.id, index, label: w.label, detail: w.detail, cost: index,
       legal: reason === null, reason, needsTarget: false, targets: [],
     };
-  }) as [RungOption, RungOption, RungOption];
+  }) as [ActivityOption, ActivityOption, ActivityOption];
   return {
-    rungs,
+    activities,
     modifier: escapeModifier(u),
     dc: Math.max(0, ...holders.map((h) => escapeDcFor(state, h, u))),
     holders: holders.map((h) => ({
@@ -1644,12 +1644,12 @@ export function withdrawOffer(state: BattleState, unitId?: string): WithdrawOffe
 function doWithdrawAction(state: BattleState, rng: Rng, u: Unit, action: WithdrawAction): number {
   const offer = withdrawOffer(state, u.id);
   if (!offer) throw new Error(`${u.name} has nothing to withdraw from`);
-  const option = offer.rungs[action.rung - 1];
-  if (!option) throw new Error(`${u.name} has no withdrawal ${action.rung}`);
+  const option = offer.activities[action.activity - 1];
+  if (!option) throw new Error(`${u.name} has no withdrawal ${action.activity}`);
   if (!option.legal) throw new Error(`${u.name} cannot ${option.label.toLowerCase()}: ${option.reason}`);
   if (action.to && !offer.targets.some((t) => t.id === action.to)) throw new Error(`${u.name} cannot withdraw to ${action.to}`);
   doWithdraw(state, rng, u, action);
-  return action.rung;
+  return action.activity;
 }
 
 const spendMovement = (u: Unit, m: { feet: number; actions: number }) => {
@@ -1666,7 +1666,7 @@ function doStride(state: BattleState, u: Unit, action: MoveAction): number {
   return m.actions;
 }
 
-// A Charge is not a rung: it is one action of movement, plus the Fight activity's own price —
+// A Charge is not an activity: it is one action of movement, plus the Fight activity's own price —
 // a Strike unless the action names another. The run's leftover feet never bank.
 function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): number {
   const foe = unit(state, action.target);
@@ -1675,7 +1675,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const reach = chargeReach(state, u);
   const option = approach(state, u, foe, reach);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
-  const wanted = action.rung ?? 1;
+  const wanted = action.activity ?? 1;
   const cost = CHARGE_ACTIONS + wanted;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
   const bonus = chargeBonus(state, u, option.cell);
@@ -1696,7 +1696,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
     log(state, u, `${u.name}'s charge finds nobody.`);
     return CHARGE_ACTIONS;
   }
-  melee(state, rng, u, foe, rungOf('fight', wanted), { bonus, saveShift, impact });
+  melee(state, rng, u, foe, activityOf('fight', wanted), { bonus, saveShift, impact });
   return cost;
 }
 
@@ -1713,7 +1713,7 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const cost = action.type === 'move' ? doStride(state, u, action)
     : action.type === 'withdraw' ? doWithdrawAction(state, rng, u, action)
       : action.type === 'charge' ? doCharge(state, rng, u, action)
-        : doRung(state, rng, u, action);
+        : doActivity(state, rng, u, action);
   u.actions -= cost;
   if (u.actions <= 0 || u.status !== 'active') finish(state, rng, u);
   refreshEmplacements(state);

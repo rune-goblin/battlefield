@@ -41,20 +41,20 @@ describe('what a target affords', () => {
     expect(mine).not.toContain('fight');
   });
 
-  // A shot reaches any band 1 to 4: nothing narrows the target list from one shoot rung to
+  // A shot reaches any band 1 to 4: nothing narrows the target list from one shoot activity to
   // the next, only the roll's own −2-a-band penalty (`shootModifier`).
-  it('offers the same shoot rungs whatever the band', () => {
+  it('offers the same shoot activities whatever the band', () => {
     const { state, me, foe } = battle();
-    const rungsAt = (square: string) => {
+    const activitiesAt = (square: string) => {
       unit(state, foe).square = parse(square);
       const shoot = offersAt(state, { kind: 'unit', id: foe }, me).find((o) => o.offer.type === 'shoot');
-      return shoot?.rungs.map((r) => r.label) ?? [];
+      return shoot?.activities.map((r) => r.label) ?? [];
     };
-    expect(rungsAt('c5')).toEqual(['Fire', 'Suppress', 'Pin']);
-    expect(rungsAt('c7')).toEqual(['Fire', 'Suppress', 'Pin']);
+    expect(activitiesAt('c5')).toEqual(['Fire', 'Suppress', 'Pin']);
+    expect(activitiesAt('c7')).toEqual(['Fire', 'Suppress', 'Pin']);
   });
 
-  it('offers nothing at an empty cell — movement is not a rung', () => {
+  it('offers nothing at an empty cell — movement is not an activity', () => {
     const { state, me } = battle();
     expect(typesAt(state, 'cell', 'f5', me)).toEqual([]);
   });

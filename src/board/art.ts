@@ -45,7 +45,7 @@ export function bannerTexture(colour: number): PIXI.Texture {
   return texture;
 }
 
-/** The action props. `charge` and `withdraw` have no ladder behind them: charging is the drag
+/** The action props. `charge` and `withdraw` have no table behind them: charging is the drag
  * of the piece itself, and a withdrawal is one Disengage check per holder. Every spell shares
  * the one `cast` prop and is told apart by its label. `no` is the odd one out: it names no
  * action at all, and marks the cell a drag may not take. */

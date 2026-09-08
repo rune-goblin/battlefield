@@ -4,40 +4,40 @@ import { saveBonus, type Tier } from './tables.js';
 
 // Two verbs have no table of their own. A Move action spends the troop's Speed in feet, and
 // Withdraw rolls the escaping unit's Reflex against whoever is holding it — see `doWithdraw`
-// in `battle.ts`. Cast keeps its slot in `LadderType` (the offer menu still groups by it) and
+// in `battle.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
 // its own six trees live in `magic.ts`.
-export type LadderType = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
-export const LADDER_TYPES: LadderType[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
+export type Verb = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
+export const VERB_TYPES: Verb[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
 /** Which of a verb's three activities: the index is also the price in actions. */
-export type Grade = 1 | 2 | 3;
+export type ActivityIndex = 1 | 2 | 3;
 
-export type RungId =
+export type ActivityId =
   | 'fire' | 'suppress' | 'pin'
   | 'strike' | 'press' | 'overrun'
   | 'brace' | 'dig-in' | 'take-cover'
   | 'steady' | 'rally' | 'inspire';
 
-/** Each rung includes everything below it. `press`: a hit's disorder needs no save. `drive`: a
+/** Each activity includes everything below it. `press`: a hit's disorder needs no save. `drive`: a
  * hit shoves the target one hex and the attacker takes its ground. */
 export interface FightEffect { press: boolean; drive: boolean }
-/** Each rung includes everything below it. `suppress` sets the target's `suppressedBy`, hit or
+/** Each activity includes everything below it. `suppress` sets the target's `suppressedBy`, hit or
  * miss; `pin` also sets `pinnedBy`, which makes the shooter one of the target's holders (see
  * `holdersOf` in battle.ts). Both clear at the shooter's own `begin`, or its leaving play. */
 export interface ShootEffect { suppress: boolean; pin: boolean }
-/** Each rung includes everything below it. `cap` caps a hit at one wound, so a critical lands
+/** Each activity includes everything below it. `cap` caps a hit at one wound, so a critical lands
  * as an ordinary one; `holds` refuses an Overrun's shove; `rooted` (Take cover only) ends the
  * unit's movement for the rest of this activation. */
 export interface GuardEffect { defence: 2 | 4; cap: boolean; holds: boolean; rooted: boolean }
-/** The rung carries scope, never amount — how much clears comes off the Quality check's
+/** The activity carries scope, never amount — how much clears comes off the Quality check's
  * degree instead (see `perform`'s 'rally' case in `battle.ts`). */
 export type RallyScope = 'self' | 'adjacent' | 'nearby';
 export interface RallyEffect { scope: RallyScope }
 
-export interface Rung {
-  id: RungId;
-  type: LadderType;
-  index: Grade;
+export interface Activity {
+  id: ActivityId;
+  type: Verb;
+  index: ActivityIndex;
   label: string;
   verb: string;
   detail: string;
@@ -47,7 +47,7 @@ export interface Rung {
   rally?: RallyEffect;
 }
 
-export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = {
+export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]> = {
   // A troop's effective range (its Reach) is `shootHome`, what Fire reaches for free; every
   // band beyond it costs −2 on the roll (`shootModifier`), the same whichever of the three a
   // unit buys. Suppress and Pin reach exactly as far as Fire does — they add an effect on the
@@ -74,7 +74,7 @@ export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = 
   ],
 };
 
-export const rungOf = (type: Exclude<LadderType, 'cast'>, index: Grade): Rung => LADDERS[type][index - 1];
+export const activityOf = (type: Exclude<Verb, 'cast'>, index: ActivityIndex): Activity => VERBS[type][index - 1];
 
 // Quality comes off the statblock, never from a curated list: of everything an importer can
 // read, the Will save is the one that spreads (5.1 points within a level, against AC's 3.2).

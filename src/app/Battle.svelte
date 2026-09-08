@@ -2,8 +2,8 @@
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
     offersAt, reachOf, targetMatches, TREE_TARGET,
-    type ActionOffer, type ChargeOption, type Grade, type LadderType, type PathStep, type RungOption,
-    type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
+    type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
+    type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
   import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
@@ -94,26 +94,26 @@
   let dragTarget = $state<{ id: string; attack: boolean } | null>(null);
   // A released drag, parked until the player picks one of its readings and confirms. One drop
   // means more than one thing, and deciding by where the pointer landed decides for the player.
-  interface Parked { cell: string; rows: Preview[]; index: number; rung: Grade | null }
+  interface Parked { cell: string; rows: Preview[]; index: number; activity: ActivityIndex | null }
   let pending = $state<Parked | null>(null);
   const picked = $derived(pending?.rows[pending.index] ?? null);
   const preview = $derived(drag ?? picked);
-  // Touching a board object opens the other popup: every rung that can act on *that*, which
+  // Touching a board object opens the other popup: every activity that can act on *that*, which
   // is `offersAt`'s whole job. Grouped by verb, because the props are what the eye lands on —
-  // a tile row across the top, then the chosen verb's three rungs beneath it.
+  // a tile row across the top, then the chosen verb's three activities beneath it.
   interface Aim { cell: string; target: TargetRef; label: string; groups: TargetOffer[]; group: number; index: number }
   let aim = $state<Aim | null>(null);
   const aimGroup = $derived(aim?.groups[aim.group] ?? null);
-  /** Every rung of the chosen verb that names the aimed target, the unaffordable ones
-   * included: a rung you cannot pay for this activation is still worth reading. */
-  const aimRungs = $derived.by<RungOption[]>(() => {
+  /** Every activity of the chosen verb that names the aimed target, the unaffordable ones
+   * included: an activity you cannot pay for this activation is still worth reading. */
+  const aimActivities = $derived.by<ActivityOption[]>(() => {
     if (!aim || !aimGroup || !active) return [];
     const t = aim.target;
     const own = t.kind === 'unit' && t.id === active.id;
-    return aimGroup.offer.rungs.filter((o) => o.cost !== null
+    return aimGroup.offer.activities.filter((o) => o.cost !== null
       && (o.targets.some((x) => targetMatches(b, x, t)) || (own && !o.needsTarget)));
   });
-  const aimed = $derived(aimRungs[aim?.index ?? -1] ?? null);
+  const aimed = $derived(aimActivities[aim?.index ?? -1] ?? null);
   let anchor = $state<{ x: number; y: number } | null>(null);
   let anchorR = $state(0);
 
@@ -122,7 +122,7 @@
   // own piece at once (Guard, a self-Rally) or arms it against a target. It sets no mode a
   // player can be stranded in — a verb stays armed only until it is spent, Esc, or a touch
   // anywhere else.
-  const ICON_FOR: Record<LadderType, ActionIcon> = {
+  const ICON_FOR: Record<Verb, ActionIcon> = {
     fight: 'attack', shoot: 'shoot', guard: 'block', rally: 'rally', cast: 'cast',
   };
 
@@ -142,8 +142,8 @@
     icon: ActionIcon;
     label: string;
     legal: boolean;
-    /** The ladder an aim off this slice narrows to. Charge and Withdraw have none. */
-    type: LadderType | null;
+    /** The verb an aim off this slice narrows to. Charge and Withdraw have none. */
+    type: Verb | null;
     style: HighlightStyle;
     /** Everything this verb can touch right now. */
     cells: string[];
@@ -157,26 +157,26 @@
   };
   // A Blast's Line and Burst, and a Heal or Restore's set, arrive as one target holding two or
   // three parts joined by '+' — a unit-kind id needs the same split a cell-kind id already gets.
-  const targetCells = (t: RungTarget): string[] =>
+  const targetCells = (t: ActivityTarget): string[] =>
     t.kind === 'cell' ? t.id.split('+')
       : t.kind === 'wall' ? [t.id.split('|')[0]]
         : t.id.split('+').map(cellOf).filter((x): x is string => x !== null);
 
   const offerEdges = (offer: ActionOffer): string[] =>
-    offer.rungs.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);
+    offer.activities.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);
 
-  /** Where an offer can land, with the unit's own square first when a rung needs no target. */
+  /** Where an offer can land, with the unit's own square first when an activity needs no target. */
   function offerCells(offer: ActionOffer): string[] {
-    const legal = offer.rungs.filter((r) => r.legal);
+    const legal = offer.activities.filter((r) => r.legal);
     const cells = legal.flatMap((r) => r.targets).flatMap(targetCells);
-    // A rung that names no target acts on your own piece, which is where its popup opens.
+    // A activity that names no target acts on your own piece, which is where its popup opens.
     if (active && legal.some((r) => !r.needsTarget)) cells.unshift(notation(active.square));
     return [...new Set(cells)];
   }
 
   const props = $derived.by<Prop[]>(() => {
     if (!active || !act) return [];
-    const byType = new Map<LadderType, ActionOffer[]>();
+    const byType = new Map<Verb, ActionOffer[]>();
     for (const offer of act.offers) {
       const list = byType.get(offer.type);
       if (list) list.push(offer);
@@ -196,7 +196,7 @@
           edges: [],
         };
       }
-      const type: LadderType = key === 'melee' ? 'fight' : key;
+      const type: Verb = key === 'melee' ? 'fight' : key;
       const offers = byType.get(type) ?? [];
       const cells = [...new Set([...offers.flatMap(offerCells), ...(key === 'melee' ? charges : [])])];
       if (key === 'melee' && !offers.length) {
@@ -263,11 +263,11 @@
 
   /** Every tree the active unit could still cast — a fresh read, not a stored list, so a spent
    * pool point is reflected the moment the picker reopens. */
-  const castOffers = () => (act?.offers ?? []).filter((o) => o.type === 'cast' && o.rungs.some((r) => r.legal));
+  const castOffers = () => (act?.offers ?? []).filter((o) => o.type === 'cast' && o.activities.some((r) => r.legal));
 
   /** Take a verb off the ring: it lights everything it can touch. One thing to touch means
    * there is nothing to choose, so it opens there at once — which is what keeps Guard a
-   * single click, the way it was when the ladder sat straight on the piece. Cast is the one
+   * single click, the way it was when the verb sat straight on the piece. Cast is the one
    * verb with a second choice behind it — which tree — so it branches to that picker instead
    * of lighting the board outright, unless there is only the one tree to pick. */
   function takeProp(p: Prop) {
@@ -309,14 +309,14 @@
     // out of it the same slice closes.
     const c = p.key === 'melee' ? act?.charges.find((x) => cellOf(x.unit) === cell) : undefined;
     if (c) {
-      pending = { cell: c.cell, rows: [chargeRow(c)], index: 0, rung: null };
+      pending = { cell: c.cell, rows: [chargeRow(c)], index: 0, activity: null };
       return;
     }
     // A withdrawal is a destination, not a target, so it parks the same drop a drag there
     // would — and reads its escapes and distance in that popup.
     if (p.key === 'withdraw') {
       const rows = rowsAt(cell).filter((r) => r.kind === 'withdraw');
-      if (rows.length) pending = { cell, rows, index: 0, rung: null };
+      if (rows.length) pending = { cell, rows, index: 0, activity: null };
       return;
     }
     const u = b.units.find((x) => x.status === 'active' && notation(x.square) === cell);
@@ -377,7 +377,7 @@
 
   /** Whether Fight already names this enemy — the melee of a unit standing in contact, which
    * needs no ground crossed and so has no charge behind it. */
-  const canFight = (enemy: Unit) => offers.some((o) => o.type === 'fight' && o.rungs.some(
+  const canFight = (enemy: Unit) => offers.some((o) => o.type === 'fight' && o.activities.some(
     (r) => r.legal && r.targets.some((t) => t.kind === 'unit' && t.id === enemy.id),
   ));
 
@@ -417,21 +417,21 @@
     const enemy = enemyAt(e.cell);
     if (enemy) {
       const charge = act.charges.find((c) => c.unit === enemy.id);
-      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge)], index: 0, rung: null };
+      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge)], index: 0, activity: null };
       else aimAt({ kind: 'unit', id: enemy.id }, e.cell, enemy.name, 'fight');
       return;
     }
     // An illegal drop parks nothing: state never changes, so `tokens` never changes, so
     // `TokenLayer` just snaps the token back to where it actually is.
     const rows = rowsAt(e.cell);
-    pending = rows.length ? { cell: e.cell, rows, index: 0, rung: null } : null;
+    pending = rows.length ? { cell: e.cell, rows, index: 0, activity: null } : null;
   }
 
   /** A second click on the row already chosen confirms it, so a plain move is drag, click. */
   function choose(i: number) {
     if (!pending) return;
     if (pending.index === i) { commit(); return; }
-    pending = { ...pending, index: i, rung: null };
+    pending = { ...pending, index: i, activity: null };
   }
 
   function commit() {
@@ -442,9 +442,9 @@
     if (!p || !row) return;
     // The piece walks the route the drag traced, not the straight line to where it ends.
     if (active) boardRef?.setRoute(active.id, row.path);
-    if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, rung: p.rung ?? undefined });
+    if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined });
     else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
-    else if (act?.withdraw) performWithdraw(p.rung ?? 1, row.cell);
+    else if (act?.withdraw) performWithdraw(p.activity ?? 1, row.cell);
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -456,7 +456,7 @@
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        pending = { ...pending, index: (pending.index + stepBy(e.key, pending.rows.length)) % pending.rows.length, rung: null };
+        pending = { ...pending, index: (pending.index + stepBy(e.key, pending.rows.length)) % pending.rows.length, activity: null };
       }
       return;
     }
@@ -464,7 +464,7 @@
     if (e.key === 'Enter') { e.preventDefault(); takeAim(); }
     else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      const n = aimRungs.length;
+      const n = aimActivities.length;
       if (n) aim = { ...aim, index: (aim.index + stepBy(e.key, n)) % n };
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
@@ -510,19 +510,19 @@
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
   // Withdraw's own three ride the same picker.
-  const RUNGS: Grade[] = [1, 2, 3];
+  const ACTIVITIES: ActivityIndex[] = [1, 2, 3];
   // The three the rules name, since a charge's Fight is bought at the charge's own price.
   const CHARGES = ['Charge', 'Charge and Press', 'Charge and Overrun'];
-  const chargeRung = $derived(pending?.rung ?? 1);
-  const withdrawRung = $derived(pending?.rung ?? 1);
+  const chargeActivity = $derived(pending?.activity ?? 1);
+  const withdrawActivity = $derived(pending?.activity ?? 1);
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
-  const chargeCost = (c: ChargePreview, rung: Grade) => c.actions - 1 + rung;
+  const chargeCost = (c: ChargePreview, activity: ActivityIndex) => c.actions - 1 + activity;
 
   /** What each reading of a drop actually costs. */
   const dropCost = (row: Preview): number =>
     row.kind === 'move' ? row.actions
-      : row.kind === 'charge' ? chargeCost(row, chargeRung)
-        : act?.withdraw?.rungs[withdrawRung - 1].cost ?? withdrawRung;
+      : row.kind === 'charge' ? chargeCost(row, chargeActivity)
+        : act?.withdraw?.activities[withdrawActivity - 1].cost ?? withdrawActivity;
   const cost = $derived(picked ? dropCost(picked) : aimed ? aimed.cost ?? 0 : 0);
   const left = $derived(act?.actions ?? 0);
 
@@ -667,36 +667,36 @@
       ({ kind: 'engine', id: `engine:${i}`, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ]);
 
-  function performRung(offer: ActionOffer, opt: RungOption, target?: string) {
+  function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
     const before = game.battle!.log.length;
-    takeAction({ type: offer.type, rung: opt.index, target, spell: offer.spell ?? undefined });
+    takeAction({ type: offer.type, activity: opt.index, target, spell: offer.spell ?? undefined });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 
-  function performWithdraw(rung: Grade, to?: string) {
+  function performWithdraw(activity: ActivityIndex, to?: string) {
     const before = game.battle!.log.length;
-    takeAction({ type: 'withdraw', rung, to });
+    takeAction({ type: 'withdraw', activity, to });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
    * prop taken off the tray narrows it to that one verb. */
-  function aimAt(target: TargetRef, cell: string, label: string, only: LadderType | null = null) {
+  function aimAt(target: TargetRef, cell: string, label: string, only: Verb | null = null) {
     if (!active) return;
     const all = offersAt(b, target, active.id);
     let groups = only ? all.filter((g) => g.offer.type === only) : all;
-    // The tree was already chosen at the picker; the popup here is one tier ladder, not a
+    // The tree was already chosen at the picker; the popup here is one tree, not a
     // second choice of tree.
     if (only === 'cast' && armedTree) groups = groups.filter((g) => g.offer.spell === armedTree);
     aim = groups.length ? { cell, target, label, groups, group: 0, index: 0 } : null;
     // The cheapest legal row is the one to land on: it is the one the player most often wants.
     if (aim) {
-      const i = aimRungs.findIndex((o) => o.legal);
+      const i = aimActivities.findIndex((o) => o.legal);
       if (i >= 0) aim = { ...aim, index: i };
     }
   }
 
-  /** A rung is taken the moment it is touched: the price is on the row, so there is nothing
+  /** A activity is taken the moment it is touched: the price is on the row, so there is nothing
    * left to confirm. */
   function aimChoose(i: number) {
     if (!aim) return;
@@ -714,12 +714,12 @@
     aim = null;
     armed = null;
     armedTree = null;
-    // The id goes through only where the rung actually names it: Guard takes none, and a
+    // The id goes through only where the activity actually names it: Guard takes none, and a
     // Rally on your own piece must not arrive carrying your own id as its ally. A matched
     // target's own id goes through, not the touched ref's: a shape or a set is named by its
     // full encoded id, whichever part was actually touched.
     const named = row.targets.find((t) => targetMatches(b, t, a.target));
-    performRung(group.offer, row, named?.id);
+    performActivity(group.offer, row, named?.id);
     // A cast's resolution burst lands on the clicked cell — the same square the aim popup was
     // anchored on — regardless of what the roll behind it did; a miss still means the spell
     // went off, just not to effect.
@@ -966,7 +966,7 @@
             <span class="popup-verb">
               {#if row.kind === 'charge'}<img class="row-prop" src={actionIconUrl('charge')} alt="" />{/if}
               {rowLabel(row)}
-              <span class="row-cost"><ActionCost n={row.kind === 'withdraw' ? withdrawRung : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
+              <span class="row-cost"><ActionCost n={row.kind === 'withdraw' ? withdrawActivity : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
             </span>
             <span class="muted">{rowDetail(row)}</span>
           </button>
@@ -983,40 +983,40 @@
                 <p class="muted">Nothing holds you. Run for your own edge.</p>
               {/each}
               {#if w.holders.length}
-                <p class="muted rung-detail">
+                <p class="muted activity-detail">
                   Break off is one roll, d20+{w.modifier} against DC {w.dc}, the highest of them,
                   read again for each. Above it they roll instead, against DC {levelDc(active.level)}.
                 </p>
               {/if}
             </div>
-            <div class="rung-chips">
-              {#each RUNGS as g (g)}
-                {@const opt = w.rungs[g - 1]}
+            <div class="activity-chips">
+              {#each ACTIVITIES as g (g)}
+                {@const opt = w.activities[g - 1]}
                 <button
-                  class="rung-chip"
-                  class:on={withdrawRung === g}
+                  class="activity-chip"
+                  class:on={withdrawActivity === g}
                   disabled={!opt.legal}
                   title={opt.reason ?? ''}
-                  onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
+                  onclick={() => { if (pending) pending = { ...pending, activity: g }; }}
                 >
                   {opt.label}
                   <ActionCost n={opt.cost ?? g} />
                 </button>
               {/each}
             </div>
-            <p class="muted rung-detail popup-escapes">{w.rungs[withdrawRung - 1].detail}</p>
+            <p class="muted activity-detail popup-escapes">{w.activities[withdrawActivity - 1].detail}</p>
           {/if}
           {#if i === pending.index && row.kind === 'charge' && active}
-            <div class="rung-chips">
-              {#each RUNGS as g (g)}
+            <div class="activity-chips">
+              {#each ACTIVITIES as g (g)}
                 {@const total = chargeCost(row, g)}
                 {@const can = total <= active.actions}
                 <button
-                  class="rung-chip"
-                  class:on={chargeRung === g}
+                  class="activity-chip"
+                  class:on={chargeActivity === g}
                   disabled={!can}
                   title={can ? '' : `needs ${total} actions`}
-                  onclick={() => { if (pending) pending = { ...pending, rung: g }; }}
+                  onclick={() => { if (pending) pending = { ...pending, activity: g }; }}
                 >
                   {CHARGES[g - 1]}
                   <ActionCost n={total} />
@@ -1040,9 +1040,9 @@
             </button>
             {/each}
         </div>
-        <!-- The ladder, priced. A rung is taken on touch: the glyph is the whole bargain. -->
-        {#each aimRungs as opt, i (opt.rung)}
-          <button class="popup-row rung-row" class:on={i === aim.index} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => aimChoose(i)}>
+        <!-- The verb, priced. A activity is taken on touch: the glyph is the whole bargain. -->
+        {#each aimActivities as opt, i (opt.activity)}
+          <button class="popup-row activity-row" class:on={i === aim.index} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => aimChoose(i)}>
             <span class="popup-verb">
               <span class="row-cost" class:over={(opt.cost ?? 0) > active.actions}><ActionCost n={opt.cost ?? 0} size="1.15em" /></span>
               {opt.label}
@@ -1172,7 +1172,7 @@
   .log { flex: 1; min-height: 8rem; max-height: none; background: none; padding: 0; }
 
   .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }
-  /* One verb is a heading, not a choice — the rungs below no longer name it themselves. */
+  /* One verb is a heading, not a choice — the activities below no longer name it themselves. */
   .verb-row.solo .verb-tile { flex-direction: row; justify-content: center; gap: .45rem; cursor: default; }
   .verb-row.solo .verb-tile img { width: 2rem; height: 1.6rem; }
   .verb-tile {
@@ -1207,20 +1207,20 @@
   .popup-row.on { border-color: var(--accent); background: var(--band); }
   .popup-row.dim { opacity: .5; cursor: default; }
   .popup-verb { display: flex; align-items: center; gap: .45rem; font-weight: 600; }
-  /* The price sits first on a rung row, in the accent, so the ladder reads as ◆ ◆◆ ◆◆◆ down
+  /* The price sits first on an activity row, in the accent, so the verb reads as ◆ ◆◆ ◆◆◆ down
      the left edge before any word is read. */
   .row-cost { display: inline-flex; align-items: center; min-width: 2.4rem; color: var(--accent); }
   .row-cost.over { color: var(--muted); }
-  .rung-row .popup-verb { gap: .3rem; }
+  .activity-row .popup-verb { gap: .3rem; }
   .reason { margin-left: auto; font-size: .7rem; font-weight: 400; color: var(--muted); }
-  .rung-chips { display: flex; gap: .3rem; padding: .1rem .5rem .3rem 1rem; }
-  .rung-chip {
+  .activity-chips { display: flex; gap: .3rem; padding: .1rem .5rem .3rem 1rem; }
+  .activity-chip {
     display: flex; gap: .3rem; align-items: center;
     padding: .1rem .45rem; border: 1px solid var(--rule); border-radius: 999px;
     background: transparent; color: var(--ink); font: inherit; font-size: .78rem; cursor: pointer;
   }
-  .rung-chip.on { border-color: var(--accent); background: var(--band); }
-  .rung-chip:disabled { opacity: .4; cursor: default; }
+  .activity-chip.on { border-color: var(--accent); background: var(--band); }
+  .activity-chip:disabled { opacity: .4; cursor: default; }
   .popup-foot { display: flex; gap: .5rem; align-items: center; padding: .3rem .5rem 0; border-top: 1px solid var(--rule); margin-top: .3rem; }
   .popup-foot .muted { margin-right: auto; }
   .popup-foot button { font-size: .8rem; padding: .15rem .5rem; }
@@ -1258,7 +1258,7 @@
 
   .hint { font-size: .8rem; }
 
-  .rung-detail { margin: .1rem 0; }
+  .activity-detail { margin: .1rem 0; }
   .popup-escapes { padding: .1rem .5rem .2rem 1rem; font-size: .8rem; }
 
   .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: .82rem; }

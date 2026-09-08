@@ -5,7 +5,7 @@ import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import type { BattleState } from '../engine/types.js';
-import type { LadderType } from '../engine/ladders.js';
+import type { Verb } from '../engine/ladders.js';
 
 const at = (grid: Grid, key: string) => grid.neighbours(parse(key)).map(notation).sort();
 
@@ -73,10 +73,10 @@ function hexBattle() {
   });
 }
 
-const offer = (state: BattleState, type: LadderType, id?: string) =>
+const offer = (state: BattleState, type: Verb, id?: string) =>
   availableActions(state, id).find((o) => o.type === type)!;
-const targets = (state: BattleState, type: LadderType, rung: 1 | 2 | 3, id?: string) =>
-  offer(state, type, id).rungs[rung - 1].targets.map((t) => t.id);
+const targets = (state: BattleState, type: Verb, activity: 1 | 2 | 3, id?: string) =>
+  offer(state, type, id).activities[activity - 1].targets.map((t) => t.id);
 
 describe('battle on hex', () => {
   it('strides into six neighbours for ten feet each, and further for a second action', () => {
@@ -98,7 +98,7 @@ describe('battle on hex', () => {
   it('sends a routed unit homeward by rows and off its own edge', () => {
     const state = hexBattle();
     unit(state, 'u0').disorder = unit(state, 'u0').quality + 1;
-    const s = act(state, { type: 'withdraw', rung: 1, to: 'c1', unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').status).toBe('left');
   });
 });

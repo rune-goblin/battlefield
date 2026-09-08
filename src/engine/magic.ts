@@ -48,11 +48,11 @@ export function treesForTradition(tradition: Tradition): Tree[] {
 }
 
 /**
- * Display-only stand-in for a `Rung` (see ladders.ts), one per activity per tree. An activity
+ * Display-only stand-in for an `Activity` (see ladders.ts), one per activity per tree. An activity
  * costs its own index in actions; `battle.ts` resolves the mechanics itself, and nothing here
  * is read back out except for the menu.
  */
-export interface CastRung { id: string; label: string; verb: string; detail: string }
+export interface CastActivity { id: string; label: string; verb: string; detail: string }
 
 const ACTIVITIES: Record<Tree, [string, string][]> = {
   blast: [
@@ -87,10 +87,10 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
   ],
 };
 
-export const CAST_RUNGS: Record<Tree, [CastRung, CastRung, CastRung]> = Object.fromEntries(
+export const CAST_ACTIVITIES: Record<Tree, [CastActivity, CastActivity, CastActivity]> = Object.fromEntries(
   TREES.map((tree) => [tree, ACTIVITIES[tree].map(([label, detail], i) => (
     { id: `${tree}-${i + 1}`, label, verb: 'casts', detail }
   ))]),
-) as Record<Tree, [CastRung, CastRung, CastRung]>;
+) as Record<Tree, [CastActivity, CastActivity, CastActivity]>;
 
-export const castRungOf = (tree: Tree, tier: CastTier): CastRung => CAST_RUNGS[tree][tier - 1];
+export const castActivityOf = (tree: Tree, tier: CastTier): CastActivity => CAST_ACTIVITIES[tree][tier - 1];

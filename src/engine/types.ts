@@ -1,7 +1,7 @@
 import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
-import type { Grade, LadderType } from './ladders.js';
+import type { ActivityIndex, Verb } from './ladders.js';
 import type { CastTier, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
@@ -103,9 +103,9 @@ export interface Unit {
 /** Which unit acts. Defaults to `activeUnit(state)`. */
 interface Acts { unit?: string }
 
-export interface RungAction extends Acts {
-  type: LadderType;
-  rung: Grade;
+export interface ActivityAction extends Acts {
+  type: Verb;
+  activity: ActivityIndex;
   target?: string;
   spell?: Tree;
 }
@@ -115,45 +115,45 @@ export interface MoveAction extends Acts { type: 'move'; to: string }
 
 /** Break contact by one of the three activities, then move. `to` is the cell to leave for; a
  * critical Break off is the only one that carries further than a single hex. */
-export interface WithdrawAction extends Acts { type: 'withdraw'; rung: Grade; to?: string }
+export interface WithdrawAction extends Acts { type: 'withdraw'; activity: ActivityIndex; to?: string }
 
-/** Move into contact and fight: the movement's actions, plus the rung's own. */
-export interface ChargeAction extends Acts { type: 'charge'; target: string; rung?: Grade }
+/** Move into contact and fight: the movement's actions, plus the activity's own. */
+export interface ChargeAction extends Acts { type: 'charge'; target: string; activity?: ActivityIndex }
 
-export type Action = RungAction | MoveAction | WithdrawAction | ChargeAction;
+export type Action = ActivityAction | MoveAction | WithdrawAction | ChargeAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
-export interface RungTarget { kind: TargetKind; id: string; label: string }
+export interface ActivityTarget { kind: TargetKind; id: string; label: string }
 
-/** One board object a rung can be aimed at: a cell, a piece, or a wall. */
+/** One board object an activity can be aimed at: a cell, a piece, or a wall. */
 export interface TargetRef { kind: TargetKind; id: string }
 
-/** What one offer can do to a given target: the offer, and only those of its rungs that both
+/** What one offer can do to a given target: the offer, and only those of its activities that both
  * reach that target and are legal right now. See `offersAt`. */
-export interface TargetOffer { offer: ActionOffer; rungs: RungOption[] }
+export interface TargetOffer { offer: ActionOffer; activities: ActivityOption[] }
 
-export interface RungOption {
-  /** A `RungId` for the four ladders; `${Tree}-${CastTier}` (e.g. `blast-2`) for Cast. */
-  rung: string;
-  index: Grade;
+export interface ActivityOption {
+  /** An `ActivityId` for the four verbs with a table; `${Tree}-${CastTier}` (e.g. `blast-2`) for Cast. */
+  activity: string;
+  index: ActivityIndex;
   label: string;
   detail: string;
-  /** Actions this rung costs: its own index, the same for every unit. `null` when no number of
+  /** Actions this activity costs: its own index, the same for every unit. `null` when no number of
    * actions reaches it — above a tradition's cap. */
   cost: number | null;
   legal: boolean;
   reason: string | null;
   needsTarget: boolean;
-  targets: RungTarget[];
+  targets: ActivityTarget[];
 }
 
 export interface ActionOffer {
-  type: LadderType;
+  type: Verb;
   spell: Tree | null;
   label: string;
   detail: string;
-  rungs: [RungOption, RungOption, RungOption];
+  activities: [ActivityOption, ActivityOption, ActivityOption];
 }
 
 /** One enemy holding the unit: what the Break off roll is read against for it, and what it
@@ -170,18 +170,18 @@ export interface Holder {
   follows: boolean;
 }
 
-/** Withdraw is not a ladder, but it offers three activities like one: Break off, Disengage,
+/** Withdraw has no table, but it offers three activities like a verb that has one: Break off, Disengage,
  * Fighting retreat. Ground is never for sale — a withdrawal is one hex clear, and only a
  * critical Break off carries further. */
 export interface WithdrawOffer {
-  rungs: [RungOption, RungOption, RungOption];
+  activities: [ActivityOption, ActivityOption, ActivityOption];
   /** The unit's Reflex, less disorder: what Break off rolls. */
   modifier: number;
   /** The highest attack DC among the holders, which Break off rolls against. */
   dc: number;
   holders: Holder[];
   /** Cells to leave for. Beyond the first hex they are the reach of a critical's free Move. */
-  targets: RungTarget[];
+  targets: ActivityTarget[];
 }
 
 export interface MoveReach {

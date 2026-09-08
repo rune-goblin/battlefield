@@ -38,10 +38,10 @@ describe('siege engines', () => {
   it('a catapult shoots at extreme range with no roll to reach it, once per round', () => {
     const s0 = battle(['Catapult']);
     const shoot = offer(s0, 'shoot');
-    expect(shoot.rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
-    expect(shoot.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
-    expect(shoot.rungs[0].targets.map((t) => t.id)).toEqual(['u1']);
-    const s1 = act(s0, { type: 'shoot', rung: 3, target: 'u1' }, scriptedRng([10]));
+    expect(shoot.activities.map((r) => r.cost)).toEqual([1, 2, 3]);
+    expect(shoot.activities[2].targets.map((t) => t.id)).toEqual(['u1']);
+    expect(shoot.activities[0].targets.map((t) => t.id)).toEqual(['u1']);
+    const s1 = act(s0, { type: 'shoot', activity: 3, target: 'u1' }, scriptedRng([10]));
     expect(unit(s1, 'u1').wounds).toBe(1);
     expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(engine('Catapult').launch);
     expect(unit(s1, 'u0').engines[0].fired).toBe(true);
@@ -49,7 +49,7 @@ describe('siege engines', () => {
 
   it("a ballista's own reach carries the crew as far, once it is crewed", () => {
     const s0 = battle(['Ballista']);
-    expect(offer(s0, 'shoot').rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
+    expect(offer(s0, 'shoot').activities[2].targets.map((t) => t.id)).toEqual(['u1']);
   });
 
   it('a ram only works against a wall it stands beside, and adds +2', () => {
@@ -59,8 +59,8 @@ describe('siege engines', () => {
     expect(offer(s0, 'fight')).toBeUndefined();
     unit(s0, 'u0').square = parse('c6');
     const key = edgeKey(parse('c6'), parse('c7'));
-    expect(offer(s0, 'fight').rungs[0].targets.map((t) => t.id)).toContain(key);
-    const s1 = act(s0, { type: 'fight', rung: 1, target: key }, scriptedRng([10]));
+    expect(offer(s0, 'fight').activities[0].targets.map((t) => t.id)).toContain(key);
+    const s1 = act(s0, { type: 'fight', activity: 1, target: key }, scriptedRng([10]));
     expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(unit(s0, 'u0').stats.strike! + 2);
     expect(s1.board.walls[key].remaining).toBe(2);
   });
@@ -68,8 +68,8 @@ describe('siege engines', () => {
   it('a catapult bombards a wall from anywhere in its band', () => {
     const s0 = battle(['Catapult'], 1);
     const key = edgeKey(parse('c6'), parse('c7'));
-    expect(offer(s0, 'shoot').rungs[2].targets.map((t) => t.id)).toContain(key);
-    const s1 = act(s0, { type: 'shoot', rung: 3, target: key }, scriptedRng([20]));
+    expect(offer(s0, 'shoot').activities[2].targets.map((t) => t.id)).toContain(key);
+    const s1 = act(s0, { type: 'shoot', activity: 3, target: key }, scriptedRng([20]));
     expect(s1.board.walls[key].remaining).toBe(0);
   });
 
@@ -84,8 +84,8 @@ describe('siege engines', () => {
     while (s.phase === 'battle') {
       const u = activeUnit(s)!;
       s = availableActions(s, u.id).some((o) => o.type === 'guard')
-        ? act(s, { type: 'guard', rung: 1, unit: u.id }, scriptedRng([10]))
-        : act(s, { type: 'withdraw', rung: 1, unit: u.id }, scriptedRng([1]));
+        ? act(s, { type: 'guard', activity: 1, unit: u.id }, scriptedRng([10]))
+        : act(s, { type: 'withdraw', activity: 1, unit: u.id }, scriptedRng([1]));
     }
     expect(activeUnit(s)).toBeNull();
     expect(unit(s, 'u0').engines[0].status).toBe('captured');

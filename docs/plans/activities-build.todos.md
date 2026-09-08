@@ -650,3 +650,20 @@ top of Wave 11.
 - 2026-09-08: a charge lands only where the charger could stand: `approach` asks `canEndOn` of
   the contact hex, so a troop carrying an unspent Fly cannot end its run on water and be left
   there when `finish` takes the flight away. A native flier still lands wherever it likes.
+
+## Wave 14 (2026-09-08)
+
+- 2026-09-08: `Grade` went too, as `ActivityIndex`. The plan's table does not list it, but Wave 0
+  recorded it as surviving "to Wave 14", and the standing rule is that code identifiers keep
+  their old names *until* this wave. `1 | 2 | 3` is the activity's index and its price alike.
+- 2026-09-08: `LADDER_TYPES` became `VERB_TYPES`, not `VERBS`, because the plan gives `VERBS` to
+  the table `LADDERS` and the two cannot share a name.
+- 2026-09-08: `check.ts`'s `LADDER` became `DEGREES`. It was never the activity ladder — it is
+  the four-degree scale — but the word is retired from the code and `DEGREES` says what it holds.
+- 2026-09-08: `ladders.ts` keeps its filename. Renaming it would have buried a pure-rename diff
+  under a file move; the identifiers inside it now all say verb and activity.
+- 2026-09-08: the CSS classes followed (`.rung-chip` → `.activity-chip`, and its siblings), as
+  did `withdrawRung`, `performRung`, `chargeRung`, `aimRungs` and the tests' local helpers.
+- 2026-09-08: the sweep was run by hand rather than by an agent, after the first attempt stalled
+  midway through `ladders.ts`; the diff is 317 insertions against 317 deletions, which is the
+  shape a rename with no behaviour change should have.
