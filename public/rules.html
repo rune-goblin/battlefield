@@ -609,7 +609,7 @@
 
 <h3>Casting</h3>
 <p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast and to heal, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
-<p>A cast is priced like every other activity: one, two or three actions for the one you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast is the activation's one attack. A buff lasts until the ally has next acted; Haste alone lasts two activations.</p>
+<p>A cast is priced like every other activity: one, two or three actions for the one you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast is the activation's one attack. A buff lasts until the ally has next acted; Haste alone lasts two activations, and Translocate is instant.</p>
 <p>A cast is one roll. Blast is a spell attack against Defence, and its one roll is read against every hex its shape covers. Healing is a spell attack against the level DC of the unit healed, read against each unit reached. Controlling is the target's Will save against your spell DC. Offense and Movement have nothing to resist and roll nothing; Defense's Aegis is the enemy's Will save against your spell DC.</p>
 
 <h3>Tradition</h3>
@@ -712,15 +712,23 @@
 <p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on an ally already under it is nothing.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range &middot; an ally</h4>
-<p><em>Not yet reviewed. The Legacy row below is the rule; the draft is in section 15.</em></p>
-
-<div class="legacy">
-<h4>Legacy</h4>
-<p><strong>The Movement tree, until reviewed.</strong> A tier above the first bought one of extended range, a longer duration or a stronger effect.</p>
+<p>Three separate things, bought one at a time; Fly covers ground because flight does. Translocate is the one buff that happens at cast time.</p>
 <div class="wrap"><table>
-<tr><th>Tree, at its range</th><th>Tier 1 &middot; one action</th><th>Tier 2 effect</th><th>Tier 2 bonus</th><th>Tier 3 effect</th><th>Tier 3 bonus</th></tr>
-<tr><td>Movement (buff) &middot; short</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>+2 movement</td><td>Grants a movement type: fly, swim, or water walk</td><td>+3 movement</td></tr>
+<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
+<tr><td>Sure footing</td><td>◆</td><td>Every hex costs the ally 1 on its next activation: forest, swamp, shallows and a climb are open ground to it, and a charge through them lands its +2.</td></tr>
+<tr><td>Fly</td><td>◆◆</td><td>On its next activation the ally flies: every hex costs 1, and it crosses water, cliffs and standing walls. Nothing engages it across a wall or a cliff it crosses.</td></tr>
+<tr><td>Translocate</td><td>◆◆◆</td><td>Now, the ally is placed in any empty hex within its Speed of it, whatever lies between. Leaving contact costs it nothing and nothing strikes it.</td></tr>
 </table></div>
+<table>
+<tr><th>Ally, infantry at one hex an action</th><th>Without</th><th>With</th></tr>
+<tr><td>Enter forest</td><td>2 actions</td><td>1, Sure footing</td></tr>
+<tr><td>Enter swamp</td><td>3 actions</td><td>1, Sure footing</td></tr>
+<tr><td>Climb one level into forest</td><td>3 actions</td><td>1, Sure footing</td></tr>
+<tr><td>Cross a river, a cliff, or a fort wall</td><td>Never</td><td>Fly</td></tr>
+<tr><td>Leave contact</td><td>Break off ◆ with a check, or Disengage ◆◆</td><td>Translocate, no action of its own</td></tr>
+<tr><td>A Speed of ground</td><td>One action of its own</td><td>Translocate, none of its own</td></tr>
+</table>
+
 </div>
 
 <p>Three trained tactics grant a fixed effect to a troop with no magic of its own, unrolled: battlefield medicine, defending allies and demoralizing. <em>What each grants under the new trees is open (section 15).</em></p>
@@ -756,27 +764,11 @@
 
 <h2 id="review">15. Under review</h2>
 <div class="key">
-<p><strong>What is decided lives in its own section.</strong> Shoot and Guard in section 8, Rally in section 9, Charge and Withdraw in section 7, and the Blast, Healing, Controlling, Offense and Defense trees in section 11. A block marked Legacy is a rule nothing has replaced yet. Each verb was judged by the four tests from the Fight review: an activity buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. What follows is still open. The reasoning behind the decided verbs is in <code>docs/plans/battle-mechanics.todos.md</code> and in this file's history.</p>
+<p><strong>What is decided lives in its own section.</strong> Shoot and Guard in section 8, Rally in section 9, Charge and Withdraw in section 7, and the six Cast trees in section 11. A block marked Legacy is a rule nothing has replaced yet. Each verb was judged by the four tests from the Fight review: an activity buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. What follows is still open. The reasoning behind the decided verbs is in <code>docs/plans/battle-mechanics.todos.md</code> and in this file's history.</p>
 </div>
 
 <h3>Free strike and no retreat</h3>
 <p>Unchanged. The free strike is a hit capped at one wound with the Fortitude save as usual, and a troop that gives no retreat follows a withdrawal for one free Move. Neither is an activity with a price.</p>
-
-<h3>Cast</h3>
-<p>Five trees are decided and stand in section 11. Movement remains, a draft.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range &middot; an ally</h4>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Sure footing</td><td>◆</td><td>Every hex costs the ally 1 on its next activation: forest, swamp, shallows and a climb are open ground to it.</td></tr>
-<tr><td>Wings</td><td>◆◆</td><td>Sure footing, and it flies: water, walls and cliffs are crossed.</td></tr>
-<tr><td>Freedom</td><td>◆◆◆</td><td>Wings, and it breaks contact without a Disengage check: nothing strikes it and nothing follows.</td></tr>
-</table></div>
-<ul>
-<li><strong>Changed:</strong> +1, +2 and +3 movement all go. Tier 1 is today's Tier 2, Tier 2 is today's Tier 3 with the choice of type removed (flight covers the other two on this board), and Freedom is new.</li>
-<li><strong>Ancestors:</strong> Tailwind (+10 feet; the shape we leave). Fly and Water Walk. Freedom of Movement, under which the target automatically Escapes.</li>
-<li>Freedom is the one buff that touches Withdraw: Break off is still paid for, and the check is simply passed. Pathfinder's Escape is an Athletics check, which is why the word is not borrowed here.</li>
-</ul>
 
 <h3>Walls and siege engines</h3>
 <p>Untouched by the Fight rework and priced as before. Nothing here proposes a change to them.</p>

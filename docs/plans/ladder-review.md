@@ -1,16 +1,17 @@
 # Ladder review, one ladder at a time
 
-Start a session with: **"Read docs/plans/ladder-review.md and review the Blast tree."**
-Nothing else needs to be in context. Change the ladder's name to pick the next one; a Cast tree
-is named by its tree, "review the Blast tree".
+The review is complete as of 2026-09-08: every verb and every Cast tree stands in its own
+section of `public/rules.html`. What remains is the build, one commit per verb, then deleting
+section 15 and the last Legacy block. Start a build session with: **"Read
+docs/plans/ladder-review.md and build Shoot."** The standing decisions below still bind.
 
 ## What to read, and nothing more
 
 1. `public/rules.html`: the named ladder's own block in the section it lives in (Shoot and
    Guard in 8, Rally in 9, Withdraw and Charge in 7, each Cast tree under its `<h4>` in 11).
    Since 2026-09-06 a decided ladder stands there as the rule and the old rule is deleted. A
-   `<div class="legacy">` marks only a rule nothing has replaced yet: the Movement
-   row in section 11 and the three tactics. A draft not yet decided is in section 15,
+   `<div class="legacy">` marks only a rule nothing has replaced yet: the three
+   tactics' grants in section 11. A draft not yet decided is in section 15,
    "Under review", which holds only open items.
 3. The engine plays the rules as they stood before the review until the build.
 3. The engine function behind it, quoted by name: `LADDERS` in `src/engine/ladders.ts`,
@@ -98,7 +99,7 @@ tree and section 11's share a name: anchor on the section first.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Eleven are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing, Controlling, Offense and Defense. Movement waits.
+All twelve are updated. The review is complete as of 2026-09-08; the build is next.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -113,7 +114,7 @@ Eleven are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing
 | Cast: Controlling | Section 11: medium range, Will save against spell DC | ✓ | Decided 2026-09-06: Dread / Stun / Hold. One Will save: a success frightens (−1 to rolls and Defence until the end of its next activation), a failure the rung, a critical failure the rung with 2 disorder. Stun is one action fewer, Hold rooted. In its section; engine not yet built. |
 | Cast: Offense | Section 11: short range, an ally | ✓ | Decided 2026-09-08: Sure strike / Wrath / Haste, a menu, each rung its own effect. Wrath is persistent damage: the ally's next hit costs the target 1 more wound at the end of its next activation, with the ordinary Fortitude save or 1 disorder. Haste is four actions on each of the ally's next two activations; the unit grade and the troop's own extra action went with it. In its section; engine not yet built. |
 | Cast: Defense | Section 11: short range, an ally | ✓ | Decided 2026-09-08: Ward / Stoneskin / Aegis, a menu. Ward is Sure strike's mirror, the attacker rolls twice and takes the worse; Stoneskin caps every hit at one wound and no disorder; Aegis is Sanctuary, the attacker's Will against spell DC or the activity is wasted. In its section; engine not yet built. |
-| Cast: Movement | Section 11: short range, an ally | | Draft in section 15: Sure footing / Wings / Freedom. Freedom passes the Disengage check. |
+| Cast: Movement | Section 11: short range, an ally | ✓ | Decided 2026-09-08: Sure footing / Fly / Translocate, a menu. Sure footing makes every hex cost 1; Fly crosses water, cliffs and walls; Translocate places the ally within its Speed at cast time, out of contact with no check. In its section; engine not yet built. |
 
 Move carries no rungs and is not under review. Section 15 also holds two blocks that are not
 ladders, "Free strike and no retreat" and "Walls and siege engines"; both say the rule is

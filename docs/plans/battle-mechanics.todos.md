@@ -2117,3 +2117,19 @@ The guesses, in one line each, so the review has a list to strike from:
   the one buff that rolls. Judgment calls: Ward and Sure strike on one attack cancel to one
   roll; a second of any on the same ally is nothing. Dropped: the whole-hit Aegis; a
   standalone wound cap at ◆◆, worth 0.05 wounds at parity.
+- **Movement decided: Sure footing, Fly, Translocate** (2026-09-08). Mark asked whether the
+  tree was Withdraw or a leftover: "movement is something that typically doesn't have a
+  tree. If you're not engaged, you can move. Is this actually the withdraw action, or is
+  this left over from the latter system?" The old +1/+2/+3 was the grade era's flat bonus
+  and the draft's Freedom was Disengage sold again, so both went; the tree stays because
+  nothing else sells difficult ground at open price or a crossing of water, cliffs and
+  walls, and it is primal's only 3. Mark: "I think sure footing, fly, and translocate. Are
+  good names." Sure footing ◆: every hex costs 1 on its next activation, and a charge
+  through difficult ground lands its +2. Fly ◆◆: flies on its next activation, crosses
+  water, cliffs and standing walls, engaged across neither. Translocate ◆◆◆: at cast time
+  the ally is placed in any empty hex within its Speed, whatever lies between, out of
+  contact with no check and no strike. Judgment calls: Fly covers ground as flight does,
+  still bought on its own; Translocate is the one buff that happens at cast time. Dropped:
+  Freedom as an escape (worth one action beside Disengage ◆◆); Wings as a name; dropping
+  the tree and rebalancing the tradition table. The last legacy tree table is deleted and
+  section 15 holds only the two unchanged blocks; the review is complete.
