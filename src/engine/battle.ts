@@ -10,8 +10,7 @@ import {
   type Grade, type LadderType, type Rung,
 } from './ladders.js';
 import {
-  bandOut, castRungOf, TRADITION_TIERS, TREE_LABEL, TREE_RANGE, TREE_ROLLS,
-  TREE_TARGET, type CastAxis, type CastBand, type CastTier, type Tree,
+  castRungOf, TRADITION_CAP, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from './magic.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
@@ -56,7 +55,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
       tradition: traits.caster ? traits.tradition : null,
-      trees: treesFor(d.card),
+      trees: treesFor(d.card), castTrees: [],
       quality: qualityFor(d.card),
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
       noRetreat: traits.signals.includes('no-retreat'),
@@ -319,9 +318,8 @@ export const willModifier = (u: Unit) => u.stats.will - u.disorder + rollBonus(u
 /** What a caster rolls to Blast: its own spell attack, less disorder (section 11). */
 export const spellAttackModifier = (u: Unit) => (u.stats.spellAttack ?? 0) - u.disorder + rollBonus(u);
 
-/** What a target resists a Controlling effect roll against: the caster's own spell DC, plus
- * whatever this cast's tier bonused it (section 11's "effect roll" bonus). */
-export const spellDcFor = (u: Unit, bonus = 0) => (u.stats.spellDc ?? 0) + bonus;
+/** What a target rolls its Will save against: the caster's own spell DC (section 11). */
+export const spellDcFor = (u: Unit) => u.stats.spellDc ?? 0;
 
 /** The level DC of the strongest enemy nearby — the highest-level enemy within close range,
  * or across the whole field if none is close. Rallying under a dragon's eye is harder than
@@ -712,12 +710,70 @@ const wallTarget = (key: string): RungTarget => ({ kind: 'wall', id: key, label:
 
 interface TargetSet { needsTarget: boolean; targets: RungTarget[] }
 
-/** The cumulative hex reach of a Cast band: how far Engaged/Short/Medium/Long/Extreme carries,
- * the same thresholds Shooting's own bands use. A spell's range is a ceiling — anything from
- * the caster's own hex out to the band counts, the way "range: 30 feet" reads on any other
- * statblock. */
-function castCeiling(state: BattleState, band: CastBand): number {
+/** How far a tree's own range carries, in hexes: the same thresholds Shooting's bands use. A
+ * spell's range is a ceiling — anything from the caster's own hex out to the band counts, the
+ * way "range: 30 feet" reads on any other statblock. */
+function castCeiling(state: BattleState, tree: Tree): number {
+  const band = TREE_RANGE[tree];
   return band === 'engaged' ? 1 : BANDS[state.board.grid][band];
+}
+
+// proto: a shape is offered as one target, its hexes joined by '+', so the aim popup needs no
+// multi-select. `blast` splits it again at resolution.
+const shapeId = (shape: Square[]) => shape.map(notation).sort().join('+');
+
+const enemiesIn = (state: BattleState, u: Unit, shape: Square[]) => state.units.filter(
+  (e) => e.side !== u.side && e.status === 'active' && shape.some((c) => sameSquare(c, e.square)),
+);
+
+/** Every pair of hexes a Line may cover: two adjacent hexes on one straight line out from the
+ * caster, the further of them second, both in range. */
+function lineShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
+  const g = grid(state);
+  const out: Square[][] = [];
+  for (const a of g.cells()) {
+    const near = dist(state, u.square, a);
+    if (near < 1 || near > ceiling) continue;
+    for (const b of g.neighbours(a)) {
+      const far = dist(state, u.square, b);
+      if (far !== near + 1 || far > ceiling) continue;
+      if (g.collinear(u.square, a, b)) out.push([a, b]);
+    }
+  }
+  return out;
+}
+
+/** Every trio of hexes a Burst may cover: the three that meet at one corner of the grid, all
+ * of them in range. */
+function burstShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
+  const g = grid(state);
+  const seen = new Set<string>();
+  const out: Square[][] = [];
+  for (const c of g.cells()) {
+    if (dist(state, u.square, c) > ceiling) continue;
+    for (const shape of g.corners(c)) {
+      if (shape.some((x) => dist(state, u.square, x) > ceiling)) continue;
+      const key = shapeId(shape);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(shape);
+    }
+  }
+  return out;
+}
+
+/** Missile names the enemy itself, as every other attack does; Line and Burst name a shape. */
+function blastTargets(state: BattleState, u: Unit, index: Grade, ceiling: number): RungTarget[] {
+  if (index === 1) {
+    return state.units
+      .filter((e) => e.side !== u.side && e.status === 'active' && dist(state, e.square, u.square) <= ceiling)
+      .map(unitTarget);
+  }
+  const shapes = index === 2 ? lineShapes(state, u, ceiling) : burstShapes(state, u, ceiling);
+  return shapes
+    .map((shape) => ({ shape, caught: enemiesIn(state, u, shape) }))
+    .filter(({ caught }) => caught.length > 0)
+    .map(({ shape, caught }) => ({ kind: 'cell' as const, id: shapeId(shape), label: caught.map((e) => e.name).join(', ') }));
 }
 
 function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null): TargetSet {
@@ -745,11 +801,8 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
     }
     case 'cast': {
       const tree = spell!;
-      // The offer's own targets are a superset: the graphical menu only ever pushes effect
-      // (see `RungAction.axis`), so range never actually extends, but a direct `act()` call
-      // may still push range — `doCastAction` re-checks the real band once the axis is known,
-      // the same way `perform`'s own shoot case re-checks a rung's band and logs "falls short".
-      const ceiling = castCeiling(state, bandOut(TREE_RANGE[tree], index - 1));
+      const ceiling = castCeiling(state, tree);
+      if (tree === 'blast') return { needsTarget: true, targets: blastTargets(state, u, index, ceiling) };
       const wants = TREE_TARGET[tree];
       const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active');
       const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
@@ -769,12 +822,12 @@ const isAttack = (type: LadderType, spell: Tree | null) =>
  * tradition behind it stops at the one-action activity.
  */
 function castCostFor(u: Unit, tree: Tree, index: Grade): number | null {
-  const cap = u.tradition ? TRADITION_TIERS[u.tradition][tree] : 1;
+  const cap = u.tradition ? TRADITION_CAP[u.tradition][tree] : 1;
   return index <= cap ? index : null;
 }
 
 function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null, blocked: string | null): RungOption {
-  const rung = type === 'cast' ? castRungOf(spell!, index as CastTier) : rungOf(type, index);
+  const rung = type === 'cast' ? castRungOf(spell!, index) : rungOf(type, index);
   const cost = type === 'cast' ? castCostFor(u, spell!, index) : index;
   const { needsTarget, targets } = targetsFor(state, u, type, index, spell);
   let reason: string | null = blocked ?? (cost === null ? "above your tradition's reach" : null);
@@ -784,7 +837,8 @@ function rungOption(state: BattleState, u: Unit, type: LadderType, index: Grade,
 }
 
 function offerFor(state: BattleState, u: Unit, type: LadderType, spell: Tree | null): ActionOffer {
-  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation' : null;
+  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
+    : spell && u.castTrees.includes(spell) ? 'already cast this activation' : null;
   const rungs = [1, 2, 3].map((i) => rungOption(state, u, type, i as Grade, spell, blocked)) as [RungOption, RungOption, RungOption];
   return {
     type, spell,
@@ -955,70 +1009,74 @@ function follow(state: BattleState, u: Unit, chasers: Unit[]) {
   }
 }
 
-/**
- * A cast's six trees (section 11). `tier` is what the cast bought on whichever one axis was
- * chosen — range, duration or effect (`axis`; Tier 1 on the other two, always). Only `effect`
- * ever changes what a tree actually does; `range` and `duration` instead widen where it lands
- * or how long it lasts, and — for Blast or Controlling only — sweeten the effect roll as a
- * consolation, per "The six trees" in rules.html.
- */
-function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: CastTier, axis: CastAxis, action: RungAction) {
+/** One cast: the tree is spent for this activation, and its own case resolves it. */
+function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: Grade, action: RungAction) {
+  u.castTrees.push(tree);
+  resolveTree(state, rng, u, tree, index, action);
+}
+
+/** The one unit an ally tree or a Controlling cast lands on, or null when it is out of range. */
+function castTarget(state: BattleState, u: Unit, tree: Tree, action: RungAction): Unit | null {
   const target = action.target ? unit(state, action.target) : u;
-  const rangeTier = axis === 'range' ? tier : 1;
-  const effectTier = axis === 'effect' ? tier : 1;
-  const band = bandOut(TREE_RANGE[tree], rangeTier - 1);
-  if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, band)) {
+  if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, tree)) {
     log(state, u, `${u.name}'s ${TREE_LABEL[tree]} cannot carry to ${target.name}.`);
-    return;
+    return null;
   }
-  if (tree === 'blast') u.attacked = true;
-  if (!TREE_ROLLS[tree]) {
-    resolveTree(state, rng, u, target, tree, effectTier, 'success');
-    return;
-  }
-  const effectBonus = axis === 'effect' ? (effectTier === 3 ? 2 : effectTier === 2 ? 1 : 0) : 0;
-  const pushBonus = axis !== 'effect' ? (tier === 3 ? 4 : tier === 2 ? 2 : 0) : 0;
-  if (tree === 'blast') {
-    const c = roll(state, rng, u, spellAttackModifier(u) + effectBonus + pushBonus, defenceOf(state, target, u, false));
-    log(state, u, `${u.name} Blasts ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-    resolveTree(state, rng, u, target, tree, effectTier, c.degree);
-    return;
-  }
-  // Controlling remains a resistance check: its own effect tier penalizes the target's Will,
-  // while a range or duration tier raises the caster's spell DC.
-  const c = roll(state, rng, target, willModifier(target) - effectBonus, spellDcFor(u, pushBonus));
-  log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-  resolveTree(state, rng, u, target, tree, effectTier, c.degree);
+  return target;
 }
 
 /**
- * What a landed cast actually does, tree by tree (section 11's "The six trees" table).
- * `degree` is the caster's attack result for Blast, the target's resistance result for
- * Controlling, and a plain `'success'` for the four ally trees, which always land.
+ * Blast, the activation's one attack: one spell attack, read against the Defence of the enemy
+ * in each hex of the shape. A hit is 1 wound, a critical 2, and the wound asks the Fortitude
+ * save as any other does.
  */
-function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: Tree, effectTier: CastTier, degree: Degree) {
+function blast(state: BattleState, rng: Rng, u: Unit, index: Grade, action: RungAction) {
+  const activity = castRungOf('blast', index);
+  const shape = index === 1 ? [unit(state, action.target!).square] : action.target!.split('+').map(parse);
+  const caught = enemiesIn(state, u, shape);
+  u.attacked = true;
+  log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`);
+  const modifier = spellAttackModifier(u);
+  // One d20 for the whole shape. `roll` wants a DC, so it takes the first hex's Defence and
+  // every hex is then read off that same die.
+  const shot = roll(state, rng, u, modifier, defenceOf(state, caught[0], u, false));
+  for (const target of caught) {
+    const c = readCheck(shot.roll, modifier, defenceOf(state, target, u, false));
+    log(state, u, `${activity.label} catches ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+    const wounds = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+    applyWounds(state, rng, target, wounds, `${u.name}'s ${activity.label}`, u);
+  }
+}
+
+/**
+ * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
+ * and its own effect; `index` is the activity bought, which is also its price.
+ */
+function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: Grade, action: RungAction) {
   switch (tree) {
-    case 'blast': {
-      if (!succeeded(degree)) return;
-      let wounds = degree === 'critical-success' ? 2 : 1;
-      if (effectTier >= 2) wounds += 1;
-      applyWounds(state, rng, target, wounds, `${u.name}'s magic`, u, true);
+    case 'blast':
+      blast(state, rng, u, index, action);
       break;
-    }
     case 'healing': {
+      const target = castTarget(state, u, tree, action);
+      if (!target) break;
       clearDisorder(state, target, 1, 'Healing');
-      if (effectTier >= 2 && target.wounds > 0) {
+      if (index >= 2 && target.wounds > 0) {
         target.wounds -= 1;
         log(state, u, `${u.name} heals ${target.name}: wounds ${target.wounds}/${MAX_WOUNDS}.`);
       }
       break;
     }
     case 'controlling': {
-      if (succeeded(degree)) return;
-      // proto: the movement and action penalties went with their fields. Section 9's disorder
+      const target = castTarget(state, u, tree, action);
+      if (!target) break;
+      const c = roll(state, rng, target, willModifier(target), spellDcFor(u));
+      log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      if (succeeded(c.degree)) break;
+      // proto: the action and movement penalties went with their fields. Section 9's disorder
       // table is the part of Controlling that still stands, so that is what lands until Wave 9
       // builds Dread, Stun and Hold.
-      addDisorder(state, target, degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${TREE_LABEL[tree]}`);
+      addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${TREE_LABEL[tree]}`);
       break;
     }
     // proto: Offense, Defense and Movement each become a menu of three named activities in
@@ -1026,9 +1084,12 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: 
     // carries and lands nothing in between.
     case 'offense':
     case 'defense':
-    case 'movement':
+    case 'movement': {
+      const target = castTarget(state, u, tree, action);
+      if (!target) break;
       log(state, u, `${u.name}'s ${TREE_LABEL[tree]} settles on ${target.name} and does nothing yet.`);
       break;
+    }
   }
 }
 
@@ -1139,6 +1200,7 @@ function begin(state: BattleState, u: Unit) {
   u.actions = ACTIONS_PER_ACTIVATION;
   u.attacked = false;
   u.feet = 0;
+  u.castTrees = [];
   u.guard = null;
   u.exposed = false;
   u.ward = false;
@@ -1201,7 +1263,7 @@ function doRung(state: BattleState, rng: Rng, u: Unit, action: RungAction): numb
   const price = opt.cost!;
   if (price > u.actions) throw new Error(`${opt.label} needs ${price} actions`);
   if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}.`);
-  if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.rung as CastTier, action.axis ?? 'effect', action);
+  if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.rung, action);
   else perform(state, rng, u, rungOf(offer.type, action.rung), action);
   return price;
 }

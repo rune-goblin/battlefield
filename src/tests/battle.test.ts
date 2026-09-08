@@ -4,7 +4,7 @@ import {
   endActivation, holdersOf, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
-import { edgeKey, notation, parse } from '../engine/board.js';
+import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
@@ -181,74 +181,66 @@ describe('the menu is filtered by situation', () => {
   });
 });
 
-describe('the six trees', () => {
+describe('Cast', () => {
   const cleric: UnitCard = { name: 'Cleric', level: 6, role: 'infantry', caster: true, tradition: 'divine', tactics: [] };
+  const magus: UnitCard = {
+    name: 'Magus', level: 6, role: 'infantry', caster: true, tradition: 'arcane', tactics: [],
+    overrides: { spellAttack: 10 },
+  };
   const castOffer = (state: BattleState, tree: string, id = 'u0') =>
     availableActions(state, id).find((o) => o.type === 'cast' && o.spell === tree)!;
 
-  it("gates which trees a tradition grants at all, and how far each may push", () => {
+  // The caster stands on c2, and c2 → d3 → d4 is one straight line out from it: the three
+  // share a cube coordinate, each hex one further out than the last.
+  const blastField = (defences: number[], cells = ['d3', 'd4']) => {
+    const foes = defences.map((defence, i): UnitCard =>
+      ({ ...infantry, name: `Foe ${i + 1}`, overrides: { defence } }));
+    const s = createBattle({
+      units: [
+        { card: magus, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'e2' },
+        ...foes.map((card, i) => ({ card, side: 'defender' as Side, square: `${'cde'[i]}7` })),
+      ],
+      board: openBoard('hex'),
+    });
+    foes.forEach((_, i) => place(s, `u${i + 2}`, cells[i]));
+    return s;
+  };
+
+  it('gates which trees a tradition grants, and how many actions it may spend in each', () => {
     const s = createBattle({
       units: [{ card: cleric, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
       board: openBoard(),
     });
-    // Divine's own grid (section 11): blast 1, healing 3, controlling 2, offense 2, defense 2,
-    // movement 0 — no Movement row at all, and Blast locked at Tier 1.
+    // Divine's own row (section 11): blast 1, healing 3, controlling 2, offense 2, defense 2,
+    // movement 0 — no Movement row at all, and Blast stops at the one-action activity.
     expect(availableActions(s, 'u0').filter((o) => o.type === 'cast').map((o) => o.spell))
       .toEqual(['blast', 'healing', 'controlling', 'offense', 'defense']);
     expect(castOffer(s, 'blast').rungs.map((r) => r.cost)).toEqual([1, null, null]);
+    expect(castOffer(s, 'blast').rungs.map((r) => r.label)).toEqual(['Missile', 'Line', 'Burst']);
     expect(castOffer(s, 'healing').rungs.map((r) => r.cost)).toEqual([1, 2, 3]);
   });
 
-  it("anchors each tree's Tier 1 range at its own base band, and only a range push extends it", () => {
-    const s = createBattle({
-      units: [
-        { card: cleric, side: 'attacker', square: 'c2' },
-        { card: infantry, side: 'attacker', square: 'a1' },
-        { card: infantry, side: 'attacker', square: 'a2' },
-        { card: kobolds, side: 'defender', square: 'c7' },
-      ],
-      board: openBoard(),
-    });
-    place(s, 'u1', 'c3'); // distance 1: engaged, inside Healing's own base range
-    place(s, 'u2', 'c4'); // distance 2: short, one band past it
-    unit(s, 'u2').disorder = 1;
-    // Tier 1's own target list is the real, unpushed band; Tier 3's is the optimistic
-    // superset a range push could reach — `doCastAction` re-checks the real one at resolution,
-    // the same way a shot's own rung re-checks its band once a target is actually chosen.
-    expect(castOffer(s, 'healing').rungs[0].targets.map((t) => t.id)).toEqual(['u0', 'u1']);
-    expect(castOffer(s, 'healing').rungs[2].targets.map((t) => t.id)).toContain('u2');
-
-    // Buying effect instead of range still can't carry to u2, even at Tier 3.
-    const boughtEffect = act(s, { type: 'cast', rung: 3, spell: 'healing', target: 'u2', unit: 'u0' }, scriptedRng([15]));
-    expect(unit(boughtEffect, 'u2').disorder).toBe(1);
-
-    // Buying range instead reaches it, at Tier 1's own effect (clears 1 disorder).
-    const boughtRange = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u2', unit: 'u0', axis: 'range' }, scriptedRng([15]));
-    expect(unit(boughtRange, 'u2').disorder).toBe(0);
+  it('reads one Line roll against the Defence in each of its two hexes', () => {
+    const s = blastField([20, 10]);
+    expect(castOffer(s, 'blast').rungs[1].targets.map((t) => t.id)).toContain('d3+d4');
+    // 10 + 10 = 20: a success against 20, a critical against 10.
+    const cast = act(s, { type: 'cast', rung: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(cast, 'u2').wounds).toBe(1);
+    expect(unit(cast, 'u3').wounds).toBe(2);
+    expect(cast.log.filter((e) => e.text.startsWith('Line catches'))).toHaveLength(2);
   });
 
-  it("rolls the caster's spell attack against Defence for Blast", () => {
-    const blaster: UnitCard = {
-      name: 'Blaster', level: 6, role: 'infantry', caster: true, tradition: 'arcane', tactics: [],
-      overrides: { spellAttack: 10 },
-    };
-    const target: UnitCard = { ...infantry, name: 'Target', overrides: { defence: 20 } };
-    const launch = (roll: number) => {
-      const s = createBattle({
-        units: [{ card: blaster, side: 'attacker', square: 'c2' }, { card: target, side: 'defender', square: 'c7' }],
-        board: openBoard(),
-      });
-      place(s, 'u1', 'c3');
-      return act(s, { type: 'cast', rung: 1, spell: 'blast', target: 'u1', unit: 'u0' }, scriptedRng([roll, 20]));
-    };
-
-    const missed = launch(9);
-    expect(unit(missed, 'u1').wounds).toBe(0);
-    expect(missed.log.find((e) => e.text.includes('Blasts'))?.check).toMatchObject({ modifier: 10, dc: 20, degree: 'failure' });
-
-    const hit = launch(10);
-    expect(unit(hit, 'u1').wounds).toBe(1);
-    expect(hit.log.find((e) => e.text.includes('Blasts'))?.check).toMatchObject({ modifier: 10, dc: 20, degree: 'success' });
+  it('draws a Burst on the three hexes that meet at one corner', () => {
+    const s = blastField([20], ['d4']);
+    const shapes = castOffer(s, 'blast').rungs[2].targets.map((t) => t.id);
+    // Six corners meet at the enemy's own hex, so six shapes cover it.
+    expect(shapes).toContain('d4+e4+e5');
+    expect(shapes).toHaveLength(6);
+    for (const id of shapes) {
+      const [a, b, c] = id.split('+').map(parse);
+      expect([[a, b], [b, c], [a, c]].map(([x, y]) => hexGrid.distance(x, y))).toEqual([1, 1, 1]);
+    }
   });
 });
 

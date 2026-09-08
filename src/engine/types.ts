@@ -2,7 +2,7 @@ import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
 import type { CheckResult } from './check.js';
 import type { Grade, LadderType } from './ladders.js';
-import type { CastAxis, CastBand, CastTier, Tree } from './magic.js';
+import type { CastTier, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
 export const SIDES: Side[] = ['attacker', 'defender'];
@@ -52,9 +52,11 @@ export interface Unit {
   /** `null` for a non-caster and for a caster with no tradition set (there is none, per
    * `cardTraits`' own fallback — see cards.ts). Gates which trees `trees` may ever hold. */
   tradition: Tradition | null;
-  /** Every tree this unit may cast at all, Tier 1 included — the caster's whole tradition, or
-   * the one tree a non-caster's tactic grants (section 11). */
+  /** Every tree this unit may cast at all — the caster's whole tradition, or the one tree a
+   * non-caster's tactic grants (section 11). */
   trees: Tree[];
+  /** Trees already cast this activation: one cast a tree, whatever else the actions buy. */
+  castTrees: Tree[];
   quality: number;
   /** Actions left in this activation; back to three between activations. */
   actions: number;
@@ -106,10 +108,6 @@ export interface RungAction extends Acts {
   rung: Grade;
   target?: string;
   spell?: Tree;
-  /** Cast only: which of range, duration or effect a tier above the first buys — never more
-   * than one. Defaults to `'effect'`, the only axis the graphical menu ever offers; range and
-   * duration are reachable through this same action, just not from the board yet. */
-  axis?: CastAxis;
 }
 
 /** Stride to `to`, spending as many Move actions as the route costs. */

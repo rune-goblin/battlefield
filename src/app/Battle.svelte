@@ -155,8 +155,9 @@
     const u = b.units.find((x) => x.id === id);
     return u ? notation(u.square) : null;
   };
-  const targetCell = (t: RungTarget): string | null =>
-    t.kind === 'cell' ? t.id : t.kind === 'wall' ? t.id.split('|')[0] : cellOf(t.id);
+  // A Blast's Line and Burst arrive as one target holding two or three hexes, joined by '+'.
+  const targetCells = (t: RungTarget): string[] =>
+    t.kind === 'cell' ? t.id.split('+') : t.kind === 'wall' ? [t.id.split('|')[0]] : [cellOf(t.id)].filter((x): x is string => x !== null);
 
   const offerEdges = (offer: ActionOffer): string[] =>
     offer.rungs.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);
@@ -164,7 +165,7 @@
   /** Where an offer can land, with the unit's own square first when a rung needs no target. */
   function offerCells(offer: ActionOffer): string[] {
     const legal = offer.rungs.filter((r) => r.legal);
-    const cells = legal.flatMap((r) => r.targets).map(targetCell).filter((x): x is string => x !== null);
+    const cells = legal.flatMap((r) => r.targets).flatMap(targetCells);
     // A rung that names no target acts on your own piece, which is where its popup opens.
     if (active && legal.some((r) => !r.needsTarget)) cells.unshift(notation(active.square));
     return [...new Set(cells)];

@@ -24,6 +24,9 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - Whether artillery needs a cheaper Pin now that the gun crew has no extra action (section 12).
 - Whether a Cast tree may be cast more than once a battle. Once an activation is built.
 - Rally's three-action activity is still named Inspire, the same word as the condition.
+- How a shape is picked on the board. Line and Burst (Wave 7) and Healing's pairs and triples
+  (Wave 8) are offered as encoded targets, and `offersAt` matches an id exactly, so no plan wave
+  makes them clickable: the aim popup would have to carry a shape rather than a hex.
 
 ## Wave 0 (2026-09-08)
 
@@ -216,3 +219,44 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - The impact folds into `melee`'s effect, not into the ladder row: `press || impact` and
   `drive || (impact && press)`, so an Overrun bought with the tactic is still an Overrun —
   nothing stands above it.
+
+## Wave 7 (2026-09-08)
+
+- **`collinear` and `corners` are grid methods, not hex-cube helpers**, so a square board still
+  plays a Blast: three squares are collinear when they share a file or a rank, and four squares
+  meet at a square's corner where three hexes meet at a hex's — a square Burst covers four cells.
+  The rules describe the hex board and the hex numbers are the ones quoted there.
+- `CastBand` went with `bandOut`, and `TREE_RANGE` is typed `'engaged' | Reach`: its four outer
+  bands are Shooting's own, which is what `BANDS` is already indexed by, so nothing needs a
+  second band type.
+- **`resolveTree` now takes the action, and each tree owns its target, its roll and its effect.**
+  Blast is written out; the other five keep Wave 1's stopgap bodies behind one shared
+  `castTarget` range guard, which is the line each of Waves 8 to 12 replaces.
+- **The eighteen activity details read the rules' own text**, ahead of the engine for the five
+  trees still on a stopgap. Naming Wrath and Haste in the menu and then describing what Wave 1
+  left would be worse than promising the rule the next wave builds; the log still says the cast
+  "does nothing yet".
+- **Missile keeps naming its enemy** — a unit target, the way every other attack is aimed. Only
+  Line and Burst are encoded shapes, so the one-hex case needs no special popup handling.
+- **Line and Burst are legal and playable but not clickable.** `offersAt` matches a target id
+  exactly, so a compound `d3+d4` never matches the hex the player touched, and no Blast row
+  above Missile reaches the aim popup. Arming Cast does light every hex of every shape
+  (`offerCells` splits the id). Closing this needs the popup to carry a shape — see Open.
+- A shape target's label is the enemies caught in it, per the plan, so two shapes holding the
+  same enemies read alike; nothing displays them yet.
+- `castTrees` is pushed before the cast resolves, so a spell that cannot carry still spends the
+  tree — its actions are spent too.
+- **`already cast this activation` is untested**: the two tests this wave names are Blast's, and
+  Blast trips the one-attack rule first, which speaks before the tree rule. Wave 9's Controlling
+  test is the first that can pin it.
+- The blast's one d20 is rolled against the first caught enemy's Defence because `roll` wants a
+  DC; the degree against every hex is read off that die with `readCheck`, and the roll itself is
+  never logged on its own.
+- `spellDcFor`'s `bonus` parameter went with the axes: nothing has bonused a spell DC since
+  Wave 0, and Aegis (Wave 11) reads the caster's own DC too.
+- `rules.html`: Line's row now reads "Two **adjacent** hexes on one straight line out from the
+  caster's hex". A line of two hexes with a gap in it is not a line, and the wounds table already
+  priced Line at two filled hexes; the engine needed the word to enumerate the shapes.
+- The `the six trees` block became `Cast`: the tradition-cap test survives, rewritten to actions
+  and now pinning the activity names, the range-push test went with the axis it bought, and the
+  Blast test became the Line one.

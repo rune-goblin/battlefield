@@ -92,6 +92,8 @@ abstract class BaseGrid {
   edgeSegment(a: Cell, b: Cell, size: number): [Point, Point] {
     return sharedEdge(this.vertices(a, size), this.vertices(b, size));
   }
+  abstract collinear(a: Cell, b: Cell, c: Cell): boolean;
+  abstract corners(c: Cell): Cell[][];
 }
 
 class SquareGrid extends BaseGrid {
@@ -118,6 +120,18 @@ class SquareGrid extends BaseGrid {
   fromPoint(p: Point, size: number): Cell | null {
     const c = { file: Math.floor(p.x / size), rank: SIZE - 1 - Math.floor(p.y / size) };
     return this.inBounds(c) ? c : null;
+  }
+  collinear(a: Cell, b: Cell, c: Cell): boolean {
+    return (a.file === b.file && b.file === c.file) || (a.rank === b.rank && b.rank === c.rank);
+  }
+  // Four squares meet at a square's corner, where three hexes meet at a hex's.
+  corners(c: Cell): Cell[][] {
+    const out: Cell[][] = [];
+    for (const df of [-1, 1]) for (const dr of [-1, 1]) {
+      const block = [c, { file: c.file + df, rank: c.rank }, { file: c.file, rank: c.rank + dr }, { file: c.file + df, rank: c.rank + dr }];
+      if (block.every((x) => this.inBounds(x))) out.push(block);
+    }
+    return out;
   }
   bounds(size: number) { return { width: size * SIZE, height: size * SIZE }; }
 }
@@ -163,6 +177,21 @@ class HexGrid extends BaseGrid {
     const c = cubeToOffset(cubeRound(q, row, -q - row));
     return inHexagon(c) ? c : null;
   }
+  // One shared cube coordinate is one of the three straight lines of hexes through the board.
+  collinear(a: Cell, b: Cell, c: Cell): boolean {
+    const [x, y, z] = [a, b, c].map(offsetToCube);
+    return (x.q === y.q && y.q === z.q) || (x.r === y.r && y.r === z.r) || (x.s === y.s && y.s === z.s);
+  }
+  corners(c: Cell): Cell[][] {
+    const ns = this.neighbours(c);
+    const out: Cell[][] = [];
+    for (let i = 0; i < ns.length; i++) {
+      for (let j = i + 1; j < ns.length; j++) {
+        if (this.distance(ns[i], ns[j]) === 1) out.push([c, ns[i], ns[j]]);
+      }
+    }
+    return out;
+  }
   // The widest rank runs file 0 to SIZE − 1 with no indent, so the hexagon spans exactly
   // SIZE cell pitches — half a pitch narrower than the rectangle of hexes it is cut from.
   bounds(size: number) {
@@ -184,6 +213,11 @@ export interface Grid {
   homeward(c: Cell, side: 'attacker' | 'defender'): Cell[];
   /** The cell one step past `through`, continuing the same direction — Pace's second square. */
   beyond(from: Cell, through: Cell): Cell | null;
+  /** Whether the three lie on one straight line of cells — a Blast's Line out from its caster. */
+  collinear(a: Cell, b: Cell, c: Cell): boolean;
+  /** Every group of cells that meets at one of this cell's corners, itself included — a
+   * Blast's Burst. */
+  corners(c: Cell): Cell[][];
   center(c: Cell, size: number): Point;
   vertices(c: Cell, size: number): Point[];
   fromPoint(p: Point, size: number): Cell | null;
