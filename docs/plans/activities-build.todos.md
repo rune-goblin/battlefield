@@ -42,6 +42,21 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   it actually next acts in, not literally "its next activation" if that included a no-op turn.
   Defensible under the rule's own wording, but worth a second look once a real pass exists in
   the UI rather than only in test helpers.
+- **Aegis can never be cast.** Defense index 3 costs three actions and no tradition's Defense
+  cap reaches 3: `TRADITION_CAP` in `src/engine/magic.ts` reads arcane 2, divine 2, occult 1,
+  primal 1, and the Tradition table in `public/rules.html` section 11 carries the same four
+  numbers. The rules describe a three-action activity nothing may buy. Raising a cap moves a
+  column off its total of 10, so the question is the Tradition table's, not the code's: which
+  tradition should afford Aegis, and what it gives up for it. Both places hold the number and
+  both must change together.
+- Stoneskin's no-disorder clause and a Wrath persistent wound never actually meet under the
+  current begin/finish timing (see Wave 11 below): the code reads `stoneskin` generically at
+  both wound-landing sites, but the field is always cleared by the time a same-activation
+  persistent wound lands.
+- ~~A Blast's Ward and Aegis are read off the shape's first caught hex alone.~~ Closed by the
+  Waves 10–11 fix pass below: every caught unit's ward and aegis is now read and consumed.
+- Sure strike now spends itself on a swing at a wall, since a wall attack is the activation's
+  one attack. Whether a wall segment should soak the ally's buff at all is a play question.
 
 ## Wave 0 (2026-09-08)
 
@@ -429,15 +444,42 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   wave's own decision to make (Defense's self-targeting, above). Flagged for the user, not
   resolved here.
 
-## Open, for play
+## Fixes (2026-09-08)
 
-- Aegis (Defense index 3) is unreachable by any tradition's Defense cap (max 2, both engine and
-  rules.html agree) — worth a look for whoever next touches the Tradition table or Defense's own
-  pricing.
-- Stoneskin's no-disorder clause and a Wrath persistent wound never actually meet under the
-  current begin/finish timing (see Wave 11 above): the code reads `stoneskin` generically at
-  both wound-landing sites, but the field is always cleared by the time a same-activation
-  persistent wound lands.
-- A Blast's Ward and Aegis are both read off the shape's first caught hex alone; a second or
-  third caught unit's own ward or aegis is neither applied nor consumed. Pre-existing for Ward
-  since Wave 10; Aegis was built the same way in Wave 11 for consistency.
+Findings from the Wave 10 and Wave 11 reviews that no later wave owned, fixed in one pass on
+top of Wave 11.
+
+- **Offense no longer reaches the caster.** rules.html reads "Offense · short range · an ally",
+  where Healing alone reads "touch: yourself or an adjacent ally", so the caster leaves the
+  Offense pool exactly as Wave 11 took it out of the Defense pool. A self-cast buff also lost an
+  activation to the caster's own `finish`, which runs at the end of the activation it cast in:
+  a self-Haste granted [4, 3, 3] where the rules promise two hasted activations. Healing still
+  reaches the caster; that asymmetry is the rules' own.
+- **`castTarget` refuses `target.id === u.id` for Offense and Defense**, not Offense alone: the
+  two trees name an ally in the same words, and the function's `: u` fallback is the one path
+  into a self-cast that the target lists do not already close. `doRung` validates a target
+  against the offer before this runs, so the guard is the second line rather than the first.
+- **A Blast reads every caught unit's ward, not the first hex's.** The shape throws one die, and
+  a ward on any unit caught (or a sure strike on the caster) throws a second — one more die for
+  the shape, never one per unit. Each unit then reads the pair against its own Defence: the
+  worse under its own ward, the better under a sure strike, and the first die alone where the
+  two cancel or neither applies. `check.ts` grows `readTwice`, the pair-reading half of
+  `rollTwice`, which now delegates to it. Every warded unit's own flag is consumed.
+- **A Blast tests every caught unit's aegis, and one failure wastes the whole cast.** rules.html
+  says "the activity is wasted, actions and all" — the rule reads on the activity, so an aegis
+  in the third hex of a Burst stops the Burst rather than dropping its own hex from the shape.
+  The alternative (a per-unit gate that drops that unit alone) would have made Aegis weaker on a
+  Blast than on a Strike, which the text does not support. Aegis is still never consumed by the
+  roll it triggers; it clears at the target's own `begin`, as Wave 11 decided.
+- Both Blast readings are written into `public/rules.html` section 11 under Defense, since the
+  rules file is the arbiter and this is a rule a player must be able to look up.
+- **`finish` lands a Wrath wound before it clears `inspired` and `frightened`.** The Fortitude
+  save against persistent damage is a roll the unit makes, so the +2 bonuses it and is spent by
+  it, and the −1 still bites. The clears follow.
+- **`attackWall` goes through `attackRoll`** with a null target: a wall attack sets `attacked`
+  like any other, so Sure strike is honoured and spent on it rather than surviving to the unit's
+  next Strike. A wall is no `Unit`, so `attackRoll`'s target is now `Unit | null` and Ward has
+  nothing to read there.
+- Aegis's unreachability by any tradition cap is untouched and sharpened under "Open, for play"
+  above: it is a balance call on the Tradition table, and both the engine and rules.html carry
+  the number.

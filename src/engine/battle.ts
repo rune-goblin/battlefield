@@ -4,7 +4,7 @@ import {
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { pathTo, reachable, stepFeet, type ReachMap } from './path.js';
-import { check, readCheck, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
+import { check, readCheck, readTwice, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
   type Grade, type LadderType, type Rung,
@@ -227,21 +227,22 @@ export function roll(state: BattleState, rng: Rng, u: Unit, modifier: number, dc
   return c;
 }
 
-/** Every attack roll — a Strike, a shot, a Blast — goes through here, not `roll` directly, so
- * Sure strike and Ward can send it to `rollTwice` without skipping `roll`'s own `inspired`
- * spend. Both flags are consumed by the roll they touch, so a Ward and a Sure strike on the
- * same attack cancel to the one plain roll below rather than two doubled ones. */
-export function attackRoll(state: BattleState, rng: Rng, attacker: Unit, target: Unit, modifier: number, dc: number): CheckResult {
+/** Every attack roll — a Strike, a shot, a Blast, a swing at a wall — goes through here, not
+ * `roll` directly, so Sure strike and Ward can send it to `rollTwice` without skipping `roll`'s
+ * own `inspired` spend. Both flags are consumed by the roll they touch, so a Ward and a Sure
+ * strike on the same attack cancel to the one plain roll below rather than two doubled ones.
+ * A null target is a wall segment: it has a Defence of sorts but no ward to read. */
+export function attackRoll(state: BattleState, rng: Rng, attacker: Unit, target: Unit | null, modifier: number, dc: number): CheckResult {
   const sureStrike = attacker.sureStrike;
-  const ward = target.ward;
+  const ward = target?.ward ?? false;
   attacker.sureStrike = false;
-  target.ward = false;
+  if (target) target.ward = false;
   if (sureStrike === ward) return roll(state, rng, attacker, modifier, dc);
   attacker.inspired = false;
   const c = rollTwice(rng, modifier, dc, sureStrike);
   log(state, attacker, sureStrike
     ? `${attacker.name} rolls twice under sure strike and keeps the better: ${c.rolls[0]} and ${c.rolls[1]}.`
-    : `${target.name}'s ward rolls the attack twice and keeps the worse: ${c.rolls[0]} and ${c.rolls[1]}.`);
+    : `${target!.name}'s ward rolls the attack twice and keeps the worse: ${c.rolls[0]} and ${c.rolls[1]}.`);
   return c;
 }
 
@@ -558,7 +559,9 @@ const wallDc = (state: BattleState, wall: Wall) =>
 function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier: number, verb: string) {
   const wall = state.board.walls[key];
   if (!wall || wall.remaining <= 0) return;
-  const c = roll(state, rng, u, modifier, wallDc(state, wall));
+  // A wall swing is the activation's one attack like any other, so Sure strike is spent here
+  // rather than surviving to the unit's next Strike.
+  const c = attackRoll(state, rng, u, null, modifier, wallDc(state, wall));
   log(state, u, `${u.name} ${verb} the wall ${key}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
   if (!hits) return;
@@ -874,10 +877,10 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
       if (tree === 'blast') return { needsTarget: true, targets: blastTargets(state, u, index, ceiling) };
       if (tree === 'healing') return { needsTarget: true, targets: healTargets(state, u, index) };
       const wants = TREE_TARGET[tree];
-      // Defense reads "an ally" in rules.html, not Healing's "yourself or an adjacent ally", so
-      // it alone drops the caster from its own pool; Offense and Movement read the same way but
-      // are Waves 10 and 12's own territory, untouched here.
-      const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active' && (tree !== 'defense' || a.id !== u.id));
+      // Offense and Defense read "an ally" in rules.html, not Healing's "yourself or an adjacent
+      // ally", so both drop the caster from their own pool; Healing has its own branch above,
+      // and Movement, which reads the same way, is Wave 12's own territory.
+      const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active' && (tree === 'movement' || a.id !== u.id));
       const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
       return { needsTarget: true, targets: pool.filter((t) => (wants === 'enemy' ? t.id !== u.id : true) && inRangeOf(t)).map(unitTarget) };
     }
@@ -1092,6 +1095,12 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: 
 /** The one unit an ally tree or a Controlling cast lands on, or null when it is out of range. */
 function castTarget(state: BattleState, u: Unit, tree: Tree, action: RungAction): Unit | null {
   const target = action.target ? unit(state, action.target) : u;
+  // Offense and Defense buff "an ally", never the caster. Self-cast would also cost the buff an
+  // activation: the caster's own `finish` runs at the end of the very activation it cast in.
+  if (target.id === u.id && (tree === 'offense' || tree === 'defense')) {
+    log(state, u, `${u.name}'s ${TREE_LABEL[tree]} must fall on an ally.`);
+    return null;
+  }
   if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, tree)) {
     log(state, u, `${u.name}'s ${TREE_LABEL[tree]} cannot carry to ${target.name}.`);
     return null;
@@ -1111,14 +1120,29 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: Grade, action: Rung
   u.attacked = true;
   log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`);
   const modifier = spellAttackModifier(u);
-  // proto: Aegis, like Ward, is read off caught[0] alone — a Line or a Burst's other hexes
-  // neither gate nor consume an aegis or a ward of their own. Flagged, not fixed, in Wave 11.
-  if (!attackGate(state, rng, u, caught[0])) return;
-  // One d20 (or two, under sure strike or ward) for the whole shape. `attackRoll` wants a DC,
-  // so it takes the first hex's Defence and every hex is then read off that same die.
-  const shot = attackRoll(state, rng, u, caught[0], modifier, defenceOf(state, caught[0], u, false));
+  // Every aegis in the shape gates the cast, and one failure wastes the whole activity,
+  // "actions and all" — the rule reads on the activity, not on the hex that carries it.
+  for (const target of caught) if (!attackGate(state, rng, u, target)) return;
+  const sureStrike = u.sureStrike;
+  const warded = new Set(caught.filter((t) => t.ward).map((t) => t.id));
+  u.sureStrike = false;
+  for (const t of caught) t.ward = false;
+  // The shape's one attack, thrown once, plus the second die Sure strike or a ward in the shape
+  // asks for. Each unit reads the pair its own way against its own Defence: better under sure
+  // strike, worse under a ward of its own, and the first die alone when the two cancel. Only the
+  // die `roll` throws carries; the DC it takes goes nowhere, since each hex reads its own below.
+  const first = roll(state, rng, u, modifier, defenceOf(state, caught[0], u, false)).roll;
+  const second = sureStrike || warded.size ? rng.d20() : null;
+  if (second !== null) {
+    log(state, u, `${activity.label} is thrown twice, ${first} and ${second}: ${sureStrike
+      ? 'sure strike keeps the better, and a warded hex reads the first alone'
+      : 'a warded hex keeps the worse, and the rest read the first'}.`);
+  }
   for (const target of caught) {
-    const c = readCheck(shot.roll, modifier, defenceOf(state, target, u, false));
+    const dc = defenceOf(state, target, u, false);
+    const c = second !== null && sureStrike !== warded.has(target.id)
+      ? readTwice([first, second], modifier, dc, sureStrike)
+      : readCheck(first, modifier, dc);
     log(state, u, `${activity.label} catches ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     const wounds = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
     applyWounds(state, rng, target, wounds, `${u.name}'s ${activity.label}`, u);
@@ -1423,13 +1447,15 @@ function finish(state: BattleState, rng: Rng, u: Unit) {
   u.feet = 0;
   u.rooted = Math.max(0, u.rooted - 1);
   u.haste = Math.max(0, u.haste - 1);
+  // The persistent wound lands before the clears below: its Fortitude save is a roll of this
+  // activation, so `inspired` bonuses it and is spent by it, and `frightened` still costs its −1.
+  if (u.persistent) landPersistent(state, rng, u);
   u.inspired = false;
   u.frightened = false;
   u.sureStrike = false;
   u.wrath = false;
   u.sureFooting = false;
   u.flies = false;
-  if (u.persistent) landPersistent(state, rng, u);
   state.activated.push(u.id);
   state.lastSide = u.side;
   state.active = null;

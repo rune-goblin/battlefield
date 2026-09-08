@@ -25,13 +25,18 @@ export function check(rng: Rng, modifier: number, dc: number): CheckResult {
   return readCheck(rng.d20(), modifier, dc);
 }
 
-export function rollTwice(rng: Rng, modifier: number, dc: number, better: boolean): TwiceResult {
-  const rolls: [number, number] = [rng.d20(), rng.d20()];
+/** A pair already thrown, read against one DC: a Blast throws its two dice once and each unit
+ * caught reads them against its own Defence, keeping the better or the worse as its flags say. */
+export function readTwice(rolls: [number, number], modifier: number, dc: number, better: boolean): TwiceResult {
   const [a, b] = rolls.map((r) => readCheck(r, modifier, dc));
   // Degree first, not total: a natural 20 shifts the degree up without the higher total.
   const rank = (c: CheckResult) => LADDER.indexOf(c.degree);
   const kept = (better ? rank(a) >= rank(b) : rank(a) <= rank(b)) ? a : b;
   return { ...kept, rolls };
+}
+
+export function rollTwice(rng: Rng, modifier: number, dc: number, better: boolean): TwiceResult {
+  return readTwice([rng.d20(), rng.d20()], modifier, dc, better);
 }
 
 export const succeeded = (d: Degree) => d === 'success' || d === 'critical-success';

@@ -231,6 +231,27 @@ describe('Cast', () => {
     expect(cast.log.filter((e) => e.text.startsWith('Line catches'))).toHaveLength(2);
   });
 
+  it("reads the worse of the shape's two dice against a ward in the Line's second hex", () => {
+    const s = blastField([20, 10]);
+    unit(s, 'u3').ward = true;
+    // 10 totals 20: a success against 20 and a critical against 10. The ward's second die, a 3,
+    // totals 13 — still a success against 10, so the critical is the thing it takes away.
+    const cast = act(s, { type: 'cast', rung: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10, 3]));
+    expect(unit(cast, 'u2').wounds).toBe(1);
+    expect(unit(cast, 'u3').wounds).toBe(1);
+    expect(unit(cast, 'u3').ward).toBe(false);
+  });
+
+  it('wastes the whole Blast on an aegis anywhere in the shape', () => {
+    const s = blastField([20, 10]);
+    unit(s, 'u3').aegis = { dc: 50 };
+    const cast = act(s, { type: 'cast', rung: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([1]));
+    expect(unit(cast, 'u2').wounds).toBe(0);
+    expect(unit(cast, 'u3').wounds).toBe(0);
+    expect(unit(cast, 'u0').attacked).toBe(true);
+    expect(said(cast, 'attack is wasted against the aegis')).toBe(true);
+  });
+
   it('draws a Burst on the three hexes that meet at one corner', () => {
     const s = blastField([20], ['d4']);
     const shapes = castOffer(s, 'blast').rungs[2].targets.map((t) => t.id);
@@ -334,6 +355,21 @@ describe('Offense', () => {
     expect(unit(landed, 'u2').wounds).toBe(2);
     expect(unit(landed, 'u2').persistent).toBeNull();
     expect(said(landed, 'braces against the persistent wound')).toBe(true);
+  });
+
+  it('refuses a buff cast on the caster itself: Offense names an ally', () => {
+    const s = createBattle({
+      units: [
+        { card: occultist, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'c3' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    const offense = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.spell === 'offense')!;
+    expect(offense.rungs[2].targets.map((t) => t.id)).toEqual(['u1']);
+    expect(() => act(s, { type: 'cast', spell: 'offense', rung: 3, target: 'u0', unit: 'u0' }, scriptedRng([10])))
+      .toThrow('not a target');
   });
 
   it('a hasted unit has four actions twice and three the third time', () => {
