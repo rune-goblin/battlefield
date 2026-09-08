@@ -21,52 +21,97 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 
 ## Open, for play
 
-- Whether artillery needs a cheaper Pin now that the gun crew has no extra action (section 12).
-- Whether a Cast tree may be cast more than once a battle. Once an activation is built.
-- Rally's three-action activity is still named Inspire, the same word as the condition.
+Ten questions stand. Each carries a **Decision:** line to fill in; write the ruling there and
+the build follows it. The three closed ones are at the bottom, kept for the record.
+
+### Contradictions to settle
+
+The document and the engine say different things. A player checking one against the other finds
+them disagree, so one of the two is wrong.
+
+- **D1 · The Controlling parity example.** `public/rules.html`'s Controlling parity example
+  quotes a level-6 troop's Will as +13 and 15/50/30/5 odds off spell DC 21; the engine derives
+  +17 for the same troop (`willModifier` on a level-6 infantry card), which shifts every one of
+  those odds. Flagged in Wave 10's session, not fixed there. Either the worked example is stale
+  or the derivation is too generous.
+  **Decision:**
+
+- **D2 · Fly's engagement clause.** rules.html's Fly carries a clause the engine does not:
+  "Nothing engages it across a wall or a cliff it crosses." A cliff already breaks engagement
+  for everyone (`isEngaged`), but a standing wall does not — section 10 makes contact across a
+  wall hold. Honouring the clause as written needs the engine to remember which edges a flight
+  crossed; the broad reading (a flier is never engaged across a wall) would change holders, free
+  strikes and withdrawal for every native flier as well. The plan's own Wave 12 table omits the
+  clause. Flagged, not built.
+  **Decision:**
+
+### Balance
+
+- **D3 · Aegis can never be cast.** Defense index 3 costs three actions and no tradition's
+  Defense cap reaches 3: `TRADITION_CAP` in `src/engine/magic.ts` reads arcane 2, divine 2,
+  occult 1, primal 1, and the Tradition table in `public/rules.html` section 11 carries the same
+  four numbers. The rules describe a three-action activity nothing may buy. Raising a cap moves
+  a column off its total of 10, so the question is the Tradition table's, not the code's: which
+  tradition should afford Aegis, and what it gives up for it. Both places hold the number and
+  both must change together.
+  **Decision:**
+
+### Rules questions
+
+- **D4 · Artillery and Pin.** Whether artillery needs a cheaper Pin now that the gun crew has no
+  extra action (section 12).
+  **Decision:**
+
+- **D5 · Casting a tree twice in a battle.** Whether a Cast tree may be cast more than once a
+  battle. Once an activation is built.
+  **Decision:**
+
+- **D6 · A charge that finds nobody.** Fear on contact routes the target mid-run, which leaves
+  `attacked` false, so the charger may still Fight this activation. Section 7 says both "it is
+  the activation's attack" and "the charge then costs its movement alone" — the two read as one
+  promise until the charge actually whiffs. Pre-existing, not a Wave 6 or Wave 8 regression.
+  **Decision:**
+
+- **D7 · Sure strike against a wall.** Sure strike now spends itself on a swing at a wall, since
+  a wall attack is the activation's one attack. Whether a wall segment should soak the ally's
+  buff at all is a play question.
+  **Decision:**
+
+### Naming
+
+- **D8 · Inspire, twice over.** Rally's three-action activity is still named Inspire, the same
+  word as the condition a Rally can leave behind.
+  **Decision:**
+
+### Gaps with a known cost
+
+Neither is a contradiction. Both are "worth building?".
+
+- **D9 · Stoneskin and a Wrath wound never meet.** Under the current begin/finish timing (see
+  Wave 11 below) the code reads `stoneskin` generically at both wound-landing sites, but the
+  field is always cleared by the time a same-activation persistent wound lands. The branch is
+  dead unless the timing changes.
+  **Decision:**
+
+- **D10 · A charge still lands on the cheapest contact hex.** Wave 12 gave the +2 the
+  terrain-blind search section 7 asks for, so any clean route in keeps it — but the hex the run
+  ends on is still the cheapest one touching the target, and a charge whose cheapest contact hex
+  can only be reached over rough ground loses a +2 that coming in on the far side would have
+  kept. Closing it means offering the player the landing hex, a change to `ChargeOption` and to
+  the board's charge chip rather than to `chargeBonus`. Marked `// proto:` on `approach`.
+  **Decision:**
+
+### Closed
+
 - ~~How a shape is picked on the board.~~ Closed in Wave 8: `targetMatches` finds an encoded
   target (`d3+d4`, `u1+u2`) by any one of its parts, cross-kind through the touched unit's own
   square when the part touched is occupied, so Line, Burst, Heal and Restore are all clickable
   with no popup change.
-- A charge that finds nobody (fear on contact routed the target mid-run) leaves `attacked`
-  false, so the charger may still Fight this activation. Section 7 says both "it is the
-  activation's attack" and "the charge then costs its movement alone" — the two read as one
-  promise until the charge actually whiffs. Pre-existing, not a Wave 6 or Wave 8 regression.
-- `public/rules.html`'s Controlling parity example quotes a level-6 troop's Will as +13 and
-  15/50/30/5 odds off spell DC 21; the engine derives +17 for the same troop (`willModifier`
-  on a level-6 infantry card), which shifts every one of those odds. A player checking the
-  worked example against the board would find them disagree. Flagged in Wave 10's session,
-  not fixed there.
 - ~~A stunned unit whose activation ends with no `act()` call at all never runs `begin`.~~
   Closed in Wave 12: `endActivation` runs `begin` itself when the activation never began, so a
   pass spends the stun, the haste and every condition the table clears at `begin`.
-- **Aegis can never be cast.** Defense index 3 costs three actions and no tradition's Defense
-  cap reaches 3: `TRADITION_CAP` in `src/engine/magic.ts` reads arcane 2, divine 2, occult 1,
-  primal 1, and the Tradition table in `public/rules.html` section 11 carries the same four
-  numbers. The rules describe a three-action activity nothing may buy. Raising a cap moves a
-  column off its total of 10, so the question is the Tradition table's, not the code's: which
-  tradition should afford Aegis, and what it gives up for it. Both places hold the number and
-  both must change together.
-- Stoneskin's no-disorder clause and a Wrath persistent wound never actually meet under the
-  current begin/finish timing (see Wave 11 below): the code reads `stoneskin` generically at
-  both wound-landing sites, but the field is always cleared by the time a same-activation
-  persistent wound lands.
 - ~~A Blast's Ward and Aegis are read off the shape's first caught hex alone.~~ Closed by the
   Waves 10–11 fix pass below: every caught unit's ward and aegis is now read and consumed.
-- Sure strike now spends itself on a swing at a wall, since a wall attack is the activation's
-  one attack. Whether a wall segment should soak the ally's buff at all is a play question.
-- **A charge still lands on the cheapest contact hex.** Wave 12 gave the +2 the terrain-blind
-  search section 7 asks for, so any clean route in keeps it — but the hex the run ends on is
-  still the cheapest one touching the target, and a charge whose cheapest contact hex can only
-  be reached over rough ground loses a +2 that coming in on the far side would have kept.
-  Closing it means offering the player the landing hex, a change to `ChargeOption` and to the
-  board's charge chip rather than to `chargeBonus`. Marked `// proto:` on `approach`.
-- **rules.html's Fly carries a clause the engine does not: "Nothing engages it across a wall or
-  a cliff it crosses."** A cliff already breaks engagement for everyone (`isEngaged`), but a
-  standing wall does not — section 10 makes contact across a wall hold. Honouring the clause as
-  written needs the engine to remember which edges a flight crossed; the broad reading (a flier
-  is never engaged across a wall) would change holders, free strikes and withdrawal for every
-  native flier as well. The plan's own Wave 12 table omits the clause. Flagged, not built.
 
 ## Wave 0 (2026-09-08)
 
