@@ -1,9 +1,9 @@
 import {
   at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
-  type Board, type Square, type SquareTerrain, type Wall,
+  type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { CELL_FEET, pathTo, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
+import { CELL_FEET, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
 import { check, readCheck, readTwice, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
@@ -637,22 +637,24 @@ function chargeReach(state: BattleState, u: Unit): ReachMap {
   });
 }
 
-const ROUGH: SquareTerrain[] = ['forest', 'swamp', 'shallows'];
-
-// proto: reads off the cheapest route alone, where the rules allow any path the movement
-// affords — a charge denied its +2 here might have kept it by a longer way round.
-/** The +2, unless the run crossed rough going or climbed for it. Sure footing turns rough
- * ground open, so it keeps the +2 wherever the run went. */
-function chargeBonus(state: BattleState, u: Unit, path: string[]): number {
+/**
+ * The +2, unless every way in crossed rough going or climbed for it. Section 7 gives the charge
+ * "any path the movement allows", so the cheapest route the run was priced on does not decide
+ * this: a second search that bans rough ground and climbs outright says whether a clean way in
+ * existed. Sure footing turns rough ground open and keeps the +2 wherever the run went; flight
+ * only makes the ground cheap, and a flier that crossed forest has crossed forest.
+ */
+function chargeBonus(state: BattleState, u: Unit, cell: string): number {
   if (u.sureFooting) return ACTION_BONUS;
-  for (let i = 1; i < path.length; i++) {
-    const here = at(state.board, parse(path[i]));
-    if (ROUGH.includes(here.terrain)) return 0;
-    if (here.elevation > at(state.board, parse(path[i - 1])).elevation) return 0;
-  }
-  return ACTION_BONUS;
+  const even = reachable(state.board, u.square, {
+    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), evenGround: true, occupied: occupiedBy(state, u),
+  });
+  return even.has(cell) ? ACTION_BONUS : 0;
 }
 
+// proto: the landing hex is the cheapest one touching the target, so a charge whose cheapest
+// contact hex can only be reached over rough ground still loses a +2 it could have kept by
+// coming in on the far side. Where to land is the player's choice and no offer carries it yet.
 /** The cheapest cell within reach from which `u` can fight `e`. */
 function approach(state: BattleState, u: Unit, e: Unit, reach: ReachMap): ChargeOption | null {
   let best: ChargeOption | null = null;
@@ -905,13 +907,12 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
       const ceiling = castCeiling(state, tree);
       if (tree === 'blast') return { needsTarget: true, targets: blastTargets(state, u, index, ceiling) };
       if (tree === 'healing') return { needsTarget: true, targets: healTargets(state, u, index) };
-      const wants = TREE_TARGET[tree];
-      // Offense and Defense read "an ally" in rules.html, not Healing's "yourself or an adjacent
-      // ally", so both drop the caster from their own pool; Healing has its own branch above,
-      // and Movement, which reads the same way, is Wave 12's own territory.
-      const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active' && (tree === 'movement' || a.id !== u.id));
-      const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
-      const inReach = pool.filter((t) => (wants === 'enemy' ? t.id !== u.id : true) && inRangeOf(t));
+      // Offense, Defense and Movement all read "an ally" in rules.html, where Healing alone
+      // reads "yourself or an adjacent ally" — and Healing has its own branch above. A buff on
+      // the caster would also lose an activation to the caster's own `finish`.
+      const pool = TREE_TARGET[tree] === 'enemy' ? enemies
+        : state.units.filter((a) => a.side === u.side && a.status === 'active' && a.id !== u.id);
+      const inReach = pool.filter((t) => dist(state, t.square, u.square) <= ceiling);
       if (tree === 'movement' && index === 3) return { needsTarget: true, targets: translocateTargets(state, inReach) };
       return { needsTarget: true, targets: inReach.map(unitTarget) };
     }
@@ -1126,9 +1127,10 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: 
 /** The one unit an ally tree or a Controlling cast lands on, or null when it is out of range. */
 function castTarget(state: BattleState, u: Unit, tree: Tree, action: RungAction): Unit | null {
   const target = action.target ? unit(state, action.target) : u;
-  // Offense and Defense buff "an ally", never the caster. Self-cast would also cost the buff an
+  // Every buff tree names "an ally", never the caster — Healing alone reads "yourself or an
+  // adjacent ally", and it never comes through here. Self-cast would also cost the buff an
   // activation: the caster's own `finish` runs at the end of the very activation it cast in.
-  if (target.id === u.id && (tree === 'offense' || tree === 'defense')) {
+  if (target.id === u.id && TREE_TARGET[tree] === 'ally') {
     log(state, u, `${u.name}'s ${TREE_LABEL[tree]} must fall on an ally.`);
     return null;
   }
@@ -1528,6 +1530,10 @@ export function endActivation(input: BattleState, rng: Rng, unitId?: string): Ba
   const u = activeUnit(state);
   if (!u) throw new Error('no unit is activating');
   if (unitId && u.id !== unitId) throw new Error(`${unitId} is not activating`);
+  // A pass is an activation. `act` is the only other caller of `begin`, so without this a unit
+  // that ends its turn having done nothing would carry its guard, its stun and every spell laid
+  // on it into the activation it next acts in.
+  if (!state.begun) begin(state, u);
   finish(state, rng, u);
   refreshEmplacements(state);
   return state;
@@ -1646,7 +1652,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const wanted = action.rung ?? 1;
   const cost = CHARGE_ACTIONS + wanted;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
-  const bonus = chargeBonus(state, u, pathTo(reach, option.cell));
+  const bonus = chargeBonus(state, u, option.cell);
   // Read from the hex the charge starts in, whatever hex it ends on.
   const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
   const impact = u.tactics.includes('cavalry-charge');

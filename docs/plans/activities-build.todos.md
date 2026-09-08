@@ -37,11 +37,9 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   on a level-6 infantry card), which shifts every one of those odds. A player checking the
   worked example against the board would find them disagree. Flagged in Wave 10's session,
   not fixed there.
-- A stunned unit whose activation ends with no `act()` call at all (a pure pass, `endActivation`
-  with nothing spent) never runs `begin`, so `stunned` carries over untouched to the activation
-  it actually next acts in, not literally "its next activation" if that included a no-op turn.
-  Defensible under the rule's own wording, but worth a second look once a real pass exists in
-  the UI rather than only in test helpers.
+- ~~A stunned unit whose activation ends with no `act()` call at all never runs `begin`.~~
+  Closed in Wave 12: `endActivation` runs `begin` itself when the activation never began, so a
+  pass spends the stun, the haste and every condition the table clears at `begin`.
 - **Aegis can never be cast.** Defense index 3 costs three actions and no tradition's Defense
   cap reaches 3: `TRADITION_CAP` in `src/engine/magic.ts` reads arcane 2, divine 2, occult 1,
   primal 1, and the Tradition table in `public/rules.html` section 11 carries the same four
@@ -57,6 +55,12 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   Waves 10–11 fix pass below: every caught unit's ward and aegis is now read and consumed.
 - Sure strike now spends itself on a swing at a wall, since a wall attack is the activation's
   one attack. Whether a wall segment should soak the ally's buff at all is a play question.
+- **A charge still lands on the cheapest contact hex.** Wave 12 gave the +2 the terrain-blind
+  search section 7 asks for, so any clean route in keeps it — but the hex the run ends on is
+  still the cheapest one touching the target, and a charge whose cheapest contact hex can only
+  be reached over rough ground loses a +2 that coming in on the far side would have kept.
+  Closing it means offering the player the landing hex, a change to `ChargeOption` and to the
+  board's charge chip rather than to `chargeBonus`. Marked `// proto:` on `approach`.
 
 ## Wave 0 (2026-09-08)
 
@@ -516,3 +520,33 @@ top of Wave 11.
   written needs the engine to remember which edges a flight crossed; the broad reading (a flier
   is never engaged across a wall) would change holders, free strikes and withdrawal for every
   native flier as well. The plan's own Wave 12 table omits the clause. Flagged, not built.
+
+### Wave 12, the carry-forwards (2026-09-08)
+
+- **A pass runs `begin`.** `act` was the only caller, so a unit that ended its turn without
+  acting kept its guard, its exposure, its ward, its stoneskin, its aegis and its stun until it
+  actually performed an action — and never cleared the suppression or the pin it had laid on
+  somebody else. `endActivation` now runs `begin` when `!state.begun`, before `finish`. A passed
+  activation is an activation: it spends a stun and one of Haste's two, and it lets the
+  shooter's own pin lapse. `finish`'s Wrath wound cannot double up with anything `begin` does —
+  `begin` never touches `persistent`, and `finish` still lands it.
+- **"An ally" is one pool for Offense, Defense and Movement**, one clause in `targetsFor` and
+  one guard in `castTarget` (`TREE_TARGET[tree] === 'ally'`) in place of three copies. Healing
+  keeps the caster: rules.html gives it alone "yourself or an adjacent ally". A self-cast Sure
+  footing or Fly would have been stripped by the caster's own `finish` in the same activation,
+  exactly as a self-cast Haste was — the same bug the Wave 11 fix pass closed for the other two.
+  Translocate is instant and would have survived a self-cast, but the pool is one clause and the
+  rules give all three trees the same words.
+- **The charge's +2 now asks whether any clean way in existed**, not what the cheapest route
+  crossed: `MoveOpts.evenGround` bans rough ground and climbs outright, and `chargeBonus` runs
+  that second search against the hex the run ends on. This is a ban, not Sure footing's
+  discount, and the two are separate flags — Sure footing returns the +2 outright, before any
+  search. What remains is the landing hex itself, under "Open, for play" above.
+- **A flier's charge reads the ground like anyone else's.** Section 7 gives a flier 1 a hex
+  "whatever the ground"; that is a price, where Sure footing says rough ground "is open ground
+  to it" and names the +2 in the same breath. Section 11 sells the three Movement activities as
+  "three separate things", so Fly is not Sure footing with extra. `stepFeet` therefore asks
+  `evenGround` ahead of `flying`. `public/rules.html` section 7's Ground bullet gained the
+  sentence, since the text implied it by structure and said it nowhere.
+- One test beyond the wave's two, for the pass: it settles what "on its next activation" means
+  when an activation does nothing.

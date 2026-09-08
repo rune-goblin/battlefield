@@ -141,6 +141,14 @@ describe('alternating activation', () => {
     expect(activeUnit(s)!.side).toBe('defender');
   });
 
+  it('spends a stun even on an activation that does nothing at all', () => {
+    const { state } = battle([]);
+    unit(state, 'u0').stunned = true;
+    const passed = endActivation(select(state, 'u0'), scriptedRng([10]), 'u0');
+    expect(unit(passed, 'u0').stunned).toBe(false);
+    expect(said(passed, 'Infantry is stunned')).toBe(true);
+  });
+
   it('starts a new round when everyone has acted', () => {
     let s = battle([]).state;
     for (let i = 0; i < 4; i++) s = burn(s, activeUnit(s)!.id);

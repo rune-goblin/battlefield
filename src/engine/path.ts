@@ -26,6 +26,9 @@ export interface MoveOpts {
   flying?: boolean;
   /** Sure footing: every hex costs one and a climb nothing. Water and blocked edges still stop it. */
   surefooted?: boolean;
+  /** Rough ground and climbs are impassable rather than dear, which answers the charge's own
+   * question: is there any route in that touched neither? */
+  evenGround?: boolean;
   /** Cells somebody else is standing on. */
   occupied?: ReadonlySet<string>;
 }
@@ -47,12 +50,15 @@ export type ReachMap = Map<string, ReachEntry>;
  */
 export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts = {}): number {
   if (!gridOf(board).inBounds(to)) return Infinity;
+  const ground = TERRAIN_FEET[at(board, to).terrain];
+  const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
+  // Even ground is a question about the ground, not about the price, so it is asked ahead of
+  // flight: a flier pays 1 a hex over forest and has still crossed forest.
+  if (opts.evenGround && ((Number.isFinite(ground) && ground > CELL_FEET) || climb > 0)) return Infinity;
   if (opts.flying) return CELL_FEET;
   if (barrierBetween(board, from, to) !== null) return Infinity;
-  const ground = TERRAIN_FEET[at(board, to).terrain];
   // Water is the one ground Sure footing cannot flatten: it blocks where forest merely costs.
   if (opts.surefooted) return Number.isFinite(ground) ? CELL_FEET : Infinity;
-  const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
   return ground + climb * CLIMB_FEET;
 }
 
@@ -62,7 +68,7 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
  */
 export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap {
   const g = gridOf(board);
-  const step: StepOpts = { flying: opts.flying, surefooted: opts.surefooted };
+  const step: StepOpts = { flying: opts.flying, surefooted: opts.surefooted, evenGround: opts.evenGround };
   const occupied = opts.occupied ?? new Set<string>();
   const startKey = notation(start);
   const reach: ReachMap = new Map([[startKey, { feet: 0, from: null }]]);
