@@ -242,6 +242,25 @@ describe('Cast', () => {
       expect([[a, b], [b, c], [a, c]].map(([x, y]) => hexGrid.distance(x, y))).toEqual([1, 1, 1]);
     }
   });
+
+  it('reads a Heal against each unit\'s own level DC, so one d20 lands two degrees', () => {
+    const levy: UnitCard = { name: 'Levy', level: 2, role: 'infantry', tactics: [] };
+    const champion: UnitCard = { name: 'Champion', level: 15, role: 'infantry', tactics: [] };
+    const s = createBattle({
+      units: [
+        { card: cleric, side: 'attacker', square: 'c2' },
+        { card: levy, side: 'attacker', square: 'c1' },
+        { card: champion, side: 'attacker', square: 'd2' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    // Level-6 divine spell attack +11. Roll 15 totals 26: against level 2's DC 16 that clears
+    // dc + 10, a critical success; against level 15's DC 34 it falls short, a plain failure.
+    const cast = act(s, { type: 'cast', rung: 2, spell: 'healing', target: 'u1+u2', unit: 'u0' }, scriptedRng([15]));
+    expect(cast.log.find((e) => e.text.startsWith('Heal reaches Levy'))!.check!.degree).toBe('critical-success');
+    expect(cast.log.find((e) => e.text.startsWith('Heal reaches Champion'))!.check!.degree).toBe('failure');
+  });
 });
 
 describe('movement points', () => {

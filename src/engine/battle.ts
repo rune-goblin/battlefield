@@ -776,6 +776,27 @@ function blastTargets(state: BattleState, u: Unit, index: Grade, ceiling: number
     .map(({ shape, caught }) => ({ kind: 'cell' as const, id: shapeId(shape), label: caught.map((e) => e.name).join(', ') }));
 }
 
+const healPool = (state: BattleState, u: Unit): Unit[] => [
+  u, ...state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) === 1),
+];
+
+function combinations<T>(pool: T[], size: number): T[][] {
+  if (size === 0) return [[]];
+  if (pool.length < size) return [];
+  const [head, ...rest] = pool;
+  return [...combinations(rest, size - 1).map((c) => [head, ...c]), ...combinations(rest, size)];
+}
+
+/** Every group Soothe, Heal or Restore may reach: the caster and its adjacent allies, `index`
+ * at a time. Heaviest need first, so the cheapest legal row (`rungOption`'s own pick) lands on
+ * the group that most wants it. */
+function healTargets(state: BattleState, u: Unit, index: Grade): RungTarget[] {
+  const need = (t: Unit) => t.disorder + t.wounds;
+  return combinations(healPool(state, u), index)
+    .sort((a, b) => b.reduce((n, t) => n + need(t), 0) - a.reduce((n, t) => n + need(t), 0))
+    .map((group) => ({ kind: 'unit' as const, id: group.map((t) => t.id).sort().join('+'), label: group.map((t) => t.name).join(', ') }));
+}
+
 function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null): TargetSet {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
   switch (type) {
@@ -803,6 +824,7 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
       const tree = spell!;
       const ceiling = castCeiling(state, tree);
       if (tree === 'blast') return { needsTarget: true, targets: blastTargets(state, u, index, ceiling) };
+      if (tree === 'healing') return { needsTarget: true, targets: healTargets(state, u, index) };
       const wants = TREE_TARGET[tree];
       const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active');
       const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
@@ -1048,6 +1070,59 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: Grade, action: Rung
   }
 }
 
+/** The critical's "one more thing": end the first condition present, pinned through persistent
+ * damage — an order this wave fixes, since rules.html lists the six in prose, not by priority. */
+function endCondition(state: BattleState, target: Unit): boolean {
+  if (target.pinnedBy) {
+    const pinner = state.units.find((e) => e.id === target.pinnedBy);
+    target.pinnedBy = null;
+    log(state, target, `${target.name} is healed clear of ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
+    return true;
+  }
+  if (target.rooted > 0) {
+    target.rooted = 0;
+    log(state, target, `${target.name} is healed clear of root.`);
+    return true;
+  }
+  if (target.suppressedBy) {
+    target.suppressedBy = null;
+    log(state, target, `${target.name} is healed clear of suppression.`);
+    return true;
+  }
+  if (target.exposed) {
+    target.exposed = false;
+    log(state, target, `${target.name} is healed clear of exposure.`);
+    return true;
+  }
+  if (target.frightened) {
+    target.frightened = false;
+    log(state, target, `${target.name} is healed clear of fright.`);
+    return true;
+  }
+  if (target.persistent) {
+    target.persistent = null;
+    log(state, target, `${target.name} is healed clear of the persistent wound.`);
+    return true;
+  }
+  return false;
+}
+
+function healWound(state: BattleState, target: Unit) {
+  if (target.wounds <= 0) return;
+  target.wounds -= 1;
+  log(state, target, `${target.name} is healed: wounds ${target.wounds}/${MAX_WOUNDS}.`);
+}
+
+/** One unit a Healing roll reaches, read against its own level DC. */
+function healOne(state: BattleState, target: Unit, degree: Degree) {
+  if (degree === 'critical-failure') return;
+  clearDisorder(state, target, 1, 'Healing');
+  if (degree === 'failure') return;
+  healWound(state, target);
+  if (degree === 'success') return;
+  if (!endCondition(state, target)) healWound(state, target);
+}
+
 /**
  * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
  * and its own effect; `index` is the activity bought, which is also its price.
@@ -1058,12 +1133,15 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       blast(state, rng, u, index, action);
       break;
     case 'healing': {
-      const target = castTarget(state, u, tree, action);
-      if (!target) break;
-      clearDisorder(state, target, 1, 'Healing');
-      if (index >= 2 && target.wounds > 0) {
-        target.wounds -= 1;
-        log(state, u, `${u.name} heals ${target.name}: wounds ${target.wounds}/${MAX_WOUNDS}.`);
+      const targets = action.target!.split('+').map((id) => unit(state, id));
+      const activity = castRungOf('healing', index);
+      log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`);
+      const modifier = spellAttackModifier(u);
+      const cast = roll(state, rng, u, modifier, levelDc(targets[0].level));
+      for (const target of targets) {
+        const c = readCheck(cast.roll, modifier, levelDc(target.level));
+        log(state, u, `${activity.label} reaches ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+        healOne(state, target, c.degree);
       }
       break;
     }
