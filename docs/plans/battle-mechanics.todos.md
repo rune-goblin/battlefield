@@ -2059,3 +2059,50 @@ The guesses, in one line each, so the review has a list to strike from:
   from the updated entries. Just keep them where there is no update." Eight Legacy blocks
   deleted; two remain: the Offense, Defense and Movement rows of the old tree table, and the
   three tactics' grants.
+- **Offense decided; the unit grade and the extra action go** (2026-09-08). On Haste at
+  ◆◆◆ for one action: "One action for three of the casters does seem like a lot. What if we
+  gave it for two rounds." Against Burst's 1.20 he noted "you may only be able to target
+  one", so the fair benchmark is Burst's range, 0.40 to 1.20, and two activations of Haste
+  sit at 0.80. Then: "Let's remove the idea of extra actions on its own. I think that is
+  coming from the previous unit grade that we used to have. And then I think haste should
+  apply to the hasted units next 2 activations." And: "Remove the whole concept of unit
+  grade." Every unit has three actions; Haste alone grants a fourth, on each of the ally's
+  next two activations, never a second attack; a second Haste on a hasted ally is nothing.
+  Section 2's extra action, section 6's price note, Charge's two mentions, the gun crew's
+  one-action Pin, the quick-reference row and section 15's source table are gone. Sure
+  strike and Wrath stand as proposed. Judgment calls: melee drill, shields, formation and
+  magic ward fed only the grades and are no longer read by the importer; a gun crew now
+  shoots at the ladder's price, so a cheaper artillery Pin is a section 12 question if play
+  wants one. Dropped: Haste at one activation for ◆◆◆, and restricting the fourth action to
+  a named ladder.
+- **Wrath is a bleed** (2026-09-08). Mark: "What if the victim or the target of an attack by
+  someone with a wrath buff needs to roll a Fortitude save against the attack or take an
+  additional point of damage the following round (this represents bleed or persistent
+  damage)? Then the question becomes: should that trigger a morale check on the following
+  round as normal for damage?" A save against the bleed left Wrath worth 0.10 wounds at
+  parity, a third of Sure strike at twice the price, so the bleed follows the hit with no
+  save, as persistent damage does in Pathfinder, and the bleed wound asks the ordinary
+  Fortitude save or 1 disorder. Mark: "Yep, no repulse on this should be removed, I think,
+  apply at the end, because that's how it works in the core system." The legacy no-repulse
+  clause is gone; the wound lands at the end of the target's next activation. Bleeding joins
+  the conditions a Healing critical ends. Dropped: the no-save disorder, which was Press; a
+  Fortitude save against the bleed itself.
+- **Persistent damage, never bleed** (2026-09-08). Mark: "I just wonder if we should not make
+  it bleed specifically, but just say 'persistent damage.' Otherwise, some units, such as
+  undead or constructs, will not be subject to bleed ... I would rather just say 'persistent
+  damage' than get into immunities, weaknesses, etc." Wrath's condition is named persistent
+  damage and the rules say it is a condition, never a damage type, so no unit is immune.
+- **Haste plain, and activity replaces rung** (2026-09-08). Mark: "For haste, just say the
+  ally has an additional action on each of its next two activations. Do not apply any
+  restrictions." Written so; the one-attack rule stands on its own in section 6. Then:
+  "'rung' is a concept which we basically have removed from the game at this point, now that
+  we have a three-action tree for every action. Let's just see if we can remove that
+  terminology" and, on the word, "We would call it An activity, I think. Battlefield
+  activity?" with Pathfinder's Activities page. Swept: every "rung" and "ladder" in
+  `public/rules.html` is gone but the legacy tactics block; the word is activity, section 6
+  is "Activities and price" at `#activities`, every table header reads Activity, and the
+  tradition table counts actions in place of tiers. Section 5's "or a higher rung of this
+  one" is dropped, since nobody climbs. "Battlefield activity" appears once, where section 6
+  defines it. Judgment calls: the legacy blocks keep their old words until deleted; the
+  engine's `LADDERS` and `CastTier` names wait for the build; this plan file keeps ladder in
+  its title.

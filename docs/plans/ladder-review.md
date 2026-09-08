@@ -9,8 +9,8 @@ is named by its tree, "review the Blast tree".
 1. `public/rules.html`: the named ladder's own block in the section it lives in (Shoot and
    Guard in 8, Rally in 9, Withdraw and Charge in 7, each Cast tree under its `<h4>` in 11).
    Since 2026-09-06 a decided ladder stands there as the rule and the old rule is deleted. A
-   `<div class="legacy">` marks only a rule nothing has replaced yet: the unreviewed buff
-   trees' rows in section 11 and the three tactics. A draft not yet decided is in section 15,
+   `<div class="legacy">` marks only a rule nothing has replaced yet: the Defense and
+   Movement rows in section 11 and the three tactics. A draft not yet decided is in section 15,
    "Under review", which holds only open items.
 3. The engine plays the rules as they stood before the review until the build.
 3. The engine function behind it, quoted by name: `LADDERS` in `src/engine/ladders.ts`,
@@ -24,10 +24,10 @@ Do not read the other ladders in section 15, the todos file, or the older plan f
 
 Open by putting the ladder in front of Mark in this exact shape, then stop and wait:
 
-| Rung | Cost | What it does |
+| Activity | Cost | What it does |
 |---|---|---|
 | Name | ◆ | One sentence. |
-| Name | ◆◆ | "Name, and ..." Rungs are cumulative. |
+| Name | ◆◆ | "Name, and ..." A verb's activities are cumulative; the buffs are not. |
 | Name | ◆◆◆ | "Name, and ..." |
 
 Under it: what changed against the rule in force, the ancestor, and any number that decides a
@@ -45,9 +45,15 @@ tree and section 11's share a name: anchor on the section first.
 
 ## What Mark has decided so far, and holds for every ladder
 
+- **The word is activity, never rung, ladder or tier.** On 2026-09-08 Mark swept them: "'rung' is a
+  concept which we basically have removed from the game at this point, now that we have a
+  three-action tree for every action." A verb (Fight, Shoot, Guard, Rally, Withdraw, Charge,
+  Cast) offers three activities in Pathfinder's sense, priced one, two and three actions;
+  the rules table header is Activity. Tier stays for forts and walls only. This file keeps
+  "ladder" in its own name and prose as history.
 - **Meaningful effects over flat bonuses.** A rung buys a different kind of thing. The one
   exception is Guard's +2 and +4 Defence, which "is just increasing your defenses".
-- **Actions are the only currency.** The rung at the grade costs one action, each rung above it
+- **Actions are the only currency.** The first rung costs one action, each rung above it
   one more. Nothing rolls for a rung and nothing turns an action into a bonus.
 - **One gate.** An effect passes through one roll. Control is gated on a check: outright
   "may not Move" was "too strong a control". A cast is one roll too: "we're going back to a
@@ -63,11 +69,12 @@ tree and section 11's share a name: anchor on the section first.
   common". It lives on the defend-allies tactic.
 - **Range is a penalty, never a rung**: −2 a band beyond effective range.
 - **Complete immunity to the next hit is too strong** for a ladder every troop can climb.
-- **Grades are gone.** Every rung costs its own number of actions for every troop: Strike 1,
-  Press 2, Overrun 3. What a better troop gets is **one extra action**, four in the activation,
-  in quickened's shape: one action however many sources, each source naming the ladder it may
-  buy. Never write "grade" into a ladder; write what the extra action buys. The source table is
-  in section 15 under "Grades become the extra action" and is open until Mark confirms it.
+- **There is no unit grade, and no extra action of a troop's own.** Every rung costs its own
+  number of actions for every troop: Strike 1, Press 2, Overrun 3, and every unit has three.
+  A better troop is better by its numbers. On 2026-09-08 Mark removed the extra action that
+  had replaced the grades: "Remove the whole concept of unit grade." Haste is the one source
+  of a fourth action, for the ally's next two activations. Never write "grade" or "extra
+  action" into a rule; a four-action rung says "only a hasted unit".
 - **Charge is for everyone.** One action of movement buys two Speeds when it ends in a Fight;
   the Strike is at +2 and the charger is exposed until it next acts; cavalry differs by reach
   and by the cavalry-charge impact, never by owning the verb. The +2 is the second flat bonus
@@ -81,7 +88,7 @@ tree and section 11's share a name: anchor on the section first.
   had cast then effect." A tree is cast once an activation; once altogether is open.
 - **Frightened is a condition**, a light disorder that wears off: −1 to everything the unit
   rolls and to its Defence until the end of its next activation. Conditions Healing's Restore
-  can end: exposed, suppressed, pinned, rooted, frightened.
+  can end: exposed, suppressed, pinned, rooted, frightened, persistent damage.
 - **Melee words:** Fight is the verb, engaged the state, Disengage the check. Never exchange or
   engagement.
 - A miss is free at range; a Fight's miss repulses. Suppress (−2 to everything, until the
@@ -91,7 +98,7 @@ tree and section 11's share a name: anchor on the section first.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Nine are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing and Controlling. Three wait.
+Ten are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing, Controlling and Offense. Two wait.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -100,11 +107,11 @@ Nine are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing a
 | Guard | Section 6: Brace / Dig in / Shieldwall | ✓ | Decided 2026-09-05: Brace / Dig in / Take cover, the share moved to the defend-allies tactic. In its section; engine not yet built. |
 | Rally | Sections 6 and 9: Steady / Rally / Inspire | ✓ | Decided 2026-09-05: the roll stays, a success clears 1 or inspires (+2 to the next roll), one roll read for everyone reached. In its section; engine not yet built. Rung 3's name is open. |
 | Withdraw | Section 7: one action, the Disengage check | ✓ | Decided 2026-09-05: Break off / Disengage / Fighting retreat. One check against the highest holder, a free Move on a critical, a pin is a holder. Ground is never a rung; above Break off the enemy rolls, a failure roots it, and at the top it takes 1 disorder. In its section; engine not yet built. Shaken and routed units now Move, fixed in section 7 and the engine. |
-| Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In its section; engine not yet built. The extra-action source table beside it is open. |
+| Charge | Section 7 | ✓ | Decided 2026-09-05: for everyone, one movement action buys two Speeds ending in a Fight, then Strike / Press / Overrun at flat price (◆◆ / ◆◆◆ / ◆◆◆◆), the Strike at +2 and the charger exposed. No +2 through difficult ground or a climb; a charge started from a hex above the target's puts its save at −2. Cavalry charge is the impact; mounted goes. In its section; engine not yet built. |
 | Cast: Blast | Section 11: long range, the activation's attack | ✓ | Decided 2026-09-06: Missile / Line / Burst. One spell attack read against a shape in hexes: one, two on a straight line from the caster, three at a corner; every hex a full target. The Cast-only actions go with it. In its section; engine not yet built. |
 | Cast: Healing | Section 11: touch | ✓ | Decided 2026-09-06: Soothe / Heal / Restore, one, two and three units, each yourself or an adjacent ally. One roll, spell attack against each unit's own level DC: a failure clears 1 disorder, a success 1 disorder and 1 wound, a critical one more thing, a condition ended or a second wound. In its section; engine not yet built. |
 | Cast: Controlling | Section 11: medium range, Will save against spell DC | ✓ | Decided 2026-09-06: Dread / Stun / Hold. One Will save: a success frightens (−1 to rolls and Defence until the end of its next activation), a failure the rung, a critical failure the rung with 2 disorder. Stun is one action fewer, Hold rooted. In its section; engine not yet built. |
-| Cast: Offense | Section 11: short range, an ally | | Draft in section 15: Sure strike / Wrath / Haste. Roll twice, a Press for a unit without one, one more action. |
+| Cast: Offense | Section 11: short range, an ally | ✓ | Decided 2026-09-08: Sure strike / Wrath / Haste, a menu, each rung its own effect. Wrath is persistent damage: the ally's next hit costs the target 1 more wound at the end of its next activation, with the ordinary Fortitude save or 1 disorder. Haste is four actions on each of the ally's next two activations; the unit grade and the troop's own extra action went with it. In its section; engine not yet built. |
 | Cast: Defense | Section 11: short range, an ally | | Draft in section 15: Ward / Stoneskin / Aegis. Aegis turns a whole hit, which the held decisions say is too strong. |
 | Cast: Movement | Section 11: short range, an ally | | Draft in section 15: Sure footing / Wings / Freedom. Freedom passes the Disengage check. |
 
