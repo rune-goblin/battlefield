@@ -219,6 +219,15 @@ export function rollBonus(u: Unit): number {
   return n;
 }
 
+/** The one place a d20 is actually thrown: every roll a unit makes — a Strike, a shot, a
+ * save, Rally — goes through here so `inspired` is spent exactly once, on the roll it
+ * bonused, and not on every later call that only reads `rollBonus` to show a number. */
+export function roll(state: BattleState, rng: Rng, u: Unit, modifier: number, dc: number): CheckResult {
+  const c = check(rng, modifier, dc);
+  u.inspired = false;
+  return c;
+}
+
 export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false): number {
   // Circumstance bonuses never stack; the highest applies.
   let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target));
@@ -366,7 +375,7 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
   if (pressed) {
     addDisorder(state, target, 1, 'a pressed hit, no save');
   } else {
-    const c = check(rng, fortitudeModifier(target), levelDc(attacker.level));
+    const c = roll(state, rng, target, fortitudeModifier(target), levelDc(attacker.level));
     log(state, target, `${target.name} braces against the wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a wound taken');
   }
@@ -400,10 +409,18 @@ function clearDisorder(state: BattleState, u: Unit, n: number, why: string) {
   log(state, u, `${u.name} clears to disorder ${u.disorder}/${u.quality} (${why}).`);
 }
 
+// Never set while disorder stands (`inspired`'s own invariant), so every call site already
+// checks that before reaching here; a unit already inspired just keeps its one bonus.
+function inspire(state: BattleState, u: Unit) {
+  if (u.inspired) return;
+  u.inspired = true;
+  log(state, u, `${u.name} is inspired: +2 to its next roll.`);
+}
+
 interface StrikeOpts { free?: boolean; pressed?: boolean; label: string }
 
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree {
-  const c = check(rng, strikeModifier(state, u, target), defenceOf(state, target, u, false));
+  const c = roll(state, rng, u, strikeModifier(state, u, target), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
   applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false);
@@ -426,7 +443,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung) 
     if (eff.drive && u.status === 'active') giveGround(state, u, target);
     return;
   }
-  const c = check(rng, willModifier(u), levelDc(target.level));
+  const c = roll(state, rng, u, willModifier(u), levelDc(target.level));
   log(state, u, `${u.name} is repulsed by ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   if (!succeeded(c.degree)) addDisorder(state, u, 1, 'a repulsed attack');
 }
@@ -465,7 +482,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung
   const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
-  const c = check(rng, shootModifier(state, u, target), defenceOf(state, target, u, true));
+  const c = roll(state, rng, u, shootModifier(state, u, target), defenceOf(state, target, u, true));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
@@ -487,7 +504,7 @@ const wallDc = (state: BattleState, wall: Wall) =>
 function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier: number, verb: string) {
   const wall = state.board.walls[key];
   if (!wall || wall.remaining <= 0) return;
-  const c = check(rng, modifier, wallDc(state, wall));
+  const c = roll(state, rng, u, modifier, wallDc(state, wall));
   log(state, u, `${u.name} ${verb} the wall ${key}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
   if (!hits) return;
@@ -766,7 +783,7 @@ function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawActio
   let pinned = false;
   for (const holder of holdersOf(state, u)) {
     if (u.status !== 'active') break;
-    const c = check(rng, escapeModifier(u), escapeDcFor(holder, u));
+    const c = roll(state, rng, u, escapeModifier(u), escapeDcFor(holder, u));
     log(state, u, `${u.name} breaks from ${holder.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     escapes.push({ holder, degree: c.degree });
     if (succeeded(c.degree)) continue;
@@ -841,14 +858,14 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: C
   const effectBonus = axis === 'effect' ? (effectTier === 3 ? 2 : effectTier === 2 ? 1 : 0) : 0;
   const pushBonus = axis !== 'effect' ? (tier === 3 ? 4 : tier === 2 ? 2 : 0) : 0;
   if (tree === 'blast') {
-    const c = check(rng, spellAttackModifier(u) + effectBonus + pushBonus, defenceOf(state, target, u, false));
+    const c = roll(state, rng, u, spellAttackModifier(u) + effectBonus + pushBonus, defenceOf(state, target, u, false));
     log(state, u, `${u.name} Blasts ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     resolveTree(state, rng, u, target, tree, effectTier, c.degree);
     return;
   }
   // Controlling remains a resistance check: its own effect tier penalizes the target's Will,
   // while a range or duration tier raises the caster's spell DC.
-  const c = check(rng, willModifier(target) - effectBonus, spellDcFor(u, pushBonus));
+  const c = roll(state, rng, target, willModifier(target) - effectBonus, spellDcFor(u, pushBonus));
   log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   resolveTree(state, rng, u, target, tree, effectTier, c.degree);
 }
@@ -943,26 +960,31 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
       break;
     }
     case 'rally': {
-      // A Quality check against the rout DC — the degree decides how much clears.
+      // One roll, d20 + Will vs the rallying unit's own rout DC, read for every unit reached:
+      // Steady is u alone, Rally adds one adjacent ally, Inspire every ally within 2.
       const eff = rung.rally!;
-      const c = check(rng, willModifier(u), routDcFor(state, u));
-      log(state, u, `${u.name} ${rung.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-      const cleared = c.degree === 'critical-success' ? u.disorder
-        : c.degree === 'success' ? 2 : c.degree === 'failure' ? 1 : 0;
-      if (cleared) clearDisorder(state, u, cleared, rung.label.toLowerCase());
-      if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a rally gone wrong');
-
-      // proto: the ally's half of a Rally is a point of disorder cleared and nothing else
-      // until Wave 4 reads the one roll for every unit reached and hands out `inspired`.
-      const lift = (a: Unit) => clearDisorder(state, a, 1, `${u.name}'s example`);
-      if (eff.scope === 'nearby') {
-        for (const a of state.units) {
-          if (a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) <= 2) lift(a);
-        }
-      } else if (eff.scope === 'adjacent' && action.target) {
+      const reached: Unit[] = [u];
+      if (eff.scope === 'adjacent' && action.target) {
         const ally = unit(state, action.target);
-        if (dist(state, ally.square, u.square) === 1) lift(ally);
+        if (dist(state, ally.square, u.square) === 1) reached.push(ally);
+      } else if (eff.scope === 'nearby') {
+        reached.push(...alliesWithin(state, u, 2));
       }
+      const c = roll(state, rng, u, willModifier(u), routDcFor(state, u));
+      log(state, u, `${u.name} ${rung.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      for (const a of reached) {
+        // Critical success reads "if none is left" (after the 2-point clear); a plain success
+        // reads "if it has none" (before the roll) — a unit sitting at exactly 1 disorder
+        // clears to 0 on a success without being inspired, only on a critical.
+        if (c.degree === 'critical-success') {
+          clearDisorder(state, a, 2, rung.label.toLowerCase());
+          if (a.disorder === 0) inspire(state, a);
+        } else if (c.degree === 'success') {
+          if (a.disorder > 0) clearDisorder(state, a, 1, rung.label.toLowerCase());
+          else inspire(state, a);
+        }
+      }
+      if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a rally gone wrong');
       break;
     }
   }

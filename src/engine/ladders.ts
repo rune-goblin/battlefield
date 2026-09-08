@@ -68,9 +68,9 @@ export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = 
     { id: 'take-cover', verb: 'takes cover', type: 'guard', index: 3, label: 'Take cover', detail: 'Dig in, and +4 Defence in place of the +2; an Overrun cannot drive you back. You may not move again this activation.', guard: { defence: 4, cap: true, holds: true, rooted: true } },
   ],
   rally: [
-    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit.', rally: { scope: 'self' } },
-    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1.', rally: { scope: 'adjacent' } },
-    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1.', rally: { scope: 'nearby' } },
+    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Roll. A success clears 1 of your own disorder, or inspires you if you have none.', rally: { scope: 'self' } },
+    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Steady, and the same result for one adjacent ally: it clears 1, or is inspired if it has none.', rally: { scope: 'adjacent' } },
+    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'Rally, and the same result for every friendly unit within 2.', rally: { scope: 'nearby' } },
   ],
 };
 

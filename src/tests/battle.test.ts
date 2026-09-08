@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
   endActivation, holdersOf, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
-  rangeBetween, select, shootModifier, strikeModifier, unit,
+  rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
 import { edgeKey, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -861,6 +861,23 @@ describe('disorder', () => {
     k.disorder = k.quality;
     const s = act(burn(state, 'u0'), { type: 'rally', rung: 1, unit: 'u2' }, scriptedRng([18]));
     expect(isShaken(unit(s, 'u2'))).toBe(false);
+  });
+  it('a success on a steady unit inspires it, and the +2 is spent by its next roll', () => {
+    const { state } = battle([]);
+    const steadied = act(state, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    const inspired = unit(steadied, 'u0');
+    expect(inspired.inspired).toBe(true);
+    expect(willModifier(inspired)).toBe(inspired.stats.will + ACTION_BONUS);
+    const spent = act(steadied, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([2]));
+    const after = unit(spent, 'u0');
+    expect(after.inspired).toBe(false);
+    expect(willModifier(after)).toBe(after.stats.will);
+  });
+  it('a critical failure costs the rallier 1 disorder', () => {
+    const { state } = battle([]);
+    const s = act(state, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([1]));
+    expect(unit(s, 'u0').disorder).toBe(1);
+    expect(unit(s, 'u0').inspired).toBe(false);
   });
   it('a routed unit leaves the field at its own edge; a shaken one holds', () => {
     const { state } = battle([]);
