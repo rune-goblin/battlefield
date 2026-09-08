@@ -610,7 +610,7 @@
 <h3>Casting</h3>
 <p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast and to heal, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
 <p>A cast is priced like every other activity: one, two or three actions for the one you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast is the activation's one attack. A buff lasts until the ally has next acted; Haste alone lasts two activations.</p>
-<p>A cast is one roll. Blast is a spell attack against Defence, and its one roll is read against every hex its shape covers. Healing is a spell attack against the level DC of the unit healed, read against each unit reached. Controlling is the target's Will save against your spell DC. The three buffs have nothing to resist and roll nothing.</p>
+<p>A cast is one roll. Blast is a spell attack against Defence, and its one roll is read against every hex its shape covers. Healing is a spell attack against the level DC of the unit healed, read against each unit reached. Controlling is the target's Will save against your spell DC. Offense and Movement have nothing to resist and roll nothing; Defense's Aegis is the enemy's Will save against your spell DC.</p>
 
 <h3>Tradition</h3>
 <p>Each cell below is the most actions a tradition may ever spend in that tree, 0 meaning no access at all. Nothing reaches every tree, and nothing sits at 0 in more than two.</p>
@@ -695,17 +695,30 @@
 <p>A second Sure strike on an ally already rolling twice is nothing. A second Haste on a hasted ally is nothing. Persistent damage is a condition, never a damage type, so no unit is immune to it and a Healing critical ends it before it lands.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range &middot; an ally</h4>
-<p><em>Not yet reviewed. The Legacy row below is the rule; the draft is in section 15.</em></p>
+<p>Three separate things, each its own price. Guard sells Defence and the wound cap; Defense sells the attacker's roll, the disorder a wound costs, and the attacker's actions, and the ally spends nothing. Aegis is the one buff that rolls, at the enemy's time and on the enemy's Will, as Controlling does.</p>
+<div class="wrap"><table>
+<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
+<tr><td>Ward</td><td>◆</td><td>The next attack against the ally before it next acts is rolled twice and the attacker takes the worse.</td></tr>
+<tr><td>Stoneskin</td><td>◆◆</td><td>Every hit against the ally before it next acts is capped at one wound and costs it no disorder.</td></tr>
+<tr><td>Aegis</td><td>◆◆◆</td><td>An enemy that would attack the ally before it next acts first rolls Will against your spell DC. On a failure the activity is wasted, actions and all.</td></tr>
+</table></div>
+<table>
+<tr><th>Buff on one attack against the ally</th><th>At parity</th></tr>
+<tr><td>None</td><td>0.40 wounds; a Fight misses 65%</td></tr>
+<tr><td>Ward ◆</td><td>0.18 wounds; a Fight misses 79%</td></tr>
+<tr><td>Stoneskin ◆◆</td><td>No disorder save; a Press or a critical is a plain wound</td></tr>
+<tr><td>Aegis ◆◆◆</td><td>35% of attacks wasted against spell DC 21; a level-15 caster's DC wastes most</td></tr>
+</table>
+<p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on an ally already under it is nothing.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range &middot; an ally</h4>
 <p><em>Not yet reviewed. The Legacy row below is the rule; the draft is in section 15.</em></p>
 
 <div class="legacy">
 <h4>Legacy</h4>
-<p><strong>The buff trees, until reviewed.</strong> A tier above the first bought one of extended range, a longer duration or a stronger effect.</p>
+<p><strong>The Movement tree, until reviewed.</strong> A tier above the first bought one of extended range, a longer duration or a stronger effect.</p>
 <div class="wrap"><table>
 <tr><th>Tree, at its range</th><th>Tier 1 &middot; one action</th><th>Tier 2 effect</th><th>Tier 2 bonus</th><th>Tier 3 effect</th><th>Tier 3 bonus</th></tr>
-<tr><td>Defense (buff) &middot; short</td><td>+2 AC</td><td>The buffed unit's next wound taken costs it no disorder</td><td>+4 AC</td><td>&minus;1 from the next damage taken</td><td>+4 AC, +2 saves</td></tr>
 <tr><td>Movement (buff) &middot; short</td><td>+1 movement point, +2 on a critical success</td><td>Ignores terrain penalties</td><td>+2 movement</td><td>Grants a movement type: fly, swim, or water walk</td><td>+3 movement</td></tr>
 </table></div>
 </div>
@@ -743,28 +756,14 @@
 
 <h2 id="review">15. Under review</h2>
 <div class="key">
-<p><strong>What is decided lives in its own section.</strong> Shoot and Guard in section 8, Rally in section 9, Charge and Withdraw in section 7, and the Blast, Healing, Controlling and Offense trees in section 11. A block marked Legacy is a rule nothing has replaced yet. Each verb was judged by the four tests from the Fight review: an activity buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. What follows is still open. The reasoning behind the decided verbs is in <code>docs/plans/battle-mechanics.todos.md</code> and in this file's history.</p>
+<p><strong>What is decided lives in its own section.</strong> Shoot and Guard in section 8, Rally in section 9, Charge and Withdraw in section 7, and the Blast, Healing, Controlling, Offense and Defense trees in section 11. A block marked Legacy is a rule nothing has replaced yet. Each verb was judged by the four tests from the Fight review: an activity buys a different kind of thing, never a bigger number; one roll gates each effect; attacking down is nearly free, even costs something, up is a mistake; six rounds can decide it. What follows is still open. The reasoning behind the decided verbs is in <code>docs/plans/battle-mechanics.todos.md</code> and in this file's history.</p>
 </div>
 
 <h3>Free strike and no retreat</h3>
 <p>Unchanged. The free strike is a hit capped at one wound with the Fortitude save as usual, and a troop that gives no retreat follows a withdrawal for one free Move. Neither is an activity with a price.</p>
 
 <h3>Cast</h3>
-<p>Four trees are decided and stand in section 11. Two remain, Defense and Movement, as drafts.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range &middot; an ally</h4>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Ward</td><td>◆</td><td>The ally's next wound taken before it next acts costs it no disorder. A Press against it wounds and nothing more.</td></tr>
-<tr><td>Stoneskin</td><td>◆◆</td><td>Ward, and the next hit against it is capped at one wound.</td></tr>
-<tr><td>Aegis</td><td>◆◆◆</td><td>Stoneskin, and the first hit against it before it next acts is turned entirely: no wound, no save.</td></tr>
-</table></div>
-<ul>
-<li><strong>Changed:</strong> +2 AC, +4 AC and +2 saves all go. Tier 1 is today's Tier 2 effect. Tier 2 is Brace at range. Tier 3 is a Shield Block that absorbs the whole hit.</li>
-<li><strong>Ancestors:</strong> Rallying Anthem (a bonus to AC and saves; the shape we leave). Stoneskin (resistance to physical damage). The Shield cantrip, which grants one Shield Block.</li>
-<li>Ward and heart do the same thing from different verbs, and they do not stack; a unit with both loses one point, once.</li>
-<li>The defending-allies tactic no longer grants a Defense tier; its share of Brace with the neighbours (under Guard, above) is the same idea as an ability of its own.</li>
-</ul>
+<p>Five trees are decided and stand in section 11. Movement remains, a draft.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range &middot; an ally</h4>
 <div class="wrap"><table>
@@ -792,7 +791,7 @@
 <tr><td>Fight</td><td>1 Strike &middot; 2 Press &middot; 3 Overrun</td><td>Strike vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude or takes 1 disorder &middot; a miss sends you to a Will save vs the target's level DC or 1 disorder &middot; critical failure exposes you. Press: the hit's disorder needs no save. Overrun: drives them back a hex and takes their ground.</td></tr>
 <tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at one wound. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
 <tr><td>Rally</td><td>1 Steady &middot; 2 Rally &middot; 3 Inspire</td><td>Will &minus; disorder vs the rout DC</td><td>Crit clears 2 &middot; success 1, or inspires if none &middot; failure nothing &middot; critical failure adds 1 to you. The activity says who else it reaches: you, one adjacent ally, everyone within 2.</td></tr>
-<tr><td>Cast</td><td>1, 2 or 3 for the activity; a tree once an activation</td><td>Blast: spell attack &minus; disorder vs Defence. Healing: spell attack &minus; disorder vs the unit's level DC. Controlling: the target's Will &minus; disorder vs your spell DC. Buffs roll nothing.</td><td>Tradition caps which trees and how high. Blast is the activation's attack.</td></tr>
+<tr><td>Cast</td><td>1, 2 or 3 for the activity; a tree once an activation</td><td>Blast: spell attack &minus; disorder vs Defence. Healing: spell attack &minus; disorder vs the unit's level DC. Controlling: the target's Will &minus; disorder vs your spell DC. Buffs roll nothing but Aegis: the attacker's Will vs your spell DC.</td><td>Tradition caps which trees and how high. Blast is the activation's attack.</td></tr>
 <tr><td>Haste</td><td>3, Offense</td><td>&mdash;</td><td>The ally has an additional action on each of its next two activations.</td></tr>
 </table></div>
 <div class="wrap"><table class="ref">

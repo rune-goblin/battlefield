@@ -2106,3 +2106,14 @@ The guesses, in one line each, so the review has a list to strike from:
   defines it. Judgment calls: the legacy blocks keep their old words until deleted; the
   engine's `LADDERS` and `CastTier` names wait for the build; this plan file keeps ladder in
   its title.
+- **Defense decided: Ward, Stoneskin, Aegis** (2026-09-08). The section 15 draft broke two
+  held decisions: Aegis turned a whole hit, and the three were cumulative. Proposed as a
+  menu of the three things Guard does not sell, the attacker's roll, the wound's disorder and
+  the attacker's actions. Mark: "Those sound great. Let's use that." Ward ◆: the next attack
+  against the ally is rolled twice and the attacker takes the worse (Sure strike's mirror;
+  Protection's "deters attacks"). Stoneskin ◆◆: every hit before it next acts is capped at
+  one wound and costs no disorder (the draft's Ward and cap made one thing). Aegis ◆◆◆:
+  Sanctuary, the attacker's Will against the caster's spell DC or the activity is wasted,
+  the one buff that rolls. Judgment calls: Ward and Sure strike on one attack cancel to one
+  roll; a second of any on the same ally is nothing. Dropped: the whole-hit Aegis; a
+  standalone wound cap at ◆◆, worth 0.05 wounds at parity.

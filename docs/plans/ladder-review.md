@@ -9,8 +9,8 @@ is named by its tree, "review the Blast tree".
 1. `public/rules.html`: the named ladder's own block in the section it lives in (Shoot and
    Guard in 8, Rally in 9, Withdraw and Charge in 7, each Cast tree under its `<h4>` in 11).
    Since 2026-09-06 a decided ladder stands there as the rule and the old rule is deleted. A
-   `<div class="legacy">` marks only a rule nothing has replaced yet: the Defense and
-   Movement rows in section 11 and the three tactics. A draft not yet decided is in section 15,
+   `<div class="legacy">` marks only a rule nothing has replaced yet: the Movement
+   row in section 11 and the three tactics. A draft not yet decided is in section 15,
    "Under review", which holds only open items.
 3. The engine plays the rules as they stood before the review until the build.
 3. The engine function behind it, quoted by name: `LADDERS` in `src/engine/ladders.ts`,
@@ -60,7 +60,7 @@ tree and section 11's share a name: anchor on the section first.
   single roll instead of a cast and then effect", so section 11's cast roll followed by a
   separate effect roll goes. Each tree's one roll is the row above it in section 15: Blast's
   spell attack, Controlling's Will save, Healing's spell attack against the healed unit's own
-  level DC, and none for the three buffs.
+  level DC, Defense's Aegis the attacker's Will save, and none for Offense or Movement.
 - **No skill checks.** Troops have no Athletics. The check to break contact or a pin is the
   **Disengage check**: Reflex, less disorder, against an attack DC (Strike or Volley + 10).
   Never call it Escape. It is one check against the highest holder, read for every holder, and
@@ -98,7 +98,7 @@ tree and section 11's share a name: anchor on the section first.
 
 Twelve ladders: six verbs and the six trees of Cast, each tree reviewed as a ladder of its own.
 Fight was reviewed first and is already built; it set the four tests the rest are judged by.
-Ten are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing, Controlling and Offense. Two wait.
+Eleven are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing, Controlling, Offense and Defense. Movement waits.
 
 | Ladder | Rule in force | Updated | Status |
 |---|---|---|---|
@@ -112,7 +112,7 @@ Ten are updated: Fight, Shoot, Guard, Rally, Withdraw, Charge, Blast, Healing, C
 | Cast: Healing | Section 11: touch | ✓ | Decided 2026-09-06: Soothe / Heal / Restore, one, two and three units, each yourself or an adjacent ally. One roll, spell attack against each unit's own level DC: a failure clears 1 disorder, a success 1 disorder and 1 wound, a critical one more thing, a condition ended or a second wound. In its section; engine not yet built. |
 | Cast: Controlling | Section 11: medium range, Will save against spell DC | ✓ | Decided 2026-09-06: Dread / Stun / Hold. One Will save: a success frightens (−1 to rolls and Defence until the end of its next activation), a failure the rung, a critical failure the rung with 2 disorder. Stun is one action fewer, Hold rooted. In its section; engine not yet built. |
 | Cast: Offense | Section 11: short range, an ally | ✓ | Decided 2026-09-08: Sure strike / Wrath / Haste, a menu, each rung its own effect. Wrath is persistent damage: the ally's next hit costs the target 1 more wound at the end of its next activation, with the ordinary Fortitude save or 1 disorder. Haste is four actions on each of the ally's next two activations; the unit grade and the troop's own extra action went with it. In its section; engine not yet built. |
-| Cast: Defense | Section 11: short range, an ally | | Draft in section 15: Ward / Stoneskin / Aegis. Aegis turns a whole hit, which the held decisions say is too strong. |
+| Cast: Defense | Section 11: short range, an ally | ✓ | Decided 2026-09-08: Ward / Stoneskin / Aegis, a menu. Ward is Sure strike's mirror, the attacker rolls twice and takes the worse; Stoneskin caps every hit at one wound and no disorder; Aegis is Sanctuary, the attacker's Will against spell DC or the activity is wasted. In its section; engine not yet built. |
 | Cast: Movement | Section 11: short range, an ally | | Draft in section 15: Sure footing / Wings / Freedom. Freedom passes the Disengage check. |
 
 Move carries no rungs and is not under review. Section 15 also holds two blocks that are not
