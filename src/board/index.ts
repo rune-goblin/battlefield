@@ -15,6 +15,7 @@ import { OverlayLayer } from './layers/OverlayLayer.js';
 import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
 import { inkAtlas } from './ink-sheet.js';
+import { paperTexture, type PaperTexture } from './paper.js';
 import type { TerrainAppearance } from './terrain-textures.js';
 import { terrainAtlas } from './terrain-sheet.js';
 import { TokenLayer } from './layers/TokenLayer.js';
@@ -164,6 +165,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   // Above the terrain fill and below the walls: the illustrated map replaces the surfaces
   // rather than sitting over them, so only one of the two ever has anything in it.
   const inkLayer = new InkLayer(layers.createLayer('ink'));
+  let paperName: PaperTexture | 'none' = 'none';
   // The grid rules the ground a piece stands on, so it crosses terrain and washes but never a
   // piece — nor a wall, which is built on the ground rather than drawn on it.
   const gridLayer = new GridLayer(layers.createLayer('grid'));
@@ -357,6 +359,17 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       inkMap = appearance;
       applyLines();
       redraw();
+      // The grain tile likewise: fetched on the first ask for it, and the repaint lays it down.
+      const grain = appearance?.settings.grain.texture ?? 'none';
+      if (grain !== paperName) {
+        paperName = grain;
+        if (grain === 'none') inkLayer.setPaper(null);
+        else void paperTexture(grain).then((texture) => {
+          if (!alive || paperName !== grain) return;
+          inkLayer.setPaper(texture);
+          if (inkMap) redraw();
+        });
+      }
       // The atlas decodes on the first switch to the illustrated map and never again; the wash
       // is drawn meanwhile and the sprites arrive on the repaint.
       if (first) void inkAtlas().then((atlas) => {

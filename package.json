@@ -17,7 +17,8 @@
     "import:engines": "node scripts/import-engines.mjs",
     "import:art": "node scripts/import-art.mjs",
     "bake:terrain": "node scripts/bake-terrain.mjs",
-    "bake:ink": "node scripts/bake-ink.mjs"
+    "bake:ink": "node scripts/bake-ink.mjs",
+    "bake:paper": "node scripts/bake-paper.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",

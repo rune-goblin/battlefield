@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
-import { actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
+import { ART_ANCHOR_Y, actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
+import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
 import type { BoardTheme } from './theme.js';
 import type { TokenReaction } from './vfx/Effect.js';
 
@@ -53,11 +54,6 @@ export type TokenModel = UnitTokenModel | EngineTokenModel;
  * the markers hang off it. Clicks are answered by the hex, not the footprint — see `hit.ts`. */
 export const TOKEN_FOOTPRINT_RATIO = 0.82;
 
-// proto: pf2e-trooper's *_strategy.webp renders put the miniature's own base ellipse about
-// four-fifths of the way down a square image (checked by eye against half a dozen troop and
-// engine samples). There is no per-image crop data to anchor exactly, so one tuned constant
-// stands in for the whole set rather than measuring each image.
-const ART_ANCHOR_Y = 0.8;
 // A pointy-top hex is only ~0.577 of a pitch tall above its centre, and a piece drawn to the
 // full footprint width overshoots that; dropping the miniature (and the ground it stands on)
 // keeps its head inside its own cell.
@@ -153,13 +149,22 @@ function badgeStyle(size: number, theme: BoardTheme): Partial<PIXI.ITextStyle> {
  * scale (at most 64 pieces) and far simpler than diffing which of a dozen small parts
  * actually changed. Art loads through `PIXI.Assets`; until it resolves the piece is its
  * shadow and its flag.
+ *
+ * The shadow is a sibling, not a child: `TokenLayer` hangs `shadow` in one group under every
+ * piece, so a shadow falling across the next hex lies under that hex's piece too, and the
+ * group's one alpha keeps crossing shadows from darkening twice. The token drags it along
+ * each tick.
  */
 export class Token extends PIXI.Container {
   readonly id: string;
   private model: TokenModel | null = null;
   private dragging = false;
 
-  private readonly shadow = new PIXI.Graphics();
+  /** The contact ellipse and the cast silhouette, positioned by `tick` to follow the piece. */
+  readonly shadow = new PIXI.Container();
+  private readonly contact = new PIXI.Graphics();
+  private readonly cast = new PIXI.Container();
+  private silhouette: PIXI.Sprite | null = null;
   private readonly decor = new PIXI.Graphics(); // wound/disorder pips, chip frame
   private art: PIXI.Sprite | null = null;
   private artPath: string | null = null;
@@ -202,7 +207,9 @@ export class Token extends PIXI.Container {
   constructor(id: string) {
     super();
     this.id = id;
-    this.addChild(this.shadow, this.decor, this.routArrow, this.ring);
+    this.addChild(this.decor, this.routArrow, this.ring);
+    this.cast.transform.setFromMatrix(castMatrix(PIECE_LIGHT));
+    this.shadow.addChild(this.contact, this.cast);
     this.routArrow.visible = false;
     this.ring.visible = false;
   }
@@ -229,7 +236,7 @@ export class Token extends PIXI.Container {
     const shaken = model.kind === 'unit' && disorder >= model.quality;
     const routed = model.kind === 'unit' && disorder > model.quality;
 
-    this.drawShadow(size, theme);
+    this.drawContact(size);
     this.updateArt(model, size);
     this.size = size;
     this.broken = broken;
@@ -325,6 +332,7 @@ export class Token extends PIXI.Container {
     else if (this.ringKind) this.breathe();
     if (this.pick === 'ready') this.breathePick();
     if (this.reaction) this.animateReaction();
+    this.followShadow();
   }
 
   /** A spell's touch: a short squash, pop, hop, jitter or brightening, then back to rest. A
@@ -438,11 +446,32 @@ export class Token extends PIXI.Container {
   }
 
   // The miniature's own base ellipse lands at its local y ≈ 0 (see ART_ANCHOR_Y), so the
-  // shadow tracks the same drop the art takes: enough to stand the piece on the ground now
-  // that no disc does it.
-  private drawShadow(size: number, theme: BoardTheme): void {
+  // contact shadow tracks the same drop the art takes. Black in both themes: the dark
+  // theme's ink is light, and a shadow is not.
+  private drawContact(size: number): void {
     const y = size * (ART_DROP + 0.02);
-    this.shadow.clear().beginFill(theme.ink, 0.22).drawEllipse(0, y, size * 0.27, size * 0.08).endFill();
+    this.contact.clear().beginFill(0x000000, SHADOW_CONTACT.alpha).drawEllipse(0, y, size * SHADOW_CONTACT.rx, size * SHADOW_CONTACT.ry).endFill();
+  }
+
+  // The shadow stays on the ground: it takes the piece's position and its breath, and none
+  // of its hop or shake. A lifted piece leaves it behind along the light.
+  private followShadow(): void {
+    if (this.dragging) {
+      const radians = (PIECE_LIGHT.azimuth * Math.PI) / 180;
+      const lift = this.size * LIFTED_SHADOW.lift * PIECE_LIGHT.slope;
+      this.shadow.position.set(this.x + Math.cos(radians) * lift, this.y + Math.sin(radians) * lift);
+      this.shadow.scale.set(LIFTED_SHADOW.scale);
+      this.shadow.alpha = LIFTED_SHADOW.alpha;
+      return;
+    }
+    this.shadow.position.set(this.x, this.y);
+    this.shadow.scale.copyFrom(this.scale);
+    this.shadow.alpha = 1;
+  }
+
+  override destroy(options?: boolean | PIXI.IDestroyOptions): void {
+    super.destroy(options);
+    this.shadow.destroy({ children: true });
   }
 
   private updateArt(model: TokenModel, size: number): void {
@@ -456,23 +485,42 @@ export class Token extends PIXI.Container {
           if (!this.art) {
             this.art = new PIXI.Sprite(texture);
             this.art.anchor.set(0.5, ART_ANCHOR_Y);
-            this.addChildAt(this.art, 1);
+            this.addChildAt(this.art, 0);
           } else {
             this.art.texture = texture;
           }
           this.layoutArt(size);
         })
-        // proto: a missing texture leaves the coloured base disc as the placeholder; no error UI.
+        // proto: a missing texture leaves the contact shadow as the placeholder; no error UI.
+        .catch(() => {});
+      silhouetteTexture(path)
+        .then((texture) => {
+          if (this.destroyed || generation !== this.artGeneration) return;
+          if (!this.silhouette) {
+            this.silhouette = new PIXI.Sprite(texture);
+            this.silhouette.anchor.set(0.5, ART_ANCHOR_Y);
+            this.silhouette.tint = 0x000000;
+            this.cast.addChild(this.silhouette);
+          } else {
+            this.silhouette.texture = texture;
+          }
+          this.layoutArt(size);
+        })
         .catch(() => {});
     }
     this.layoutArt(size);
   }
 
+  // The silhouette is baked narrower than the art, so each is scaled to the footprint from
+  // its own width; both hinge on the anchor row, dropped together.
   private layoutArt(size: number): void {
-    if (!this.art) return;
     const target = size * TOKEN_FOOTPRINT_RATIO;
-    this.art.scale.set(target / Math.max(this.art.texture.width, 1));
-    this.art.position.set(0, size * ART_DROP);
+    if (this.art) {
+      this.art.scale.set(target / Math.max(this.art.texture.width, 1));
+      this.art.position.set(0, size * ART_DROP);
+    }
+    if (this.silhouette) this.silhouette.scale.set(target / Math.max(this.silhouette.texture.width, 1));
+    this.cast.position.set(0, size * ART_DROP);
   }
 
   private drawDecor(model: UnitTokenModel, size: number, theme: BoardTheme): void {

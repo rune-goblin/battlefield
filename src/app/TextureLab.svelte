@@ -3,7 +3,7 @@
   import InkPanel from './InkPanel.svelte';
   import MapLinesPanel from './MapLinesPanel.svelte';
   import { setLayout, setTextureLab, textureLab } from './texture-lab.svelte.js';
-  import { mapSettings, persistMapSettings } from './map-style.svelte.js';
+  import { mapSettings, persistMapSettings, setMapStyle } from './map-style.svelte.js';
   import { at, gridOf, type Wall } from '../engine/index.js';
   import type { BoardEventOf, Brush } from '../board/index.js';
   import {
@@ -20,7 +20,8 @@
   const ink = $derived(mapSettings.ink);
   // Which map the lab is showing. Two styles over one board and one set of sample terrain:
   // textured surfaces, or the illustrated wash-and-pencil map. Each keeps its own settings.
-  let style = $state<'textures' | 'ink'>('textures');
+  // The choice is the game board's own, so whatever the lab shows is what the game draws.
+  const style = $derived(mapSettings.style === 'ink' ? 'ink' : 'textures');
   let selected = $state<TerrainGroup>('forest');
   let tab = $state<'textures' | 'global' | 'lines'>('textures');
   let pane: PixiBoard | undefined = $state();
@@ -100,8 +101,8 @@
   <header>
     <div class="heading"><span class="badge">Development</span><h1>Terrain lab</h1></div>
     <div class="styles" role="group" aria-label="Map style">
-      <button class:active={style === 'textures'} aria-pressed={style === 'textures'} onclick={() => style = 'textures'}>Textured</button>
-      <button class:active={style === 'ink'} aria-pressed={style === 'ink'} onclick={() => style = 'ink'}>Illustrated</button>
+      <button class:active={style === 'textures'} aria-pressed={style === 'textures'} onclick={() => setMapStyle('textures')}>Textured</button>
+      <button class:active={style === 'ink'} aria-pressed={style === 'ink'} onclick={() => setMapStyle('ink')}>Illustrated</button>
     </div>
     <button onclick={() => setTextureLab(false)}>← Game board</button>
   </header>

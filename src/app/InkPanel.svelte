@@ -2,6 +2,7 @@
   import LchColour from './LchColour.svelte';
   import MapLinesPanel from './MapLinesPanel.svelte';
   import { defaultInkSettings, type InkMapSettings } from '../board/ink-map.js';
+  import { isPage, PAPER_GRAINS, PAPER_LABELS, PAPER_PAGES } from '../board/paper.js';
   import { TERRAIN_GROUPS, TERRAIN_LABELS, type TerrainGroup } from '../board/terrain-textures.js';
 
   interface Props {
@@ -54,6 +55,22 @@
   <section aria-label="Paper and wash">
     <div class="section-title"><h2>Paper &amp; wash</h2><span>The ground under the ink</span></div>
     <LchColour label="Paper" id="ink-paper" bind:value={settings.paper} />
+    <label class="select" for="ink-grain"><span>Texture</span>
+      <select id="ink-grain" bind:value={settings.grain.texture}>
+        <option value="none">None</option>
+        <optgroup label="Page — the sheet as scanned, washed over">
+          {#each PAPER_PAGES as texture}<option value={texture}>{PAPER_LABELS[texture]}</option>{/each}
+        </optgroup>
+        <optgroup label="Grain — grey, multiplied over the wash">
+          {#each PAPER_GRAINS as texture}<option value={texture}>{PAPER_LABELS[texture]}</option>{/each}
+        </optgroup>
+      </select>
+    </label>
+    <label class="slider" for="ink-grain-strength"><span>{settings.grain.texture !== 'none' && isPage(settings.grain.texture) ? 'Page opacity' : 'Grain strength'}</span><output>{Math.round(settings.grain.strength * 100)}%</output></label>
+    <input id="ink-grain-strength" type="range" min="0" max="1" step="0.01" bind:value={settings.grain.strength} disabled={settings.grain.texture === 'none'} />
+    <label class="slider" for="ink-grain-hexes"><span>Grain size</span><output>{settings.grain.hexes} hexes per tile</output></label>
+    <input id="ink-grain-hexes" type="range" min="4" max="64" step="1" bind:value={settings.grain.hexes} disabled={settings.grain.texture === 'none'} />
+    <p class="description">A tile cut from real parchment. A page is the sheet as scanned, laid over the paper colour at this opacity, and the terrain colours stain it at the wash strength, multiplied so every grain shows through. A grain is multiplied over the opaque wash instead: the fine and coarse cuts are grey, so the paper's colour and every wash stay the ones set here, and the coloured cut keeps half the sheet's hue. More hexes per tile is a finer texture.</p>
     <label class="slider" for="ink-wash"><span>Wash strength</span><output>{Math.round(settings.wash * 100)}%</output></label>
     <input id="ink-wash" type="range" min="0" max="1" step="0.01" bind:value={settings.wash} />
     <label class="slider" for="ink-variation"><span>Patch-to-patch variation</span><output>±{Math.round(settings.variation * 100)}%</output></label>
@@ -114,6 +131,8 @@
   h2 { border: 0; margin: 0; padding: 0; }
   .section-title span { font-size: .75rem; color: var(--muted); }
   .description { margin: .4rem 0 .9rem; color: var(--muted); font-size: .8rem; }
+  .select { display: flex; justify-content: space-between; align-items: center; gap: .5rem; width: 100%; font-size: .85rem; margin: .5rem 0; }
+  .select select { flex: 1; max-width: 60%; font-size: .85rem; }
   .slider { display: flex; justify-content: space-between; width: 100%; font-size: .85rem; }
   output { font-variant-numeric: tabular-nums; color: var(--accent); }
   input[type=range] { display: block; width: 100%; padding: 0; margin: .5rem 0 .65rem; accent-color: var(--accent); }

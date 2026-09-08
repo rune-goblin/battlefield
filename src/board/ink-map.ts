@@ -5,6 +5,7 @@ import {
   DEFAULT_AREA_LINE, DEFAULT_ELEVATION_LINES, normalizeElevationLines, normalizeMapLine,
   type ElevationLines, type MapLine,
 } from './map-lines.js';
+import { PAPER_TEXTURES, type PaperTexture } from './paper.js';
 import { TERRAIN_GROUPS, type TerrainGroup } from './terrain-textures.js';
 
 /** How the ink itself is drawn: one colour and weight for every sprite on the board, since a
@@ -40,13 +41,20 @@ export interface InkHeroes {
    * one. */
   perHexes: number;
 }
+/** The paper's texture, one of the baked tiles or none. A page cut is laid over the paper
+ * colour at `strength` and the terrain colours are washed over it at the wash strength; a
+ * grain cut is multiplied at `strength` over the opaque wash. `hexes` is how many hexes one
+ * tile spans, so a higher count is a finer grain. */
+export interface InkGrain { texture: PaperTexture | 'none'; strength: number; hexes: number }
 export interface InkMapSettings {
   /** Bumped when a default is retuned; a saved set behind it takes the retuned defaults. */
   version: number;
   /** The page every wash is printed onto, and the ground of a hex with no colour of its own. */
   paper: number;
-  /** How much of the terrain's colour reaches the page, 0–1. The whole point of the style is
-   * that this stays low. */
+  grain: InkGrain;
+  /** How much of the terrain's colour reaches the page, 0–1: the mix into the paper colour,
+   * or the wash's opacity over a page cut. The whole point of the style is that this stays
+   * low. */
   wash: number;
   /** Per-patch lightness wobble, 0–1, so two woods are not one flat plate. */
   variation: number;
@@ -83,12 +91,13 @@ export const DEFAULT_INK_STYLE: InkStyle = {
 // and at 0.6 a reed stood as tall as a tree.
 export const DEFAULT_INK_FILL: InkFill = { density: 5, scale: 0.4, variation: 0.2, opacity: 0.9 };
 export const DEFAULT_INK_HEROES: InkHeroes = { perHexes: 2 };
-export const INK_SETTINGS_VERSION = 3;
+export const INK_SETTINGS_VERSION = 5;
 
 export function defaultInkSettings(): InkMapSettings {
   return {
     version: INK_SETTINGS_VERSION,
     paper: 0xf4ece0,
+    grain: { texture: 'scratched-page', strength: 1, hexes: 24 },
     wash: 0.55,
     variation: 0.02,
     terrains: Object.fromEntries(TERRAIN_GROUPS.map(group =>
@@ -119,6 +128,12 @@ export function normalizeInkSettings(value: unknown): InkMapSettings {
   // set from before keeps the new defaults for those alone.
   const stale = (saved.version ?? 1) < INK_SETTINGS_VERSION;
   result.paper = colour(saved.paper, result.paper);
+  if (saved.grain && !stale) {
+    const texture = saved.grain.texture;
+    if (texture === 'none' || (PAPER_TEXTURES as readonly string[]).includes(texture)) result.grain.texture = texture;
+    result.grain.strength = clamp(saved.grain.strength, 0, 1, result.grain.strength);
+    result.grain.hexes = clamp(saved.grain.hexes, 4, 64, result.grain.hexes);
+  }
   result.wash = clamp(saved.wash, 0, 1, result.wash);
   if (!stale) result.variation = clamp(saved.variation, 0, 1, result.variation);
   for (const group of TERRAIN_GROUPS) {
@@ -219,7 +234,9 @@ function pointIn(grid: Grid, cell: Cell, size: number, inset: number, random: ()
  * under the drawings. Seeded by the
  * patch's lowest key, so a patch keeps its scatter while the board resizes and no two patches
  * share one. */
-export function inkPatch(grid: Grid, cells: Cell[], size: number, settings: InkMapSettings, groupScale: number): InkPatch {
+/** `drawn` says whether the terrain has standing drawings at all: water and shallows have
+ * none, and a patch of them fills right across, with no ground kept clear. */
+export function inkPatch(grid: Grid, cells: Cell[], size: number, settings: InkMapSettings, groupScale: number, drawn = true): InkPatch {
   const ordered = [...cells].sort((a, b) => (grid.key(a) < grid.key(b) ? -1 : 1));
   const random = seededRandom(seedOf(`ink-patch:${grid.key(ordered[0])}`));
   const gap = (p: Point, others: readonly Point[]): number =>
@@ -253,7 +270,7 @@ export function inkPatch(grid: Grid, cells: Cell[], size: number, settings: InkM
 
   let heroCount = 0;
   for (let i = 0; i < ordered.length; i++) if (random() * settings.heroes.perHexes < 1) heroCount++;
-  heroCount = Math.max(1, heroCount);
+  heroCount = drawn ? Math.max(1, heroCount) : 0;
   const heroes: InkHero[] = [];
   const stood: Point[] = [];
   const slots = Array.from({ length: HERO_VARIANTS }, (_, i) => i);

@@ -1364,3 +1364,67 @@ saves its own under its own storage key.
   defaults when a saved set is behind; colours and lines stay the user's.
 - Open for play: whether the stamps want a 2× generation once they draw at native size when
   zoomed in.
+
+## The illustrated map gets a paper grain (2026-09-07)
+
+- **The grain is a multiply over the wash, under the pencil.** `bake-paper.mjs` cuts the
+  licensed parchment sheets (kept outside the repo, in `~/Documents/battlefield/parchment-stock`)
+  into 1024-pixel seamless tiles with the lighting gradient removed and the mean levelled to
+  0.95. Multiply at the slider's alpha weighs the grain; a normal blend at an alpha would have
+  faded the page to the dark mat behind it.
+- **The page is the sheet as scanned, and the colour is a multiply over it.** A page cut is
+  seam-blended and nothing else, laid over the paper colour at the slider's opacity, and the
+  terrain colours are multiplied over it at the wash strength — the same dial that mixes them
+  into the paper colour when there is no page. As translucent paint the pale washes lightened
+  the sheet to a flat pastel and it read as colour under paper; as a stain every grain shows.
+  Default: the scratched vellum at full opacity.
+- **The grains are the alternate, in the same select.** Three more cuts a sheet, multiplied
+  over the opaque wash: a fine and a coarse grey cut leave the paper colour and every terrain
+  wash to the settings; a coloured cut keeps half the sheet's own hue, the whole of it having
+  made the golden sheet a yellow filter over everything. Twenty-four tiles, 2.9 MB, one loaded
+  at a time. The gold-leaf sheet was left out as not paper.
+- **The first bake was too heavy.** 2048 pixels, deviation doubled, the scratched vellum at
+  full strength and sixteen hexes a tile put scratches the length of the board across the map
+  and darkened it a tenth. Now natural deviation and twenty-four hexes a tile; the size is a
+  slider, more hexes a tile being finer.
+- **Seams hide by roll-and-blend.** The tile rolled half a turn is faded in towards the edges,
+  where its own join is continuous; a mirrored tile would have been seamless too, but its
+  reflected blotches read as a pattern.
+- Open for play: a page tile shows a soft repeat at twenty-four hexes, and a faint line across
+  the middle of the stained, streaked and plaster pages where the roll's fade begins; a
+  larger crop or a wider fade would take both down. Whether the texture wants to run under the
+  textured map's surfaces too.
+
+## Water stands no drawing (2026-09-07)
+
+- **A terrain with no drawing art places none.** `inkPatch` was standing its drawings on every
+  patch and keeping the fills off the ground under them, whether or not the terrain had frames
+  to paint; on a nine-hex lake that left three hexes bare and placed 18 marks of 45. The layer
+  now passes whether the atlas holds drawings for the group, and a patch without them fills
+  right across.
+
+## Pieces cast their own shadow (2026-09-08)
+
+- **The shadow is the art, sheared onto the ground.** Under a sun the rays are parallel and
+  the board is seen from above, so a point of the figure `h` above its base lands `h * slope`
+  along the light's azimuth: one affine matrix on a black copy of the sprite, hinged at the
+  base row. That is exact for a flat cutout, which the renders are; a homography would only
+  buy a point light. The light is the terrain's own 55°, so hills, trees and pieces agree,
+  and the renders are lit from the viewer's upper left, which is the same sun.
+- **The round base is masked by a ramp, and the ellipse stays.** The silhouette is baked at
+  256 pixels, white, fading out from the top of the painted base to the anchor row, so the
+  base's squashed cylinder never shows; the old ellipse stays under the base as the contact
+  shadow. Two parts, the usual stylised recipe.
+- **Shadows live in one group under every piece.** A piece's shadow was its own child, so a
+  shadow falling into the next hex drew over that hex's piece. `TokenLayer` now hangs every
+  `Token.shadow` in one container under the tokens, with one blur and one `AlphaFilter` for
+  the lot, so two shadows crossing darken once. The token drags its shadow along each tick;
+  the shadow takes the piece's breath and none of its hop or shake.
+- **Black in both themes.** The dark theme's ink is light, and the ellipse had been drawn in
+  it. A shadow is dark on either board.
+- **A lifted piece leaves its shadow on the ground.** It shrinks, fades and slides along the
+  light by the lift, which says "in hand" better than the scale bump alone.
+- Open for play: slope 0.75 and group alpha 0.38 are by eye; the light is read off the
+  terrain default rather than plumbed from the live appearance settings, so the panel's angle
+  slider moves the hills and not the pieces. Whether the silhouette wants a darker edge near
+  the feet than the uniform blur gives it.

@@ -19,6 +19,13 @@ export function engineArtUrl(name: string): string | null {
   return path ? BASE + path : null;
 }
 
+// proto: pf2e-trooper's *_strategy.webp renders put the miniature's own base ellipse about
+// four-fifths of the way down a square image (checked by eye against half a dozen troop and
+// engine samples). There is no per-image crop data to anchor exactly, so one tuned constant
+// stands in for the whole set rather than measuring each image. The piece's art is anchored
+// here, and its cast shadow is hinged here.
+export const ART_ANCHOR_Y = 0.8;
+
 // Copied from pf2e-reignmaker (img/effects/faction-banner.svg, and the substitution in
 // src/services/army/factionEffect.ts). The cloth ships in one sentinel colour and carries an
 // overlay-shading layer on top, so swapping the sentinel for any hue still reads as folded

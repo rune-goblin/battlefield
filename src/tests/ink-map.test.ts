@@ -16,6 +16,14 @@ describe('inkPatch', () => {
     expect(new Set(heroes.map((h) => Math.floor(h.variant * 16))).size).toBe(heroes.length);
   });
 
+  it('stands no drawing on a terrain without art, and fills it right across', () => {
+    const { heroes, fills } = inkPatch(hexGrid, wood, 60, settings, 1, false);
+    expect(heroes).toHaveLength(0);
+    const filled = new Set(fills.map((f) => hexGrid.key(hexGrid.fromPoint(f.position, 60)!)));
+    expect(filled.size).toBe(wood.length);
+    expect(fills.length).toBeGreaterThanOrEqual(wood.length * settings.fill.density * 0.8);
+  });
+
   it('keeps the fills clear of the drawings and of each other', () => {
     const { heroes, fills } = inkPatch(hexGrid, wood, 60, settings, 1);
     for (const { position, width } of heroes) {

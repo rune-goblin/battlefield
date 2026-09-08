@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../../engine/index.js';
 import type { TokenPlacement } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
+import { SHADOW_GROUP } from '../piece-shadow.js';
 import { Token, type TokenModel } from '../Token.js';
 import type { TokenReaction } from '../vfx/Effect.js';
 
@@ -12,6 +13,10 @@ import type { TokenReaction } from '../vfx/Effect.js';
  */
 export class TokenLayer {
   private readonly container: PIXI.Container;
+  // Every piece's shadow in one group under every piece, darkened and softened once as a
+  // whole — see `Token.shadow`.
+  private readonly shadows = new PIXI.Container();
+  private readonly shadowBlur = new PIXI.BlurFilter();
   private readonly ticker: PIXI.Ticker;
   private theme: BoardTheme;
   private grid: Grid | null = null;
@@ -30,6 +35,10 @@ export class TokenLayer {
   constructor(container: PIXI.Container, ticker: PIXI.Ticker, theme: BoardTheme) {
     this.container = container;
     this.container.sortableChildren = true;
+    this.shadows.name = 'Token_shadows';
+    this.shadows.zIndex = -2;
+    this.shadows.filters = [this.shadowBlur, new PIXI.AlphaFilter(SHADOW_GROUP.alpha)];
+    this.container.addChild(this.shadows);
     this.ticker = ticker;
     this.theme = theme;
     this.ticker.add(this.tick);
@@ -41,6 +50,7 @@ export class TokenLayer {
     this.grid = grid;
     this.size = size;
     this.theme = theme;
+    this.shadowBlur.blur = size * SHADOW_GROUP.blur;
     this.renderAll();
   }
 
@@ -108,6 +118,7 @@ export class TokenLayer {
     for (const [id, token] of this.cache) {
       if (wanted.has(id)) continue;
       this.container.removeChild(token);
+      this.shadows.removeChild(token.shadow);
       token.destroy();
       this.cache.delete(id);
     }
@@ -118,6 +129,7 @@ export class TokenLayer {
         token = new Token(model.id);
         this.cache.set(model.id, token);
         this.container.addChild(token);
+        this.shadows.addChild(token.shadow);
       }
       token.draw(model, this.grid!, this.size, this.theme);
     }
