@@ -99,3 +99,23 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - Per the coordinator's note, both wall-attack inline modifiers (`shoot`'s bombard and `fight`'s
   hack/ram) now add `rollBonus(u)`, closing the gap Wave 1 left where a suppressed unit battered
   a wall unmodified.
+
+## Wave 3 (2026-09-08)
+
+- `GUARD_DEFENCE` now documents only Brace's number and the defend-allies share (both +2); Take
+  cover's +4 is read off `eff.defence` on the ladder row instead, since a single constant can no
+  longer stand for every Guard's bonus.
+- `auraOn` keeps its name and its spot, but reads `a.tactics.includes('defend-allies')` in place
+  of the old rung's `braces` flag: any Guard on a defend-allies unit shares +2 now, "whatever it
+  paid for that Guard" per the rules, so the check no longer cares which of the three it bought.
+- `giveGround` treats `guard.holds` as its own branch, before the "nowhere to give ground" check:
+  a target under Take cover logs and returns with no disorder, where the ordinary blocked-shove
+  case still costs 1. The rules give Take cover's holder "nothing for it," a stronger promise
+  than the general shove-blocked line.
+- The wound-cap test (`lands criticals as ordinary hits on a unit that has dug in...`) needed no
+  edit: Brace and Dig in both carry `defence: 2`, so the numbers it already asserted still hold;
+  only the two tests asserting `guard`'s object shape needed rewriting.
+- The new defend-allies test builds its own two-card `createBattle` rather than reusing the
+  shared `battle()`/`engaged()` fixtures, since none of those cards carry a tactic.
+- Fixed a stale comment on `Unit.rooted` left from Wave 1 ("Digging in sets two"): Dig in never
+  sets `rooted` under this wave's table, only Take cover does, and to 1, not 2.

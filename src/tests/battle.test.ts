@@ -447,7 +447,7 @@ describe('one attack an activation, and actions buy acts', () => {
   it('spends the rest on other acts: a Strike and then a Brace', () => {
     let s = act(engaged(), { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
     s = act(s, { type: 'guard', rung: 1, unit: 'u0' }, scriptedRng([10]));
-    expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 1 });
+    expect(unit(s, 'u0').guard).toEqual({ defence: 2, cap: false, holds: false });
     expect(unit(s, 'u0').actions).toBe(1);
   });
 });
@@ -492,8 +492,8 @@ describe('rungs carry effects', () => {
     expect(unit(miss, 'u2').disorder).toBe(0);
   });
 
-  // Every Guard sets +2 Defence; the rung carries the effect. u2 attacks at +7 into a Defence
-  // set for an even matchup.
+  // Defence off the rung: +2 for Brace and Dig in, +4 for Take cover. The +12 buffer keeps an
+  // ordinary hit out of reach, so only a natural 20's degree shift can land one.
   const guarded = (rung: Grade) => {
     const state = engaged();
     unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 12;
@@ -504,11 +504,12 @@ describe('rungs carry effects', () => {
   const struck = (s: BattleState, roll: number) =>
     unit(act(s, { type: 'fight', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([roll, 1])), 'u0').wounds;
 
-  it('every Guard is +2 Defence, whatever the rung', () => {
+  it('Brace and Dig in are +2 Defence; Take cover is +4', () => {
+    const defenceByRung: Record<Grade, 2 | 4> = { 1: 2, 2: 2, 3: 4 };
     for (const rung of [1, 2, 3] as Grade[]) {
       const s = guarded(rung);
-      expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung });
-      expect(defenceOf(s, unit(s, 'u0'), null, false)).toBe(unit(s, 'u0').stats.defence + 2);
+      expect(unit(s, 'u0').guard?.defence).toBe(defenceByRung[rung]);
+      expect(defenceOf(s, unit(s, 'u0'), null, false)).toBe(unit(s, 'u0').stats.defence + defenceByRung[rung]);
     }
   });
 
@@ -521,17 +522,33 @@ describe('rungs carry effects', () => {
     expect(struck(guarded(2), 13)).toBe(0);
   });
 
-  it('braces the allies beside a shieldwall, and nobody further off', () => {
+  it('Take cover holds against an Overrun: the shove fails and the attacker stays put', () => {
     const state = engaged();
-    place(state, 'u1', 'c1');
-    const s = act(state, { type: 'guard', rung: 3, unit: 'u0' }, scriptedRng([10]));
-    const ally = unit(s, 'u1');
-    expect(defenceOf(s, ally, null, false)).toBe(ally.stats.defence + ACTION_BONUS);
-    place(s, 'u1', 'a1');
-    expect(defenceOf(s, unit(s, 'u1'), null, false)).toBe(ally.stats.defence);
-    // Dig in braces nobody.
-    const dug = act(state, { type: 'guard', rung: 2, unit: 'u0' }, scriptedRng([10]));
-    expect(defenceOf(dug, unit(dug, 'u1'), null, false)).toBe(ally.stats.defence);
+    unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 5;
+    const covered = act(state, { type: 'guard', rung: 3, unit: 'u0' }, scriptedRng([10]));
+    const s = act(covered, { type: 'fight', rung: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
+    expect(notation(unit(s, 'u0').square)).toBe('c2');
+    expect(notation(unit(s, 'u2').square)).toBe('c3');
+    expect(unit(s, 'u0').wounds).toBe(1);
+    expect(said(s, 'holds its ground under cover')).toBe(true);
+  });
+
+  it('a defend-allies Guard shares +2 Defence with a neighbour; a plain Guard shares nothing', () => {
+    const shieldbearer: UnitCard = { name: 'Shieldbearer', level: 6, role: 'infantry', tactics: ['defend-allies'] };
+    const spearman: UnitCard = { name: 'Spearman', level: 6, role: 'infantry', tactics: [] };
+    const s = createBattle({
+      units: [
+        { card: shieldbearer, side: 'attacker', square: 'c2' },
+        { card: spearman, side: 'attacker', square: 'c1' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    const shared = act(s, { type: 'guard', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    expect(defenceOf(shared, unit(shared, 'u1'), null, false)).toBe(unit(shared, 'u1').stats.defence + ACTION_BONUS);
+
+    const plain = act(s, { type: 'guard', rung: 1, unit: 'u1' }, scriptedRng([10]));
+    expect(defenceOf(plain, unit(plain, 'u0'), null, false)).toBe(unit(plain, 'u0').stats.defence);
   });
 });
 

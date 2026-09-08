@@ -197,13 +197,13 @@ export function garrisoned(state: BattleState, u: Unit): boolean {
     .some((n) => (state.board.walls[edgeKey(u.square, n)]?.remaining ?? 0) > 0);
 }
 
-/** What any Guard is worth in Defence. The rung carries the rest. */
+/** Brace's Defence bonus, and what a defend-allies Guard shares with a neighbour. */
 export const GUARD_DEFENCE = ACTION_BONUS;
 
-/** A Shieldwall braces the allies beside it: they get what a Guard buys. */
+/** A defend-allies ally under any Guard shares +2 with its neighbours, whatever it paid for it. */
 const auraOn = (state: BattleState, u: Unit) => state.units.some((a) =>
   a.side === u.side && a.id !== u.id && a.status === 'active'
-  && a.guard && rungOf('guard', a.guard.rung).guard!.braces && dist(state, a.square, u.square) === 1)
+  && a.guard && a.tactics.includes('defend-allies') && dist(state, a.square, u.square) === 1)
   ? GUARD_DEFENCE : 0;
 
 /**
@@ -332,12 +332,11 @@ const degreeWord: Record<Degree, string> = {
 };
 
 /**
- * The one step between a hit rolled and a wound taken. A Guard's rung is what bites here:
- * Dig in caps the hit at a single wound, so a critical lands as an ordinary one.
+ * The one step between a hit rolled and a wound taken. Dig in and Take cover cap the hit at a
+ * single wound, so a critical lands as an ordinary one.
  */
 export function reduceWounds(target: Unit, n: number): number {
-  const g = target.guard ? rungOf('guard', target.guard.rung).guard! : null;
-  return g?.blunt ? Math.min(n, 1) : n;
+  return target.guard?.cap ? Math.min(n, 1) : n;
 }
 
 /** The target's Fortitude, less its own disorder, the way every other save reads it. */
@@ -436,7 +435,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung) 
  * Overrun's shove, the shape of Pathfinder's Shove: the target moves one hex directly away
  * from the attacker, and the attacker steps into the hex it left, so contact holds. A destroyed
  * target simply yields its hex. With that one hex blocked the target holds and takes 1 disorder
- * instead.
+ * instead. Take cover blocks it too, but takes nothing for it: the Overrun just lands as a Press.
  */
 function giveGround(state: BattleState, u: Unit, target: Unit) {
   const ground = target.square;
@@ -445,6 +444,10 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
       moveTo(state, u, ground);
       log(state, u, `${u.name} overruns and takes ${notation(ground)}.`);
     }
+    return;
+  }
+  if (target.guard?.holds) {
+    log(state, target, `${target.name} holds its ground under cover: the Overrun lands as a Press.`);
     return;
   }
   const away = grid(state).beyond(u.square, ground);
@@ -925,17 +928,16 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
     }
     case 'guard': {
       const eff = rung.guard!;
-      const defence = GUARD_DEFENCE;
-      u.guard = { defence, rung: rung.index };
+      u.guard = { defence: eff.defence, cap: eff.cap, holds: eff.holds };
       // One: the rest of this activation, and no further. `finish` clears it. The Guard
       // bonus itself dies when the unit acts again, so a root outliving it would be a penalty
       // charged after the protection it paid for had already lapsed.
       if (eff.rooted) u.rooted = 1;
       const parts = [
-        `+${defence} Defence`,
-        eff.blunt ? 'criticals against it land as ordinary hits' : '',
-        eff.braces ? 'adjacent allies count as braced' : '',
-        eff.rooted ? 'rooted for the rest of the activation' : '',
+        `+${eff.defence} Defence`,
+        eff.cap ? 'criticals against it land as ordinary hits' : '',
+        eff.holds ? 'holds its ground against an Overrun' : '',
+        eff.rooted ? 'may not move again this activation' : '',
       ].filter(Boolean);
       log(state, u, `${u.name} ${rung.verb}: ${parts.join(', ')}.`);
       break;

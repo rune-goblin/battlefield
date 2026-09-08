@@ -15,7 +15,7 @@ export type Grade = 1 | 2 | 3;
 export type RungId =
   | 'fire' | 'suppress' | 'pin'
   | 'strike' | 'press' | 'overrun'
-  | 'brace' | 'dig-in' | 'shieldwall'
+  | 'brace' | 'dig-in' | 'take-cover'
   | 'steady' | 'rally' | 'inspire';
 
 /** Each rung includes everything below it. `press`: a hit's disorder needs no save. `drive`: a
@@ -25,10 +25,10 @@ export interface FightEffect { press: boolean; drive: boolean }
  * miss; `pin` also sets `pinnedBy`, which makes the shooter one of the target's holders (see
  * `holdersOf` in battle.ts). Both clear at the shooter's own `begin`, or its leaving play. */
 export interface ShootEffect { suppress: boolean; pin: boolean }
-/** Every Guard rung sets the same Defence; the rung carries the effect on top. `blunt` caps a
- * hit at one wound, so a critical lands as an ordinary one, and `braces` gives adjacent allies
- * what a Guard buys. Each rung includes everything below it. */
-export interface GuardEffect { blunt: boolean; braces: boolean; rooted: boolean }
+/** Each rung includes everything below it. `cap` caps a hit at one wound, so a critical lands
+ * as an ordinary one; `holds` refuses an Overrun's shove; `rooted` (Take cover only) ends the
+ * unit's movement for the rest of this activation. */
+export interface GuardEffect { defence: 2 | 4; cap: boolean; holds: boolean; rooted: boolean }
 /** The rung carries scope, never amount — how much clears comes off the Quality check's
  * degree instead (see `perform`'s 'rally' case in `battle.ts`). */
 export type RallyScope = 'self' | 'adjacent' | 'nearby';
@@ -63,9 +63,9 @@ export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = 
     { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Press, and a hit drives them back a hex. You take their ground.', fight: { press: true, drive: true } },
   ],
   guard: [
-    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence, like raising shields.', guard: { blunt: false, braces: false, rooted: false } },
-    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Brace, and critical hits against you land as ordinary ones. Rooted for the rest of the activation.', guard: { blunt: true, braces: false, rooted: true } },
-    { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: 'Dig in, and adjacent allies count as braced.', guard: { blunt: true, braces: true, rooted: true } },
+    { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence until you next act.', guard: { defence: 2, cap: false, holds: false, rooted: false } },
+    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Brace, and every hit against you lands as an ordinary hit, a critical capped at one wound.', guard: { defence: 2, cap: true, holds: false, rooted: false } },
+    { id: 'take-cover', verb: 'takes cover', type: 'guard', index: 3, label: 'Take cover', detail: 'Dig in, and +4 Defence in place of the +2; an Overrun cannot drive you back. You may not move again this activation.', guard: { defence: 4, cap: true, holds: true, rooted: true } },
   ],
   rally: [
     { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit.', rally: { scope: 'self' } },

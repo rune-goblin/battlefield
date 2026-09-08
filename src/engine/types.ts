@@ -67,9 +67,10 @@ export interface Unit {
   wounds: number;
   disorder: number;
   status: 'active' | 'destroyed' | 'left';
-  /** The Guard in force until this unit next activates; `rung` says which effects it carries. */
-  guard: { defence: number; rung: Grade } | null;
-  /** Activations left before the unit may move again. Digging in sets two: this one and the next. */
+  /** The Guard in force until this unit next activates. `cap` is Dig in's wound cap, `holds`
+   * Take cover's refusal of an Overrun's shove. */
+  guard: { defence: 2 | 4; cap: boolean; holds: boolean } | null;
+  /** Activations left before the unit may move again. Take cover sets one: the rest of this one. */
   rooted: number;
   exposed: boolean;
   /** +2 on the unit's next roll of any kind. Never set while disorder stands. */
