@@ -26,14 +26,9 @@ export interface FightEffect { press: boolean; drive: boolean }
  * what a Guard buys. Each rung includes everything below it. */
 export interface GuardEffect { blunt: boolean; braces: boolean; rooted: boolean }
 /** The rung carries scope, never amount — how much clears comes off the Quality check's
- * degree instead (see `perform`'s 'rally' case in `battle.ts`).
- *
- * `heart` is the second scope: who takes heart from the order, which is what gives Rally a use
- * on a unit with no disorder to clear. It reaches one rung further out than `scope` at the
- * bottom of the ladder on purpose — a levy's Steady is a poor self-rally but a real gift to the
- * troop beside it, which is the whole role a weak unit is meant to have in a fight. */
+ * degree instead (see `perform`'s 'rally' case in `battle.ts`). */
 export type RallyScope = 'self' | 'adjacent' | 'nearby';
-export interface RallyEffect { scope: RallyScope; heart: RallyScope }
+export interface RallyEffect { scope: RallyScope }
 
 export interface Rung {
   id: RungId;
@@ -68,9 +63,9 @@ export const LADDERS: Record<Exclude<LadderType, 'cast'>, [Rung, Rung, Rung]> = 
     { id: 'shieldwall', verb: 'forms a shieldwall', type: 'guard', index: 3, label: 'Shieldwall', detail: 'Dig in, and adjacent allies count as braced.', guard: { blunt: true, braces: true, rooted: true } },
   ],
   rally: [
-    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit, and one adjacent ally takes heart.', rally: { scope: 'self', heart: 'adjacent' } },
-    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1 and takes heart.', rally: { scope: 'adjacent', heart: 'adjacent' } },
-    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1 and takes heart.', rally: { scope: 'nearby', heart: 'nearby' } },
+    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'This unit.', rally: { scope: 'self' } },
+    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'This unit, and one adjacent ally clears 1.', rally: { scope: 'adjacent' } },
+    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'This unit, and every friendly unit within 2 clears 1.', rally: { scope: 'nearby' } },
   ],
 };
 

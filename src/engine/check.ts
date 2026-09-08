@@ -5,6 +5,9 @@ const LADDER: Degree[] = ['critical-failure', 'failure', 'success', 'critical-su
 
 export interface CheckResult { roll: number; modifier: number; total: number; dc: number; degree: Degree; }
 
+/** Two d20s, the one kept and the pair, so a log line can show what was thrown away. */
+export interface TwiceResult extends CheckResult { rolls: [number, number] }
+
 export function degreeOf(roll: number, modifier: number, dc: number): Degree {
   const total = roll + modifier;
   let i = total >= dc + 10 ? 3 : total >= dc ? 2 : total <= dc - 10 ? 0 : 1;
@@ -13,9 +16,22 @@ export function degreeOf(roll: number, modifier: number, dc: number): Degree {
   return LADDER[i];
 }
 
-export function check(rng: Rng, modifier: number, dc: number): CheckResult {
-  const roll = rng.d20();
+/** The degree of a roll already made: one d20 reaches several units, each with its own DC. */
+export function readCheck(roll: number, modifier: number, dc: number): CheckResult {
   return { roll, modifier, total: roll + modifier, dc, degree: degreeOf(roll, modifier, dc) };
+}
+
+export function check(rng: Rng, modifier: number, dc: number): CheckResult {
+  return readCheck(rng.d20(), modifier, dc);
+}
+
+export function rollTwice(rng: Rng, modifier: number, dc: number, better: boolean): TwiceResult {
+  const rolls: [number, number] = [rng.d20(), rng.d20()];
+  const [a, b] = rolls.map((r) => readCheck(r, modifier, dc));
+  // Degree first, not total: a natural 20 shifts the degree up without the higher total.
+  const rank = (c: CheckResult) => LADDER.indexOf(c.degree);
+  const kept = (better ? rank(a) >= rank(b) : rank(a) <= rank(b)) ? a : b;
+  return { ...kept, rolls };
 }
 
 export const succeeded = (d: Degree) => d === 'success' || d === 'critical-success';

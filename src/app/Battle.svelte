@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, engagedEnemies, HEART_BONUS, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, CELL_FEET, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
     offersAt, reachOf, rungOf, TREE_TARGET, withdrawTargets,
     type ActionOffer, type ChargeOption, type Grade, type LadderType, type MoveReach, type RungOption,
     type RungTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type WithdrawOffer,
@@ -818,12 +818,23 @@
 
   const status = (u: Unit) => [
     isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : '',
-    u.guard ? `${rungOf('guard', u.guard.rung).label.toLowerCase()} +${u.guard.defence} Defence` : '',
+    u.guard ? `guarded +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
-    u.defense.bonus ? `defended +${u.defense.bonus}` : '',
-    u.offense.bonus ? `offense +${u.offense.bonus}` : '',
-    u.heartened ? `heartened +${HEART_BONUS}` : '',
+    u.inspired ? 'inspired' : '',
+    u.suppressedBy ? 'suppressed' : '',
+    u.pinnedBy ? 'pinned' : '',
+    u.frightened ? 'frightened' : '',
+    u.stunned ? 'stunned' : '',
+    u.persistent ? 'bleeding' : '',
+    u.sureStrike ? 'sure strike' : '',
+    u.wrath ? 'wrath' : '',
+    u.haste ? 'hasted' : '',
+    u.ward ? 'warded' : '',
+    u.stoneskin ? 'stoneskin' : '',
+    u.aegis ? 'aegis' : '',
+    u.sureFooting ? 'sure footing' : '',
+    u.flies ? 'flying' : '',
     b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
   ].filter(Boolean).join(' · ');
 

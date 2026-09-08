@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
   endActivation, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
-  rangeBetween, routDcFor, select, shootModifier, strikeModifier, unit,
+  rangeBetween, select, shootModifier, strikeModifier, unit,
 } from '../engine/battle.js';
 import { edgeKey, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -11,7 +11,6 @@ import type { UnitCard } from '../engine/cards.js';
 import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
 import { rungOf, type Grade, type LadderType } from '../engine/ladders.js';
-import { levelDc } from '../engine/tables.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
@@ -450,97 +449,6 @@ describe('one attack an activation, and actions buy acts', () => {
     s = act(s, { type: 'guard', rung: 1, unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').guard).toEqual({ defence: 2, rung: 1 });
     expect(unit(s, 'u0').actions).toBe(1);
-  });
-});
-
-describe('Rally: the roll carries the amount, the rung carries the scope', () => {
-  // Level-6 infantry: Will +17, quality 5. Kobolds L3 sit adjacent at c3, so the rout DC reads
-  // their level; Trolls L8 stay out at e7.
-  const engaged = () => {
-    const { state } = battle([]);
-    place(state, 'u2', 'c3');
-    return state;
-  };
-  const rallyOn = (disorder: number, roll: number) => {
-    const s = engaged();
-    unit(s, 'u0').disorder = disorder;
-    return unit(act(s, { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([roll])), 'u0');
-  };
-
-  it('the degree decides how much clears: all, 2, 1, or nothing and a point gained', () => {
-    expect(rallyOn(3, 20).disorder).toBe(0); // critical success clears everything
-    expect(rallyOn(3, 6).disorder).toBe(1); // success clears 2
-    expect(rallyOn(3, 2).disorder).toBe(2); // failure still clears 1 — degrade, never cancel
-    expect(rallyOn(3, 1).disorder).toBe(4); // critical failure (a natural 1) clears nothing, and adds 1
-  });
-
-  it('reads the rout DC off the highest-level enemy within close range, falling back to the field', () => {
-    const state = engaged();
-    expect(routDcFor(state, unit(state, 'u0'))).toBe(levelDc(3)); // Kobolds L3, close at c3
-    place(state, 'u2', 'h7'); // now nothing is close; the field falls back to Trolls L8
-    expect(routDcFor(state, unit(state, 'u0'))).toBe(levelDc(8));
-  });
-
-  it('Rally reaches one adjacent ally, and Inspire reaches every friendly unit within 2', () => {
-    const ally = (name: string): UnitCard => ({ name, level: 6, role: 'infantry', tactics: [] });
-    const build = () => {
-      const state = createBattle({
-        units: [
-          { card: infantry, side: 'attacker', square: 'a1' },
-          { card: ally('Adjacent'), side: 'attacker', square: 'b1' },
-          { card: ally('Near'), side: 'attacker', square: 'c1' },
-          { card: ally('Far'), side: 'attacker', square: 'd1' },
-          { card: kobolds, side: 'defender', square: 'h8' },
-        ],
-        board: openBoard(),
-      });
-      place(state, 'u0', 'd4');
-      place(state, 'u1', 'd5'); // distance 1 from u0 — adjacent
-      place(state, 'u2', 'd6'); // distance 2 — within Inspire, but not Rally
-      place(state, 'u3', 'd7'); // distance 3 — beyond both
-      unit(state, 'u0').disorder = 1;
-      for (const id of ['u1', 'u2', 'u3']) unit(state, id).disorder = 2;
-      return state;
-    };
-
-    const reach = build();
-    expect(offer(reach, 'rally', 'u0').rungs[1].targets.map((t) => t.id)).toEqual(['u1']);
-    const rallied = act(reach, { type: 'rally', rung: 2, unit: 'u0', target: 'u1' }, scriptedRng([10]));
-    expect(unit(rallied, 'u1').disorder).toBe(1);
-    expect(unit(rallied, 'u2').disorder).toBe(2);
-    expect(unit(rallied, 'u3').disorder).toBe(2);
-
-    const inspired = act(build(), { type: 'rally', rung: 3, unit: 'u0' }, scriptedRng([10]));
-    expect(unit(inspired, 'u1').disorder).toBe(1);
-    expect(unit(inspired, 'u2').disorder).toBe(1);
-    expect(unit(inspired, 'u3').disorder).toBe(2); // beyond Inspire's radius, untouched
-  });
-
-  it('lends heart to a neighbour with nothing to clear', () => {
-    const levy: UnitCard = { name: 'Levy', level: 6, role: 'infantry', tactics: [] };
-    const state = createBattle({
-      units: [
-        { card: levy, side: 'attacker', square: 'c2' },
-        { card: infantry, side: 'attacker', square: 'e2' },
-        { card: kobolds, side: 'defender', square: 'c7' },
-      ],
-      board: openBoard(),
-    });
-    place(state, 'u0', 'd4');
-    place(state, 'u1', 'd5');
-    place(state, 'u2', 'd6');
-    const bare = strikeModifier(state, unit(state, 'u1'), unit(state, 'u2'));
-
-    // Steady clears nothing here — the levy is in good order — but the troop beside it still
-    // takes heart, which is the whole role a weak unit has next to a strong one.
-    const s = act(state, { type: 'rally', rung: 1, unit: 'u0', target: 'u1' }, scriptedRng([10]));
-    expect(unit(s, 'u1').heartened).toBe(true);
-    expect(strikeModifier(s, unit(s, 'u1'), unit(s, 'u2'))).toBe(bare + ACTION_BONUS);
-
-    // It waits for the troop it was given to, and is spent by that activation.
-    const round = endActivation(select(endActivation(s), 'u2'));
-    expect(unit(round, 'u1').heartened).toBe(true);
-    expect(unit(endActivation(select(round, 'u1')), 'u1').heartened).toBe(false);
   });
 });
 

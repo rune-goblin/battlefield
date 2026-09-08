@@ -43,3 +43,34 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   the `needs N actions` reason is still built and now untested.
 - The Cast rows still read "Tier 1 / 2 / 3" in the popup: naming all eighteen cast activities is
   Wave 7's job, so the labels break the no-tier rule until then.
+
+## Wave 1 (2026-09-08)
+
+- `guard` keeps its `{ defence, rung }` shape: reshaping it to `{ defence, cap, holds }` now
+  would drop Shieldwall's braces aura with nothing to replace it, and Wave 3 names that change.
+- `rollBonus(u)` reads and never spends: `strikeModifier`, `escapeModifier` and the rest are
+  called to show a number as often as to roll one, so the roll that spends `inspired` must
+  clear it at the roll site — Wave 4 wires that, and `finish` clears it meanwhile.
+- `finish` does not clear `persistent`: the table clears it only once its wound has landed,
+  which is Wave 10's build, and clearing it bare would swallow the wound.
+- `begin(shooter)` already clears `suppressedBy` and `pinnedBy` on every unit that names it,
+  though nothing sets them until Wave 2; the "shooter leaves play" half is Wave 2's too.
+- Rally's heart went with `heartened`: `RallyEffect` is scope alone, Steady reaches its own
+  unit only, and the ally's half is a point of disorder until Wave 4 hands out `inspired`. The
+  three rally detail lines dropped the "takes heart" promise they could no longer keep.
+- A Controlling cast now lands 1 disorder on a failed Will save and 2 on a critical failure —
+  section 9's disorder table, the part of Controlling still standing with `control` gone.
+  `// proto:` until Wave 9 builds Dread, Stun and Hold.
+- Offense, Defense and Movement casts land nothing and say so in the log: their conditions are
+  Waves 10, 11 and 12, and nothing may set the new fields before then.
+- Healing lost the "+1/+2 on the next save" and its regeneration with `nextSaveBonus` and
+  `lingering`; it clears 1 disorder, and 1 wound above the one-action activity, until Wave 8.
+  Blast lost its lingering wound the same way.
+- `movementBudget` and the pathing read `u.flying` alone; `u.flies` waits for Wave 12, since
+  reading a field nothing sets would be dead code.
+- Kept the "rungs carry effects" tests the plan marked for deletion: with `guard` unchanged
+  they still assert live rules (Press, Overrun, the wound cap). Wave 3 rewrites the Guard half.
+- `rollTwice` keeps the better or worse by degree, not by total, so a natural 20's degree shift
+  is never thrown away for the higher number.
+- `act`'s guard for a unit destroyed at `begin` went with `tickLingering`: nothing at `begin`
+  can destroy a unit now, and Wrath's wound lands at `finish` instead.

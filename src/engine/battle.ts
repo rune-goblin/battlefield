@@ -3,7 +3,7 @@ import {
   type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { CELL_FEET, reachable, stepFeet } from './path.js';
+import { reachable, stepFeet } from './path.js';
 import { check, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
@@ -63,13 +63,11 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e) => engineState(e, d.side, sq, false)),
       square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
-      guard: null, rooted: 0, exposed: false, heartened: false,
-      defense: { bonus: 0, noWoundDisorder: false, damageReduction: 0 },
-      offense: { bonus: 0, damage: 0, noRepulse: false },
-      movementBuff: { bonusFeet: 0, flies: false },
-      control: { movementPenaltyFeet: 0, actionPenalty: false },
-      lingering: null,
-      nextSaveBonus: 0,
+      guard: null, rooted: 0, exposed: false, inspired: false,
+      suppressedBy: null, pinnedBy: null, frightened: false, stunned: false, persistent: null,
+      sureStrike: false, wrath: false, haste: 0,
+      ward: false, stoneskin: false, aegis: null,
+      sureFooting: false, flies: false,
     };
   });
   const emplaced = (setup.engines ?? []).map((e) => {
@@ -208,14 +206,29 @@ const auraOn = (state: BattleState, u: Unit) => state.units.some((a) =>
   && a.guard && rungOf('guard', a.guard.rung).guard!.braces && dist(state, a.square, u.square) === 1)
   ? GUARD_DEFENCE : 0;
 
+/**
+ * What the conditions in force are worth on any roll the unit makes. Read, never spent: the
+ * modifier functions below are called to show a number as often as to roll one, so the roll
+ * that consumes `inspired` clears it at the roll itself.
+ */
+export function rollBonus(u: Unit): number {
+  let n = 0;
+  if (u.inspired) n += ACTION_BONUS;
+  if (u.suppressedBy) n -= 2;
+  if (u.frightened) n -= 1;
+  return n;
+}
+
 export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false): number {
   // Circumstance bonuses never stack; the highest applies.
-  let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target), target.defense.bonus);
+  let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target));
   const downhill = attacker ? elevation(state, attacker) > elevation(state, target) : false;
   if (vsVolley && !ignoresCover && square(state, target).terrain === 'forest' && !downhill) circumstance = Math.max(circumstance, 1);
   let penalty = target.disorder;
   if (isOutflanked(state, target)) penalty += 2;
   if (target.exposed) penalty += 2;
+  if (target.suppressedBy) penalty += 2;
+  if (target.frightened) penalty += 1;
   return target.stats.defence + circumstance - penalty;
 }
 
@@ -269,13 +282,8 @@ function shotRank(state: BattleState, u: Unit, target: Unit): number {
   return inRange(r) && r > 1 && elevation(state, u) > elevation(state, target) ? r - 1 : r;
 }
 
-/** What an ally's Rally is worth to the unit that took heart from it, on its attacks. */
-export const HEART_BONUS = ACTION_BONUS;
-
 export function strikeModifier(state: BattleState, u: Unit, target: Unit): number {
-  let m = u.stats.strike ?? 0;
-  if (u.heartened) m += HEART_BONUS;
-  if (u.offense.bonus) m += u.offense.bonus;
+  let m = (u.stats.strike ?? 0) + rollBonus(u);
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   if (square(state, u).terrain === 'swamp' || square(state, u).terrain === 'shallows') m -= 1;
@@ -286,9 +294,7 @@ export function strikeModifier(state: BattleState, u: Unit, target: Unit): numbe
 
 export function shootModifier(state: BattleState, u: Unit, target: Unit): number {
   const e = crewedArtillery(state, u);
-  let m = e ? e.launch : (u.stats.volley ?? 0);
-  if (u.heartened) m += HEART_BONUS;
-  if (u.offense.bonus) m += u.offense.bonus;
+  let m = (e ? e.launch : (u.stats.volley ?? 0)) + rollBonus(u);
   if (isWeakened(u)) m -= 2;
   m -= u.disorder;
   m -= Math.max(0, elevation(state, target) - elevation(state, u));
@@ -298,23 +304,14 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
 }
 
 /** Will, less disorder: the Rally check, and the save a repulsed attacker makes. */
-export const willModifier = (u: Unit) => u.stats.will - u.disorder;
+export const willModifier = (u: Unit) => u.stats.will - u.disorder + rollBonus(u);
 
 /** What a caster rolls to Blast: its own spell attack, less disorder (section 11). */
-export const spellAttackModifier = (u: Unit) => (u.stats.spellAttack ?? 0) - u.disorder;
+export const spellAttackModifier = (u: Unit) => (u.stats.spellAttack ?? 0) - u.disorder + rollBonus(u);
 
 /** What a target resists a Controlling effect roll against: the caster's own spell DC, plus
  * whatever this cast's tier bonused it (section 11's "effect roll" bonus). */
 export const spellDcFor = (u: Unit, bonus = 0) => (u.stats.spellDc ?? 0) + bonus;
-
-/** Healing's "+1/+2 on the target's next save" is consumed by whichever save comes first,
- * whoever's activation that falls in — not tied to `begin`/`finish` the way every other cast
- * flag on `Unit` is. */
-function takeSaveBonus(u: Unit): number {
-  const b = u.nextSaveBonus;
-  u.nextSaveBonus = 0;
-  return b;
-}
 
 /** The level DC of the strongest enemy nearby — the highest-level enemy within close range,
  * or across the whole field if none is close. Rallying under a dragon's eye is harder than
@@ -343,39 +340,25 @@ export function reduceWounds(target: Unit, n: number): number {
 }
 
 /** The target's Fortitude, less its own disorder, the way every other save reads it. */
-export const fortitudeModifier = (u: Unit) => u.stats.fortitude - u.disorder;
+export const fortitudeModifier = (u: Unit) => u.stats.fortitude - u.disorder + rollBonus(u);
 
 /**
- * Wounds that actually land, after the target's Guard, the attacker's Offense buff, and the
- * target's Defense buff. A wound then asks a Fortitude save against the attacker's level DC
- * before it disorders anyone. `pressed` skips that save: the disorder simply lands.
+ * Wounds that actually land, after the target's Guard. A wound then asks a Fortitude save
+ * against the attacker's level DC before it disorders anyone. `pressed` skips that save: the
+ * disorder simply lands.
  */
 function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false): number {
-  let n = reduceWounds(target, raw);
+  const n = reduceWounds(target, raw);
   if (n < raw) log(state, target, `${target.name} has dug in: the critical lands as an ordinary hit.`);
-  if (n > 0 && attacker.offense.damage) {
-    n += attacker.offense.damage;
-    log(state, attacker, `${attacker.name}'s Offense buff adds ${attacker.offense.damage} to the damage result.`);
-    attacker.offense.damage = 0;
-  }
-  if (n > 0 && target.defense.damageReduction) {
-    n = Math.max(0, n - target.defense.damageReduction);
-    log(state, target, `${target.name}'s Defense buff takes ${target.defense.damageReduction} off the damage.`);
-    target.defense.damageReduction = 0;
-  }
   if (n <= 0) return 0;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); return n; }
-  // A spell that grants immunity beats a rung that skips a save.
-  if (target.defense.noWoundDisorder) {
-    target.defense.noWoundDisorder = false;
-    log(state, target, `${target.name}'s Defense buff takes this wound with no disorder.`);
-  } else if (pressed) {
+  if (pressed) {
     addDisorder(state, target, 1, 'a pressed hit, no save');
   } else {
-    const c = check(rng, fortitudeModifier(target) + takeSaveBonus(target), levelDc(attacker.level));
+    const c = check(rng, fortitudeModifier(target), levelDc(attacker.level));
     log(state, target, `${target.name} braces against the wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a wound taken');
   }
@@ -401,14 +384,6 @@ function addDisorder(state: BattleState, u: Unit, n: number, why: string) {
   const crossed = routed ? ' — routed' : !wasShaken && isShaken(u) ? ' — shaken' : '';
   log(state, u, `${u.name} is disordered ${u.disorder}/${u.quality} (${n > 0 ? '+' : ''}${n}, ${why})${crossed}.`);
   if (routed) abandonEngines(state, u);
-}
-
-/** The support half of a Rally. A troop with a poor ladder of its own still lends a real +2 to
- * the one beside it, which is the role a weak unit is meant to have beside a strong one. */
-function hearten(state: BattleState, u: Unit, ally: Unit) {
-  if (ally.heartened) return;
-  ally.heartened = true;
-  log(state, u, `${ally.name} takes heart (+${HEART_BONUS} on its attacks until it has acted).`);
 }
 
 function clearDisorder(state: BattleState, u: Unit, n: number, why: string) {
@@ -443,12 +418,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung) 
     if (eff.drive && u.status === 'active') giveGround(state, u, target);
     return;
   }
-  if (u.offense.noRepulse) {
-    u.offense.noRepulse = false;
-    log(state, u, `${u.name}'s Offense buff keeps it from being repulsed.`);
-    return;
-  }
-  const c = check(rng, willModifier(u) + takeSaveBonus(u), levelDc(target.level));
+  const c = check(rng, willModifier(u), levelDc(target.level));
   log(state, u, `${u.name} is repulsed by ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   if (!succeeded(c.degree)) addDisorder(state, u, 1, 'a repulsed attack');
 }
@@ -510,12 +480,7 @@ const occupiedBy = (state: BattleState, u: Unit) =>
   new Set(state.units.filter((o) => o.status === 'active' && o.id !== u.id).map((o) => notation(o.square)));
 
 /** Feet the unit may still spend: what earlier Move actions banked, plus what the rest buy. */
-export const movementBudget = (u: Unit) =>
-  Math.max(0, u.feet + u.actions * u.speed + u.movementBuff.bonusFeet - u.control.movementPenaltyFeet);
-
-/** Movement's own Tier 2 grants "ignores terrain penalties" and Tier 3 a movement type — both
- * ride the existing flight rule (see `resolveTree`), so a buffed unit reads as flying too. */
-const fliesLike = (u: Unit) => u.flying || u.movementBuff.flies;
+export const movementBudget = (u: Unit) => Math.max(0, u.feet + u.actions * u.speed);
 
 // Movement pools across the activation rather than being lost at the end of each Stride, so a
 // swamp cell at 30 ft stays enterable by a 25 ft troop over two actions.
@@ -529,7 +494,7 @@ export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = reachable(state.board, u.square, {
-    budget: movementBudget(u), flying: fliesLike(u), occupied: occupiedBy(state, u),
+    budget: movementBudget(u), flying: u.flying, occupied: occupiedBy(state, u),
   });
   const home = notation(u.square);
   for (const [key, entry] of reach) {
@@ -590,7 +555,7 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
     .filter((n) => enterable(state, u, u.square, n))
     .map(notation));
   if (feet > 0 && u.speed > 0) {
-    const reach = reachable(state.board, u.square, { budget: feet, flying: fliesLike(u), occupied: occupiedBy(state, u) });
+    const reach = reachable(state.board, u.square, { budget: feet, flying: u.flying, occupied: occupiedBy(state, u) });
     for (const key of reach.keys()) {
       const sq = parse(key);
       if (sameSquare(sq, u.square)) continue;
@@ -613,7 +578,7 @@ export const escapeDcFor = (holder: Unit) => (holder.stats.strike ?? 0) + 10;
 
 /** Reflex is the widest-spreading defensive stat on a troop sheet (5.6 points within a level
  * against AC's 3.2), so it is the one that tells troops apart. */
-export const escapeModifier = (u: Unit) => u.stats.reflex - u.disorder;
+export const escapeModifier = (u: Unit) => u.stats.reflex - u.disorder + rollBonus(u);
 
 /** Enemies that can actually hold a unit. One with no melee strike cannot. */
 export const holdersOf = (state: BattleState, u: Unit) =>
@@ -678,8 +643,7 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
     case 'guard':
       return { needsTarget: false, targets: [] };
     case 'rally': {
-      // A steady ally is still worth naming: it takes heart even where it has nothing to clear.
-      if (rungOf('rally', index).rally!.heart !== 'adjacent') return { needsTarget: false, targets: [] };
+      if (rungOf('rally', index).rally!.scope !== 'adjacent') return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
         && dist(state, a.square, u.square) === 1);
       return { needsTarget: false, targets: allies.map(unitTarget) };
@@ -751,8 +715,8 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   const types: LadderType[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
   // A wall is a thing to fight even when nobody defends it.
   if (!contact && u.side === 'attacker' && wallKeys(state).some((k) => bordersWall(u, k))) types.push('fight');
-  // Rally is offered whether or not there is disorder to clear: with none, it is the support
-  // verb — the order that lends the troop beside you heart.
+  // Rally is offered whether or not there is disorder to clear: with none, it is the order
+  // that lifts the troop beside you.
   types.push('rally');
   const offers = types
     .filter((t) => (t === 'shoot' ? canShoot(state, u) : t === 'fight' ? u.stats.strike !== null : true))
@@ -776,7 +740,7 @@ function doWithdraw(state: BattleState, rng: Rng, u: Unit, action: WithdrawActio
   let pinned = false;
   for (const holder of holdersOf(state, u)) {
     if (u.status !== 'active') break;
-    const c = check(rng, escapeModifier(u) + takeSaveBonus(u), escapeDcFor(holder));
+    const c = check(rng, escapeModifier(u), escapeDcFor(holder));
     log(state, u, `${u.name} breaks from ${holder.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     escapes.push({ holder, degree: c.degree });
     if (succeeded(c.degree)) continue;
@@ -836,7 +800,6 @@ function follow(state: BattleState, u: Unit, escapes: Escape[]) {
 function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: CastTier, axis: CastAxis, action: RungAction) {
   const target = action.target ? unit(state, action.target) : u;
   const rangeTier = axis === 'range' ? tier : 1;
-  const durationTier = axis === 'duration' ? tier : 1;
   const effectTier = axis === 'effect' ? tier : 1;
   const band = bandOut(TREE_RANGE[tree], rangeTier - 1);
   if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, band)) {
@@ -845,7 +808,7 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: C
   }
   if (tree === 'blast') u.attacked = true;
   if (!TREE_ROLLS[tree]) {
-    resolveTree(state, rng, u, target, tree, effectTier, durationTier, 'success');
+    resolveTree(state, rng, u, target, tree, effectTier, 'success');
     return;
   }
   const effectBonus = axis === 'effect' ? (effectTier === 3 ? 2 : effectTier === 2 ? 1 : 0) : 0;
@@ -853,84 +816,54 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, tier: C
   if (tree === 'blast') {
     const c = check(rng, spellAttackModifier(u) + effectBonus + pushBonus, defenceOf(state, target, u, false));
     log(state, u, `${u.name} Blasts ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-    resolveTree(state, rng, u, target, tree, effectTier, durationTier, c.degree);
+    resolveTree(state, rng, u, target, tree, effectTier, c.degree);
     return;
   }
   // Controlling remains a resistance check: its own effect tier penalizes the target's Will,
   // while a range or duration tier raises the caster's spell DC.
-  const c = check(rng, target.stats.will - target.disorder + takeSaveBonus(target) - effectBonus, spellDcFor(u, pushBonus));
+  const c = check(rng, willModifier(target) - effectBonus, spellDcFor(u, pushBonus));
   log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
-  resolveTree(state, rng, u, target, tree, effectTier, durationTier, c.degree);
+  resolveTree(state, rng, u, target, tree, effectTier, c.degree);
 }
-
-/** How many of the target's own activations a lingering or regenerating effect still ticks
- * for. "Instant" duration is one tick — the target's very next activation — since a single
- * cast never pushes both effect and duration at once (section 11). */
-const durationRounds = (durationTier: CastTier) => durationTier;
 
 /**
  * What a landed cast actually does, tree by tree (section 11's "The six trees" table).
  * `degree` is the caster's attack result for Blast, the target's resistance result for
  * Controlling, and a plain `'success'` for the four ally trees, which always land.
  */
-function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: Tree, effectTier: CastTier, durationTier: CastTier, degree: Degree) {
+function resolveTree(state: BattleState, rng: Rng, u: Unit, target: Unit, tree: Tree, effectTier: CastTier, degree: Degree) {
   switch (tree) {
     case 'blast': {
       if (!succeeded(degree)) return;
       let wounds = degree === 'critical-success' ? 2 : 1;
       if (effectTier >= 2) wounds += 1;
       applyWounds(state, rng, target, wounds, `${u.name}'s magic`, u, true);
-      if (effectTier >= 3) target.lingering = { tree: 'blast', roundsLeft: durationRounds(durationTier) };
       break;
     }
     case 'healing': {
       clearDisorder(state, target, 1, 'Healing');
-      if (effectTier >= 2) {
-        if (target.wounds > 0) {
-          target.wounds -= 1;
-          log(state, u, `${u.name} heals ${target.name}: wounds ${target.wounds}/${MAX_WOUNDS}.`);
-        }
-        target.nextSaveBonus = 1;
-      }
-      if (effectTier >= 3) {
-        target.lingering = { tree: 'healing', roundsLeft: durationRounds(durationTier) };
-        target.nextSaveBonus = 2;
+      if (effectTier >= 2 && target.wounds > 0) {
+        target.wounds -= 1;
+        log(state, u, `${u.name} heals ${target.name}: wounds ${target.wounds}/${MAX_WOUNDS}.`);
       }
       break;
     }
     case 'controlling': {
       if (succeeded(degree)) return;
-      target.control.movementPenaltyFeet = CELL_FEET;
-      log(state, u, `${u.name} compels ${target.name}: -1 movement on its next activation.`);
-      if (effectTier >= 2) {
-        target.control.actionPenalty = true;
-        log(state, u, `${u.name} compels ${target.name} further: -1 action on its next activation.`);
-      }
+      // proto: the movement and action penalties went with their fields. Section 9's disorder
+      // table is the part of Controlling that still stands, so that is what lands until Wave 9
+      // builds Dread, Stun and Hold.
+      addDisorder(state, target, degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${TREE_LABEL[tree]}`);
       break;
     }
-    case 'offense': {
-      target.offense.bonus = effectTier === 3 ? 3 : effectTier === 2 ? 2 : 1;
-      if (effectTier >= 2) target.offense.damage = 1;
-      if (effectTier >= 3) target.offense.noRepulse = true;
-      log(state, u, `${u.name} buffs ${target.name}'s Offense (+${target.offense.bonus} to attacks).`);
+    // proto: Offense, Defense and Movement each become a menu of three named activities in
+    // Waves 10, 11 and 12. Their old buffs went with the fields that held them, so the cast
+    // carries and lands nothing in between.
+    case 'offense':
+    case 'defense':
+    case 'movement':
+      log(state, u, `${u.name}'s ${TREE_LABEL[tree]} settles on ${target.name} and does nothing yet.`);
       break;
-    }
-    case 'defense': {
-      target.defense.bonus = effectTier >= 2 ? 4 : 2;
-      if (effectTier >= 2) target.defense.noWoundDisorder = true;
-      if (effectTier >= 3) { target.defense.damageReduction = 1; target.nextSaveBonus = 2; }
-      log(state, u, `${u.name} buffs ${target.name}'s Defense (+${target.defense.bonus} Defence).`);
-      break;
-    }
-    case 'movement': {
-      target.movementBuff.bonusFeet = effectTier * CELL_FEET;
-      // proto: Tier 2's "ignores terrain penalties" and Tier 3's movement-type grant both ride
-      // the existing `flying` pathing rule rather than a new terrain-cost mode — a superset of
-      // Tier 2's own text (flight also ignores blocked edges), simpler than adding a third one.
-      if (effectTier >= 2) target.movementBuff.flies = true;
-      log(state, u, `${u.name} buffs ${target.name}'s Movement (+${target.movementBuff.bonusFeet} ft).`);
-      break;
-    }
   }
 }
 
@@ -988,25 +921,21 @@ function perform(state: BattleState, rng: Rng, u: Unit, rung: Rung, action: Rung
     case 'rally': {
       // A Quality check against the rout DC — the degree decides how much clears.
       const eff = rung.rally!;
-      const c = check(rng, willModifier(u) + takeSaveBonus(u), routDcFor(state, u));
+      const c = check(rng, willModifier(u), routDcFor(state, u));
       log(state, u, `${u.name} ${rung.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       const cleared = c.degree === 'critical-success' ? u.disorder
         : c.degree === 'success' ? 2 : c.degree === 'failure' ? 1 : 0;
       if (cleared) clearDisorder(state, u, cleared, rung.label.toLowerCase());
       if (c.degree === 'critical-failure') addDisorder(state, u, 1, 'a rally gone wrong');
 
-      // Scope is the rung's own gift, independent of the check above. What an ally gets is
-      // heart at every rung, and a point of disorder cleared once the clearing scope reaches
-      // it too.
-      const lift = (a: Unit) => {
-        if (eff.scope !== 'self') clearDisorder(state, a, 1, `${u.name}'s example`);
-        hearten(state, u, a);
-      };
-      if (eff.heart === 'nearby') {
+      // proto: the ally's half of a Rally is a point of disorder cleared and nothing else
+      // until Wave 4 reads the one roll for every unit reached and hands out `inspired`.
+      const lift = (a: Unit) => clearDisorder(state, a, 1, `${u.name}'s example`);
+      if (eff.scope === 'nearby') {
         for (const a of state.units) {
           if (a.side === u.side && a.id !== u.id && a.status === 'active' && dist(state, a.square, u.square) <= 2) lift(a);
         }
-      } else if (action.target) {
+      } else if (eff.scope === 'adjacent' && action.target) {
         const ally = unit(state, action.target);
         if (dist(state, ally.square, u.square) === 1) lift(ally);
       }
@@ -1032,30 +961,10 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
   };
 }
 
-// proto: Blast's lingering wound or Healing's regeneration, at the start of the target's own
-// activation — "no roll", so this reads as no Fortitude save against its disorder either; a
-// side-effect of an attack already resolved, not a fresh one, rather than a fresh wound event.
-function tickLingering(state: BattleState, u: Unit) {
-  const l = u.lingering;
-  if (!l) return;
-  if (l.tree === 'blast') {
-    const n = reduceWounds(u, 1);
-    if (n > 0) {
-      u.wounds = Math.min(MAX_WOUNDS, u.wounds + n);
-      log(state, u, `${u.name} takes a lingering wound (${u.wounds}/${MAX_WOUNDS}).`);
-      if (u.wounds >= MAX_WOUNDS) { u.status = 'destroyed'; abandonEngines(state, u); }
-    }
-  } else if (l.tree === 'healing' && u.wounds > 0) {
-    u.wounds -= 1;
-    log(state, u, `${u.name} regenerates: wounds ${u.wounds}/${MAX_WOUNDS}.`);
-  }
-  l.roundsLeft -= 1;
-  if (l.roundsLeft <= 0 || u.status !== 'active') u.lingering = null;
-}
-
-// What lasted "until this unit acts again" ends when it starts acting. What was laid on its
-// next activation — rooted, Controlling's action penalty — is spent by this one and
-// cleared at the end (or, for the action penalty, consumed right here).
+// Everything that lasted "until this unit acts again" ends when it starts acting: its own
+// Guard, the exposure a critical miss left it with, and the protections cast over it. A
+// suppression or a pin ends on its shooter's activation instead, so those are cleared on
+// whoever named this unit.
 function begin(state: BattleState, u: Unit) {
   if (state.begun && state.active === u.id) return;
   state.active = u.id;
@@ -1065,24 +974,33 @@ function begin(state: BattleState, u: Unit) {
   u.feet = 0;
   u.guard = null;
   u.exposed = false;
-  u.defense = { bonus: 0, noWoundDisorder: false, damageReduction: 0 };
-  if (u.control.actionPenalty) {
+  u.ward = false;
+  u.stoneskin = false;
+  u.aegis = null;
+  if (u.stunned) {
     u.actions -= 1;
-    u.control.actionPenalty = false;
-    log(state, u, `${u.name} is compelled: one fewer action this activation.`);
+    u.stunned = false;
+    log(state, u, `${u.name} is stunned: one fewer action this activation.`);
   }
-  if (u.status === 'active') tickLingering(state, u);
+  for (const o of state.units) {
+    if (o.suppressedBy === u.id) o.suppressedBy = null;
+    if (o.pinnedBy === u.id) o.pinnedBy = null;
+  }
 }
 
+// What was laid on the unit's next activation is spent by this one and cleared at the end.
 function finish(state: BattleState, u: Unit) {
   u.actions = ACTIONS_PER_ACTIVATION;
   u.attacked = false;
   u.feet = 0;
   u.rooted = Math.max(0, u.rooted - 1);
-  u.heartened = false;
-  u.offense = { bonus: 0, damage: 0, noRepulse: false };
-  u.movementBuff = { bonusFeet: 0, flies: false };
-  u.control.movementPenaltyFeet = 0;
+  u.haste = Math.max(0, u.haste - 1);
+  u.inspired = false;
+  u.frightened = false;
+  u.sureStrike = false;
+  u.wrath = false;
+  u.sureFooting = false;
+  u.flies = false;
   state.activated.push(u.id);
   state.lastSide = u.side;
   state.active = null;
@@ -1219,13 +1137,6 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   }
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u);
-  // A lingering wound can destroy a unit the moment its own activation starts — nothing left
-  // to spend actions on, so the activation ends here instead of reaching the dispatch below.
-  if (u.status !== 'active') {
-    finish(state, u);
-    refreshEmplacements(state);
-    return state;
-  }
   const cost = action.type === 'move' ? doStride(state, u, action)
     : action.type === 'withdraw' ? doWithdrawAction(state, rng, u, action)
       : action.type === 'charge' ? doCharge(state, rng, u, action)

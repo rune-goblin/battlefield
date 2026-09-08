@@ -10,8 +10,8 @@ export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 /** PF2e's economy, unchanged: Move, Move, Move, or Move, Shoot, Guard. */
 export const ACTIONS_PER_ACTIVATION = 3;
-/** The system's single increment: a Guard's Defence, Outflanked, a Ward and taking heart are
- * all the same number. */
+/** The system's single increment: a Guard's Defence, Outflanked and inspired are all the
+ * same number. */
 export const ACTION_BONUS = 2;
 /** The disorder a troop of ordinary discipline absorbs before it routs; `Unit.quality` varies it. */
 export const ROUTED_AT = 3;
@@ -72,24 +72,29 @@ export interface Unit {
   /** Activations left before the unit may move again. Digging in sets two: this one and the next. */
   rooted: number;
   exposed: boolean;
-  /** Took heart from an ally's Rally: +2 on its attacks until the end of its next activation.
-   * The support half of the rally ladder — see `RallyEffect.heart`. */
-  heartened: boolean;
-  /** Defense buff, applied the moment it's cast: protects the target through whatever comes
-   * before its own next activation, the way the old Ward spell did — cleared at `begin`. */
-  defense: { bonus: number; noWoundDisorder: boolean; damageReduction: number };
-  /** Offense buff and Controlling's action penalty apply *during* the buffed unit's own next
-   * activation, not before it — cleared at `finish`. */
-  offense: { bonus: number; damage: number; noRepulse: boolean };
-  movementBuff: { bonusFeet: number; flies: boolean };
-  /** Controlling's hold on the target's next activation. */
-  control: { movementPenaltyFeet: number; actionPenalty: boolean };
-  /** Blast's lingering wound or Healing's regeneration: ticks at the start of the target's own
-   * activation (`begin`), for as many of its own activations as `roundsLeft` still covers. */
-  lingering: { tree: Tree; roundsLeft: number } | null;
-  /** Healing's "+1/+2 on the target's next save" — consumed by whichever save comes first,
-   * whoever's activation that falls in, not tied to `begin`/`finish` at all. */
-  nextSaveBonus: number;
+  /** +2 on the unit's next roll of any kind. Never set while disorder stands. */
+  inspired: boolean;
+  /** The shooter's id: −2 to every roll and to Defence until that shooter acts again. */
+  suppressedBy: string | null;
+  /** The shooter's id: it holds this unit at Volley + 10 until it acts again. */
+  pinnedBy: string | null;
+  frightened: boolean;
+  /** One action fewer on its next activation. */
+  stunned: boolean;
+  /** Wrath's wound, waiting on the unit's own `finish`; `dc` is the Fortitude save's. */
+  persistent: { dc: number } | null;
+  sureStrike: boolean;
+  /** The unit's next hit leaves persistent damage on whoever takes it. */
+  wrath: boolean;
+  /** Activations left with a fourth action. */
+  haste: number;
+  ward: boolean;
+  stoneskin: boolean;
+  /** The caster's spell DC: an attacker rolls Will against it or wastes the activity. */
+  aegis: { dc: number } | null;
+  sureFooting: boolean;
+  /** Flies on its next activation only; `flying` is the troop that always does. */
+  flies: boolean;
 }
 
 /** Which unit acts. Defaults to `activeUnit(state)`. */
