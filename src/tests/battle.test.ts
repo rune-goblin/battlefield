@@ -34,7 +34,7 @@ function battle(rolls: number[], board = openBoard()) {
 const place = (state: BattleState, id: string, sq: string) => { unit(state, id).square = parse(sq); };
 // Emplacement status follows position, and nothing but an action recomputes it — a test that
 // moves a unit by hand has to run one to see the consequence.
-const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', rung: 1 }, scriptedRng([10])));
+const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', rung: 1 }, scriptedRng([10])), scriptedRng([10]));
 /** Burn every unit's activation so `endRound` runs, which is where an engine changes hands. */
 const runRound = (state: BattleState) => {
   let s = state;
@@ -56,7 +56,7 @@ const burn = (state: BattleState, id: string) => {
   const s = availableActions(state, id).some((o) => o.type === 'guard')
     ? guardOn(state, id)
     : act(state, { type: 'withdraw', rung: 1, unit: id }, scriptedRng([10]));
-  return s.phase === 'battle' && s.active === id ? endActivation(s) : s;
+  return s.phase === 'battle' && s.active === id ? endActivation(s, scriptedRng([10])) : s;
 };
 
 describe('deployment', () => {
@@ -136,7 +136,7 @@ describe('alternating activation', () => {
 
   it('lets a unit stop with actions unspent', () => {
     const { state } = battle([]);
-    const s = endActivation(guardOn(state, 'u0'));
+    const s = endActivation(guardOn(state, 'u0'), scriptedRng([10]));
     expect(s.activated).toEqual(['u0']);
     expect(activeUnit(s)!.side).toBe('defender');
   });
@@ -294,6 +294,67 @@ describe('Controlling', () => {
     const s = dread([10]);
     expect(() => act(s, { type: 'cast', spell: 'controlling', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10])))
       .toThrow(/already cast this activation/);
+  });
+});
+
+describe('Offense', () => {
+  const occultist: UnitCard = { name: 'Occultist', level: 6, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
+
+  it('Sure strike keeps the better of two rolls', () => {
+    const s = createBattle({
+      units: [
+        { card: occultist, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'e2' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    place(s, 'u1', 'c3');
+    place(s, 'u2', 'c4');
+    const cast = act(s, { type: 'cast', spell: 'offense', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(cast, 'u1').sureStrike).toBe(true);
+    const passed = endActivation(endActivation(cast, scriptedRng([10])), scriptedRng([10]), 'u2');
+    // 8 totals 19, a plain success; 3 totals 14, a failure. Sure strike keeps the 8.
+    const struck = act(passed, { type: 'fight', rung: 1, target: 'u2', unit: 'u1' }, scriptedRng([8, 3]));
+    expect(unit(struck, 'u2').wounds).toBe(1);
+    expect(unit(struck, 'u1').sureStrike).toBe(false);
+    expect(said(struck, 'rolls twice under sure strike')).toBe(true);
+  });
+
+  it('a Wrath wound lands at the target\'s finish and asks the save', () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c3');
+    unit(state, 'u0').wrath = true;
+    const hit = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([8]));
+    expect(unit(hit, 'u2').persistent).not.toBeNull();
+    expect(unit(hit, 'u0').wrath).toBe(false);
+    const passed = endActivation(hit, scriptedRng([10]));
+    // A natural 1 always fails: the wound lands, then the failed Fortitude save costs disorder.
+    const landed = endActivation(passed, scriptedRng([1]), 'u2');
+    expect(unit(landed, 'u2').wounds).toBe(2);
+    expect(unit(landed, 'u2').persistent).toBeNull();
+    expect(said(landed, 'braces against the persistent wound')).toBe(true);
+  });
+
+  it('a hasted unit has four actions twice and three the third time', () => {
+    let s = createBattle({
+      units: [
+        { card: occultist, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'c3' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    s = act(s, { type: 'cast', spell: 'offense', rung: 3, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(s, 'u1').haste).toBe(2);
+    const grants: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      while (activeUnit(s)!.id !== 'u1') s = endActivation(s, scriptedRng([10]), activeUnit(s)!.id);
+      s = act(s, { type: 'guard', rung: 1, unit: 'u1' }, scriptedRng([10]));
+      grants.push(unit(s, 'u1').actions + 1);
+      s = endActivation(s, scriptedRng([10]), 'u1');
+    }
+    expect(grants).toEqual([4, 4, 3]);
   });
 });
 
@@ -568,7 +629,7 @@ describe('rungs carry effects', () => {
     unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 12;
     // Take cover spends all three actions, which ends the activation on its own.
     const s = act(state, { type: 'guard', rung, unit: 'u0' }, scriptedRng([10]));
-    return s.active === 'u0' ? endActivation(s, 'u0') : s;
+    return s.active === 'u0' ? endActivation(s, scriptedRng([10]), 'u0') : s;
   };
   const struck = (s: BattleState, roll: number) =>
     unit(act(s, { type: 'fight', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([roll, 1])), 'u0').wounds;
@@ -886,7 +947,7 @@ describe('disorder', () => {
     const hit = act(burn(state, 'u1'), { type: 'shoot', rung: 1, target: 'u0', unit: 'u2' }, scriptedRng([20, 1]));
     expect(unit(hit, 'u0').wounds).toBe(2);
     expect(unit(hit, 'u0').disorder).toBe(1);
-    const rallied = act(endActivation(hit), { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
+    const rallied = act(endActivation(hit, scriptedRng([10])), { type: 'rally', rung: 1, unit: 'u0' }, scriptedRng([10]));
     expect(unit(rallied, 'u0').disorder).toBe(0);
   });
   it('a Fortitude save that succeeds shrugs the wound off with no disorder at all', () => {
@@ -1002,7 +1063,7 @@ describe.each(['square', 'hex'] as const)('a full round on %s', (kind) => {
       const cell = [...a.moves].filter(([, m]) => m.actions === 1).map(([k]) => k).sort()[0];
       let next = cell ? act(s, { type: 'move', to: cell, unit: u.id }, scriptedRng([10])) : s;
       if (next.phase === 'battle' && next.active === u.id) next = guardOn(next, u.id);
-      s = next.phase === 'battle' && next.active === u.id ? endActivation(next) : next;
+      s = next.phase === 'battle' && next.active === u.id ? endActivation(next, scriptedRng([10])) : next;
     }
     expect(seen.sort()).toEqual(['u0', 'u1', 'u2', 'u3']);
     expect(s.round).toBe(2);

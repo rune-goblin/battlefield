@@ -169,7 +169,7 @@ export function deselectUnit() {
 export function endActivation() {
   if (!game.battle) return;
   game.history = [...game.history.slice(-30), game.battle];
-  game.battle = endActivationEngine(game.battle);
+  game.battle = endActivationEngine(game.battle, randomRng);
   save();
 }
 

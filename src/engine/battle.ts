@@ -4,7 +4,7 @@ import {
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { pathTo, reachable, stepFeet, type ReachMap } from './path.js';
-import { check, readCheck, succeeded, type CheckResult, type Degree } from './check.js';
+import { check, readCheck, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
   type Grade, type LadderType, type Rung,
@@ -227,6 +227,23 @@ export function roll(state: BattleState, rng: Rng, u: Unit, modifier: number, dc
   return c;
 }
 
+/** Every attack roll — a Strike, a shot, a Blast — goes through here, not `roll` directly, so
+ * Sure strike and Ward (Wave 11) can send it to `rollTwice` without skipping `roll`'s own
+ * `inspired` spend. Both flags are consumed by the roll they touch. */
+export function attackRoll(state: BattleState, rng: Rng, attacker: Unit, target: Unit, modifier: number, dc: number): CheckResult {
+  const sureStrike = attacker.sureStrike;
+  const ward = target.ward;
+  attacker.sureStrike = false;
+  target.ward = false;
+  if (sureStrike === ward) return roll(state, rng, attacker, modifier, dc);
+  attacker.inspired = false;
+  const c = rollTwice(rng, modifier, dc, sureStrike);
+  log(state, attacker, sureStrike
+    ? `${attacker.name} rolls twice under sure strike and keeps the better: ${c.rolls[0]} and ${c.rolls[1]}.`
+    : `${target.name}'s ward rolls the attack twice and keeps the worse: ${c.rolls[0]} and ${c.rolls[1]}.`);
+  return c;
+}
+
 export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false): number {
   // Circumstance bonuses never stack; the highest applies.
   let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target));
@@ -369,6 +386,11 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
+  if (attacker.wrath) {
+    attacker.wrath = false;
+    target.persistent = { dc: levelDc(attacker.level) };
+    log(state, target, `${target.name} is marked by ${attacker.name}'s wrath: 1 more wound at the end of its next activation.`);
+  }
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return n; }
   if (pressed) {
     addDisorder(state, target, 1, 'a pressed hit, no save');
@@ -418,7 +440,7 @@ function inspire(state: BattleState, u: Unit) {
 interface StrikeOpts { free?: boolean; pressed?: boolean; bonus?: number; saveShift?: number; label: string }
 
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree {
-  const c = roll(state, rng, u, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
+  const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
   applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0);
@@ -490,7 +512,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung
   const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
-  const c = roll(state, rng, u, shootModifier(state, u, target), defenceOf(state, target, u, true));
+  const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
@@ -1062,9 +1084,9 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: Grade, action: Rung
   u.attacked = true;
   log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`);
   const modifier = spellAttackModifier(u);
-  // One d20 for the whole shape. `roll` wants a DC, so it takes the first hex's Defence and
-  // every hex is then read off that same die.
-  const shot = roll(state, rng, u, modifier, defenceOf(state, caught[0], u, false));
+  // One d20 (or two, under sure strike or ward) for the whole shape. `attackRoll` wants a DC,
+  // so it takes the first hex's Defence and every hex is then read off that same die.
+  const shot = attackRoll(state, rng, u, caught[0], modifier, defenceOf(state, caught[0], u, false));
   for (const target of caught) {
     const c = readCheck(shot.roll, modifier, defenceOf(state, target, u, false));
     log(state, u, `${activity.label} catches ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
@@ -1170,10 +1192,28 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       }
       break;
     }
-    // proto: Offense, Defense and Movement each become a menu of three named activities in
-    // Waves 10, 11 and 12. Their old buffs went with the fields that held them, so the cast
-    // carries and lands nothing in between.
-    case 'offense':
+    case 'offense': {
+      const target = castTarget(state, u, tree, action);
+      if (!target) break;
+      const activity = castRungOf('offense', index);
+      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
+      if (index === 1) {
+        if (target.sureStrike) { log(state, target, `${target.name} is already rolling its next attack twice.`); break; }
+        target.sureStrike = true;
+        log(state, target, `${target.name} rolls its next attack twice and takes the better.`);
+      } else if (index === 2) {
+        target.wrath = true;
+        log(state, target, `${target.name}'s next hit will leave persistent damage.`);
+      } else {
+        if (target.haste > 0) { log(state, target, `${target.name} is already hasted.`); break; }
+        target.haste = 2;
+        log(state, target, `${target.name} is hasted: an extra action on each of its next two activations.`);
+      }
+      break;
+    }
+    // proto: Defense and Movement each become a menu of three named activities in Waves 11
+    // and 12. Their old buffs went with the fields that held them, so the cast carries and
+    // lands nothing in between.
     case 'defense':
     case 'movement': {
       const target = castTarget(state, u, tree, action);
@@ -1288,7 +1328,9 @@ function begin(state: BattleState, u: Unit) {
   if (state.begun && state.active === u.id) return;
   state.active = u.id;
   state.begun = true;
-  u.actions = ACTIONS_PER_ACTIVATION;
+  // The hasted total is set before the stun subtracts, so the two compose (4 − 1 = 3) instead
+  // of a later write to `actions` silently overwriting the stun.
+  u.actions = ACTIONS_PER_ACTIVATION + (u.haste > 0 ? 1 : 0);
   u.attacked = false;
   u.feet = 0;
   u.castTrees = [];
@@ -1297,6 +1339,7 @@ function begin(state: BattleState, u: Unit) {
   u.ward = false;
   u.stoneskin = false;
   u.aegis = null;
+  if (u.haste > 0) log(state, u, `${u.name} is hasted: one extra action this activation.`);
   if (u.stunned) {
     u.actions -= 1;
     u.stunned = false;
@@ -1305,8 +1348,24 @@ function begin(state: BattleState, u: Unit) {
   clearAsShooter(state, u.id);
 }
 
+/** Wrath's wound, waiting on the target's own `finish`. Its DC was fixed when the hit landed,
+ * so no attacker is needed here — only the mark. */
+function landPersistent(state: BattleState, rng: Rng, target: Unit) {
+  const dc = target.persistent!.dc;
+  target.persistent = null;
+  if (target.status !== 'active') return;
+  const n = reduceWounds(target, 1);
+  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
+  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
+  log(state, target, `${target.name} takes 1 wound from persistent damage (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
+  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return; }
+  const c = roll(state, rng, target, fortitudeModifier(target), dc);
+  log(state, target, `${target.name} braces against the persistent wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a persistent wound');
+}
+
 // What was laid on the unit's next activation is spent by this one and cleared at the end.
-function finish(state: BattleState, u: Unit) {
+function finish(state: BattleState, rng: Rng, u: Unit) {
   u.actions = ACTIONS_PER_ACTIVATION;
   u.attacked = false;
   u.feet = 0;
@@ -1318,6 +1377,7 @@ function finish(state: BattleState, u: Unit) {
   u.wrath = false;
   u.sureFooting = false;
   u.flies = false;
+  if (u.persistent) landPersistent(state, rng, u);
   state.activated.push(u.id);
   state.lastSide = u.side;
   state.active = null;
@@ -1332,13 +1392,13 @@ function finish(state: BattleState, u: Unit) {
  * too. Naming the unit guards against ending the next one's activation when an action has
  * already finished this one.
  */
-export function endActivation(input: BattleState, unitId?: string): BattleState {
+export function endActivation(input: BattleState, rng: Rng, unitId?: string): BattleState {
   const state = clone(input);
   if (state.phase !== 'battle') throw new Error('battle is over');
   const u = activeUnit(state);
   if (!u) throw new Error('no unit is activating');
   if (unitId && u.id !== unitId) throw new Error(`${unitId} is not activating`);
-  finish(state, u);
+  finish(state, rng, u);
   refreshEmplacements(state);
   return state;
 }
@@ -1493,7 +1553,7 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
       : action.type === 'charge' ? doCharge(state, rng, u, action)
         : doRung(state, rng, u, action);
   u.actions -= cost;
-  if (u.actions <= 0 || u.status !== 'active') finish(state, u);
+  if (u.actions <= 0 || u.status !== 'active') finish(state, rng, u);
   refreshEmplacements(state);
   return state;
 }
