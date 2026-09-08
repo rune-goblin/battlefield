@@ -529,8 +529,12 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
     log(state, target, `${target.name} holds its ground under cover: the Overrun lands as a Press.`);
     return;
   }
+  // Section 8 blocks the shove on water, a wall or a cliff with no flier exception at all, and
+  // the target spends no action of its own giving ground — Fly buys only its next activation
+  // (`follow` already reads a holder's native `flying` alone for the same reason), so an unspent
+  // Fly does not open a hex here either. A native flier still shrugs the shove off anywhere.
   const away = grid(state).beyond(u.square, ground);
-  if (!away || !enterable(state, target, ground, away)) {
+  if (!away || !enterable(state, ground, away, { flying: target.flying })) {
     log(state, target, `${target.name} has nowhere to give ground and is crushed against it.`);
     addDisorder(state, target, 1, 'nowhere to give ground');
     return;
@@ -581,8 +585,15 @@ function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier
  * flattens every price short of water. */
 const groundFor = (u: Unit): StepOpts => ({ flying: u.flying || u.flies, surefooted: u.sureFooting });
 
-const enterable = (state: BattleState, u: Unit, from: Square, to: Square) =>
-  !unitAt(state, to) && Number.isFinite(stepFeet(state.board, from, to, groundFor(u)));
+/** Whether `u` could stand on `sq` unassisted: section 7 gives a native flier free run of
+ * anywhere, but Fly only "crosses" water (section 11) — it never says a unit ends its move
+ * there, and `finish` strips the buff, so a unit that ends its Move or Translocate on water
+ * with only an unspent Fly would be grounded in a river with no way out. */
+const canEndOn = (u: Unit, board: Board, sq: Square) =>
+  u.flying || !u.flies || at(board, sq).terrain !== 'water';
+
+const enterable = (state: BattleState, from: Square, to: Square, opts: StepOpts) =>
+  !unitAt(state, to) && Number.isFinite(stepFeet(state.board, from, to, opts));
 
 const occupiedBy = (state: BattleState, u: Unit) =>
   new Set(state.units.filter((o) => o.status === 'active' && o.id !== u.id).map((o) => notation(o.square)));
@@ -606,7 +617,7 @@ export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   });
   const home = notation(u.square);
   for (const [key, entry] of reach) {
-    if (key === home) continue;
+    if (key === home || !canEndOn(u, state.board, parse(key))) continue;
     out.set(key, { feet: entry.feet, actions: moveActionsFor(u, entry.feet), from: entry.from });
   }
   return out;
@@ -698,13 +709,13 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
   const routing = isRouted(u) && !engaged.length;
   const step = homewardStep(u);
   const cells = new Set((routing ? g.homeward(u.square, u.side) : g.neighbours(u.square))
-    .filter((n) => enterable(state, u, u.square, n))
+    .filter((n) => enterable(state, u.square, n, groundFor(u)) && canEndOn(u, state.board, n))
     .map(notation));
   if (feet > 0 && u.speed > 0) {
     const reach = reachable(state.board, u.square, { budget: feet, ...groundFor(u), occupied: occupiedBy(state, u) });
     for (const key of reach.keys()) {
       const sq = parse(key);
-      if (sameSquare(sq, u.square)) continue;
+      if (sameSquare(sq, u.square) || !canEndOn(u, state.board, sq)) continue;
       // A routed unit runs for its own edge and nowhere else.
       if (routing && Math.sign(sq.rank - u.square.rank) !== step) continue;
       cells.add(key);
@@ -864,9 +875,9 @@ function healTargets(state: BattleState, u: Unit, index: Grade): RungTarget[] {
 }
 
 /** A hex a unit may be set down in: empty, and ground it could stand on — water holds nobody
- * that cannot fly over it. */
+ * but a native flier. */
 const standable = (state: BattleState, u: Unit, sq: Square) =>
-  !unitAt(state, sq) && (u.flying || u.flies || at(state.board, sq).terrain !== 'water');
+  !unitAt(state, sq) && canEndOn(u, state.board, sq);
 
 // proto: the pair is one target, the ally's own hex and the hex it lands on joined by '+', so
 // the aim popup needs no second pick — the same shape a Blast's Line uses. Touching either hex

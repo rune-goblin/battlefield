@@ -61,6 +61,12 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
   be reached over rough ground loses a +2 that coming in on the far side would have kept.
   Closing it means offering the player the landing hex, a change to `ChargeOption` and to the
   board's charge chip rather than to `chargeBonus`. Marked `// proto:` on `approach`.
+- **rules.html's Fly carries a clause the engine does not: "Nothing engages it across a wall or
+  a cliff it crosses."** A cliff already breaks engagement for everyone (`isEngaged`), but a
+  standing wall does not — section 10 makes contact across a wall hold. Honouring the clause as
+  written needs the engine to remember which edges a flight crossed; the broad reading (a flier
+  is never engaged across a wall) would change holders, free strikes and withdrawal for every
+  native flier as well. The plan's own Wave 12 table omits the clause. Flagged, not built.
 
 ## Wave 0 (2026-09-08)
 
@@ -487,6 +493,50 @@ top of Wave 11.
 - Aegis's unreachability by any tradition cap is untouched and sharpened under "Open, for play"
   above: it is a balance call on the Tradition table, and both the engine and rules.html carry
   the number.
+- **A hex a `flies`-only unit can end on is now the same set a grounded unit could stand on;
+  a native flier still ends anywhere.** Section 11 gives Fly "crosses water"; section 7 gives
+  water "cannot be entered at all" for anyone else, and `finish` strips `flies` at the end of
+  the activation that spent it, so the old code (`u.flying || u.flies` feeding both `moveReach`
+  and `standable`) could leave a land troop standing in a river with nothing left to fly it out.
+  `canEndOn` is the one gate now shared by `moveReach`, `withdrawTargets` and Translocate's
+  `standable`; the underlying `groundFor` still lets `flies` cross water in transit, so a
+  two-action Fly'd Move can still carry a unit over a river to dry land on the far side, only
+  never leaves it standing on the water itself.
+- **This narrows `standable`, and with it a claim the Wave 12 entry above made about it: "A
+  flier may already end its Move over water, so it may land there."** That was true of the code
+  as it stood (`flying || flies`), not of the rule; it now reads native `flying` alone, per the
+  fix above.
+- **The Overrun shove drops `flies` from what it reads and keeps `flying`.** `enterable` used
+  to build its ground opts from `groundFor(target)`, so a target sitting on an unspent Fly could
+  be shoved across a wall, a cliff or into water during the *attacker's* activation — the one
+  thing Fly does not buy (`finish` clears it at the end of the flier's own activation, never the
+  enemy's). Section 8's Overrun names water, a wall and a cliff as blocking the shove with no
+  flier clause at all, where section 7's Move carves one out explicitly for a unit spending its
+  own action; the shove is the attacker's action, not the target's, so the same absence that
+  already has `follow` reading a no-retreat holder's `flying` alone (not `.flies`) settles this
+  the same way. `enterable` now takes its ground opts as a parameter instead of deriving them
+  from `groundFor`, so the shove passes `{ flying: target.flying }` and `withdrawTargets` keeps
+  passing `groundFor(u)` for the withdrawing unit's own activation. A native flier is still
+  shoved wherever it likes, since flight is not something Overrun's text takes away from it.
+- **Section 8's Suppress cell now says "and to its Defence"**, matching `defenceOf` and the
+  quick reference's own Suppressed row (already fixed in Wave 13); the cell was the one place
+  left saying only half of what Suppress does.
+- **Section 2 drops "There is no unit grade" and "fed the grades" without deleting the sentences
+  around them.** The first folds into the sentence beside it ("by its numbers alone"), which
+  already carried the same claim in positive form; the second now says what the engine actually
+  does with those four statblock names — nothing, because every troop's activities cost the same
+  regardless — rather than naming the removed system that used to read them.
+- **The Fly-across-a-wall engagement gap moves from the Wave 12 section to "Open, for play"**,
+  where the file's own header sends every rules-versus-engine doubt; it was never closed, only
+  filed under the wave that found it.
+- **rules.html's flier-charge sentence (section 7, the Ground bullet) is tightened** to the
+  document's own register: it argued its point where the rest of the bullet states it. New text:
+  "A flier's charge reads the ground like any other's: flight prices the hex and does not turn
+  it open. Sure footing alone (section 11) does, and keeps the +2." No rule changed, only how
+  it reads.
+- One test beyond the two gates allow: `flies` crosses water in transit (a two-action Move
+  still reaches a cell on the far side, at the flying cost) but never appears as a destination
+  itself, where a native `flying` unit already had its own test for landing there.
 
 ## Wave 12 (2026-09-08)
 
@@ -514,12 +564,6 @@ top of Wave 11.
   because a pin that survived it would cost the unit every activation; a Translocate is not the
   pinned unit's own action, nothing in section 11 says it breaks a pin, and the pin ends at the
   shooter's next activation regardless.
-- **rules.html's Fly carries a clause the engine does not: "Nothing engages it across a wall or
-  a cliff it crosses."** A cliff already breaks engagement for everyone (`isEngaged`), but a
-  standing wall does not — section 10 makes contact across a wall hold. Honouring the clause as
-  written needs the engine to remember which edges a flight crossed; the broad reading (a flier
-  is never engaged across a wall) would change holders, free strikes and withdrawal for every
-  native flier as well. The plan's own Wave 12 table omits the clause. Flagged, not built.
 
 ### Wave 12, the carry-forwards (2026-09-08)
 

@@ -96,8 +96,8 @@
 <p>A card with no sheet takes the level tables for its type. Infantry: high AC, moderate attack, high Will, moderate Reflex, moderate Fortitude, one hex an action. Cavalry: high AC, high attack, moderate Will, high Reflex, moderate Fortitude, two hexes an action.</p>
 
 <h3>Three actions</h3>
-<p>Every unit has three actions in its activation, and every activity costs its own number of them for every unit: one, two or three (section 6). There is no unit grade. A better troop is better by its numbers, never by a cheaper activity or a longer activation. The one thing that grants a fourth is Haste (section 11).</p>
-<p>An importer reads <em>no retreat</em> straight off the recurring action names on a statblock (section 7). <em>Melee drill</em>, <em>shields</em>, <em>formation</em> and <em>magic ward</em> fed the grades and are no longer read. <em>Mounted</em> is no longer read: pace already carries the charge.</p>
+<p>Every unit has three actions in its activation, and every activity costs its own number of them for every unit: one, two or three (section 6). A better troop is better by its numbers alone, never by a cheaper activity or a longer activation. The one thing that grants a fourth is Haste (section 11).</p>
+<p>An importer reads <em>no retreat</em> straight off the recurring action names on a statblock (section 7). <em>Melee drill</em>, <em>shields</em>, <em>formation</em> and <em>magic ward</em> are recurring names too, but the engine reads none of them: every troop's activities cost the same whatever its statblock calls out. <em>Mounted</em> is no longer read either: pace already carries the charge.</p>
 <div class="aside">
 <h4>Armour Class and attack DC say nothing about a troop</h4>
 <p>Across all 162 published troops, Armour Class spreads 3.2 points within a level and attack DC 2.6 — at level 12 every troop shares one attack DC. Both are functions of level, so neither says anything about a troop's character. Will spreads 5.1 and Speed falls across seven bands, so those two are read numerically, and the recurring action names carry the rest.</p>
@@ -444,7 +444,7 @@
 <tr><td>Charge and Overrun</td><td>◆◆◆◆</td><td>Charge, then Overrun: a hit's disorder needs no save, and it drives them one hex straight back; you take their ground. Four actions, so only a hasted unit can buy it (section 11).</td></tr>
 </table></div>
 <ul>
-<li><strong>Ground.</strong> A charge whose path enters forest, swamp or shallows, or climbs, lands no +2; the discount stands and the charger is still exposed. A charge that starts from a hex higher than the target's puts the target's save against disorder at &minus;2, whatever hex the charge ends on. The path is any path the movement allows. A flier pays 1 a hex and has still crossed the ground it flew over, so its charge loses the +2 like any other; Sure footing alone (section 11) turns rough ground open and keeps it.</li>
+<li><strong>Ground.</strong> A charge whose path enters forest, swamp or shallows, or climbs, lands no +2; the discount stands and the charger is still exposed. A charge that starts from a hex higher than the target's puts the target's save against disorder at &minus;2, whatever hex the charge ends on. The path is any path the movement allows. A flier's charge reads the ground like any other's: flight prices the hex and does not turn it open. Sure footing alone (section 11) does, and keeps the +2.</li>
 <li><strong>Reach.</strong> Infantry charges 2 hexes, which is short range. A paced troop charges 4, into medium.</li>
 <li><strong>Cavalry charge</strong>, the tactic, is the impact: the charge's hit needs no save, so a Strike lands as a Press and a Press as an Overrun, at the price paid.</li>
 <li><strong>The counter.</strong> Take cover holds the ground an Overrun would take, and a charge cannot end across a standing wall or a cliff.</li>
@@ -508,7 +508,7 @@
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at &minus;2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
-<tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: &minus;2 to everything it rolls until the start of your next activation.</td></tr>
+<tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: &minus;2 to everything it rolls and to its Defence until the start of your next activation.</td></tr>
 <tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Withdraw as if in contact; a withdrawal that gets clear ends the pin, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
 </table></div>
 <p>Suppress bites hit or miss, because volume fire works by volume. Suppressed is disorder's temporary cousin, two points that lift on their own, and the two stack. A pinned unit is held (section 7), and it cannot charge.</p>

@@ -561,6 +561,18 @@ describe('movement points', () => {
     expect(moves(state, 'u0').get('b2')).toMatchObject({ feet: 10 });
   });
 
+  it('an unspent Fly crosses water but cannot end a Move there, unlike a native flier', () => {
+    const board = openBoard();
+    board.squares[2][2].terrain = 'water';
+    const { state } = battle([], board);
+    const u = unit(state, 'u0');
+    u.flies = true;
+    u.actions = 2;
+    const reach = moves(state, 'u0');
+    expect(reach.has('c3')).toBe(false);
+    expect(reach.get('c4')).toMatchObject({ feet: 20 });
+  });
+
   it('a unit in contact leaves by withdrawing, not by striding', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
