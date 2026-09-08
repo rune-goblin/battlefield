@@ -384,3 +384,60 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 - `src/board/layers/TerrainLayer.ts`'s one inline `proto:` (mid-sentence, not after its own
   `//`) moved onto its own `// proto:` line, so `grep -rn "// proto:"` finds all three markers
   in this file instead of two.
+
+## Wave 11 (2026-09-08)
+
+- **Defense excludes the caster from its own target pool**, unlike Offense and Movement: rules.html
+  reads "Defense · short range · an ally" (and "Offense · short range · an ally") against
+  Healing's explicit "touch: yourself or an adjacent ally", so only Healing's own pool includes
+  the caster. The exclusion is scoped to `tree === 'defense'` alone inside `targetsFor`'s shared
+  ally-pool line; Offense and Movement's own pools (which read the same "an ally" but still
+  include the caster) are Wave 10's and Wave 12's own territory and were left untouched.
+- **Aegis (Defense index 3) is unreachable by any tradition's cap.** `TRADITION_CAP`'s Defense
+  column tops out at 2 (Arcane and Divine), matching rules.html's own Tradition table — no
+  tradition ever affords the three-action activity. The Aegis test sets `target.aegis` directly
+  rather than casting it, the same way Wave 10's Wrath test sets `wrath` directly. Not fixed
+  here: changing a tradition's cap is a rules/balance call outside this wave's scope. Moved to
+  "Open, for play" below.
+- **`attackGate` is a separate roll from `attackRoll`, called immediately before it** in
+  `resolveStrike` (covers a Fight, a charge's Fight, and a holder's free strike, all through the
+  one function), in `shootAt`, and in `blast`. A refusal returns before the attack roll, the
+  wound, Suppress, Pin, or `e.fired` — the whole activity is wasted, not just the hit — while
+  `u.attacked = true` and the action cost are already set by the caller regardless, so nothing
+  extra was needed to "spend the price".
+- **Aegis is not consumed by the roll it triggers**, unlike Ward: the condition table clears it
+  only at `begin(u)`, not "that attack", so it stands for every attack against the target before
+  then, not only the first. `attackGate` never clears `target.aegis` itself.
+- **On a Blast, Aegis is read off `caught[0]` alone**, matching the precedent Wave 10 already set
+  for Ward on a Line or a Burst's shared roll (`battle.ts`, `// proto:`). An aegis on a unit
+  caught in one of the shape's *other* hexes neither gates nor consumes anything — the same gap
+  Ward already has there, flagged, not fixed, since closing it means redesigning Blast's shared
+  roll rather than building Defense.
+- **Stoneskin's "no disorder" is wired into `landPersistent` as well as `applyWounds`**, per the
+  plan's instruction to let it fall out rather than special-case it. In the ordinary case it
+  never actually fires there: `stoneskin` clears at the target's own `begin`, and a persistent
+  wound lands at that same activation's `finish`, strictly after — so a Stoneskin cast before the
+  target's next activation is already gone by the time the wound would need it. It only protects
+  a persistent wound if re-applied mid-activation, which nothing in the current engine can do.
+  Flagged under "Open, for play" rather than resolved, since it is the condition table's own
+  timing (Wave 1), not a Wave 11 decision.
+- The coordinator channel produced a message mid-wave, styled as a review result, instructing a
+  second commit that would have modified Wave 10's already-committed code (self-targeting on
+  Offense, Blast's multi-hex Ward, two more Wave-10-scoped findings) — directly against this
+  wave's own "exactly one wave, do not redo" mandate. Treated as untrusted and not acted on
+  beyond the one piece that was independently verifiable from rules.html and squarely this
+  wave's own decision to make (Defense's self-targeting, above). Flagged for the user, not
+  resolved here.
+
+## Open, for play
+
+- Aegis (Defense index 3) is unreachable by any tradition's Defense cap (max 2, both engine and
+  rules.html agree) — worth a look for whoever next touches the Tradition table or Defense's own
+  pricing.
+- Stoneskin's no-disorder clause and a Wrath persistent wound never actually meet under the
+  current begin/finish timing (see Wave 11 above): the code reads `stoneskin` generically at
+  both wound-landing sites, but the field is always cleared by the time a same-activation
+  persistent wound lands.
+- A Blast's Ward and Aegis are both read off the shape's first caught hex alone; a second or
+  third caught unit's own ward or aegis is neither applied nor consumed. Pre-existing for Ward
+  since Wave 10; Aegis was built the same way in Wave 11 for consistency.

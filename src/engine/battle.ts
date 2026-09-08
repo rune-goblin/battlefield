@@ -228,8 +228,9 @@ export function roll(state: BattleState, rng: Rng, u: Unit, modifier: number, dc
 }
 
 /** Every attack roll — a Strike, a shot, a Blast — goes through here, not `roll` directly, so
- * Sure strike and Ward (Wave 11) can send it to `rollTwice` without skipping `roll`'s own
- * `inspired` spend. Both flags are consumed by the roll they touch. */
+ * Sure strike and Ward can send it to `rollTwice` without skipping `roll`'s own `inspired`
+ * spend. Both flags are consumed by the roll they touch, so a Ward and a Sure strike on the
+ * same attack cancel to the one plain roll below rather than two doubled ones. */
 export function attackRoll(state: BattleState, rng: Rng, attacker: Unit, target: Unit, modifier: number, dc: number): CheckResult {
   const sureStrike = attacker.sureStrike;
   const ward = target.ward;
@@ -356,11 +357,11 @@ const degreeWord: Record<Degree, string> = {
 };
 
 /**
- * The one step between a hit rolled and a wound taken. Dig in and Take cover cap the hit at a
- * single wound, so a critical lands as an ordinary one.
+ * The one step between a hit rolled and a wound taken. Dig in, Take cover and Stoneskin all cap
+ * the hit at a single wound, so a critical lands as an ordinary one.
  */
 export function reduceWounds(target: Unit, n: number): number {
-  return target.guard?.cap ? Math.min(n, 1) : n;
+  return target.guard?.cap || target.stoneskin ? Math.min(n, 1) : n;
 }
 
 /** The target's Fortitude, less its own disorder, the way every other save reads it. */
@@ -381,7 +382,9 @@ function clearAsShooter(state: BattleState, shooterId: string) {
  */
 function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false, saveShift = 0): number {
   const n = reduceWounds(target, raw);
-  if (n < raw) log(state, target, `${target.name} has dug in: the critical lands as an ordinary hit.`);
+  if (n < raw) log(state, target, target.stoneskin && !target.guard?.cap
+    ? `${target.name}'s stoneskin caps the critical at one wound.`
+    : `${target.name} has dug in: the critical lands as an ordinary hit.`);
   if (n <= 0) return 0;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
@@ -392,7 +395,9 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
     log(state, target, `${target.name} is marked by ${attacker.name}'s wrath: 1 more wound at the end of its next activation.`);
   }
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return n; }
-  if (pressed) {
+  if (target.stoneskin) {
+    log(state, target, `${target.name}'s stoneskin costs it no disorder.`);
+  } else if (pressed) {
     addDisorder(state, target, 1, 'a pressed hit, no save');
   } else {
     const c = roll(state, rng, target, fortitudeModifier(target) + saveShift, levelDc(attacker.level));
@@ -437,9 +442,26 @@ function inspire(state: BattleState, u: Unit) {
   log(state, u, `${u.name} is inspired: +2 to its next roll.`);
 }
 
+/**
+ * Aegis's own roll, ahead of any attack roll — a Strike, a shot, a Blast, a charge's Fight, a
+ * free strike: the attacker's Will against the caster's spell DC. Unlike Ward, it is not
+ * consumed here — it stands until the target's own `begin`, so it gates every attack against
+ * the target before then, not only the first.
+ */
+function attackGate(state: BattleState, rng: Rng, attacker: Unit, target: Unit): boolean {
+  if (!target.aegis) return true;
+  const c = roll(state, rng, attacker, willModifier(attacker), target.aegis.dc);
+  log(state, attacker, `${attacker.name} tests ${target.name}'s aegis: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  if (succeeded(c.degree)) return true;
+  log(state, attacker, `${attacker.name}'s attack is wasted against the aegis.`);
+  return false;
+}
+
 interface StrikeOpts { free?: boolean; pressed?: boolean; bonus?: number; saveShift?: number; label: string }
 
-function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree {
+// `null` means Aegis wasted the whole attempt: no roll, no wound, nothing for `melee` to read.
+function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree | null {
+  if (!attackGate(state, rng, u, target)) return null;
   const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
@@ -469,6 +491,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung, 
   const degree = resolveStrike(state, rng, u, target, {
     pressed: eff.press || impact, bonus: opts.bonus, saveShift: opts.saveShift, label: rung.verb,
   });
+  if (degree === null) return;
   if (succeeded(degree)) {
     if (drive && u.status === 'active') giveGround(state, u, target);
     return;
@@ -512,6 +535,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, rung: Rung
   const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
+  if (!attackGate(state, rng, u, target)) return;
   const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${rung.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
@@ -850,7 +874,10 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
       if (tree === 'blast') return { needsTarget: true, targets: blastTargets(state, u, index, ceiling) };
       if (tree === 'healing') return { needsTarget: true, targets: healTargets(state, u, index) };
       const wants = TREE_TARGET[tree];
-      const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active');
+      // Defense reads "an ally" in rules.html, not Healing's "yourself or an adjacent ally", so
+      // it alone drops the caster from its own pool; Offense and Movement read the same way but
+      // are Waves 10 and 12's own territory, untouched here.
+      const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active' && (tree !== 'defense' || a.id !== u.id));
       const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
       return { needsTarget: true, targets: pool.filter((t) => (wants === 'enemy' ? t.id !== u.id : true) && inRangeOf(t)).map(unitTarget) };
     }
@@ -1084,6 +1111,9 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: Grade, action: Rung
   u.attacked = true;
   log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`);
   const modifier = spellAttackModifier(u);
+  // proto: Aegis, like Ward, is read off caught[0] alone — a Line or a Burst's other hexes
+  // neither gate nor consume an aegis or a ward of their own. Flagged, not fixed, in Wave 11.
+  if (!attackGate(state, rng, u, caught[0])) return;
   // One d20 (or two, under sure strike or ward) for the whole shape. `attackRoll` wants a DC,
   // so it takes the first hex's Defence and every hex is then read off that same die.
   const shot = attackRoll(state, rng, u, caught[0], modifier, defenceOf(state, caught[0], u, false));
@@ -1211,10 +1241,28 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       }
       break;
     }
-    // proto: Defense and Movement each become a menu of three named activities in Waves 11
-    // and 12. Their old buffs went with the fields that held them, so the cast carries and
-    // lands nothing in between.
-    case 'defense':
+    case 'defense': {
+      const target = castTarget(state, u, tree, action);
+      if (!target) break;
+      const activity = castRungOf('defense', index);
+      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
+      if (index === 1) {
+        if (target.ward) { log(state, target, `${target.name} is already warded.`); break; }
+        target.ward = true;
+        log(state, target, `${target.name}'s next attack rolls twice and the attacker takes the worse.`);
+      } else if (index === 2) {
+        if (target.stoneskin) { log(state, target, `${target.name} already has stoneskin.`); break; }
+        target.stoneskin = true;
+        log(state, target, `${target.name} has stoneskin: every hit caps at one wound and costs no disorder.`);
+      } else {
+        if (target.aegis) { log(state, target, `${target.name} is already under an aegis.`); break; }
+        target.aegis = { dc: spellDcFor(u) };
+        log(state, target, `${target.name} is under an aegis: an attacker must beat Will DC ${target.aegis.dc} or waste the attempt.`);
+      }
+      break;
+    }
+    // proto: Movement becomes a menu of three named activities in Wave 12. Its old buff went
+    // with the fields that held it, so the cast carries and lands nothing in between.
     case 'movement': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
@@ -1359,6 +1407,10 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
   log(state, target, `${target.name} takes 1 wound from persistent damage (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return; }
+  if (target.stoneskin) {
+    log(state, target, `${target.name}'s stoneskin costs it no disorder.`);
+    return;
+  }
   const c = roll(state, rng, target, fortitudeModifier(target), dc);
   log(state, target, `${target.name} braces against the persistent wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a persistent wound');

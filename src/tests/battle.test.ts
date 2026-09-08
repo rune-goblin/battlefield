@@ -358,6 +358,51 @@ describe('Offense', () => {
   });
 });
 
+describe('Defense', () => {
+  const occultist: UnitCard = { name: 'Occultist', level: 6, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
+
+  it('Ward and Sure strike on one attack cancel to one roll', () => {
+    const s = createBattle({
+      units: [
+        { card: occultist, side: 'attacker', square: 'c1' },
+        { card: infantry, side: 'attacker', square: 'c2' },
+        { card: occultist, side: 'defender', square: 'c7' },
+        { card: kobolds, side: 'defender', square: 'c8' },
+      ],
+      board: openBoard(),
+    });
+    place(s, 'u1', 'c3');
+    place(s, 'u2', 'c5');
+    place(s, 'u3', 'c4');
+    const cast = act(s, { type: 'cast', spell: 'offense', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const afterU0 = endActivation(cast, scriptedRng([10]));
+    const warded = act(afterU0, { type: 'cast', spell: 'defense', rung: 1, target: 'u3', unit: 'u2' }, scriptedRng([10]));
+    expect(unit(warded, 'u3').ward).toBe(true);
+    const afterU2 = endActivation(warded, scriptedRng([10]));
+    // 8 totals 19, a plain success, the same single roll either flag alone would have made.
+    const struck = act(afterU2, { type: 'fight', rung: 1, target: 'u3', unit: 'u1' }, scriptedRng([8, 3]));
+    expect(unit(struck, 'u3').wounds).toBe(1);
+    expect(unit(struck, 'u1').sureStrike).toBe(false);
+    expect(unit(struck, 'u3').ward).toBe(false);
+    expect(said(struck, 'keeps the better')).toBe(false);
+    expect(said(struck, 'keeps the worse')).toBe(false);
+  });
+
+  it('an attacker that fails the Aegis save spends its actions and its attack', () => {
+    const { state } = battle([]);
+    place(state, 'u2', 'c3');
+    // No tradition's cap reaches Aegis (defense index 3; see the Wave 11 todos), so the mark is
+    // set directly, the same way the Wrath test sets `wrath` rather than casting Offense 2.
+    unit(state, 'u2').aegis = { dc: 50 };
+    const gated = act(state, { type: 'fight', rung: 1, target: 'u2', unit: 'u0' }, scriptedRng([1]));
+    expect(unit(gated, 'u0').attacked).toBe(true);
+    expect(unit(gated, 'u0').actions).toBe(2);
+    expect(unit(gated, 'u2').wounds).toBe(0);
+    expect(unit(gated, 'u2').aegis).not.toBeNull();
+    expect(said(gated, 'attack is wasted against the aegis')).toBe(true);
+  });
+});
+
 describe('movement points', () => {
   it('one Move action carries a troop one square, and a Pace unit two', () => {
     const { state } = battle([]);
