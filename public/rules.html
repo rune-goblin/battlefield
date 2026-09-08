@@ -602,7 +602,7 @@
 
 <h3>Casting</h3>
 <p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast and to heal, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
-<p>A cast is priced like every other activity: one, two or three actions for the one you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast is the activation's one attack. A buff lasts until the ally has next acted; Haste alone lasts two activations, and Translocate is instant.</p>
+<p>A cast is priced like every other activity: one, two or three actions for the one you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast is the activation's one attack. A buff falls on the caster as readily as on an ally, and it lasts until the unit it fell on has next acted: a caster's own ward stands through the enemy's turn, and its own sure strike, wrath or sure footing is spent in the rest of the activation it cast in, or wasted. Haste alone lasts two activations, and a caster hasting itself takes the first of the two actions at once. Translocate is instant.</p>
 <p>A cast is one roll. Blast is a spell attack against Defence, and its one roll is read against every hex its shape covers. Healing is a spell attack against the level DC of the unit healed, read against each unit reached. Controlling is the target's Will save against your spell DC. Offense and Movement have nothing to resist and roll nothing; Defense's Aegis is the enemy's Will save against your spell DC.</p>
 
 <h3>Tradition</h3>
@@ -677,17 +677,17 @@
 </table></div>
 <p>Frightened is a condition, so a Healing critical can end it.</p>
 
-<h4 style="margin:1.25rem 0 .35rem">Offense &middot; short range &middot; an ally</h4>
+<h4 style="margin:1.25rem 0 .35rem">Offense &middot; short range: yourself or an ally</h4>
 <p>Each buff is its own effect at its own price and includes nothing below it. The tradition's cap still says which of the three it may buy.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Sure strike</td><td>◆</td><td>The ally rolls its next attack twice and takes the better.</td></tr>
 <tr><td>Wrath</td><td>◆◆</td><td>The ally's next hit deals <strong>persistent damage</strong>: at the end of the target's next activation it takes 1 more wound, and rolls Fortitude against the attacker's level DC or takes 1 disorder, as any wound.</td></tr>
-<tr><td>Haste</td><td>◆◆◆</td><td>The ally has an additional action on each of its next two activations.</td></tr>
+<tr><td>Haste</td><td>◆◆◆</td><td>The ally has an additional action on each of its next two activations. Cast on yourself, the first of the two comes at once, in the activation you cast in.</td></tr>
 </table></div>
-<p>A second Sure strike on an ally already rolling twice is nothing. A second Haste on a hasted ally is nothing. Persistent damage is a condition, never a damage type, so no unit is immune to it and a Healing critical ends it before it lands.</p>
+<p>A second Sure strike on a unit already rolling twice is nothing. A second Haste on a hasted unit is nothing. Persistent damage is a condition, never a damage type, so no unit is immune to it and a Healing critical ends it before it lands.</p>
 
-<h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range &middot; an ally</h4>
+<h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range: yourself or an ally</h4>
 <p>Three separate things, each its own price. Guard sells Defence and the wound cap; Defense sells the attacker's roll, the disorder a wound costs, and the attacker's actions, and the ally spends nothing. Aegis is the one buff that rolls, at the enemy's time and on the enemy's Will, as Controlling does.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
@@ -702,10 +702,10 @@
 <tr><td>Stoneskin ◆◆</td><td>No disorder save; a Press or a critical is a plain wound</td></tr>
 <tr><td>Aegis ◆◆◆</td><td>35% of attacks wasted against spell DC 21; a level-15 caster's DC wastes most</td></tr>
 </table>
-<p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on an ally already under it is nothing.</p>
+<p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on a unit already under it is nothing.</p>
 <p>A Blast is one attack over several hexes. A ward on any unit caught, or a sure strike on the caster, throws a second die for the shape, and each unit reads that pair against its own Defence: a warded unit keeps the worse, or the first die alone when the caster also has a sure strike; the rest keep the better under a sure strike, the first die otherwise. An aegis on any unit in the shape gates the cast as a whole, and a failed save wastes the whole activity, actions and all.</p>
 
-<h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range &middot; an ally</h4>
+<h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range: yourself or an ally</h4>
 <p>Three separate things, bought one at a time; Fly covers ground because flight does. Translocate is the one buff that happens at cast time.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
@@ -763,7 +763,7 @@
 <tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at one wound. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
 <tr><td>Rally</td><td>1 Steady &middot; 2 Rally &middot; 3 Inspire</td><td>Will &minus; disorder vs the rout DC</td><td>Crit clears 2 &middot; success 1, or inspires if none &middot; failure nothing &middot; critical failure adds 1 to you. The activity says who else it reaches: you, one adjacent ally, everyone within 2.</td></tr>
 <tr><td>Cast</td><td>1, 2 or 3 for the activity; a tree once an activation</td><td>Blast: spell attack &minus; disorder vs Defence. Healing: spell attack &minus; disorder vs the unit's level DC. Controlling: the target's Will &minus; disorder vs your spell DC. Buffs roll nothing but Aegis: the attacker's Will vs your spell DC.</td><td>Tradition caps which trees and how high. Blast is the activation's attack.</td></tr>
-<tr><td>Haste</td><td>3, Offense</td><td>&mdash;</td><td>The ally has an additional action on each of its next two activations.</td></tr>
+<tr><td>Haste</td><td>3, Offense</td><td>&mdash;</td><td>The ally has an additional action on each of its next two activations. On yourself, the first comes at once.</td></tr>
 </table></div>
 <div class="wrap"><table class="ref">
 <tr><th>Modifier</th><th>Value</th></tr>

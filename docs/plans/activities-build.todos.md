@@ -412,7 +412,8 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 
 ## Wave 11 (2026-09-08)
 
-- **Defense excludes the caster from its own target pool**, unlike Offense and Movement: rules.html
+- ~~**Defense excludes the caster from its own target pool**~~ (superseded by Self-buffs,
+  2026-09-08), unlike Offense and Movement: rules.html
   reads "Defense · short range · an ally" (and "Offense · short range · an ally") against
   Healing's explicit "touch: yourself or an adjacent ally", so only Healing's own pool includes
   the caster. The exclusion is scoped to `tree === 'defense'` alone inside `targetsFor`'s shared
@@ -459,13 +460,15 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 Findings from the Wave 10 and Wave 11 reviews that no later wave owned, fixed in one pass on
 top of Wave 11.
 
-- **Offense no longer reaches the caster.** rules.html reads "Offense · short range · an ally",
+- ~~**Offense no longer reaches the caster.**~~ Superseded by Self-buffs (2026-09-08).
+  rules.html read "Offense · short range · an ally",
   where Healing alone reads "touch: yourself or an adjacent ally", so the caster leaves the
   Offense pool exactly as Wave 11 took it out of the Defense pool. A self-cast buff also lost an
   activation to the caster's own `finish`, which runs at the end of the activation it cast in:
   a self-Haste granted [4, 3, 3] where the rules promise two hasted activations. Healing still
   reaches the caster; that asymmetry is the rules' own.
-- **`castTarget` refuses `target.id === u.id` for Offense and Defense**, not Offense alone: the
+- ~~**`castTarget` refuses `target.id === u.id` for Offense and Defense**~~ (superseded by
+  Self-buffs, 2026-09-08), not Offense alone: the
   two trees name an ally in the same words, and the function's `: u` fallback is the one path
   into a self-cast that the target lists do not already close. `doRung` validates a target
   against the offer before this runs, so the guard is the second line rather than the first.
@@ -667,3 +670,38 @@ top of Wave 11.
 - 2026-09-08: the sweep was run by hand rather than by an agent, after the first attempt stalled
   midway through `ladders.ts`; the diff is 317 insertions against 317 deletions, which is the
   shape a rename with no behaviour change should have.
+
+## Self-buffs (2026-09-08)
+
+The user decided this after the fifteen waves were built, on the ladder review's own terms: a
+caster may target itself with Offense, Defense and Movement, as it already could with Healing,
+and Haste hands its first extra action over at once when it lands mid-activation. The three
+bullets struck above recorded the opposite ban and are history now.
+
+- The self-cast Haste counter is 2, the same as an ally's: the casting activation's own `finish`
+  spends the first of the two, which is why the immediate grant needs no third. Measured self-cast
+  4 (three actions bought the cast, one is left to spend now) / 4 / 3, against an ally's 4 / 4 / 3
+  on the two activations after the cast.
+- The immediate grant is written `u.actions += 1`, never a total: Haste is +1 and a stun is −1, so
+  a stunned self-hasted unit gets 3 + 1 − 1 = 3, pinned by the same test.
+- A self-cast buff does not carry over, by the user's decision: `finish` clears sure strike, wrath,
+  sure footing and fly at the end of the activation cast in, so a Sure strike bought after the
+  activation's one attack is wasted. Haste's immediate grant is the one exception, and only because
+  `begin` has already dealt the actions by the time the spell lands.
+- All nine buffs verified self-cast against the built engine, not by reading: Sure strike and Wrath
+  are spent by the caster's own attack in the remaining actions; Ward, Stoneskin and Aegis clear at
+  the caster's next `begin`, so they stand through the enemy's turn; Sure footing and Fly are read
+  live off `u.sureFooting` / `u.flies`, so the caster moves on them at once (forest fell from 2
+  actions to 1, and a cliff hex went from unreachable to entered); Translocate is instant and moves
+  the caster itself; Haste is the one that needed the fix.
+- Translocate now offers the caster its own placements (four, on an open board with 25-foot Speed):
+  three actions to put yourself a Speed away, out of contact, with nothing striking you. In scope
+  by the decision's own words, and no rule had to change to allow it.
+- Aegis is still uncastable by any tradition's cap, so its self-cast behaviour was read off a
+  forced field rather than a real cast. The open bullet above still stands.
+- `magic.ts`'s Haste detail string was updated alongside rules.html's row, so the popup and the
+  document say the same thing. The board needed no change: `offerCells` already lights whatever a
+  target list holds, and `onToken` takes an armed cast over the radial on the caster's own piece.
+- `magic.ts` still exports `CastTier` (and `castActivityOf(tree, tier)`), the one activity-word
+  "tier" Wave 14's sweep left in the code. Flagged, not renamed: it is Wave 14's territory, not
+  this change's.

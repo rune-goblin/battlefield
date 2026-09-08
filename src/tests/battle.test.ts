@@ -328,6 +328,7 @@ describe('Controlling', () => {
 
 describe('Offense', () => {
   const occultist: UnitCard = { name: 'Occultist', level: 6, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
+  const druid: UnitCard = { name: 'Druid', level: 6, role: 'infantry', caster: true, tradition: 'primal', tactics: [] };
 
   it('Sure strike keeps the better of two rolls', () => {
     const s = createBattle({
@@ -365,40 +366,52 @@ describe('Offense', () => {
     expect(said(landed, 'braces against the persistent wound')).toBe(true);
   });
 
-  it('refuses a buff cast on the caster itself: Offense names an ally', () => {
-    const s = createBattle({
-      units: [
-        { card: occultist, side: 'attacker', square: 'c2' },
-        { card: infantry, side: 'attacker', square: 'c3' },
-        { card: kobolds, side: 'defender', square: 'c7' },
-      ],
-      board: openBoard(),
-    });
-    const offense = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.spell === 'offense')!;
-    expect(offense.activities[2].targets.map((t) => t.id)).toEqual(['u1']);
-    expect(() => act(s, { type: 'cast', spell: 'offense', activity: 3, target: 'u0', unit: 'u0' }, scriptedRng([10])))
-      .toThrow('not a target');
+  const casterAnd = (caster: UnitCard) => createBattle({
+    units: [
+      { card: caster, side: 'attacker', square: 'c2' },
+      { card: infantry, side: 'attacker', square: 'c3' },
+      { card: kobolds, side: 'defender', square: 'c7' },
+    ],
+    board: openBoard(),
   });
 
-  it('a hasted unit has four actions twice and three the third time', () => {
-    let s = createBattle({
-      units: [
-        { card: occultist, side: 'attacker', square: 'c2' },
-        { card: infantry, side: 'attacker', square: 'c3' },
-        { card: kobolds, side: 'defender', square: 'c7' },
-      ],
-      board: openBoard(),
-    });
-    s = act(s, { type: 'cast', spell: 'offense', activity: 3, target: 'u1', unit: 'u0' }, scriptedRng([10]));
-    expect(unit(s, 'u1').haste).toBe(2);
-    const grants: number[] = [];
-    for (let i = 0; i < 3; i++) {
-      while (activeUnit(s)!.id !== 'u1') s = endActivation(s, scriptedRng([10]), activeUnit(s)!.id);
-      s = act(s, { type: 'guard', activity: 1, unit: 'u1' }, scriptedRng([10]));
-      grants.push(unit(s, 'u1').actions + 1);
-      s = endActivation(s, scriptedRng([10]), 'u1');
+  // Actions granted in each of a unit's next `n` activations, read off a one-action Guard.
+  const grantsFor = (start: BattleState, id: string, n: number) => {
+    let s = start;
+    const out: number[] = [];
+    for (let i = 0; i < n; i++) {
+      while (activeUnit(s)!.id !== id) s = endActivation(s, scriptedRng([10]), activeUnit(s)!.id);
+      s = act(s, { type: 'guard', activity: 1, unit: id }, scriptedRng([10]));
+      out.push(unit(s, id).actions + 1);
+      s = endActivation(s, scriptedRng([10]), id);
     }
-    expect(grants).toEqual([4, 4, 3]);
+    return out;
+  };
+
+  it('offers the caster itself for Offense, Defense and Movement, as Healing already does', () => {
+    const s = casterAnd(druid);
+    for (const tree of ['offense', 'defense', 'movement', 'healing'] as const) {
+      const o = availableActions(s, 'u0').find((x) => x.type === 'cast' && x.spell === tree)!;
+      expect(o.activities[0].targets.map((t) => t.id)).toContain('u0');
+    }
+  });
+
+  it('a hasted ally has four actions twice and three the third time', () => {
+    const s = act(casterAnd(occultist), { type: 'cast', spell: 'offense', activity: 3, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(s, 'u1').haste).toBe(2);
+    expect(grantsFor(s, 'u1', 3)).toEqual([4, 4, 3]);
+  });
+
+  it('a caster hasting itself takes the first of the two actions at once', () => {
+    const s = act(casterAnd(occultist), { type: 'cast', spell: 'offense', activity: 3, target: 'u0', unit: 'u0' }, scriptedRng([10]));
+    // Four this activation: three of them bought the cast, and the fourth is left to spend now.
+    expect(unit(s, 'u0').actions).toBe(1);
+    expect(s.active).toBe('u0');
+    const ended = endActivation(s, scriptedRng([10]), 'u0');
+    expect(grantsFor(ended, 'u0', 2)).toEqual([4, 3]);
+    unit(ended, 'u0').stunned = true;
+    // The hasted +1 and the stun's −1 compose to the three every unit has.
+    expect(grantsFor(ended, 'u0', 1)).toEqual([3]);
   });
 });
 

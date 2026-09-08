@@ -73,7 +73,7 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
   offense: [
     ['Sure strike', 'The ally rolls its next attack twice and takes the better.'],
     ['Wrath', "The ally's next hit leaves persistent damage: 1 more wound at the end of the target's next activation."],
-    ['Haste', 'The ally has an additional action on each of its next two activations.'],
+    ['Haste', "An additional action on each of the target's next two activations; on yourself, the first comes at once."],
   ],
   defense: [
     ['Ward', 'The next attack against the ally before it next acts is rolled twice and the attacker takes the worse.'],

@@ -933,11 +933,8 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
       const ceiling = castCeiling(state, tree);
       if (tree === 'blast') return { needsTarget: true, targets: blastTargets(state, u, index, ceiling) };
       if (tree === 'healing') return { needsTarget: true, targets: healTargets(state, u, index) };
-      // Offense, Defense and Movement all read "an ally" in rules.html, where Healing alone
-      // reads "yourself or an adjacent ally" — and Healing has its own branch above. A buff on
-      // the caster would also lose an activation to the caster's own `finish`.
       const pool = TREE_TARGET[tree] === 'enemy' ? enemies
-        : state.units.filter((a) => a.side === u.side && a.status === 'active' && a.id !== u.id);
+        : state.units.filter((a) => a.side === u.side && a.status === 'active');
       const inReach = pool.filter((t) => dist(state, t.square, u.square) <= ceiling);
       if (tree === 'movement' && index === 3) return { needsTarget: true, targets: translocateTargets(state, inReach) };
       return { needsTarget: true, targets: inReach.map(unitTarget) };
@@ -1153,13 +1150,6 @@ function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: 
 /** The one unit an ally tree or a Controlling cast lands on, or null when it is out of range. */
 function castTarget(state: BattleState, u: Unit, tree: Tree, action: ActivityAction): Unit | null {
   const target = action.target ? unit(state, action.target) : u;
-  // Every buff tree names "an ally", never the caster — Healing alone reads "yourself or an
-  // adjacent ally", and it never comes through here. Self-cast would also cost the buff an
-  // activation: the caster's own `finish` runs at the end of the very activation it cast in.
-  if (target.id === u.id && TREE_TARGET[tree] === 'ally') {
-    log(state, u, `${u.name}'s ${TREE_LABEL[tree]} must fall on an ally.`);
-    return null;
-  }
   if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, tree)) {
     log(state, u, `${u.name}'s ${TREE_LABEL[tree]} cannot carry to ${target.name}.`);
     return null;
@@ -1334,7 +1324,15 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       } else {
         if (target.haste > 0) { log(state, target, `${target.name} is already hasted.`); break; }
         target.haste = 2;
-        log(state, target, `${target.name} is hasted: an extra action on each of its next two activations.`);
+        // `begin` is what deals the extra action, and on a self-cast it has already run, so the
+        // first of the two is handed over here; this activation's `finish` spends it like any
+        // other. A delta, never a total: a stun still subtracts from it.
+        if (target.id === u.id) {
+          u.actions += 1;
+          log(state, target, `${target.name} is hasted: an extra action at once, and one on its next activation.`);
+        } else {
+          log(state, target, `${target.name} is hasted: an extra action on each of its next two activations.`);
+        }
       }
       break;
     }
