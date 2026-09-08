@@ -439,6 +439,47 @@ describe('Defense', () => {
   });
 });
 
+describe('Movement', () => {
+  const wizard: UnitCard = { name: 'Wizard', level: 6, role: 'infantry', caster: true, tradition: 'arcane', tactics: [] };
+  const druid: UnitCard = { name: 'Druid', level: 6, role: 'infantry', caster: true, tradition: 'primal', tactics: [] };
+
+  it('a sure-footed troop enters swamp for one action, where it pays three', () => {
+    const board = openBoard();
+    board.squares[3][2].terrain = 'swamp';
+    const s = createBattle({
+      units: [
+        { card: wizard, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'c3' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board,
+    });
+    expect(moves(s, 'u1').get('c4')).toMatchObject({ feet: 30, actions: 3 });
+    const cast = act(s, { type: 'cast', spell: 'movement', rung: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(cast, 'u1').sureFooting).toBe(true);
+    expect(moves(cast, 'u1').get('c4')).toMatchObject({ feet: 10, actions: 1 });
+  });
+
+  it('Translocate lifts an ally out of contact, with no strike and none of its own actions', () => {
+    const s = createBattle({
+      units: [
+        { card: druid, side: 'attacker', square: 'c2' },
+        { card: infantry, side: 'attacker', square: 'c3' },
+        { card: kobolds, side: 'defender', square: 'c7' },
+      ],
+      board: openBoard(),
+    });
+    place(s, 'u2', 'c4');
+    const movement = availableActions(s, 'u0').find((o) => o.type === 'cast' && o.spell === 'movement')!;
+    expect(movement.rungs[2].targets.map((t) => t.id)).toContain('c3+b3');
+    const cast = act(s, { type: 'cast', spell: 'movement', rung: 3, target: 'c3+b3', unit: 'u0' }, scriptedRng([10]));
+    expect(unit(cast, 'u1').square).toEqual(parse('b3'));
+    expect(unit(cast, 'u1').wounds).toBe(0);
+    expect(unit(cast, 'u1').actions).toBe(ACTIONS_PER_ACTIVATION);
+    expect(said(cast, 'strikes the')).toBe(false);
+  });
+});
+
 describe('movement points', () => {
   it('one Move action carries a troop one square, and a Pace unit two', () => {
     const { state } = battle([]);

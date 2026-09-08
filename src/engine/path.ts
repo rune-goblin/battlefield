@@ -24,9 +24,13 @@ export interface MoveOpts {
   budget: number;
   /** A flier ignores terrain cost and every blocked edge. */
   flying?: boolean;
+  /** Sure footing: every hex costs one and a climb nothing. Water and blocked edges still stop it. */
+  surefooted?: boolean;
   /** Cells somebody else is standing on. */
   occupied?: ReadonlySet<string>;
 }
+
+export type StepOpts = Omit<MoveOpts, 'budget' | 'occupied'>;
 
 export interface ReachEntry {
   /** Feet spent getting here from the start. */
@@ -41,12 +45,15 @@ export type ReachMap = Map<string, ReachEntry>;
  * Feet to step from one neighbouring cell to the next, or `Infinity` when the step is blocked.
  * Walls and cliffs sit on edges, so a breached wall is a crossing with no cost of its own.
  */
-export function stepFeet(board: Board, from: Square, to: Square, flying = false): number {
+export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts = {}): number {
   if (!gridOf(board).inBounds(to)) return Infinity;
-  if (flying) return CELL_FEET;
+  if (opts.flying) return CELL_FEET;
   if (barrierBetween(board, from, to) !== null) return Infinity;
+  const ground = TERRAIN_FEET[at(board, to).terrain];
+  // Water is the one ground Sure footing cannot flatten: it blocks where forest merely costs.
+  if (opts.surefooted) return Number.isFinite(ground) ? CELL_FEET : Infinity;
   const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
-  return TERRAIN_FEET[at(board, to).terrain] + climb * CLIMB_FEET;
+  return ground + climb * CLIMB_FEET;
 }
 
 /**
@@ -55,7 +62,7 @@ export function stepFeet(board: Board, from: Square, to: Square, flying = false)
  */
 export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap {
   const g = gridOf(board);
-  const flying = opts.flying ?? false;
+  const step: StepOpts = { flying: opts.flying, surefooted: opts.surefooted };
   const occupied = opts.occupied ?? new Set<string>();
   const startKey = notation(start);
   const reach: ReachMap = new Map([[startKey, { feet: 0, from: null }]]);
@@ -69,7 +76,7 @@ export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap
     for (const n of g.neighbours(cur.cell)) {
       const key = notation(n);
       if (occupied.has(key)) continue;
-      const feet = cur.feet + stepFeet(board, cur.cell, n, flying);
+      const feet = cur.feet + stepFeet(board, cur.cell, n, step);
       if (!Number.isFinite(feet) || feet > opts.budget) continue;
       if (feet >= (reach.get(key)?.feet ?? Infinity)) continue;
       reach.set(key, { feet, from: notation(cur.cell) });

@@ -483,3 +483,36 @@ top of Wave 11.
 - Aegis's unreachability by any tradition cap is untouched and sharpened under "Open, for play"
   above: it is a balance call on the Tradition table, and both the engine and rules.html carry
   the number.
+
+## Wave 12 (2026-09-08)
+
+- **Translocate names a pair of hexes, the ally's own and the one it lands on**, joined by '+'
+  (`c3+b3`), the encoding Line and Burst already use: the aim popup takes one pick, and
+  `targetMatches` finds the pair by touching either hex — the ally's token or the empty hex.
+  Enumerated per ally, so a hex within reach of two allies moves whichever is listed first.
+  `// proto:`, the same shortcut and the same limit as a Blast's shape.
+- **A landing hex must be empty and standable**: not water, unless the ally flies. "Any empty
+  hex" is about what is in it, and nothing else in the engine puts a land troop in a river —
+  `canDeploy` refuses one too. A flier may already end its Move over water, so it may land there.
+- **Sure footing and Fly get no "already under it" guard**, following Wave 10's Wrath: the rules
+  name the guard for Ward, Stoneskin, Aegis, Sure strike and Haste and not for these two, and
+  setting a boolean already true is a no-op. Haste needed one only because it holds a count.
+- **`stepFeet` takes an options object** (`{ flying, surefooted }`) rather than a third boolean:
+  two of them side by side read as a puzzle at every call site, and `reachable` builds one
+  `StepOpts` for the whole search.
+- **Water still stops a sure-footed unit**, along with walls and cliffs: Sure footing flattens
+  the price of ground a unit could already cross, and section 7 says water "cannot be entered
+  at all" — the table in section 11 gives crossing a river to Fly alone.
+- **`u.flying || u.flies` is one thing everywhere a unit pays for ground**, but a no-retreat
+  holder's `follow` still reads `holder.flying` alone: Fly buys "its next activation", and a
+  chase after somebody else's withdrawal is not the holder's activation.
+- **Translocate does not clear the ally's pin.** Wave 5 cleared `pinnedBy` on a withdrawal
+  because a pin that survived it would cost the unit every activation; a Translocate is not the
+  pinned unit's own action, nothing in section 11 says it breaks a pin, and the pin ends at the
+  shooter's next activation regardless.
+- **rules.html's Fly carries a clause the engine does not: "Nothing engages it across a wall or
+  a cliff it crosses."** A cliff already breaks engagement for everyone (`isEngaged`), but a
+  standing wall does not — section 10 makes contact across a wall hold. Honouring the clause as
+  written needs the engine to remember which edges a flight crossed; the broad reading (a flier
+  is never engaged across a wall) would change holders, free strikes and withdrawal for every
+  native flier as well. The plan's own Wave 12 table omits the clause. Flagged, not built.

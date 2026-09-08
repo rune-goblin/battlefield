@@ -3,7 +3,7 @@ import {
   type Board, type Square, type SquareTerrain, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { pathTo, reachable, stepFeet, type ReachMap } from './path.js';
+import { CELL_FEET, pathTo, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
 import { check, readCheck, readTwice, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   LADDERS, qualityFor, rungOf, treesFor,
@@ -569,8 +569,12 @@ function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier
   log(state, u, wall.remaining ? `The wall holds ${wall.remaining}/${wall.boxes}.` : `The wall at ${key} is breached.`);
 }
 
+/** How this unit pays for ground: a native flier and Fly are the same thing, and Sure footing
+ * flattens every price short of water. */
+const groundFor = (u: Unit): StepOpts => ({ flying: u.flying || u.flies, surefooted: u.sureFooting });
+
 const enterable = (state: BattleState, u: Unit, from: Square, to: Square) =>
-  !unitAt(state, to) && Number.isFinite(stepFeet(state.board, from, to, u.flying));
+  !unitAt(state, to) && Number.isFinite(stepFeet(state.board, from, to, groundFor(u)));
 
 const occupiedBy = (state: BattleState, u: Unit) =>
   new Set(state.units.filter((o) => o.status === 'active' && o.id !== u.id).map((o) => notation(o.square)));
@@ -590,7 +594,7 @@ export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
   // A unit in contact leaves by withdrawing, which is its own ladder and its own price.
   if (engagedEnemies(state, u).length) return out;
   const reach = reachable(state.board, u.square, {
-    budget: movementBudget(u), flying: u.flying, occupied: occupiedBy(state, u),
+    budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u),
   });
   const home = notation(u.square);
   for (const [key, entry] of reach) {
@@ -629,17 +633,18 @@ function chargeReach(state: BattleState, u: Unit): ReachMap {
   if (u.status !== 'active' || u.speed === 0 || u.rooted > 0 || u.pinnedBy) return new Map();
   if (u.actions <= 0 || engagedEnemies(state, u).length) return new Map();
   return reachable(state.board, u.square, {
-    budget: CHARGE_SPEEDS * u.speed, flying: u.flying, occupied: occupiedBy(state, u),
+    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), occupied: occupiedBy(state, u),
   });
 }
 
 const ROUGH: SquareTerrain[] = ['forest', 'swamp', 'shallows'];
 
 // proto: reads off the cheapest route alone, where the rules allow any path the movement
-// affords — a charge denied its +2 here might have kept it by a longer way round. Sure footing
-// (Wave 12) restores it outright.
-/** The +2, unless the run crossed rough going or climbed for it. */
-function chargeBonus(state: BattleState, path: string[]): number {
+// affords — a charge denied its +2 here might have kept it by a longer way round.
+/** The +2, unless the run crossed rough going or climbed for it. Sure footing turns rough
+ * ground open, so it keeps the +2 wherever the run went. */
+function chargeBonus(state: BattleState, u: Unit, path: string[]): number {
+  if (u.sureFooting) return ACTION_BONUS;
   for (let i = 1; i < path.length; i++) {
     const here = at(state.board, parse(path[i]));
     if (ROUGH.includes(here.terrain)) return 0;
@@ -686,7 +691,7 @@ export function withdrawTargets(state: BattleState, u: Unit, feet = 0): Square[]
     .filter((n) => enterable(state, u, u.square, n))
     .map(notation));
   if (feet > 0 && u.speed > 0) {
-    const reach = reachable(state.board, u.square, { budget: feet, flying: u.flying, occupied: occupiedBy(state, u) });
+    const reach = reachable(state.board, u.square, { budget: feet, ...groundFor(u), occupied: occupiedBy(state, u) });
     for (const key of reach.keys()) {
       const sq = parse(key);
       if (sameSquare(sq, u.square)) continue;
@@ -848,6 +853,30 @@ function healTargets(state: BattleState, u: Unit, index: Grade): RungTarget[] {
     .map((group) => ({ kind: 'unit' as const, id: group.map((t) => t.id).sort().join('+'), label: group.map((t) => t.name).join(', ') }));
 }
 
+/** A hex a unit may be set down in: empty, and ground it could stand on — water holds nobody
+ * that cannot fly over it. */
+const standable = (state: BattleState, u: Unit, sq: Square) =>
+  !unitAt(state, sq) && (u.flying || u.flies || at(state.board, sq).terrain !== 'water');
+
+// proto: the pair is one target, the ally's own hex and the hex it lands on joined by '+', so
+// the aim popup needs no second pick — the same shape a Blast's Line uses. Touching either hex
+// finds it, and touching one that several pairs share lands on the first of them.
+/** Every placement Translocate offers: each ally, and each empty hex within that ally's own
+ * Speed of it, whatever lies between. */
+function translocateTargets(state: BattleState, allies: Unit[]): RungTarget[] {
+  const g = grid(state);
+  const out: RungTarget[] = [];
+  for (const a of allies) {
+    const hexes = Math.floor(a.speed / CELL_FEET);
+    for (const sq of g.cells()) {
+      const away = dist(state, a.square, sq);
+      if (away < 1 || away > hexes || !standable(state, a, sq)) continue;
+      out.push({ kind: 'cell', id: `${notation(a.square)}+${notation(sq)}`, label: `${a.name} to ${notation(sq)}` });
+    }
+  }
+  return out;
+}
+
 function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade, spell: Tree | null): TargetSet {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
   switch (type) {
@@ -882,7 +911,9 @@ function targetsFor(state: BattleState, u: Unit, type: LadderType, index: Grade,
       // and Movement, which reads the same way, is Wave 12's own territory.
       const pool = wants === 'enemy' ? enemies : state.units.filter((a) => a.side === u.side && a.status === 'active' && (tree === 'movement' || a.id !== u.id));
       const inRangeOf = (t: Unit) => t.id === u.id || dist(state, t.square, u.square) <= ceiling;
-      return { needsTarget: true, targets: pool.filter((t) => (wants === 'enemy' ? t.id !== u.id : true) && inRangeOf(t)).map(unitTarget) };
+      const inReach = pool.filter((t) => (wants === 'enemy' ? t.id !== u.id : true) && inRangeOf(t));
+      if (tree === 'movement' && index === 3) return { needsTarget: true, targets: translocateTargets(state, inReach) };
+      return { needsTarget: true, targets: inReach.map(unitTarget) };
     }
   }
 }
@@ -1202,6 +1233,20 @@ function healOne(state: BattleState, target: Unit, degree: Degree) {
   if (!endCondition(state, target)) healWound(state, target);
 }
 
+/** Translocate, the one buff that happens at cast time: the ally is set down whatever lies
+ * between, and the leap is none of its own actions. No check, and no free strike from anything
+ * it was in contact with. */
+function translocate(state: BattleState, u: Unit, label: string, action: RungAction) {
+  const [home, landing] = (action.target ?? '').split('+');
+  const ally = unitAt(state, parse(home));
+  if (!ally || !landing) { log(state, u, `${u.name}'s ${label} finds nobody to move.`); return; }
+  const held = engagedEnemies(state, ally).length > 0;
+  log(state, u, `${u.name} casts ${label} on ${ally.name}.`);
+  moveTo(state, ally, parse(landing));
+  log(state, ally, `${ally.name} is set down on ${landing}${held ? ', out of contact with nothing to strike it' : ''}.`);
+  fearOnContact(state, ally);
+}
+
 /**
  * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
  * and its own effect; `index` is the activity bought, which is also its price.
@@ -1285,12 +1330,19 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: G
       }
       break;
     }
-    // proto: Movement becomes a menu of three named activities in Wave 12. Its old buff went
-    // with the fields that held it, so the cast carries and lands nothing in between.
     case 'movement': {
+      const activity = castRungOf('movement', index);
+      if (index === 3) { translocate(state, u, activity.label, action); break; }
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      log(state, u, `${u.name}'s ${TREE_LABEL[tree]} settles on ${target.name} and does nothing yet.`);
+      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
+      if (index === 1) {
+        target.sureFooting = true;
+        log(state, target, `${target.name} has sure footing: every hex costs it 1 on its next activation, and a charge through rough ground still lands its +2.`);
+      } else {
+        target.flies = true;
+        log(state, target, `${target.name} flies on its next activation: 1 a hex, across water, cliffs and standing walls.`);
+      }
       break;
     }
   }
@@ -1594,7 +1646,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const wanted = action.rung ?? 1;
   const cost = CHARGE_ACTIONS + wanted;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
-  const bonus = chargeBonus(state, pathTo(reach, option.cell));
+  const bonus = chargeBonus(state, u, pathTo(reach, option.cell));
   // Read from the hex the charge starts in, whatever hex it ends on.
   const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
   const impact = u.tactics.includes('cavalry-charge');
