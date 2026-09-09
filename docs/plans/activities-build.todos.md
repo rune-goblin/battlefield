@@ -790,6 +790,18 @@ bullets struck above recorded the opposite ban and are history now.
 - 2026-09-08: `CastTier` became `CastActivityIndex` and `castActivityOf`'s parameter `tier`
   became `index`, closing the last activity-word "tier" Wave 14's sweep left in the code. The
   fort's and the wall's tiers stay: those are physical constructions, not activities.
+- 2026-09-09: `public/rules.html` prose pass. Section 6 became "Battlefield activities": the grid
+  showing all twelve verb activities at once is gone, replaced by one index table naming each
+  verb's activities and the section that reads them. Every activity keeps the individual ladder
+  table (Activity / Cost / What it does) it already had in sections 7, 8, 9 and 11, so no effect
+  text was lost with the grid — the grid's rows were an abridged duplicate of those tables.
+  Judgment calls made in the same pass:
+  - Section 2 said Fortitude reads for "a wound from a shot, a Blast or a free strike". The engine
+    (`wound` in `battle.ts`) asks the save on every wound that is neither pressed nor stoneskinned,
+    which section 8's own table already said. The sentence now says any wound.
+  - Section 8's "Against a unit under cover an Overrun is a Press" read ambiguously between Dig in
+    and Take cover. `GuardEffect.holds` is Take cover's alone, so the sentence names it.
+  - A stray `</div>` after the Movement table in section 11 is removed; the file's div tags balance.
 
 ## Decisions built (2026-09-09)
 

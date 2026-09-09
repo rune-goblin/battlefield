@@ -48,7 +48,7 @@
 <p class="sub">Rules for resolving a battle between armies in a single sitting.</p>
 
 <div class="key">
-<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of sixty-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit does one of five things — Shoot, Fight, Guard, Rally, Cast — or it moves. Shoot, Fight, Guard and Rally each offer three activities, priced one, two and three actions for every unit. Nothing is rolled for an activity. Cast is six trees, each three activities priced the same way (section 11). Actions left over buy other acts, never a bonus. An attack is one roll: a hit deals wounds, one or two, and four wounds destroy a unit. A wound costs the target disorder unless its Fortitude saves, and a Fight that misses costs the attacker disorder unless its Will saves. A unit whose disorder reaches its Quality is shaken, and one point past it routs. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
+<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of sixty-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit spends those actions on <strong>battlefield activities</strong>. Shoot, Fight, Guard and Rally each offer three, priced at one, two and three actions; Cast offers six trees of three (section 11); moving offers its own (section 7). Every activity costs the same for every unit, and nothing is rolled for it. Spare actions buy another activity. An attack is one roll: a hit deals one wound, a critical two, and four wounds destroy a unit. A wound costs the target disorder unless its Fortitude saves. A Fight that misses costs the attacker disorder unless its Will saves. A unit whose disorder reaches its Quality is shaken, and one point past it routs. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
 </div>
 
 <nav class="toc">
@@ -57,7 +57,7 @@
 <a href="#board">3. The battlefield</a><br>
 <a href="#setup">4. Setting up</a><br>
 <a href="#round">5. The round</a><br>
-<a href="#activities">6. Activities and price</a><br>
+<a href="#activities">6. Battlefield activities</a><br>
 <a href="#move">7. Moving and breaking away</a><br>
 <a href="#wounds">8. Wounds</a><br>
 <a href="#disorder">9. Disorder and rout</a><br>
@@ -92,12 +92,12 @@
 <tr><td>Disorder</td><td>From the army's demoralized value (section 9)</td><td>0</td></tr>
 </table></div>
 <p>Level DCs are the standard table: level 1 is DC 15, 3 is 18, 6 is 22, 8 is 24, 12 is 30.</p>
-<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level where Armour Class spreads 3.2, which is why breaking contact reads off Reflex rather than off Defence. Perception is derived and displayed, but no rule reads it — there is no initiative roll (section 5). Fortitude now reads for one thing: the save a wound from a shot, a Blast or a free strike asks before it disorders anyone (section 8).</p>
+<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level, where Armour Class spreads 3.2. Breaking contact therefore reads off Reflex. Perception is displayed, but no rule reads it: there is no initiative roll (section 5). Fortitude reads for one thing, the save against the disorder a wound would cost (section 8).</p>
 <p>A card with no sheet takes the level tables for its type. Infantry: high AC, moderate attack, high Will, moderate Reflex, moderate Fortitude, one hex an action. Cavalry: high AC, high attack, moderate Will, high Reflex, moderate Fortitude, two hexes an action.</p>
 
 <h3>Three actions</h3>
-<p>Every unit has three actions in its activation, and every activity costs its own number of them for every unit: one, two or three (section 6). A better troop is better by its numbers alone, never by a cheaper activity or a longer activation. The one thing that grants a fourth is Haste (section 11).</p>
-<p>An importer reads <em>no retreat</em> straight off the recurring action names on a statblock (section 7). <em>Melee drill</em>, <em>shields</em>, <em>formation</em> and <em>magic ward</em> are recurring names too, but the engine reads none of them: every troop's activities cost the same whatever its statblock calls out. <em>Mounted</em> is no longer read either: pace already carries the charge.</p>
+<p>Every unit has three actions in its activation, and every activity costs one, two or three of them (section 6). The price is the same for every unit, so a better troop is better by its numbers. Haste alone grants a fourth action (section 11).</p>
+<p>An importer reads <em>no retreat</em> off the recurring action names on a statblock (section 7). <em>Melee drill</em>, <em>shields</em>, <em>formation</em> and <em>magic ward</em> recur too, and the engine reads none of them: every troop's activities cost the same. It reads <em>mounted</em> no longer either, since pace already carries the charge.</p>
 <div class="aside">
 <h4>Armour Class and attack DC say nothing about a troop</h4>
 <p>Across all 162 published troops, Armour Class spreads 3.2 points within a level and attack DC 2.6 — at level 12 every troop shares one attack DC. Both are functions of level, so neither says anything about a troop's character. Will spreads 5.1 and Speed falls across seven bands, so those two are read numerically, and the recurring action names carry the rest.</p>
@@ -118,7 +118,7 @@
 <tr><td>7&ndash;8</td><td>Extreme</td><td>No troop's own Salvo is anchored here &mdash; only a siege engine's effective range starts this far out</td></tr>
 <tr><td>9 or more</td><td>Beyond</td><td>Never occurs on this board: extreme's own ceiling is already the farthest two hexes can be</td></tr>
 </table>
-<p>A shot reaches any target the shooter can see. <strong>Fire</strong> is a weapon's own effective range (its Reach, section 2); each band beyond it costs &minus;2 on the roll, and nearer bands cost nothing (section 8). A short-reach troop shooting into extreme is at &minus;6.</p>
+<p>A shot reaches any target the shooter can see. Each band beyond the weapon's own effective range (its Reach, section 2) costs &minus;2 on the roll, and nearer bands cost nothing (section 8). A short-reach troop shooting into extreme is at &minus;6.</p>
 <figure><svg viewBox="0 0 472 432" role="img" aria-label="Shooting bands measured from c3: colour deepens toward the centre; the plain unshaded hexes at the edge are extreme range">
 <polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="hx b1"/>
 <polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="cell"/>
@@ -410,33 +410,39 @@
 <li>An emplaced engine with only the enemy beside it changes hands. Every engine reloads.</li>
 <li>If either side has no unit still standing, the battle ends. If this was the sixth round, dusk ends it.</li>
 </ol>
-<p>Alternating activation is what keeps a round readable: no side ever takes its whole army's worth of actions while the other watches, and a side that outnumbers the other spends its surplus at the end of the round rather than the start.</p>
+<p>Alternating activation keeps a round readable. No side takes its whole army's worth of actions while the other watches, and a side that outnumbers the other spends its surplus at the end of the round.</p>
 
-<h2 id="activities">6. Activities and price</h2>
-<p>Four verbs, and each offers three <strong>battlefield activities</strong>, in Pathfinder's sense: a named thing that costs one, two or three actions and does more than the actions would one at a time. A verb's two- and three-action activities do what its one-action activity does and more; the buffs of section 11 are the exception, three separate things. A fifth verb, Cast, is six trees, each three activities that a tradition caps (section 11). The verbs are read in full where they live: Shoot and Guard in section 8, Rally in section 9, Charge and Withdraw in section 7.</p>
+<h2 id="activities">6. Battlefield activities</h2>
+<p>A unit spends its three actions on <strong>battlefield activities</strong>. An activity is a named act priced at one, two or three actions, in Pathfinder's sense: it buys more than the same actions would buy one at a time. Five verbs offer activities &mdash; Shoot, Fight, Guard, Rally and Cast &mdash; and moving offers three more.</p>
+<p>Within a verb, the two- and three-action activities do what the one-action activity does and more. The buffs of section 11 are the exception: three separate effects at three prices.</p>
+<p>Each verb's activities are set out in full in the section named below.</p>
 <div class="wrap"><table>
-<tr><th>Verb</th><th>◆ one action</th><th>◆◆ two actions</th><th>◆◆◆ three actions</th></tr>
-<tr><td>Shoot</td><td><strong>Fire</strong> &mdash; a volley, &minus;2 a band beyond your effective range</td><td><strong>Suppress</strong> &mdash; Fire, and hit or miss the target is suppressed: &minus;2 to everything until your next activation</td><td><strong>Pin</strong> &mdash; Suppress, and the target is pinned: you are one of its holders</td></tr>
-<tr><td>Fight</td><td><strong>Strike</strong> &mdash; one roll against their Defence (section 8)</td><td><strong>Press</strong> &mdash; a hit's disorder needs no save</td><td><strong>Overrun</strong> &mdash; Press, and a hit drives them one hex straight back; you take their ground</td></tr>
-<tr><td>Guard</td><td><strong>Brace</strong> &mdash; +2 Defence</td><td><strong>Dig in</strong> &mdash; Brace, and every hit against you lands as an ordinary hit</td><td><strong>Take cover</strong> &mdash; Dig in, and +4 Defence in place of the +2; an Overrun cannot drive you back; you may not move again this activation</td></tr>
-<tr><td>Rally</td><td><strong>Steady</strong> &mdash; roll; a success clears 1 of your own disorder, or inspires you if you have none</td><td><strong>Rally</strong> &mdash; and the same result for one adjacent ally</td><td><strong>Inspire</strong> &mdash; and for every friendly unit within 2</td></tr>
+<tr><th>Verb</th><th>Its activities</th><th>Read in</th></tr>
+<tr><td>Move</td><td>Move ◆</td><td>Section 7</td></tr>
+<tr><td>Charge</td><td>Charge ◆◆ &middot; Charge and Press ◆◆◆ &middot; Charge and Overrun ◆◆◆◆</td><td>Section 7</td></tr>
+<tr><td>Withdraw</td><td>Break off ◆ &middot; Disengage ◆◆ &middot; Fighting retreat ◆◆◆</td><td>Section 7</td></tr>
+<tr><td>Shoot</td><td>Fire ◆ &middot; Suppress ◆◆ &middot; Pin ◆◆◆</td><td>Section 8</td></tr>
+<tr><td>Fight</td><td>Strike ◆ &middot; Press ◆◆ &middot; Overrun ◆◆◆</td><td>Section 8</td></tr>
+<tr><td>Guard</td><td>Brace ◆ &middot; Dig in ◆◆ &middot; Take cover ◆◆◆</td><td>Section 8</td></tr>
+<tr><td>Rally</td><td>Steady ◆ &middot; Rally ◆◆ &middot; Inspire ◆◆◆</td><td>Section 9</td></tr>
+<tr><td>Cast</td><td>Six trees, three activities each</td><td>Section 11</td></tr>
 </table></div>
-<p>The menu is filtered by where the unit stands, so it is never long. In contact: Fight and Guard. In the open: Shoot and Guard. A shaken unit is offered Rally alone, and a routed one no activity at all; both may still Move and withdraw. Rally is otherwise always offered; a caster adds a row for each of the six trees its tradition grants, and a troop with battlefield medicine or demoralize a single row for the one tree its tactic grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
+<p>Where a unit stands filters its menu, which is therefore never long. In contact it is offered Fight and Guard; in the open, Shoot and Guard. A shaken unit is offered Rally alone, and a routed one no activity at all; both may still Move and withdraw. Rally is otherwise always offered. A caster adds a row for each tree its tradition grants, and a troop with battlefield medicine or demoralize adds one row for the tree its tactic grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
 
 <h3 id="price">The price</h3>
-<p>Every activity costs the same for every unit: the one, two or three actions its diamonds show. Nothing is rolled for an activity, and nothing converts an action into a bonus: what an action buys is always a different effect, never a bigger number on the same one. This is Pathfinder's own shape, the one-, two- and three-action versions of Heal. A better troop is not cheaper; it is better by its numbers (section 2). Three actions buy one three-action activity and nothing over, and only a hasted unit has a fourth (section 11).</p>
-<p>So a three-action activation is a plan made of named things: Strike and Brace, or Strike, Brace and Steady, or Overrun alone. The third action on one verb competes with the third action on every other, and that is the whole decision.</p>
+<p>Every activity costs the same for every unit: the one, two or three actions its diamonds show. Nothing is rolled for an activity, and no action buys a bonus on a roll. Each action buys its own effect, which is the shape of Pathfinder's own Heal in its one-, two- and three-action versions. A better troop pays the same prices and is better by its numbers (section 2). Three actions buy one three-action activity and nothing over, and only a hasted unit has a fourth (section 11).</p>
+<p>So an activation is a plan made of named things: Strike and Brace, or Strike, Brace and Steady, or Overrun alone. The third action on one verb competes with the third action on every other, and that is the whole decision.</p>
 <div class="key">
-<p><strong>One attack an activation.</strong> Fight, Shoot and a Blast are the same slot. A second attack was the thing that broke the pacing, so the spare actions buy other acts instead. Everything else &mdash; Guard, Rally, the other spells, moving &mdash; may be repeated, and a Cast tree once an activation.</p>
+<p><strong>One attack an activation.</strong> Fight, Shoot and a Blast share one slot. A second attack broke the pacing, so spare actions buy other activities instead. Everything else may be repeated &mdash; Guard, Rally, the other spells, moving &mdash; and a Cast tree once an activation.</p>
 </div>
 
 <h2 id="move">7. Moving and breaking away</h2>
 <h3>Move</h3>
-<p>One Move action buys the unit's hexes (the row above), and a hex costs that budget by its terrain: 1 for open ground or a settlement, 2 for forest or shallows, 3 for swamp, plus 1 for each level of height climbed. Water cannot be entered at all. So a 1-hex-an-action infantry troop spends two actions to enter forest and three to enter swamp, and a 2-hex-an-action cavalry troop spends one and two.</p>
-<p>Movement banks across the whole activation rather than lapsing at the end of each Move, so a 2-hex troop that steps one open hex keeps the leftover hex for the next step. A unit may not enter an occupied hex, cross a standing wall, or cross a cliff. A breach in a wall is an ordinary crossing.</p>
+<p>One Move action buys the unit's hexes (its Speed, section 2). Each hex costs from that budget by its terrain: 1 for open ground or a settlement, 2 for forest or shallows, 3 for swamp, and 1 more for each level of height climbed. Water cannot be entered. So a 1-hex-an-action infantry troop spends two actions to enter forest and three to enter swamp, and a 2-hex-an-action cavalry troop spends one and two.</p>
+<p>Movement banks across the whole activation, so a 2-hex troop that steps one open hex keeps the leftover hex for its next step. A unit may not enter an occupied hex, cross a standing wall, or cross a cliff. A breach in a wall is an ordinary crossing.</p>
 <p>A flier pays 1 a hex whatever the ground and crosses walls and cliffs. Flight buys no extra distance: how far a unit goes is still its Speed.</p>
 <h3>Charge</h3>
-<p>Charge is for everyone. One action of movement buys up to two Speeds, at the ordinary terrain prices, provided it ends in contact and in a Fight. The Fight is at +2, and the charger is <strong>exposed</strong> until it next acts: &minus;2 Defence, the condition a critically failed Strike hands out. It is the activation's attack. A charge may not begin in contact; that is a Fight.</p>
+<p>Every unit may charge. One action of movement buys up to two Speeds at the ordinary terrain prices, provided it ends in contact and in a Fight. The Fight is at +2, and the charger is <strong>exposed</strong> until it next acts: &minus;2 Defence, the same condition a critically failed Strike hands out. The charge spends the activation's attack. A unit already in contact fights instead of charging.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Charge</td><td>◆◆</td><td>Up to two Speeds of movement ending in contact, then a Strike at +2. You are exposed until you next act. A miss repulses like any Fight.</td></tr>
@@ -444,7 +450,7 @@
 <tr><td>Charge and Overrun</td><td>◆◆◆◆</td><td>Charge, then Overrun: a hit's disorder needs no save, and it drives them one hex straight back; you take their ground. Four actions, so only a hasted unit can buy it (section 11).</td></tr>
 </table></div>
 <ul>
-<li><strong>Ground.</strong> A charge whose path enters forest, swamp or shallows, or climbs, lands no +2; the discount stands and the charger is still exposed. A charge that starts from a hex higher than the target's puts the target's save against disorder at &minus;2, whatever hex the charge ends on. The path is any path the movement allows. A flier's charge reads the ground like any other's: flight prices the hex and does not turn it open. Sure footing alone (section 11) does, and keeps the +2.</li>
+<li><strong>Ground.</strong> A charge whose path enters forest, swamp or shallows, or climbs, lands no +2. It keeps the movement discount, and the charger is still exposed. A charge that starts from a hex higher than the target's puts the target's save against disorder at &minus;2, wherever it ends. The path is any the movement allows. A flier's charge reads the ground like any other charge: flight prices the hex and leaves it rough. Sure footing (section 11) makes it open ground and keeps the +2.</li>
 <li><strong>Reach.</strong> Infantry charges 2 hexes, which is short range. A paced troop charges 4, into medium.</li>
 <li><strong>Cavalry charge</strong>, the tactic, is the impact: the charge's hit needs no save, so a Strike lands as a Press and a Press as an Overrun, at the price paid.</li>
 <li><strong>The first unit you engage.</strong> You must charge the first unit you engage: a route that would bring the charger into contact with any enemy but its target is closed to it, so the run turns aside from every hex another enemy holds. An enemy across a wall or a cliff holds none of them, since neither edge holds engagement (section 10). Where more than one hex touching the target is in reach, the charge comes in on one that keeps the +2 &mdash; the run costs the same one action however far it carries.</li>
@@ -453,7 +459,7 @@
 </ul>
 
 <h3>Withdraw</h3>
-<p>Withdrawing is the only way out of contact. A shaken or routed unit in the open Moves like any other; in contact it withdraws like any other. Ground is never for sale: once clear, a unit Moves like any other. The three activities change who rolls. At Break off the withdrawing unit rolls to get away; above it, it simply goes, and the enemy left holding air rolls instead.</p>
+<p>Withdrawing is the only way out of contact, and a shaken or routed unit moves and withdraws like any other. The three activities differ in who rolls: at Break off the withdrawing unit rolls to get away; above it, the unit simply goes and each holder rolls instead. Once clear, further ground is an ordinary Move.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Break off</td><td>◆</td><td>One Disengage check against the highest holder, below. On a success, one hex clear of everything holding you; on a critical, a free Move of your Speed.</td></tr>
@@ -482,11 +488,11 @@
 </g>
 <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
 </svg><figcaption>A hit adds one wound, a critical two. Nothing is rolled for damage.</figcaption></figure>
-<p>Damage is never rolled. A hit deals one wound, a critical hit two, and each unit holds four. The level difference between attacker and target does the work damage dice do elsewhere: a level-6 troop striking a level-2 troop hits on about 7 and criticals from 17, and the reverse hits only from 17 and cannot critical without help.</p>
+<p>Damage is never rolled. A hit deals one wound, a critical hit two, and each unit holds four. The level difference between attacker and target does the work damage dice do elsewhere. A level-6 troop striking a level-2 troop hits on about 7 and criticals from 17; the level-2 troop hits only from 17 and cannot critical without help.</p>
 <p>A unit that enters battle already hurt starts with wounds: 0 above three-quarters of its hit points, 1 above half, 2 above a quarter, 3 with any left. After the battle they are written back the same way.</p>
 
 <h3>The attack</h3>
-<p>Every attack is one roll, one way. A Fight is d20 + Strike against the target's Defence; a shot is d20 + Volley the same way; a Blast is the caster's spell attack. Critical success deals 2 wounds, success 1, failure nothing. Nobody strikes back: the target's answer is its own activation.</p>
+<p>Every attack is one roll in one direction. A Fight is d20 + Strike against the target's Defence; a shot is d20 + Volley the same way; a Blast is the caster's spell attack. Critical success deals 2 wounds, success 1, failure nothing. Nobody strikes back: the target answers in its own activation.</p>
 <div class="wrap"><table>
 <tr><th>Attack result</th><th>The target</th><th>The attacker, in a Fight</th></tr>
 <tr><td>Critical success</td><td>2 wounds, then a Fortitude save or 1 disorder</td><td>nothing</td></tr>
@@ -494,7 +500,7 @@
 <tr><td>Failure</td><td>nothing</td><td><strong>Repulsed</strong>: a Will save or 1 disorder</td></tr>
 <tr><td>Critical failure</td><td>nothing</td><td>Repulsed as above, and <strong>exposed</strong>: &minus;2 Defence until it next activates</td></tr>
 </table></div>
-<p>Both saves are d20 + the save, less disorder, against the other unit's level DC. Fortitude for the wound and Will for the repulse: one is a body flinching from a hit, the other a line losing heart. A missed shot or Blast repulses nobody — the shooter is not in contact. A free strike on a failed withdrawal is a hit capped at one wound, with the Fortitude save as usual.</p>
+<p>Both saves are d20 + the save, less disorder, against the other unit's level DC. Fortitude answers the wound, Will the repulse. A missed shot or Blast repulses nobody, because the shooter stands out of contact. A free strike on a failed withdrawal is a hit capped at one wound, with the Fortitude save as usual.</p>
 <p>Fight is Strike, Press or Overrun, and each is the same roll with more riding on a hit.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
@@ -502,28 +508,28 @@
 <tr><td>Press</td><td>◆◆</td><td>Strike, and a hit's disorder needs no save: the target takes 1 outright. A Press that misses is an ordinary repulse, so there is always a risk to engaging.</td></tr>
 <tr><td>Overrun</td><td>◆◆◆</td><td>Press, and a hit drives the target one hex directly away from you; you step into the hex it left, so contact holds. Water, a wall, a cliff, an occupied hex or the board's edge on that one hex blocks the shove, and a target that cannot give ground holds and takes 1 more disorder instead. A target the attack destroys simply yields its hex.</td></tr>
 </table></div>
-<p>A unit under Take cover holds its ground against an Overrun, and a Defense buff that takes a wound with no disorder (section 11) still beats a Press.</p>
+<p>A unit under Take cover holds its ground against an Overrun. Stoneskin (section 11) costs its unit no disorder, so a Press against it lands the wound alone.</p>
 
 <h3>Shooting</h3>
-<p>A shot reaches any target the shooter can see. Fire is the shooter's own effective range; each band beyond it costs &minus;2 on the roll, and nearer bands cost nothing. A target engaged with one of your own costs a further &minus;4: the two are too close together to pick apart. Suppress and Pin buy what volume fire does to the troop under it. Shooting is not possible while engaged, in either direction.</p>
+<p>A shot reaches any target the shooter can see. Each band beyond the shooter's effective range costs &minus;2 on the roll, and nearer bands cost nothing. A target engaged with one of your own costs a further &minus;4, because the two are too close together to pick apart. Suppress and Pin buy what volume fire does to the troop under it. Nobody shoots while engaged, in either direction.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at &minus;2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
 <tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: &minus;2 to everything it rolls and to its Defence until the start of your next activation.</td></tr>
 <tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Withdraw as if in contact; a withdrawal that gets clear ends the pin, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
 </table></div>
-<p>Suppress bites hit or miss, because volume fire works by volume. Suppressed is disorder's temporary cousin, two points that lift on their own, and the two stack. A pinned unit is held (section 7), and it cannot charge.</p>
+<p>Suppress bites hit or miss, because volume fire works by volume. Suppressed is a temporary disorder of two points that lifts on its own, and it stacks with disorder proper. A pinned unit is held (section 7) and cannot charge.</p>
 
 
 <h3>Guard</h3>
-<p>Guard lasts until the unit next acts. Its +2 is the one number an activity sells: a raised shield is nothing but a harder unit to hit, and cover is the same thing again. Dig in and Take cover are Pathfinder's two degrees of cover.</p>
+<p>Guard lasts until the unit next acts. Its +2 is the one number any activity sells, because a raised shield is simply a harder unit to hit, and cover is the same thing again. Dig in and Take cover are Pathfinder's two degrees of cover.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Brace</td><td>◆</td><td>Shields up: +2 Defence until you next act.</td></tr>
 <tr><td>Dig in</td><td>◆◆</td><td>Brace, and standard cover: every hit against you lands as an ordinary hit, a critical capped at one wound.</td></tr>
 <tr><td>Take cover</td><td>◆◆◆</td><td>Dig in, and greater cover: +4 Defence in place of the +2, and you hold your ground: an Overrun cannot drive you back. You may not move again this activation.</td></tr>
 </table></div>
-<p>The cap touches the wound and nothing else, so a Press against a dug-in unit still lands its point. Against a unit under cover an Overrun is a Press: the shove fails, the attacker stays where it is, and the target takes nothing for it. No Guard activity reaches a neighbour: a unit with the <em>defend allies</em> tactic gives every adjacent ally what Brace buys whenever it Guards, whatever it paid.</p>
+<p>The cap touches the wound alone, so a Press against a dug-in unit still lands its point of disorder. Against a unit under Take cover an Overrun lands as a Press: the shove fails, the attacker stays where it is, and the target takes no disorder for holding. No Guard activity reaches a neighbour on its own. A unit with the <em>defend allies</em> tactic gives every adjacent ally what Brace buys whenever it Guards, whatever it paid.</p>
 
 <h3>Defence</h3>
 <p>Every attack rolls against the target's Defence, and Defence is built the same way each time.</p>
@@ -538,9 +544,9 @@
 <p>A unit that has dug in caps every hit it takes at one wound, so a critical against it lands as an ordinary one.</p>
 
 <h2 id="disorder">9. Disorder and rout</h2>
-<p>Morale is one number: <strong>disorder</strong>. Each point is &minus;1 to everything the unit rolls and &minus;1 to its Defence. Morale runs one point past Quality, and the two bands above it are different things.</p>
+<p>Morale is one number: <strong>disorder</strong>. Each point is &minus;1 to everything the unit rolls and &minus;1 to its Defence. Disorder runs one point past Quality, and those two bands differ.</p>
 <p>When disorder <em>reaches</em> the unit's Quality (section 2) the unit is <strong>shaken</strong>: it may do nothing but Rally, Move or withdraw. It holds its hex if it wants to, it still counts as standing, and Rally is a real way back &mdash; a shaken unit that clears a point is a unit again.</p>
-<p>One point <em>past</em> Quality and it is <strong>routed</strong>: nothing but Move and the withdrawal, and it leaves the field when it reaches its own edge. A withdrawal it makes runs for that edge. Disorder stops there; a routed unit cannot be driven further. Its own Rally is gone, so the only way back is an adjacent ally's Rally or an Inspire within 2 &mdash; which is what makes the troop beside a breaking one worth keeping there.</p>
+<p>One point <em>past</em> Quality and it is <strong>routed</strong>: it may Move and withdraw, and it leaves the field when it reaches its own edge. Any withdrawal it makes runs for that edge. Disorder stops there, and a routed unit cannot be driven further. It has lost its own Rally, so the way back is an adjacent ally's Rally or an Inspire within 2. That is what makes the troop beside a breaking one worth keeping there.</p>
 <div class="wrap"><table>
 <tr><th>Disorder comes from</th><th>Points</th></tr>
 <tr><td>A wound taken, on a failed Fortitude save against the attacker's level DC</td><td>1</td></tr>
@@ -557,7 +563,7 @@
 <h3>Rally</h3>
 <p><strong>Every unit that is not routed may Rally</strong>, whatever else its situation allows: in contact or in the open, in good order or shaken. A shaken unit has Rally, Move and the withdrawal and nothing else, which is what makes the act its way back. The rout is the only thing that takes it away, and then only the unit's own &mdash; an ally's Rally still reaches it.</p>
 <p>Rally and a Healing cast (section 11) are the only things that clear disorder. Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
-<p>The roll says how much clears; the activity says who else it reaches. One roll, read for every unit reached. A success is one effect, and it is what every activity hands on: a unit with disorder clears 1, and a unit with none is <strong>inspired</strong>, +2 to its next roll.</p>
+<p>The roll says how much clears, and the activity says who else it reaches. One roll is read for every unit reached. On a success a unit with disorder clears 1, and a unit with none is <strong>inspired</strong>: +2 to its next roll.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Steady</td><td>◆</td><td>Roll. On a success you clear 1 of your own disorder, or if you have none, you are inspired.</td></tr>
@@ -571,7 +577,7 @@
 <tr><td>Failure</td><td>Nothing</td></tr>
 <tr><td>Critical failure</td><td>Nothing, and the rallying unit takes 1 more</td></tr>
 </table>
-<p><strong>Inspired</strong> is +2 to the unit's next roll of any kind, the first it makes: an attack, a save against disorder, a Disengage check. It is a status bonus, so it does not stack with another status bonus to the same roll. It lapses when the roll is made or when the unit has acted, whichever is first, and a second Rally on an inspired unit adds nothing. A unit cannot be inspired while it still carries disorder, so Rally on a shaken line steadies it and Rally on a steady line lifts it. This is why a unit with nothing to clear still has a use for the act.</p>
+<p><strong>Inspired</strong> is +2 to the first roll the unit makes, of any kind: an attack, a save against disorder, a Disengage check. It is a status bonus, so it does not stack with another status bonus on the same roll. It lapses when that roll is made or when the unit has acted, whichever comes first, and a second Rally on an inspired unit adds nothing. A unit carrying disorder cannot be inspired, so Rally steadies a shaken line and lifts a steady one. A unit with nothing to clear therefore still has use for the activity.</p>
 
 <h2 id="ground">10. Ground, height and walls</h2>
 <p>Three layers shape the field. Terrain fills a hex and changes what checks cost; height decides who has the advantage; barriers sit on edges and decide where units may go. Forest hides, swamp slows, water blocks, height commands, walls bar the way.</p>
@@ -603,7 +609,7 @@
 
 <h3>Casting</h3>
 <p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast and to heal, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
-<p>A cast is priced like every other activity: one, two or three actions for the one you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast is the activation's one attack. A buff falls on the caster as readily as on an ally, and it lasts until the unit it fell on has next acted: a caster's own ward stands through the enemy's turn, and its own sure strike, wrath or sure footing is spent in the rest of the activation it cast in, or wasted. Haste alone lasts two activations, and a caster hasting itself takes the first of the two actions at once. Translocate is instant.</p>
+<p>A cast is priced like every other activity: one, two or three actions for the activity you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast spends the activation's one attack. A buff falls on the caster as readily as on an ally, and it lasts until the unit it fell on has next acted. So a caster's own ward stands through the enemy's turn, while its own sure strike, wrath or sure footing must be spent in the rest of the activation it cast in. Haste alone lasts two activations, and a caster hasting itself takes the first of the two actions at once. Translocate is instant.</p>
 <p>A cast is one roll. Blast is a spell attack against Defence, and its one roll is read against every hex its shape covers. Healing is a spell attack against the level DC of the unit healed, read against each unit reached. Controlling is the target's Will save against your spell DC. Offense and Movement have nothing to resist and roll nothing; Defense's Aegis is the enemy's Will save against your spell DC.</p>
 
 <h3>Tradition</h3>
@@ -621,7 +627,7 @@
 <p>Every column sums to 11 &mdash; a budget check, not proof of equal power. A 3 in Blast and a 3 in Movement aren't worth the same at the table, so this only rules out one tradition being flatly starved next to the other three.</p>
 
 <h3>The six trees</h3>
-<p>Each activity buys a different kind of thing, as every activity on the board does. Each tree has one range and a cast is instant; neither is for sale. The chances quoted are at parity: a level-6 caster against level-6 troops.</p>
+<p>Each activity buys its own kind of thing, as every activity on the board does. Each tree has one fixed range, and a cast is instant. The chances quoted are at parity: a level-6 caster against level-6 troops.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Blast &middot; long range &middot; the activation's attack</h4>
 <div class="wrap"><table>
@@ -679,7 +685,7 @@
 <p>Frightened is a condition, so a Healing critical can end it.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Offense &middot; short range: yourself or an ally</h4>
-<p>Each buff is its own effect at its own price and includes nothing below it. The tradition's cap still says which of the three it may buy.</p>
+<p>Each buff is its own effect at its own price, and includes nothing below it. The tradition's cap says which of the three a caster may buy.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Sure strike</td><td>◆</td><td>The ally rolls its next attack twice and takes the better.</td></tr>
@@ -689,7 +695,7 @@
 <p>A second Sure strike on a unit already rolling twice is nothing. A second Haste on a hasted unit is nothing. Persistent damage is a condition, never a damage type, so no unit is immune to it and a Healing critical ends it before it lands.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range: yourself or an ally</h4>
-<p>Three separate things, each its own price. Guard sells Defence and the wound cap; Defense sells the attacker's roll, the disorder a wound costs, and the attacker's actions, and the ally spends nothing. Aegis is the one buff that rolls, at the enemy's time and on the enemy's Will, as Controlling does.</p>
+<p>Three separate effects, each at its own price, and the ally spends nothing. Guard sells Defence and the wound cap. Defense sells the attacker's roll, the disorder a wound costs, and the attacker's actions. Aegis is the one buff that rolls, on the enemy's Will at the enemy's own time, as Controlling does.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Ward</td><td>◆</td><td>Until the ally has next acted, the first attack against it is rolled twice and the attacker takes the worse.</td></tr>
@@ -707,7 +713,7 @@
 <p>A Blast is one attack over several hexes. A ward on any unit caught, or a sure strike on the caster, throws a second die for the shape, and each unit reads that pair against its own Defence: a warded unit keeps the worse, or the first die alone when the caster also has a sure strike; the rest keep the better under a sure strike, the first die otherwise. An aegis on any unit in the shape gates the cast as a whole, and a failed save wastes the whole activity, actions and all.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range: yourself or an ally</h4>
-<p>Three separate things, bought one at a time; Fly covers ground because flight does. Translocate is the one buff that happens at cast time.</p>
+<p>Three separate effects, bought one at a time. Fly covers ground because flight does. Translocate is the one buff that lands at cast time.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Sure footing</td><td>◆</td><td>Every hex costs the ally 1 on its next activation: forest, swamp, shallows and a climb are open ground to it, and a charge through them lands its +2.</td></tr>
@@ -724,8 +730,6 @@
 <tr><td>A Speed of ground</td><td>One action of its own</td><td>Translocate, none of its own</td></tr>
 </table>
 
-</div>
-
 <p>Three trained tactics grant a fixed effect to a troop with no magic of its own. <strong>Battlefield medicine</strong> grants Soothe, rolled off the troop's own Will in place of spell attack. <strong>Defend allies</strong> grants the Guard share (section 8): no cast, no roll, just what Brace already buys shared with a neighbour. <strong>Demoralize</strong> grants Dread, read against the troop's own level DC in place of spell DC. Each is the one-action activity alone; a troop with no tradition has no cap to raise it past that.</p>
 
 <h2 id="siege">12. Siege engines</h2>
@@ -739,7 +743,7 @@
 <h3>Dusk</h3>
 <p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
 <h3>The kingdom's checks</h3>
-<p>What a battle's outcome buys the kingdom &mdash; Fame, Unrest, recovery &mdash; is not these rules' concern. A battle ends at wounds, disorder, destroyed and captured; what a wider campaign does with that result is a kingdom action of its own.</p>
+<p>A battle ends at wounds, disorder, units destroyed and engines captured. What the kingdom then makes of that result &mdash; Fame, Unrest, recovery &mdash; is a kingdom action of its own.</p>
 <h3>Back on the kingdom map</h3>
 <p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
 
@@ -755,7 +759,7 @@
 
 <h2 id="ref">Quick reference</h2>
 <div class="wrap"><table class="ref">
-<tr><th>Act</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
+<tr><th>Verb</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
 <tr><td>Move</td><td>1 per Speed's worth</td><td>&mdash;</td><td>1 open or settlement, 2 forest or shallows, 3 swamp, +1 a level climbed. Movement banks across the activation. Not while engaged.</td></tr>
 <tr><td>Charge</td><td>2 &middot; 3 with Press &middot; 4 with Overrun</td><td>Strike + 2 vs Defence on arrival</td><td>Up to two Speeds ending in contact, by any route that engages nobody but the target: you charge the first unit you engage. Exposed until you next act. No +2 through difficult ground; from above, the target's save at &minus;2. Spends the activation's attack.</td></tr>
 <tr><td>Withdraw</td><td>1 Break off &middot; 2 Disengage &middot; 3 Fighting retreat</td><td>Break off: Reflex &minus; disorder vs the highest holder's attack DC. Above it, each holder's Reflex &minus; disorder vs your level DC</td><td>Break off: failure a free strike from each holder the roll missed, critical a free Move. Disengage: no check; a holder that fails is rooted. Fighting retreat: and it takes 1 disorder. Then one hex clear.</td></tr>
@@ -764,7 +768,7 @@
 <tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at one wound. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
 <tr><td>Rally</td><td>1 Steady &middot; 2 Rally &middot; 3 Inspire</td><td>Will &minus; disorder vs the rout DC</td><td>Crit clears 2 &middot; success 1, or inspires if none &middot; failure nothing &middot; critical failure adds 1 to you. The activity says who else it reaches: you, one adjacent ally, everyone within 2.</td></tr>
 <tr><td>Cast</td><td>1, 2 or 3 for the activity; a tree once an activation</td><td>Blast: spell attack &minus; disorder vs Defence. Healing: spell attack &minus; disorder vs the unit's level DC. Controlling: the target's Will &minus; disorder vs your spell DC. Buffs roll nothing but Aegis: the attacker's Will vs your spell DC.</td><td>Tradition caps which trees and how high. Blast is the activation's attack.</td></tr>
-<tr><td>Haste</td><td>3, Offense</td><td>&mdash;</td><td>The ally has an additional action on each of its next two activations. On yourself, the first comes at once.</td></tr>
+<tr><td>Cast: Haste</td><td>3, Offense</td><td>&mdash;</td><td>The ally has an additional action on each of its next two activations. On yourself, the first comes at once.</td></tr>
 </table></div>
 <div class="wrap"><table class="ref">
 <tr><th>Modifier</th><th>Value</th></tr>
