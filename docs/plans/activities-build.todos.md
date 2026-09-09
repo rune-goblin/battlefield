@@ -832,3 +832,7 @@ bullets struck above recorded the opposite ban and are history now.
   reference's Charge row says it too. `chargePath` is new and exported: `Battle.svelte` drew the
   charge arrow with `movePath`, which knows neither the two-Speed budget nor the zones the run must
   avoid, so the arrow could trace a route the charge may not take.
+- 2026-09-09: **D9, one fixup.** A battle already in `localStorage` deserialises with no `selfBuffs`
+  on its units, and `finish` reads that field on every activation, so `intact` in `game.svelte.ts`
+  now checks it. A stale save costs the battle in progress and keeps the board and the two forces,
+  which is the mechanism that file already documents for a field a save predates.

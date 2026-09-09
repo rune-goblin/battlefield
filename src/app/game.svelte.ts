@@ -15,7 +15,9 @@ const KEY = 'battlefield.v4';
 // A save written before a field existed still parses; it crashes later, at render. Drop it
 // here so a missed KEY bump costs a fresh start rather than a broken board.
 const intact = (b: BattleState | null | undefined): boolean =>
-  !!b && Array.isArray(b.units) && Array.isArray(b.engines) && Array.isArray(b.log);
+  !!b && Array.isArray(b.units) && Array.isArray(b.engines) && Array.isArray(b.log)
+  // Units gained `selfBuffs`, which `finish` reads on every activation.
+  && b.units.every((u) => Array.isArray(u.selfBuffs));
 const STAGES: Stage[] = ['board', 'paint', 'attackers', 'defenders', 'battle'];
 /** The side each deployment stage edits. */
 export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker', defenders: 'defender' };
