@@ -132,8 +132,11 @@ Mark answered all ten inline above. What each one became:
   acted". `guard` and `exposed` stay at `begin`: those read "until you next act". A buff a caster
   lays on itself is held over the activation that cast it (`Unit.selfBuffs`), so the same
   paragraph's "a caster's own ward stands through the enemy's turn" is still true.
-- **D10 — building.** A charge may take any route its movement allows and must charge the first
-  unit it engages, so it cannot pass through another unit's zone of control.
+- **D10 — built.** A charge may take any route its movement allows and must charge the first
+  unit it engages, so it cannot pass through another unit's zone of control. The landing hex is
+  chosen for the charger: a hex a clean route reaches beats a cheaper one, since the run costs
+  the same one action however far it carries. No new player choice, so `ChargeOption` and the
+  charge chip are unchanged; the board's arrow now traces the charge's own route.
 
 ### Closed
 
@@ -817,3 +820,15 @@ bullets struck above recorded the opposite ban and are history now.
   records a Defense buff laid on a unit inside its own activation and `finish` holds that one over —
   its next act is the activation after this one. A tree is cast once an activation, so at most one
   buff is ever held over. `guard` and `exposed` stay at `begin`, as their own text says.
+- 2026-09-09: **D10 — any route, and the first unit you engage.** `approach` gathers every hex in
+  reach that touches the target and sorts them: a hex a clean route reaches first, then the cheapest,
+  then by name. The `// proto:` on the cheapest-hex landing is closed. Where the hex is chosen for
+  the player rather than offered: the run buys two Speeds for one action whatever it spends, and an
+  even-ground route also avoids the &minus;1 for striking out of swamp or shallows, so a farther
+  clean hex costs the charger nothing and there is nothing to ask. `ChargeOption`, the popup and the
+  charge chip are untouched. The new constraint is `chargeBlocked`: the run may not enter a hex any
+  enemy but the target is in contact with, which reads engagement through D2, so a wall or a cliff
+  between them leaves the hex open. Section 7 carries the rule as its own bullet, and the quick
+  reference's Charge row says it too. `chargePath` is new and exported: `Battle.svelte` drew the
+  charge arrow with `movePath`, which knows neither the two-Speed budget nor the zones the run must
+  avoid, so the arrow could trace a route the charge may not take.

@@ -646,15 +646,33 @@ const touching = (state: BattleState, sq: Square, e: Unit) =>
 const CHARGE_ACTIONS = 1;
 const CHARGE_SPEEDS = 2;
 
-/** Every cell the run can end on. Empty for a unit that may not charge at all: one in contact
- * (that is a Fight), pinned, rooted, or with nothing left to spend. */
-function chargeReach(state: BattleState, u: Unit): ReachMap {
-  if (u.status !== 'active' || u.speed === 0 || u.rooted > 0 || u.pinnedBy) return new Map();
-  if (u.actions <= 0 || engagedEnemies(state, u).length) return new Map();
-  return reachable(state.board, u.square, {
-    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), occupied: occupiedBy(state, u),
-  });
+/** Whether the unit may charge at all. One in contact fights instead, and a pinned, rooted or
+ * spent unit charges nothing. */
+const canCharge = (state: BattleState, u: Unit) =>
+  u.status === 'active' && u.speed > 0 && u.rooted === 0 && !u.pinnedBy
+  && u.actions > 0 && engagedEnemies(state, u).length === 0;
+
+/**
+ * Cells the run may not enter: where somebody stands, and every hex an enemy other than the
+ * target holds. A charge comes to grips with the first unit it engages (section 7), so a route
+ * that would put the charger in contact with anyone else is no route at all. A hex an enemy
+ * touches only across a wall or a cliff is free, since neither holds engagement.
+ */
+function chargeBlocked(state: BattleState, u: Unit, target: Unit): Set<string> {
+  const blocked = new Set(occupiedBy(state, u));
+  for (const e of state.units) {
+    if (e.side === u.side || e.status !== 'active' || e.id === target.id) continue;
+    for (const n of grid(state).neighbours(e.square)) {
+      if (barrierBetween(state.board, e.square, n) === null) blocked.add(notation(n));
+    }
+  }
+  return blocked;
 }
+
+const chargeRun = (state: BattleState, u: Unit, blocked: ReadonlySet<string>, evenGround = false): ReachMap =>
+  reachable(state.board, u.square, {
+    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), evenGround, occupied: blocked,
+  });
 
 /**
  * The +2, unless every way in crossed rough going or climbed for it. Section 7 gives the charge
@@ -663,36 +681,45 @@ function chargeReach(state: BattleState, u: Unit): ReachMap {
  * existed. Sure footing turns rough ground open and keeps the +2 wherever the run went; flight
  * only makes the ground cheap, and a flier that crossed forest has crossed forest.
  */
-function chargeBonus(state: BattleState, u: Unit, cell: string): number {
+function chargeBonus(state: BattleState, u: Unit, cell: string, target: Unit): number {
   if (u.sureFooting) return ACTION_BONUS;
-  const even = reachable(state.board, u.square, {
-    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), evenGround: true, occupied: occupiedBy(state, u),
-  });
-  return even.has(cell) ? ACTION_BONUS : 0;
+  return chargeRun(state, u, chargeBlocked(state, u, target), true).has(cell) ? ACTION_BONUS : 0;
 }
 
-// proto: the landing hex is the cheapest one touching the target, so a charge whose cheapest
-// contact hex can only be reached over rough ground still loses a +2 it could have kept by
-// coming in on the far side. Where to land is the player's choice and no offer carries it yet.
-/** The cheapest cell within reach from which `u` can fight `e`. */
-function approach(state: BattleState, u: Unit, e: Unit, reach: ReachMap): ChargeOption | null {
-  let best: ChargeOption | null = null;
-  for (const [cell, entry] of reach) {
-    if (!touching(state, parse(cell), e) || !canEndOn(u, state.board, parse(cell))) continue;
-    if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) {
-      best = { unit: e.id, cell, feet: entry.feet, actions: CHARGE_ACTIONS };
-    }
-  }
-  return best;
+/**
+ * Where the run ends: any hex within reach that touches the target, since the charge takes any
+ * route its movement allows. A hex a clean route reaches wins over a cheaper one, because the
+ * run costs the same one action however far it carries, so keeping the +2 costs the charger
+ * nothing and asks it nothing.
+ */
+function approach(state: BattleState, u: Unit, e: Unit): ChargeOption | null {
+  if (!canCharge(state, u)) return null;
+  const blocked = chargeBlocked(state, u, e);
+  const clean = u.sureFooting ? null : chargeRun(state, u, blocked, true);
+  const landings = [...chargeRun(state, u, blocked)]
+    .filter(([cell]) => touching(state, parse(cell), e) && canEndOn(u, state.board, parse(cell)))
+    .map(([cell, entry]) => ({ cell, feet: entry.feet, bonus: clean === null || clean.has(cell) }))
+    .sort((a, b) => Number(b.bonus) - Number(a.bonus) || a.feet - b.feet || a.cell.localeCompare(b.cell));
+  const best = landings[0];
+  return best ? { unit: e.id, cell: best.cell, feet: best.feet, actions: CHARGE_ACTIONS } : null;
+}
+
+/** The route a charge takes to its landing hex, its own cell first. Not the ordinary Move's
+ * route: this one is priced on two Speeds in one action and turns aside from every zone of
+ * control but the target's. */
+export function chargePath(state: BattleState, u: Unit, targetId: string): string[] {
+  const target = state.units.find((e) => e.id === targetId);
+  if (!target) return [];
+  const option = approach(state, u, target);
+  return option ? pathTo(chargeRun(state, u, chargeBlocked(state, u, target)), option.cell) : [];
 }
 
 /** Enemies this unit can both reach and afford the melee against. */
 export function chargeTargets(state: BattleState, u: Unit): ChargeOption[] {
   if (u.stats.strike === null || u.attacked) return [];
-  const reach = chargeReach(state, u);
   const out: ChargeOption[] = [];
   for (const e of state.units.filter((x) => x.side !== u.side && x.status === 'active')) {
-    const option = approach(state, u, e, reach);
+    const option = approach(state, u, e);
     if (option && option.actions + 1 <= u.actions) out.push(option);
   }
   return out;
@@ -1671,13 +1698,12 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const foe = unit(state, action.target);
   if (u.stats.strike === null) throw new Error(`${u.name} has no melee`);
   if (u.attacked) throw new Error(`${u.name} has already attacked this activation`);
-  const reach = chargeReach(state, u);
-  const option = approach(state, u, foe, reach);
+  const option = approach(state, u, foe);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
   const wanted = action.activity ?? 1;
   const cost = CHARGE_ACTIONS + wanted;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
-  const bonus = chargeBonus(state, u, option.cell);
+  const bonus = chargeBonus(state, u, option.cell, foe);
   // Read from the hex the charge starts in, whatever hex it ends on.
   const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
   const impact = u.tactics.includes('cavalry-charge');

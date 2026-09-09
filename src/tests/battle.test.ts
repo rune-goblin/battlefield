@@ -671,6 +671,34 @@ describe('movement points', () => {
     expect(strikeMod(act(wooded, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(11);
   });
 
+  it('lands on the hex a clean route reaches rather than the cheapest one, and keeps the +2', () => {
+    const board = openBoard();
+    // c3 is the cheapest way into c4 and the only rough one; b4 is 10 ft further and open.
+    board.squares[2][2].terrain = 'forest';
+    const { state } = battle([], board);
+    place(state, 'u0', 'a1');
+    place(state, 'u1', 'c2');
+    place(state, 'u2', 'c4');
+    const cavalry = unit(state, 'u1');
+    expect(chargeTargets(state, cavalry).find((c) => c.unit === 'u2'))
+      .toEqual({ unit: 'u2', cell: 'b4', feet: 30, actions: 1 });
+    const s = act(state, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]));
+    expect(unit(s, 'u1').square).toEqual(parse('b4'));
+    expect(s.log.find((e) => e.check)!.check!.modifier).toBe(cavalry.stats.strike! + ACTION_BONUS);
+  });
+
+  it("turns aside from another unit's zone of control: you charge the first unit you engage", () => {
+    const { state } = battle([]);
+    place(state, 'u0', 'a1');
+    place(state, 'u1', 'c2');
+    place(state, 'u2', 'b4');
+    place(state, 'u3', 'c5');
+    const options = chargeTargets(state, unit(state, 'u1'));
+    // c4 is the cheapest hex touching u3 and b4 holds it, so the run goes round to d5.
+    expect(options.find((c) => c.unit === 'u3')).toEqual({ unit: 'u3', cell: 'd5', feet: 40, actions: 1 });
+    expect(options.find((c) => c.unit === 'u2')).toEqual({ unit: 'u2', cell: 'b3', feet: 20, actions: 1 });
+  });
+
   it('a charge from a higher hex puts the target’s save at −2', () => {
     const board = openBoard();
     board.squares[1][2].elevation = 1;

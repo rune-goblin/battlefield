@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
     offersAt, reachOf, targetMatches, TREE_TARGET,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
     type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
@@ -356,7 +356,7 @@
   }
 
   const chargeRow = (c: ChargeOption): ChargePreview =>
-    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: movePath(b, active!, c.cell).map((s) => s.cell) });
+    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: chargePath(b, active!, c.unit) });
 
   /** Every reading of a drop on `cell`, in the order the popup offers them. One drag chains as
    * many Move actions as the route costs — `MoveReach.actions` counts them, and a row quotes
