@@ -162,19 +162,16 @@ export const unitAt = (state: BattleState, sq: Square): Unit | undefined =>
 const square = (state: BattleState, u: Unit) => at(state.board, u.square);
 const elevation = (state: BattleState, u: Unit) => square(state, u).elevation;
 
+/** A barrier breaks contact: neither a cliff nor a standing wall holds engagement (section 10),
+ * so a unit beside one Moves and shoots as if the enemy over it were a hex further off. */
 export function isEngaged(state: BattleState, a: Unit, b: Unit): boolean {
   if (a.side === b.side || a.status !== 'active' || b.status !== 'active') return false;
   if (dist(state, a.square, b.square) !== 1) return false;
-  return barrierBetween(state.board, a.square, b.square)?.kind !== 'cliff';
+  return barrierBetween(state.board, a.square, b.square) === null;
 }
 
 export const engagedEnemies = (state: BattleState, u: Unit) =>
   state.units.filter((e) => isEngaged(state, u, e));
-
-export const wallBetween = (state: BattleState, a: Unit, b: Unit): Wall | null => {
-  const barrier = barrierBetween(state.board, a.square, b.square);
-  return barrier?.kind === 'wall' ? barrier.wall : null;
-};
 
 /** Which of the four range bands a distance falls in. Rank 5 is out of range altogether. */
 function bandRank(state: BattleState, d: number): number {
@@ -315,7 +312,6 @@ export function strikeModifier(state: BattleState, u: Unit, target: Unit): numbe
   m -= u.disorder;
   if (square(state, u).terrain === 'swamp' || square(state, u).terrain === 'shallows') m -= 1;
   m -= Math.max(0, elevation(state, target) - elevation(state, u));
-  if (u.side === 'attacker' && wallBetween(state, u, target)) m -= 2;
   return m;
 }
 
@@ -640,13 +636,10 @@ export function movePath(state: BattleState, u: Unit, to: string): PathStep[] {
   });
 }
 
-// Contact across a standing wall holds (section 10), but nobody charges over one, so a charge
-// asks for a clear edge where a pursuer only asks for no cliff.
-const touching = (state: BattleState, sq: Square, e: Unit, charging = false) => {
-  if (dist(state, sq, e.square) !== 1) return false;
-  const barrier = barrierBetween(state.board, sq, e.square);
-  return barrier === null || (barrier.kind === 'wall' && !charging);
-};
+/** Contact from a hex the unit has yet to reach: a charge's landing hex, a pursuer's. Reads the
+ * edge the way `isEngaged` does, so neither one comes to grips over a wall or a cliff. */
+const touching = (state: BattleState, sq: Square, e: Unit) =>
+  dist(state, sq, e.square) === 1 && barrierBetween(state.board, sq, e.square) === null;
 
 /** A charge is one action of movement however far it carries, and that action buys two Speeds
  * at the ordinary terrain prices — the discount the verb sells. */
@@ -685,7 +678,7 @@ function chargeBonus(state: BattleState, u: Unit, cell: string): number {
 function approach(state: BattleState, u: Unit, e: Unit, reach: ReachMap): ChargeOption | null {
   let best: ChargeOption | null = null;
   for (const [cell, entry] of reach) {
-    if (!touching(state, parse(cell), e, true) || !canEndOn(u, state.board, parse(cell))) continue;
+    if (!touching(state, parse(cell), e) || !canEndOn(u, state.board, parse(cell))) continue;
     if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) {
       best = { unit: e.id, cell, feet: entry.feet, actions: CHARGE_ACTIONS };
     }

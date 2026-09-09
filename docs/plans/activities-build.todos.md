@@ -110,8 +110,10 @@ Mark answered all ten inline above. What each one became:
   The engine is untouched, so infantry keeps `will: 'high'` (+17) and cavalry `will: 'moderate'`
   (+14), and Quality is unchanged. Section 2's specimen card keeps its +13: that is a real
   statblock's `sheet` value, not a derived one, and the adapter contract lets the two differ.
-- **D2 — building.** A standing wall no longer holds engagement, for every unit and not only a
-  flier, which makes Fly's clause true as written.
+- **D2 — built.** A standing wall no longer holds engagement, for every unit and not only a
+  flier, which makes Fly's clause true as written. `isEngaged` and `touching` both ask for a clear
+  edge now, so a wall and a cliff read alike: no holder, no free strike, no fear, no outflanking
+  and no melee across one, and the two sides shoot over it at a hex's range instead.
 - **D3 — built.** Divine buys Aegis. `TRADITION_CAP` and section 11's Tradition table both read
   arcane 3/0/2/1/2/3, divine 1/3/2/2/3/0, occult 2/1/3/3/1/1, primal 2/2/1/1/2/3 — every column
   sums to 11 now rather than 10, each tradition gaining one point in a different tree, so they
@@ -782,3 +784,16 @@ bullets struck above recorded the opposite ban and are history now.
 - 2026-09-08: `CastTier` became `CastActivityIndex` and `castActivityOf`'s parameter `tier`
   became `index`, closing the last activity-word "tier" Wave 14's sweep left in the code. The
   fort's and the wall's tiers stay: those are physical constructions, not activities.
+
+## Decisions built (2026-09-09)
+
+- 2026-09-09: **D2 — walls do not hold engagement.** `isEngaged` asks `barrierBetween(...) === null`,
+  the test a cliff already met, so a standing wall breaks contact for every unit. Consequences taken
+  rather than flagged: melee cannot reach over a standing wall at all, so the attacker's &minus;2 for
+  striking across one is deleted from `strikeModifier`, from section 10 and from the quick reference —
+  a walled hex is taken by breaching the segment and coming through. `touching` lost its `charging`
+  flag: a *no retreat* pursuer no longer re-establishes contact across a wall either. `wallBetween`
+  went with the &minus;2; nothing else read it. Shooting across a wall is legal now that neither side
+  is engaged, and the garrisoned +1 is the only wall modifier left on `shootModifier`. Balance note
+  for play: an unbreached wall is a much harder shell than it was, since the garrison can only be
+  shot at, never fought.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
-  endActivation, holdersOf, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
+  endActivation, engagedEnemies, holdersOf, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
 import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
@@ -176,6 +176,23 @@ describe('the menu is filtered by situation', () => {
     expect(types(state, 'u0')).toEqual(['fight', 'guard', 'rally']);
     // Out of contact and steady, there is nothing to break from.
     expect(activation(state, 'u1')!.withdraw).toBeNull();
+  });
+  it('holds no contact across a standing wall: no holder, no melee over it, a shot instead', () => {
+    const board = openBoard();
+    board.walls[edgeKey(parse('c3'), parse('c4'))] = { tier: 1, boxes: 2, remaining: 2 };
+    const { state } = battle([], board);
+    place(state, 'u0', 'c3');
+    place(state, 'u2', 'c4');
+    const wall = edgeKey(parse('c3'), parse('c4'));
+    expect(engagedEnemies(state, unit(state, 'u0'))).toEqual([]);
+    expect(holdersOf(state, unit(state, 'u0'))).toEqual([]);
+    expect(activation(state, 'u0')!.withdraw).toBeNull();
+    expect(moves(state, 'u0').size).toBeGreaterThan(0);
+    // The segment is still a thing to fight; the troop behind it is not.
+    expect(targets(offer(state, 'fight', 'u0'), 1)).toEqual([wall]);
+    expect(types(state, 'u2')).toEqual(['shoot', 'guard', 'rally']);
+    expect(targets(offer(state, 'shoot', 'u2'), 1)).toContain('u0');
+    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley! + 1);
   });
   it("offers a caster one row per tree its tradition grants", () => {
     // No tradition set falls back to arcane (cards.ts), whose grid is 0 in Healing.
