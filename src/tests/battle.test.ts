@@ -465,8 +465,8 @@ describe('Defense', () => {
   it('an attacker that fails the Aegis save spends its actions and its attack', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
-    // No tradition's cap reaches Aegis (defense index 3; see the Wave 11 todos), so the mark is
-    // set directly, the same way the Wrath test sets `wrath` rather than casting Offense 2.
+    // The mark is set directly rather than cast by a divine caster, the same way the Wrath test
+    // sets `wrath` rather than casting Offense 2.
     unit(state, 'u2').aegis = { dc: 50 };
     const gated = act(state, { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([1]));
     expect(unit(gated, 'u0').attacked).toBe(true);
@@ -474,6 +474,32 @@ describe('Defense', () => {
     expect(unit(gated, 'u2').wounds).toBe(0);
     expect(unit(gated, 'u2').aegis).not.toBeNull();
     expect(said(gated, 'attack is wasted against the aegis')).toBe(true);
+  });
+
+  it('stands through the activation it protects, so Stoneskin meets a Wrath wound at its end', () => {
+    const { state } = battle([]);
+    const target = unit(state, 'u2');
+    target.stoneskin = true;
+    target.persistent = { dc: 22 };
+    const s = burn(burn(state, 'u0'), 'u2');
+    expect(unit(s, 'u2').wounds).toBe(1);
+    expect(said(s, 'persistent wound')).toBe(false);
+    expect(said(s, 'stoneskin costs it no disorder')).toBe(true);
+    expect(unit(s, 'u2').disorder).toBe(0);
+    expect(unit(s, 'u2').stoneskin).toBe(false);
+  });
+
+  it("holds a caster's own ward through the enemy's turn, and drops it once it has acted again", () => {
+    const s = createBattle({
+      units: [{ card: occultist, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
+      board: openBoard(),
+    });
+    const cast = act(s, { type: 'cast', spell: 'defense', activity: 1, target: 'u0', unit: 'u0' }, scriptedRng([10]));
+    const ownTurnOver = endActivation(cast, scriptedRng([10]));
+    expect(unit(ownTurnOver, 'u0').ward).toBe(true);
+    const round2 = burn(ownTurnOver, 'u1');
+    expect(unit(round2, 'u0').ward).toBe(true);
+    expect(unit(burn(round2, 'u0'), 'u0').ward).toBe(false);
   });
 });
 

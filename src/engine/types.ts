@@ -32,6 +32,9 @@ export interface EngineState {
   emplaced: boolean;
 }
 
+/** The three buffs of the Defense tree, which stand until the unit they fell on has acted. */
+export type DefenceBuff = 'ward' | 'stoneskin' | 'aegis';
+
 export interface Unit {
   id: string;
   name: string;
@@ -95,6 +98,10 @@ export interface Unit {
   stoneskin: boolean;
   /** The caster's spell DC: an attacker rolls Will against it or wastes the activity. */
   aegis: { dc: number } | null;
+  /** Defense buffs cast on this unit inside its own activation. A buff lasts until the unit it
+   * fell on has next acted, so `finish` holds these over the activation that cast them: a
+   * caster's own ward stands through the enemy's turn (section 11). */
+  selfBuffs: DefenceBuff[];
   sureFooting: boolean;
   /** Flies on its next activation only; `flying` is the troop that always does. */
   flies: boolean;

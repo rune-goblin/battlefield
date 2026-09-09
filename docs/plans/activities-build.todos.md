@@ -127,9 +127,11 @@ Mark answered all ten inline above. What each one became:
 - **D7 — closed, already built.** Any attack roll may use Sure strike, a swing at a wall included:
   the Waves 10–11 fix pass routed `attackWall` through `attackRoll`.
 - **D8 — closed, no change.** Inspire stays the name of both the activity and the condition.
-- **D9 — building.** `ward`, `stoneskin` and `aegis` move from `begin` to `finish`, which makes
+- **D9 — built.** `ward`, `stoneskin` and `aegis` move from `begin` to `finish`, which makes
   Stoneskin meet a Wrath wound and matches section 11's "a buff lasts until the ally has next
-  acted". `guard` and `exposed` stay at `begin`: those read "until you next act".
+  acted". `guard` and `exposed` stay at `begin`: those read "until you next act". A buff a caster
+  lays on itself is held over the activation that cast it (`Unit.selfBuffs`), so the same
+  paragraph's "a caster's own ward stands through the enemy's turn" is still true.
 - **D10 — building.** A charge may take any route its movement allows and must charge the first
   unit it engages, so it cannot pass through another unit's zone of control.
 
@@ -805,3 +807,13 @@ bullets struck above recorded the opposite ban and are history now.
   unit from the field — `addDisorder` leaves `status` active — so no test pins it. The other path
   that interrupts a charge, an Aegis that refuses the Fight, already spent the attack and the full
   price: `melee` sets `attacked` before `resolveStrike`, and `doCharge` returns the whole cost.
+- 2026-09-09: **D9 — the three Defense buffs clear at `finish`.** `begin` no longer touches `ward`,
+  `stoneskin` or `aegis`; `finish` clears them after `landPersistent`, so a persistent wound at the
+  end of an activation lands under the stoneskin that was standing all through it. Verified live, not
+  assumed: the new Defense test reads the "stoneskin costs it no disorder" line off `landPersistent`
+  and the unit keeps 0 disorder for a wound it took. Judgment call the plain move forced: a buff cast
+  on the caster itself would have died at the `finish` of the activation that cast it, which
+  contradicts section 11's own "a caster's own ward stands through the enemy's turn". So `Unit.selfBuffs`
+  records a Defense buff laid on a unit inside its own activation and `finish` holds that one over —
+  its next act is the activation after this one. A tree is cast once an activation, so at most one
+  buff is ever held over. `guard` and `exposed` stay at `begin`, as their own text says.

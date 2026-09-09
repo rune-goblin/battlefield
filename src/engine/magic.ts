@@ -76,8 +76,8 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
     ['Haste', "An additional action on each of the target's next two activations; on yourself, the first comes at once."],
   ],
   defense: [
-    ['Ward', 'The next attack against the ally before it next acts is rolled twice and the attacker takes the worse.'],
-    ['Stoneskin', 'Every hit against the ally before it next acts is capped at one wound and costs it no disorder.'],
+    ['Ward', 'The next attack against the ally, until it has next acted, is rolled twice and the attacker takes the worse.'],
+    ['Stoneskin', 'Every hit against the ally, until it has next acted, is capped at one wound and costs it no disorder.'],
     ['Aegis', 'An enemy that would attack the ally first rolls Will against your spell DC, or wastes the activity.'],
   ],
   movement: [

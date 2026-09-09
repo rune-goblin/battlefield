@@ -65,7 +65,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       guard: null, rooted: 0, exposed: false, inspired: false,
       suppressedBy: null, pinnedBy: null, frightened: false, stunned: false, persistent: null,
       sureStrike: false, wrath: false, haste: 0,
-      ward: false, stoneskin: false, aegis: null,
+      ward: false, stoneskin: false, aegis: null, selfBuffs: [],
       sureFooting: false, flies: false,
     };
   });
@@ -1337,14 +1337,17 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       if (index === 1) {
         if (target.ward) { log(state, target, `${target.name} is already warded.`); break; }
         target.ward = true;
+        if (target.id === u.id) target.selfBuffs.push('ward');
         log(state, target, `${target.name}'s next attack rolls twice and the attacker takes the worse.`);
       } else if (index === 2) {
         if (target.stoneskin) { log(state, target, `${target.name} already has stoneskin.`); break; }
         target.stoneskin = true;
+        if (target.id === u.id) target.selfBuffs.push('stoneskin');
         log(state, target, `${target.name} has stoneskin: every hit caps at one wound and costs no disorder.`);
       } else {
         if (target.aegis) { log(state, target, `${target.name} is already under an aegis.`); break; }
         target.aegis = { dc: spellDcFor(u) };
+        if (target.id === u.id) target.selfBuffs.push('aegis');
         log(state, target, `${target.name} is under an aegis: an attacker must beat Will DC ${target.aegis.dc} or waste the attempt.`);
       }
       break;
@@ -1463,10 +1466,10 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
   };
 }
 
-// Everything that lasted "until this unit acts again" ends when it starts acting: its own
-// Guard, the exposure a critical miss left it with, and the protections cast over it. A
-// suppression or a pin ends on its shooter's activation instead, so those are cleared on
-// whoever named this unit.
+// Everything that lasted "until this unit acts again" ends when it starts acting: its own Guard
+// and the exposure a critical miss left it with. A Defense buff lasts a beat longer, until the
+// unit has acted, so `finish` clears those. A suppression or a pin ends on its shooter's
+// activation instead, so those are cleared on whoever named this unit.
 function begin(state: BattleState, u: Unit) {
   if (state.begun && state.active === u.id) return;
   state.active = u.id;
@@ -1479,9 +1482,6 @@ function begin(state: BattleState, u: Unit) {
   u.castTrees = [];
   u.guard = null;
   u.exposed = false;
-  u.ward = false;
-  u.stoneskin = false;
-  u.aegis = null;
   if (u.haste > 0) log(state, u, `${u.name} is hasted: one extra action this activation.`);
   if (u.stunned) {
     u.actions -= 1;
@@ -1521,6 +1521,14 @@ function finish(state: BattleState, rng: Rng, u: Unit) {
   // The persistent wound lands before the clears below: its Fortitude save is a roll of this
   // activation, so `inspired` bonuses it and is spent by it, and `frightened` still costs its −1.
   if (u.persistent) landPersistent(state, rng, u);
+  // A Defense buff lasts until the unit it fell on has next acted (section 11), so it stands
+  // through the whole of this activation and lapses here — which is what lets Stoneskin meet a
+  // persistent wound above. One the unit cast on itself this activation is held over instead:
+  // its own next act is the activation after this one.
+  if (!u.selfBuffs.includes('ward')) u.ward = false;
+  if (!u.selfBuffs.includes('stoneskin')) u.stoneskin = false;
+  if (!u.selfBuffs.includes('aegis')) u.aegis = null;
+  u.selfBuffs = [];
   u.inspired = false;
   u.frightened = false;
   u.sureStrike = false;
