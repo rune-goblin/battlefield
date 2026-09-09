@@ -1683,8 +1683,12 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   u.exposed = true;
   log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
   fearOnContact(state, u);
+  // A charge names its target, so only that target leaving play between the run and the melee
+  // gets here. The charge is the activation's attack either way (section 7), so it is spent
+  // with no roll made and the ground the run took stands.
   if (u.status !== 'active' || !isEngaged(state, u, foe)) {
-    log(state, u, `${u.name}'s charge finds nobody.`);
+    u.attacked = true;
+    log(state, u, `${u.name}'s charge is interrupted: the ground it took stands and its attack is spent.`);
     return CHARGE_ACTIONS;
   }
   melee(state, rng, u, foe, activityOf('fight', wanted), { bonus, saveShift, impact });

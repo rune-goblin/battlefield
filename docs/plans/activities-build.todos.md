@@ -121,8 +121,9 @@ Mark answered all ten inline above. What each one became:
 - **D4 — closed, no change.** Artillery keeps its price; the gun crew is revisited later.
 - **D5 — closed, already built.** A tree is cast once an activation and there is no per-battle
   limit. `castTrees` on `Unit`, cleared at `begin`; Wave 9's third test pins it.
-- **D6 — building.** A charge whose target leaves play mid-run spends the attack anyway; the
-  movement stands.
+- **D6 — built.** A charge whose target leaves play mid-run spends the attack anyway; the
+  movement stands, and the charge still costs its movement alone. Aegis needed no change: `melee`
+  sets `attacked` before it rolls, so a refused charge already spent the attack and its actions.
 - **D7 — closed, already built.** Any attack roll may use Sure strike, a swing at a wall included:
   the Waves 10–11 fix pass routed `attackWall` through `attackRoll`.
 - **D8 — closed, no change.** Inspire stays the name of both the activity and the condition.
@@ -797,3 +798,10 @@ bullets struck above recorded the opposite ban and are history now.
   is engaged, and the garrisoned +1 is the only wall modifier left on `shootModifier`. Balance note
   for play: an unbreached wall is a much harder shell than it was, since the garrison can only be
   shot at, never fought.
+- 2026-09-09: **D6 — an interrupted charge spends the attack.** `doCharge` sets `attacked` on the
+  branch where the target is gone between the run and the melee, and the log says the ground stands
+  and the attack is spent. Section 7's fear bullet says the same. The branch stays narrow and is
+  unreachable today: nothing but the target leaving play reaches it, and routing does not remove a
+  unit from the field — `addDisorder` leaves `status` active — so no test pins it. The other path
+  that interrupts a charge, an Aegis that refuses the Fight, already spent the attack and the full
+  price: `melee` sets `attacked` before `resolveStrike`, and `doCharge` returns the whole cost.
