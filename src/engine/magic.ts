@@ -32,10 +32,10 @@ export type CastActivityIndex = 1 | 2 | 3;
 // Each cell is the most actions a tradition may ever spend in that tree — 0 meaning no access
 // at all. Every column sums to 10, a budget check rather than a claim of equal power.
 export const TRADITION_CAP: Record<Tradition, Record<Tree, CastActivityIndex | 0>> = {
-  arcane: { blast: 3, healing: 0, controlling: 2, offense: 1, defense: 2, movement: 2 },
-  divine: { blast: 1, healing: 3, controlling: 2, offense: 2, defense: 2, movement: 0 },
-  occult: { blast: 2, healing: 1, controlling: 3, offense: 3, defense: 1, movement: 0 },
-  primal: { blast: 2, healing: 2, controlling: 1, offense: 1, defense: 1, movement: 3 },
+  arcane: { blast: 3, healing: 0, controlling: 2, offense: 1, defense: 2, movement: 3 },
+  divine: { blast: 1, healing: 3, controlling: 2, offense: 2, defense: 3, movement: 0 },
+  occult: { blast: 2, healing: 1, controlling: 3, offense: 3, defense: 1, movement: 1 },
+  primal: { blast: 2, healing: 2, controlling: 1, offense: 1, defense: 2, movement: 3 },
 };
 
 export const TRADITIONS: Tradition[] = ['arcane', 'divine', 'occult', 'primal'];

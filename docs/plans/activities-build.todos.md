@@ -34,7 +34,7 @@ them disagree, so one of the two is wrong.
   +17 for the same troop (`willModifier` on a level-6 infantry card), which shifts every one of
   those odds. Flagged in Wave 10's session, not fixed there. Either the worked example is stale
   or the derivation is too generous.
-  **Decision:**
+  **Decision:** Saving throws are a range. At level 7 a +17 save would be high whereas a 13 would be low. Probably balancing our things against moderate would be good. +14  ![image-20260909014557119](/Users/mark/Library/Application Support/typora-user-images/image-20260909014557119.png)
 
 - **D2 · Fly's engagement clause.** rules.html's Fly carries a clause the engine does not:
   "Nothing engages it across a wall or a cliff it crosses." A cliff already breaks engagement
@@ -43,7 +43,7 @@ them disagree, so one of the two is wrong.
   crossed; the broad reading (a flier is never engaged across a wall) would change holders, free
   strikes and withdrawal for every native flier as well. The plan's own Wave 12 table omits the
   clause. Flagged, not built.
-  **Decision:**
+  **Decision:** walls do not hold engagement 
 
 ### Balance
 
@@ -54,34 +54,34 @@ them disagree, so one of the two is wrong.
   a column off its total of 10, so the question is the Tradition table's, not the code's: which
   tradition should afford Aegis, and what it gives up for it. Both places hold the number and
   both must change together.
-  **Decision:**
+  **Decision:** divine: defense 3, arcane, movement 3, occult move 1, primal def 2
 
 ### Rules questions
 
 - **D4 · Artillery and Pin.** Whether artillery needs a cheaper Pin now that the gun crew has no
   extra action (section 12).
-  **Decision:**
+  **Decision:**  no, we will revisit artillery later
 
 - **D5 · Casting a tree twice in a battle.** Whether a Cast tree may be cast more than once a
   battle. Once an activation is built.
-  **Decision:**
+  **Decision:** cast 1/turn
 
 - **D6 · A charge that finds nobody.** Fear on contact routes the target mid-run, which leaves
   `attacked` false, so the charger may still Fight this activation. Section 7 says both "it is
   the activation's attack" and "the charge then costs its movement alone" — the two read as one
   promise until the charge actually whiffs. Pre-existing, not a Wave 6 or Wave 8 regression.
-  **Decision:**
+  **Decision:** I don't understand how a charge could not find somebody. You can't charge unless you have a target. If a charge is somehow interrupted, then the attack is lost. The movement stands. 
 
 - **D7 · Sure strike against a wall.** Sure strike now spends itself on a swing at a wall, since
   a wall attack is the activation's one attack. Whether a wall segment should soak the ally's
   buff at all is a play question.
-  **Decision:**
+  **Decision:** any attack roll can use Sure Strike. 
 
 ### Naming
 
 - **D8 · Inspire, twice over.** Rally's three-action activity is still named Inspire, the same
   word as the condition a Rally can leave behind.
-  **Decision:**
+  **Decision:** leave the word inspire in both
 
 ### Gaps with a known cost
 
@@ -91,7 +91,7 @@ Neither is a contradiction. Both are "worth building?".
   Wave 11 below) the code reads `stoneskin` generically at both wound-landing sites, but the
   field is always cleared by the time a same-activation persistent wound lands. The branch is
   dead unless the timing changes.
-  **Decision:**
+  **Decision:** if we change the timing so that effects end at the end of a turn, except at the beginning, would that work? 
 
 - **D10 · A charge still lands on the cheapest contact hex.** Wave 12 gave the +2 the
   terrain-blind search section 7 asks for, so any clean route in keeps it — but the hex the run
@@ -99,7 +99,36 @@ Neither is a contradiction. Both are "worth building?".
   can only be reached over rough ground loses a +2 that coming in on the far side would have
   kept. Closing it means offering the player the landing hex, a change to `ChargeOption` and to
   the board's charge chip rather than to `chargeBonus`. Marked `// proto:` on `approach`.
-  **Decision:**
+  **Decision:** any valid movement should be okay so long as it doesn't engage another unit. You can't charge past a unit they have zone control of. Which may need to document, so you must charge the first unit you engage. 
+
+### Built from those decisions (2026-09-09)
+
+Mark answered all ten inline above. What each one became:
+
+- **D1 — built.** The Controlling parity example now reads "a moderate level-6 Will of +14" and its
+  odds are recomputed for it: 20 / 50 / 25 / 5 against spell DC 21, where +13 gave 15 / 50 / 30 / 5.
+  The engine is untouched, so infantry keeps `will: 'high'` (+17) and cavalry `will: 'moderate'`
+  (+14), and Quality is unchanged. Section 2's specimen card keeps its +13: that is a real
+  statblock's `sheet` value, not a derived one, and the adapter contract lets the two differ.
+- **D2 — building.** A standing wall no longer holds engagement, for every unit and not only a
+  flier, which makes Fly's clause true as written.
+- **D3 — built.** Divine buys Aegis. `TRADITION_CAP` and section 11's Tradition table both read
+  arcane 3/0/2/1/2/3, divine 1/3/2/2/3/0, occult 2/1/3/3/1/1, primal 2/2/1/1/2/3 — every column
+  sums to 11 now rather than 10, each tradition gaining one point in a different tree, so they
+  stay level with each other. Divine alone reaches Defense 3, and only divine may cast Aegis.
+- **D4 — closed, no change.** Artillery keeps its price; the gun crew is revisited later.
+- **D5 — closed, already built.** A tree is cast once an activation and there is no per-battle
+  limit. `castTrees` on `Unit`, cleared at `begin`; Wave 9's third test pins it.
+- **D6 — building.** A charge whose target leaves play mid-run spends the attack anyway; the
+  movement stands.
+- **D7 — closed, already built.** Any attack roll may use Sure strike, a swing at a wall included:
+  the Waves 10–11 fix pass routed `attackWall` through `attackRoll`.
+- **D8 — closed, no change.** Inspire stays the name of both the activity and the condition.
+- **D9 — building.** `ward`, `stoneskin` and `aegis` move from `begin` to `finish`, which makes
+  Stoneskin meet a Wrath wound and matches section 11's "a buff lasts until the ally has next
+  acted". `guard` and `exposed` stay at `begin`: those read "until you next act".
+- **D10 — building.** A charge may take any route its movement allows and must charge the first
+  unit it engages, so it cannot pass through another unit's zone of control.
 
 ### Closed
 
