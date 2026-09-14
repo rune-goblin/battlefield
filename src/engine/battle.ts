@@ -641,10 +641,10 @@ export function movePath(state: BattleState, u: Unit, to: string): PathStep[] {
 const touching = (state: BattleState, sq: Square, e: Unit) =>
   dist(state, sq, e.square) === 1 && barrierBetween(state.board, sq, e.square) === null;
 
-/** A charge is one action of movement however far it carries, and that action buys two Speeds
- * at the ordinary terrain prices — the discount the verb sells. */
-const CHARGE_ACTIONS = 1;
-const CHARGE_SPEEDS = 2;
+/** A charge is a Fight with a run folded into it: one Speed of movement at the ordinary terrain
+ * prices, buying no action of its own — the discount the verb sells. */
+const CHARGE_ACTIONS = 0;
+const CHARGE_SPEEDS = 1;
 
 /** Whether the unit may charge at all. One in contact fights instead, and a pinned, rooted or
  * spent unit charges nothing. */
@@ -689,7 +689,7 @@ function chargeBonus(state: BattleState, u: Unit, cell: string, target: Unit): n
 /**
  * Where the run ends: any hex within reach that touches the target, since the charge takes any
  * route its movement allows. A hex a clean route reaches wins over a cheaper one, because the
- * run costs the same one action however far it carries, so keeping the +2 costs the charger
+ * run buys no action of its own however far it carries, so keeping the +2 costs the charger
  * nothing and asks it nothing.
  */
 function approach(state: BattleState, u: Unit, e: Unit): ChargeOption | null {
@@ -705,8 +705,8 @@ function approach(state: BattleState, u: Unit, e: Unit): ChargeOption | null {
 }
 
 /** The route a charge takes to its landing hex, its own cell first. Not the ordinary Move's
- * route: this one is priced on two Speeds in one action and turns aside from every zone of
- * control but the target's. */
+ * route: this one is priced on one Speed that costs no action of its own, and turns aside from
+ * every zone of control but the target's. */
 export function chargePath(state: BattleState, u: Unit, targetId: string): string[] {
   const target = state.units.find((e) => e.id === targetId);
   if (!target) return [];
@@ -794,13 +794,6 @@ function leaveField(state: BattleState, u: Unit) {
   log(state, u, `${u.name} leaves the field.`);
 }
 
-// A troop that comes to grips with something terrible loses order for it.
-function fearOnContact(state: BattleState, mover: Unit) {
-  for (const e of engagedEnemies(state, mover)) {
-    if (e.fear && !mover.fear) addDisorder(state, mover, 1, `fear of ${e.name}`);
-    if (mover.fear && !e.fear) addDisorder(state, e, 1, `fear of ${mover.name}`);
-  }
-}
 
 const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filter(([, w]) => w.remaining > 0).map(([k]) => k);
 const wallCells = (key: string) => key.split('|').map(parse);
@@ -946,7 +939,7 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
       if (activityOf('rally', index).rally!.scope !== 'adjacent') return { needsTarget: false, targets: [] };
       const allies = state.units.filter((a) => a.side === u.side && a.id !== u.id && a.status === 'active'
         && dist(state, a.square, u.square) === 1);
-      return { needsTarget: false, targets: allies.map(unitTarget) };
+      return { needsTarget: true, targets: allies.map(unitTarget) };
     }
     case 'cast': {
       const tree = spell!;
@@ -1157,7 +1150,7 @@ function follow(state: BattleState, u: Unit, chasers: Unit[]) {
     if (!best) { log(state, holder, `${holder.name} cannot follow ${u.name}.`); continue; }
     moveTo(state, holder, parse(best.cell));
     log(state, holder, `${holder.name} gives no retreat and follows ${u.name} to ${best.cell}.`);
-    fearOnContact(state, holder);
+
   }
 }
 
@@ -1282,7 +1275,7 @@ function translocate(state: BattleState, u: Unit, label: string, action: Activit
   log(state, u, `${u.name} casts ${label} on ${ally.name}.`);
   moveTo(state, ally, parse(landing));
   log(state, ally, `${ally.name} is set down on ${landing}${held ? ', out of contact with nothing to strike it' : ''}.`);
-  fearOnContact(state, ally);
+
 }
 
 /**
@@ -1450,9 +1443,8 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
       // Steady is u alone, Rally adds one adjacent ally, Inspire every ally within 2.
       const eff = activity.rally!;
       const reached: Unit[] = [u];
-      if (eff.scope === 'adjacent' && action.target) {
-        const ally = unit(state, action.target);
-        if (dist(state, ally.square, u.square) === 1) reached.push(ally);
+      if (eff.scope === 'adjacent') {
+        reached.push(unit(state, action.target!));
       } else if (eff.scope === 'nearby') {
         reached.push(...alliesWithin(state, u, 2));
       }
@@ -1688,12 +1680,12 @@ function doStride(state: BattleState, u: Unit, action: MoveAction): number {
   spendMovement(u, m);
   moveTo(state, u, parse(action.to));
   log(state, u, `${u.name} strides to ${action.to} — ${m.feet} ft, ${m.actions} action${m.actions === 1 ? '' : 's'}.`);
-  fearOnContact(state, u);
   return m.actions;
+
 }
 
-// A Charge is not an activity: it is one action of movement, plus the Fight activity's own price —
-// a Strike unless the action names another. The run's leftover feet never bank.
+// A Charge costs the Fight activity's own price and no more — a Strike unless the action names
+// another — with one Speed of run folded in. The run's leftover feet never bank.
 function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): number {
   const foe = unit(state, action.target);
   if (u.stats.strike === null) throw new Error(`${u.name} has no melee`);
@@ -1716,15 +1708,6 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}, ${carried.join(', ')}.`);
   u.exposed = true;
   log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
-  fearOnContact(state, u);
-  // A charge names its target, so only that target leaving play between the run and the melee
-  // gets here. The charge is the activation's attack either way (section 7), so it is spent
-  // with no roll made and the ground the run took stands.
-  if (u.status !== 'active' || !isEngaged(state, u, foe)) {
-    u.attacked = true;
-    log(state, u, `${u.name}'s charge is interrupted: the ground it took stands and its attack is spent.`);
-    return CHARGE_ACTIONS;
-  }
   melee(state, rng, u, foe, activityOf('fight', wanted), { bonus, saveShift, impact });
   return cost;
 }

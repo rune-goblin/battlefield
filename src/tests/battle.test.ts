@@ -647,13 +647,13 @@ describe('movement points', () => {
     expect(chargeTargets(state, unit(state, 'u0'))).toEqual([]);
   });
 
-  it('a Charge is one action of movement, up to two Speeds, and the Fight it ends in', () => {
+  it("a Charge is one Speed of run folded into a Fight, at the Fight's own price", () => {
     const { state } = battle([]);
-    place(state, 'u2', 'c5');
-    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c4', feet: 20, actions: 1 }]);
+    place(state, 'u2', 'c4');
+    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c3', feet: 10, actions: 0 }]);
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 1]));
-    expect(unit(s, 'u0').square).toEqual(parse('c4'));
-    expect(unit(s, 'u0').actions).toBe(1);
+    expect(unit(s, 'u0').square).toEqual(parse('c3'));
+    expect(unit(s, 'u0').actions).toBe(2);
     expect(unit(s, 'u0').exposed).toBe(true);
     expect(unit(s, 'u2').wounds).toBeGreaterThanOrEqual(1);
   });
@@ -664,11 +664,17 @@ describe('movement points', () => {
     place(open, 'u2', 'c4');
     expect(strikeMod(act(open, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(13);
 
+    // One Speed of infantry cannot pay 20 ft for a forest hex at all, so the ground that costs
+    // the +2 rather than the run is read off a troop that can afford it.
     const board = openBoard();
     board.squares[2][2].terrain = 'forest';
     const wooded = battle([], board).state;
+    place(wooded, 'u0', 'a1');
+    place(wooded, 'u1', 'c2');
     place(wooded, 'u2', 'c4');
-    expect(strikeMod(act(wooded, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(11);
+    const rider = unit(wooded, 'u1');
+    expect(strikeMod(act(wooded, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]))))
+      .toBe(rider.stats.strike!);
   });
 
   it('lands on the hex a clean route reaches rather than the cheapest one, and keeps the +2', () => {
@@ -680,8 +686,10 @@ describe('movement points', () => {
     place(state, 'u1', 'c2');
     place(state, 'u2', 'c4');
     const cavalry = unit(state, 'u1');
+    // A run of one Speed only has a route to choose when the Speed is long enough for two.
+    cavalry.speed = 40;
     expect(chargeTargets(state, cavalry).find((c) => c.unit === 'u2'))
-      .toEqual({ unit: 'u2', cell: 'b4', feet: 30, actions: 1 });
+      .toEqual({ unit: 'u2', cell: 'b4', feet: 30, actions: 0 });
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]));
     expect(unit(s, 'u1').square).toEqual(parse('b4'));
     expect(s.log.find((e) => e.check)!.check!.modifier).toBe(cavalry.stats.strike! + ACTION_BONUS);
@@ -693,10 +701,11 @@ describe('movement points', () => {
     place(state, 'u1', 'c2');
     place(state, 'u2', 'b4');
     place(state, 'u3', 'c5');
+    unit(state, 'u1').speed = 40;
     const options = chargeTargets(state, unit(state, 'u1'));
     // c4 is the cheapest hex touching u3 and b4 holds it, so the run goes round to d5.
-    expect(options.find((c) => c.unit === 'u3')).toEqual({ unit: 'u3', cell: 'd5', feet: 40, actions: 1 });
-    expect(options.find((c) => c.unit === 'u2')).toEqual({ unit: 'u2', cell: 'b3', feet: 20, actions: 1 });
+    expect(options.find((c) => c.unit === 'u3')).toEqual({ unit: 'u3', cell: 'd5', feet: 40, actions: 0 });
+    expect(options.find((c) => c.unit === 'u2')).toEqual({ unit: 'u2', cell: 'b3', feet: 20, actions: 0 });
   });
 
   it('a charge from a higher hex puts the target’s save at −2', () => {
@@ -709,12 +718,12 @@ describe('movement points', () => {
     expect(save.modifier).toBe(unit(s, 'u2').stats.fortitude - 2);
   });
 
-  it('three actions cover a stride and then a charge, and no more', () => {
+  it('three actions cover a stride and then a charge that Presses, and no more', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c5');
     let s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').actions).toBe(2);
-    s = act(s, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 10]));
+    s = act(s, { type: 'charge', target: 'u2', unit: 'u0', activity: 2 }, scriptedRng([10, 10]));
     expect(unit(s, 'u0').square).toEqual(parse('c4'));
     expect(s.activated).toEqual(['u0']);
     expect(s.pending).toBe('defender');
@@ -1244,6 +1253,17 @@ describe('disorder', () => {
     expect(after.inspired).toBe(false);
     expect(willModifier(after)).toBe(after.stats.will);
   });
+  it('Rally names the adjacent ally it reaches, and needs one', () => {
+    const { state } = battle([]);
+    const rally = (s: BattleState) => offer(s, 'rally', 'u0').activities[1];
+    expect(rally(state).reason).toBe('no target');
+    place(state, 'u1', 'd2');
+    unit(state, 'u1').disorder = 1;
+    expect(rally(state).targets.map((t) => t.id)).toEqual(['u1']);
+    expect(() => act(state, { type: 'rally', activity: 2, unit: 'u0' }, scriptedRng([15]))).toThrow();
+    const s = act(state, { type: 'rally', activity: 2, unit: 'u0', target: 'u1' }, scriptedRng([15]));
+    expect(unit(s, 'u1').disorder).toBe(0);
+  });
   it('a critical failure costs the rallier 1 disorder', () => {
     const { state } = battle([]);
     const s = act(state, { type: 'rally', activity: 1, unit: 'u0' }, scriptedRng([1]));
@@ -1260,13 +1280,6 @@ describe('disorder', () => {
     unit(state, 'u2').disorder = unit(state, 'u2').quality + 1;
     const s = act(burn(state, 'u0'), { type: 'withdraw', activity: 1, unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
-  });
-  it('fear disorders whoever comes to grips with it', () => {
-    const { state } = battle([]);
-    unit(state, 'u2').fear = true;
-    place(state, 'u2', 'c4');
-    const s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
-    expect(unit(s, 'u0').disorder).toBe(1);
   });
 });
 

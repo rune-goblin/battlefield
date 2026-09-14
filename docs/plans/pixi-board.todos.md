@@ -1428,3 +1428,20 @@ saves its own under its own storage key.
   terrain default rather than plumbed from the live appearance settings, so the panel's angle
   slider moves the hills and not the pieces. Whether the silhouette wants a darker edge near
   the feet than the uniform blur gives it.
+
+## 2026-09-13: the illustrated map becomes the default
+
+- **Illustrated is the default map style.** `loadStyle` falls back to `ink` when nothing is
+  saved. Every game stage already hands its board `gameMap`, so the style reaches setup, paint,
+  placement and battle with no further wiring.
+- **The tuned lab settings are the defaults.** `defaultInkSettings()` now matches the set the
+  user dialled in the terrain lab: a mottled page at 36% over a pink-white paper, a full-strength
+  wash with no patch variation, black ink at full opacity with no lift, a denser fill (11 marks
+  per hex at 0.44), and a faint hex grid at 10%. The terrain colours, drawing sizes and lines
+  were already the defaults. `INK_SETTINGS_VERSION` stays at 5: a saved set from before keeps
+  its own dials, and the user's saved set equals the new defaults.
+- **The wash no longer stays low.** The interface comment on `wash` said the style depends on a
+  faint wash; at 100% over a page cut the page's grain carries the paper, so the comment went.
+- Open for play: a density of 11 saturates. The Poisson-disc spacing at scale 0.44 fits about
+  six marks per hex, so the dial above six adds nothing but sampling. The fill test pins its own
+  density at 5 so it checks placement rather than the tuned default.

@@ -21,8 +21,57 @@ what was decided and why. Never reopen a decision here; put a doubt under "Open"
 
 ## Open, for play
 
-Ten questions stand. Each carries a **Decision:** line to fill in; write the ruling there and
-the build follows it. The three closed ones are at the bottom, kept for the record.
+Four things stand. Each carries a **Decision:** line to fill in; write the ruling there and the
+build follows it. Everything answered so far is under "Answered and built", below.
+
+### Deferred
+
+- **O1 · Artillery and Pin.** Whether artillery needs a cheaper Pin now that the gun crew has no
+  extra action (section 12). Asked as D4 and deferred on 2026-09-09: "no, we will revisit
+  artillery later." Nothing in the engine waits on it.
+  **Decision:**
+
+### Balance to watch at the table
+
+Neither is a contradiction. Both are a rule working as written, at a strength only a game can
+judge.
+
+- **O2 · An unbreached wall is a much harder shell than it was.** D2 made a standing wall break
+  engagement, so a garrison can be shot at and never fought: the only way in is to breach a
+  segment and come through. The attacker's &minus;2 for striking across a wall went with it,
+  because there is no longer such a strike.
+  **Decision:**
+
+- **O3 · Rough ground now stops a short charge instead of taxing it.** The run is one Speed
+  (2026-09-09), and one Speed of infantry is 10 ft, which cannot pay a forest hex's 20 at all.
+  Rough ground used to cost a charge its +2; for a 1-hex-an-action troop it now refuses the
+  charge outright. Sure footing is worth much more to a charge than it was.
+  **Decision:**
+
+### To confirm
+
+- **O4 · How far D1's "balance against moderate" reaches.** The ruling ("+14") was built into
+  rules.html's worked examples, which now quote a moderate level-6 Will. The engine's fallback
+  profile still gives a sheet-less infantry card `will: 'high'` (+17), and section 2's own
+  sheet-less table says "high Will" for infantry to match, so the two agree with each other. The
+  ruling was read as covering the worked examples and not the profile.
+  **Decision:**
+
+### Not questions, but findable
+
+- Shortcuts carry `// proto:` in the code, as this project's mode asks. Six sit in `src/engine`
+  (encoded multi-hex targets, a break's nearest legal cell, an artillery read); the rest are
+  board, art and shell. Each says what it stands in for.
+- Two test gaps are recorded in their own waves rather than here: the `needs N actions` reason
+  (Wave 0) and `already cast this activation` (Wave 7). Prototype mode does not ask for either.
+- Wave 11 recorded a coordinator-channel message that arrived styled as a review result and
+  instructed a second commit against that wave's own mandate. It was treated as untrusted and
+  not acted on. Kept visible here because it was flagged for the user and never answered.
+
+## Answered and built (2026-09-09)
+
+Mark answered all ten questions inline. Every one is built and verified against the tree. The
+questions, the rulings and what each became are kept below for the record.
 
 ### Contradictions to settle
 
@@ -101,9 +150,7 @@ Neither is a contradiction. Both are "worth building?".
   the board's charge chip rather than to `chargeBonus`. Marked `// proto:` on `approach`.
   **Decision:** any valid movement should be okay so long as it doesn't engage another unit. You can't charge past a unit they have zone control of. Which may need to document, so you must charge the first unit you engage. 
 
-### Built from those decisions (2026-09-09)
-
-Mark answered all ten inline above. What each one became:
+### What each became
 
 - **D1 — built.** The Controlling parity example now reads "a moderate level-6 Will of +14" and its
   odds are recomputed for it: 20 / 50 / 25 / 5 against spell DC 21, where +13 gave 15 / 50 / 30 / 5.
@@ -121,8 +168,9 @@ Mark answered all ten inline above. What each one became:
 - **D4 — closed, no change.** Artillery keeps its price; the gun crew is revisited later.
 - **D5 — closed, already built.** A tree is cast once an activation and there is no per-battle
   limit. `castTrees` on `Unit`, cleared at `begin`; Wave 9's third test pins it.
-- **D6 — built.** A charge whose target leaves play mid-run spends the attack anyway; the
-  movement stands, and the charge still costs its movement alone. Aegis needed no change: `melee`
+- **D6 — built, then superseded.** A charge whose target left play mid-run spent the attack anyway
+  and the movement stood. The branch is deleted with fear on contact (see the last bullet of this
+  file): nothing can interrupt a charge any more. Aegis, the other path, never needed it — `melee`
   sets `attacked` before it rolls, so a refused charge already spent the attack and its actions.
 - **D7 — closed, already built.** Any attack roll may use Sure strike, a swing at a wall included:
   the Waves 10–11 fix pass routed `attackWall` through `attackRoll`.
@@ -819,7 +867,8 @@ bullets struck above recorded the opposite ban and are history now.
   branch where the target is gone between the run and the melee, and the log says the ground stands
   and the attack is spent. Section 7's fear bullet says the same. The branch stays narrow and is
   unreachable today: nothing but the target leaving play reaches it, and routing does not remove a
-  unit from the field — `addDisorder` leaves `status` active — so no test pins it. The other path
+  unit from the field — `addDisorder` leaves `status` active — so no test pins it. (Superseded the
+  same day: the branch is deleted with fear on contact, the last bullet of this file.) The other path
   that interrupts a charge, an Aegis that refuses the Fight, already spent the attack and the full
   price: `melee` sets `attacked` before `resolveStrike`, and `doCharge` returns the whole cost.
 - 2026-09-09: **D9 — the three Defense buffs clear at `finish`.** `begin` no longer touches `ward`,
@@ -848,3 +897,43 @@ bullets struck above recorded the opposite ban and are history now.
   on its units, and `finish` reads that field on every activation, so `intact` in `game.svelte.ts`
   now checks it. A stale save costs the battle in progress and keeps the board and the two forces,
   which is the mechanism that file already documents for a field a save predates.
+- 2026-09-09: Charge dropped a step. Nothing has four actions by default, so Charge and Overrun
+  was unbuyable and the ladder's top rung sat dead. Every rung now costs one less, and the run
+  it folds in halves: one Speed, not two. `CHARGE_ACTIONS` is 0 and `CHARGE_SPEEDS` is 1, so a
+  charge costs the Fight's own price and nothing more — Charge ◆, Charge and Press ◆◆, Charge
+  and Overrun ◆◆◆, the same 1/2/3 shape every other verb has. The discount is unchanged in
+  size: a charge still saves the one action the approach would have cost.
+  Consequences taken with it:
+  - An interrupted charge (fear on contact routs the charger) used to refund the Fight and keep
+    the movement's one action. With the run costing no action there is nothing left to refund, so
+    `doCharge` now returns the full `cost`: the activity is spent whether or not the melee lands,
+    as every other activity is. rules.html section 7 says so.
+  - Reach halves. Infantry charges from distance 2, a paced troop from distance 3. One Speed of
+    infantry is 10 ft, which cannot pay a forest hex's 20 at all, so rough ground now refuses a
+    short charge outright where it used to cost only the +2. Sure footing (section 11) is worth
+    much more to a charge than it was.
+  - `Battle.svelte` needed no change: `chargeCost` is `c.actions - 1 + activity`, which now reads
+    1/2/3 straight off the chips, and all three were already offered.
+  - Two routing tests (the clean-route pick and the zone-of-control detour) set the charger's
+    Speed to 40: at one Speed of 20 ft a run reaches two hexes, and two hexes leave no route to
+    choose between. The behaviour they cover is unchanged.
+- 2026-09-09: Fear on contact is gone, by the user's decision. A fear aura in Pathfinder imposes
+  a penalty; it does not fire on movement, so disordering whoever came to grips with it was an
+  effect the game does not have. A troop with an aura now brings the aura its statblock gives it
+  and nothing more. `fearOnContact` and its four call sites (stride, charge, a no-retreat follow,
+  Translocate) are removed, along with the disorder-table row in rules.html section 9.
+  - The `fear` flag stays on `UnitCard` and `Unit`, imported off a frightful presence and read by
+    nothing — the same standing `melee-drill` and the other unread signals already have. Noted at
+    the field in `types.ts` and in `docs/adapter-contract.md`.
+  - The charge's interrupt branch is removed with it. Rout is derived (`isRouted` is
+    `disorder > quality`; `status` stays `'active'`), so a charger that broke from fear never
+    tripped `u.status !== 'active'` and swung anyway — verified against the built engine before
+    the removal, not read off the code. With fear gone nothing at all can interrupt a charge
+    between the run and the melee, so the branch was unreachable in fact as well as in principle.
+    rules.html's section 7 bullet loses the sentence that described it.
+- 2026-09-14: Rally ◆◆ names its ally. `targetsFor` already listed the adjacent allies but marked
+  the activity `needsTarget: false`, so taking Rally off your own piece spent two actions on a
+  Steady that reached nobody. It now needs a target: arm Rally, touch the ally, pick the row.
+  - With no adjacent ally the activity reads "no target" and is not offered. Rally with nobody
+    beside you was a Steady at twice the price, so nothing legal is lost.
+  - `perform` trusts `doActivity`'s target check and drops its own adjacency re-check.

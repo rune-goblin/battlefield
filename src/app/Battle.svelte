@@ -119,7 +119,7 @@
 
   // --- The ring. Touching your own piece blooms its verbs around it, so the menu arrives at
   // the piece rather than the player travelling to a menu. Choosing one either acts on your
-  // own piece at once (Guard, a self-Rally) or arms it against a target. It sets no mode a
+  // own piece at once (Guard, Steady) or arms it against a target. It sets no mode a
   // player can be stranded in — a verb stays armed only until it is spent, Esc, or a touch
   // anywhere else.
   const ICON_FOR: Record<Verb, ActionIcon> = {
@@ -714,8 +714,8 @@
     aim = null;
     armed = null;
     armedTree = null;
-    // The id goes through only where the activity actually names it: Guard takes none, and a
-    // Rally on your own piece must not arrive carrying your own id as its ally. A matched
+    // The id goes through only where the activity actually names it: Guard and Steady take
+    // none, so a touch on your own piece must not send your own id. A matched
     // target's own id goes through, not the touched ref's: a shape or a set is named by its
     // full encoded id, whichever part was actually touched.
     const named = row.targets.find((t) => targetMatches(b, t, a.target));

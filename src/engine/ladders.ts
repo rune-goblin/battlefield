@@ -69,7 +69,7 @@ export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]
   ],
   rally: [
     { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Roll. A success clears 1 of your own disorder, or inspires you if you have none.', rally: { scope: 'self' } },
-    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Steady, and the same result for one adjacent ally: it clears 1, or is inspired if it has none.', rally: { scope: 'adjacent' } },
+    { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Steady, and the same result for one adjacent ally you name: it clears 1, or is inspired if it has none.', rally: { scope: 'adjacent' } },
     { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'Rally, and the same result for every friendly unit within 2.', rally: { scope: 'nearby' } },
   ],
 };

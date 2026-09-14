@@ -50,7 +50,10 @@ export interface Unit {
   /** Read off the 'no-retreat' signal. Such a troop follows an enemy that withdraws from it,
    * one free Move, to re-establish contact — it is a hold on others, not on itself. */
   noRetreat: boolean;
+  /** Imported off a frightful presence and read by nothing: an aura's effect stays the
+   * statblock's own. */
   fear: boolean;
+
   tactics: Tactic[];
   /** `null` for a non-caster and for a caster with no tradition set (there is none, per
    * `cardTraits`' own fallback — see cards.ts). Gates which trees `trees` may ever hold. */

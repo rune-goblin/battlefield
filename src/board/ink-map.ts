@@ -53,8 +53,7 @@ export interface InkMapSettings {
   paper: number;
   grain: InkGrain;
   /** How much of the terrain's colour reaches the page, 0–1: the mix into the paper colour,
-   * or the wash's opacity over a page cut. The whole point of the style is that this stays
-   * low. */
+   * or the wash's opacity over a page cut. */
   wash: number;
   /** Per-patch lightness wobble, 0–1, so two woods are not one flat plate. */
   variation: number;
@@ -82,24 +81,23 @@ const TERRAIN_COLOURS: Record<TerrainGroup, number> = {
 const TERRAIN_SCALES: Record<TerrainGroup, number> = {
   plains: 0.85, desert: 0.9, forest: 1, swamp: 0.9, water: 1, shallows: 1,
   hills: 1, mountain: 1.1, settlement: 1,
-};
-export const DEFAULT_INK_STYLE: InkStyle = {
-  colour: 0x4a4038, opacity: 0.85, scale: 0.95, variation: 0.12, jitter: 0.06, lift: 0.04,
+};export const DEFAULT_INK_STYLE: InkStyle = {
+  colour: 0x000000, opacity: 1, scale: 0.95, variation: 0.08, jitter: 0.06, lift: 0,
 };
 // 0.28 would be the fills' own pixel scale against the hero art — a 96-pixel fill cell is a
 // quarter of a 384-pixel hero cell — but at that size the marks are dust on a 60-pixel hex,
 // and at 0.6 a reed stood as tall as a tree.
-export const DEFAULT_INK_FILL: InkFill = { density: 5, scale: 0.4, variation: 0.2, opacity: 0.9 };
+export const DEFAULT_INK_FILL: InkFill = { density: 11, scale: 0.44, variation: 0.27, opacity: 1 };
 export const DEFAULT_INK_HEROES: InkHeroes = { perHexes: 2 };
 export const INK_SETTINGS_VERSION = 5;
 
 export function defaultInkSettings(): InkMapSettings {
   return {
     version: INK_SETTINGS_VERSION,
-    paper: 0xf4ece0,
-    grain: { texture: 'scratched-page', strength: 1, hexes: 24 },
-    wash: 0.55,
-    variation: 0.02,
+    paper: 0xfdebef,
+    grain: { texture: 'mottled-page', strength: 0.36, hexes: 64 },
+    wash: 1,
+    variation: 0,
     terrains: Object.fromEntries(TERRAIN_GROUPS.map(group =>
       [group, { colour: TERRAIN_COLOURS[group], scale: TERRAIN_SCALES[group] }])) as Record<TerrainGroup, InkTerrain>,
     ink: { ...DEFAULT_INK_STYLE },
@@ -112,7 +110,7 @@ export function defaultInkSettings(): InkMapSettings {
       level1: { ...DEFAULT_ELEVATION_LINES.level1, visible: false, colour: 0x4a4038 },
       level2: { ...DEFAULT_ELEVATION_LINES.level2, visible: false, colour: 0x4a4038 },
     },
-    grid: { ...DEFAULT_GRID_SETTINGS },
+    grid: { ...DEFAULT_GRID_SETTINGS, visible: true, opacity: 0.1 },
   };
 }
 
@@ -140,8 +138,7 @@ export function normalizeInkSettings(value: unknown): InkMapSettings {
     const terrain = saved.terrains?.[group];
     if (!terrain) continue;
     result.terrains[group].colour = colour(terrain.colour, result.terrains[group].colour);
-    result.terrains[group].scale = clamp(terrain.scale, 0.2, 2.5, result.terrains[group].scale);
-  }
+    result.terrains[group].scale = clamp(terrain.scale, 0.2, 2.5, result.terrains[group].scale);  }
   if (saved.ink) {
     const ink = saved.ink;
     result.ink.colour = colour(ink.colour, result.ink.colour);
