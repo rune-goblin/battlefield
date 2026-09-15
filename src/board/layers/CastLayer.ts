@@ -1,3 +1,4 @@
+import { targetAnchor } from '../target-point.js';
 import * as PIXI from 'pixi.js';
 import type { Grid, Point, Tree } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
@@ -38,7 +39,7 @@ export class CastLayer {
   private theme: BoardTheme;
   private grid: Grid | null = null;
   private size = 0;
-  private cast: { from: string; to: string; tree: Tree } | null = null;
+  private cast: { from: string; to: string; tree: Tree; toCells?: string[] } | null = null;
   private particles: Particle[] = [];
   private a: Point | null = null;
   private b: Point | null = null;
@@ -94,8 +95,8 @@ export class CastLayer {
   }
 
   /** The cast being aimed right now, or null to clear it. */
-  setCast(cast: { from: string; to: string; tree: Tree } | null): void {
-    if (cast?.from === this.cast?.from && cast?.to === this.cast?.to && cast?.tree === this.cast?.tree) return;
+  setCast(cast: { from: string; to: string; tree: Tree; toCells?: string[] } | null): void {
+    if (cast?.from === this.cast?.from && cast?.to === this.cast?.to && cast?.toCells?.join('+') === this.cast?.toCells?.join('+') && cast?.tree === this.cast?.tree) return;
     this.cast = cast;
     this.redraw();
   }
@@ -115,10 +116,13 @@ export class CastLayer {
     this.clearVisual();
     if (!this.grid || !this.size || !this.cast) return;
     const from = this.grid.parse(this.cast.from);
-    const to = this.grid.parse(this.cast.to);
-    if (!this.grid.inBounds(from) || !this.grid.inBounds(to)) return;
+    if (!this.grid.inBounds(from)) return;
     const a = this.grid.center(from, this.size);
-    const b = this.grid.center(to, this.size);
+    const b = targetAnchor(this.cast.toCells ?? [this.cast.to], (cell) => {
+      const target = this.grid!.parse(cell);
+      return this.grid!.inBounds(target) ? this.grid!.center(target, this.size) : null;
+    });
+    if (!b) return;
     if (a.x === b.x && a.y === b.y) return;
 
     const colour = this.theme.overlay.cast[this.cast.tree];

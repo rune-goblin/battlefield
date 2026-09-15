@@ -26,9 +26,9 @@
     /** A token that traces a drag without leaving its square — see `BoardView.setAnchored`. */
     anchored?: string | null;
     /** The shot being aimed, shooter's cell to target's — see `BoardView.setShot`. */
-    shot?: { from: string; to: string } | null;
+    shot?: { from: string; to: string; toCells?: string[] } | null;
     /** The cast being aimed, caster's cell to target's — see `BoardView.setCast`. */
-    cast?: { from: string; to: string; tree: Tree } | null;
+    cast?: { from: string; to: string; tree: Tree; toCells?: string[] } | null;
     /** The acting piece's hex, washed and outlined in its side's colour. */
     selected?: { cell: string; side: Side } | null;
     /** In battle mode, the only token a press may pick up. Place mode ignores this. */

@@ -68,7 +68,7 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
   controlling: [
     ['Dread', 'The target rolls Will against your spell DC; a failure costs it 1 disorder, a success frightens it.'],
     ['Stun', 'Dread, and one action fewer on its next activation.'],
-    ['Hold', 'Stun, and it is rooted on its next activation: no Move, Charge or Withdraw.'],
+    ['Hold', 'Stun, and it is rooted on its next activation: no Move, Charge or Maneuver.'],
   ],
   offense: [
     ['Sure strike', 'The ally rolls its next attack twice and takes the better.'],

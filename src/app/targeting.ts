@@ -1,0 +1,154 @@
+import {
+  gridOf, notation, type ActionOffer, type ActivityAction, type ActivityOption,
+  type ActivityTarget, type BattleState, type TargetRef, type Tree, type Unit,
+} from '../engine/index.js';
+import type { TargetIcon } from '../board/art.js';
+
+export type TargetGeometry = 'hex' | 'edge' | 'corner' | 'group';
+export interface TargetMarker {
+  id: string;
+  label: string;
+  cells: string[];
+  anchorCells: string[];
+  geometry: TargetGeometry;
+  icon: TargetIcon;
+  selected?: boolean;
+}
+export interface TargetChoice extends ActivityTarget, TargetMarker {}
+export interface TargetingHit { kind: 'hex' | 'edge' | 'corner' | 'target'; id: string }
+export interface TargetResolution {
+  action: ActivityAction;
+  markers: TargetMarker[];
+  effects: { cell: string; tree: Tree; from: string }[];
+}
+
+export function cellsForTarget(state: BattleState, target: ActivityTarget): string[] {
+  if (target.kind === 'wall') return target.id.split('|');
+  if (target.kind === 'cell') return target.id.split('+');
+  return target.id.split('+').flatMap((id) => {
+    const u = state.units.find((unit) => unit.id === id && unit.status === 'active');
+    return u ? [notation(u.square)] : [];
+  });
+}
+
+export const targetingIcon = (offer: Pick<ActionOffer, 'type' | 'spell'>): TargetIcon =>
+  offer.spell ? `cast:${offer.spell}`
+    : ({ fight: 'attack', shoot: 'shoot', rally: 'rally', guard: 'block', cast: 'cast' } as const)[offer.type];
+
+export { targetAnchor } from '../board/target-point.js';
+
+/** Adapts exact engine targets to board picks, icons, previews and one action/effect plan. */
+export class TargetingService {
+  readonly choices: TargetChoice[];
+  readonly icon: TargetIcon;
+  readonly style: 'attack' | 'deploy';
+
+  get placement(): boolean { return this.offer.spell === 'movement' && this.activity.index === 3; }
+
+  candidates(selected: string[] = []): TargetChoice[] {
+    return this.choices.filter((target) => this.placement
+      ? !selected.length || target.cells[0] === selected[0]
+      : selected.every((cell) => target.cells.includes(cell)));
+  }
+
+  /** Unit groups pick one member at a time; placement picks its source before its destination. */
+  surface(selected: string[] = []): TargetMarker[] {
+    const candidates = this.candidates(selected);
+    if (!this.placement && !candidates.some((target) => target.geometry === 'group')) return candidates;
+    const cells = [...new Set(candidates.flatMap((target) => this.placement
+      ? [target.cells[selected.length ? 1 : 0]] : target.cells))];
+    return [...new Set([...selected, ...cells])].map((cell) => ({
+      id: `hex:${cell}`, label: `${this.activity.label}: ${this.state.units.find((u) => u.status === 'active' && notation(u.square) === cell)?.name ?? cell}`,
+      cells: [cell], anchorCells: [cell], geometry: 'hex', icon: this.icon, selected: selected.includes(cell),
+    }));
+  }
+
+  pickCell(cell: string, selected: string[] = []): { selected: string[]; target: TargetChoice | null } | null {
+    if (selected.includes(cell)) return { selected: selected.filter((value) => value !== cell), target: null };
+    const candidates = this.candidates(selected);
+    if (this.placement) {
+      if (!selected.length) return candidates.some((target) => target.cells[0] === cell) ? { selected: [cell], target: null } : null;
+      const target = candidates.find((target) => target.cells[1] === cell);
+      return target ? { selected: [...selected, cell], target } : null;
+    }
+    const next = [...selected, cell];
+    const matches = candidates.filter((target) => target.cells.includes(cell));
+    if (!matches.length) return null;
+    const target = matches.find((target) => target.cells.length === next.length) ?? null;
+    return { selected: next, target };
+  }
+
+  markersFor(target: TargetChoice): TargetMarker[] {
+    return target.geometry === 'group' ? target.cells.map((cell) => ({ ...target, id: `${target.id}:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : [target];
+  }
+
+  constructor(readonly state: BattleState, readonly actor: Unit, readonly offer: ActionOffer, readonly activity: ActivityOption) {
+    this.icon = targetingIcon(offer);
+    this.style = offer.type === 'shoot' || offer.type === 'fight' || offer.spell === 'blast' || offer.spell === 'controlling' ? 'attack' : 'deploy';
+    const targets: ActivityTarget[] = activity.needsTarget ? activity.targets
+      : [{ kind: 'unit', id: actor.id, label: actor.name }];
+    this.choices = activity.legal ? targets.map((target) => this.describe(target)) : [];
+  }
+
+  private describe(target: ActivityTarget): TargetChoice {
+    const cells = cellsForTarget(this.state, target);
+    const placement = this.offer.spell === 'movement' && this.activity.index === 3;
+    const geometry: TargetGeometry = target.kind === 'wall' ? 'edge'
+      : this.offer.spell === 'blast' && this.activity.index === 3 ? 'corner'
+        : this.offer.spell === 'blast' && this.activity.index === 2 ? 'edge'
+          : cells.length > 1 && !placement ? 'group' : 'hex';
+    return {
+      ...target, cells, geometry, icon: this.icon,
+      anchorCells: placement ? cells.slice(-1) : cells,
+      label: `${this.activity.label}: ${target.label}`,
+    };
+  }
+
+  matches(hit: TargetingHit): TargetChoice[] {
+    return this.choices.filter((target) => {
+      if (hit.kind === 'target') return target.id === hit.id;
+      if (hit.kind === 'hex') return target.kind !== 'wall' && target.cells.includes(hit.id);
+      if (hit.kind === 'edge') return target.geometry === 'edge'
+        && target.anchorCells.slice().sort().join('|') === hit.id.split(/[|+]/).sort().join('|');
+      return target.geometry === 'corner'
+        && target.anchorCells.slice().sort().join('+') === hit.id.split('+').sort().join('+');
+    });
+  }
+
+  forRef(ref: TargetRef): TargetChoice[] {
+    if (ref.kind === 'wall') return this.matches({ kind: 'edge', id: ref.id });
+    if (ref.kind === 'cell') return this.matches({ kind: 'hex', id: ref.id });
+    return this.choices.filter((target) => target.kind === 'unit' && target.id.split('+').includes(ref.id)
+      || target.kind === 'cell' && target.cells.some((cell) => this.state.units.some((u) => u.id === ref.id && notation(u.square) === cell)));
+  }
+
+  preview(id: string | null) {
+    const choice = this.choices.find((target) => target.id === id);
+    if (!choice) return null;
+    const link = { from: notation(this.actor.square), to: choice.anchorCells[0], toCells: choice.anchorCells };
+    return {
+      choice, cells: choice.cells, style: this.style,
+      shot: this.offer.type === 'shoot' ? link : null,
+      cast: this.offer.spell ? { ...link, tree: this.offer.spell } : null,
+    };
+  }
+
+  resolve(id?: string): TargetResolution | null {
+    if (!this.activity.legal) return null;
+    const target = this.activity.needsTarget ? this.choices.find((choice) => choice.id === id) : this.choices[0];
+    if (!target) return null;
+    let cells = target.cells;
+    if (this.offer.type === 'rally') {
+      const g = gridOf(this.state.board);
+      cells = this.activity.index === 3 ? this.state.units.filter((u) => u.status === 'active' && u.side === this.actor.side && g.distance(u.square, this.actor.square) <= 2).map((u) => notation(u.square))
+        : [...new Set([notation(this.actor.square), ...cells])];
+    }
+    const placement = this.offer.spell === 'movement' && this.activity.index === 3;
+    const effectCells = placement ? target.anchorCells : cells;
+    return {
+      action: { type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? target.id : undefined },
+      markers: this.offer.type === 'rally' ? cells.map((cell) => ({ ...target, id: `rally:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : this.markersFor(target),
+      effects: this.offer.spell ? effectCells.map((cell) => ({ cell, tree: this.offer.spell!, from: notation(this.actor.square) })) : [],
+    };
+  }
+}

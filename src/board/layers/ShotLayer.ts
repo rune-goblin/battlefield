@@ -1,3 +1,4 @@
+import { targetAnchor } from '../target-point.js';
 import * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
@@ -26,7 +27,7 @@ export class ShotLayer {
   private grid: Grid | null = null;
   private size = 0;
   private theme: BoardTheme;
-  private shot: { from: string; to: string } | null = null;
+  private shot: { from: string; to: string; toCells?: string[] } | null = null;
 
   constructor(container: PIXI.Container, theme: BoardTheme) {
     this.container = container;
@@ -41,8 +42,8 @@ export class ShotLayer {
   }
 
   /** The shot being aimed right now, or null to clear it. */
-  setShot(shot: { from: string; to: string } | null): void {
-    if (shot?.from === this.shot?.from && shot?.to === this.shot?.to) return;
+  setShot(shot: { from: string; to: string; toCells?: string[] } | null): void {
+    if (shot?.from === this.shot?.from && shot?.to === this.shot?.to && shot?.toCells?.join('+') === this.shot?.toCells?.join('+')) return;
     this.shot = shot;
     this.redraw();
   }
@@ -51,10 +52,13 @@ export class ShotLayer {
     this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
     if (!this.grid || !this.size || !this.shot) return;
     const from = this.grid.parse(this.shot.from);
-    const to = this.grid.parse(this.shot.to);
-    if (!this.grid.inBounds(from) || !this.grid.inBounds(to)) return;
+    if (!this.grid.inBounds(from)) return;
     const a = this.grid.center(from, this.size);
-    const b = this.grid.center(to, this.size);
+    const b = targetAnchor(this.shot.toCells ?? [this.shot.to], (cell) => {
+      const target = this.grid!.parse(cell);
+      return this.grid!.inBounds(target) ? this.grid!.center(target, this.size) : null;
+    });
+    if (!b) return;
     if (a.x === b.x && a.y === b.y) return;
 
     const g = new PIXI.Graphics();

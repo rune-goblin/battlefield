@@ -1,17 +1,20 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, reachOf, targetMatches, TREE_TARGET,
+    offersAt, reachOf, targetMatches, TREE_TARGET, maneuverOutcome, parse,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
     type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
-  import { actionIconUrl, castIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
+  import { actionIconUrl, castIconUrl, targetIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
   import BoardPopup from './BoardPopup.svelte';
+  import BattleLog from './BattleLog.svelte';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import RadialMenu from './RadialMenu.svelte';
+  import TargetMarkers from './TargetMarkers.svelte';
+  import { cellsForTarget, targetingIcon, TargetingService, type TargetMarker } from './targeting.js';
   import ArmyReel from './ArmyReel.svelte';
   import { backToSetup, deselectUnit, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
@@ -49,10 +52,10 @@
   );
   const hot = $derived(hoveredCard ?? hoveredPiece);
 
-  // The only place `resolveStrike` is called with `free: true` (doWithdraw's covering
+  // The only place `resolveStrike` is called with `free: true` (doManeuver's covering
   // strikes) — the sole channel to flag a free strike for the token pulse without a
   // dedicated field on the log entry.
-  const FREE_STRIKE_RE = /strikes the withdrawing/;
+  const FREE_STRIKE_RE = /strikes the maneuvering/;
   const FLASH_MS = 700;
   let flashing = $state<string[]>([]);
   let flashTimers: ReturnType<typeof setTimeout>[] = [];
@@ -67,7 +70,7 @@
 
   // A new unit drops every open popup and any in-flight drag preview — all of it is
   // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; });
+  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null; blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null; });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return TREE_TARGET[offer.spell] === 'enemy' ? 'attack' : 'deploy';
@@ -81,10 +84,9 @@
   // drawing an illegal one (see `onBoardDrag`).
   interface MovePreview { kind: 'move'; cell: string; feet: number; actions: number; path: string[]; near: string[]; far: string[] }
   interface ChargePreview { kind: 'charge'; cell: string; enemy: string; feet: number; actions: number; path: string[] }
-  // No traced route: a withdrawal breaks contact and leaves, so its arrow is the straight
-  // line from where the unit stands to where it is going.
-  interface WithdrawPreview { kind: 'withdraw'; cell: string; path: string[] }
-  type Preview = MovePreview | ChargePreview | WithdrawPreview;
+  // Maneuver previews connect the starting hex to the chosen destination.
+  interface ManeuverPreview { kind: 'maneuver'; cell: string; path: string[] }
+  type Preview = MovePreview | ChargePreview | ManeuverPreview;
   let drag = $state<Preview | null>(null);
   // The cell a drag has pulled to that the piece may not take — an X goes there, since the
   // refusal reads where the player is pulling rather than on the piece under their finger.
@@ -104,10 +106,11 @@
   interface Aim { cell: string; target: TargetRef; label: string; groups: TargetOffer[]; group: number; index: number }
   let aim = $state<Aim | null>(null);
   const aimGroup = $derived(aim?.groups[aim.group] ?? null);
-  /** Every activity of the chosen verb that names the aimed target, the unaffordable ones
-   * included: an activity you cannot pay for this activation is still worth reading. */
+  /** Show activities for this target, including their unavailable levels. Blast exposes its
+   * whole ladder because choosing a level starts a separate area selection. */
   const aimActivities = $derived.by<ActivityOption[]>(() => {
     if (!aim || !aimGroup || !active) return [];
+    if (aimGroup.offer.spell === 'blast') return aimGroup.offer.activities;
     const t = aim.target;
     const own = t.kind === 'unit' && t.id === active.id;
     return aimGroup.offer.activities.filter((o) => o.cost !== null
@@ -129,20 +132,20 @@
   // Always these six, always in this order. A ring is learned by direction, so a verb the
   // situation forbids dims in place — letting it vanish would rotate every other verb onto a
   // new angle and cost the player the muscle memory the ring exists to build.
-  type Slot = 'melee' | 'shoot' | 'cast' | 'withdraw' | 'rally' | 'guard';
-  const SLOTS: Slot[] = ['melee', 'shoot', 'cast', 'withdraw', 'rally', 'guard'];
+  type Slot = 'melee' | 'shoot' | 'cast' | 'maneuver' | 'rally' | 'guard';
+  const SLOTS: Slot[] = ['melee', 'shoot', 'cast', 'maneuver', 'rally', 'guard'];
   const SLOT_LABEL: Record<Slot, string> = {
-    melee: 'Fight', shoot: 'Shoot', cast: 'Cast', withdraw: 'Withdraw', rally: 'Rally', guard: 'Guard',
+    melee: 'Fight', shoot: 'Shoot', cast: 'Cast', maneuver: 'Maneuver', rally: 'Rally', guard: 'Guard',
   };
   const SLOT_STYLE: Record<Slot, HighlightStyle> = {
-    melee: 'attack', shoot: 'attack', cast: 'deploy', withdraw: 'move', rally: 'deploy', guard: 'deploy',
+    melee: 'attack', shoot: 'attack', cast: 'deploy', maneuver: 'move', rally: 'deploy', guard: 'deploy',
   };
   interface Prop {
     key: Slot;
     icon: ActionIcon;
     label: string;
     legal: boolean;
-    /** The verb an aim off this slice narrows to. Charge and Withdraw have none. */
+    /** The verb an aim off this slice narrows to. Charge and Maneuver have none. */
     type: Verb | null;
     style: HighlightStyle;
     /** Everything this verb can touch right now. */
@@ -157,10 +160,7 @@
   };
   // A Blast's Line and Burst, and a Heal or Restore's set, arrive as one target holding two or
   // three parts joined by '+' — a unit-kind id needs the same split a cell-kind id already gets.
-  const targetCells = (t: ActivityTarget): string[] =>
-    t.kind === 'cell' ? t.id.split('+')
-      : t.kind === 'wall' ? [t.id.split('|')[0]]
-        : t.id.split('+').map(cellOf).filter((x): x is string => x !== null);
+  const targetCells = (target: ActivityTarget): string[] => cellsForTarget(b, target);
 
   const offerEdges = (offer: ActionOffer): string[] =>
     offer.activities.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);
@@ -185,12 +185,12 @@
     // Charge shares the melee slice with Fight. Charging is how a unit out of contact reaches
     // the fight the slice already holds, so one direction means "hit them" either way.
     const charges = act.charges.map((c) => cellOf(c.unit)).filter((x): x is string => x !== null);
-    const w = act.withdraw;
+    const w = act.maneuver;
 
     return SLOTS.map((key): Prop => {
-      if (key === 'withdraw') {
+      if (key === 'maneuver') {
         return {
-          key, icon: 'withdraw', label: 'Withdraw', type: null, style: 'move',
+          key, icon: 'maneuver', label: 'Maneuver', type: null, style: 'move',
           legal: !!w && w.targets.length > 0,
           cells: w ? w.targets.map((t) => t.id) : [],
           edges: [],
@@ -220,11 +220,98 @@
   });
 
   let armed = $state<string | null>(null);
-  // Cast alone branches before a target: which tree, chosen off a picker anchored on the
-  // caster's own piece, narrows what "Cast" then lights up and what the eventual aim popup
-  // offers — every other verb still goes straight from the ring to the wash.
+  // Cast branches through the tree ring, then shares the activity picker with Rally.
   let castPick = $state<ActionOffer[] | null>(null);
   let armedTree = $state<Tree | null>(null);
+  let blastOpen = $state(false);
+  let blastLevel = $state<ActivityIndex | null>(null);
+  let blastTarget = $state<string | null>(null);
+  let blastHover = $state<string | null>(null);
+  let blastCell = $state<string | null>(null);
+  const blastOffer = $derived(offers.find((o) => o.spell === 'blast') ?? null);
+  const blastActivity = $derived(blastOpen ? blastOffer?.activities.find((o) => o.index === blastLevel) ?? null : null);
+  const blastService = $derived(active && blastOffer && blastActivity ? new TargetingService(b, active, blastOffer, blastActivity) : null);
+  const blastTargets = $derived(blastService?.choices ?? []);
+  const blastCandidates = $derived(blastTargets.filter((t) => !blastCell || targetCells(t).includes(blastCell)));
+  const blastPreview = $derived(blastTargets.find((t) => t.id === (blastHover ?? blastTarget)) ?? null);
+  const blastSelection = $derived(blastTargets.find((t) => t.id === blastTarget) ?? null);
+
+
+  // Cast and Rally show their activities before asking for a target.
+  let activityPick = $state<{ key: string; index: ActivityIndex | null; selected: string[] } | null>(null);
+  let targetHover = $state<string | null>(null);
+  const pickerOffer = $derived(offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
+  const pickerActivity = $derived(pickerOffer?.activities.find((o) => o.index === activityPick?.index) ?? null);
+  const pickerService = $derived(active && pickerOffer && pickerActivity ? new TargetingService(b, active, pickerOffer, pickerActivity) : null);
+  const pickerTargets = $derived(pickerService?.choices ?? []);
+  const pickerCandidates = $derived(pickerService?.candidates(activityPick?.selected) ?? []);
+  const pickerHoverMatches = $derived(hoveredCell ? pickerService?.matches({ kind: 'hex', id: hoveredCell }) ?? [] : []);
+  const pickerPreview = $derived(pickerTargets.find((t) => t.id === targetHover) ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null));
+
+  function openActivityPicker(offer: ActionOffer) {
+    aim = null; pending = null; radial = null; castPick = null;
+    armed = null; armedTree = null; targetHover = null;
+    activityPick = { key: offerKey(offer), index: null, selected: [] };
+  }
+
+  function choosePickerActivity(index: ActivityIndex) {
+    const offer = pickerOffer;
+    const option = offer?.activities.find((o) => o.index === index);
+    if (!offer || !option?.legal || !activityPick) return;
+    targetHover = null;
+    if (!option.needsTarget) {
+      activityPick = null;
+      performActivity(offer, option);
+      return;
+    }
+    activityPick = { ...activityPick, index, selected: [] };
+  }
+
+  function choosePickerTarget(id: string) {
+    const offer = pickerOffer, option = pickerActivity;
+    const target = pickerTargets.find((t) => t.id === id);
+    if (!offer || !option?.legal || !target) return;
+    activityPick = null; targetHover = null;
+    performActivity(offer, option, target.id);
+  }
+
+  function pickActivityCell(cell: string) {
+    if (!activityPick || !pickerActivity?.legal) return;
+    const pick = pickerService?.pickCell(cell, activityPick.selected);
+    if (!pick) return;
+    targetHover = null;
+    if (pick.target) choosePickerTarget(pick.target.id);
+    else activityPick = { ...activityPick, selected: pick.selected };
+  }
+
+  function openBlast(level: ActivityIndex | null = null) {
+    aim = null; pending = null; radial = null; castPick = null;
+    armed = null; armedTree = null;
+    activityPick = null; targetHover = null;
+    blastOpen = true;
+    chooseBlastLevel(level);
+  }
+
+  function chooseBlastLevel(level: ActivityIndex | null) {
+    blastLevel = level; blastTarget = null; blastHover = null; blastCell = null;
+  }
+
+  function pickBlastCell(cell: string) {
+    if (!blastActivity?.legal) return;
+    if (blastLevel === 1) {
+      blastTarget = blastService?.matches({ kind: 'hex', id: cell })[0]?.id ?? null;
+    } else {
+      // A hex can belong to several shapes. Keep every match for an explicit choice.
+      blastCell = cell; blastTarget = null;
+    }
+    blastHover = null;
+  }
+
+  function confirmBlast() {
+    if (!blastOffer || !blastActivity?.legal || !blastSelection) return;
+    performActivity(blastOffer, blastActivity, blastSelection.id);
+    blastOpen = false; chooseBlastLevel(null);
+  }
   const armedProp = $derived(props.find((p) => p.key === armed && p.legal) ?? null);
   const armedCastOffer = $derived(
     armed === 'cast' && armedTree ? (act?.offers.find((o) => o.type === 'cast' && o.spell === armedTree) ?? null) : null,
@@ -244,6 +331,23 @@
    * (Cast only), then the ring, then nothing. Nothing is committed until the last click, so
    * every stage can be walked out of. */
   function stepBack() {
+    if (activityPick) {
+      targetHover = null;
+      if (activityPick.selected.length) { activityPick = { ...activityPick, selected: activityPick.selected.slice(0, -1) }; return; }
+      if (activityPick.index !== null) { activityPick = { ...activityPick, index: null }; return; }
+      const wasCast = pickerOffer?.type === 'cast';
+      activityPick = null;
+      if (wasCast) castPick = castOffers();
+      else if (active) radial = { cell: notation(active.square) };
+      return;
+    }
+    if (blastOpen) {
+      if (blastTarget || blastCell) { blastTarget = null; blastHover = null; blastCell = null; return; }
+      if (blastLevel !== null) { chooseBlastLevel(null); return; }
+      blastOpen = false;
+      castPick = castOffers();
+      return;
+    }
     if (pending) { pending = null; return; }
     if (aim) { aim = null; return; }
     if (armed) {
@@ -265,23 +369,25 @@
    * pool point is reflected the moment the picker reopens. */
   const castOffers = () => (act?.offers ?? []).filter((o) => o.type === 'cast' && o.activities.some((r) => r.legal));
 
-  /** Take a verb off the ring: it lights everything it can touch. One thing to touch means
-   * there is nothing to choose, so it opens there at once — which is what keeps Guard a
-   * single click, the way it was when the verb sat straight on the piece. Cast is the one
-   * verb with a second choice behind it — which tree — so it branches to that picker instead
-   * of lighting the board outright, unless there is only the one tree to pick. */
+  /** Rally opens its activities; Cast opens its trees and then activities. Other verbs
+   * highlight their targets, opening the target popup directly when only one exists. */
   function takeProp(p: Prop) {
     if (!p.legal || !active) return;
     pending = null;
     aim = null;
     radial = null;
+    activityPick = null; targetHover = null;
+    if (p.key === 'rally') {
+      const offer = offers.find((o) => o.type === 'rally');
+      if (offer) openActivityPicker(offer);
+      return;
+    }
     if (p.key === 'cast') {
       if (armed === 'cast' || castPick) { armed = null; armedTree = null; castPick = null; return; }
       const offers = castOffers();
       if (offers.length <= 1) {
-        armed = 'cast';
-        armedTree = offers[0]?.spell ?? null;
-        if (p.cells.length === 1) applyProp(p, p.cells[0]);
+        if (offers[0]?.spell === 'blast') { openBlast(); return; }
+        if (offers[0]) openActivityPicker(offers[0]);
       } else {
         castPick = offers;
       }
@@ -292,15 +398,10 @@
     if (p.cells.length === 1) applyProp(p, p.cells[0]);
   }
 
-  /** The picker's own choice: arm Cast narrowed to this one tree, opening straight to the aim
-   * popup when it has only one thing to touch. */
+  /** A tree opens its activity picker; Blast retains its shape picker. */
   function chooseTree(o: ActionOffer) {
-    castPick = null;
-    armed = 'cast';
-    armedTree = o.spell;
-    const castProp = props.find((p) => p.key === 'cast');
-    const cells = offerCells(o);
-    if (castProp && cells.length === 1) applyProp(castProp, cells[0]);
+    if (o.spell === 'blast') { openBlast(); return; }
+    openActivityPicker(o);
   }
 
   /** Spend an armed prop on a board object. */
@@ -312,10 +413,10 @@
       pending = { cell: c.cell, rows: [chargeRow(c)], index: 0, activity: null };
       return;
     }
-    // A withdrawal is a destination, not a target, so it parks the same drop a drag there
+    // A maneuver is a destination, not a target, so it parks the same drop a drag there
     // would — and reads its escapes and distance in that popup.
-    if (p.key === 'withdraw') {
-      const rows = rowsAt(cell).filter((r) => r.kind === 'withdraw');
+    if (p.key === 'maneuver') {
+      const rows = rowsAt(cell).filter((r) => r.kind === 'maneuver');
       if (rows.length) pending = { cell, rows, index: 0, activity: null };
       return;
     }
@@ -371,7 +472,7 @@
     }
     // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
     for (const c of act.charges) if (c.cell === cell) rows.push(chargeRow(c));
-    if (act.withdraw?.targets.some((t) => t.id === cell)) rows.push({ kind: 'withdraw', cell, path: [notation(active.square), cell] });
+    if (act.maneuver?.targets.some((t) => t.id === cell)) rows.push({ kind: 'maneuver', cell, path: [notation(active.square), cell] });
     return rows;
   }
 
@@ -444,7 +545,7 @@
     if (active) boardRef?.setRoute(active.id, row.path);
     if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined });
     else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
-    else if (act?.withdraw) performWithdraw(p.activity ?? 1, row.cell);
+    else if (act?.maneuver) performManeuver(p.activity ?? 1, row.cell);
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -452,6 +553,7 @@
   function onKey(e: KeyboardEvent) {
     // One Escape, one step back — the same walk out that a click off the target takes.
     if (e.key === 'Escape') { stepBack(); return; }
+    if (blastOpen) return;
     if (pending) {
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -501,20 +603,25 @@
   const actionCost = (n: number) => (n === 0 ? 'free, on banked movement' : actions(n));
   const rowLabel = (row: Preview) =>
     row.kind === 'charge' ? `Charge ${enemyName(row.enemy)}`
-      : row.kind === 'withdraw' ? 'Withdraw here' : 'Move here';
+      : row.kind === 'maneuver' ? (active && maneuverOutcome(b, active, parse(row.cell)) === 'reposition' ? 'Reposition here' : 'Withdraw here') : 'Move here';
   const rowDetail = (row: Preview) =>
     row.kind === 'charge' ? `${actions(row.actions)}, melee included`
-      : row.kind === 'withdraw' ? 'Break off, Disengage or Fighting retreat'
+      : row.kind === 'maneuver' ? maneuverDetail(row.cell)
         : actionCost(row.actions);
+  function maneuverDetail(cell: string): string {
+    if (!active) return 'Maneuver';
+    return maneuverOutcome(b, active, parse(cell)) === 'reposition' ? 'Maneuver · stay in contact'
+      : 'Maneuver · break contact';
+  }
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
-  // Withdraw's own three ride the same picker.
+  // Maneuver's own three ride the same picker.
   const ACTIVITIES: ActivityIndex[] = [1, 2, 3];
   // The three the rules name, since a charge's Fight is bought at the charge's own price.
   const CHARGES = ['Charge', 'Charge and Press', 'Charge and Overrun'];
   const chargeActivity = $derived(pending?.activity ?? 1);
-  const withdrawActivity = $derived(pending?.activity ?? 1);
+  const maneuverActivity = $derived(pending?.activity ?? 1);
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
   const chargeCost = (c: ChargePreview, activity: ActivityIndex) => c.actions - 1 + activity;
 
@@ -522,14 +629,14 @@
   const dropCost = (row: Preview): number =>
     row.kind === 'move' ? row.actions
       : row.kind === 'charge' ? chargeCost(row, chargeActivity)
-        : act?.withdraw?.activities[withdrawActivity - 1].cost ?? withdrawActivity;
+        : act?.maneuver?.activities[maneuverActivity - 1].cost ?? maneuverActivity;
   const cost = $derived(picked ? dropCost(picked) : aimed ? aimed.cost ?? 0 : 0);
   const left = $derived(act?.actions ?? 0);
 
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
     if (!preview) return [];
     if (preview.kind === 'charge') return [{ style: 'attack', cells: preview.path.slice(1) }];
-    if (preview.kind === 'withdraw') return [{ style: 'move', cells: [preview.cell] }];
+    if (preview.kind === 'maneuver') return [{ style: 'move', cells: [preview.cell] }];
     return [{ style: 'move', cells: preview.near }, { style: 'moveFar', cells: preview.far }];
   });
   const previewPath = $derived(preview?.path ?? []);
@@ -541,7 +648,7 @@
   const dragBand = $derived.by<MoveBand | null>(() => {
     if (!preview) return null;
     if (preview.kind === 'move') return bandOf(preview.actions);
-    return null; // a charge and a withdrawal are not Move rows
+    return null; // a charge and a maneuver are not Move rows
   });
 
   // Move's three bands, grouped straight off the engine's own `moves` map — no pathing
@@ -563,11 +670,11 @@
     // Contact keeps its own card in the panel; here it is one more reason a drag goes nowhere.
     if (holders.length) return {
       tag: 'held in contact',
-      why: 'A Stride is closed while you are in contact. Withdraw is the only way off this square.',
+      why: 'A Stride is closed while you are in contact. Maneuver is the only way off this square.',
     };
     if (active.rooted > 0) return {
       tag: 'rooted',
-      why: 'Rooted where you stand: no Stride, no Charge and no Withdraw. Your remaining actions still fight, shoot, rally and cast.',
+      why: 'Rooted where you stand: no Stride, no Charge and no Maneuver. Your remaining actions still fight, shoot, rally and cast.',
     };
     if (active.speed === 0) return { tag: 'no speed', why: 'This piece has Speed 0. It holds the ground it was placed on.' };
     if (act.actions <= 0) return { tag: 'out of actions', why: 'No actions left to spend — end the activation.' };
@@ -575,10 +682,10 @@
   });
 
   // The piece lifts only while some drop could still land. `stuck` already means no Stride, so
-  // with no charge and nowhere to withdraw to there is nothing to carry: lifting it to snap it
+  // with no charge and nowhere to maneuver to there is nothing to carry: lifting it to snap it
   // straight back mimes a move being considered, where the X alone is the answer.
   const anchored = $derived(
-    stuck && !act?.charges.length && !act?.withdraw?.targets.length ? active?.id ?? null : null,
+    stuck && !act?.charges.length && !act?.maneuver?.targets.length ? active?.id ?? null : null,
   );
 
   const bandStyle = (n: MoveBand): HighlightStyle => (n === 1 ? 'move' : n === 2 ? 'moveFar' : 'moveFar3');
@@ -587,35 +694,57 @@
   // across half the board, which buried the map it was drawn on. The drag arrow says where a
   // move goes; hovering a Move row is how you ask to see the band behind it.
   const bandHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
-    if (!active || !act || preview || arming || !hoveredBand) return [];
+    if (!active || !act || preview || arming || blastOpen || activityPick || !hoveredBand) return [];
     return [{ style: bandStyle(hoveredBand), cells: moveBands[hoveredBand] }];
   });
 
-  const aimCells = $derived(aim && aimed ? [aim.cell] : []);
-  // A shot is the one verb whose two ends are far apart, so it draws its own flight path: the
-  // prop on the target says what is coming, the arc says who it is coming from.
-  const shot = $derived(
-    active && aim && aimGroup?.offer.type === 'shoot' ? { from: notation(active.square), to: aim.cell } : null,
-  );
-  // A cast's line tracks the pointer's own cell while its target is still being chosen —
-  // caster's own cell out to whatever legal cell it sits over — then locks to the popup's
-  // target once one is clicked, the same way a shot's arc locks to `aim.cell`.
-  const cast = $derived.by(() => {
-    if (!active || armed !== 'cast' || !armedTree) return null;
-    const to = aim?.cell ?? (hoveredCell && arming?.cells.includes(hoveredCell) ? hoveredCell : null);
-    return to ? { from: notation(active.square), to, tree: armedTree } : null;
+  const aimService = $derived(active && aimGroup && aimed ? new TargetingService(b, active, aimGroup.offer, aimed) : null);
+  const aimChoices = $derived(aim && aimService ? aimService.forRef(aim.target) : []);
+  const targetingService = $derived(pickerService ?? blastService ?? aimService);
+  const targetingChoice = $derived(pickerPreview ?? blastPreview ?? (aimChoices.length === 1 ? aimChoices[0] : null));
+  const targetingPreview = $derived(targetingService?.preview(targetingChoice?.id ?? null) ?? null);
+  const targetMarkers = $derived.by<TargetMarker[]>(() => {
+    const candidates = activityPick ? pickerCandidates : blastOpen ? blastCandidates : aimChoices;
+    // A list hover identifies an exact group or placement when several choices share a point.
+    if (activityPick && pickerService) return pickerService.surface(activityPick.selected);
+    if (targetingChoice && targetingService) return targetingService.markersFor(targetingChoice);
+    if (aim && aimService && aimChoices.length) return [{ id: `aim:${aim.cell}`, label: aimService.activity.label, cells: [aim.cell], anchorCells: [aim.cell], geometry: 'hex', icon: aimService.icon }];
+    return candidates.filter((target) => target.geometry !== 'group'
+      && candidates.filter((other) => other.anchorCells.join('+') === target.anchorCells.join('+')).length === 1);
   });
+  const shot = $derived(targetingPreview?.shot ?? null);
+  const cast = $derived(targetingPreview?.cast ?? null);
+  const aimCells = $derived(aim ? targetingPreview?.cells ?? [] : []);
+  let resolvedMarkers = $state<TargetMarker[]>([]);
+  let resolutionTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => () => { if (resolutionTimer) clearTimeout(resolutionTimer); });
+
+  function hoverTargetMarker(id: string | null) {
+    if (blastOpen) blastHover = id;
+    else if (activityPick) targetHover = id;
+  }
+
+  function chooseTargetMarker(id: string) {
+    if (blastOpen) { blastTarget = id; blastHover = null; }
+    else if (activityPick) {
+      if (id.startsWith('hex:')) pickActivityCell(id.slice(4));
+      else choosePickerTarget(id);
+    }
+    // Target-first actions keep their activity picker open until a row is chosen.
+  }
   const aimStyle = $derived<HighlightStyle>(aimGroup ? styleFor(aimGroup.offer) : 'attack');
 
   // An armed prop lights everything it can touch, so picking the verb first still teaches
   // reach — the thing pure object-first hides until you happen to touch a distant enemy.
   const propCells = $derived(arming?.cells ?? []);
-  // A withdrawal lights ground to run to, not a target to hit, so it washes like a move.
+  // A maneuver lights ground to run to, not a target to hit, so it washes like a move.
   const propStyle = $derived<HighlightStyle>(arming?.style ?? 'attack');
 
   const highlights = $derived<{ style: HighlightStyle; cells: string[] }[]>([
     { style: propStyle, cells: propCells },
     { style: aimStyle, cells: aimCells },
+    { style: pickerOffer ? styleFor(pickerOffer) : 'deploy', cells: activityPick ? (targetHover && pickerPreview ? targetCells(pickerPreview) : pickerService?.surface(activityPick.selected).flatMap((target) => target.cells) ?? []) : [] },
+    { style: 'attack', cells: blastOpen ? (blastPreview ? targetCells(blastPreview) : blastCandidates.flatMap(targetCells)) : [] },
     ...bandHighlights,
     ...previewHighlights,
   ]);
@@ -624,7 +753,6 @@
    * unit keeps until it acts again. State the board can show is state the panel need not. */
   function propOn(u: Unit): ActionIcon | null {
     if (dragTarget?.id === u.id) return dragTarget.attack ? 'attack' : 'no';
-    if (aim?.target.kind === 'unit' && aim.target.id === u.id && aimGroup) return ICON_FOR[aimGroup.offer.type];
     if (picked?.kind === 'charge' && picked.enemy === u.id) return 'charge';
     return u.guard ? 'block' : null;
   }
@@ -668,14 +796,21 @@
   ]);
 
   function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
+    if (!active) return;
+    const resolution = new TargetingService(b, active, offer, opt).resolve(target);
+    if (!resolution) return;
     const before = game.battle!.log.length;
-    takeAction({ type: offer.type, activity: opt.index, target, spell: offer.spell ?? undefined });
+    takeAction(resolution.action);
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
+    resolvedMarkers = resolution.markers;
+    if (resolutionTimer) clearTimeout(resolutionTimer);
+    resolutionTimer = setTimeout(() => { resolvedMarkers = []; resolutionTimer = null; }, 800);
+    for (const effect of resolution.effects) boardRef?.burst(effect.cell, effect.tree, effect.from);
   }
 
-  function performWithdraw(activity: ActivityIndex, to?: string) {
+  function performManeuver(activity: ActivityIndex, to?: string) {
     const before = game.battle!.log.length;
-    takeAction({ type: 'withdraw', activity, to });
+    takeAction({ type: 'maneuver', activity, to });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 
@@ -704,29 +839,35 @@
     takeAim();
   }
 
-  const aimVerb = (i: number) => { if (aim) aim = { ...aim, group: i, index: 0 }; };
+  const aimVerb = (i: number) => {
+    if (!aim) return;
+    aim = { ...aim, group: i, index: 0 };
+    const legal = aimActivities.findIndex((option) => option.legal);
+    if (legal >= 0) aim = { ...aim, index: legal };
+  };
 
   function takeAim() {
     const a = aim;
     const row = aimed;
     const group = aimGroup;
     if (!a || !row || !group || !row.legal) return;
+    if (group.offer.spell === 'blast') { openBlast(row.index); return; }
     aim = null;
     armed = null;
     armedTree = null;
-    // The id goes through only where the activity actually names it: Guard and Steady take
-    // none, so a touch on your own piece must not send your own id. A matched
-    // target's own id goes through, not the touched ref's: a shape or a set is named by its
-    // full encoded id, whichever part was actually touched.
-    const named = row.targets.find((t) => targetMatches(b, t, a.target));
-    performActivity(group.offer, row, named?.id);
-    // A cast's resolution burst lands on the clicked cell — the same square the aim popup was
-    // anchored on — regardless of what the roll behind it did; a miss still means the spell
-    // went off, just not to effect.
-    if (group.offer.type === 'cast' && group.offer.spell) boardRef?.burst(a.cell, group.offer.spell);
+    const service = new TargetingService(b, active!, group.offer, row);
+    const matches = service.forRef(a.target);
+    if (row.needsTarget && matches.length !== 1) {
+      openActivityPicker(group.offer);
+      activityPick = { key: offerKey(group.offer), index: row.index, selected: service.pickCell(a.cell)?.selected ?? [] };
+      return;
+    }
+    performActivity(group.offer, row, matches[0]?.id);
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
+    if (activityPick) { pickActivityCell(e.cell); return; }
+    if (blastOpen) { pickBlastCell(e.cell); return; }
     // A click on the parked destination confirms the row it has chosen. Anywhere else is a
     // cancel: while something is open or armed, a stray click walks one step back rather than
     // meaning something new, so a verb picked by mistake costs one click to undo.
@@ -749,6 +890,8 @@
     deselectUnit();
   }
   function onToken(e: BoardEventOf<'token'>) {
+    if (activityPick) { const cell = cellOf(e.id); if (cell) pickActivityCell(cell); return; }
+    if (blastOpen) { const cell = cellOf(e.id); if (cell) pickBlastCell(cell); return; }
     // Before an army is chosen the board is the second way into the army reel.
     if (!active) {
       const own = b.units.find((x) => x.id === e.id);
@@ -782,6 +925,11 @@
   // an armed verb that can hit a wall makes one pickable at all, so the edge is always that
   // verb's own target.
   function onEdge(e: BoardEventOf<'edge'>) {
+    if (activityPick && pickerService) {
+      const targets = pickerService.matches({ kind: 'edge', id: e.edge });
+      if (targets.length === 1) choosePickerTarget(targets[0].id);
+      return;
+    }
     const p = arming;
     if (!p) { stepBack(); return; }
     aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '), p.type);
@@ -828,9 +976,6 @@
   ].filter(Boolean).join(' · ');
 
   const spec = $derived(`${b.board.spec.base}${b.board.spec.feature && b.board.spec.feature !== 'none' ? ' · ' + b.board.spec.feature : ''}`);
-  const cls = (e: { degree: string } | undefined) => !e ? '' : e.degree === 'critical-success' ? 'crit' : e.degree.includes('fail') ? 'fail' : '';
-  let logEl = $state<HTMLDivElement>();
-  $effect(() => { void b.log.length; logEl?.scrollTo({ top: logEl.scrollHeight }); });
 </script>
 
 {#snippet popupHead(label: string)}
@@ -840,6 +985,29 @@
       {#if left > 0}<ActionCost n={left} size="1.05em" />{:else}<span class="muted">no actions left</span>{/if}
     </span>
   </div>
+{/snippet}
+
+{#snippet pickerHead(label: string, treatment: 'cast' | 'rally' | 'shoot', tree: Tree | null = null)}
+  <div class="picker-heading" class:cast-heading={treatment === 'cast'} class:rally-heading={treatment === 'rally'} class:shoot-heading={treatment === 'shoot'}>
+    <span class="picker-emblem" aria-hidden="true">
+      <img src={tree ? castIconUrl(tree) : actionIconUrl(treatment)} alt="" />
+    </span>
+    <span class="picker-heading-text"><span class="picker-kicker">{treatment === 'cast' ? 'Cast' : treatment === 'rally' ? 'Command' : 'Ranged attack'}</span><strong>{label}</strong></span>
+    <span class="picker-budget" title="Actions left this activation"><ActionCost n={left} size="1em" /></span>
+  </div>
+{/snippet}
+
+{#snippet activityRows(options: ActivityOption[], selected: ActivityIndex | null, chooseActivity: (index: ActivityIndex) => void, treatment: 'plain' | 'cast' | 'rally' | 'shoot' = 'plain')}
+  {#each options as opt (opt.activity)}
+    <button class="popup-row activity-row" class:cast-row={treatment === 'cast'} class:rally-row={treatment === 'rally'} class:shoot-row={treatment === 'shoot'} class:on={opt.index === selected} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => chooseActivity(opt.index)}>
+      <span class="popup-verb">
+        <span class="row-cost" class:over={(opt.cost ?? 0) > (active?.actions ?? 0)}><ActionCost n={opt.cost ?? opt.index} size="1.15em" /></span>
+        {opt.label}
+        {#if !opt.legal && opt.reason}<span class="reason">{opt.reason}</span>{/if}
+      </span>
+      <span class="muted">{opt.detail}</span>
+    </button>
+  {/each}
 {/snippet}
 
 {#snippet popupFoot(confirm: () => void)}
@@ -910,7 +1078,7 @@
   {/snippet}
 
   {#snippet map()}
-    <div class="mapwrap" class:aiming={arming !== null}>
+    <div class="mapwrap" class:aiming={arming !== null || blastOpen || pickerActivity !== null}>
     <PixiBoard
       bind:this={boardRef}
       board={b.board}
@@ -927,8 +1095,8 @@
       {shot}
       {cast}
       selected={selectedHex}
-      draggable={active?.id ?? null}
-      pickableEdges={arming?.edges ?? []}
+      draggable={blastOpen || activityPick ? null : active?.id ?? null}
+      pickableEdges={pickerService ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id) : arming?.edges ?? []}
       onhover={(e) => { hoveredCell = e.cell; }}
       oncell={active ? onCell : undefined}
       ontoken={onToken}
@@ -940,6 +1108,77 @@
   {/snippet}
 
   {#snippet pin()}
+    <TargetMarkers targets={targetMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
+      cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={targetingChoice?.id ?? null}
+      hover={hoverTargetMarker} choose={chooseTargetMarker} />
+    <TargetMarkers targets={resolvedMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
+      cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={null} resolved
+      hover={() => {}} choose={() => {}} />
+    {#if activityPick && pickerOffer && active}
+      <BoardPopup cell={notation(active.square)} close={stepBack} appearance={pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
+        {@render pickerHead(pickerOffer.label, pickerOffer.type === 'cast' ? 'cast' : 'rally', pickerOffer.spell)}
+        {@render activityRows(pickerOffer.activities, pickerActivity?.index ?? null, choosePickerActivity, pickerOffer.type === 'cast' ? 'cast' : 'rally')}
+        {#if pickerActivity}
+          <p class="popup-escapes" aria-live="polite">
+            {#if pickerService?.placement}{activityPick.selected.length ? 'Choose a destination hex.' : 'Choose the unit to translocate.'}
+            {:else if pickerOffer.spell === 'healing' && pickerActivity.index > 1}Choose {pickerActivity.index} units on the board. {activityPick.selected.length} selected.
+            {:else}Choose a target icon on the board to {pickerActivity.label.toLowerCase()}.{/if}
+          </p>
+          <div class="activity-targets" aria-label="{pickerOffer.label} targets">
+            {#each pickerCandidates as target (target.id)}
+              <button class="popup-row" onpointerenter={() => { targetHover = target.id; }} onpointerleave={() => { targetHover = null; }}
+                onfocus={() => { targetHover = target.id; }} onblur={() => { targetHover = null; }} onclick={() => choosePickerTarget(target.id)}>
+                <span class="popup-verb">{target.label}</span>
+                <span class="muted">{targetCells(target).join(' + ')}</span>
+              </button>
+            {/each}
+          </div>
+          {#if activityPick.selected.length}<button onclick={() => { if (activityPick) activityPick = { ...activityPick, selected: [] }; targetHover = null; }}>Reset targets</button>{/if}
+        {:else}
+          <p class="popup-escapes">Choose an activity.</p>
+        {/if}
+        <div class="popup-foot"><button onclick={() => { activityPick = null; targetHover = null; }}>Cancel</button></div>
+      </BoardPopup>
+    {/if}
+    {#if blastOpen && blastOffer && active}
+      <BoardPopup cell={notation(active.square)} close={stepBack} appearance="cast">
+        {@render pickerHead('Blast', 'cast', 'blast')}
+        <div class="blast-levels">
+          {#each blastOffer.activities as opt (opt.index)}
+            <button class="popup-row activity-row cast-row" class:on={blastLevel === opt.index} class:dim={!opt.legal} disabled={!opt.legal} aria-pressed={blastLevel === opt.index} onclick={() => chooseBlastLevel(opt.index)}>
+              <span class="popup-verb"><span class="row-cost"><ActionCost n={opt.index} /></span>{opt.label}</span>
+              <span class="muted">{opt.reason ?? opt.detail}</span>
+            </button>
+          {/each}
+        </div>
+        {#if blastActivity}
+          <p class="popup-escapes" aria-live="polite">
+            {#if blastLevel === 1}Choose an enemy hex.
+            {:else if blastLevel === 2}Choose a Blast icon on an edge for the two hexes in a line.
+            {:else}Choose a Blast icon at a corner for the three hexes that meet there.{/if}
+          </p>
+          <div class="blast-targets" aria-label="Blast targets">
+            {#each blastCandidates as target (target.id)}
+              <button class="popup-row" class:on={blastTarget === target.id} aria-pressed={blastTarget === target.id}
+                onpointerenter={() => { blastHover = target.id; }} onpointerleave={() => { blastHover = null; }}
+                onfocus={() => { blastHover = target.id; }} onblur={() => { blastHover = null; }}
+                onclick={() => { blastTarget = target.id; blastHover = null; }}>
+                <span class="popup-verb">{targetCells(target).join(' + ')}</span>
+                <span class="muted">{target.label}</span>
+              </button>
+            {/each}
+          </div>
+          {#if blastCell}<button onclick={() => { blastCell = null; }}>Show all targets</button>{/if}
+          {#if blastPreview}<p class="popup-escapes" aria-live="polite">Affected hexes: {targetCells(blastPreview).join(', ')}. Enemies: {blastPreview.label}.</p>{/if}
+          <div class="popup-foot">
+            <button onclick={() => { blastOpen = false; chooseBlastLevel(null); }}>Cancel</button>
+            <button class="primary" disabled={!blastActivity.legal || !blastSelection} onclick={confirmBlast}>Cast {blastActivity.label} · {blastActivity.cost} action{blastActivity.cost === 1 ? '' : 's'}</button>
+          </div>
+        {:else}
+          <p class="popup-escapes">Choose a blast level, then designate its target.</p>
+        {/if}
+      </BoardPopup>
+    {/if}
     {#if radial && anchor && radialItems.length}
       <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={radialItems} pick={pickProp} />
     {/if}
@@ -966,12 +1205,12 @@
             <span class="popup-verb">
               {#if row.kind === 'charge'}<img class="row-prop" src={actionIconUrl('charge')} alt="" />{/if}
               {rowLabel(row)}
-              <span class="row-cost"><ActionCost n={row.kind === 'withdraw' ? withdrawActivity : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
+              <span class="row-cost"><ActionCost n={row.kind === 'maneuver' ? maneuverActivity : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
             </span>
             <span class="muted">{rowDetail(row)}</span>
           </button>
-          {#if i === pending.index && row.kind === 'withdraw' && act?.withdraw && active}
-            {@const w = act.withdraw}
+          {#if i === pending.index && row.kind === 'maneuver' && act?.maneuver && active}
+            {@const w = act.maneuver}
             <div class="popup-escapes">
               {#each w.holders as h (h.unit)}
                 <p class="escape">
@@ -980,7 +1219,7 @@
                   {#if h.follows}<span class="tag">gives no retreat — follows you</span>{/if}
                 </p>
               {:else}
-                <p class="muted">Nothing holds you. Run for your own edge.</p>
+                <p class="muted">Nothing holds you.{isRouted(active) ? ' Run for your own edge.' : ' Choose your position.'}</p>
               {/each}
               {#if w.holders.length}
                 <p class="muted activity-detail">
@@ -994,7 +1233,7 @@
                 {@const opt = w.activities[g - 1]}
                 <button
                   class="activity-chip"
-                  class:on={withdrawActivity === g}
+                  class:on={maneuverActivity === g}
                   disabled={!opt.legal}
                   title={opt.reason ?? ''}
                   onclick={() => { if (pending) pending = { ...pending, activity: g }; }}
@@ -1004,7 +1243,7 @@
                 </button>
               {/each}
             </div>
-            <p class="muted activity-detail popup-escapes">{w.activities[withdrawActivity - 1].detail}</p>
+            <p class="muted activity-detail popup-escapes">{w.activities[maneuverActivity - 1].detail}</p>
           {/if}
           {#if i === pending.index && row.kind === 'charge' && active}
             <div class="activity-chips">
@@ -1029,28 +1268,20 @@
       </BoardPopup>
     {/if}
     {#if aim && aimGroup && active && !pending}
-      <BoardPopup cell={aim.cell} close={stepBack}>
-        {@render popupHead(aim.label)}
+      <BoardPopup cell={aim.cell} close={stepBack} appearance={aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'default'}>
+        {#if aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally'}
+          {@render pickerHead(aim.label, aimGroup.offer.type, aimGroup.offer.spell)}
+        {:else}{@render popupHead(aim.label)}{/if}
         <div class="verb-row" class:solo={aim.groups.length === 1}>
           {#each aim.groups as g, gi (offerKey(g.offer))}
-            {@const icon = ICON_FOR[g.offer.type]}
+            {@const icon = targetingIcon(g.offer)}
             <button class="verb-tile" class:on={gi === aim.group} onclick={() => aimVerb(gi)}>
-              {#if icon}<img src={actionIconUrl(icon)} alt="" />{/if}
+              {#if icon}<img src={targetIconUrl(icon)} alt="" />{/if}
               <span>{g.offer.label}</span>
             </button>
             {/each}
         </div>
-        <!-- The verb, priced. A activity is taken on touch: the glyph is the whole bargain. -->
-        {#each aimActivities as opt, i (opt.activity)}
-          <button class="popup-row activity-row" class:on={i === aim.index} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => aimChoose(i)}>
-            <span class="popup-verb">
-              <span class="row-cost" class:over={(opt.cost ?? 0) > active.actions}><ActionCost n={opt.cost ?? 0} size="1.15em" /></span>
-              {opt.label}
-              {#if !opt.legal && opt.reason}<span class="reason">{opt.reason}</span>{/if}
-            </span>
-            <span class="muted">{opt.detail}</span>
-          </button>
-        {/each}
+        {@render activityRows(aimActivities, aimed?.index ?? null, (index) => aimChoose(aimActivities.findIndex((opt) => opt.index === index)), aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'plain')}
       </BoardPopup>
     {/if}
   {/snippet}
@@ -1105,10 +1336,10 @@
           <p class="move-note">
             <strong>{holders.map((e) => e.name).join(' and ')}</strong>
             {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
-            contact — <strong>Withdraw</strong> is the only way off this square. Break off rolls
+            contact — <strong>Maneuver</strong> is the only way off this square. Break off rolls
             once against the highest of them; pay more and they roll instead.
-            {#if act.withdraw}
-              Drag to one of its {act.withdraw.targets.length} cell{act.withdraw.targets.length === 1 ? '' : 's'}.
+            {#if act.maneuver}
+              Drag to one of its {act.maneuver.targets.length} cell{act.maneuver.targets.length === 1 ? '' : 's'}.
             {/if}
           </p>
         {:else if stuck}
@@ -1137,12 +1368,12 @@
 
       {#if isRouted(active)}
         <p class="muted">
-          Routed at {active.disorder}/{active.quality} — it may Move or withdraw, nothing else, and
+          Routed at {active.disorder}/{active.quality} — it may Move or maneuver, nothing else, and
           it leaves the field at its own edge. Only an adjacent ally's Rally can bring it back.
         </p>
       {:else if isShaken(active)}
         <p class="muted">
-          Shaken at {active.disorder}/{active.quality} — it may Rally, Move or withdraw, nothing
+          Shaken at {active.disorder}/{active.quality} — it may Rally, Move or maneuver, nothing
           else. One more point and it routs.
         </p>
       {:else if !offers.length}
@@ -1158,18 +1389,14 @@
   {/snippet}
 
   {#snippet right()}
-    <div class="log" bind:this={logEl}>
-      {#each b.log as e, i (i)}
-        <p class:round={!e.unit} class={cls(e.check)}>{e.text}</p>
-      {/each}
-    </div>
+    <BattleLog battle={b} />
   {/snippet}
 </AppShell>
 
 <style>
   .mapwrap { width: 100%; height: 100%; }
   .mapwrap.aiming { cursor: crosshair; }
-  .log { flex: 1; min-height: 8rem; max-height: none; background: none; padding: 0; }
+  .blast-targets, .activity-targets { max-height: 10rem; overflow-y: auto; }
 
   .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }
   /* One verb is a heading, not a choice — the activities below no longer name it themselves. */
@@ -1213,6 +1440,33 @@
   .row-cost.over { color: var(--muted); }
   .activity-row .popup-verb { gap: .3rem; }
   .reason { margin-left: auto; font-size: .7rem; font-weight: 400; color: var(--muted); }
+  .picker-heading { display: flex; align-items: center; gap: .65rem; padding: .65rem .7rem .8rem; margin-bottom: .35rem; border-bottom: 1px solid var(--rule); }
+  .picker-emblem { position: relative; flex: 0 0 3rem; height: 3rem; display: grid; place-items: center; }
+  .picker-emblem img { width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 2px 3px #0004); }
+  .picker-heading-text { display: flex; flex-direction: column; min-width: 0; }
+  .picker-heading-text strong { font-size: 1.15rem; line-height: 1.2; }
+  .picker-kicker { color: var(--accent); text-transform: uppercase; font-size: .59rem; letter-spacing: .18em; font-weight: 700; margin-bottom: .25rem; }
+  .picker-budget { margin-left: auto; align-self: end; color: var(--accent); flex-shrink: 0; }
+  .cast-heading { border-bottom-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  .cast-heading .picker-emblem { border: 1px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent); }
+  .cast-heading .picker-emblem::before { content: ''; position: absolute; inset: -5px; border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 50%; }
+  .rally-heading { background: color-mix(in srgb, var(--accent) 9%, transparent); border-bottom: 3px double color-mix(in srgb, var(--accent) 50%, transparent); }
+  .rally-heading .picker-emblem { background: color-mix(in srgb, var(--accent) 15%, transparent); height: 3.5rem; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); padding-bottom: .5rem; }
+  .shoot-heading { padding-block: .3rem .6rem; }
+  .shoot-heading .picker-emblem { border: 1px solid var(--accent); background: linear-gradient(90deg, transparent 49%, color-mix(in srgb, var(--accent) 25%, transparent) 49% 51%, transparent 51%), linear-gradient(transparent 49%, color-mix(in srgb, var(--accent) 25%, transparent) 49% 51%, transparent 51%); }
+  .activity-row.cast-row, .activity-row.rally-row { position: relative; padding: .65rem .55rem .65rem 3.5rem; margin-bottom: .35rem; min-height: 3.4rem; }
+  .activity-row.cast-row { border: 1px solid color-mix(in srgb, var(--accent) 23%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  .cast-row .row-cost, .rally-row .row-cost { position: absolute; left: .55rem; top: .65rem; min-width: 0; width: 2.35rem; height: 2.35rem; display: flex; align-items: center; justify-content: center; }
+  .cast-row .row-cost { border: 1px solid var(--accent); border-radius: 50%; background: color-mix(in srgb, var(--accent) 9%, var(--card)); box-shadow: inset 0 0 0 3px var(--card); }
+  .activity-row.rally-row { border-radius: 2px; border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-bottom: 1px solid var(--rule); }
+  .rally-row .row-cost { height: 2.7rem; padding-bottom: .35rem; color: var(--card); background: var(--accent); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 83%, 0 100%); }
+  .cast-row .popup-verb, .rally-row .popup-verb { flex-wrap: wrap; row-gap: .1rem; }
+  .cast-row .reason, .rally-row .reason { margin-left: 0; width: 100%; }
+  .activity-row.cast-row.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+  .activity-row.rally-row.on { border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+  .activity-row.shoot-row { border-radius: 2px; border-bottom: 1px solid var(--rule); }
+  .shoot-row .row-cost { border-right: 1px solid var(--rule); margin-right: .3rem; }
+  .activity-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .activity-chips { display: flex; gap: .3rem; padding: .1rem .5rem .3rem 1rem; }
   .activity-chip {
     display: flex; gap: .3rem; align-items: center;

@@ -45,13 +45,13 @@ export function bannerTexture(colour: number): PIXI.Texture {
   return texture;
 }
 
-/** The action props. `charge` and `withdraw` have no table behind them: charging is the drag
- * of the piece itself, and a withdrawal is one Disengage check per holder. Every spell shares
+/** The action props. `charge` and `maneuver` have no table behind them: charging is the drag
+ * of the piece itself, and a maneuver moves in contact. Every spell shares
  * the one `cast` prop and is told apart by its label. `no` is the odd one out: it names no
  * action at all, and marks the cell a drag may not take. */
-export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'withdraw';
+export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'maneuver';
 
-export const actionIconUrl = (icon: ActionIcon): string => `${BASE}art/action-icons/${icon}.webp`;
+export const actionIconUrl = (icon: ActionIcon): string => `${BASE}art/action-icons/${icon === 'maneuver' ? 'withdraw' : icon}.webp`;
 
 // One face per tree, for the picker that branches off Cast — a second ring, not a slice of
 // the first, so it needs its own art rather than the single generic `cast` face above.
@@ -61,3 +61,8 @@ const CAST_ICON: Record<Tree, string> = {
 };
 
 export const castIconUrl = (tree: Tree): string => `${BASE}art/cast-icons/${CAST_ICON[tree]}.webp`;
+
+/** Targeting uses the selected spell tree's art instead of the generic Cast menu icon. */
+export type TargetIcon = ActionIcon | `cast:${Tree}`;
+export const targetIconUrl = (icon: TargetIcon): string => icon.startsWith('cast:')
+  ? castIconUrl(icon.slice(5) as Tree) : actionIconUrl(icon as ActionIcon);

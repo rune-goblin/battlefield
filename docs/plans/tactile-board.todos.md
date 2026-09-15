@@ -825,3 +825,48 @@ viewport translate with no hit-testing in its way, so it was the one gesture saf
 without auditing the other two. Space-drag stays blocked too, since `spaceDown` can only be set
 from a keydown and keydown is still fully frozen — reaching it would mean punching a second
 hole in the freeze for one more gesture nobody asked for yet.
+
+
+## Cast and Rally activity pickers — 2026-09-14
+
+- Rally opens Steady, Rally and Inspire immediately. Cast opens the chosen tree's activities; Blast keeps its existing level and shape picker.
+- Both use the same activity rows as Shoot, with action costs, descriptions and reasons for unavailable options. Self and area Rally activities resolve on the activity click. Activities that name targets then accept a board click or a target-list choice.
+- Healing groups and Translocate pairs use exact engine target IDs. A board cell shared by several choices filters the list instead of choosing the first match. Hover previews the complete target. Escape returns through target filtering, activity selection and the tree or action ring. Cancel spends nothing.
+- The change affects interaction only; action costs, ranges and effects remain in the engine.
+
+
+## Picker visual treatments — 2026-09-14
+
+- Cast uses violet accents, a double frame, a tree emblem and circular action badges. Blast and target-first Cast share this treatment.
+- Rally uses gold accents, a command banner and pennant action badges. Shoot uses a compact angular frame with a sight motif and olive accents.
+- The treatments support both system color schemes and preserve activity selection, costs and targeting. Visual checks covered Cast and Rally on the battle board.
+
+
+## Shared targeting service — 2026-09-14
+
+- `src/app/targeting.ts` converts engine activity targets into exact hex, edge, corner or group choices. Cast, Blast, Rally and target-first actions share target matching, icons, preview anchors and action/effect plans. Ambiguous board picks retain all matches for an explicit choice.
+- `TargetMarkers` draws the action icon at the service's anchor. Cast uses its tree icon; Rally uses its banner; Shoot uses a larger bullseye. The overlay replaces transient token props so previews do not draw two icons on a unit. Persistent Guard and drag props remain on tokens.
+- Hex icons sit at cell centres, edge icons at midpoints and Burst icons at shared corners. Shot arcs and cast lines use that same projected anchor. Translocate previews and effects land at the chosen destination. Resolution retains the actor's origin and the exact target ID before the battle state changes.
+- The engine still applies costs, saves and effects. One UI dispatcher submits the service's action and plays its feedback. No combat rule changed.
+
+## Spell target surfaces — 2026-09-14
+
+- Every spell activity exposes its legal locations through the shared board surface and uses its tree icon. Tests cover all six trees at all three activity levels.
+- Healing selects recipients one hex at a time. Selected units retain their icons; the final pick casts on the exact group. Clicking a selected unit removes it. Resolution marks every recipient at its own hex.
+- Translocate first picks the unit, then exposes only that unit's legal destination hexes. This replaces hidden overlapping destination markers and keeps the entire choice on the board. The target list remains an alternative.
+- Target-first menus show the spell icon on the touched unit even when several groups match. Switching verbs selects the first legal activity so an unavailable first row cannot hide the targeting preview.
+
+## Stable selection shadows — 2026-09-15
+
+- Anchor the shared token-shadow filter to the renderer's screen rectangle. Automatic filter bounds changed with the outermost token's selection pulse and shifted sampling for stationary shadows as well.
+- Preserve the selection pulse and each token's own shadow motion. The filter frame stays fixed during animation, pan and zoom; the renderer updates its rectangle on resize. This uses a viewport-sized filter pass to keep overlapping shadows at their existing shared opacity.
+
+## Battle log turn sections — 2026-09-15
+
+- Record activation start and end as explicit log boundaries. Keep enemy reactions, saves and end-turn effects within the acting army's section. Automatic completion and passing use the same boundaries.
+- Show a provisional turn header as soon as an army is selected. Switching or clearing an uncommitted selection replaces that header without adding empty turns to saved history.
+- Give attacker turns a red wash and defender turns a blue wash, with army names, side labels, round numbers, top rules and end-turn dividers. Use system sans-serif for the log, tabular numerals, quiet row separators and compact round labels. Preserve the rest of the game's typography.
+- Follow new entries while the reader is at the bottom. Preserve their position while they read older entries and offer a Latest entries button.
+- Older saves lack activation boundaries. Keep those events in their original order rather than guessing turn ownership from reacting units. New turns receive explicit grouping; undo restores the boundaries with the battle snapshot.
+- Reserve an extra inline gutter inside the log for overlay scrollbars, which ignore `scrollbar-gutter`. Use a thin thumb in the sidebar palette so the scrollbar stays separate from turn panels and text.
+- Close each turn section with 1px side and bottom borders; retain the stronger 2px top border in its side's color.

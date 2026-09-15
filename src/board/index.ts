@@ -63,10 +63,10 @@ export interface BoardView {
   setAnchored(id: string | null): void;
   /** The shot being aimed: an arc from the shooter's cell over to the target's, drawn above
    * the pieces. Null clears it. */
-  setShot(shot: { from: string; to: string } | null): void;
+  setShot(shot: { from: string; to: string; toCells?: string[] } | null): void;
   /** The cast being aimed: a swirling particle line from the caster's cell out to the
    * target's, coloured by tree. Null clears it. */
-  setCast(cast: { from: string; to: string; tree: Tree } | null): void;
+  setCast(cast: { from: string; to: string; tree: Tree; toCells?: string[] } | null): void;
   /** A one-shot resolution animation on `cell`, selected by `tree` — fired once a cast
    * actually lands, unlike `setCast`'s held aim line. `from` is the caster's cell for a
    * spell that flies in; it defaults to the cast being aimed, if there is one. */
@@ -174,7 +174,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   const mapLineLayer = new MapLineLayer(layers.createLayer('mapLines'));
   const edgeLayer = new EdgeLayer(layers.createLayer('edges'));
   const overlayLayer = new OverlayLayer(layers.createLayer('overlay'), opts.theme);
-  const tokenLayer = new TokenLayer(layers.createLayer('tokens'), opts.ticker, opts.theme);
+  const tokenLayer = new TokenLayer(layers.createLayer('tokens'), opts.ticker, opts.theme, opts.renderer.screen);
   const shotLayer = new ShotLayer(layers.createLayer('shot'), opts.theme);
   const castLayer = new CastLayer(layers.createLayer('cast'), opts.ticker, opts.theme);
   // Two effect containers: light on the cell, pools and scorch marks sit under the pieces;
@@ -559,7 +559,7 @@ export { setVfxTimeScale } from './layers/EffectLayer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the BASE_URL-prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
-export { actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
+export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';

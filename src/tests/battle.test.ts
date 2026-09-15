@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
-  endActivation, engagedEnemies, holdersOf, isOutflanked, isRouted, isShaken, isStanding, moveReach, movePath,
+  endActivation, engagedEnemies, holdersOf, isOutflanked, maneuverOutcome, maneuverTargets, isRouted, isShaken, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
 import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
@@ -49,13 +49,13 @@ const guardOn = (state: BattleState, id: string, rng = scriptedRng([10])) =>
   act(state, { type: 'guard', activity: 1, unit: id }, rng);
 const moves = (state: BattleState, id: string) => moveReach(state, unit(state, id));
 const said = (state: BattleState, text: string) => state.log.some((e) => e.text.includes(text));
-// A routed unit is offered no verb at all, only the withdrawal, so burning its activation
+// A routed unit is offered no verb at all, only the maneuver, so burning its activation
 // takes both. One action leaves two unspent, so the activation is ended by hand unless the
 // action ended it.
 const burn = (state: BattleState, id: string) => {
   const s = availableActions(state, id).some((o) => o.type === 'guard')
     ? guardOn(state, id)
-    : act(state, { type: 'withdraw', activity: 1, unit: id }, scriptedRng([10]));
+    : act(state, { type: 'maneuver', activity: 1, unit: id }, scriptedRng([10]));
   return s.phase === 'battle' && s.active === id ? endActivation(s, scriptedRng([10])) : s;
 };
 
@@ -167,15 +167,15 @@ describe('the menu is filtered by situation', () => {
     expect(a.speed).toBe(10);
     expect(a.moves.size).toBeGreaterThan(0);
   });
-  it('offers Fight and Guard in contact, Rally throughout, and the withdrawal alongside', () => {
+  it('offers Fight and Guard in contact, Rally throughout, and the maneuver alongside', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
     expect(types(state, 'u0')).toEqual(['fight', 'guard', 'rally']);
-    expect(activation(state, 'u0')!.withdraw).not.toBeNull();
+    expect(activation(state, 'u0')!.maneuver).not.toBeNull();
     unit(state, 'u0').disorder = 1;
     expect(types(state, 'u0')).toEqual(['fight', 'guard', 'rally']);
     // Out of contact and steady, there is nothing to break from.
-    expect(activation(state, 'u1')!.withdraw).toBeNull();
+    expect(activation(state, 'u1')!.maneuver).toBeNull();
   });
   it('holds no contact across a standing wall: no holder, no melee over it, a shot instead', () => {
     const board = openBoard();
@@ -186,7 +186,7 @@ describe('the menu is filtered by situation', () => {
     const wall = edgeKey(parse('c3'), parse('c4'));
     expect(engagedEnemies(state, unit(state, 'u0'))).toEqual([]);
     expect(holdersOf(state, unit(state, 'u0'))).toEqual([]);
-    expect(activation(state, 'u0')!.withdraw).toBeNull();
+    expect(activation(state, 'u0')!.maneuver).toBeNull();
     expect(moves(state, 'u0').size).toBeGreaterThan(0);
     // The segment is still a thing to fight; the troop behind it is not.
     expect(targets(offer(state, 'fight', 'u0'), 1)).toEqual([wall]);
@@ -640,7 +640,7 @@ describe('movement points', () => {
     expect(moveReach(state, u).has('c3')).toBe(false);
   });
 
-  it('a unit in contact leaves by withdrawing, not by striding', () => {
+  it('a unit in contact leaves by maneuvering, not by striding', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c3');
     expect(moves(state, 'u0').size).toBe(0);
@@ -729,7 +729,7 @@ describe('movement points', () => {
     expect(s.pending).toBe('defender');
   });
 
-  it('a Move takes no free strikes; only a Withdraw does', () => {
+  it('a Move takes no free strikes; only a Maneuver does', () => {
     const { state } = battle([10]);
     place(state, 'u2', 'c4');
     const s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([20]));
@@ -1042,7 +1042,7 @@ describe('a Fight is one roll', () => {
     expect(defenceOf(miss, unit(miss, 'u0'), null, false)).toBe(unit(miss, 'u0').stats.defence - 2);
   });
 
-  it('striking uphill or out of a swamp costs −1, and outflanking costs the target −2 Defence', () => {
+  it('striking uphill or out of a swamp costs −1, and flanking costs the target −2 Defence', () => {
     const board = openBoard();
     board.squares[2][2].elevation = 1;
     board.squares[1][2].terrain = 'swamp';
@@ -1055,7 +1055,7 @@ describe('a Fight is one roll', () => {
   });
 });
 
-describe('withdrawal', () => {
+describe('maneuver', () => {
   // Level-6 infantry escapes on Reflex +14. Kobolds hold at DC 17 (strike +7 + 10), so 3–12
   // succeeds, 13+ crits, 2 fails and a natural 1 crit-fails. Trolls hold at DC 23.
   const held = (holders: Record<string, string> = { u2: 'c3' }) => {
@@ -1066,10 +1066,54 @@ describe('withdrawal', () => {
   const wounds = (s: BattleState, id = 'u0') => unit(s, id).wounds;
   const where = (s: BattleState, id = 'u0') => notation(unit(s, id).square);
   const breakOff = (state: BattleState, rolls: number[], to = 'c1', id = 'u0') =>
-    act(state, { type: 'withdraw', activity: 1, to, unit: id }, scriptedRng(rolls));
+    act(state, { type: 'maneuver', activity: 1, to, unit: id }, scriptedRng(rolls));
+
+  it('repositions in contact with the same check and action cost as withdrawing', () => {
+    const { state } = battle([], openBoard('hex'));
+    place(state, 'u0', 'e3');
+    place(state, 'u1', 'f4');
+    place(state, 'u2', 'e4');
+    const mover = unit(state, 'u0'), target = unit(state, 'u2');
+    target.noRetreat = true;
+    expect(moveReach(state, mover).size).toBe(0);
+    const destinations = maneuverTargets(state, mover).map(notation);
+    expect(destinations).toContain('d4');
+    expect(destinations).toContain('e2');
+    expect(destinations).not.toContain('e4');
+    expect(maneuverOutcome(state, mover, parse('d4'))).toBe('reposition');
+    expect(maneuverOutcome(state, mover, parse('e2'))).toBe('withdraw');
+    const moved = act(state, { type: 'maneuver', activity: 1, to: 'd4', unit: 'u0' }, scriptedRng([5]));
+    expect(where(moved)).toBe('d4');
+    expect(unit(moved, 'u0').actions).toBe(2);
+    expect(engagedEnemies(moved, unit(moved, 'u0')).map((u) => u.id)).toContain('u2');
+    expect(where(moved, 'u2')).toBe('e4');
+    expect(moveReach(moved, unit(moved, 'u0')).size).toBe(0);
+    expect(said(moved, 'repositions to d4')).toBe(true);
+    const failed = act(state, { type: 'maneuver', activity: 1, to: 'd4', unit: 'u0' }, scriptedRng([1, 1]));
+    expect(where(failed)).toBe('e3');
+    expect(unit(failed, 'u0').actions).toBe(2);
+  });
+
+  it('respects occupied terrain, walls, roots and homeward routing while in contact', () => {
+    const { state } = battle([], openBoard('hex'));
+    place(state, 'u0', 'e3');
+    place(state, 'u2', 'e4');
+    const mover = unit(state, 'u0');
+    state.board.walls[edgeKey(parse('e3'), parse('d4'))] = { tier: 1, boxes: 2, remaining: 2 };
+    state.board.squares[2][3].terrain = 'water';
+    const destinations = maneuverTargets(state, mover).map(notation);
+    expect(destinations).not.toContain('d4');
+    expect(destinations).not.toContain('d3');
+    expect(destinations).not.toContain('e4');
+    mover.rooted = 1;
+    expect(activation(state, mover.id)!.maneuver).toBeNull();
+    mover.rooted = 0;
+    mover.disorder = mover.quality + 1;
+    expect(maneuverTargets(state, mover, mover.speed).every((sq) => sq.rank < mover.square.rank)).toBe(true);
+  });
 
   it('offers three activities at their own price, and one check against the highest holder', () => {
-    const w = activation(held({ u2: 'c3', u3: 'b2' }), 'u0')!.withdraw!;
+    const w = activation(held({ u2: 'c3', u3: 'b2' }), 'u0')!.maneuver!;
     expect(w.activities.map((r) => [r.label, r.cost])).toEqual([['Break off', 1], ['Disengage', 2], ['Fighting retreat', 3]]);
     expect(w.modifier).toBe(14);
     expect(w.dc).toBe(23);
@@ -1080,7 +1124,7 @@ describe('withdrawal', () => {
     // Disorder is −1 to everything, the escape included.
     const shaken = held();
     unit(shaken, 'u0').disorder = 2;
-    expect(activation(shaken, 'u0')!.withdraw!.modifier).toBe(12);
+    expect(activation(shaken, 'u0')!.maneuver!.modifier).toBe(12);
   });
 
   it('resolves the four degrees of a Break off: away clean, struck, or held where it stands', () => {
@@ -1103,8 +1147,8 @@ describe('withdrawal', () => {
   it('reads the one roll for every holder, so a grip it cleared lands no free strike', () => {
     // 5 + 14 = 19: a failure against the Trolls' DC 23, a success against the Kobolds' 17.
     const s = breakOff(held({ u2: 'c3', u3: 'b2' }), [5, 20, 20]);
-    expect(said(s, 'Trolls strikes the withdrawing')).toBe(true);
-    expect(said(s, 'Kobolds strikes the withdrawing')).toBe(false);
+    expect(said(s, 'Trolls strikes the maneuvering')).toBe(true);
+    expect(said(s, 'Kobolds strikes the maneuvering')).toBe(false);
     expect(wounds(s)).toBe(1);
     expect(where(s)).toBe('c1');
   });
@@ -1116,8 +1160,8 @@ describe('withdrawal', () => {
     expect(where(breakOff(state, [5], 'd1', 'u1'), 'u1')).toBe('d2');
   });
 
-  it('is no verb of the menu: nothing offers a Withdraw row', () => {
-    expect(types(held(), 'u0')).not.toContain('withdraw');
+  it('is no verb of the menu: nothing offers a Maneuver row', () => {
+    expect(types(held(), 'u0')).not.toContain('maneuver');
   });
 
   it('is offered even with nowhere to go, so a cornered unit is never stuck', () => {
@@ -1125,10 +1169,10 @@ describe('withdrawal', () => {
     place(state, 'u0', 'a1');
     place(state, 'u1', 'a2');
     place(state, 'u2', 'b1');
-    const w = activation(state, 'u0')!.withdraw!;
+    const w = activation(state, 'u0')!.maneuver!;
     expect(w.holders).toHaveLength(1);
     expect(w.targets).toEqual([]);
-    const s = act(state, { type: 'withdraw', activity: 1, unit: 'u0' }, scriptedRng([5]));
+    const s = act(state, { type: 'maneuver', activity: 1, unit: 'u0' }, scriptedRng([5]));
     expect(notation(unit(s, 'u0').square)).toBe('a1');
   });
 });
@@ -1148,8 +1192,8 @@ describe('no retreat', () => {
     return state;
   };
 
-  it('follows a withdrawal it can reach, and deals no damage doing it', () => {
-    const s = act(chased(), { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([5]));
+  it('follows a maneuver it can reach, and deals no damage doing it', () => {
+    const s = act(chased(), { type: 'maneuver', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([5]));
     expect(notation(unit(s, 'u0').square)).toBe('c1');
     expect(notation(unit(s, 'u1').square)).toBe('c2');
     expect(unit(s, 'u0').wounds).toBe(0);
@@ -1158,29 +1202,29 @@ describe('no retreat', () => {
 
   it('is shaken off outright by a critical success', () => {
     // Reflex +14 against the Line's DC 21 crits on 17 or better.
-    const s = act(chased(), { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([17]));
+    const s = act(chased(), { type: 'maneuver', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([17]));
     expect(notation(unit(s, 'u0').square)).toBe('c1');
     expect(notation(unit(s, 'u1').square)).toBe('c3');
   });
 
   it('keeps its grip on a critical failure, on top of the free strike', () => {
-    const pinned = act(chased(), { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([1, 20]));
+    const pinned = act(chased(), { type: 'maneuver', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([1, 20]));
     expect(notation(unit(pinned, 'u0').square)).toBe('c2');
     expect(unit(pinned, 'u0').wounds).toBe(1);
   });
 
   it('is rooted and does not follow when it fails its own Disengage roll', () => {
     // The Line rolls Reflex +14 against the level-6 runner's DC 22: 8 or better holds on.
-    const failed = act(chased(), { type: 'withdraw', activity: 2, to: 'c1', unit: 'u0' }, scriptedRng([1]));
+    const failed = act(chased(), { type: 'maneuver', activity: 2, to: 'c1', unit: 'u0' }, scriptedRng([1]));
     expect(unit(failed, 'u1').rooted).toBe(1);
     expect(notation(unit(failed, 'u1').square)).toBe('c3');
     expect(unit(failed, 'u0').wounds).toBe(0);
 
-    const passed = act(chased(), { type: 'withdraw', activity: 2, to: 'c1', unit: 'u0' }, scriptedRng([10]));
+    const passed = act(chased(), { type: 'maneuver', activity: 2, to: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(passed, 'u1').rooted).toBe(0);
     expect(notation(unit(passed, 'u1').square)).toBe('c2');
 
-    const fighting = act(chased(), { type: 'withdraw', activity: 3, to: 'c1', unit: 'u0' }, scriptedRng([1]));
+    const fighting = act(chased(), { type: 'maneuver', activity: 3, to: 'c1', unit: 'u0' }, scriptedRng([1]));
     expect(unit(fighting, 'u1').disorder).toBe(1);
   });
 });
@@ -1212,7 +1256,7 @@ describe('disorder', () => {
     expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(before - 2);
     expect(defenceOf(state, unit(state, 'u0'), null, false)).toBe(unit(state, 'u0').stats.defence - 2);
   });
-  it('at Quality a unit is shaken: Rally, Move or withdraw, and it still counts as standing', () => {
+  it('at Quality a unit is shaken: Rally, Move or maneuver, and it still counts as standing', () => {
     const { state } = battle([]);
     const k = unit(state, 'u2');
     expect(k.quality).toBe(5);
@@ -1221,7 +1265,7 @@ describe('disorder', () => {
     expect(isRouted(k)).toBe(false);
     expect(isStanding(k)).toBe(true);
     expect(types(state, 'u2')).toEqual(['rally']);
-    expect(activation(state, 'u2')!.withdraw).not.toBeNull();
+    expect(activation(state, 'u2')!.maneuver).not.toBeNull();
     expect(moveReach(state, k).size).toBeGreaterThan(0);
   });
   it('one point past Quality a unit routs, and disorder stops there', () => {
@@ -1231,7 +1275,7 @@ describe('disorder', () => {
     expect(isRouted(k)).toBe(true);
     expect(isStanding(k)).toBe(false);
     expect(types(state, 'u2')).toEqual([]);
-    expect(activation(state, 'u2')!.withdraw).not.toBeNull();
+    expect(activation(state, 'u2')!.maneuver).not.toBeNull();
   });
   it('a shaken unit rallies back below Quality', () => {
     const { state } = battle([]);
@@ -1275,10 +1319,10 @@ describe('disorder', () => {
     place(state, 'u2', 'c8');
     const shaken = structuredClone(state);
     unit(shaken, 'u2').disorder = unit(shaken, 'u2').quality;
-    expect(unit(act(burn(shaken, 'u0'), { type: 'withdraw', activity: 1, unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
+    expect(unit(act(burn(shaken, 'u0'), { type: 'maneuver', activity: 1, unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
 
     unit(state, 'u2').disorder = unit(state, 'u2').quality + 1;
-    const s = act(burn(state, 'u0'), { type: 'withdraw', activity: 1, unit: 'u2' }, scriptedRng([10]));
+    const s = act(burn(state, 'u0'), { type: 'maneuver', activity: 1, unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
   });
 });

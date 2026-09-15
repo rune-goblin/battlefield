@@ -88,7 +88,7 @@ describe('battle on hex', () => {
     expect(moves.get('c4')).toMatchObject({ feet: 20, actions: 2 });
     expect(moves.get('c5')).toMatchObject({ feet: 30, actions: 3 });
   });
-  it('engages across a square diagonal and outflanks from two of the six', () => {
+  it('engages across a square diagonal and flanks from two of the six', () => {
     const state = hexBattle();
     unit(state, 'u2').square = parse('d1');
     expect(targets(state, 'fight', 1, 'u0')).toEqual(['u2']);
@@ -98,7 +98,7 @@ describe('battle on hex', () => {
   it('sends a routed unit homeward by rows and off its own edge', () => {
     const state = hexBattle();
     unit(state, 'u0').disorder = unit(state, 'u0').quality + 1;
-    const s = act(state, { type: 'withdraw', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'maneuver', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').status).toBe('left');
   });
 });

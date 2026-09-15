@@ -3,7 +3,7 @@ import { treesForTradition, type Tree } from './magic.js';
 import { saveBonus, type Tier } from './tables.js';
 
 // Two verbs have no table of their own. A Move action spends the troop's Speed in feet, and
-// Withdraw rolls the escaping unit's Reflex against whoever is holding it — see `doWithdraw`
+// Maneuver rolls the escaping unit's Reflex against whoever is holding it — see `doManeuver`
 // in `battle.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
 // its own six trees live in `magic.ts`.
 export type Verb = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';

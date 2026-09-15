@@ -47,7 +47,7 @@ export interface Unit {
   speed: number;
   /** A flier ignores terrain cost and blocked edges. */
   flying: boolean;
-  /** Read off the 'no-retreat' signal. Such a troop follows an enemy that withdraws from it,
+  /** Read off the 'no-retreat' signal. Such a troop follows an enemy that maneuvers from it,
    * one free Move, to re-establish contact — it is a hold on others, not on itself. */
   noRetreat: boolean;
   /** Imported off a frightful presence and read by nothing: an aura's effect stays the
@@ -125,12 +125,12 @@ export interface MoveAction extends Acts { type: 'move'; to: string }
 
 /** Break contact by one of the three activities, then move. `to` is the cell to leave for; a
  * critical Break off is the only one that carries further than a single hex. */
-export interface WithdrawAction extends Acts { type: 'withdraw'; activity: ActivityIndex; to?: string }
+export interface ManeuverAction extends Acts { type: 'maneuver'; activity: ActivityIndex; to?: string }
 
 /** Move into contact and fight: the movement's actions, plus the activity's own. */
 export interface ChargeAction extends Acts { type: 'charge'; target: string; activity?: ActivityIndex }
 
-export type Action = ActivityAction | MoveAction | WithdrawAction | ChargeAction;
+export type Action = ActivityAction | MoveAction | ManeuverAction | ChargeAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -167,7 +167,7 @@ export interface ActionOffer {
 }
 
 /** One enemy holding the unit: what the Break off roll is read against for it, and what it
- * does about the withdrawal. */
+ * does about the maneuver. */
 export interface Holder {
   unit: string;
   name: string;
@@ -180,10 +180,10 @@ export interface Holder {
   follows: boolean;
 }
 
-/** Withdraw has no table, but it offers three activities like a verb that has one: Break off, Disengage,
- * Fighting retreat. Ground is never for sale — a withdrawal is one hex clear, and only a
+/** Maneuver has no table, but it offers three activities like a verb that has one: Break off, Disengage,
+ * Fighting retreat. A maneuver moves one hex to reposition or withdraw, and only a
  * critical Break off carries further. */
-export interface WithdrawOffer {
+export interface ManeuverOffer {
   activities: [ActivityOption, ActivityOption, ActivityOption];
   /** The unit's Reflex, less disorder: what Break off rolls. */
   modifier: number;
@@ -231,7 +231,7 @@ export interface Activation {
   speed: number;
   offers: ActionOffer[];
   /** Offered in contact, and to a routed unit. `null` when there is nothing to break from. */
-  withdraw: WithdrawOffer | null;
+  maneuver: ManeuverOffer | null;
   moves: Map<string, MoveReach>;
   charges: ChargeOption[];
 }
@@ -239,6 +239,8 @@ export interface Activation {
 export interface LogEntry {
   round: number;
   unit?: string;
+  /** Explicit activation boundaries keep reactions under the acting army's turn. */
+  turn?: 'start' | 'end';
   text: string;
   check?: CheckResult;
 }

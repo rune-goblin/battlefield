@@ -32,3 +32,12 @@ After `phase === 'ended'`, each `Unit` carries `wounds`, `disorder`, `status` (`
 ## Randomness
 
 Every roll goes through `Rng.d20()`. Pass `seededRng` for replays and tests, `randomRng` for play, or a wrapper around a VTT's dice roller.
+
+
+## Targeting UI
+
+`src/app/targeting.ts` adapts an `ActionOffer` and `ActivityOption` to `TargetChoice` objects. `TargetingService.matches` accepts hex, edge, corner and exact-target hits; multiple matches require an explicit choice. `forRef` supports target-first menus. `preview` supplies the icon, affected cells and the projected aim point. `resolve` returns the exact engine action, feedback markers and spell animations, or `null` for an invalid selection.
+
+Target geometry and effects remain separate. A Burst anchors at a shared corner and affects all cells in its shape. Translocate anchors at the destination and preserves the origin/destination pair in the engine action. `src/board/target-point.ts` projects anchors for both DOM markers and PIXI aim lines. The engine remains the authority for legal targets and mechanical effects.
+
+`surface(selected)` provides the current board markers for every spell tree. Healing groups select one unit hex at a time and mark each recipient. Translocate first offers source units, then the chosen unit's destinations. `pickCell` advances or reverses that selection and returns an exact target only when the selection is complete. Shared destinations therefore keep their source explicit. `markersFor` places group feedback on each recipient instead of between units.

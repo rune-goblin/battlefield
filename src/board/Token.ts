@@ -69,7 +69,7 @@ const FLAG_RATIO = 0.32;
  * both size and place: it rides the middle of the cell at better than half a hex, because it
  * is what the arc's head is aimed at rather than a badge hung off the piece. */
 const PROP_RATIO = 0.3;
-const SHOT_PROP_RATIO = 0.6;
+const SHOT_PROP_RATIO = 0.9;
 // The cloth's mass sits above the middle of the square template — it tapers to a point at the
 // bottom — so the level rides a little high of the sprite's own centre.
 const FLAG_TEXT_Y = -0.07;

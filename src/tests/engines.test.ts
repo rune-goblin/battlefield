@@ -85,7 +85,7 @@ describe('siege engines', () => {
       const u = activeUnit(s)!;
       s = availableActions(s, u.id).some((o) => o.type === 'guard')
         ? act(s, { type: 'guard', activity: 1, unit: u.id }, scriptedRng([10]))
-        : act(s, { type: 'withdraw', activity: 1, unit: u.id }, scriptedRng([1]));
+        : act(s, { type: 'maneuver', activity: 1, unit: u.id }, scriptedRng([1]));
     }
     expect(activeUnit(s)).toBeNull();
     expect(unit(s, 'u0').engines[0].status).toBe('captured');

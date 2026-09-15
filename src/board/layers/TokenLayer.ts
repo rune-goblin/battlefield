@@ -32,11 +32,15 @@ export class TokenLayer {
     for (const token of this.cache.values()) token.tick();
   };
 
-  constructor(container: PIXI.Container, ticker: PIXI.Ticker, theme: BoardTheme) {
+  constructor(container: PIXI.Container, ticker: PIXI.Ticker, theme: BoardTheme, screen: PIXI.Rectangle) {
     this.container = container;
     this.container.sortableChildren = true;
     this.shadows.name = 'Token_shadows';
     this.shadows.zIndex = -2;
+    // Auto bounds follow the outermost breathing piece. Their rounding shifts the shared
+    // filter's sampling origin and makes even stationary shadows twitch. The renderer owns
+    // this screen-space rectangle and updates it on resize; pan and zoom leave it fixed.
+    this.shadows.filterArea = screen;
     this.shadows.filters = [this.shadowBlur, new PIXI.AlphaFilter(SHADOW_GROUP.alpha)];
     this.container.addChild(this.shadows);
     this.ticker = ticker;

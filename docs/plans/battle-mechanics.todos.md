@@ -2133,3 +2133,10 @@ The guesses, in one line each, so the review has a list to strike from:
   Freedom as an escape (worth one action beside Disengage ◆◆); Wings as a name; dropping
   the tree and rebalancing the tradition table. The last legacy tree table is deleted and
   section 15 holds only the two unchanged blocks; the review is complete.
+
+
+## Maneuver — 2026-09-14
+
+- Renamed Withdraw to Maneuver in the engine, activation API, UI and rules. Reposition keeps contact; Withdraw ends contact. Both use the existing Break off / Disengage / Fighting retreat costs and check effects. A failed Break off still moves after free strikes; a critical failure stays put. The ladder remains available for either outcome.
+- Adjacent destinations include positions in contact even when clear destinations exist. A routed unit moves homeward while engaged as well. Occupancy, terrain, barriers, roots and zero Speed constrain movement. A change of hex clears Pin. A pursuer already in contact stays in its hex.
+- Retained the existing outflanking rule and its −2 Defence penalty. Mark clarified that flanking already exists and this change must not add another penalty or replace its calculation.
