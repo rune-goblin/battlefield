@@ -29,8 +29,8 @@ export const TREE_RANGE: Record<Tree, 'engaged' | Reach> = {
 
 export type CastActivityIndex = 1 | 2 | 3;
 
-// Each cell is the most actions a tradition may ever spend in that tree — 0 meaning no access
-// at all. Every column sums to 10, a budget check rather than a claim of equal power.
+// Each cell is the highest activity a tradition may buy in that tree — 0 meaning no access
+// at all. Every column sums to 11, a budget check rather than a claim of equal power.
 export const TRADITION_CAP: Record<Tradition, Record<Tree, CastActivityIndex | 0>> = {
   arcane: { blast: 3, healing: 0, controlling: 2, offense: 1, defense: 2, movement: 3 },
   divine: { blast: 1, healing: 3, controlling: 2, offense: 2, defense: 3, movement: 0 },

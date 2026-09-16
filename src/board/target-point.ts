@@ -1,4 +1,12 @@
 import type { Point } from '../engine/grid.js';
+import type { Tree, Verb } from '../engine/index.js';
+
+export interface TargetArrow {
+  from: string;
+  to: string;
+  toCells?: string[];
+  tone?: Tree | Verb;
+}
 
 /** Project a hex centre, an edge midpoint or a shared corner through the same board transform. */
 export function targetAnchor(cells: readonly string[], screenOf: (cell: string) => Point | null): Point | null {

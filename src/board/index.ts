@@ -12,6 +12,7 @@ import { DEFAULT_MAP_LINES, MapLineLayer } from './layers/MapLineLayer.js';
 import { InkLayer, type InkMapAppearance } from './layers/InkLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
+import type { TargetArrow } from './target-point.js';
 import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
 import { inkAtlas } from './ink-sheet.js';
@@ -61,9 +62,9 @@ export interface BoardView {
    * `drag`/`drop` event still run, so the caller can answer the gesture, but a piece that has
    * nowhere to go never lifts. Null lets every drag lift again. */
   setAnchored(id: string | null): void;
-  /** The shot being aimed: an arc from the shooter's cell over to the target's, drawn above
-   * the pieces. Null clears it. */
-  setShot(shot: { from: string; to: string; toCells?: string[] } | null): void;
+  /** Aiming arrows above the pieces, colored by action or spell. Accepts one target or a
+   * group; null clears them. An omitted tone retains the red shot arc. */
+  setShot(shot: TargetArrow | readonly TargetArrow[] | null): void;
   /** The cast being aimed: a swirling particle line from the caster's cell out to the
    * target's, coloured by tree. Null clears it. */
   setCast(cast: { from: string; to: string; tree: Tree; toCells?: string[] } | null): void;
@@ -563,3 +564,5 @@ export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUr
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';
+
+export type { TargetArrow } from './target-point.js';

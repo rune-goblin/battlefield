@@ -52,6 +52,7 @@ describe('targeting service', () => {
     expect(targeting.matches({ kind: 'edge', id: 'f3|e3' })).toHaveLength(1);
     expect(targeting.resolve(edge)!.action.target).toBe(edge);
     expect(targeting.choices[0].anchorCells).toEqual(['e3', 'f3']);
+    expect(targeting.arrows([], null, 'f3|e3')).toEqual(targeting.arrows([], edge));
   });
 
   it('places Translocate at the selected destination and applies its effect there', () => {
@@ -126,8 +127,38 @@ describe('targeting service', () => {
         const resolution = targeting.resolve(target.id)!;
         expect(resolution.action).toMatchObject({ type: 'cast', spell: tree, activity: index, target: target.id });
         expect(resolution.effects.every((effect) => effect.tree === tree)).toBe(true);
+        expect(resolution.arrows.length).toBeGreaterThan(0);
+        expect(resolution.arrows.every((arrow) => arrow.tone === tree)).toBe(true);
       }
     }
+  });
+
+
+  it('aims at intermediate surface picks and retains arrows to selected healing recipients', () => {
+    const { actor, service } = fixture();
+    const movement = service('cast', 3, 'movement');
+    expect(movement.arrows([], 'hex:d3')).toEqual([{ from: 'e3', to: 'd3', toCells: ['d3'], tone: 'movement' }]);
+    expect(movement.arrows(['d3'], 'hex:d4')).toEqual([{ from: 'd3', to: 'd4', toCells: ['d4'], tone: 'movement' }]);
+    expect(movement.arrows(['d3'], null, 'd4')).toEqual(movement.arrows(['d3'], 'hex:d4'));
+    expect(movement.arrows([], null, 'd4')).toEqual([]);
+    actor.tradition = 'divine';
+    actor.trees = ['healing'];
+    const healing = service('cast', 2, 'healing');
+    expect(healing.arrows(['d3'], 'hex:e3').map((arrow) => arrow.to).sort()).toEqual(['d3', 'e3']);
+    expect(healing.arrows(['d3'])).toEqual([{ from: 'e3', to: 'd3', toCells: ['d3'], tone: 'healing' }]);
+    expect(service('rally', 2).arrows([], 'u1')[0].tone).toBe('rally');
+  });
+
+  it('previews a shot from a hovered hex before a target is selected', () => {
+    const { state, service } = fixture();
+    unit(state, 'u0').stats.volley = 11;
+    unit(state, 'u0').stats.reach = 'medium';
+    const shooting = service('shoot', 1);
+    expect(shooting.arrows([], null, 'e5')).toEqual([
+      { from: 'e3', to: 'e5', toCells: ['e5'], tone: 'shoot' },
+    ]);
+    expect(shooting.arrows([], null, 'd3')).toEqual([]);
+    expect(shooting.resolve()).toBeNull();
   });
 
 });

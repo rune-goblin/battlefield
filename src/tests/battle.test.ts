@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
-  endActivation, engagedEnemies, holdersOf, isOutflanked, maneuverOutcome, maneuverTargets, isRouted, isShaken, isStanding, moveReach, movePath,
+  endActivation, engagedEnemies, holdersOf, isOutflanked, maneuverOutcome, maneuverTargets, isRouted, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
 import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
-import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS } from '../engine/types.js';
+import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS, ROUTED_AT } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
 import { activityOf, type ActivityIndex, type Verb } from '../engine/ladders.js';
 
@@ -856,11 +856,11 @@ describe('activities carry effects', () => {
     expect(notation(unit(strike, 'u0').square)).toBe('c2');
   });
 
-  it('Press skips the Fortitude save: a hit disorders outright, and a miss gives nothing extra', () => {
+  it('Press keeps the worse Fortitude save, and a miss gives nothing extra', () => {
     const hit = act(engaged(), { type: 'fight', activity: 2, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
     expect(unit(hit, 'u2').wounds).toBe(1);
     expect(unit(hit, 'u2').disorder).toBe(1);
-    expect(said(hit, 'no save')).toBe(true);
+    expect(said(hit, 'keeps the worse')).toBe(true);
     // The same 20 on a Strike is a save made, and no disorder.
     const strike = act(engaged(), { type: 'fight', activity: 1, target: 'u2', unit: 'u0' }, scriptedRng([10, 20]));
     expect(unit(strike, 'u2').disorder).toBe(0);
@@ -1108,7 +1108,7 @@ describe('maneuver', () => {
     mover.rooted = 1;
     expect(activation(state, mover.id)!.maneuver).toBeNull();
     mover.rooted = 0;
-    mover.disorder = mover.quality + 1;
+    mover.disorder = ROUTED_AT;
     expect(maneuverTargets(state, mover, mover.speed).every((sq) => sq.rank < mover.square.rank)).toBe(true);
   });
 
@@ -1256,33 +1256,40 @@ describe('disorder', () => {
     expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(before - 2);
     expect(defenceOf(state, unit(state, 'u0'), null, false)).toBe(unit(state, 'u0').stats.defence - 2);
   });
-  it('at Quality a unit is shaken: Rally, Move or maneuver, and it still counts as standing', () => {
+  it('keeps ordinary actions available at two disorder, with the roll penalty', () => {
     const { state } = battle([]);
     const k = unit(state, 'u2');
-    expect(k.quality).toBe(5);
-    k.disorder = k.quality;
-    expect(isShaken(k)).toBe(true);
+    const normal = types(state, k.id);
+    k.disorder = 2;
     expect(isRouted(k)).toBe(false);
     expect(isStanding(k)).toBe(true);
-    expect(types(state, 'u2')).toEqual(['rally']);
-    expect(activation(state, 'u2')!.maneuver).not.toBeNull();
+    expect(types(state, k.id)).toEqual(normal);
+    expect(types(state, k.id)).toContain('shoot');
+    expect(types(state, k.id)).toContain('guard');
+    expect(willModifier(k)).toBe(k.stats.will - 2);
     expect(moveReach(state, k).size).toBeGreaterThan(0);
+    place(state, 'u0', 'c6');
+    expect(types(state, k.id)).toContain('fight');
+    expect(activation(state, k.id)!.maneuver).not.toBeNull();
+    const guarded = act(burn(state, 'u0'), { type: 'guard', activity: 1, unit: k.id }, scriptedRng([10]));
+    expect(unit(guarded, k.id).guard?.defence).toBe(2);
   });
-  it('one point past Quality a unit routs, and disorder stops there', () => {
+  it('routes at three disorder and restricts the unit to movement', () => {
     const { state } = battle([]);
     const k = unit(state, 'u2');
-    k.disorder = k.quality + 1;
+    k.disorder = ROUTED_AT;
     expect(isRouted(k)).toBe(true);
     expect(isStanding(k)).toBe(false);
-    expect(types(state, 'u2')).toEqual([]);
-    expect(activation(state, 'u2')!.maneuver).not.toBeNull();
+    expect(types(state, k.id)).toEqual([]);
+    expect(activation(state, k.id)!.maneuver).not.toBeNull();
+    expect(() => act(state, { type: 'rally', activity: 1, unit: k.id }, scriptedRng([20]))).toThrow();
   });
-  it('a shaken unit rallies back below Quality', () => {
+  it('rallies from two disorder without an early action restriction', () => {
     const { state } = battle([]);
-    const k = unit(state, 'u2');
-    k.disorder = k.quality;
+    unit(state, 'u2').disorder = 2;
     const s = act(burn(state, 'u0'), { type: 'rally', activity: 1, unit: 'u2' }, scriptedRng([18]));
-    expect(isShaken(unit(s, 'u2'))).toBe(false);
+    expect(unit(s, 'u2').disorder).toBeLessThan(2);
+    expect(types(s, 'u2')).toContain('guard');
   });
   it('a success on a steady unit inspires it, and the +2 is spent by its next roll', () => {
     const { state } = battle([]);
@@ -1314,14 +1321,14 @@ describe('disorder', () => {
     expect(unit(s, 'u0').disorder).toBe(1);
     expect(unit(s, 'u0').inspired).toBe(false);
   });
-  it('a routed unit leaves the field at its own edge; a shaken one holds', () => {
+  it('a routed unit leaves the field at its own edge; a unit at two disorder stays', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c8');
     const shaken = structuredClone(state);
-    unit(shaken, 'u2').disorder = unit(shaken, 'u2').quality;
-    expect(unit(act(burn(shaken, 'u0'), { type: 'maneuver', activity: 1, unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
+    unit(shaken, 'u2').disorder = 2;
+    expect(unit(act(burn(shaken, 'u0'), { type: 'move', to: 'c9', unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
 
-    unit(state, 'u2').disorder = unit(state, 'u2').quality + 1;
+    unit(state, 'u2').disorder = ROUTED_AT;
     const s = act(burn(state, 'u0'), { type: 'maneuver', activity: 1, unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u2').status).toBe('left');
   });
@@ -1331,7 +1338,7 @@ describe('the battle ends', () => {
   it('when one side has nothing standing', () => {
     const { state } = battle([]);
     unit(state, 'u2').status = 'destroyed';
-    unit(state, 'u3').disorder = unit(state, 'u3').quality;
+    unit(state, 'u3').disorder = ROUTED_AT;
     let s = state;
     while (s.phase === 'battle') s = burn(s, activeUnit(s)!.id);
     expect(s.winner).toBe('attacker');

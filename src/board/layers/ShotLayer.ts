@@ -1,4 +1,4 @@
-import { targetAnchor } from '../target-point.js';
+import { targetAnchor, type TargetArrow } from '../target-point.js';
 import * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
@@ -12,22 +12,19 @@ const TAIL_HALF = 0.02;
 const NOCK_HALF = 0.055;
 const HEAD_LENGTH = 0.3;
 const HEAD_HALF = 0.15;
-/** The tip stops short of the target's centre by the bullseye's own radius (Token's
- * SHOT_PROP_RATIO / 2), so the head lands on the mark rather than covering it. */
-const TIP_INSET = 0.28;
+const TARGET_RADIUS = 0.22;
 const SAMPLES = 40;
 
 /**
- * The arc a shot flies: shooter's cell to target's cell, over the top rather than through the
- * ground between them. It draws above the pieces, so a shot across a crowded board still
- * reads as one line from one cell to one other.
+ * Shared targeting arcs: each source to its target, above the pieces. Each action supplies
+ * its tone; spells use the same palette as their effects.
  */
 export class ShotLayer {
   private readonly container: PIXI.Container;
   private grid: Grid | null = null;
   private size = 0;
   private theme: BoardTheme;
-  private shot: { from: string; to: string; toCells?: string[] } | null = null;
+  private arrows: readonly TargetArrow[] = [];
 
   constructor(container: PIXI.Container, theme: BoardTheme) {
     this.container = container;
@@ -41,33 +38,45 @@ export class ShotLayer {
     this.redraw();
   }
 
-  /** The shot being aimed right now, or null to clear it. */
-  setShot(shot: { from: string; to: string; toCells?: string[] } | null): void {
-    if (shot?.from === this.shot?.from && shot?.to === this.shot?.to && shot?.toCells?.join('+') === this.shot?.toCells?.join('+')) return;
-    this.shot = shot;
+  /** Shared aiming arcs; a single shot remains valid for existing board callers. */
+  setShot(shot: TargetArrow | readonly TargetArrow[] | null): void {
+    const arrows = shot === null ? [] : Array.isArray(shot) ? shot : [shot as TargetArrow];
+    if (JSON.stringify(arrows) === JSON.stringify(this.arrows)) return;
+    this.arrows = arrows;
     this.redraw();
   }
 
   private redraw(): void {
     this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
-    if (!this.grid || !this.size || !this.shot) return;
-    const from = this.grid.parse(this.shot.from);
-    if (!this.grid.inBounds(from)) return;
-    const a = this.grid.center(from, this.size);
-    const b = targetAnchor(this.shot.toCells ?? [this.shot.to], (cell) => {
-      const target = this.grid!.parse(cell);
-      return this.grid!.inBounds(target) ? this.grid!.center(target, this.size) : null;
-    });
-    if (!b) return;
-    if (a.x === b.x && a.y === b.y) return;
-
-    const g = new PIXI.Graphics();
-    g.name = 'Shot';
-    this.drawArc(g, a, b);
-    this.container.addChild(g);
+    if (!this.grid || !this.size) return;
+    for (const arrow of this.arrows) {
+      const from = this.grid.parse(arrow.from);
+      if (!this.grid.inBounds(from)) continue;
+      const a = this.grid.center(from, this.size);
+      const b = targetAnchor(arrow.toCells ?? [arrow.to], (cell) => {
+        const target = this.grid!.parse(cell);
+        return this.grid!.inBounds(target) ? this.grid!.center(target, this.size) : null;
+      });
+      if (!b) continue;
+      const tone = arrow.tone ?? 'shoot';
+      const colour = tone === 'shoot' || tone === 'fight' ? this.theme.overlay.shot
+        : tone === 'rally' ? this.theme.token.ringFlash
+          : tone === 'guard' ? this.theme.overlay.cast.defense
+            : tone === 'cast' ? this.theme.overlay.cast.controlling : this.theme.overlay.cast[tone];
+      const g = new PIXI.Graphics();
+      g.name = 'TargetArrow';
+      // Draw the placement circle first, beneath the arrowhead, in the action's own colour.
+      g.lineStyle(Math.max(1, this.size * 0.018), colour, 0.5)
+        .beginFill(colour, 0.22)
+        .drawCircle(b.x, b.y, this.size * TARGET_RADIUS)
+        .endFill()
+        .lineStyle(0);
+      if (a.x !== b.x || a.y !== b.y) this.drawArc(g, a, b, colour);
+      this.container.addChild(g);
+    }
   }
 
-  private drawArc(g: PIXI.Graphics, a: Point, b: Point): void {
+  private drawArc(g: PIXI.Graphics, a: Point, b: Point, colour: number): void {
     const size = this.size;
     const span = Math.hypot(b.x - a.x, b.y - a.y);
     const lift = Math.min(size * LIFT_MAX, Math.max(size * LIFT_MIN, span * LIFT_SPAN));
@@ -87,7 +96,7 @@ export class ShotLayer {
       if (i) lengths.push(lengths[i - 1] + Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y));
     }
     const total = lengths[SAMPLES];
-    const flight = total - size * TIP_INSET;
+    const flight = total;
     const shaft = flight - size * HEAD_LENGTH;
     if (shaft <= 0) return;
 
@@ -118,7 +127,6 @@ export class ShotLayer {
       left.push({ x: p.x + nx * half, y: p.y + ny * half });
       right.push({ x: p.x - nx * half, y: p.y - ny * half });
     }
-    const colour = this.theme.overlay.shot;
     g.beginFill(colour, 0.95)
       .drawPolygon([...left, ...right.reverse()].flatMap((p) => [p.x, p.y]))
       .endFill();

@@ -870,3 +870,10 @@ hole in the freeze for one more gesture nobody asked for yet.
 - Older saves lack activation boundaries. Keep those events in their original order rather than guessing turn ownership from reacting units. New turns receive explicit grouping; undo restores the boundaries with the battle snapshot.
 - Reserve an extra inline gutter inside the log for overlay scrollbars, which ignore `scrollbar-gutter`. Use a thin thumb in the sidebar palette so the scrollbar stays separate from turn panels and text.
 - Close each turn section with 1px side and bottom borders; retain the stronger 2px top border in its side's color.
+
+## Persistent targeting arrows — 2026-09-15
+
+- Every targeted action uses the shared aiming arc. Fight and Shoot use red, Rally uses gold, Guard uses blue, and spells use their tree's effect color.
+- Retain the last valid aim while the pointer or keyboard focus returns to the picker. Canceling, switching activities or changing the acting army clears that aim. Keep arrows alongside resolution icons for their brief feedback interval.
+- Healing draws an arrow to each recipient. Translocate draws from the chosen unit to its destination; edge and corner aims share the marker's exact anchor. Self-targets keep their icon without a zero-length arrow.
+- Verified Controlling's purple arrow and Defense's blue arrow in the browser, including persistence after focus leaves the target. Preview checks spent no actions.

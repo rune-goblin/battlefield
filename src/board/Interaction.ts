@@ -8,7 +8,7 @@ export interface Rect { x: number; y: number; width: number; height: number }
 export type BoardMode = 'view' | 'paint' | 'place' | 'battle';
 
 export type BoardEvent =
-  | { type: 'hover'; cell: string | null }
+  | { type: 'hover'; cell: string | null; edge?: string | null }
   | { type: 'cell'; cell: string }
   | { type: 'edge'; edge: string }
   | { type: 'token'; id: string }
@@ -544,11 +544,10 @@ export class Interaction {
 
   private setHover(cell: string | null, edge: string | null): void {
     if (cell === this.hoverCell && edge === this.hoverEdge) return;
-    const cellChanged = cell !== this.hoverCell;
     this.hoverCell = cell;
     this.hoverEdge = edge;
     this.o.onHover(cell, edge);
-    if (cellChanged) this.o.emit({ type: 'hover', cell });
+    this.o.emit({ type: 'hover', cell, edge });
   }
 
   private cancel(): void {

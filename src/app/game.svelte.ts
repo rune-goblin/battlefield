@@ -2,6 +2,7 @@ import {
   act, at, COMBATANTS, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, OFFICIAL, parse, randomRng, select,
   type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
 } from '../engine/index.js';
+import { migrateMorale } from './migrate-morale.js';
 
 export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
 export interface SetupUnit { card: UnitCard; side: Side; square: string | null; engines: string[] }
@@ -50,6 +51,7 @@ function load(): { stage: Stage; setup: Setup; battle: BattleState | null } {
       const parsed = JSON.parse(raw);
       if (parsed.setup && STAGES.includes(parsed.stage)) {
         if (!intact(parsed.battle)) parsed.battle = null;
+        else parsed.battle = migrateMorale(parsed.battle);
         return parsed;
       }
     }

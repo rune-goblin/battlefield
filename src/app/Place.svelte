@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, qualityFor, RADIUS, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
+  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, RADIUS, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
@@ -71,7 +71,6 @@
       cell: u.square,
       wounds: 0,
       disorder: 0,
-      quality: qualityFor(u.card),
       engine: u.engines[0] ?? null,
       prop: null,
       pick: null,

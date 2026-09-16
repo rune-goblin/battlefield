@@ -6,7 +6,7 @@ import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type Un
 import { CELL_FEET, pathTo, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
 import { check, readCheck, readTwice, rollTwice, succeeded, type CheckResult, type Degree } from './check.js';
 import {
-  VERBS, qualityFor, activityOf, treesFor,
+  VERBS, activityOf, treesFor, canFocus,
   type ActivityIndex, type Verb, type Activity,
 } from './ladders.js';
 import {
@@ -15,7 +15,7 @@ import {
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
 import {
-  ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK,
+  ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT,
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
   type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep,
   type Range, type ActivityAction, type ActivityOption, type ActivityTarget, type Side,
@@ -56,12 +56,11 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
-      quality: qualityFor(d.card),
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
       noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e) => engineState(e, d.side, sq, false)),
-      square: sq, wounds: d.card.wounds ?? 0, disorder: d.card.disorder ?? 0, status: 'active' as const,
+      square: sq, wounds: d.card.wounds ?? 0, disorder: Math.max(0, Math.min(ROUTED_AT, d.card.disorder ?? 0)), status: 'active' as const,
       guard: null, rooted: 0, exposed: false, inspired: false,
       suppressedBy: null, pinnedBy: null, frightened: false, stunned: false, persistent: null,
       sureStrike: false, wrath: false, haste: 0,
@@ -85,6 +84,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     halfChecked: { attacker: false, defender: false },
     log: [{ round: 1, text: 'Round 1 begins.' }],
   };
+  for (const u of state.units) if (isRouted(u)) abandonEngines(state, u);
   state.pending = nextSide(state) ?? 'attacker';
   refreshEmplacements(state);
   return state;
@@ -101,11 +101,9 @@ export const unit = (state: BattleState, id: string): Unit => {
   return u;
 };
 
-/** Morale runs one point past Quality. At Quality the unit is shaken and may do nothing but
- * Rally or maneuver; the point above it is the rout, and Rally is the only way back down. */
-export const isShaken = (u: Unit) => u.status === 'active' && u.disorder >= u.quality;
-export const isRouted = (u: Unit) => u.status === 'active' && u.disorder > u.quality;
-export const isStanding = (u: Unit) => u.status === 'active' && u.disorder <= u.quality;
+/** A full morale track routes the unit; every lower value still counts as standing. */
+export const isRouted = (u: Unit) => u.status === 'active' && u.disorder >= ROUTED_AT;
+export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < ROUTED_AT;
 export const isWeakened = (u: Unit) => u.wounds >= 2;
 export const isBroken = (u: Unit) => u.wounds >= 3;
 
@@ -382,8 +380,7 @@ function clearAsShooter(state: BattleState, shooterId: string) {
 
 /**
  * Wounds that actually land, after the target's Guard. A wound then asks a Fortitude save
- * against the attacker's level DC before it disorders anyone. `pressed` skips that save: the
- * disorder simply lands. `saveShift` bends it — a charge from above is −2 on it.
+ * against the attacker's level DC before it disorders anyone. `pressed` rolls that save twice and keeps the worse result. `saveShift` bends it — a charge from above is −2 on it.
  */
 function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false, saveShift = 0): number {
   const n = reduceWounds(target, raw);
@@ -402,10 +399,15 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return n; }
   if (target.stoneskin) {
     log(state, target, `${target.name}'s stoneskin costs it no disorder.`);
-  } else if (pressed) {
-    addDisorder(state, target, 1, 'a pressed hit, no save');
   } else {
-    const c = roll(state, rng, target, fortitudeModifier(target) + saveShift, levelDc(attacker.level));
+    const modifier = fortitudeModifier(target) + saveShift;
+    const dc = levelDc(attacker.level);
+    const twice = pressed ? rollTwice(rng, modifier, dc, false) : null;
+    const c = twice ?? roll(state, rng, target, modifier, dc);
+    if (pressed) {
+      target.inspired = false;
+      log(state, target, `${target.name} resists Press: rolls ${twice!.rolls.join(' and ')}, keeps the worse.`);
+    }
     log(state, target, `${target.name} braces against the wound: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a wound taken');
   }
@@ -423,20 +425,19 @@ function abandonEngines(state: BattleState, u: Unit) {
 
 function addDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (n === 0 || u.status !== 'active') return;
-  const wasShaken = isShaken(u);
   const wasRouted = isRouted(u);
-  // The rout sits one point above Quality, so that is where the cap goes.
-  u.disorder = Math.max(0, Math.min(u.quality + 1, u.disorder + n));
+  // Every point fits on the three-pip track.
+  u.disorder = Math.max(0, Math.min(ROUTED_AT, u.disorder + n));
   const routed = !wasRouted && isRouted(u);
-  const crossed = routed ? ' — routed' : !wasShaken && isShaken(u) ? ' — shaken' : '';
-  log(state, u, `${u.name} is disordered ${u.disorder}/${u.quality} (${n > 0 ? '+' : ''}${n}, ${why})${crossed}.`);
+  const crossed = routed ? ' — routed' : '';
+  log(state, u, `${u.name} is disordered ${u.disorder}/${ROUTED_AT} (${n > 0 ? '+' : ''}${n}, ${why})${crossed}.`);
   if (routed) abandonEngines(state, u);
 }
 
 function clearDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (u.disorder === 0) return;
   u.disorder = Math.max(0, u.disorder - n);
-  log(state, u, `${u.name} clears to disorder ${u.disorder}/${u.quality} (${why}).`);
+  log(state, u, `${u.name} clears to disorder ${u.disorder}/${ROUTED_AT} (${why}).`);
 }
 
 // Never set while disorder stands (`inspired`'s own invariant), so every call site already
@@ -480,13 +481,13 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
 }
 
 /** What a charge carries into the Fight: `bonus` on the attack roll, `saveShift` on the
- * target's save against the wound, and `impact` — a cavalry charge's hit needs no save, so a
+ * target's save against the wound, and `impact` — a cavalry charge applies Press, so a
  * Strike lands as a Press and a Press as an Overrun, at the price paid. */
 export interface MeleeOpts { bonus?: number; saveShift?: number; impact?: boolean }
 
 // A Fight is one roll, one way. A hit wounds, and the target's Fortitude save decides its
 // disorder; a miss repulses the attacker, whose Will save against the target's level DC
-// decides its own. The activity adds no number to the roll: Press skips the target's save, and
+// decides its own. The activity adds no number to the roll: Press makes the target save twice and keep the worse, and
 // Overrun drives it back a hex besides.
 function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Activity, opts: MeleeOpts = {}) {
   const eff = activity.fight!;
@@ -509,8 +510,8 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Ac
 /**
  * Overrun's shove, the shape of Pathfinder's Shove: the target moves one hex directly away
  * from the attacker, and the attacker steps into the hex it left, so contact holds. A destroyed
- * target simply yields its hex. With that one hex blocked the target holds and takes 1 disorder
- * instead. Take cover blocks it too, but takes nothing for it: the Overrun just lands as a Press.
+ * target simply yields its hex. With that one hex blocked the target holds without extra
+ * disorder. Take cover also blocks displacement; the Overrun resolves as a Press.
  */
 function giveGround(state: BattleState, u: Unit, target: Unit) {
   const ground = target.square;
@@ -531,8 +532,7 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
   // Fly does not open a hex here either. A native flier still shrugs the shove off anywhere.
   const away = grid(state).beyond(u.square, ground);
   if (!away || !enterable(state, ground, away, { flying: target.flying })) {
-    log(state, target, `${target.name} has nowhere to give ground and is crushed against it.`);
-    addDisorder(state, target, 1, 'nowhere to give ground');
+    log(state, target, `${target.name} has nowhere to give ground and holds its hex without extra disorder.`);
     return;
   }
   moveTo(state, target, away);
@@ -540,12 +540,12 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
   log(state, u, `${u.name} drives ${target.name} back to ${notation(away)} and takes ${notation(ground)}.`);
 }
 
-function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Activity) {
+function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Activity, bonus = 0) {
   const e = crewedArtillery(state, u);
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
   if (!attackGate(state, rng, u, target)) return;
-  const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true));
+  const c = attackRoll(state, rng, u, target, shootModifier(state, u, target) + bonus, defenceOf(state, target, u, true));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${activity.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
@@ -995,9 +995,8 @@ function offerFor(state: BattleState, u: Unit, type: Verb, spell: Tree | null): 
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  // A routed unit is offered no verb, a shaken one Rally alone; both still Move and maneuver.
+  // Only a full morale track restricts activities to Move and Maneuver.
   if (isRouted(u)) return [];
-  if (isShaken(u)) return [offerFor(state, u, 'rally', null)];
   const contact = engagedEnemies(state, u).length > 0;
   const types: Verb[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
   // A wall is a thing to fight even when nobody defends it.
@@ -1134,7 +1133,7 @@ function maneuverTo(state: BattleState, u: Unit, to: string | undefined, far: bo
 function follow(state: BattleState, u: Unit, chasers: Unit[]) {
   for (const holder of chasers) {
     if (u.status !== 'active') return;
-    if (isShaken(holder) || !isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
+    if (!isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
     if (isEngaged(state, holder, u)) continue;
     const reach = reachable(state.board, holder.square, {
       budget: holder.speed, flying: holder.flying, occupied: occupiedBy(state, holder),
@@ -1178,7 +1177,7 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
   const caught = enemiesIn(state, u, shape);
   u.attacked = true;
   log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`);
-  const modifier = spellAttackModifier(u);
+  const modifier = spellAttackModifier(u) + ACTION_BONUS * (action.focus ?? 0);
   // Every aegis in the shape gates the cast, and one failure wastes the whole activity,
   // "actions and all" — the rule reads on the activity, not on the hex that carries it.
   for (const target of caught) if (!attackGate(state, rng, u, target)) return;
@@ -1288,7 +1287,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       const targets = action.target!.split('+').map((id) => unit(state, id));
       const activity = castActivityOf('healing', index);
       log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`);
-      const modifier = healingModifier(u);
+      const modifier = healingModifier(u) + ACTION_BONUS * (action.focus ?? 0);
       const cast = roll(state, rng, u, modifier, levelDc(targets[0].level));
       for (const target of targets) {
         const c = readCheck(cast.roll, modifier, levelDc(target.level));
@@ -1300,7 +1299,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     case 'controlling': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      const c = roll(state, rng, target, willModifier(target), controllingDc(u));
+      const c = roll(state, rng, target, willModifier(target), controllingDc(u) + ACTION_BONUS * (action.focus ?? 0));
       log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       if (c.degree === 'critical-success') break;
       if (c.degree === 'success') {
@@ -1388,6 +1387,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
 }
 
 function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, action: ActivityAction) {
+  const focusBonus = ACTION_BONUS * (action.focus ?? 0);
   switch (activity.type) {
     case 'shoot': {
       const outOfBand = (r: number) => !inRange(r);
@@ -1397,12 +1397,12 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
         if (outOfBand(wallRank(state, u, action.target))) { log(state, u, `${u.name}'s shot falls short of the wall.`); break; }
         e.fired = true;
         u.attacked = true;
-        attackWall(state, rng, u, action.target, e.launch - u.disorder - (isWeakened(u) ? 2 : 0) + rollBonus(u), 'bombards');
+        attackWall(state, rng, u, action.target, e.launch - u.disorder - (isWeakened(u) ? 2 : 0) + rollBonus(u) + focusBonus, 'bombards');
         break;
       }
       const target = unit(state, action.target!);
       if (outOfBand(shotRank(state, u, target))) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
-      shootAt(state, rng, u, target, activity);
+      shootAt(state, rng, u, target, activity, focusBonus);
       break;
     }
     case 'fight': {
@@ -1411,12 +1411,12 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
         if (ram) ram.fired = true;
         u.attacked = true;
         const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + (ram ? 2 : 0) + rollBonus(u);
-        attackWall(state, rng, u, action.target, bonus, ram ? 'rams' : 'hacks at');
+        attackWall(state, rng, u, action.target, bonus + focusBonus, ram ? 'rams' : 'hacks at');
         break;
       }
       const target = unit(state, action.target!);
       if (!isEngaged(state, u, target)) { log(state, u, `${u.name} is not in contact with ${target.name}.`); break; }
-      melee(state, rng, u, target, activity);
+      melee(state, rng, u, target, activity, { bonus: focusBonus });
       break;
     }
     case 'guard': {
@@ -1445,7 +1445,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
       } else if (eff.scope === 'nearby') {
         reached.push(...alliesWithin(state, u, 2));
       }
-      const c = roll(state, rng, u, willModifier(u), routDcFor(state, u));
+      const c = roll(state, rng, u, willModifier(u) + focusBonus, routDcFor(state, u));
       log(state, u, `${u.name} ${activity.verb}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
       for (const a of reached) {
         // Critical success reads "if none is left" (after the 2-point clear); a plain success
@@ -1582,6 +1582,16 @@ export function endActivation(input: BattleState, rng: Rng, unitId?: string): Ba
   return state;
 }
 
+/** Reject malformed or unsupported commitment before any action resolves. */
+function validateFocus(action: ActivityAction | ChargeAction): number {
+  const focus = action.focus ?? 0;
+  if (!Number.isInteger(focus) || focus < 0 || focus > 2
+    || (focus > 0 && !canFocus(action.type, 'spell' in action ? action.spell : null))) {
+    throw new Error('invalid commitment: spend up to two extra actions on a supported activity');
+  }
+  return focus;
+}
+
 function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityAction): number {
   const offer = availableActions(state, u.id).find((o) => o.type === action.type && o.spell === (action.spell ?? null));
   if (!offer) throw new Error(`${action.type} is not available to ${u.name}`);
@@ -1590,9 +1600,10 @@ function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityActio
   if (opt.needsTarget && !opt.targets.some((t) => t.id === action.target)) {
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
-  const price = opt.cost!;
+  const focus = validateFocus(action);
+  const price = opt.cost! + focus;
   if (price > u.actions) throw new Error(`${opt.label} needs ${price} actions`);
-  if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}.`);
+  if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}${focus ? ` (+${focus * ACTION_BONUS} ${action.spell === 'controlling' ? 'spell DC' : 'on the roll'})` : ''}.`);
   if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.activity, action);
   else perform(state, rng, u, activityOf(offer.type, action.activity), action);
   return price;
@@ -1629,13 +1640,13 @@ export function offersAt(state: BattleState, target: TargetRef, unitId?: string)
   return out;
 }
 
-/** Maneuver is offered in contact, and to a shaken unit whichever way it faces. A rooted unit
+/** Maneuver is offered in contact, and to a routed unit heading for its home edge. A rooted unit
  * is offered nothing: no Move, no Charge and no Maneuver while the root stands. */
 export function maneuverOffer(state: BattleState, unitId?: string): ManeuverOffer | null {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active' || u.rooted > 0 || u.speed === 0) return null;
   const holders = holdersOf(state, u);
-  if (!holders.length && !engagedEnemies(state, u).length && !isShaken(u)) return null;
+  if (!holders.length && !engagedEnemies(state, u).length && !isRouted(u)) return null;
   const activities = ([1, 2, 3] as ActivityIndex[]).map((index): ActivityOption => {
     const w = MANEUVER[index - 1];
     // Above Break off the holders are the ones who roll, so with none there is nothing to buy.
@@ -1692,7 +1703,9 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const option = approach(state, u, foe);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
   const wanted = action.activity ?? 1;
-  const cost = CHARGE_ACTIONS + wanted;
+  if (![1, 2, 3].includes(wanted)) throw new Error('invalid charge activity');
+  const focus = validateFocus(action);
+  const cost = CHARGE_ACTIONS + wanted + focus;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
   const bonus = chargeBonus(state, u, option.cell, foe);
   // Read from the hex the charge starts in, whatever hex it ends on.
@@ -1702,12 +1715,13 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const carried = [
     bonus ? `+${bonus} on the Fight` : 'no +2: the going was rough',
     saveShift ? `${foe.name}'s save is at −${ACTION_BONUS}, charged from above` : '',
-    impact ? 'the impact needs no save' : '',
+    impact ? 'the impact forces two Fortitude rolls, keeping the worse' : '',
+    focus ? `commitment +${focus * ACTION_BONUS} on the Fight (${cost} actions total)` : '',
   ].filter(Boolean);
   log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}, ${carried.join(', ')}.`);
   u.exposed = true;
   log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
-  melee(state, rng, u, foe, activityOf('fight', wanted), { bonus, saveShift, impact });
+  melee(state, rng, u, foe, activityOf('fight', wanted), { bonus: bonus + focus * ACTION_BONUS, saveShift, impact });
   return cost;
 }
 

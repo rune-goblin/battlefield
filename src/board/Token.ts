@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
-import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
+import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
 import { ART_ANCHOR_Y, actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
-import type { BoardTheme } from './theme.js';
+import { healthPipColour, moralePipColour, type BoardTheme } from './theme.js';
 import type { TokenReaction } from './vfx/Effect.js';
 
 /** A ring is state, never chrome: the unit acting now, a free strike landing, or the piece a
@@ -26,9 +26,6 @@ export interface UnitTokenModel {
   cell: string;
   wounds: number;
   disorder: number;
-  /** Disorder a unit absorbs before it routs; varies per unit (Quality), so the rout
-   * threshold and the disorder-pip count both read off it rather than a fixed constant. */
-  quality: number;
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
   /** The action prop riding on the piece: what is being aimed at it right now, or the shield
@@ -129,7 +126,7 @@ const easeInOut = (t: number): number => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2
 const same = (a: Point, b: Point): boolean => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5;
 
 // A shared filter instance: desaturate() only ever sets the same fixed matrix, so every
-// broken token can point at the one instance instead of allocating its own.
+// dead or routed miniature can point at the one instance instead of allocating its own.
 const DESATURATE = new PIXI.ColorMatrixFilter();
 DESATURATE.desaturate();
 
@@ -193,7 +190,7 @@ export class Token extends PIXI.Container {
   private reactScale = { x: 1, y: 1 };
 
   private size = 0;
-  private broken = false;
+  private desaturated = false;
   private reaction: { spec: TokenReaction; start: number } | null = null;
   private flashFilter: PIXI.ColorMatrixFilter | null = null;
 
@@ -232,16 +229,14 @@ export class Token extends PIXI.Container {
 
     const wounds = model.kind === 'unit' ? model.wounds : 0;
     const disorder = model.kind === 'unit' ? model.disorder : 0;
-    const broken = model.kind === 'unit' && wounds >= MAX_WOUNDS - 1;
-    const shaken = model.kind === 'unit' && disorder >= model.quality;
-    const routed = model.kind === 'unit' && disorder > model.quality;
+    const routed = model.kind === 'unit' && disorder >= ROUTED_AT;
 
     this.drawContact(size);
     this.updateArt(model, size);
     this.size = size;
-    this.broken = broken;
+    this.desaturated = wounds >= MAX_WOUNDS || routed;
     this.applyFilters();
-    this.updateFlag(model.side, size, theme, shaken);
+    this.updateFlag(model.side, size, theme, routed);
 
     if (model.kind === 'unit') {
       this.drawDecor(model, size, theme);
@@ -405,7 +400,8 @@ export class Token extends PIXI.Container {
 
   private applyFilters(): void {
     const list: PIXI.Filter[] = [];
-    if (this.broken) list.push(DESATURATE);
+    // Keep each pip track's severity colour when the miniature loses its colour.
+    if (this.art) this.art.filters = this.desaturated ? [DESATURATE] : null;
     if (this.reaction?.spec.flash && this.flashFilter) list.push(this.flashFilter);
     this.filters = list.length ? list : null;
   }
@@ -490,6 +486,7 @@ export class Token extends PIXI.Container {
             this.art.texture = texture;
           }
           this.layoutArt(size);
+          this.applyFilters();
         })
         // proto: a missing texture leaves the contact shadow as the placeholder; no error UI.
         .catch(() => {});
@@ -531,22 +528,24 @@ export class Token extends PIXI.Container {
     const step = size * 0.145;
     const startX = -r * 0.85;
     const woundY = size * 0.28;
+    const healthColour = healthPipColour(model.wounds);
     for (let i = 0; i < MAX_WOUNDS; i++) {
       const filled = i < model.wounds;
       this.decor
         .lineStyle(1, theme.rule, 1)
-        .beginFill(filled ? theme.token.pipFilled : theme.token.pipEmpty, 1)
+        .beginFill(filled ? healthColour : theme.token.pipEmpty, 1)
         .drawRect(startX + i * step - pip / 2, woundY - pip / 2, pip, pip)
         .endFill();
     }
 
     const disorderY = woundY + size * 0.15;
     const pipR = size * 0.05;
-    for (let i = 0; i < model.quality; i++) {
+    const moraleColour = moralePipColour(model.disorder);
+    for (let i = 0; i < ROUTED_AT; i++) {
       const filled = i < model.disorder;
       this.decor
         .lineStyle(1, theme.rule, 1)
-        .beginFill(filled ? theme.token.pipFilled : theme.token.pipEmpty, 1)
+        .beginFill(filled ? moraleColour : theme.token.pipEmpty, 1)
         .drawCircle(startX + i * step, disorderY, pipR)
         .endFill();
     }
@@ -564,10 +563,9 @@ export class Token extends PIXI.Container {
   }
 
   /** The side's flag, top right — the only thing on the piece that says whose it is, now that
-   * the coloured disc is gone. A shaken unit flies a colourless one, and the arrow that comes
-   * with the rout is what separates the two bands on the board. */
-  private updateFlag(side: Side, size: number, theme: BoardTheme, shaken: boolean): void {
-    const colour = shaken ? theme.token.routed : side === 'attacker' ? theme.attacker : theme.defender;
+   * the coloured disc is gone. A routed unit flies a colourless one and carries a retreat arrow. */
+  private updateFlag(side: Side, size: number, theme: BoardTheme, routed: boolean): void {
+    const colour = routed ? theme.token.routed : side === 'attacker' ? theme.attacker : theme.defender;
     if (!this.flag) {
       this.flag = new PIXI.Sprite(bannerTexture(colour));
       this.flag.anchor.set(0.5);
@@ -689,18 +687,24 @@ export class Token extends PIXI.Container {
     this.routArrow.visible = routed;
     this.routArrow.clear();
     if (!routed) return;
-    // Board-local y grows toward the attacker's home edge (rank 0), on both grids — see
+    // Board-local y grows toward the attacker's home edge (rank 1), on both grids — see
     // grid.ts's SquareGrid/HexGrid `center`. A routed unit retreats toward its own edge.
     const dir = side === 'attacker' ? 1 : -1;
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     const x = r + size * 0.16;
     const half = size * 0.2 * dir;
     const width = size * 0.07;
-    this.routArrow.lineStyle(size * 0.045, theme.ink, 0.9).moveTo(x, -half).lineTo(x, half);
+    const shaft = size * 0.025;
+    // An opposing outline keeps the retreat symbol visible over both pale and dark terrain.
     this.routArrow
-      .beginFill(theme.ink, 0.9)
+      .lineStyle(Math.max(1, size * 0.022), theme.background, 1)
+      .beginFill(theme.ink, 1)
       .moveTo(x, half + size * 0.09 * dir)
       .lineTo(x - width, half)
+      .lineTo(x - shaft, half)
+      .lineTo(x - shaft, -half)
+      .lineTo(x + shaft, -half)
+      .lineTo(x + shaft, half)
       .lineTo(x + width, half)
       .closePath()
       .endFill();

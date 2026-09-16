@@ -13,7 +13,7 @@ export const ACTIONS_PER_ACTIVATION = 3;
 /** The system's single increment: a Guard's Defence, Outflanked and inspired are all the
  * same number. */
 export const ACTION_BONUS = 2;
-/** The disorder a troop of ordinary discipline absorbs before it routs; `Unit.quality` varies it. */
+/** Every unit has three morale pips; filling the third causes rout. */
 export const ROUTED_AT = 3;
 
 export interface EngineState {
@@ -63,7 +63,6 @@ export interface Unit {
   trees: Tree[];
   /** Trees already cast this activation: one cast a tree, whatever else the actions buy. */
   castTrees: Tree[];
-  quality: number;
   /** Actions left in this activation; back to three between activations. */
   actions: number;
   /** A unit attacks once per activation. Further actions buy other acts, never a second attack. */
@@ -118,6 +117,8 @@ export interface ActivityAction extends Acts {
   activity: ActivityIndex;
   target?: string;
   spell?: Tree;
+  /** Extra actions committed before resolution: each adds +2, at most two. */
+  focus?: number;
 }
 
 /** Stride to `to`, spending as many Move actions as the route costs. */
@@ -127,8 +128,8 @@ export interface MoveAction extends Acts { type: 'move'; to: string }
  * critical Break off is the only one that carries further than a single hex. */
 export interface ManeuverAction extends Acts { type: 'maneuver'; activity: ActivityIndex; to?: string }
 
-/** Move into contact and fight: the movement's actions, plus the activity's own. */
-export interface ChargeAction extends Acts { type: 'charge'; target: string; activity?: ActivityIndex }
+/** Move into contact and fight at the activity price, plus optional commitment. */
+export interface ChargeAction extends Acts { type: 'charge'; target: string; activity?: ActivityIndex; focus?: number }
 
 export type Action = ActivityAction | MoveAction | ManeuverAction | ChargeAction;
 

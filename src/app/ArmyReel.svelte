@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { MAX_WOUNDS, notation, type Unit } from '../engine/index.js';
+  import { MAX_WOUNDS, ROUTED_AT, notation, type Unit } from '../engine/index.js';
   import { troopArtUrl } from '../board/index.js';
+  import { healthPipColour, moralePipColour } from '../board/theme.js';
 
   interface Props {
     /** Every standing unit of the side now on turn, in activation order. */
@@ -37,14 +38,14 @@
       onfocus={() => hover(u.id)}
       onblur={() => hover(null)}
     >
-      <img src={troopArtUrl(u.name, u.role)} alt="" />
+      <img class:desaturated={u.wounds >= MAX_WOUNDS || u.disorder >= ROUTED_AT} src={troopArtUrl(u.name, u.role)} alt="" />
       <span class="name">{u.name}</span>
       <span class="meta">L{u.level} · {notation(u.square)}</span>
-      <span class="pip-row">
+      <span class="pip-row" style:--pip-colour={'#' + healthPipColour(u.wounds).toString(16).padStart(6, '0')} role="img" aria-label="Wounds {u.wounds}/{MAX_WOUNDS}{u.wounds >= MAX_WOUNDS ? ' — dead' : ''}">
         {#each Array(MAX_WOUNDS) as _, n (n)}<span class="pip square" class:on={n < u.wounds}></span>{/each}
       </span>
-      <span class="pip-row">
-        {#each Array(u.quality) as _, n (n)}<span class="pip circle" class:on={n < u.disorder}></span>{/each}
+      <span class="pip-row" style:--pip-colour={'#' + moralePipColour(u.disorder).toString(16).padStart(6, '0')} role="img" aria-label="Morale {u.disorder}/{ROUTED_AT}{u.disorder >= ROUTED_AT ? ' — routed' : ''}">
+        {#each Array(ROUTED_AT) as _, n (n)}<span class="pip circle" class:on={n < u.disorder}></span>{/each}
       </span>
     </button>
   {:else}
@@ -137,7 +138,8 @@
   .pip { display: inline-block; width: .5rem; height: .5rem; border: 1px solid var(--rule); background: transparent; }
   .pip.square { border-radius: 2px; }
   .pip.circle { border-radius: 50%; }
-  .pip.on { background: var(--hi); border-color: var(--hi); }
+  .pip.on { background: var(--pip-colour); border-color: var(--pip-colour); }
+  .unit-card img.desaturated { filter: grayscale(1); }
 
   @media (prefers-reduced-motion: reduce) {
     .unit-card, .unit-card img { transition: none; }

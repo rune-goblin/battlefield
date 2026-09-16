@@ -1,12 +1,15 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, engagedEnemies, isOutflanked, isRouted, isShaken, levelDc, MAX_WOUNDS, movePath, notation,
-    offersAt, reachOf, targetMatches, TREE_TARGET, maneuverOutcome, parse,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, ROUTED_AT, movePath, notation,
+    offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
     type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
-  import { actionIconUrl, castIconUrl, targetIconUrl, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
+  import { actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
+  import CommitmentPicker from './CommitmentPicker.svelte';
+
+  let focus = $state(0);
   import BoardPopup from './BoardPopup.svelte';
   import BattleLog from './BattleLog.svelte';
   import PixiBoard from './PixiBoard.svelte';
@@ -41,6 +44,7 @@
   // Tracks the pointer's own cell while a spell is armed, so its cast line can follow the
   // cursor before a target is picked — see `cast` below.
   let hoveredCell = $state<string | null>(null);
+  let hoveredEdge = $state<string | null>(null);
 
   // The hover runs both ways: a card in the reel rings its miniature, and a miniature under the
   // pointer lights its card. One unit is hot at a time, whichever end the pointer is at.
@@ -70,7 +74,7 @@
 
   // A new unit drops every open popup and any in-flight drag preview — all of it is
   // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null; blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null; });
+  $effect(() => { void active?.id; focus = 0; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null; blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null; });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return TREE_TARGET[offer.spell] === 'enemy' ? 'attack' : 'deploy';
@@ -233,12 +237,15 @@
   const blastService = $derived(active && blastOffer && blastActivity ? new TargetingService(b, active, blastOffer, blastActivity) : null);
   const blastTargets = $derived(blastService?.choices ?? []);
   const blastCandidates = $derived(blastTargets.filter((t) => !blastCell || targetCells(t).includes(blastCell)));
-  const blastPreview = $derived(blastTargets.find((t) => t.id === (blastHover ?? blastTarget)) ?? null);
+  const blastHoverMatches = $derived(hoveredCell ? blastService?.matches({ kind: 'hex', id: hoveredCell }) ?? [] : []);
+  const blastPreview = $derived(blastTargets.find((t) => t.id === blastHover)
+    ?? (blastHoverMatches.length === 1 ? blastHoverMatches[0] : null)
+    ?? blastTargets.find((t) => t.id === blastTarget) ?? null);
   const blastSelection = $derived(blastTargets.find((t) => t.id === blastTarget) ?? null);
 
 
   // Cast and Rally show their activities before asking for a target.
-  let activityPick = $state<{ key: string; index: ActivityIndex | null; selected: string[] } | null>(null);
+  let activityPick = $state<{ key: string; index: ActivityIndex | null; selected: string[]; target?: string } | null>(null);
   let targetHover = $state<string | null>(null);
   const pickerOffer = $derived(offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
   const pickerActivity = $derived(pickerOffer?.activities.find((o) => o.index === activityPick?.index) ?? null);
@@ -246,9 +253,12 @@
   const pickerTargets = $derived(pickerService?.choices ?? []);
   const pickerCandidates = $derived(pickerService?.candidates(activityPick?.selected) ?? []);
   const pickerHoverMatches = $derived(hoveredCell ? pickerService?.matches({ kind: 'hex', id: hoveredCell }) ?? [] : []);
-  const pickerPreview = $derived(pickerTargets.find((t) => t.id === targetHover) ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null));
+  const pickerPreview = $derived(pickerTargets.find((t) => t.id === targetHover)
+    ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null)
+    ?? pickerTargets.find((t) => t.id === activityPick?.target) ?? null);
 
   function openActivityPicker(offer: ActionOffer) {
+    focus = 0;
     aim = null; pending = null; radial = null; castPick = null;
     armed = null; armedTree = null; targetHover = null;
     activityPick = { key: offerKey(offer), index: null, selected: [] };
@@ -259,20 +269,23 @@
     const option = offer?.activities.find((o) => o.index === index);
     if (!offer || !option?.legal || !activityPick) return;
     targetHover = null;
-    if (!option.needsTarget) {
-      activityPick = null;
-      performActivity(offer, option);
-      return;
-    }
-    activityPick = { ...activityPick, index, selected: [] };
+    focus = 0;
+    activityPick = { ...activityPick, index, selected: [], target: undefined };
   }
 
   function choosePickerTarget(id: string) {
     const offer = pickerOffer, option = pickerActivity;
     const target = pickerTargets.find((t) => t.id === id);
     if (!offer || !option?.legal || !target) return;
+    if (activityPick) activityPick = { ...activityPick, target: target.id };
+    targetHover = null;
+  }
+
+  function confirmPicker() {
+    const offer = pickerOffer, option = pickerActivity, target = activityPick?.target;
+    if (!offer || !option?.legal || (option.needsTarget && !target)) return;
+    performActivity(offer, option, target);
     activityPick = null; targetHover = null;
-    performActivity(offer, option, target.id);
   }
 
   function pickActivityCell(cell: string) {
@@ -281,7 +294,7 @@
     if (!pick) return;
     targetHover = null;
     if (pick.target) choosePickerTarget(pick.target.id);
-    else activityPick = { ...activityPick, selected: pick.selected };
+    else activityPick = { ...activityPick, selected: pick.selected, target: undefined };
   }
 
   function openBlast(level: ActivityIndex | null = null) {
@@ -293,6 +306,7 @@
   }
 
   function chooseBlastLevel(level: ActivityIndex | null) {
+    focus = 0;
     blastLevel = level; blastTarget = null; blastHover = null; blastCell = null;
   }
 
@@ -316,8 +330,8 @@
   const armedCastOffer = $derived(
     armed === 'cast' && armedTree ? (act?.offers.find((o) => o.type === 'cast' && o.spell === armedTree) ?? null) : null,
   );
-  // The arm outlives the popup it opened, so cancelling the popup lands back on the wash
-  // instead of on nothing. `arming` is the state where the board is waiting to be touched —
+  // Stepping back from a popup retains the arm. Cancelling clears it. `arming` is the state
+  // where the board is waiting to be touched —
   // narrowed to the chosen tree's own targets once one is picked, not Cast's whole book.
   const arming = $derived(
     armedProp && !aim && !pending
@@ -327,14 +341,25 @@
   // A new activation, or a verb that has run out of targets, drops the arm.
   $effect(() => { if (armed && !armedProp) { armed = null; armedTree = null; } });
 
+  /** Cancel the whole action so the next click on the acting unit opens its wheel. */
+  function cancelAction() {
+    focus = 0;
+    aim = null; pending = null; radial = null; castPick = null;
+    armed = null; armedTree = null;
+    activityPick = null; targetHover = null;
+    blastOpen = false; chooseBlastLevel(null);
+    drag = null; dragTarget = null; blockedCell = null;
+  }
+
   /** One step back up the chain the ring starts: popup, then the wash, then the tree picker
    * (Cast only), then the ring, then nothing. Nothing is committed until the last click, so
    * every stage can be walked out of. */
   function stepBack() {
     if (activityPick) {
       targetHover = null;
+      if (activityPick.target) { activityPick = { ...activityPick, target: undefined }; return; }
       if (activityPick.selected.length) { activityPick = { ...activityPick, selected: activityPick.selected.slice(0, -1) }; return; }
-      if (activityPick.index !== null) { activityPick = { ...activityPick, index: null }; return; }
+      if (activityPick.index !== null) { focus = 0; activityPick = { ...activityPick, index: null }; return; }
       const wasCast = pickerOffer?.type === 'cast';
       activityPick = null;
       if (wasCast) castPick = castOffers();
@@ -372,6 +397,7 @@
   /** Rally opens its activities; Cast opens its trees and then activities. Other verbs
    * highlight their targets, opening the target popup directly when only one exists. */
   function takeProp(p: Prop) {
+    focus = 0;
     if (!p.legal || !active) return;
     pending = null;
     aim = null;
@@ -406,6 +432,7 @@
 
   /** Spend an armed prop on a board object. */
   function applyProp(p: Prop, cell: string) {
+    focus = 0;
     // A charge is read off the cell rather than the slice: in contact the melee slice fights,
     // out of it the same slice closes.
     const c = p.key === 'melee' ? act?.charges.find((x) => cellOf(x.unit) === cell) : undefined;
@@ -509,6 +536,7 @@
   }
 
   function onBoardDrop(e: BoardEventOf<'drop'>) {
+    focus = 0;
     drag = null;
     blockedCell = null;
     dragTarget = null;
@@ -532,6 +560,7 @@
   function choose(i: number) {
     if (!pending) return;
     if (pending.index === i) { commit(); return; }
+    focus = 0;
     pending = { ...pending, index: i, activity: null };
   }
 
@@ -543,7 +572,7 @@
     if (!p || !row) return;
     // The piece walks the route the drag traced, not the straight line to where it ends.
     if (active) boardRef?.setRoute(active.id, row.path);
-    if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined });
+    if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined, focus });
     else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
     else if (act?.maneuver) performManeuver(p.activity ?? 1, row.cell);
   }
@@ -553,11 +582,12 @@
   function onKey(e: KeyboardEvent) {
     // One Escape, one step back — the same walk out that a click off the target takes.
     if (e.key === 'Escape') { stepBack(); return; }
-    if (blastOpen) return;
+    if (blastOpen || activityPick) return;
     if (pending) {
       if (e.key === 'Enter') { e.preventDefault(); commit(); }
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
+        focus = 0;
         pending = { ...pending, index: (pending.index + stepBy(e.key, pending.rows.length)) % pending.rows.length, activity: null };
       }
       return;
@@ -566,10 +596,12 @@
     if (e.key === 'Enter') { e.preventDefault(); takeAim(); }
     else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
+      focus = 0;
       const n = aimActivities.length;
       if (n) aim = { ...aim, index: (aim.index + stepBy(e.key, n)) % n };
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
+      focus = 0;
       const n = aim.groups.length;
       aim = { ...aim, group: (aim.group + (e.key === 'ArrowRight' ? 1 : n - 1)) % n, index: 0 };
     }
@@ -628,10 +660,10 @@
   /** What each reading of a drop actually costs. */
   const dropCost = (row: Preview): number =>
     row.kind === 'move' ? row.actions
-      : row.kind === 'charge' ? chargeCost(row, chargeActivity)
+      : row.kind === 'charge' ? chargeCost(row, chargeActivity) + focus
         : act?.maneuver?.activities[maneuverActivity - 1].cost ?? maneuverActivity;
-  const cost = $derived(picked ? dropCost(picked) : aimed ? aimed.cost ?? 0 : 0);
-  const left = $derived(act?.actions ?? 0);
+  const cost = $derived(picked ? dropCost(picked) : aimed ? (aimed.cost ?? 0) + (aimGroup && canFocus(aimGroup.offer.type, aimGroup.offer.spell) ? focus : 0) : 0);
+  const actionsLeft = $derived(act?.actions ?? 0);
 
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
     if (!preview) return [];
@@ -707,19 +739,49 @@
     const candidates = activityPick ? pickerCandidates : blastOpen ? blastCandidates : aimChoices;
     // A list hover identifies an exact group or placement when several choices share a point.
     if (activityPick && pickerService) return pickerService.surface(activityPick.selected);
+    if (blastOpen) return blastCandidates;
     if (targetingChoice && targetingService) return targetingService.markersFor(targetingChoice);
     if (aim && aimService && aimChoices.length) return [{ id: `aim:${aim.cell}`, label: aimService.activity.label, cells: [aim.cell], anchorCells: [aim.cell], geometry: 'hex', icon: aimService.icon }];
     return candidates.filter((target) => target.geometry !== 'group'
       && candidates.filter((other) => other.anchorCells.join('+') === target.anchorCells.join('+')).length === 1);
   });
-  const shot = $derived(targetingPreview?.shot ?? null);
-  const cast = $derived(targetingPreview?.cast ?? null);
+  const arrowContext = $derived(targetingService
+    ? `${targetingService.actor.id}:${offerKey(targetingService.offer)}:${targetingService.activity.index}:${activityPick?.selected.join('+') ?? ''}`
+    : arming && active ? `${active.id}:${arming.key}:${armedTree ?? ''}` : null);
+  const liveArrows = $derived.by<TargetArrow[]>(() => {
+    if (targetingService) {
+      const selected = activityPick?.selected ?? [];
+      const hovered = targetingService.arrows(selected, targetHover ?? blastHover, hoveredEdge ?? hoveredCell);
+      if (targetHover || blastHover || hoveredCell || hoveredEdge) {
+        if (hovered.length) return hovered;
+      }
+      return targetingService.arrows(selected, targetingChoice?.id ?? null, aim?.cell ?? null);
+    }
+    if (!arming || !active) return [];
+    const cells = hoveredEdge && arming.edges.includes(hoveredEdge) ? hoveredEdge.split('|')
+      : hoveredCell && arming.cells.includes(hoveredCell) ? [hoveredCell] : [];
+    if (!cells.length) return [];
+    return [{ from: notation(active.square), to: cells[0], toCells: cells,
+      tone: arming.key === 'maneuver' ? 'movement' : arming.key === 'melee' ? 'fight'
+        : arming.key === 'cast' ? armedTree ?? 'cast' : arming.key }];
+  });
+  let heldArrows = $state<{ context: string; arrows: TargetArrow[] } | null>(null);
+  let resolvedArrows = $state<TargetArrow[]>([]);
+  $effect(() => {
+    if (arrowContext && liveArrows.length) heldArrows = { context: arrowContext, arrows: liveArrows };
+    else if (!arrowContext) heldArrows = null;
+  });
+  // Keep the last valid aim while the pointer travels between the board and its picker.
+  const shot = $derived(liveArrows.length ? liveArrows
+    : arrowContext && heldArrows?.context === arrowContext ? heldArrows.arrows
+      : arrowContext ? [] : resolvedArrows);
   const aimCells = $derived(aim ? targetingPreview?.cells ?? [] : []);
   let resolvedMarkers = $state<TargetMarker[]>([]);
   let resolutionTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => () => { if (resolutionTimer) clearTimeout(resolutionTimer); });
 
   function hoverTargetMarker(id: string | null) {
+    if (id) { hoveredCell = null; hoveredEdge = null; }
     if (blastOpen) blastHover = id;
     else if (activityPick) targetHover = id;
   }
@@ -780,7 +842,6 @@
       cell: notation(u.square),
       wounds: u.wounds,
       disorder: u.disorder,
-      quality: u.quality,
       engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
       prop: propOn(u),
       pick: pickOn(u),
@@ -800,11 +861,12 @@
     const resolution = new TargetingService(b, active, offer, opt).resolve(target);
     if (!resolution) return;
     const before = game.battle!.log.length;
-    takeAction(resolution.action);
+    takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
     resolvedMarkers = resolution.markers;
+    resolvedArrows = resolution.arrows;
     if (resolutionTimer) clearTimeout(resolutionTimer);
-    resolutionTimer = setTimeout(() => { resolvedMarkers = []; resolutionTimer = null; }, 800);
+    resolutionTimer = setTimeout(() => { resolvedMarkers = []; resolvedArrows = []; resolutionTimer = null; }, 800);
     for (const effect of resolution.effects) boardRef?.burst(effect.cell, effect.tree, effect.from);
   }
 
@@ -817,6 +879,7 @@
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
    * prop taken off the tray narrows it to that one verb. */
   function aimAt(target: TargetRef, cell: string, label: string, only: Verb | null = null) {
+    focus = 0;
     if (!active) return;
     const all = offersAt(b, target, active.id);
     let groups = only ? all.filter((g) => g.offer.type === only) : all;
@@ -831,15 +894,15 @@
     }
   }
 
-  /** A activity is taken the moment it is touched: the price is on the row, so there is nothing
-   * left to confirm. */
+  /** Choose the effect first, then its commitment, and confirm the total. */
   function aimChoose(i: number) {
     if (!aim) return;
+    focus = 0;
     aim = { ...aim, index: i };
-    takeAim();
   }
 
   const aimVerb = (i: number) => {
+    focus = 0;
     if (!aim) return;
     aim = { ...aim, group: i, index: 0 };
     const legal = aimActivities.findIndex((option) => option.legal);
@@ -858,7 +921,9 @@
     const service = new TargetingService(b, active!, group.offer, row);
     const matches = service.forRef(a.target);
     if (row.needsTarget && matches.length !== 1) {
+      const committed = focus;
       openActivityPicker(group.offer);
+      focus = committed;
       activityPick = { key: offerKey(group.offer), index: row.index, selected: service.pickCell(a.cell)?.selected ?? [] };
       return;
     }
@@ -954,7 +1019,7 @@
   }
 
   const status = (u: Unit) => [
-    isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : '',
+    isRouted(u) ? 'routed' : '',
     u.guard ? `guarded +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
@@ -982,7 +1047,7 @@
   <div class="popup-head">
     <span>{label}</span>
     <span class="popup-actions" title="Actions left this activation">
-      {#if left > 0}<ActionCost n={left} size="1.05em" />{:else}<span class="muted">no actions left</span>{/if}
+      {#if actionsLeft > 0}<ActionCost n={actionsLeft} size="1.05em" />{:else}<span class="muted">no actions left</span>{/if}
     </span>
   </div>
 {/snippet}
@@ -993,7 +1058,7 @@
       <img src={tree ? castIconUrl(tree) : actionIconUrl(treatment)} alt="" />
     </span>
     <span class="picker-heading-text"><span class="picker-kicker">{treatment === 'cast' ? 'Cast' : treatment === 'rally' ? 'Command' : 'Ranged attack'}</span><strong>{label}</strong></span>
-    <span class="picker-budget" title="Actions left this activation"><ActionCost n={left} size="1em" /></span>
+    <span class="picker-budget" title="Actions left this activation"><ActionCost n={actionsLeft} size="1em" /></span>
   </div>
 {/snippet}
 
@@ -1013,9 +1078,9 @@
 {#snippet popupFoot(confirm: () => void)}
   <div class="popup-foot">
     <span class="muted">
-      Spends {cost} of {left}{cost >= left ? ' — ends the turn' : ''}
+      Spends {cost} of {actionsLeft}{cost >= actionsLeft ? ' — ends the turn' : ''}
     </span>
-    <button onclick={stepBack}>Cancel</button>
+    <button onclick={cancelAction}>Cancel</button>
     <button class="primary" onclick={confirm}>Confirm</button>
   </div>
 {/snippet}
@@ -1029,8 +1094,8 @@
           <div class="unitrow">
             <span class={u.side === 'attacker' ? 'side-att' : 'side-def'}>{u.name}</span>
             <span class="stat">wounds {u.wounds}/{MAX_WOUNDS}</span>
-            <span class="stat">disorder {u.disorder}/{u.quality}</span>
-            <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : isShaken(u) ? 'shaken' : 'standing') : u.status}</span>
+            <span class="stat">disorder {u.disorder}/{ROUTED_AT}</span>
+            <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : 'standing') : u.status}</span>
           </div>
         {/each}
       </div>
@@ -1093,11 +1158,10 @@
       barred={blockedCell}
       {anchored}
       {shot}
-      {cast}
       selected={selectedHex}
       draggable={blastOpen || activityPick ? null : active?.id ?? null}
       pickableEdges={pickerService ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id) : arming?.edges ?? []}
-      onhover={(e) => { hoveredCell = e.cell; }}
+      onhover={(e) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; }}
       oncell={active ? onCell : undefined}
       ontoken={onToken}
       onedge={active ? onEdge : undefined}
@@ -1115,33 +1179,43 @@
       cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={null} resolved
       hover={() => {}} choose={() => {}} />
     {#if activityPick && pickerOffer && active}
-      <BoardPopup cell={notation(active.square)} close={stepBack} appearance={pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
+      <BoardPopup cell={notation(active.square)} close={cancelAction} appearance={pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
         {@render pickerHead(pickerOffer.label, pickerOffer.type === 'cast' ? 'cast' : 'rally', pickerOffer.spell)}
         {@render activityRows(pickerOffer.activities, pickerActivity?.index ?? null, choosePickerActivity, pickerOffer.type === 'cast' ? 'cast' : 'rally')}
         {#if pickerActivity}
+          {#if canFocus(pickerOffer.type, pickerOffer.spell)}
+            <CommitmentPicker base={pickerActivity.cost ?? pickerActivity.index} available={actionsLeft} bind:value={focus} effect={pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+          {/if}
           <p class="popup-escapes" aria-live="polite">
-            {#if pickerService?.placement}{activityPick.selected.length ? 'Choose a destination hex.' : 'Choose the unit to translocate.'}
+            {#if !pickerActivity.needsTarget}Choose your commitment, then confirm.
+            {:else if pickerService?.placement}{activityPick.selected.length ? 'Choose a destination hex.' : 'Choose the unit to translocate.'}
             {:else if pickerOffer.spell === 'healing' && pickerActivity.index > 1}Choose {pickerActivity.index} units on the board. {activityPick.selected.length} selected.
             {:else}Choose a target icon on the board to {pickerActivity.label.toLowerCase()}.{/if}
           </p>
+          {#if pickerActivity.needsTarget}
           <div class="activity-targets" aria-label="{pickerOffer.label} targets">
             {#each pickerCandidates as target (target.id)}
-              <button class="popup-row" onpointerenter={() => { targetHover = target.id; }} onpointerleave={() => { targetHover = null; }}
-                onfocus={() => { targetHover = target.id; }} onblur={() => { targetHover = null; }} onclick={() => choosePickerTarget(target.id)}>
+              <button class="popup-row" class:on={activityPick.target === target.id} aria-pressed={activityPick.target === target.id} onpointerenter={() => hoverTargetMarker(target.id)} onpointerleave={() => hoverTargetMarker(null)}
+                onfocus={() => hoverTargetMarker(target.id)} onblur={() => hoverTargetMarker(null)} onclick={() => choosePickerTarget(target.id)}>
                 <span class="popup-verb">{target.label}</span>
                 <span class="muted">{targetCells(target).join(' + ')}</span>
               </button>
             {/each}
           </div>
-          {#if activityPick.selected.length}<button onclick={() => { if (activityPick) activityPick = { ...activityPick, selected: [] }; targetHover = null; }}>Reset targets</button>{/if}
+          {/if}
+          {#if activityPick.selected.length}<button onclick={() => { if (activityPick) activityPick = { ...activityPick, selected: [], target: undefined }; targetHover = null; }}>Reset targets</button>{/if}
         {:else}
           <p class="popup-escapes">Choose an activity.</p>
         {/if}
-        <div class="popup-foot"><button onclick={() => { activityPick = null; targetHover = null; }}>Cancel</button></div>
+        <div class="popup-foot">
+          {#if pickerActivity}<span class="muted">Spends {(pickerActivity.cost ?? 0) + focus} of {actionsLeft}</span>{/if}
+          <button onclick={cancelAction}>Cancel</button>
+          <button class="primary" disabled={!pickerActivity?.legal || (pickerActivity.needsTarget && !activityPick.target)} onclick={confirmPicker}>Confirm</button>
+        </div>
       </BoardPopup>
     {/if}
     {#if blastOpen && blastOffer && active}
-      <BoardPopup cell={notation(active.square)} close={stepBack} appearance="cast">
+      <BoardPopup cell={notation(active.square)} close={cancelAction} appearance="cast">
         {@render pickerHead('Blast', 'cast', 'blast')}
         <div class="blast-levels">
           {#each blastOffer.activities as opt (opt.index)}
@@ -1152,6 +1226,7 @@
           {/each}
         </div>
         {#if blastActivity}
+          <CommitmentPicker base={blastActivity.cost ?? blastActivity.index} available={actionsLeft} bind:value={focus} effect="on the spell attack" />
           <p class="popup-escapes" aria-live="polite">
             {#if blastLevel === 1}Choose an enemy hex.
             {:else if blastLevel === 2}Choose a Blast icon on an edge for the two hexes in a line.
@@ -1160,8 +1235,8 @@
           <div class="blast-targets" aria-label="Blast targets">
             {#each blastCandidates as target (target.id)}
               <button class="popup-row" class:on={blastTarget === target.id} aria-pressed={blastTarget === target.id}
-                onpointerenter={() => { blastHover = target.id; }} onpointerleave={() => { blastHover = null; }}
-                onfocus={() => { blastHover = target.id; }} onblur={() => { blastHover = null; }}
+                onpointerenter={() => hoverTargetMarker(target.id)} onpointerleave={() => hoverTargetMarker(null)}
+                onfocus={() => hoverTargetMarker(target.id)} onblur={() => hoverTargetMarker(null)}
                 onclick={() => { blastTarget = target.id; blastHover = null; }}>
                 <span class="popup-verb">{targetCells(target).join(' + ')}</span>
                 <span class="muted">{target.label}</span>
@@ -1171,8 +1246,8 @@
           {#if blastCell}<button onclick={() => { blastCell = null; }}>Show all targets</button>{/if}
           {#if blastPreview}<p class="popup-escapes" aria-live="polite">Affected hexes: {targetCells(blastPreview).join(', ')}. Enemies: {blastPreview.label}.</p>{/if}
           <div class="popup-foot">
-            <button onclick={() => { blastOpen = false; chooseBlastLevel(null); }}>Cancel</button>
-            <button class="primary" disabled={!blastActivity.legal || !blastSelection} onclick={confirmBlast}>Cast {blastActivity.label} · {blastActivity.cost} action{blastActivity.cost === 1 ? '' : 's'}</button>
+            <button onclick={cancelAction}>Cancel</button>
+            <button class="primary" disabled={!blastActivity.legal || !blastSelection} onclick={confirmBlast}>Cast {blastActivity.label} · {(blastActivity.cost ?? 0) + focus} action{(blastActivity.cost ?? 0) + focus === 1 ? '' : 's'}</button>
           </div>
         {:else}
           <p class="popup-escapes">Choose a blast level, then designate its target.</p>
@@ -1198,7 +1273,7 @@
       </div>
     {/if}
     {#if pending}
-      <BoardPopup cell={pending.cell} close={stepBack}>
+      <BoardPopup cell={pending.cell} close={cancelAction}>
         {@render popupHead(pending.cell)}
         {#each pending.rows as row, i (rowKey(row))}
           <button class="popup-row" class:on={i === pending.index} onclick={() => choose(i)}>
@@ -1236,7 +1311,7 @@
                   class:on={maneuverActivity === g}
                   disabled={!opt.legal}
                   title={opt.reason ?? ''}
-                  onclick={() => { if (pending) pending = { ...pending, activity: g }; }}
+                  onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
                 >
                   {opt.label}
                   <ActionCost n={opt.cost ?? g} />
@@ -1255,20 +1330,21 @@
                   class:on={chargeActivity === g}
                   disabled={!can}
                   title={can ? '' : `needs ${total} actions`}
-                  onclick={() => { if (pending) pending = { ...pending, activity: g }; }}
+                  onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
                 >
                   {CHARGES[g - 1]}
                   <ActionCost n={total} />
                 </button>
               {/each}
             </div>
+            <CommitmentPicker base={chargeCost(row, chargeActivity)} available={actionsLeft} bind:value={focus} effect="on the attack, in addition to the charge bonus" />
           {/if}
         {/each}
         {@render popupFoot(commit)}
       </BoardPopup>
     {/if}
     {#if aim && aimGroup && active && !pending}
-      <BoardPopup cell={aim.cell} close={stepBack} appearance={aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'default'}>
+      <BoardPopup cell={aim.cell} close={cancelAction} appearance={aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'default'}>
         {#if aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally'}
           {@render pickerHead(aim.label, aimGroup.offer.type, aimGroup.offer.spell)}
         {:else}{@render popupHead(aim.label)}{/if}
@@ -1282,6 +1358,12 @@
             {/each}
         </div>
         {@render activityRows(aimActivities, aimed?.index ?? null, (index) => aimChoose(aimActivities.findIndex((opt) => opt.index === index)), aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'plain')}
+        {#if aimed?.legal}
+          {#if canFocus(aimGroup.offer.type, aimGroup.offer.spell) && aimGroup.offer.spell !== 'blast'}
+            <CommitmentPicker base={aimed.cost ?? aimed.index} available={actionsLeft} bind:value={focus} effect={aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+          {/if}
+          {@render popupFoot(takeAim)}
+        {/if}
       </BoardPopup>
     {/if}
   {/snippet}
@@ -1298,13 +1380,13 @@
       </div>
       <p class="cost-key">
         Every activity costs the same for every unit: <ActionCost n={1} />, <ActionCost n={2} /> or
-        <ActionCost n={3} />, and nothing is rolled for it. One attack an activation.
+        <ActionCost n={3} />. Commit extra actions for +2 each on supported activities. One attack an activation.
       </p>
 
       <table class="stats"><tbody>
         <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
         <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
-        <tr><td>Disorder</td><td class="stat">{active.disorder}/{active.quality}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
+        <tr><td>Disorder</td><td class="stat">{active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
         <tr><td>Move</td><td class="stat">{active.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
         {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
         {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
@@ -1368,13 +1450,8 @@
 
       {#if isRouted(active)}
         <p class="muted">
-          Routed at {active.disorder}/{active.quality} — it may Move or maneuver, nothing else, and
-          it leaves the field at its own edge. Only an adjacent ally's Rally can bring it back.
-        </p>
-      {:else if isShaken(active)}
-        <p class="muted">
-          Shaken at {active.disorder}/{active.quality} — it may Rally, Move or maneuver, nothing
-          else. One more point and it routs.
+          Routed at {active.disorder}/{ROUTED_AT} — it may Move or maneuver, nothing else, and
+          it leaves the field at its own edge. An ally's Rally, Inspire or Healing can bring it back.
         </p>
       {:else if !offers.length}
         <p class="muted">Nothing else to do here — end the turn.</p>

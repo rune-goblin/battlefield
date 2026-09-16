@@ -3,6 +3,7 @@ import {
   type ActivityTarget, type BattleState, type TargetRef, type Tree, type Unit,
 } from '../engine/index.js';
 import type { TargetIcon } from '../board/art.js';
+import type { TargetArrow } from '../board/target-point.js';
 
 export type TargetGeometry = 'hex' | 'edge' | 'corner' | 'group';
 export interface TargetMarker {
@@ -19,6 +20,7 @@ export interface TargetingHit { kind: 'hex' | 'edge' | 'corner' | 'target'; id: 
 export interface TargetResolution {
   action: ActivityAction;
   markers: TargetMarker[];
+  arrows: TargetArrow[];
   effects: { cell: string; tree: Tree; from: string }[];
 }
 
@@ -80,6 +82,24 @@ export class TargetingService {
 
   markersFor(target: TargetChoice): TargetMarker[] {
     return target.geometry === 'group' ? target.cells.map((cell) => ({ ...target, id: `${target.id}:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : [target];
+  }
+
+  /** Resolve both exact choices and intermediate surface picks into visible aiming arrows. */
+  arrows(selected: string[] = [], targetId: string | null = null, cell: string | null = null): TargetArrow[] {
+    const surface = this.surface(selected);
+    const choice = this.candidates(selected).find((target) => target.id === targetId);
+    const marker = surface.find((target) => target.id === targetId)
+      ?? (cell ? surface.find((target) => target.geometry !== 'group'
+        && target.anchorCells.slice().sort().join('|') === cell.split('|').sort().join('|')) : undefined);
+    const marks = choice ? this.markersFor(choice) : marker ? [marker] : [];
+    if (!this.placement) marks.push(...surface.filter((target) => target.selected));
+    else if (!marks.length && selected.length) marks.push(...surface.filter((target) => target.selected));
+    const unique = [...new Map(marks.map((target) => [target.anchorCells.join('+'), target])).values()];
+    return unique.map((target) => ({
+      from: this.placement && (choice || (selected.length && !target.selected))
+        ? choice?.cells[0] ?? selected[0] : notation(this.actor.square),
+      to: target.anchorCells[0], toCells: target.anchorCells, tone: this.offer.spell ?? this.offer.type,
+    }));
   }
 
   constructor(readonly state: BattleState, readonly actor: Unit, readonly offer: ActionOffer, readonly activity: ActivityOption) {
@@ -148,6 +168,7 @@ export class TargetingService {
     return {
       action: { type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? target.id : undefined },
       markers: this.offer.type === 'rally' ? cells.map((cell) => ({ ...target, id: `rally:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : this.markersFor(target),
+      arrows: this.offer.type === 'rally' ? cells.map((cell) => ({ from: notation(this.actor.square), to: cell, tone: 'rally' })) : this.arrows([], target.id),
       effects: this.offer.spell ? effectCells.map((cell) => ({ cell, tree: this.offer.spell!, from: notation(this.actor.square) })) : [],
     };
   }

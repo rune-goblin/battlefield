@@ -1,6 +1,5 @@
-import { cardTraits, deriveStats, type Tactic, type UnitCard } from './cards.js';
+import { cardTraits, type Tactic, type UnitCard } from './cards.js';
 import { treesForTradition, type Tree } from './magic.js';
-import { saveBonus, type Tier } from './tables.js';
 
 // Two verbs have no table of their own. A Move action spends the troop's Speed in feet, and
 // Maneuver rolls the escaping unit's Reflex against whoever is holding it — see `doManeuver`
@@ -18,7 +17,7 @@ export type ActivityId =
   | 'brace' | 'dig-in' | 'take-cover'
   | 'steady' | 'rally' | 'inspire';
 
-/** Each activity includes everything below it. `press`: a hit's disorder needs no save. `drive`: a
+/** Each activity includes everything below it. `press`: the target rolls its wound save twice and keeps the worse. `drive`: a
  * hit shoves the target one hex and the attacker takes its ground. */
 export interface FightEffect { press: boolean; drive: boolean }
 /** Each activity includes everything below it. `suppress` sets the target's `suppressedBy`, hit or
@@ -29,7 +28,7 @@ export interface ShootEffect { suppress: boolean; pin: boolean }
  * as an ordinary one; `holds` refuses an Overrun's shove; `rooted` (Take cover only) ends the
  * unit's movement for the rest of this activation. */
 export interface GuardEffect { defence: 2 | 4; cap: boolean; holds: boolean; rooted: boolean }
-/** The activity carries scope, never amount — how much clears comes off the Quality check's
+/** The activity carries scope, never amount — how much clears comes off the Rally check's
  * degree instead (see `perform`'s 'rally' case in `battle.ts`). */
 export type RallyScope = 'self' | 'adjacent' | 'nearby';
 export interface RallyEffect { scope: RallyScope }
@@ -59,8 +58,8 @@ export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]
   ],
   fight: [
     { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'One roll against their Defence. A miss can cost you heart.', fight: { press: false, drive: false } },
-    { id: 'press', verb: 'presses', type: 'fight', index: 2, label: 'Press', detail: 'A hit disorders them with no save.', fight: { press: true, drive: false } },
-    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Press, and a hit drives them back a hex. You take their ground.', fight: { press: true, drive: true } },
+    { id: 'press', verb: 'presses', type: 'fight', index: 2, label: 'Press', detail: 'On a hit, they roll Fortitude twice and keep the worse; failure causes 1 disorder.', fight: { press: true, drive: false } },
+    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Press, and a hit drives them back a hex. You take their ground. A blocked retreat causes no extra disorder.', fight: { press: true, drive: true } },
   ],
   guard: [
     { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence until you next act.', guard: { defence: 2, cap: false, holds: false, rooted: false } },
@@ -75,20 +74,6 @@ export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]
 };
 
 export const activityOf = (type: Exclude<Verb, 'cast'>, index: ActivityIndex): Activity => VERBS[type][index - 1];
-
-// Quality comes off the statblock, never from a curated list: of everything an importer can
-// read, the Will save is the one that spreads (5.1 points within a level, against AC's 3.2).
-const TIERS: Tier[] = ['low', 'moderate', 'high', 'extreme'];
-
-/** The disorder a unit absorbs before it is shaken, by Will band: 2 below low, 6 at extreme. */
-const QUALITY = [2, 3, 4, 5, 6];
-
-export function qualityFor(card: UnitCard): number {
-  const will = deriveStats(card).will;
-  let quality = QUALITY[0];
-  TIERS.forEach((t, i) => { if (will >= saveBonus(card.level, t)) quality = QUALITY[i + 1]; });
-  return quality;
-}
 
 // A tactic grants one tree's one-action activity to a troop with no magic of its own (section
 // 11): battlefield medicine reaches Soothe, demoralize reaches Dread, both capped at index 1
@@ -108,4 +93,10 @@ export function treesFor(card: UnitCard): Tree[] {
   const out = new Set<Tree>();
   for (const t of tactics) { const tree = TACTIC_TREE[t]; if (tree) out.add(tree); }
   return [...out];
+}
+
+/** Commitment improves the activity's own roll or Controlling DC, never its scope. */
+export function canFocus(type: Verb | 'charge', spell?: Tree | null): boolean {
+  return type === 'charge' || type === 'fight' || type === 'shoot' || type === 'rally'
+    || (type === 'cast' && (spell === 'blast' || spell === 'healing' || spell === 'controlling'));
 }

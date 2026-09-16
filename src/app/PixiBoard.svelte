@@ -3,7 +3,7 @@
   import type { TerrainAppearance } from '../board/terrain-textures.js';
   import {
     createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
-    type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
+    type TargetArrow, type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
   } from '../board/index.js';
   import type { Board, Side, Tree } from '../engine/index.js';
 
@@ -25,8 +25,8 @@
     barred?: string | null;
     /** A token that traces a drag without leaving its square — see `BoardView.setAnchored`. */
     anchored?: string | null;
-    /** The shot being aimed, shooter's cell to target's — see `BoardView.setShot`. */
-    shot?: { from: string; to: string; toCells?: string[] } | null;
+    /** Action-colored aiming arrows — see `BoardView.setShot`. */
+    shot?: TargetArrow | readonly TargetArrow[] | null;
     /** The cast being aimed, caster's cell to target's — see `BoardView.setCast`. */
     cast?: { from: string; to: string; tree: Tree; toCells?: string[] } | null;
     /** The acting piece's hex, washed and outlined in its side's colour. */

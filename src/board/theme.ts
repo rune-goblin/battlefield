@@ -1,4 +1,19 @@
-import type { SquareTerrain, Tree } from '../engine/index.js';
+import { MAX_WOUNDS, ROUTED_AT, type SquareTerrain, type Tree } from '../engine/index.js';
+
+const PIP_YELLOW = 0xf2c744;
+const PIP_ORANGE = 0xf28c28;
+const PIP_RED = 0xe0453a;
+const PIP_GREY = 0x9b9b9b;
+
+/** Red marks the last wound before death; a full track turns grey. */
+export function healthPipColour(wounds: number): number {
+  return wounds >= MAX_WOUNDS ? PIP_GREY : wounds >= 3 ? PIP_RED : wounds >= 2 ? PIP_ORANGE : PIP_YELLOW;
+}
+
+/** Every filled morale pip shares the colour of the unit's current disorder. */
+export function moralePipColour(disorder: number): number {
+  return disorder >= ROUTED_AT ? PIP_GREY : disorder >= 2 ? PIP_RED : PIP_ORANGE;
+}
 
 // The standing move-band wash (selecting a unit, before any drag): 'move' is the one-action
 // band, 'moveFar'/'moveFar3' the costed band at two and three actions — one shade per extra
