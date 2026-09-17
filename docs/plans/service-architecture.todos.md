@@ -31,6 +31,14 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 
 - 2026-09-18, Wave 0.1: `assetUrl` computes at each call site rather than caching a module-level `DIR`/`BASE` constant, so a `setAssetBase` call still reaches art requests from modules already imported (`paper.ts`, `ink-sheet.ts`, `terrain-sheet.ts`, `EffectLayer.ts`). `terrain-textures.ts`'s `TEXTURE_CHOICES` stays an eager module-load computation, matching its prior behaviour.
 - 2026-09-18, Wave 0.1: exported `setAssetBase` from `src/board/index.ts`'s public barrel, since Foundry's adapter (Wave 0.2) calls it from outside `src/board`.
+- 2026-09-18, Wave 0.2: the module id is `battlefield`, so the link in `Data/modules` must carry that name — `assetUrl` resolves art at `modules/battlefield/art/...`. `vite.foundry.config.ts` fails the build if `module.json` and `src/adapters/foundry/module-id.ts` disagree.
+- 2026-09-18, Wave 0.2: `app.css` is scoped with `:where(.battlefield-root)`, which adds no specificity, so every selector weighs what it did before and component styles still override it. Foundry's own stylesheet sits entirely in cascade layers and unlayered rules beat every layer, so the module needs no extra weight to hold its own inside the window.
+- 2026-09-18, Wave 0.2: the browser's `html, body` rules moved to `src/app/page.css`, which `main.ts` imports and the module build leaves out; its pre-paint background is a literal, since the palette tokens now live on the app root.
+- 2026-09-18, Wave 0.2: the app root is `display: contents`, so the browser's layout is untouched and the shell's fixed layers resolve against `.battlefield-content`, which carries `contain: layout`.
+- 2026-09-18, Wave 0.2: `withinApp` reads the last pointer press to place a key that lands on `<body>` with nothing focused; containment alone would silence the board's own keys in both hosts.
+- 2026-09-18, Wave 0.2: `setAssetBase` runs from `install-asset-base.ts` at load, the first import in the Foundry entry, because `terrain-textures.ts` builds `TEXTURE_CHOICES` the moment it is evaluated. It imports `board/asset-base.js` directly: the barrel would pull in the modules it has to precede.
+- 2026-09-18, Wave 0.2: the PIXI shim enumerates the members the app uses rather than re-exporting a namespace, since a runtime global has no static exports; `npm run check` checks that list against pixi.js 7.4.3's own types.
+- 2026-09-18, Wave 0.2: `grep -c "PixiJS" dist-foundry/*.js` stands as written — the marker appears 5 times in the browser bundle and 0 in the module bundle, so it separates the two.
 
 ## Open, for Mark
 
