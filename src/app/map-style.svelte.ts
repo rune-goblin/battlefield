@@ -1,10 +1,10 @@
 import { normalizeInkSettings } from '../board/ink-map.js';
 import { normalizeTextureSettings } from '../board/terrain-textures.js';
 
-export const MAP_STYLES = ['plain', 'textures', 'ink'] as const;
+export const MAP_STYLES = ['textures', 'ink'] as const;
 export type MapStyle = (typeof MAP_STYLES)[number];
 export const MAP_STYLE_LABELS: Record<MapStyle, string> = {
-  plain: 'Plain', textures: 'Textured', ink: 'Illustrated',
+  textures: 'Textured', ink: 'Illustrated',
 };
 
 const TEXTURE_KEY = 'battlefield.texture-lab.v1';

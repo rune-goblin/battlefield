@@ -19,6 +19,7 @@
   <div class="tools">
     {#if tools}{@render tools()}{/if}
     <div class="styles" role="group" aria-label="Map style">
+      <span class="style-label">Map</span>
       {#each MAP_STYLES as style (style)}
         <button
           class:on={mapSettings.style === style}
@@ -55,24 +56,25 @@
 </div>
 
 <style>
-  .topbar { display: flex; align-items: center; flex-wrap: nowrap; gap: .9rem; padding: .3rem .8rem; }
+  .topbar { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .9rem; padding: .3rem .8rem; }
   h1 { flex: none; font-size: 1.05rem; }
   /* One line, and the first thing to give when the bar runs out of room — the panels and the
      board say the same things at more length. */
   .status { min-width: 0; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tools { flex: none; margin-left: auto; display: flex; align-items: center; gap: .6rem; }
+  .tools { flex: 0 1 auto; max-width: 100%; margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .6rem; }
   .tools :global(button) { white-space: nowrap; }
   nav { display: flex; }
   nav a { color: var(--muted); font-size: .82rem; margin-left: .7rem; }
   nav a:hover { color: var(--ink); }
 
-  /* One control, not three buttons: the segments share a border and only the chosen one is filled. */
-  .styles { display: flex; }
+  /* The two styles share a border; the active style fills its segment. */
+  .styles { display: flex; align-items: center; }
+  .style-label { margin-right: .4rem; font-size: .78rem; color: var(--muted); }
   .styles button {
     padding: .15rem .5rem; font-size: .78rem; border-radius: 0;
     color: var(--muted); background: none;
   }
-  .styles button:first-child { border-radius: 4px 0 0 4px; }
+  .styles button:first-of-type { border-radius: 4px 0 0 4px; }
   .styles button:last-child { border-radius: 0 4px 4px 0; }
   .styles button + button { border-left-width: 0; }
   .styles button:hover { color: var(--ink); }

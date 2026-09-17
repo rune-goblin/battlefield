@@ -1,5 +1,6 @@
 <script lang="ts">
   import { setTextureLab } from '../texture-lab.svelte.js';
+  import { mapSettings, persistMapSettings } from '../map-style.svelte.js';
   import type PixiBoard from '../PixiBoard.svelte';
   import { visibleRect } from './layout.svelte.js';
 
@@ -24,12 +25,9 @@
   const zoom = (factor: number) => board?.zoomBy(factor, visibleRect());
   const frame = (of: string[] | null) => board?.frame(of, visibleRect());
 
-  // proto: session-only — doesn't survive a reload. Owned here rather than by the battle/place
-  // stages, since the grid is a map-display preference, not game state.
-  let gridVisible = $state(false);
-  let gridWidth = $state(1);
-  const applyGrid = () => board?.setGrid({ visible: gridVisible, width: gridWidth });
-  const toggleGrid = () => { gridVisible = !gridVisible; applyGrid(); };
+  // Each style keeps its grid settings alongside its terrain and outlines.
+  const grid = $derived(mapSettings.style === 'ink' ? mapSettings.ink.grid : mapSettings.textures.grid);
+  const toggleGrid = () => { grid.visible = !grid.visible; persistMapSettings(); };
 
   let settings: HTMLDialogElement | undefined = $state();
 </script>
@@ -53,8 +51,8 @@
       </svg>
     </button>
   {/if}
-  <button class="rule" title={gridVisible ? 'Hide hex grid' : 'Show hex grid'} aria-label={gridVisible ? 'Hide hex grid' : 'Show hex grid'} aria-pressed={gridVisible} onclick={toggleGrid}>
-    {#if gridVisible}
+  <button class="rule" title={grid.visible ? 'Hide hex grid' : 'Show hex grid'} aria-label={grid.visible ? 'Hide hex grid' : 'Show hex grid'} aria-pressed={grid.visible} onclick={toggleGrid}>
+    {#if grid.visible}
       <svg viewBox="0 0 16 16" aria-hidden="true">
         <path d="M1.5 8s2.3-4 6.5-4 6.5 4 6.5 4-2.3 4-6.5 4-6.5-4-6.5-4z" />
         <circle cx="8" cy="8" r="1.6" />
@@ -81,13 +79,13 @@
 <dialog bind:this={settings} class="grid-settings">
   <h2>Hex grid</h2>
   <label>
-    <input type="checkbox" bind:checked={gridVisible} onchange={applyGrid} />
+    <input type="checkbox" bind:checked={grid.visible} onchange={persistMapSettings} />
     Show the reference grid
   </label>
   <label>
     Line weight
-    <input type="range" min="0.5" max="2" step="0.5" bind:value={gridWidth} oninput={applyGrid} />
-    <span>{gridWidth}px</span>
+    <input type="range" min="0.5" max="2" step="0.5" bind:value={grid.width} oninput={persistMapSettings} />
+    <span>{grid.width}px</span>
   </label>
   <button onclick={() => settings?.close()}>Done</button>
 </dialog>

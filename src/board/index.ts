@@ -7,7 +7,7 @@ import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, t
 import { CastLayer } from './layers/CastLayer.js';
 import { EdgeLayer } from './layers/EdgeLayer.js';
 import { EffectLayer } from './layers/EffectLayer.js';
-import { GridLayer, type GridUpdate } from './layers/GridLayer.js';
+import { DEFAULT_GRID_SETTINGS, GridLayer, type GridUpdate } from './layers/GridLayer.js';
 import { DEFAULT_MAP_LINES, MapLineLayer } from './layers/MapLineLayer.js';
 import { InkLayer, type InkMapAppearance } from './layers/InkLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
@@ -212,6 +212,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
    * no appearance at all takes the defaults. */
   function applyLines(): void {
     const settings = inkMap?.settings ?? terrain?.settings;
+    gridLayer.setSettings(settings?.grid ?? DEFAULT_GRID_SETTINGS);
     mapLineLayer.setSettings(settings
       ? { area: settings.area, elevation: settings.elevation, groups: (inkMap ?? terrain)?.groups }
       : DEFAULT_MAP_LINES);
