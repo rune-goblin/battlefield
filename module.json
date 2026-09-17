@@ -1,0 +1,11 @@
+{
+  "id": "battlefield",
+  "title": "Battlefield",
+  "description": "A fast abstract battle game for armies: sixty-one hexes, three actions, four wounds.",
+  "version": "0.1.0",
+  "esmodules": ["battlefield.js"],
+  "styles": ["battlefield.css"],
+  "socket": true,
+  "authors": [{ "name": "Mark Pearce" }],
+  "compatibility": { "minimum": "14", "verified": "14" }
+}

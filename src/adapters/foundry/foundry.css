@@ -1,0 +1,12 @@
+/* Foundry's own stylesheet is entirely in cascade layers, and unlayered rules beat every
+   layer, so these need no weight beyond their selectors. */
+
+.battlefield-content {
+  padding: 0;
+  overflow: hidden;
+  /* Layout containment makes this element the containing block for the shell's `position:
+     fixed` layers, which otherwise resolve against the viewport and cover Foundry. */
+  contain: layout;
+}
+
+.battlefield-mount { display: contents; }

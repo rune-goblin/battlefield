@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:foundry": "vite build --config vite.foundry.config.ts",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit -p tsconfig.engine.json",
     "test": "vitest run",

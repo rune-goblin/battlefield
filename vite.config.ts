@@ -9,7 +9,7 @@ const VIRTUAL_ID = 'virtual:terrain-textures';
 // The board reads the terrain art out of `public/`, which no bundler graph covers, so the
 // listing has to come from a scan of the folder. A `define` would not do: Vite 8 leaves those
 // untouched in dev, and the lab came up with an empty texture library.
-const terrainTextures = (): Plugin => ({
+export const terrainTextures = (): Plugin => ({
   name: 'terrain-textures',
   resolveId: id => (id === VIRTUAL_ID ? `\0${VIRTUAL_ID}` : null),
   load(id) {
