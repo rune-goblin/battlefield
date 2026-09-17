@@ -18,7 +18,7 @@ import { levelDc } from './tables.js';
 import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT,
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
-  type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep,
+  type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep, type MeleePlan, type AdvanceAction,
   type Range, type ActivityAction, type ActivityOption, type ActivityTarget, type Side,
   type TargetOffer, type TargetRef, type Unit, type ManeuverAction, type ManeuverOffer,
 } from './types.js';
@@ -764,6 +764,92 @@ export function chargeTargets(state: BattleState, u: Unit): ChargeOption[] {
     if (option && option.actions + 1 <= u.actions) out.push(option);
   }
   return out;
+}
+
+/** Cheapest legal route for each choice. Ordinary movement reserves one action for melee;
+ * Charge still gets exactly one Speed, and every leg respects first contact. */
+export function meleePlans(state: BattleState, u: Unit, targetId: string): MeleePlan[] {
+  const found = state.units.find(e => e.id === targetId && e.status === 'active' && e.side !== u.side);
+  if (!found || u.status !== 'active' || u.actions < 1 || u.attacked || u.stats.strike === null || isRouted(u)) return [];
+  const target: Unit = found;
+  const candidates: MeleePlan[] = [];
+  const home = notation(u.square);
+  function consider(from: Unit, via: string | null, move: string[], feet: number, moveActions: number) {
+    const projected = { ...state, units: state.units.map(x => x.id === u.id ? from : x) };
+    if (touching(projected, from.square, target)) {
+      candidates.push({ target: targetId, kind: 'fight', via, cell: notation(from.square), moveActions,
+        feet, bonus: 0, movePath: move, attackPath: [notation(from.square)] });
+    }
+    const charge = approach(projected, from, target);
+    if (charge) candidates.push({ target: targetId, kind: 'charge', via, cell: charge.cell, moveActions,
+      feet: feet + charge.feet, bonus: chargeBonus(projected, from, charge.cell, target), movePath: move,
+      attackPath: chargePath(projected, from, targetId) });
+  }
+  consider(u, null, [home], 0, 0);
+  if (u.speed > 0 && !u.rooted && !u.pinnedBy && !engagedEnemies(state, u).length) {
+    const reach = strideReach(state, { ...u, actions: u.actions - 1 });
+    for (const [cell, entry] of reach) {
+      if (cell === home || !canEndOn(u, state.board, parse(cell))) continue;
+      const moveActions = moveActionsFor(u, entry.feet);
+      consider({ ...u, square: parse(cell), actions: u.actions - moveActions,
+        feet: u.feet + moveActions * u.speed - entry.feet }, cell, pathTo(reach, cell), entry.feet, moveActions);
+    }
+  }
+  candidates.sort((a, b) => a.moveActions - b.moveActions || b.bonus - a.bonus || a.feet - b.feet
+    || (a.via ?? '').localeCompare(b.via ?? '') || a.cell.localeCompare(b.cell));
+  return (['fight', 'charge'] as const).flatMap(kind => {
+    const best = candidates.find(p => p.kind === kind);
+    return best ? [best] : [];
+  });
+}
+
+/** Explain a refused drag using the same destinations and terrain costs as the actions. */
+export function dragBlockReason(state: BattleState, u: Unit, cell: string): string | null {
+  if (cell === notation(u.square)) return null;
+  const target = unitAt(state, parse(cell));
+  if (target && target.side !== u.side) {
+    if (meleePlans(state, u, target.id).length) return null;
+    if (u.attacked) return `${u.name} has already attacked this activation. Each unit gets one attack per activation.`;
+    if (u.stats.strike === null) return `${u.name} has no melee attack.`;
+    if (u.actions <= 0) return 'All actions are spent. End the activation.';
+    if (isRouted(u)) return 'This unit is routed. Use Move or Maneuver to retreat toward its own edge.';
+    if (engagedEnemies(state, u).length) return 'This unit is already in contact. Fight an adjacent enemy or use Maneuver to change position.';
+    if (u.rooted > 0) return 'This unit is rooted. A charge requires movement; you can still fight an adjacent enemy.';
+    if (u.pinnedBy) return 'This unit is pinned. Use Maneuver to break the pin before charging.';
+    if (u.speed === 0) return 'This unit has Speed 0. A charge requires movement.';
+    const landings = (reach: ReachMap) => [...reach].filter(([key]) =>
+      touching(state, parse(key), target) && canEndOn(u, state.board, parse(key)));
+    const route = reachable(state.board, u.square, {
+      budget: Infinity, ...groundFor(u), occupied: chargeBlocked(state, u, target), stopAt: controlCells(state, u),
+    });
+    const feet = Math.min(...landings(route).map(([, entry]) => entry.feet));
+    if (Number.isFinite(feet)) return `Reaching ${target.name} needs ${feet} ft of movement. This unit has ${u.actions} action${u.actions === 1 ? '' : 's'} left; every legal move-and-attack route exceeds that budget. A charge covers ${u.speed} ft and still spends one action.`;
+    const withoutOtherControl = reachable(state.board, u.square, {
+      budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u),
+    });
+    if (landings(withoutOtherControl).length) return 'Another enemy controls the approach. A charge must engage its target first. Move into contact and use Fight, or choose another target.';
+    return 'Terrain, barriers or occupied hexes block every approach to this enemy.';
+  }
+  if (moveReach(state, u).has(cell) || maneuverOffer(state, u.id)?.targets.some(t => t.id === cell)) return null;
+  if (target) return `${target.name} occupies ${cell}. Choose an empty hex.`;
+  if (u.actions <= 0) return 'All actions are spent. End the activation.';
+  if (u.rooted > 0) return 'This unit is rooted. Move, Charge and Maneuver are unavailable until the root ends.';
+  if (u.speed === 0) return 'This unit has Speed 0 and must hold its position.';
+  if (u.pinnedBy) return 'This unit is pinned. Choose a destination within Maneuver reach to break the pin.';
+  if (engagedEnemies(state, u).length) return 'This unit is in contact. Choose a destination within Maneuver reach to change position.';
+  if (at(state.board, parse(cell)).terrain === 'water' && !u.flying) return 'This unit must end its movement on land. Water is an invalid destination.';
+  const route = reachable(state.board, u.square, {
+    budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u),
+  });
+  const feet = route.get(cell)?.feet;
+  if (feet !== undefined) {
+    const needed = moveActionsFor(u, feet);
+    return `Reaching ${cell} needs ${needed} movement actions; this unit has ${u.actions} left.`;
+  }
+  const withoutControl = reachable(state.board, u.square, { budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u) });
+  return withoutControl.has(cell)
+    ? 'Enemy contact ends movement before this hex. Move into contact, then use Maneuver to continue.'
+    : 'Terrain, barriers or occupied hexes block the route to this hex.';
 }
 
 /** The destination decides whether Maneuver repositions in contact or withdraws from it. */
@@ -1767,6 +1853,24 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   return cost;
 }
 
+function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction): number {
+  const plan = meleePlans(state, u, action.target).find(p => p.kind === action.finish && p.via === action.via);
+  if (!plan || !plan.via) throw new Error('This move-and-attack route is no longer available. Choose the target again.');
+  const activity = action.activity ?? 1;
+  const attack: ChargeAction | ActivityAction = { type: action.finish, target: action.target, activity, focus: action.focus };
+  const focus = validateFocus(attack);
+  if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
+    throw new Error('The move and chosen attack exceed the available actions.');
+  }
+  const movement = doStride(state, u, { type: 'move', to: plan.via });
+  // Reserve the movement cost before validating the melee. The caller subtracts the total
+  // once and ends the activation once; an exception discards this entire cloned state.
+  u.actions -= movement;
+  const cost = attack.type === 'charge' ? doCharge(state, rng, u, attack) : doActivity(state, rng, u, attack);
+  u.actions += movement;
+  return movement + cost;
+}
+
 export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const state = clone(input);
   if (state.phase !== 'battle') throw new Error('battle is over');
@@ -1780,7 +1884,8 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const cost = action.type === 'move' ? doStride(state, u, action)
     : action.type === 'maneuver' ? doManeuverAction(state, rng, u, action)
       : action.type === 'charge' ? doCharge(state, rng, u, action)
-        : doActivity(state, rng, u, action);
+        : action.type === 'advance' ? doAdvance(state, rng, u, action)
+          : doActivity(state, rng, u, action);
   u.actions -= cost;
   if (u.actions <= 0 || u.status !== 'active') finish(state, rng, u);
   refreshEmplacements(state);

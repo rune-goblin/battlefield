@@ -131,7 +131,12 @@ export interface ManeuverAction extends Acts { type: 'maneuver'; activity: Activ
 /** Move into contact and fight at the activity price, plus optional commitment. */
 export interface ChargeAction extends Acts { type: 'charge'; target: string; activity?: ActivityIndex; focus?: number }
 
-export type Action = ActivityAction | MoveAction | ManeuverAction | ChargeAction;
+/** Ordinary movement followed by the chosen melee, committed as one player decision. */
+export interface AdvanceAction extends Acts {
+  type: 'advance'; target: string; via: string; finish: 'fight' | 'charge'; activity?: ActivityIndex; focus?: number;
+}
+
+export type Action = ActivityAction | MoveAction | ManeuverAction | ChargeAction | AdvanceAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -218,6 +223,19 @@ export interface ChargeOption {
   feet: number;
   /** Move actions, before the one the melee itself costs. */
   actions: number;
+}
+
+export interface MeleePlan {
+  target: string;
+  kind: 'fight' | 'charge';
+  /** The ordinary move ends here. Null means the melee starts at the current position. */
+  via: string | null;
+  cell: string;
+  moveActions: number;
+  feet: number;
+  bonus: number;
+  movePath: string[];
+  attackPath: string[];
 }
 
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */

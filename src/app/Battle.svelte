@@ -1,12 +1,18 @@
 <script lang="ts">
   import {
-    ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, ROUTED_AT, movePath, notation,
+    ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, dragBlockReason, meleePlans, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, ROUTED_AT, movePath, notation,
     at, isMountain, shootCeiling, shootRangeLabel, offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
-    type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
+    type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type MeleePlan,
   } from '../engine/index.js';
   import { actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
+  import { onDestroy } from 'svelte';
+  import { useNotifications } from './notification-context.js';
+
+  const notifications = useNotifications();
+  const DRAG_NOTICE = 'battle-drag';
+  onDestroy(() => notifications.dismiss(DRAG_NOTICE));
   import CommitmentPicker from './CommitmentPicker.svelte';
 
   let focus = $state(0);
@@ -20,6 +26,7 @@
   import TargetMarkers from './TargetMarkers.svelte';
   import { cellsForTarget, targetingIcon, TargetingService, type TargetMarker } from './targeting.js';
   import ArmyReel from './ArmyReel.svelte';
+  import MeleeChoices from './MeleeChoices.svelte';
   import { backToSetup, deselectUnit, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
 
   const b = $derived(game.battle!);
@@ -30,6 +37,10 @@
   // and where it reaches — `moves`/`charges` drive the drag, `offers` drive the popups.
   const act = $derived(active ? activation(b, active.id) : null);
   const offers = $derived(act?.offers ?? []);
+  const meleeOptions = $derived.by(() => new Map(active ? b.units.filter(u => u.status === 'active' && u.side !== active.side)
+    .map(u => [u.id, meleePlans(b, active!, u.id)] as const) : []));
+  let meleeTarget = $state<string | null>(null);
+  let meleeSelected = $state<'fight' | 'charge' | null>(null);
   const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
   // Once an action is spent the choice is made: the engine refuses a second `select`.
   const locked = $derived(b.begun);
@@ -89,13 +100,23 @@
   // drawing an illegal one (see `onBoardDrag`).
   interface MovePreview { kind: 'move'; cell: string; feet: number; actions: number; path: string[]; near: string[]; far: string[] }
   interface ChargePreview { kind: 'charge'; cell: string; enemy: string; feet: number; actions: number; path: string[] }
+  interface AdvancePreview { kind: 'advance'; cell: string; enemy: string; feet: number; actions: number; path: string[]; plan: MeleePlan }
   // Maneuver previews connect the starting hex to the chosen destination.
   interface ManeuverPreview { kind: 'maneuver'; cell: string; path: string[] }
-  type Preview = MovePreview | ChargePreview | ManeuverPreview;
+  type Preview = MovePreview | ChargePreview | ManeuverPreview | AdvancePreview;
   let drag = $state<Preview | null>(null);
   // The cell a drag has pulled to that the piece may not take — an X goes there, since the
   // refusal reads where the player is pulling rather than on the piece under their finger.
   let blockedCell = $state<string | null>(null);
+  const blockedNotice = $derived($notifications.find(n => n.id === DRAG_NOTICE));
+  // A refusal survives release so the player has time to read it. A new activation clears it.
+  $effect(() => { void active?.id; blockedCell = null; notifications.dismiss(DRAG_NOTICE); meleeTarget = null; meleeSelected = null; });
+
+  function explainBlocked(cell: string, enemy?: Unit) {
+    const reason = active ? dragBlockReason(b, active, cell) : null;
+    if (reason) notifications.show({ id: DRAG_NOTICE, title: enemy ? `Cannot attack ${enemy.name}` : `Cannot enter ${cell}`, message: reason, tone: 'error' });
+    else notifications.dismiss(DRAG_NOTICE);
+  }
   // The enemy a live drag is pulling into, and whether the drop can reach a melee on it. The
   // mark rides the piece rather than the cell: the overlay's X would sit under the token.
   let dragTarget = $state<{ id: string; attack: boolean } | null>(null);
@@ -189,7 +210,7 @@
     }
     // Charge shares the melee slice with Fight. Charging is how a unit out of contact reaches
     // the fight the slice already holds, so one direction means "hit them" either way.
-    const charges = act.charges.map((c) => cellOf(c.unit)).filter((x): x is string => x !== null);
+    const charges = [...meleeOptions].filter(([, plans]) => plans.length).map(([id]) => cellOf(id)).filter((x): x is string => x !== null);
     const w = act.maneuver;
 
     return SLOTS.map((key): Prop => {
@@ -206,7 +227,7 @@
       const cells = [...new Set([...offers.flatMap(offerCells), ...(key === 'melee' ? charges : [])])];
       if (key === 'melee' && !offers.length) {
         return {
-          key, icon: 'charge', label: 'Charge', type: null, style: 'attack',
+          key, icon: 'attack', label: 'Melee', type: null, style: 'attack',
           legal: charges.length > 0,
           cells: charges,
           edges: [],
@@ -349,13 +370,15 @@
     armed = null; armedTree = null;
     activityPick = null; targetHover = null;
     blastOpen = false; chooseBlastLevel(null);
-    drag = null; dragTarget = null; blockedCell = null;
+    drag = null; dragTarget = null; blockedCell = null; notifications.dismiss(DRAG_NOTICE);
+    meleeTarget = null; meleeSelected = null;
   }
 
   /** One step back up the chain the ring starts: popup, then the wash, then the tree picker
    * (Cast only), then the ring, then nothing. Nothing is committed until the last click, so
    * every stage can be walked out of. */
   function stepBack() {
+    if (blockedNotice) { notifications.dismiss(DRAG_NOTICE); return; }
     if (activityPick) {
       targetHover = null;
       if (activityPick.target) { activityPick = { ...activityPick, target: undefined }; return; }
@@ -376,6 +399,7 @@
     }
     if (pending) { pending = null; return; }
     if (aim) { aim = null; return; }
+    if (meleeTarget) { meleeTarget = null; meleeSelected = null; return; }
     if (armed) {
       armed = null;
       if (armedTree && active) { armedTree = null; castPick = castOffers(); return; }
@@ -436,9 +460,9 @@
     focus = 0;
     // A charge is read off the cell rather than the slice: in contact the melee slice fights,
     // out of it the same slice closes.
-    const c = p.key === 'melee' ? act?.charges.find((x) => cellOf(x.unit) === cell) : undefined;
-    if (c) {
-      pending = { cell: c.cell, rows: [chargeRow(c)], index: 0, activity: null };
+    const enemy = p.key === 'melee' ? enemyAt(cell) : undefined;
+    if (enemy && meleeOptions.get(enemy.id)?.length) {
+      openMelee(enemy.id);
       return;
     }
     // A maneuver is a destination, not a target, so it parks the same drop a drag there
@@ -487,6 +511,28 @@
   const chargeRow = (c: ChargeOption): ChargePreview =>
     ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: chargePath(b, active!, c.unit) });
 
+  const advanceRow = (plan: MeleePlan): AdvancePreview => ({ kind: 'advance', plan, cell: plan.cell,
+    enemy: plan.target, feet: plan.feet, actions: plan.moveActions + 1, path: [...plan.movePath, ...plan.attackPath.slice(1)] });
+
+  function openMelee(id: string) {
+    pending = null; aim = null; focus = 0;
+    meleeTarget = id; meleeSelected = null;
+  }
+
+  function chooseMelee(kind: 'fight' | 'charge') {
+    const plan = meleeTarget ? meleeOptions.get(meleeTarget)?.find(p => p.kind === kind) : null;
+    if (!plan) return;
+    focus = 0; pending = null; aim = null; meleeSelected = kind;
+    if (plan.via) pending = { cell: plan.cell, rows: [advanceRow(plan)], index: 0, activity: null };
+    else if (kind === 'charge') {
+      const charge = act?.charges.find(c => c.unit === plan.target);
+      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge)], index: 0, activity: null };
+    } else {
+      const enemy = b.units.find(u => u.id === plan.target)!;
+      aimAt({ kind: 'unit', id: enemy.id }, notation(enemy.square), enemy.name, 'fight');
+    }
+  }
+
   /** Every reading of a drop on `cell`, in the order the popup offers them. One drag chains as
    * many Move actions as the route costs — `MoveReach.actions` counts them, and a row quotes
    * the whole price rather than asking again per action. */
@@ -504,25 +550,31 @@
     return rows;
   }
 
-  /** Whether Fight already names this enemy — the melee of a unit standing in contact, which
-   * needs no ground crossed and so has no charge behind it. */
-  const canFight = (enemy: Unit) => offers.some((o) => o.type === 'fight' && o.activities.some(
-    (r) => r.legal && r.targets.some((t) => t.kind === 'unit' && t.id === enemy.id),
-  ));
-
   function onBoardDrag(e: BoardEventOf<'drag'>) {
     if (!active || !act || e.id !== active.id) return;
+    if (e.cell === null) {
+      // Interaction sends a final clear after drop. Preserve the popup or refusal it just set.
+      if (drag || dragTarget || blockedCell) notifications.dismiss(DRAG_NOTICE);
+      drag = null; dragTarget = null; blockedCell = null;
+      return;
+    }
+    pending = null; aim = null; notifications.dismiss(DRAG_NOTICE);
+    meleeTarget = null; meleeSelected = null;
     dragTarget = null;
-    if (e.cell === null) { drag = null; blockedCell = null; return; }
     // Pulling into a piece is a melee and nothing else: the charge that closes on it, or the
     // fight already in contact. The swords go on the target the moment either one stands up.
     const enemy = enemyAt(e.cell);
     if (enemy) {
+      const plans = meleeOptions.get(enemy.id) ?? [];
+      const plan = [...plans].sort((a, b) => a.moveActions - b.moveActions)[0];
       const charge = act.charges.find((c) => c.unit === enemy.id);
-      dragTarget = { id: enemy.id, attack: !!charge || canFight(enemy) };
+      dragTarget = { id: enemy.id, attack: plans.length > 0 };
       // A charge redraws the route to its approach cell; anything else leaves the trace where
       // it stalled, so the arrow still shows how far the drag did get.
-      if (charge) drag = chargeRow(charge);
+      if (plan?.via) drag = advanceRow(plan);
+      else if (charge) drag = chargeRow(charge);
+      else if (dragTarget.attack) drag = null;
+      else explainBlocked(e.cell, enemy);
       blockedCell = null;
       return;
     }
@@ -534,33 +586,35 @@
     // it traced, so the refusal names the ground refused rather than the whole gesture. The
     // piece's own square never takes it — an X there would cover the thing it is about.
     blockedCell = e.cell === notation(active.square) ? null : e.cell;
+    if (blockedCell) explainBlocked(blockedCell);
   }
 
   function onBoardDrop(e: BoardEventOf<'drop'>) {
     focus = 0;
     drag = null;
     blockedCell = null;
+    notifications.dismiss(DRAG_NOTICE);
     dragTarget = null;
     if (!active || !act || e.id !== active.id) return;
     // Dropped on a piece: the charge, or the fight it is already in. A shot is aimed by
     // touching a target, never by dragging into one — a drag is the unit going there.
     const enemy = enemyAt(e.cell);
     if (enemy) {
-      const charge = act.charges.find((c) => c.unit === enemy.id);
-      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge)], index: 0, activity: null };
-      else aimAt({ kind: 'unit', id: enemy.id }, e.cell, enemy.name, 'fight');
+      if (meleeOptions.get(enemy.id)?.length) openMelee(enemy.id);
+      else { pending = null; aim = null; explainBlocked(e.cell, enemy); }
       return;
     }
     // An illegal drop parks nothing: state never changes, so `tokens` never changes, so
     // `TokenLayer` just snaps the token back to where it actually is.
     const rows = rowsAt(e.cell);
     pending = rows.length ? { cell: e.cell, rows, index: 0, activity: null } : null;
+    if (!rows.length) explainBlocked(e.cell);
   }
 
-  /** A second click on the row already chosen confirms it, so a plain move is drag, click. */
+  /** A plain move can confirm on its row. Melee always keeps its explicit confirmation. */
   function choose(i: number) {
     if (!pending) return;
-    if (pending.index === i) { commit(); return; }
+    if (pending.index === i && pending.rows[i].kind === 'move') { commit(); return; }
     focus = 0;
     pending = { ...pending, index: i, activity: null };
   }
@@ -573,9 +627,15 @@
     if (!p || !row) return;
     // The piece walks the route the drag traced, not the straight line to where it ends.
     if (active) boardRef?.setRoute(active.id, row.path);
-    if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined, focus });
-    else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
-    else if (act?.maneuver) performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
+    try {
+      if (row.kind === 'advance') takeAction({ type: 'advance', target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus });
+      else if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined, focus });
+      else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
+      else if (act?.maneuver) performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
+      meleeTarget = null; meleeSelected = null;
+    } catch (error) {
+      notifications.show({ id: DRAG_NOTICE, title: 'Action unavailable', message: error instanceof Error ? error.message : String(error), tone: 'error' });
+    }
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -636,9 +696,11 @@
   const actionCost = (n: number) => (n === 0 ? 'free, on banked movement' : actions(n));
   const rowLabel = (row: Preview) =>
     row.kind === 'charge' ? `Charge ${enemyName(row.enemy)}`
+      : row.kind === 'advance' ? `Move + ${row.plan.kind === 'charge' ? 'Charge' : 'Attack'} ${enemyName(row.enemy)}`
       : row.kind === 'maneuver' ? (active && maneuverOutcome(b, active, parse(row.cell)) === 'reposition' ? 'Reposition here' : 'Withdraw here') : 'Move here';
   const rowDetail = (row: Preview) =>
     row.kind === 'charge' ? `${actions(row.actions)}, melee included`
+      : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + 1 to ${row.plan.kind === 'charge' ? 'charge' : 'attack'}`
       : row.kind === 'maneuver' ? maneuverDetail(row.cell)
         : actionCost(row.actions);
   function maneuverDetail(cell: string): string {
@@ -646,7 +708,7 @@
     return maneuverOutcome(b, active, parse(cell)) === 'reposition' ? 'Maneuver · stay in contact'
       : 'Maneuver · break contact';
   }
-  const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' ? row.enemy : row.cell}`;
+  const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' || row.kind === 'advance' ? row.enemy : row.cell}`;
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
   // Maneuver's own three ride the same picker.
@@ -657,12 +719,12 @@
   const firstManeuverActivity = (cell?: string): ActivityIndex => act?.maneuver?.activities.find(opt => opt.legal && (!cell || opt.targets.some(t => t.id === cell)))?.index ?? 1;
   const maneuverActivity = $derived(pending?.activity ?? firstManeuverActivity(pending?.cell));
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
-  const chargeCost = (c: ChargePreview, activity: ActivityIndex) => c.actions - 1 + activity;
+  const chargeCost = (c: ChargePreview | AdvancePreview, activity: ActivityIndex) => c.actions - 1 + activity;
 
   /** What each reading of a drop actually costs. */
   const dropCost = (row: Preview): number =>
     row.kind === 'move' ? row.actions
-      : row.kind === 'charge' ? chargeCost(row, chargeActivity) + focus
+      : row.kind === 'charge' || row.kind === 'advance' ? chargeCost(row, chargeActivity) + focus
         : act?.maneuver?.activities[maneuverActivity - 1].cost ?? maneuverActivity;
   const cost = $derived(picked ? dropCost(picked) : aimed ? (aimed.cost ?? 0) + (aimGroup && canFocus(aimGroup.offer.type, aimGroup.offer.spell) ? focus : 0) : 0);
   const actionsLeft = $derived(act?.actions ?? 0);
@@ -670,6 +732,10 @@
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
     if (!preview) return [];
     if (preview.kind === 'charge') return [{ style: 'attack', cells: preview.path.slice(1) }];
+    if (preview.kind === 'advance') return [
+      { style: 'move', cells: preview.plan.movePath.slice(1) },
+      { style: 'attack', cells: preview.plan.attackPath.slice(1) },
+    ];
     if (preview.kind === 'maneuver') return [{ style: 'move', cells: [preview.cell] }];
     return [{ style: 'move', cells: preview.near }, { style: 'moveFar', cells: preview.far }];
   });
@@ -817,7 +883,9 @@
    * unit keeps until it acts again. State the board can show is state the panel need not. */
   function propOn(u: Unit): ActionIcon | null {
     if (dragTarget?.id === u.id) return dragTarget.attack ? 'attack' : 'no';
-    if (picked?.kind === 'charge' && picked.enemy === u.id) return 'charge';
+    if ((picked?.kind === 'charge' || picked?.kind === 'advance') && picked.enemy === u.id) {
+      return picked.kind === 'charge' || picked.plan.kind === 'charge' ? 'charge' : 'attack';
+    }
     return u.guard ? 'block' : null;
   }
 
@@ -933,18 +1001,23 @@
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
+    notifications.dismiss(DRAG_NOTICE);
     if (activityPick) { pickActivityCell(e.cell); return; }
     if (blastOpen) { pickBlastCell(e.cell); return; }
     // A click on the parked destination confirms the row it has chosen. Anywhere else is a
     // cancel: while something is open or armed, a stray click walks one step back rather than
     // meaning something new, so a verb picked by mistake costs one click to undo.
     if (pending) {
-      if (pending.cell === e.cell) { commit(); return; }
+      if (pending.cell === e.cell) {
+        if (picked?.kind !== 'charge' && picked?.kind !== 'advance') commit();
+        return;
+      }
       stepBack();
       return;
     }
     if (aim) { stepBack(); return; }
     if (castPick) { stepBack(); return; }
+    if (meleeTarget) { meleeTarget = null; meleeSelected = null; return; }
     const p = arming;
     if (p) {
       if (p.cells.includes(e.cell)) applyProp(p, e.cell);
@@ -957,6 +1030,7 @@
     deselectUnit();
   }
   function onToken(e: BoardEventOf<'token'>) {
+    notifications.dismiss(DRAG_NOTICE);
     if (activityPick) { const cell = cellOf(e.id); if (cell) pickActivityCell(cell); return; }
     if (blastOpen) { const cell = cellOf(e.id); if (cell) pickBlastCell(cell); return; }
     // Before an army is chosen the board is the second way into the army reel.
@@ -965,9 +1039,9 @@
       if (own) pickUnit(own, false);
       return;
     }
-    // A charge parks on its approach cell, so clicking the enemy is what confirms it.
+    // Clicking the target preserves the melee review; its Confirm button executes it.
     if (pending) {
-      if (picked?.kind === 'charge' && picked.enemy === e.id) { commit(); return; }
+      if ((picked?.kind === 'charge' || picked?.kind === 'advance') && picked.enemy === e.id) return;
       stepBack();
       return;
     }
@@ -1081,13 +1155,13 @@
   {/each}
 {/snippet}
 
-{#snippet popupFoot(confirm: () => void)}
+{#snippet popupFoot(confirm: () => void, label = 'Confirm')}
   <div class="popup-foot">
     <span class="muted">
       Spends {cost} of {actionsLeft}{cost >= actionsLeft ? ' — ends the turn' : ''}
     </span>
     <button onclick={cancelAction}>Cancel</button>
-    <button class="primary" onclick={confirm}>Confirm</button>
+    <button class="primary" onclick={confirm}>{label}</button>
   </div>
 {/snippet}
 
@@ -1163,6 +1237,10 @@
   {/snippet}
 
   {#snippet pin()}
+    {#if meleeTarget && cellOf(meleeTarget)}
+      <MeleeChoices cell={cellOf(meleeTarget)!} plans={meleeOptions.get(meleeTarget) ?? []} selected={meleeSelected}
+        screenOf={(cell) => boardRef?.screenOf(cell) ?? null} radiusOf={(cell) => boardRef?.cellRadius(cell) ?? null} choose={chooseMelee} />
+    {/if}
     <TargetMarkers targets={targetMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
       cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={targetingChoice?.id ?? null}
       hover={hoverTargetMarker} choose={chooseTargetMarker} />
@@ -1251,16 +1329,15 @@
     {#if castPick && anchor && castRadialItems.length}
       <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={castRadialItems} pick={pickCastTree} back={stepBack} />
     {/if}
-    {#if drag}
+    {#if drag && !blockedNotice}
       <div class="drag-hud">
         <strong>{rowLabel(drag)}</strong>
         <span class="muted">{drag.cell} — {rowDetail(drag)}</span>
       </div>
-    {:else if blockedCell && stuck}
-      <div class="drag-hud stuck">
-        <img class="row-prop" src={actionIconUrl('no')} alt="" />
-        <strong>Cannot move — {stuck.tag}</strong>
-        <span class="muted">{stuck.why}</span>
+    {:else if dragTarget?.attack && !blockedNotice}
+      <div class="drag-hud">
+        <strong>Attack {enemyName(dragTarget.id)}</strong>
+        <span class="muted">Release to choose a Fight activity · from 1 action</span>
       </div>
     {/if}
     {#if pending}
@@ -1269,11 +1346,15 @@
         {#each pending.rows as row, i (rowKey(row))}
           <button class="popup-row" class:on={i === pending.index} onclick={() => choose(i)}>
             <span class="popup-verb">
-              {#if row.kind === 'charge'}<img class="row-prop" src={actionIconUrl('charge')} alt="" />{/if}
+              {#if row.kind === 'charge' || row.kind === 'advance'}<img class="row-prop" src={actionIconUrl(row.kind === 'charge' || row.plan.kind === 'charge' ? 'charge' : 'attack')} alt="" />{/if}
               {rowLabel(row)}
-              <span class="row-cost"><ActionCost n={row.kind === 'maneuver' ? maneuverActivity : row.kind === 'move' ? Math.max(0, row.actions) : row.actions} /></span>
+              <span class="row-cost"><ActionCost n={i === pending.index ? dropCost(row) : row.kind === 'maneuver' ? firstManeuverActivity(row.cell) : row.actions} /></span>
             </span>
-            <span class="muted">{rowDetail(row)}</span>
+            <span class="muted">
+              {#if i === pending.index && row.kind === 'advance'}{actionCost(row.plan.moveActions)} to move + {actions(chargeActivity + focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
+              {:else if i === pending.index && row.kind === 'charge'}{actions(dropCost(row))}, melee included
+              {:else}{rowDetail(row)}{/if}
+            </span>
           </button>
           {#if i === pending.index && row.kind === 'maneuver' && act?.maneuver && active}
             {@const w = act.maneuver}
@@ -1312,7 +1393,15 @@
             </div>
             <p class="muted activity-detail popup-escapes">{w.activities[maneuverActivity - 1].detail}</p>
           {/if}
-          {#if i === pending.index && row.kind === 'charge' && active}
+          {#if i === pending.index && (row.kind === 'charge' || row.kind === 'advance') && active}
+            {@const charging = row.kind === 'charge' || row.plan.kind === 'charge'}
+            <p class="muted activity-detail popup-escapes">
+              {#if row.kind === 'advance'}Move to {row.plan.via}, then {charging ? 'charge' : 'attack'} from there. {row.actions} actions total for the basic attack. {/if}
+              {#if charging}
+                {#if row.kind === 'advance'}{row.plan.bonus ? `+${row.plan.bonus} on the attack.` : 'Rough ground removes the charge bonus.'} {/if}
+                Charge leaves this unit exposed: −2 Defence until it next acts.
+              {:else}Attack uses the normal melee rules.{/if}
+            </p>
             <div class="activity-chips">
               {#each ACTIVITIES as g (g)}
                 {@const total = chargeCost(row, g)}
@@ -1324,15 +1413,15 @@
                   title={can ? '' : `needs ${total} actions`}
                   onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
                 >
-                  {CHARGES[g - 1]}
+                  {charging ? CHARGES[g - 1] : ['Strike', 'Press', 'Overrun'][g - 1]}
                   <ActionCost n={total} />
                 </button>
               {/each}
             </div>
-            <CommitmentPicker base={chargeCost(row, chargeActivity)} available={actionsLeft} bind:value={focus} effect="on the attack, in addition to the charge bonus" />
+            <CommitmentPicker base={chargeCost(row, chargeActivity)} available={actionsLeft} bind:value={focus} effect={charging ? 'on the attack, in addition to the charge bonus' : 'on the attack'} />
           {/if}
         {/each}
-        {@render popupFoot(commit)}
+        {@render popupFoot(commit, picked?.kind === 'charge' || (picked?.kind === 'advance' && picked.plan.kind === 'charge') ? 'Confirm charge' : picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
       </BoardPopup>
     {/if}
     {#if aim && aimGroup && active && !pending}
@@ -1354,7 +1443,7 @@
           {#if canFocus(aimGroup.offer.type, aimGroup.offer.spell) && aimGroup.offer.spell !== 'blast'}
             <CommitmentPicker base={aimed.cost ?? aimed.index} available={actionsLeft} bind:value={focus} effect={aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
           {/if}
-          {@render popupFoot(takeAim)}
+          {@render popupFoot(takeAim, aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
         {/if}
       </BoardPopup>
     {/if}
@@ -1492,7 +1581,6 @@
     background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
     pointer-events: none;
   }
-  .drag-hud.stuck { border-color: var(--bad); }
   .popup-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .1rem 1.3rem .3rem .4rem; font-weight: 600; color: var(--muted); }
   .popup-actions { display: flex; align-items: center; color: var(--accent); }
   .popup-row {

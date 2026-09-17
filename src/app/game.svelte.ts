@@ -151,8 +151,9 @@ export function startBattle() {
 
 export function takeAction(action: Action) {
   if (!game.battle) return;
+  const next = act(game.battle, action, randomRng);
   game.history = [...game.history.slice(-30), game.battle];
-  game.battle = act(game.battle, action, randomRng);
+  game.battle = next;
   save();
 }
 

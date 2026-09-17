@@ -10,6 +10,10 @@
     createTextureSample, defaultTextureSettings, DEFAULT_TREES, TERRAIN_GROUPS, TERRAIN_LABELS, TEXTURE_CHOICES, wallStates, type TerrainGroup,
   } from '../board/terrain-textures.js';
   import { IDENTITY_HSB } from '../board/layers/color.js';
+  import { onDestroy } from 'svelte';
+  import { useNotifications } from './notification-context.js';
+  const notifications = useNotifications();
+  onDestroy(() => notifications.dismiss('texture-storage'));
 
   const ELEVATION_LEVELS = [2, 1, 0, -1, -2];
   // Raw, like the board: one draw of the patches, replaced whole when a new layout is rolled.
@@ -33,7 +37,6 @@
   // itself by replacing the object rather than by being watched cell by cell.
   let board = $state.raw(sample.board);
   let elevationLevel = $state<number | null>(null);
-  let storageMessage = $state('Changes save in this browser.');
   const SHADOW_LEVELS = [{ key: 'level1', label: 'One step up' }, { key: 'level2', label: 'Two steps or more' }] as const;
   const appearance = $derived(style === 'ink' ? null : { settings, groups: sample.groups, compareHard, elevationMarks });
   const inkMap = $derived(style === 'ink' ? { settings: ink, groups: sample.groups, elevationMarks } : null);
@@ -45,7 +48,9 @@
   const count = $derived(Object.values(sample.groups).filter(group => group === selected).length);
 
   $effect(() => {
-    if (!persistMapSettings()) storageMessage = 'Browser storage is unavailable. Changes last until you leave this page.';
+    if (!persistMapSettings()) notifications.show({ id: 'texture-storage', tone: 'warning', title: 'Changes could not be saved',
+      message: 'Browser storage is unavailable. Changes last until you leave this page.' });
+    else notifications.dismiss('texture-storage');
   });
   // A snapshot, like the terrain appearance: Pixi keeps the settings it is handed and cannot
   // subscribe to a nested Svelte mutation.
@@ -290,7 +295,7 @@
       </div>
       <footer><button onclick={() => { mapSettings.textures = defaultTextureSettings(); compareHard = false; }}>Reset all settings</button></footer>
       {/if}
-      <p class="storage">{storageMessage} Settings affect this development preview.</p>
+      <p class="storage">Settings affect this development preview.</p>
     </aside>
   </main>
 </div>

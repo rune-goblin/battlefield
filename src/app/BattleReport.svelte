@@ -7,6 +7,11 @@
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { gameMap } from './map-style.svelte.js';
+  import { onDestroy } from 'svelte';
+  import { useNotifications } from './notification-context.js';
+  const notifications = useNotifications();
+  const NOTICE = 'battle-report';
+  onDestroy(() => notifications.dismiss(NOTICE));
 
   type Step = 'report' | 'recovery' | 'orders' | 'battlefield' | 'deployment';
   const steps: { id: Step; label: string }[] = [
@@ -17,7 +22,6 @@
   let step = $state<Step>('report');
   let choices = $state<Record<string, RecoveryActivity | ''>>({});
   let positions = $state<Record<string, string>>({});
-  let error = $state('');
   let content: HTMLDivElement;
   const resolved = $derived(b.night !== null);
   const continuing = $derived(canContinueBattle(b));
@@ -54,10 +58,12 @@
     return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
   }
   $effect(() => { if (b.night !== null) positions = suggestDeployment(field); });
-  function go(next: Step) { step = next; error = ''; content?.scrollTo({ top: 0 }); }
+  function go(next: Step) { step = next; notifications.dismiss(NOTICE); content?.scrollTo({ top: 0 }); }
   function attempt(action: () => void) {
-    error = '';
-    try { action(); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+    notifications.dismiss(NOTICE);
+    try { action(); } catch (e) {
+      notifications.show({ id: NOTICE, title: 'Action unavailable', message: e instanceof Error ? e.message : String(e), tone: 'error' });
+    }
   }
   function generateNext(changes: Partial<BoardSpec> = {}) {
     attempt(() => chooseNextBattlefield(generateBoard({
@@ -221,7 +227,6 @@
       {/if}
     </div>
     <footer>
-      {#if error}<p role="alert">{error}</p>{/if}
       {#if stage === 'orders' && continuing}
         <p class="decision-status" role="status">{surrenderPending ? 'Awaiting the opponent’s response to surrender.' : !ordersReady ? 'Choose a decision for both armies.' : bothHold ? 'Both armies will hold. Continue to choose the next battlefield.' : SIDES.every((s) => b.dayOrders?.choices[s] === 'withdraw') ? 'Both armies will withdraw. The field stays contested.' : `The ${b.dayOrders?.choices.attacker === 'withdraw' ? 'defender' : 'attacker'} will hold the field.`}</p>
       {/if}
@@ -335,7 +340,6 @@
   footer { padding: 1rem 1.6rem; border-top: 1px solid var(--rule); background: var(--card); }
   .footer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
   .end-battle { margin-right: auto; }
-  footer [role='alert'] { color: var(--bad); margin: 0 0 .6rem; }
   @media (max-width: 650px) {
     .armies, .map-choices, .field-layout { grid-template-columns: 1fr; }
     .report-scrim { padding: .5rem; }

@@ -7,6 +7,10 @@
   import Battle from './Battle.svelte';
   import VfxGallery from './VfxGallery.svelte';
   import { game, STAGE_SIDE } from './game.svelte.js';
+  import { provideNotifications } from './notification-context.js';
+  import Notifications from './Notifications.svelte';
+
+  provideNotifications();
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be
   // tuned and screenshotted without playing a battle up to a cast.
@@ -28,3 +32,5 @@
 {:else}
   <BoardSetup />
 {/if}
+
+<Notifications />
