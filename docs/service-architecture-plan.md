@@ -117,13 +117,21 @@ The work runs as waves. One wave is one executor session with one gate and one r
 
 | Role | Runs as | Duty |
 | --- | --- | --- |
-| Orchestrator | An Opus session | Reads this file, runs one wave at a time, calls the agents below, records the ledger in the todos file, and stops at every human gate. |
+| Orchestrator | The `service-architecture` workflow, `.claude/workflows/service-architecture.js` | Runs one phase per invocation: each wave in order through the agents below, with the escalation ladder as code. It stops at the phase's human gate, at a wave Fable cannot pass, and at Wave 5.3. |
 | Executor | `wave-executor`, with the wave's model passed as the `model` override | Builds exactly one wave and commits it. |
 | Counter | `census` | Measures call sites before a wave whose scope depends on a count. |
-| Sweeper | `recipe-sweeper` | Runs the mechanical sweeps the wave table names. |
 | Gate | `test-verifier` | Runs the wave's gate after the executor reports and returns the decisive output. |
 | Reviewer | `wave-reviewer`, at its configured model | Checks the wave's diff against the invariants. APPROVE opens the next wave; BLOCK returns the wave to an executor. |
+| Scribe | A Sonnet agent at low effort | Appends the wave's ledger line, open calls, and oddities to the todos file and commits it. |
 | Mark | — | Plays each phase's human gate, rules on reserved judgment calls, and merges. |
+
+### Running a phase
+
+Ask the session to use a workflow: "Use the `service-architecture` workflow for phase 0." The phase number is the workflow's argument; `{ phase: 2, startAt: '2.4' }` starts partway through. `/workflows` shows progress. A phase uses about four agents per wave before escalations, so a six-wave phase exceeds the default medium workflow size; say so in the request or raise "Dynamic workflow size" in `/config`.
+
+The preflight agent refuses a dirty tree, checks out `service-architecture`, and reads the ledger, so a rerun skips every wave the ledger marks APPROVE. Before phase 1 it also refuses to start until `CLAUDE.md` names `src/runtime`. An interrupted run resumes in the same session from its run ID; in a new session, rerun the phase and the ledger carries the progress.
+
+The workflow returns the approved waves, any stop with its cause, and the calls reserved for Mark. The session then reports the phase's human gate.
 
 ### Executor reading list
 
@@ -139,10 +147,10 @@ The work runs as waves. One wave is one executor session with one gate and one r
 - Start each phase from a clean tree on the `service-architecture` branch. Another session's uncommitted work in `src/` stops the run until Mark clears it.
 - Commit subjects start `Arch <wave>:`, for example `Arch 2.3: roster commands`. `git log --grep '^Arch '` is the progress record.
 - The standard gate is `npx vitest run`, `npm run check`, and `npx vite build`. From Wave 0.2 it adds `npm run build:foundry`. Each wave adds its own greps under **Done**.
-- A wave that edits `.svelte` files runs each touched component through the Svelte MCP `svelte-autofixer` before review.
+- A wave that edits `.svelte` files runs each touched component through the Svelte MCP `svelte-autofixer` before the gate; the workflow hands those files to the `svelte-file-editor` agent.
 - Every judgment call goes into the todos file as a dated one-line bullet. Shortcuts carry `// proto:`. A call this file reserves for review is flagged in the executor's report and left open.
 - Tests follow `CLAUDE.md`. From Wave 1.1, `src/runtime` and `src/services` take direct tests for every invariant a wave names. Views and PIXI code stay under the prototype rules.
-- The orchestrator stops at each human gate and reports. Mark plays the build, answers open calls, and merges the branch on his word. No wave opens a browser or Foundry on its own.
+- The workflow ends at each human gate and the session reports. Mark plays the build, answers open calls, and merges the branch on his word. No wave opens a browser or Foundry on its own.
 
 ### Model assignment and escalation
 
@@ -158,11 +166,11 @@ Hand the escalated model the wave text, the current diff, and the failing output
 
 | Wave | Model | Reason |
 | --- | --- | --- |
-| 0.1 | Sonnet, or `recipe-sweeper` | Six reads replaced by one function. |
+| 0.1 | Sonnet | Six reads replaced by one function. |
 | 0.2 | Opus | Build configuration, the PIXI alias, and the first `ApplicationV2` mount. |
 | 1.1 † | Opus | The session schema and save migration; every later wave reads this record. |
 | 1.2 † | Opus | The executor, its queue, and the commit boundary. |
-| 1.3 | `census`, then `recipe-sweeper` | `Acts.unit` becomes required across the engine's callers and tests. |
+| 1.3 | `census`, then Sonnet | `Acts.unit` becomes required across the engine's callers and tests; the count goes to the executor. |
 | 1.4 | Opus | The first asynchronous commands under Svelte state. |
 | 2.1 | Sonnet | Two small components behind one service, with the paint fix specified. |
 | 2.2 † | Opus | Stable IDs touch the engine, setup, tokens, and saves. |
@@ -222,7 +230,7 @@ Review sections: [Foundry host integration](service-architecture-review.md#found
 - Add `src/adapters/foundry/index.ts` and `BattlefieldApp.ts`: an `ApplicationV2` window that calls `setAssetBase('modules/<id>/')`, mounts `App.svelte` with Svelte's `mount`, and unmounts on close. Add a scene-control button or a macro-callable `api.open()`. Reference: `src/view/kingdom/KingdomApp.ts`.
 - Scope the app's CSS under the window's root so Foundry's styles and the shell's leave each other intact. Reference: ReignMaker's `cssHash` prefix.
 - Set `contain: layout` on the window's content root so the `position: fixed` rules in `AppShell`, `Notifications`, `TextureLab`, and `VfxGallery` resolve against the window. Give the app a root element, and have the `svelte:window` key handlers in `Battle.svelte` and `AppShell.svelte` and the ctrl-wheel listener in `main.ts` ignore events that start outside it.
-- Copy `public/art` into the module output.
+- Copy `public/art` into the module output, and add `dist-foundry` to `.gitignore`.
 - **Done:** both builds pass. `grep -c "PixiJS" dist-foundry/*.js` returns 0, which shows the bundle carries no PIXI core; if the string proves a poor marker, replace this check with a better one and note it in the todos.
 
 ### Human gate 0
@@ -233,7 +241,7 @@ Mark links `dist-foundry` into `Data/modules`, enables the module in a v14 world
 
 Review sections: [Shared state and local state](service-architecture-review.md#shared-state-and-local-state) and [Command and synchronization contract](service-architecture-review.md#command-and-synchronization-contract).
 
-Before Wave 1.1, the orchestrator proposes the `CLAUDE.md` amendment to Mark: the new directories in the layout section, and `src/runtime` and `src/services` exempt from prototype mode. It proceeds once Mark has made or approved the edit.
+Before Wave 1.1, the session proposes the `CLAUDE.md` amendment to Mark: the new directories in the layout section, and `src/runtime` and `src/services` exempt from prototype mode. The workflow's preflight refuses phase 1 until the edit is in.
 
 ### Wave 1.1 † — Session record and browser repository
 
@@ -255,7 +263,7 @@ Before Wave 1.1, the orchestrator proposes the `CLAUDE.md` amendment to Mark: th
 
 - `census` counts `act(` calls and action literals that omit `unit` across `src/` and `src/tests`.
 - Make `unit` required in `Acts` (`engine/types.ts`), remove the `activeUnit` fallback from `act`, and have `TargetingService.resolve` and the maneuver and move callers name the unit.
-- `recipe-sweeper` adds `unit` to each test action. Expected results stay as written.
+- Add `unit` to each test action the census lists. Expected results stay as written.
 - **Done:** `grep -n "unit?:" src/engine/types.ts` shows no match inside `Acts`. The engine suite passes with no assertion edits.
 
 ### Wave 1.4 — Commands under the store
