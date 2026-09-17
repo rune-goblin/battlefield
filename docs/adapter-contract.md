@@ -22,14 +22,28 @@ Roles match the skirmish rules: infantry and cavalry, with siege engines as a se
 
 ## Output: `BattleState`
 
-Future ReignMaker integration: a unit that routs during a battle should require a post-battle leadership morale check to keep it. This remains a design note; the engine does not perform that check or record a dedicated rout-history field. See [the morale review](plans/morale-review.md#deferred-integration-post-battle-leadership-check).
+Campaign Demoralized and battlefield `disorder` are one track. Set `UnitCard.disorder` to the campaign value on import. Supply stats before this morale penalty: the engine subtracts `disorder` once, including on overnight checks. If an actor's prepared stats already include Demoralized, remove that contribution before passing the stats to Battlefield. Preserve other applicable actor modifiers according to their normal stacking rules.
+
+Export final `disorder` directly, including recovery. Never keep the higher of the old campaign value and the battle value, and never add the two. A survivor at disorder 3, including `status: 'left'`, requires the campaign Routed condition. A unit that rallied before leaving the field and finishes standing does not require a historical-rout retention check. Destroyed units are permanent losses.
+
+ReignMaker owns Rally Troops and turn-end disbanding, as proposed in [feature request #2](https://github.com/motionproto/reignmaker-feedback/issues/2). Battlefield does not spend leader actions or advance the ReignMaker turn. Its night phase cannot recover units that left the battle through rout.
 
 After `phase === 'ended'`, each `Unit` carries `wounds`, `disorder`, `status` (`active`, `destroyed`, `left`) and `side`; `winner` and `endedBy` name the result; `walls.remaining` is what stands. An adapter writes back:
 
 - wounds → hit points (`max`, `⌊¾⌋`, `⌊½⌋`, `⌊¼⌋`, `0`);
-- disorder → frightened / demoralized, one stack per point, keeping the higher value; a unit at `ROUTED_AT` (3) is routed; `status: 'left'` records its departure from the field;
+- disorder → Demoralized, one stack per point, replacing the prior value; a surviving unit at `ROUTED_AT` (3) requires Routed; `status: 'left'` records its departure from the field;
 - `destroyed` → disband; each `EngineState` with `status: 'captured'` changes owner to the capturing side, `abandoned` ones are lost;
 - the loser's surviving units fall back one hex.
+
+## Day continuation
+
+`declareDayOrder(state, side, order)` records `surrender`, `withdraw`, or `hold` in `dayOrders.choices`. `resolveDayOrders` requires both choices: two holds confirm continuation; withdrawals set `endedBy: 'withdrawal'` and award the field to the side that stays, or draw when both leave. `answerSurrender(state, responder, accept)` requires an opposing proposal. Acceptance sets `endedBy: 'surrender'` and `winner` to the responder; rejection clears the proposer's choice. These functions preserve all unit losses and survivor condition. The campaign owns surrender terms and withdrawal movement. Recovery precedes decisions. Day-order functions require a committed `night`; `startNextDay` requires recovery and confirmed holds from both sides. Recovery clears any decisions from older saves so players choose again with the results.
+
+`BattleSetup.roundsPerDay` defaults to 6. `BattleState.day` starts at 1; `round` restarts each day. `phase: 'ended'` with `endedBy: 'dusk'` can continue while both sides have standing survivors.
+
+`recoverAtNight(state, choices, rng)` accepts the complete array of `{ unit, activity: 'rally' | 'treat' }` declarations for both sides. It validates the complete selection before rolling, stores each check and recovery in `state.night`, and logs the results. A non-null `night` prevents repeated recovery, including after serialization. An empty array commits a night without recovery. Routed units become `status: 'left'`; all unit records remain available to the report and campaign handoff.
+
+`BattleState.nextBoard` stores an optional new board. Null or absence keeps the current field. `nextDayBattlefield(state)` previews the destination without changing the current report. Pass that preview to `deploymentCells` and `suggestDeployment` for legal home-zone placements. `startNextDay(state, positions)` accepts a unit-ID-to-cell map, validates all survivor positions against the chosen board, and begins the next day. It preserves unit IDs, casualties, morale, wounds, and recovery results. On the same field, board damage and equipment positions remain. On a new field, only crewed attached engines travel with standing survivors; `previousBattlefields` archives the old board and all fixed or abandoned equipment for campaign writeback. Read those archives alongside current equipment when resolving the campaign outcome. `order` contains that day's deployment. Survivors retain their morale when their side loses half its units. The client migrates older saves to day 1, six rounds, and no committed night.
 
 ## Randomness
 

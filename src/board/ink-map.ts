@@ -272,10 +272,10 @@ export function inkPatch(grid: Grid, cells: Cell[], size: number, settings: InkM
   const stood: Point[] = [];
   const slots = Array.from({ length: HERO_VARIANTS }, (_, i) => i);
   for (let i = 0; i < heroCount; i++) {
-    const width = size * ink.scale * groupScale * (1 + (random() * 2 - 1) * ink.variation);
+    let width = size * ink.scale * groupScale * (1 + (random() * 2 - 1) * ink.variation);
     // The first drawing takes the deepest point of the patch; the rest take the point farthest
     // from those standing. Either way its whole foot must be on the patch. A patch too thin
-    // for any foot — a single hex under a wide drawing — takes the deepest point regardless.
+    // for any foot takes a smaller drawing at its deepest candidate.
     let position: Point | null = null, best = -Infinity, fallback: Point | null = null, deepest = -Infinity;
     for (let attempt = 0; attempt < HERO_CANDIDATES; attempt++) {
       const candidate = somewhere(1);
@@ -287,6 +287,8 @@ export function inkPatch(grid: Grid, cells: Cell[], size: number, settings: InkM
     }
     if (!position && i > 0) break;
     position ??= fallback!;
+    while (width > size * .1 && !ring(position, width * HERO_FOOT.x, width * HERO_FOOT.y)) width *= .85;
+    if (!ring(position, width * HERO_FOOT.x, width * HERO_FOOT.y)) continue;
     if (!slots.length) slots.push(...Array.from({ length: HERO_VARIANTS }, (_, i) => i));
     const slot = slots.splice(Math.floor(random() * slots.length), 1)[0];
     stood.push(position);

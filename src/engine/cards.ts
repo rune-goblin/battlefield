@@ -73,6 +73,8 @@ export interface UnitCard {
   signals?: Signal[];
   tactics?: Tactic[];
   wounds?: number;
+  /** Campaign Demoralized and tactical morale loss share this value. Imported stats
+   * must exclude its penalty; Battlefield subtracts it once when resolving checks. */
   disorder?: number;
   overrides?: Partial<UnitStats>;
 }

@@ -1,6 +1,6 @@
-import { SIZE, type Board, type GridKind, type SquareTerrain } from '../engine/board.js';
+import { type Board, type GridKind, type SquareTerrain } from '../engine/board.js';
 
-export function openBoard(grid: GridKind = 'square'): Board {
+export function openBoard(grid: GridKind = 'square', SIZE = 9): Board {
   return {
     spec: { base: 'plains', grid, seed: 0 },
     grid,

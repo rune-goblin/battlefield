@@ -10,6 +10,7 @@ export const TERRAIN_FEET: Record<SquareTerrain, number> = {
   open: CELL_FEET,
   // A settlement is a road, so it is never worse than open ground.
   settlement: CELL_FEET,
+  bridge: CELL_FEET,
   forest: 2 * CELL_FEET,
   shallows: 2 * CELL_FEET,
   swamp: 3 * CELL_FEET,
@@ -31,9 +32,11 @@ export interface MoveOpts {
   evenGround?: boolean;
   /** Cells somebody else is standing on. */
   occupied?: ReadonlySet<string>;
+  /** These cells can be entered, but the route must end there (enemy zones of control). */
+  stopAt?: ReadonlySet<string>;
 }
 
-export type StepOpts = Omit<MoveOpts, 'budget' | 'occupied'>;
+export type StepOpts = Omit<MoveOpts, 'budget' | 'occupied' | 'stopAt'>;
 
 export interface ReachEntry {
   /** Feet spent getting here from the start. */
@@ -79,6 +82,7 @@ export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap
     frontier.sort((a, b) => a.feet - b.feet);
     const cur = frontier.shift()!;
     if (cur.feet > (reach.get(notation(cur.cell))?.feet ?? Infinity)) continue;
+    if (notation(cur.cell) !== startKey && opts.stopAt?.has(notation(cur.cell))) continue;
     for (const n of g.neighbours(cur.cell)) {
       const key = notation(n);
       if (occupied.has(key)) continue;

@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { drawBridges } from './Bridges.js';
 import { gridOf, type Board, type Cell, type Grid } from '../../engine/index.js';
 import { FILL_CELL, type InkAtlas, type InkFrames } from '../ink-sheet.js';
 import { inkPatch, type InkGrain, type InkMapSettings } from '../ink-map.js';
@@ -106,6 +107,7 @@ export class InkLayer {
     if (paper) this.container.addChild(this.sheet(grid, size, settings.grain, page));
     if (page) this.container.addChild(colour);
     this.container.addChild(sprites);
+    this.container.addChild(drawBridges(board, size));
     if (!appearance.elevationMarks) return;
     const tint = new PIXI.Graphics();
     tint.name = 'Ink_elevation';

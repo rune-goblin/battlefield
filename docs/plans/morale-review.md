@@ -1,8 +1,12 @@
 # Morale review
 
-Date: 2026-09-16. Status: three-pip morale and ordinary activities below rout implemented.
+Date: 2026-09-16. Status: three-point morale and ordinary activities below rout implemented.
+
+Update 2026-09-17: removed the half-army morale penalty by user decision. Losing half a side's units no longer adds disorder to its survivors. References below to that penalty describe the earlier rules.
 
 The user approved the common three-pip track and removal of the early action restriction. The engine, tokens, army reel, save loading and rules now use that model. The analysis below preserves the earlier variable-Quality baseline for comparison. Check frequency and Rally's critical-failure outcome remain candidates for later experiments.
+
+Display update: the user subsequently approved decreasing status bars. Health shows four minus wounds; morale shows three minus disorder. Both start full and green, shrink as losses accumulate, and leave an empty grey track at death or rout. Health is the thicker upper bar; morale is the thinner lower bar of equal length. The pip descriptions below record the earlier proposal. The thresholds and deferred post-battle leadership check remain as documented.
 
 Use three morale pips for every unit and rout when the third pip fills. Let saves provide the troop distinction. Remove the separate action restriction at the penultimate pip: disorder already reduces effectiveness, and the player should retain choices until rout.
 
@@ -131,6 +135,8 @@ node scripts/analyze-morale.mjs /private/tmp/battlefield-morale-engine
 The script imports the compiled engine, computes exact outcome probabilities and checks probability conservation. It also prints the library's historical Quality distribution, Rally outcomes and a sensitivity case that removes the disorder penalty from Dread saves.
 
 ## Deferred integration: post-battle leadership check
+
+Superseded on 2026-09-16: the user chose one shared campaign/battle morale track, a paid ReignMaker Rally Troops action, and disbanding for armies still Routed at the end of the ReignMaker turn. The historical proposal below no longer governs the integration. Current rules appear in `public/rules.html`, section 13.
 
 A battlefield rout should trigger a morale check at the end of the battle to determine whether the army keeps the surviving unit. This should be a leadership check in the ReignMaker integration. Battlefield currently resolves tactical rout and retreat only.
 

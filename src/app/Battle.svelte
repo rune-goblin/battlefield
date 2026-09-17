@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, ROUTED_AT, movePath, notation,
-    offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
+    at, isMountain, shootCeiling, shootRangeLabel, offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
     type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit,
   } from '../engine/index.js';
@@ -12,6 +12,7 @@
   let focus = $state(0);
   import BoardPopup from './BoardPopup.svelte';
   import BattleLog from './BattleLog.svelte';
+  import BattleReport from './BattleReport.svelte';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
@@ -574,7 +575,7 @@
     if (active) boardRef?.setRoute(active.id, row.path);
     if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined, focus });
     else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
-    else if (act?.maneuver) performManeuver(p.activity ?? 1, row.cell);
+    else if (act?.maneuver) performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -653,7 +654,8 @@
   // The three the rules name, since a charge's Fight is bought at the charge's own price.
   const CHARGES = ['Charge', 'Charge and Press', 'Charge and Overrun'];
   const chargeActivity = $derived(pending?.activity ?? 1);
-  const maneuverActivity = $derived(pending?.activity ?? 1);
+  const firstManeuverActivity = (cell?: string): ActivityIndex => act?.maneuver?.activities.find(opt => opt.legal && (!cell || opt.targets.some(t => t.id === cell)))?.index ?? 1;
+  const maneuverActivity = $derived(pending?.activity ?? firstManeuverActivity(pending?.cell));
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
   const chargeCost = (c: ChargePreview, activity: ActivityIndex) => c.actions - 1 + activity;
 
@@ -1020,6 +1022,10 @@
 
   const status = (u: Unit) => [
     isRouted(u) ? 'routed' : '',
+    isMountain(b.board, u.square) ? 'mountain +1 Defence' : '',
+    at(b.board, u.square).terrain === 'forest' ? 'forest +1 ranged cover' : '',
+    at(b.board, u.square).terrain === 'swamp' ? 'swamp −1 Defence' : '',
+    at(b.board, u.square).elevation > 0 ? 'higher-ground attacks +1' : '',
     u.guard ? `guarded +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
@@ -1086,22 +1092,7 @@
 {/snippet}
 
 {#snippet result()}
-  <div class="scrim">
-    <div class="card result">
-      <h2>{b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`}</h2>
-      <div class="unitlist">
-        {#each b.units as u (u.id)}
-          <div class="unitrow">
-            <span class={u.side === 'attacker' ? 'side-att' : 'side-def'}>{u.name}</span>
-            <span class="stat">wounds {u.wounds}/{MAX_WOUNDS}</span>
-            <span class="stat">disorder {u.disorder}/{ROUTED_AT}</span>
-            <span class="muted">{u.status === 'active' ? (isRouted(u) ? 'routed' : 'standing') : u.status}</span>
-          </div>
-        {/each}
-      </div>
-      <p><button class="primary" onclick={backToSetup}>Set up another battle</button></p>
-    </div>
-  </div>
+  <BattleReport />
 {/snippet}
 
 <svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} />
@@ -1110,7 +1101,7 @@
   {#snippet top()}
     <TopBar>
       {#snippet status()}
-        <strong>Round {b.round} / 6</strong>
+        <strong>Day {b.day} · Round {b.round} / {b.roundsPerDay}</strong>
         <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span>
         {#if active}<span class="muted">· {active.name}{locked ? ' is committed' : ''}</span>
         {:else}<span class="muted">· choose an army</span>{/if}
@@ -1306,11 +1297,12 @@
             <div class="activity-chips">
               {#each ACTIVITIES as g (g)}
                 {@const opt = w.activities[g - 1]}
+                {@const reaches = opt.targets.some(t => t.id === row.cell)}
                 <button
                   class="activity-chip"
                   class:on={maneuverActivity === g}
-                  disabled={!opt.legal}
-                  title={opt.reason ?? ''}
+                  disabled={!opt.legal || !reaches}
+                  title={opt.reason ?? (!reaches ? 'Terrain or distance needs a different Maneuver' : '')}
                   onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
                 >
                   {opt.label}
@@ -1385,6 +1377,7 @@
 
       <table class="stats"><tbody>
         <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
+        {#if shootCeiling(b, active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(b, active)}</td></tr>{/if}
         <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
         <tr><td>Disorder</td><td class="stat">{active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
         <tr><td>Move</td><td class="stat">{active.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
@@ -1555,12 +1548,6 @@
   .popup-foot { display: flex; gap: .5rem; align-items: center; padding: .3rem .5rem 0; border-top: 1px solid var(--rule); margin-top: .3rem; }
   .popup-foot .muted { margin-right: auto; }
   .popup-foot button { font-size: .8rem; padding: .15rem .5rem; }
-
-  .scrim {
-    position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem;
-    background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(3px);
-  }
-  .scrim .result { max-width: 34rem; max-height: 100%; overflow: auto; }
 
   .orders-head { display: flex; align-items: baseline; gap: .5rem; }
   .orders-head h3 { margin: 0; }

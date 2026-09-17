@@ -30,6 +30,7 @@ const typesAt = (state: BattleState, kind: 'cell' | 'unit' | 'wall', target: str
 describe('what a target affords', () => {
   it('offers an enemy only the acts that name it', () => {
     const { state, me, foe } = battle();
+    unit(state, foe).square = parse('c5');
     expect(typesAt(state, 'unit', foe, me)).toEqual(['shoot']);
   });
 
@@ -41,9 +42,8 @@ describe('what a target affords', () => {
     expect(mine).not.toContain('fight');
   });
 
-  // A shot reaches any band 1 to 4: nothing narrows the target list from one shoot activity to
-  // the next, only the roll's own −2-a-band penalty (`shootModifier`).
-  it('offers the same shoot activities whatever the band', () => {
+  // Commitment buys effects within the same hard range ceiling.
+  it('offers every shoot activity in range and none beyond Reach', () => {
     const { state, me, foe } = battle();
     const activitiesAt = (square: string) => {
       unit(state, foe).square = parse(square);
@@ -51,7 +51,7 @@ describe('what a target affords', () => {
       return shoot?.activities.map((r) => r.label) ?? [];
     };
     expect(activitiesAt('c5')).toEqual(['Fire', 'Suppress', 'Pin']);
-    expect(activitiesAt('c7')).toEqual(['Fire', 'Suppress', 'Pin']);
+    expect(activitiesAt('c7')).toEqual([]);
   });
 
   it('offers nothing at an empty cell — movement is not an activity', () => {

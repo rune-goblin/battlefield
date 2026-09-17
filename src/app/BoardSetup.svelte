@@ -4,7 +4,8 @@
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
-  import { game, generate, rerollSeed, save } from './game.svelte.js';
+  import ConnectionWarning from './ConnectionWarning.svelte';
+  import { game, generate, goToStage, rerollSeed, save } from './game.svelte.js';
 
   const GRIDS: GridKind[] = ['hex', 'square'];
 
@@ -21,7 +22,7 @@
 <AppShell leftTitle="The ground" leftWidth={20}>
   {#snippet top()}
     <TopBar>
-      {#snippet status()}<span class="muted">Rank 1 is the attacker's edge, rank 9 the defender's.</span>{/snippet}
+      {#snippet status()}<span class="muted">Rank 1 is the attacker's edge, rank {game.setup.board?.squares.length ?? 11} the defender's.</span>{/snippet}
       {#snippet tools()}<StageNav />{/snippet}
     </TopBar>
   {/snippet}
@@ -37,10 +38,20 @@
 
   {#snippet left()}
     <div class="fields">
+      <label>Rounds per day
+        <select value={game.setup.roundsPerDay ?? 6} onchange={(e) => { game.setup.roundsPerDay = Number(e.currentTarget.value); save(); }}>
+          <option value={6}>6 rounds</option><option value={8}>8 rounds</option>
+        </select>
+      </label>
       <label>Hex <select bind:value={game.setup.spec.base} onchange={save}>{#each HEX_TERRAINS as t (t)}<option value={t}>{t}</option>{/each}</select></label>
       <label>Grid
         <select value={spec.grid ?? 'hex'} onchange={(e) => { game.setup.spec.grid = e.currentTarget.value as GridKind; generate(); }}>
           {#each GRIDS as g (g)}<option value={g}>{g}</option>{/each}
+        </select>
+      </label>
+      <label>Board size
+        <select value={spec.size ?? 11} onchange={(e) => { game.setup.spec.size = Number(e.currentTarget.value) as 9 | 11; generate(); }}>
+          <option value={11}>Large · {spec.grid === 'square' ? '11 × 11' : '91 hexes'}</option><option value={9}>Original · {spec.grid === 'square' ? '9 × 9' : '61 hexes'}</option>
         </select>
       </label>
       <label>Feature <select bind:value={game.setup.spec.feature} onchange={save}>{#each FEATURES as f (f)}<option value={f}>{f}</option>{/each}</select></label>
@@ -57,6 +68,7 @@
       <button onclick={rerollSeed}>Reroll seed</button>
     </div>
     <p class="muted">The seed reproduces the board exactly. Painting comes next; nothing here is final.</p>
+    <ConnectionWarning board={game.setup.board} edit={() => goToStage('paint')} />
     {#if !game.setup.board}<p class="muted">No board yet. Generate one.</p>{/if}
   {/snippet}
 </AppShell>

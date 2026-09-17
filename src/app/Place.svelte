@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, RADIUS, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
+  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
@@ -46,7 +46,7 @@
    * selected piece's current square count as a destination, which a token move needs. */
   function deployCells(forSide: Side, forAmbush: boolean, exclude: Pick | null): Set<string> {
     const taken = occupied(exclude);
-    const ranks = new Set(deployRanks(forSide, forAmbush));
+    const ranks = new Set(deployRanks(forSide, forAmbush, game.setup.board?.squares.length));
     const out = new Set<string>();
     for (const sq of gridOf(board).cells()) {
       if (!ranks.has(sq.rank)) continue;
@@ -126,8 +126,8 @@
     const forAmbush = p.kind === 'unit' && ambush(piece as SetupUnit);
     const open = [...deployCells(piece.side, forAmbush, p)].map(parse);
     if (!open.length) return null;
-    const home = (c: Square) => (piece.side === 'attacker' ? c.rank : SIZE - 1 - c.rank);
-    open.sort((a, b) => home(a) - home(b) || Math.abs(a.file - RADIUS) - Math.abs(b.file - RADIUS));
+    const home = (c: Square) => (piece.side === 'attacker' ? c.rank : (game.setup.board?.squares.length ?? SIZE) - 1 - c.rank);
+    open.sort((a, b) => home(a) - home(b) || Math.abs(a.file - (board.squares.length - 1) / 2) - Math.abs(b.file - (board.squares.length - 1) / 2));
     return notation(open[0]);
   }
 
@@ -224,7 +224,7 @@
   }
 
   const deployNote = (u: SetupUnit) => {
-    const ranks = deployRanks(u.side, ambush(u)).map((r) => r + 1);
+    const ranks = deployRanks(u.side, ambush(u), game.setup.board?.squares.length).map((r) => r + 1);
     return `ranks ${Math.min(...ranks)}–${Math.max(...ranks)}`;
   };
   const engineCard = (name: string) => ENGINES.find((e) => e.name === name);

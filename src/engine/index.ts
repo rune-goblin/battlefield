@@ -6,10 +6,14 @@ export * from './ladders.js';
 export * from './magic.js';
 export * from './types.js';
 export * from './battle.js';
+export * from './aftermath.js';
 export * from './roster.js';
 export * from './combatants.js';
 export * from './official.js';
 export * from './engines.js';
 export * from './board.js';
 export * from './path.js';
+export * from './connectivity.js';
 export * from './force.js';
+
+export * from './sight.js';

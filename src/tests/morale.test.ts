@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, isRouted, isStanding, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, endActivation, isRouted, isStanding, unit } from '../engine/battle.js';
 import { COMBATANTS, OFFICIAL, ROSTER, ENGINES, ROUTED_AT, parse, type UnitCard } from '../engine/index.js';
 import { migrateMorale } from '../app/migrate-morale.js';
 import { scriptedRng } from '../engine/rng.js';
@@ -13,6 +13,28 @@ const setup = () => createBattle({ board: openBoard(), units: [
 ] });
 
 describe('three-pip morale', () => {
+  it.each(['destroyed', 'routed', 'left'] as const)('preserves survivor morale at round end when half the army is %s', (loss) => {
+    let battle = setup();
+    unit(battle, 'u0').disorder = 2;
+    unit(battle, 'u0').wounds = 2;
+    const casualty = unit(battle, 'u1');
+    if (loss === 'routed') casualty.disorder = ROUTED_AT;
+    else casualty.status = loss;
+    if (loss === 'destroyed') casualty.wounds = 4;
+    if (loss === 'left') casualty.disorder = ROUTED_AT;
+
+    for (let i = 0; i < 3 && battle.round === 1 && battle.phase === 'battle'; i++) {
+      battle = endActivation(battle, scriptedRng([10]));
+    }
+
+    expect(battle.round).toBe(2);
+    expect(battle.phase).toBe('battle');
+    expect(unit(battle, 'u0').disorder).toBe(2);
+    expect(unit(battle, 'u0').wounds).toBe(2);
+    expect(isStanding(unit(battle, 'u0'))).toBe(true);
+    expect(unit(battle, 'u2').disorder).toBe(0);
+  });
+
   it('uses the same terminal pip for every troop regardless of Will', () => {
     for (const card of [...COMBATANTS, ...OFFICIAL, ...ROSTER]) {
       const battle = createBattle({ board: openBoard(), units: [

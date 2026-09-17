@@ -1,19 +1,4 @@
-import { MAX_WOUNDS, ROUTED_AT, type SquareTerrain, type Tree } from '../engine/index.js';
-
-const PIP_YELLOW = 0xf2c744;
-const PIP_ORANGE = 0xf28c28;
-const PIP_RED = 0xe0453a;
-const PIP_GREY = 0x9b9b9b;
-
-/** Red marks the last wound before death; a full track turns grey. */
-export function healthPipColour(wounds: number): number {
-  return wounds >= MAX_WOUNDS ? PIP_GREY : wounds >= 3 ? PIP_RED : wounds >= 2 ? PIP_ORANGE : PIP_YELLOW;
-}
-
-/** Every filled morale pip shares the colour of the unit's current disorder. */
-export function moralePipColour(disorder: number): number {
-  return disorder >= ROUTED_AT ? PIP_GREY : disorder >= 2 ? PIP_RED : PIP_ORANGE;
-}
+import type { SquareTerrain, Tree } from '../engine/index.js';
 
 // The standing move-band wash (selecting a unit, before any drag): 'move' is the one-action
 // band, 'moveFar'/'moveFar3' the costed band at two and three actions — one shade per extra
@@ -47,8 +32,6 @@ export interface BoardTheme {
   token: {
     routed: number;
     ringFlash: number;
-    pipFilled: number;
-    pipEmpty: number;
     badgeFill: number;
     badgeText: number;
     /** The level, sitting on the flag's cloth — always the light one, since both sides tint
@@ -80,6 +63,7 @@ const LIGHT: BoardTheme = {
     swamp: 0xb8ad78,
     shallows: 0xb4d4e0,
     water: 0x6f9fc4,
+    bridge: 0x6f9fc4,
     settlement: 0xc2bcb2,
   },
   overlay: {
@@ -98,8 +82,6 @@ const LIGHT: BoardTheme = {
   token: {
     routed: 0xb9ab93,
     ringFlash: 0xf2c744,
-    pipFilled: 0x1f1a17,
-    pipEmpty: 0xf8f4ec,
     badgeFill: 0xf8f4ec,
     badgeText: 0x1f1a17,
     bannerText: 0xf8f4ec,
@@ -122,6 +104,7 @@ const DARK: BoardTheme = {
     swamp: 0x4d4728,
     shallows: 0x37535f,
     water: 0x2f5476,
+    bridge: 0x2f5476,
     settlement: 0x4a4744,
   },
   overlay: {
@@ -140,8 +123,6 @@ const DARK: BoardTheme = {
   token: {
     routed: 0x8c8378,
     ringFlash: 0xffe066,
-    pipFilled: 0xe8e1d5,
-    pipEmpty: 0x2a2520,
     badgeFill: 0x1d1a17,
     badgeText: 0xe8e1d5,
     bannerText: 0xf3ece0,

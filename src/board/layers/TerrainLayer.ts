@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { drawBridges } from './Bridges.js';
 import { at, gridOf, type Board, type Grid, type Square, type SquareTerrain } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import type { ScatterKind, TerrainAtlas } from '../terrain-sheet.js';
@@ -27,6 +28,7 @@ const SCATTER_TERRAIN: Partial<Record<SquareTerrain, Scenery>> = {
   forest: { kind: 'trees' },
   swamp: { kind: 'swamp' },
   water: { kind: 'water' },
+  bridge: { kind: 'water' },
   shallows: { kind: 'water', style: 'shallows' },
 };
 // A tree's own shadow, in the same light as the ground's: thrown a fraction of the crown's own
@@ -116,6 +118,7 @@ export class TerrainLayer {
     const grid = gridOf(board);
     if (this.appearance) {
       this.drawTextures(grid, board, size, theme, this.appearance);
+      this.container.addChild(drawBridges(board, size));
       return;
     }
 
@@ -160,6 +163,7 @@ export class TerrainLayer {
     // Over the elevation wash, under its numerals: a wood on high ground should still read as
     // a wood rather than as trees behind frosted glass, and the numeral has to stay findable.
     this.drawScatter(grid, board, size, theme);
+    this.container.addChild(drawBridges(board, size));
     this.container.addChild(labels);
   }
 

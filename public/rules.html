@@ -48,7 +48,7 @@
 <p class="sub">Rules for resolving a battle between armies in a single sitting.</p>
 
 <div class="key">
-<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of sixty-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit spends those actions on <strong>battlefield activities</strong>. Shoot, Fight, Guard and Rally each offer three, priced at one, two and three actions; Cast offers six trees of three (section 11); moving offers its own (section 7). Every activity costs the same for every unit, and nothing is rolled for it. Spare actions buy another activity. An attack is one roll: a hit deals one wound, a critical two, and four wounds destroy a unit. A wound costs the target disorder unless its Fortitude saves. A Fight that misses costs the attacker disorder unless its Will saves. Every unit has three morale pips. The third disorder point fills the track and routs the unit. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
+<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of ninety-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit spends those actions on <strong>battlefield activities</strong>. Shoot, Fight, Guard and Rally each offer three, priced at one, two and three actions; Cast offers six trees of three (section 11); moving offers its own (section 7). Every activity costs the same for every unit, and nothing is rolled for it. Spare actions buy another activity. An attack is one roll: a hit deals one wound, a critical two, and four wounds destroy a unit. A wound costs the target disorder unless its Fortitude saves. A Fight that misses costs the attacker disorder unless its Will saves. Every unit has three morale pips. The third disorder point fills the track and routs the unit. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
 </div>
 
 <nav class="toc">
@@ -70,7 +70,7 @@
 </nav>
 
 <h2 id="need">1. What you need</h2>
-<p>Each army's troop sheet, a d20, and the battle board in the kingdom app: a hexagon of sixty-one hexes, files lettered a to i and ranks numbered 1 to 9, generated from the hex being fought over. Each player commands the armies they lead and any the GM hands them. The GM commands every army of an enemy faction.</p>
+<p>Each army's troop sheet, a d20, and the battle board in the kingdom app: a hexagon of ninety-one hexes, files lettered a to k and ranks numbered 1 to 11, generated from the hex being fought over. Each player commands the armies they lead and any the GM hands them. The GM commands every army of an enemy faction.</p>
 <p>A battle happens when armies of hostile factions end up in the same hex. The side that moved in is the <strong>attacker</strong>; the side already there is the <strong>defender</strong>. The defender's hex sets the ground (section 10). The battle resolves inside the kingdom's Actions phase, before the next kingdom action.</p>
 
 <h2 id="card">2. The unit</h2>
@@ -81,7 +81,7 @@
 <tr><th>Battle value</th><th>Where it comes from</th><th>Line Infantry, level 6</th></tr>
 <tr><td>Strike</td><td>The DC of the troop's <em>Battle</em> attack, minus 10</td><td>DC 21 &rarr; +11</td></tr>
 <tr><td>Volley</td><td>The DC of the troop's <em>Salvo</em> attack, minus 10. No Salvo, no shooting.</td><td>DC 21 &rarr; +11</td></tr>
-<tr><td>Reach</td><td>The Salvo's <strong>effective range</strong>: short, medium, long or extreme, already on the card. A shot beyond it is at &minus;2 a band; nearer costs nothing (section 8).</td><td>medium</td></tr>
+<tr><td>Reach</td><td>The Salvo's <strong>preferred range band</strong>: short, medium, long or extreme. Shoot normally in that band, or one hex shorter or longer at &minus;2. Targets more than one hex outside the preferred distances are unavailable (section 8).</td><td>medium</td></tr>
 <tr><td>Defence</td><td>Armour Class, including any fortification bonus already on the sheet</td><td>24</td></tr>
 <tr><td>Will</td><td>Will save. Non-magical reaches, every Rally, and resisting Controlling.</td><td>+13</td></tr>
 <tr><td>Reflex</td><td>Reflex save. Breaking contact, and nothing else.</td><td>+14</td></tr>
@@ -107,147 +107,112 @@
 <p>Every unit has <strong>three morale pips</strong>. Each point of disorder fills one pip, and the third point causes rout. Will affects resistance to repulse and hostile morale magic, and the chance to Rally. Fortitude resists disorder from wounds. Capacity is the same for every unit; saving throws provide the distinction between troops.</p>
 
 <h2 id="board">3. The battlefield</h2>
-<p>The battlefield is a hexagon of sixty-one hexes, in rows of 5, 6, 7, 8, 9, 8, 7, 6 and 5. Files run a to i and ranks 1 to 9, from the attacker's edge to the defender's; e5 is the centre. Name a hex by file and rank: c3, e7. Every unit stands on one hex, and a hex holds at most one unit.</p>
+<p>The battlefield is a hexagon of ninety-one hexes, in rows of 6, 7, 8, 9, 10, 11, 10, 9, 8, 7 and 6. Files run a to k and ranks 1 to 11, from the attacker's edge to the defender's; f6 is the centre. The maximum distance is ten hexes. Setup also offers the original 61-hex board, and saved smaller battles retain their dimensions. Name a hex by file and rank: c3, e7. Every unit stands on one hex, and a hex holds at most one unit.</p>
 <p>Hexes have no diagonal. Every one of a hex's six neighbours is adjacent, at distance 1, and the <strong>distance</strong> between two units is the number of steps from one hex to the other. Distance sets the band a shot falls in:</p>
 <table>
 <tr><th>Distance</th><th>Band</th><th>Note</th></tr>
 <tr><td>1</td><td>Engaged</td><td>Fight. No shooting either way.</td></tr>
 <tr><td>2</td><td>Short</td><td></td></tr>
-<tr><td>3&ndash;4</td><td>Medium</td><td></td></tr>
-<tr><td>5&ndash;6</td><td>Long</td><td></td></tr>
-<tr><td>7&ndash;8</td><td>Extreme</td><td>No troop's own Salvo is anchored here &mdash; only a siege engine's effective range starts this far out</td></tr>
-<tr><td>9 or more</td><td>Beyond</td><td>Never occurs on this board: extreme's own ceiling is already the farthest two hexes can be</td></tr>
+<tr><td>3</td><td>Medium</td><td></td></tr>
+<tr><td>4</td><td>Long</td><td></td></tr>
+<tr><td>5&ndash;7</td><td>Extreme</td><td>Long-distance artillery</td></tr>
+<tr><td>8</td><td>Extended extreme</td><td>Extreme weapons only, at &minus;2</td></tr>
+<tr><td>9 or more</td><td>Beyond</td><td>Outside weapon range</td></tr>
 </table>
-<p>A shot reaches any target the shooter can see. Each band beyond the weapon's own effective range (its Reach, section 2) costs &minus;2 on the roll, and nearer bands cost nothing (section 8). A short-reach troop shooting into extreme is at &minus;6.</p>
-<figure><svg viewBox="0 0 472 432" role="img" aria-label="Shooting bands measured from c3: colour deepens toward the centre; the plain unshaded hexes at the edge are extreme range">
-<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="hx b1"/>
-<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="cell"/>
-<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="hx b1"/>
-<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="cell"/>
-<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="hx b2"/>
-<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="cell"/>
-<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="hx b3"/>
-<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="cell"/>
-<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="hx b3"/>
-<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="cell"/>
-<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="hx b1"/>
-<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="cell"/>
-<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="hx b1"/>
-<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="cell"/>
-<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="hx b1"/>
-<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="cell"/>
-<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="hx b2"/>
-<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="cell"/>
-<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="hx b3"/>
-<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="cell"/>
-<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="hx b3"/>
-<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="cell"/>
-<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="hx b1"/>
-<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="cell"/>
-<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="hx here"/>
-<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="cell"/>
-<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="hx b1"/>
-<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="cell"/>
-<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="hx b1"/>
-<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="cell"/>
-<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="hx b2"/>
-<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="cell"/>
-<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="hx b3"/>
-<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="cell"/>
-<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="hx b3"/>
-<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="cell"/>
-<polygon points="97.5,256.0 75.0,269.0 52.5,256.0 52.5,230.0 75.0,217.0 97.5,230.0" class="hx b1"/>
-<polygon points="97.5,256.0 75.0,269.0 52.5,256.0 52.5,230.0 75.0,217.0 97.5,230.0" class="cell"/>
-<polygon points="142.6,256.0 120.1,269.0 97.5,256.0 97.5,230.0 120.1,217.0 142.6,230.0" class="hx b1"/>
-<polygon points="142.6,256.0 120.1,269.0 97.5,256.0 97.5,230.0 120.1,217.0 142.6,230.0" class="cell"/>
-<polygon points="187.6,256.0 165.1,269.0 142.6,256.0 142.6,230.0 165.1,217.0 187.6,230.0" class="hx b1"/>
-<polygon points="187.6,256.0 165.1,269.0 142.6,256.0 142.6,230.0 165.1,217.0 187.6,230.0" class="cell"/>
-<polygon points="232.6,256.0 210.1,269.0 187.6,256.0 187.6,230.0 210.1,217.0 232.6,230.0" class="hx b1"/>
-<polygon points="232.6,256.0 210.1,269.0 187.6,256.0 187.6,230.0 210.1,217.0 232.6,230.0" class="cell"/>
-<polygon points="277.7,256.0 255.2,269.0 232.6,256.0 232.6,230.0 255.2,217.0 277.7,230.0" class="hx b2"/>
-<polygon points="277.7,256.0 255.2,269.0 232.6,256.0 232.6,230.0 255.2,217.0 277.7,230.0" class="cell"/>
-<polygon points="322.7,256.0 300.2,269.0 277.7,256.0 277.7,230.0 300.2,217.0 322.7,230.0" class="hx b3"/>
-<polygon points="322.7,256.0 300.2,269.0 277.7,256.0 277.7,230.0 300.2,217.0 322.7,230.0" class="cell"/>
-<polygon points="367.7,256.0 345.2,269.0 322.7,256.0 322.7,230.0 345.2,217.0 367.7,230.0" class="hx b3"/>
-<polygon points="367.7,256.0 345.2,269.0 322.7,256.0 322.7,230.0 345.2,217.0 367.7,230.0" class="cell"/>
-<polygon points="412.8,256.0 390.3,269.0 367.7,256.0 367.7,230.0 390.3,217.0 412.8,230.0" class="cell"/>
-<polygon points="75.0,217.0 52.5,230.0 30.0,217.0 30.0,191.0 52.5,178.0 75.0,191.0" class="hx b2"/>
-<polygon points="75.0,217.0 52.5,230.0 30.0,217.0 30.0,191.0 52.5,178.0 75.0,191.0" class="cell"/>
-<polygon points="120.1,217.0 97.5,230.0 75.0,217.0 75.0,191.0 97.5,178.0 120.1,191.0" class="hx b1"/>
-<polygon points="120.1,217.0 97.5,230.0 75.0,217.0 75.0,191.0 97.5,178.0 120.1,191.0" class="cell"/>
-<polygon points="165.1,217.0 142.6,230.0 120.1,217.0 120.1,191.0 142.6,178.0 165.1,191.0" class="hx b1"/>
-<polygon points="165.1,217.0 142.6,230.0 120.1,217.0 120.1,191.0 142.6,178.0 165.1,191.0" class="cell"/>
-<polygon points="210.1,217.0 187.6,230.0 165.1,217.0 165.1,191.0 187.6,178.0 210.1,191.0" class="hx b1"/>
-<polygon points="210.1,217.0 187.6,230.0 165.1,217.0 165.1,191.0 187.6,178.0 210.1,191.0" class="cell"/>
-<polygon points="255.2,217.0 232.6,230.0 210.1,217.0 210.1,191.0 232.6,178.0 255.2,191.0" class="hx b2"/>
-<polygon points="255.2,217.0 232.6,230.0 210.1,217.0 210.1,191.0 232.6,178.0 255.2,191.0" class="cell"/>
-<polygon points="300.2,217.0 277.7,230.0 255.2,217.0 255.2,191.0 277.7,178.0 300.2,191.0" class="hx b3"/>
-<polygon points="300.2,217.0 277.7,230.0 255.2,217.0 255.2,191.0 277.7,178.0 300.2,191.0" class="cell"/>
-<polygon points="345.2,217.0 322.7,230.0 300.2,217.0 300.2,191.0 322.7,178.0 345.2,191.0" class="hx b3"/>
-<polygon points="345.2,217.0 322.7,230.0 300.2,217.0 300.2,191.0 322.7,178.0 345.2,191.0" class="cell"/>
-<polygon points="390.3,217.0 367.7,230.0 345.2,217.0 345.2,191.0 367.7,178.0 390.3,191.0" class="cell"/>
-<polygon points="435.3,217.0 412.8,230.0 390.3,217.0 390.3,191.0 412.8,178.0 435.3,191.0" class="cell"/>
-<polygon points="97.5,178.0 75.0,191.0 52.5,178.0 52.5,152.0 75.0,139.0 97.5,152.0" class="hx b2"/>
-<polygon points="97.5,178.0 75.0,191.0 52.5,178.0 52.5,152.0 75.0,139.0 97.5,152.0" class="cell"/>
-<polygon points="142.6,178.0 120.1,191.0 97.5,178.0 97.5,152.0 120.1,139.0 142.6,152.0" class="hx b2"/>
-<polygon points="142.6,178.0 120.1,191.0 97.5,178.0 97.5,152.0 120.1,139.0 142.6,152.0" class="cell"/>
-<polygon points="187.6,178.0 165.1,191.0 142.6,178.0 142.6,152.0 165.1,139.0 187.6,152.0" class="hx b2"/>
-<polygon points="187.6,178.0 165.1,191.0 142.6,178.0 142.6,152.0 165.1,139.0 187.6,152.0" class="cell"/>
-<polygon points="232.6,178.0 210.1,191.0 187.6,178.0 187.6,152.0 210.1,139.0 232.6,152.0" class="hx b2"/>
-<polygon points="232.6,178.0 210.1,191.0 187.6,178.0 187.6,152.0 210.1,139.0 232.6,152.0" class="cell"/>
-<polygon points="277.7,178.0 255.2,191.0 232.6,178.0 232.6,152.0 255.2,139.0 277.7,152.0" class="hx b3"/>
-<polygon points="277.7,178.0 255.2,191.0 232.6,178.0 232.6,152.0 255.2,139.0 277.7,152.0" class="cell"/>
-<polygon points="322.7,178.0 300.2,191.0 277.7,178.0 277.7,152.0 300.2,139.0 322.7,152.0" class="hx b3"/>
-<polygon points="322.7,178.0 300.2,191.0 277.7,178.0 277.7,152.0 300.2,139.0 322.7,152.0" class="cell"/>
-<polygon points="367.7,178.0 345.2,191.0 322.7,178.0 322.7,152.0 345.2,139.0 367.7,152.0" class="cell"/>
-<polygon points="412.8,178.0 390.3,191.0 367.7,178.0 367.7,152.0 390.3,139.0 412.8,152.0" class="cell"/>
-<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="hx b3"/>
-<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="cell"/>
-<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="hx b3"/>
-<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="cell"/>
-<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="hx b3"/>
-<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="cell"/>
-<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="hx b3"/>
-<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="cell"/>
-<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="hx b3"/>
-<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="cell"/>
-<polygon points="345.2,139.0 322.7,152.0 300.2,139.0 300.2,113.0 322.7,100.0 345.2,113.0" class="cell"/>
-<polygon points="390.3,139.0 367.7,152.0 345.2,139.0 345.2,113.0 367.7,100.0 390.3,113.0" class="cell"/>
-<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="hx b3"/>
-<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="cell"/>
-<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="hx b3"/>
-<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="cell"/>
-<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="hx b3"/>
-<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="cell"/>
-<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="hx b3"/>
-<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="cell"/>
-<polygon points="322.7,100.0 300.2,113.0 277.7,100.0 277.7,74.0 300.2,61.0 322.7,74.0" class="cell"/>
-<polygon points="367.7,100.0 345.2,113.0 322.7,100.0 322.7,74.0 345.2,61.0 367.7,74.0" class="cell"/>
-<polygon points="165.1,61.0 142.6,74.0 120.1,61.0 120.1,35.0 142.6,22.0 165.1,35.0" class="cell"/>
-<polygon points="210.1,61.0 187.6,74.0 165.1,61.0 165.1,35.0 187.6,22.0 210.1,35.0" class="cell"/>
-<polygon points="255.2,61.0 232.6,74.0 210.1,61.0 210.1,35.0 232.6,22.0 255.2,35.0" class="cell"/>
-<polygon points="300.2,61.0 277.7,74.0 255.2,61.0 255.2,35.0 277.7,22.0 300.2,35.0" class="cell"/>
-<polygon points="345.2,61.0 322.7,74.0 300.2,61.0 300.2,35.0 322.7,22.0 345.2,35.0" class="cell"/>
-<text class="sm" x="110.6" y="364.0" text-anchor="end">1</text>
-<text class="sm" x="88.1" y="325.0" text-anchor="end">2</text>
-<text class="sm" x="65.5" y="286.0" text-anchor="end">3</text>
-<text class="sm" x="43.0" y="247.0" text-anchor="end">4</text>
-<text class="sm" x="20.5" y="208.0" text-anchor="end">5</text>
-<text class="sm" x="43.0" y="169.0" text-anchor="end">6</text>
-<text class="sm" x="65.5" y="130.0" text-anchor="end">7</text>
-<text class="sm" x="88.1" y="91.0" text-anchor="end">8</text>
-<text class="sm" x="110.6" y="52.0" text-anchor="end">9</text>
-<text class="sm" x="52.5" y="406.0" text-anchor="middle">a</text>
-<text class="sm" x="97.5" y="406.0" text-anchor="middle">b</text>
-<text class="sm" x="142.6" y="406.0" text-anchor="middle">c</text>
-<text class="sm" x="187.6" y="406.0" text-anchor="middle">d</text>
-<text class="sm" x="232.6" y="406.0" text-anchor="middle">e</text>
-<text class="sm" x="277.7" y="406.0" text-anchor="middle">f</text>
-<text class="sm" x="322.7" y="406.0" text-anchor="middle">g</text>
-<text class="sm" x="367.7" y="406.0" text-anchor="middle">h</text>
-<text class="sm" x="412.8" y="406.0" text-anchor="middle">i</text>
-<text class="sm" x="30" y="426">From c3: short within 2, medium to 4, long to 6, extreme to 8.</text>
-</svg><figcaption>The bands from c3, colour deepening toward the centre; the plain hexes at the edge are extreme range. See the table above for the exact hex counts.</figcaption></figure>
+<p>Reach is the weapon's preferred band. It shoots normally there and may flex one hex shorter or longer at &minus;2. It cannot attack targets more than one hex outside its preferred distances, even with extra commitment or height. A long weapon prefers four hexes and allows three or five at &minus;2. Extreme prefers five to seven and allows four or eight at &minus;2. Spells retain fixed distance ceilings: Blast four hexes, Controlling three, and short-range buffs two.</p>
+<figure id="range-diagram"><svg viewBox="0 0 434 393.7084555916037" role="img" aria-label="Distance bands on the 91-hex board">
+<polygon points="149.0,334.3 149.0,353.9 132.0,363.7 115.0,353.9 115.0,334.3 132.0,324.4" class="hx "/><polygon points="149.0,334.3 149.0,353.9 132.0,363.7 115.0,353.9 115.0,334.3 132.0,324.4" class="cell"/>
+<polygon points="183.0,334.3 183.0,353.9 166.0,363.7 149.0,353.9 149.0,334.3 166.0,324.4" class="hx "/><polygon points="183.0,334.3 183.0,353.9 166.0,363.7 149.0,353.9 149.0,334.3 166.0,324.4" class="cell"/>
+<polygon points="217.0,334.3 217.0,353.9 200.0,363.7 183.0,353.9 183.0,334.3 200.0,324.4" class="hx "/><polygon points="217.0,334.3 217.0,353.9 200.0,363.7 183.0,353.9 183.0,334.3 200.0,324.4" class="cell"/>
+<polygon points="251.0,334.3 251.0,353.9 234.0,363.7 217.0,353.9 217.0,334.3 234.0,324.4" class="hx "/><polygon points="251.0,334.3 251.0,353.9 234.0,363.7 217.0,353.9 217.0,334.3 234.0,324.4" class="cell"/>
+<polygon points="285.0,334.3 285.0,353.9 268.0,363.7 251.0,353.9 251.0,334.3 268.0,324.4" class="hx "/><polygon points="285.0,334.3 285.0,353.9 268.0,363.7 251.0,353.9 251.0,334.3 268.0,324.4" class="cell"/>
+<polygon points="319.0,334.3 319.0,353.9 302.0,363.7 285.0,353.9 285.0,334.3 302.0,324.4" class="hx "/><polygon points="319.0,334.3 319.0,353.9 302.0,363.7 285.0,353.9 285.0,334.3 302.0,324.4" class="cell"/>
+<polygon points="132.0,304.8 132.0,324.4 115.0,334.3 98.0,324.4 98.0,304.8 115.0,295.0" class="hx "/><polygon points="132.0,304.8 132.0,324.4 115.0,334.3 98.0,324.4 98.0,304.8 115.0,295.0" class="cell"/>
+<polygon points="166.0,304.8 166.0,324.4 149.0,334.3 132.0,324.4 132.0,304.8 149.0,295.0" class="hx b3"/><polygon points="166.0,304.8 166.0,324.4 149.0,334.3 132.0,324.4 132.0,304.8 149.0,295.0" class="cell"/>
+<polygon points="200.0,304.8 200.0,324.4 183.0,334.3 166.0,324.4 166.0,304.8 183.0,295.0" class="hx b3"/><polygon points="200.0,304.8 200.0,324.4 183.0,334.3 166.0,324.4 166.0,304.8 183.0,295.0" class="cell"/>
+<polygon points="234.0,304.8 234.0,324.4 217.0,334.3 200.0,324.4 200.0,304.8 217.0,295.0" class="hx b3"/><polygon points="234.0,304.8 234.0,324.4 217.0,334.3 200.0,324.4 200.0,304.8 217.0,295.0" class="cell"/>
+<polygon points="268.0,304.8 268.0,324.4 251.0,334.3 234.0,324.4 234.0,304.8 251.0,295.0" class="hx b3"/><polygon points="268.0,304.8 268.0,324.4 251.0,334.3 234.0,324.4 234.0,304.8 251.0,295.0" class="cell"/>
+<polygon points="302.0,304.8 302.0,324.4 285.0,334.3 268.0,324.4 268.0,304.8 285.0,295.0" class="hx b3"/><polygon points="302.0,304.8 302.0,324.4 285.0,334.3 268.0,324.4 268.0,304.8 285.0,295.0" class="cell"/>
+<polygon points="336.0,304.8 336.0,324.4 319.0,334.3 302.0,324.4 302.0,304.8 319.0,295.0" class="hx "/><polygon points="336.0,304.8 336.0,324.4 319.0,334.3 302.0,324.4 302.0,304.8 319.0,295.0" class="cell"/>
+<polygon points="115.0,275.4 115.0,295.0 98.0,304.8 81.0,295.0 81.0,275.4 98.0,265.6" class="hx "/><polygon points="115.0,275.4 115.0,295.0 98.0,304.8 81.0,295.0 81.0,275.4 98.0,265.6" class="cell"/>
+<polygon points="149.0,275.4 149.0,295.0 132.0,304.8 115.0,295.0 115.0,275.4 132.0,265.6" class="hx b3"/><polygon points="149.0,275.4 149.0,295.0 132.0,304.8 115.0,295.0 115.0,275.4 132.0,265.6" class="cell"/>
+<polygon points="183.0,275.4 183.0,295.0 166.0,304.8 149.0,295.0 149.0,275.4 166.0,265.6" class="hx b2"/><polygon points="183.0,275.4 183.0,295.0 166.0,304.8 149.0,295.0 149.0,275.4 166.0,265.6" class="cell"/>
+<polygon points="217.0,275.4 217.0,295.0 200.0,304.8 183.0,295.0 183.0,275.4 200.0,265.6" class="hx b2"/><polygon points="217.0,275.4 217.0,295.0 200.0,304.8 183.0,295.0 183.0,275.4 200.0,265.6" class="cell"/>
+<polygon points="251.0,275.4 251.0,295.0 234.0,304.8 217.0,295.0 217.0,275.4 234.0,265.6" class="hx b2"/><polygon points="251.0,275.4 251.0,295.0 234.0,304.8 217.0,295.0 217.0,275.4 234.0,265.6" class="cell"/>
+<polygon points="285.0,275.4 285.0,295.0 268.0,304.8 251.0,295.0 251.0,275.4 268.0,265.6" class="hx b2"/><polygon points="285.0,275.4 285.0,295.0 268.0,304.8 251.0,295.0 251.0,275.4 268.0,265.6" class="cell"/>
+<polygon points="319.0,275.4 319.0,295.0 302.0,304.8 285.0,295.0 285.0,275.4 302.0,265.6" class="hx b3"/><polygon points="319.0,275.4 319.0,295.0 302.0,304.8 285.0,295.0 285.0,275.4 302.0,265.6" class="cell"/>
+<polygon points="353.0,275.4 353.0,295.0 336.0,304.8 319.0,295.0 319.0,275.4 336.0,265.6" class="hx "/><polygon points="353.0,275.4 353.0,295.0 336.0,304.8 319.0,295.0 319.0,275.4 336.0,265.6" class="cell"/>
+<polygon points="98.0,245.9 98.0,265.6 81.0,275.4 64.0,265.6 64.0,245.9 81.0,236.1" class="hx "/><polygon points="98.0,245.9 98.0,265.6 81.0,275.4 64.0,265.6 64.0,245.9 81.0,236.1" class="cell"/>
+<polygon points="132.0,245.9 132.0,265.6 115.0,275.4 98.0,265.6 98.0,245.9 115.0,236.1" class="hx b3"/><polygon points="132.0,245.9 132.0,265.6 115.0,275.4 98.0,265.6 98.0,245.9 115.0,236.1" class="cell"/>
+<polygon points="166.0,245.9 166.0,265.6 149.0,275.4 132.0,265.6 132.0,245.9 149.0,236.1" class="hx b2"/><polygon points="166.0,245.9 166.0,265.6 149.0,275.4 132.0,265.6 132.0,245.9 149.0,236.1" class="cell"/>
+<polygon points="200.0,245.9 200.0,265.6 183.0,275.4 166.0,265.6 166.0,245.9 183.0,236.1" class="hx b1"/><polygon points="200.0,245.9 200.0,265.6 183.0,275.4 166.0,265.6 166.0,245.9 183.0,236.1" class="cell"/>
+<polygon points="234.0,245.9 234.0,265.6 217.0,275.4 200.0,265.6 200.0,245.9 217.0,236.1" class="hx b1"/><polygon points="234.0,245.9 234.0,265.6 217.0,275.4 200.0,265.6 200.0,245.9 217.0,236.1" class="cell"/>
+<polygon points="268.0,245.9 268.0,265.6 251.0,275.4 234.0,265.6 234.0,245.9 251.0,236.1" class="hx b1"/><polygon points="268.0,245.9 268.0,265.6 251.0,275.4 234.0,265.6 234.0,245.9 251.0,236.1" class="cell"/>
+<polygon points="302.0,245.9 302.0,265.6 285.0,275.4 268.0,265.6 268.0,245.9 285.0,236.1" class="hx b2"/><polygon points="302.0,245.9 302.0,265.6 285.0,275.4 268.0,265.6 268.0,245.9 285.0,236.1" class="cell"/>
+<polygon points="336.0,245.9 336.0,265.6 319.0,275.4 302.0,265.6 302.0,245.9 319.0,236.1" class="hx b3"/><polygon points="336.0,245.9 336.0,265.6 319.0,275.4 302.0,265.6 302.0,245.9 319.0,236.1" class="cell"/>
+<polygon points="370.0,245.9 370.0,265.6 353.0,275.4 336.0,265.6 336.0,245.9 353.0,236.1" class="hx "/><polygon points="370.0,245.9 370.0,265.6 353.0,275.4 336.0,265.6 336.0,245.9 353.0,236.1" class="cell"/>
+<polygon points="81.0,216.5 81.0,236.1 64.0,245.9 47.0,236.1 47.0,216.5 64.0,206.7" class="hx "/><polygon points="81.0,216.5 81.0,236.1 64.0,245.9 47.0,236.1 47.0,216.5 64.0,206.7" class="cell"/>
+<polygon points="115.0,216.5 115.0,236.1 98.0,245.9 81.0,236.1 81.0,216.5 98.0,206.7" class="hx b3"/><polygon points="115.0,216.5 115.0,236.1 98.0,245.9 81.0,236.1 81.0,216.5 98.0,206.7" class="cell"/>
+<polygon points="149.0,216.5 149.0,236.1 132.0,245.9 115.0,236.1 115.0,216.5 132.0,206.7" class="hx b2"/><polygon points="149.0,216.5 149.0,236.1 132.0,245.9 115.0,236.1 115.0,216.5 132.0,206.7" class="cell"/>
+<polygon points="183.0,216.5 183.0,236.1 166.0,245.9 149.0,236.1 149.0,216.5 166.0,206.7" class="hx b1"/><polygon points="183.0,216.5 183.0,236.1 166.0,245.9 149.0,236.1 149.0,216.5 166.0,206.7" class="cell"/>
+<polygon points="217.0,216.5 217.0,236.1 200.0,245.9 183.0,236.1 183.0,216.5 200.0,206.7" class="hx b1"/><polygon points="217.0,216.5 217.0,236.1 200.0,245.9 183.0,236.1 183.0,216.5 200.0,206.7" class="cell"/>
+<polygon points="251.0,216.5 251.0,236.1 234.0,245.9 217.0,236.1 217.0,216.5 234.0,206.7" class="hx b1"/><polygon points="251.0,216.5 251.0,236.1 234.0,245.9 217.0,236.1 217.0,216.5 234.0,206.7" class="cell"/>
+<polygon points="285.0,216.5 285.0,236.1 268.0,245.9 251.0,236.1 251.0,216.5 268.0,206.7" class="hx b1"/><polygon points="285.0,216.5 285.0,236.1 268.0,245.9 251.0,236.1 251.0,216.5 268.0,206.7" class="cell"/>
+<polygon points="319.0,216.5 319.0,236.1 302.0,245.9 285.0,236.1 285.0,216.5 302.0,206.7" class="hx b2"/><polygon points="319.0,216.5 319.0,236.1 302.0,245.9 285.0,236.1 285.0,216.5 302.0,206.7" class="cell"/>
+<polygon points="353.0,216.5 353.0,236.1 336.0,245.9 319.0,236.1 319.0,216.5 336.0,206.7" class="hx b3"/><polygon points="353.0,216.5 353.0,236.1 336.0,245.9 319.0,236.1 319.0,216.5 336.0,206.7" class="cell"/>
+<polygon points="387.0,216.5 387.0,236.1 370.0,245.9 353.0,236.1 353.0,216.5 370.0,206.7" class="hx "/><polygon points="387.0,216.5 387.0,236.1 370.0,245.9 353.0,236.1 353.0,216.5 370.0,206.7" class="cell"/>
+<polygon points="64.0,187.0 64.0,206.7 47.0,216.5 30.0,206.7 30.0,187.0 47.0,177.2" class="hx "/><polygon points="64.0,187.0 64.0,206.7 47.0,216.5 30.0,206.7 30.0,187.0 47.0,177.2" class="cell"/>
+<polygon points="98.0,187.0 98.0,206.7 81.0,216.5 64.0,206.7 64.0,187.0 81.0,177.2" class="hx b3"/><polygon points="98.0,187.0 98.0,206.7 81.0,216.5 64.0,206.7 64.0,187.0 81.0,177.2" class="cell"/>
+<polygon points="132.0,187.0 132.0,206.7 115.0,216.5 98.0,206.7 98.0,187.0 115.0,177.2" class="hx b2"/><polygon points="132.0,187.0 132.0,206.7 115.0,216.5 98.0,206.7 98.0,187.0 115.0,177.2" class="cell"/>
+<polygon points="166.0,187.0 166.0,206.7 149.0,216.5 132.0,206.7 132.0,187.0 149.0,177.2" class="hx b1"/><polygon points="166.0,187.0 166.0,206.7 149.0,216.5 132.0,206.7 132.0,187.0 149.0,177.2" class="cell"/>
+<polygon points="200.0,187.0 200.0,206.7 183.0,216.5 166.0,206.7 166.0,187.0 183.0,177.2" class="hx b1"/><polygon points="200.0,187.0 200.0,206.7 183.0,216.5 166.0,206.7 166.0,187.0 183.0,177.2" class="cell"/>
+<polygon points="234.0,187.0 234.0,206.7 217.0,216.5 200.0,206.7 200.0,187.0 217.0,177.2" class="hx b1"/><polygon points="234.0,187.0 234.0,206.7 217.0,216.5 200.0,206.7 200.0,187.0 217.0,177.2" class="cell"/>
+<circle cx="217" cy="196.85422779580185" r="8" class="att"/><polygon points="268.0,187.0 268.0,206.7 251.0,216.5 234.0,206.7 234.0,187.0 251.0,177.2" class="hx b1"/><polygon points="268.0,187.0 268.0,206.7 251.0,216.5 234.0,206.7 234.0,187.0 251.0,177.2" class="cell"/>
+<polygon points="302.0,187.0 302.0,206.7 285.0,216.5 268.0,206.7 268.0,187.0 285.0,177.2" class="hx b1"/><polygon points="302.0,187.0 302.0,206.7 285.0,216.5 268.0,206.7 268.0,187.0 285.0,177.2" class="cell"/>
+<polygon points="336.0,187.0 336.0,206.7 319.0,216.5 302.0,206.7 302.0,187.0 319.0,177.2" class="hx b2"/><polygon points="336.0,187.0 336.0,206.7 319.0,216.5 302.0,206.7 302.0,187.0 319.0,177.2" class="cell"/>
+<polygon points="370.0,187.0 370.0,206.7 353.0,216.5 336.0,206.7 336.0,187.0 353.0,177.2" class="hx b3"/><polygon points="370.0,187.0 370.0,206.7 353.0,216.5 336.0,206.7 336.0,187.0 353.0,177.2" class="cell"/>
+<polygon points="404.0,187.0 404.0,206.7 387.0,216.5 370.0,206.7 370.0,187.0 387.0,177.2" class="hx "/><polygon points="404.0,187.0 404.0,206.7 387.0,216.5 370.0,206.7 370.0,187.0 387.0,177.2" class="cell"/>
+<polygon points="81.0,157.6 81.0,177.2 64.0,187.0 47.0,177.2 47.0,157.6 64.0,147.8" class="hx "/><polygon points="81.0,157.6 81.0,177.2 64.0,187.0 47.0,177.2 47.0,157.6 64.0,147.8" class="cell"/>
+<polygon points="115.0,157.6 115.0,177.2 98.0,187.0 81.0,177.2 81.0,157.6 98.0,147.8" class="hx b3"/><polygon points="115.0,157.6 115.0,177.2 98.0,187.0 81.0,177.2 81.0,157.6 98.0,147.8" class="cell"/>
+<polygon points="149.0,157.6 149.0,177.2 132.0,187.0 115.0,177.2 115.0,157.6 132.0,147.8" class="hx b2"/><polygon points="149.0,157.6 149.0,177.2 132.0,187.0 115.0,177.2 115.0,157.6 132.0,147.8" class="cell"/>
+<polygon points="183.0,157.6 183.0,177.2 166.0,187.0 149.0,177.2 149.0,157.6 166.0,147.8" class="hx b1"/><polygon points="183.0,157.6 183.0,177.2 166.0,187.0 149.0,177.2 149.0,157.6 166.0,147.8" class="cell"/>
+<polygon points="217.0,157.6 217.0,177.2 200.0,187.0 183.0,177.2 183.0,157.6 200.0,147.8" class="hx b1"/><polygon points="217.0,157.6 217.0,177.2 200.0,187.0 183.0,177.2 183.0,157.6 200.0,147.8" class="cell"/>
+<polygon points="251.0,157.6 251.0,177.2 234.0,187.0 217.0,177.2 217.0,157.6 234.0,147.8" class="hx b1"/><polygon points="251.0,157.6 251.0,177.2 234.0,187.0 217.0,177.2 217.0,157.6 234.0,147.8" class="cell"/>
+<polygon points="285.0,157.6 285.0,177.2 268.0,187.0 251.0,177.2 251.0,157.6 268.0,147.8" class="hx b1"/><polygon points="285.0,157.6 285.0,177.2 268.0,187.0 251.0,177.2 251.0,157.6 268.0,147.8" class="cell"/>
+<polygon points="319.0,157.6 319.0,177.2 302.0,187.0 285.0,177.2 285.0,157.6 302.0,147.8" class="hx b2"/><polygon points="319.0,157.6 319.0,177.2 302.0,187.0 285.0,177.2 285.0,157.6 302.0,147.8" class="cell"/>
+<polygon points="353.0,157.6 353.0,177.2 336.0,187.0 319.0,177.2 319.0,157.6 336.0,147.8" class="hx b3"/><polygon points="353.0,157.6 353.0,177.2 336.0,187.0 319.0,177.2 319.0,157.6 336.0,147.8" class="cell"/>
+<polygon points="387.0,157.6 387.0,177.2 370.0,187.0 353.0,177.2 353.0,157.6 370.0,147.8" class="hx "/><polygon points="387.0,157.6 387.0,177.2 370.0,187.0 353.0,177.2 353.0,157.6 370.0,147.8" class="cell"/>
+<polygon points="98.0,128.1 98.0,147.8 81.0,157.6 64.0,147.8 64.0,128.1 81.0,118.3" class="hx "/><polygon points="98.0,128.1 98.0,147.8 81.0,157.6 64.0,147.8 64.0,128.1 81.0,118.3" class="cell"/>
+<polygon points="132.0,128.1 132.0,147.8 115.0,157.6 98.0,147.8 98.0,128.1 115.0,118.3" class="hx b3"/><polygon points="132.0,128.1 132.0,147.8 115.0,157.6 98.0,147.8 98.0,128.1 115.0,118.3" class="cell"/>
+<polygon points="166.0,128.1 166.0,147.8 149.0,157.6 132.0,147.8 132.0,128.1 149.0,118.3" class="hx b2"/><polygon points="166.0,128.1 166.0,147.8 149.0,157.6 132.0,147.8 132.0,128.1 149.0,118.3" class="cell"/>
+<polygon points="200.0,128.1 200.0,147.8 183.0,157.6 166.0,147.8 166.0,128.1 183.0,118.3" class="hx b1"/><polygon points="200.0,128.1 200.0,147.8 183.0,157.6 166.0,147.8 166.0,128.1 183.0,118.3" class="cell"/>
+<polygon points="234.0,128.1 234.0,147.8 217.0,157.6 200.0,147.8 200.0,128.1 217.0,118.3" class="hx b1"/><polygon points="234.0,128.1 234.0,147.8 217.0,157.6 200.0,147.8 200.0,128.1 217.0,118.3" class="cell"/>
+<polygon points="268.0,128.1 268.0,147.8 251.0,157.6 234.0,147.8 234.0,128.1 251.0,118.3" class="hx b1"/><polygon points="268.0,128.1 268.0,147.8 251.0,157.6 234.0,147.8 234.0,128.1 251.0,118.3" class="cell"/>
+<polygon points="302.0,128.1 302.0,147.8 285.0,157.6 268.0,147.8 268.0,128.1 285.0,118.3" class="hx b2"/><polygon points="302.0,128.1 302.0,147.8 285.0,157.6 268.0,147.8 268.0,128.1 285.0,118.3" class="cell"/>
+<polygon points="336.0,128.1 336.0,147.8 319.0,157.6 302.0,147.8 302.0,128.1 319.0,118.3" class="hx b3"/><polygon points="336.0,128.1 336.0,147.8 319.0,157.6 302.0,147.8 302.0,128.1 319.0,118.3" class="cell"/>
+<polygon points="370.0,128.1 370.0,147.8 353.0,157.6 336.0,147.8 336.0,128.1 353.0,118.3" class="hx "/><polygon points="370.0,128.1 370.0,147.8 353.0,157.6 336.0,147.8 336.0,128.1 353.0,118.3" class="cell"/>
+<polygon points="115.0,98.7 115.0,118.3 98.0,128.1 81.0,118.3 81.0,98.7 98.0,88.9" class="hx "/><polygon points="115.0,98.7 115.0,118.3 98.0,128.1 81.0,118.3 81.0,98.7 98.0,88.9" class="cell"/>
+<polygon points="149.0,98.7 149.0,118.3 132.0,128.1 115.0,118.3 115.0,98.7 132.0,88.9" class="hx b3"/><polygon points="149.0,98.7 149.0,118.3 132.0,128.1 115.0,118.3 115.0,98.7 132.0,88.9" class="cell"/>
+<polygon points="183.0,98.7 183.0,118.3 166.0,128.1 149.0,118.3 149.0,98.7 166.0,88.9" class="hx b2"/><polygon points="183.0,98.7 183.0,118.3 166.0,128.1 149.0,118.3 149.0,98.7 166.0,88.9" class="cell"/>
+<polygon points="217.0,98.7 217.0,118.3 200.0,128.1 183.0,118.3 183.0,98.7 200.0,88.9" class="hx b2"/><polygon points="217.0,98.7 217.0,118.3 200.0,128.1 183.0,118.3 183.0,98.7 200.0,88.9" class="cell"/>
+<polygon points="251.0,98.7 251.0,118.3 234.0,128.1 217.0,118.3 217.0,98.7 234.0,88.9" class="hx b2"/><polygon points="251.0,98.7 251.0,118.3 234.0,128.1 217.0,118.3 217.0,98.7 234.0,88.9" class="cell"/>
+<polygon points="285.0,98.7 285.0,118.3 268.0,128.1 251.0,118.3 251.0,98.7 268.0,88.9" class="hx b2"/><polygon points="285.0,98.7 285.0,118.3 268.0,128.1 251.0,118.3 251.0,98.7 268.0,88.9" class="cell"/>
+<polygon points="319.0,98.7 319.0,118.3 302.0,128.1 285.0,118.3 285.0,98.7 302.0,88.9" class="hx b3"/><polygon points="319.0,98.7 319.0,118.3 302.0,128.1 285.0,118.3 285.0,98.7 302.0,88.9" class="cell"/>
+<polygon points="353.0,98.7 353.0,118.3 336.0,128.1 319.0,118.3 319.0,98.7 336.0,88.9" class="hx "/><polygon points="353.0,98.7 353.0,118.3 336.0,128.1 319.0,118.3 319.0,98.7 336.0,88.9" class="cell"/>
+<polygon points="132.0,69.3 132.0,88.9 115.0,98.7 98.0,88.9 98.0,69.3 115.0,59.4" class="hx "/><polygon points="132.0,69.3 132.0,88.9 115.0,98.7 98.0,88.9 98.0,69.3 115.0,59.4" class="cell"/>
+<polygon points="166.0,69.3 166.0,88.9 149.0,98.7 132.0,88.9 132.0,69.3 149.0,59.4" class="hx b3"/><polygon points="166.0,69.3 166.0,88.9 149.0,98.7 132.0,88.9 132.0,69.3 149.0,59.4" class="cell"/>
+<polygon points="200.0,69.3 200.0,88.9 183.0,98.7 166.0,88.9 166.0,69.3 183.0,59.4" class="hx b3"/><polygon points="200.0,69.3 200.0,88.9 183.0,98.7 166.0,88.9 166.0,69.3 183.0,59.4" class="cell"/>
+<polygon points="234.0,69.3 234.0,88.9 217.0,98.7 200.0,88.9 200.0,69.3 217.0,59.4" class="hx b3"/><polygon points="234.0,69.3 234.0,88.9 217.0,98.7 200.0,88.9 200.0,69.3 217.0,59.4" class="cell"/>
+<polygon points="268.0,69.3 268.0,88.9 251.0,98.7 234.0,88.9 234.0,69.3 251.0,59.4" class="hx b3"/><polygon points="268.0,69.3 268.0,88.9 251.0,98.7 234.0,88.9 234.0,69.3 251.0,59.4" class="cell"/>
+<polygon points="302.0,69.3 302.0,88.9 285.0,98.7 268.0,88.9 268.0,69.3 285.0,59.4" class="hx b3"/><polygon points="302.0,69.3 302.0,88.9 285.0,98.7 268.0,88.9 268.0,69.3 285.0,59.4" class="cell"/>
+<polygon points="336.0,69.3 336.0,88.9 319.0,98.7 302.0,88.9 302.0,69.3 319.0,59.4" class="hx "/><polygon points="336.0,69.3 336.0,88.9 319.0,98.7 302.0,88.9 302.0,69.3 319.0,59.4" class="cell"/>
+<polygon points="149.0,39.8 149.0,59.4 132.0,69.3 115.0,59.4 115.0,39.8 132.0,30.0" class="hx "/><polygon points="149.0,39.8 149.0,59.4 132.0,69.3 115.0,59.4 115.0,39.8 132.0,30.0" class="cell"/>
+<polygon points="183.0,39.8 183.0,59.4 166.0,69.3 149.0,59.4 149.0,39.8 166.0,30.0" class="hx "/><polygon points="183.0,39.8 183.0,59.4 166.0,69.3 149.0,59.4 149.0,39.8 166.0,30.0" class="cell"/>
+<polygon points="217.0,39.8 217.0,59.4 200.0,69.3 183.0,59.4 183.0,39.8 200.0,30.0" class="hx "/><polygon points="217.0,39.8 217.0,59.4 200.0,69.3 183.0,59.4 183.0,39.8 200.0,30.0" class="cell"/>
+<polygon points="251.0,39.8 251.0,59.4 234.0,69.3 217.0,59.4 217.0,39.8 234.0,30.0" class="hx "/><polygon points="251.0,39.8 251.0,59.4 234.0,69.3 217.0,59.4 217.0,39.8 234.0,30.0" class="cell"/>
+<polygon points="285.0,39.8 285.0,59.4 268.0,69.3 251.0,59.4 251.0,39.8 268.0,30.0" class="hx "/><polygon points="285.0,39.8 285.0,59.4 268.0,69.3 251.0,59.4 251.0,39.8 268.0,30.0" class="cell"/>
+<polygon points="319.0,39.8 319.0,59.4 302.0,69.3 285.0,59.4 285.0,39.8 302.0,30.0" class="hx "/><polygon points="319.0,39.8 319.0,59.4 302.0,69.3 285.0,59.4 285.0,39.8 302.0,30.0" class="cell"/>
+<text x="106.5" y="348.0785464391564" text-anchor="end" class="sm">1</text><text x="89.5" y="318.6336827104855" text-anchor="end" class="sm">2</text><text x="72.5" y="289.1888189818146" text-anchor="end" class="sm">3</text><text x="55.5" y="259.74395525314367" text-anchor="end" class="sm">4</text><text x="38.5" y="230.29909152447277" text-anchor="end" class="sm">5</text><text x="21.5" y="200.85422779580185" text-anchor="end" class="sm">6</text><text x="38.5" y="171.40936406713092" text-anchor="end" class="sm">7</text><text x="55.5" y="141.96450033846003" text-anchor="end" class="sm">8</text><text x="72.5" y="112.5196366097891" text-anchor="end" class="sm">9</text><text x="89.5" y="83.07477288111818" text-anchor="end" class="sm">10</text><text x="106.5" y="53.62990915244728" text-anchor="end" class="sm">11</text><text x="47" y="385.7084555916037" text-anchor="middle" class="sm">a</text><text x="81" y="385.7084555916037" text-anchor="middle" class="sm">b</text><text x="115" y="385.7084555916037" text-anchor="middle" class="sm">c</text><text x="132" y="385.7084555916037" text-anchor="middle" class="sm">d</text><text x="166" y="385.7084555916037" text-anchor="middle" class="sm">e</text><text x="200" y="385.7084555916037" text-anchor="middle" class="sm">f</text><text x="234" y="385.7084555916037" text-anchor="middle" class="sm">g</text><text x="268" y="385.7084555916037" text-anchor="middle" class="sm">h</text><text x="302" y="385.7084555916037" text-anchor="middle" class="sm">i</text><text x="336" y="385.7084555916037" text-anchor="middle" class="sm">j</text><text x="370" y="385.7084555916037" text-anchor="middle" class="sm">k</text></svg><figcaption>Distance bands from f6: short is within two hexes, medium is three, long is four, and extreme is five to seven. A weapon may extend one hex beyond either end of its preferred distances at &minus;2. Engagement prevents shooting.</figcaption></figure>
 <p>Two enemy units on adjacent hexes are <strong>engaged</strong>, unless a cliff lies on the edge between them. A unit engaged with two or more enemies is <strong>outflanked</strong> and takes &minus;2 to Defence. An engaged unit cannot stride away and cannot shoot; it fights, guards, rallies, casts, or maneuvers (section 7).</p>
 <p>Hexes carry terrain and height; edges carry walls and cliffs (section 10).</p>
 
@@ -255,160 +220,126 @@
 <p>Setup runs in five stages, each on its own screen in the app.</p>
 <h3>Stage 1: the battlefield</h3>
 <p>Pick the hex's terrain (plains, forest, hills, mountains, swamp or desert), add a feature if the hex has one (a river or a lakeside) and a construction if it holds one (a fort of tier 0 to 3), then roll a seed. The generator lays the board out, and the same seed always gives the same board. Reroll until it looks like the hex.</p>
-<p>Terrain is a tendency, not a rule: a plains board can carry a copse and a hills board a marsh, never many. Hills and desert raise a low ridge, mountains a high one with peaks. A river runs across ranks 4 to 6, the band neither side deploys on, and carries one or two fords; a lake hugs one flank with a marshy shore. Water never lands on a deployment rank, so both sides can always deploy.</p>
+<p>Terrain is a tendency, not a rule: a plains board can carry a copse and a hills board a marsh, never many. Hills and desert raise a low ridge, mountains a high one with peaks. A river runs across ranks 4 to 8, the band neither side deploys on, and carries one or two fords; a lake hugs one flank with a marshy shore. Water never lands on a deployment rank, so both sides can always deploy.</p>
 <div class="wrap"><table>
 <tr><th>Hex terrain</th><th>What the generator lays down</th></tr>
 <tr><td>Plains</td><td>Up to two small copses, a marsh or a pond at most</td></tr>
-<tr><td>Forest</td><td>Eight to eleven woods of three to six hexes</td></tr>
+<tr><td>Forest</td><td>Small, separate woods of two to four hexes; about one third of the board</td></tr>
 <tr><td>Hills</td><td>A low ridge, one to three copses</td></tr>
-<tr><td>Mountains</td><td>A high ridge with one or two peaks, four to seven woods</td></tr>
-<tr><td>Swamp</td><td>Eight to twelve bogs, one to three ponds, a copse or two</td></tr>
+<tr><td>Mountains</td><td>A high ridge with one or two peaks, three to five small woods</td></tr>
+<tr><td>Swamp</td><td>Small, separate bogs of two to four hexes; about one quarter of the board, plus ponds and copses</td></tr>
 <tr><td>Desert</td><td>A low ridge and open ground</td></tr>
 </table></div>
 <h3>Stage 2: paint</h3>
 <p>The GM adjusts the board by hand: set any hex's terrain, set its height to 0, 1 or 2, put a wall on any edge, or clear a hex. This is where a hazard from the adventure goes — the bridge, the burning barn, the ravine.</p>
 <h3>Stages 3 and 4: the two forces</h3>
-<p>Build each side from the troop library, the force generator or a custom card, attach siege engines to the units that bring them, then put every unit on a hex. The attacker deploys anywhere on ranks 1 to 3, the defender anywhere on ranks 7 to 9, never on water. A unit with an ambush tactic may deploy one rank further in. Both sides need at least one unit, and every unit needs a hex. Note each unit's wounds and disorder from its sheet.</p>
-<p>Three ranks lie between the lines. A unit on rank 3 reaches contact in its first activation; a unit held back on rank 1 takes two. The depth of your deployment is your first decision.</p>
+<p>Build each side from the troop library, the force generator or a custom card, attach siege engines to the units that bring them, then put every unit on a hex. The attacker deploys anywhere on ranks 1 to 3, the defender anywhere on ranks 9 to 11, never on water. A unit with an ambush tactic may deploy one rank further in. Both sides need at least one unit, and every unit needs a hex. Note each unit's wounds and disorder from its sheet.</p>
+<p>Five ranks lie between the deployment zones. Against a stationary opponent on rank 9, a Speed-1 unit on rank 3 can attack in its second activation over open ground. Both armies advancing meet sooner. The depth of your deployment is your first decision.</p>
 <p><strong>Every player commands a unit.</strong> When the players' side brings fewer armies than players, split armies before deployment: one army becomes two or more units of the same card, each with its own hex, wounds and disorder. Each half is a full unit, a separate target for outflanking and a separate candidate for routing; a player who commands one may lose it. After the battle the halves rejoin: wounds take the average rounded up, disorder the higher. The GM may also hand an allied faction's unit to a player for the battle.</p>
 <p><strong>The opposing force.</strong> The GM picks the enemy from the library or lets the generator build one. The generator reads the other side and answers it: the same number of units give or take one, every unit within three levels of the other side's average, and the total level within a tenth of the other side's. At most one unit brings a siege engine. An attacker facing walls brings one three times in four, and it may be a ram; anyone else brings artillery one time in five. Add to the generated force or take from it.</p>
 <h3>Stage 5: begin</h3>
 <p>The attacker's side activates first. There is no initiative roll.</p>
-<figure><svg viewBox="0 0 472 432" role="img" aria-label="The hexagon at deployment">
-<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="hx att"/>
-<polygon points="165.1,373.0 142.6,386.0 120.1,373.0 120.1,347.0 142.6,334.0 165.1,347.0" class="cell"/>
-<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="hx att"/>
-<polygon points="210.1,373.0 187.6,386.0 165.1,373.0 165.1,347.0 187.6,334.0 210.1,347.0" class="cell"/>
-<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="hx att"/>
-<polygon points="255.2,373.0 232.6,386.0 210.1,373.0 210.1,347.0 232.6,334.0 255.2,347.0" class="cell"/>
-<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="hx att"/>
-<polygon points="300.2,373.0 277.7,386.0 255.2,373.0 255.2,347.0 277.7,334.0 300.2,347.0" class="cell"/>
-<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="hx att"/>
-<polygon points="345.2,373.0 322.7,386.0 300.2,373.0 300.2,347.0 322.7,334.0 345.2,347.0" class="cell"/>
-<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="hx att"/>
-<polygon points="142.6,334.0 120.1,347.0 97.5,334.0 97.5,308.0 120.1,295.0 142.6,308.0" class="cell"/>
-<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="hx att"/>
-<polygon points="187.6,334.0 165.1,347.0 142.6,334.0 142.6,308.0 165.1,295.0 187.6,308.0" class="cell"/>
-<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="hx att"/>
-<polygon points="232.6,334.0 210.1,347.0 187.6,334.0 187.6,308.0 210.1,295.0 232.6,308.0" class="cell"/>
-<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="hx att"/>
-<polygon points="277.7,334.0 255.2,347.0 232.6,334.0 232.6,308.0 255.2,295.0 277.7,308.0" class="cell"/>
-<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="hx att"/>
-<polygon points="322.7,334.0 300.2,347.0 277.7,334.0 277.7,308.0 300.2,295.0 322.7,308.0" class="cell"/>
-<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="hx att"/>
-<polygon points="367.7,334.0 345.2,347.0 322.7,334.0 322.7,308.0 345.2,295.0 367.7,308.0" class="cell"/>
-<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="hx att"/>
-<polygon points="120.1,295.0 97.5,308.0 75.0,295.0 75.0,269.0 97.5,256.0 120.1,269.0" class="cell"/>
-<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="hx att"/>
-<polygon points="165.1,295.0 142.6,308.0 120.1,295.0 120.1,269.0 142.6,256.0 165.1,269.0" class="cell"/>
-<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="hx att"/>
-<polygon points="210.1,295.0 187.6,308.0 165.1,295.0 165.1,269.0 187.6,256.0 210.1,269.0" class="cell"/>
-<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="hx att"/>
-<polygon points="255.2,295.0 232.6,308.0 210.1,295.0 210.1,269.0 232.6,256.0 255.2,269.0" class="cell"/>
-<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="hx att"/>
-<polygon points="300.2,295.0 277.7,308.0 255.2,295.0 255.2,269.0 277.7,256.0 300.2,269.0" class="cell"/>
-<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="hx att"/>
-<polygon points="345.2,295.0 322.7,308.0 300.2,295.0 300.2,269.0 322.7,256.0 345.2,269.0" class="cell"/>
-<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="hx att"/>
-<polygon points="390.3,295.0 367.7,308.0 345.2,295.0 345.2,269.0 367.7,256.0 390.3,269.0" class="cell"/>
-<polygon points="97.5,256.0 75.0,269.0 52.5,256.0 52.5,230.0 75.0,217.0 97.5,230.0" class="cell"/>
-<polygon points="142.6,256.0 120.1,269.0 97.5,256.0 97.5,230.0 120.1,217.0 142.6,230.0" class="cell"/>
-<polygon points="187.6,256.0 165.1,269.0 142.6,256.0 142.6,230.0 165.1,217.0 187.6,230.0" class="cell"/>
-<polygon points="232.6,256.0 210.1,269.0 187.6,256.0 187.6,230.0 210.1,217.0 232.6,230.0" class="cell"/>
-<polygon points="277.7,256.0 255.2,269.0 232.6,256.0 232.6,230.0 255.2,217.0 277.7,230.0" class="cell"/>
-<polygon points="322.7,256.0 300.2,269.0 277.7,256.0 277.7,230.0 300.2,217.0 322.7,230.0" class="cell"/>
-<polygon points="367.7,256.0 345.2,269.0 322.7,256.0 322.7,230.0 345.2,217.0 367.7,230.0" class="cell"/>
-<polygon points="412.8,256.0 390.3,269.0 367.7,256.0 367.7,230.0 390.3,217.0 412.8,230.0" class="cell"/>
-<polygon points="75.0,217.0 52.5,230.0 30.0,217.0 30.0,191.0 52.5,178.0 75.0,191.0" class="cell"/>
-<polygon points="120.1,217.0 97.5,230.0 75.0,217.0 75.0,191.0 97.5,178.0 120.1,191.0" class="cell"/>
-<polygon points="165.1,217.0 142.6,230.0 120.1,217.0 120.1,191.0 142.6,178.0 165.1,191.0" class="cell"/>
-<polygon points="210.1,217.0 187.6,230.0 165.1,217.0 165.1,191.0 187.6,178.0 210.1,191.0" class="cell"/>
-<polygon points="255.2,217.0 232.6,230.0 210.1,217.0 210.1,191.0 232.6,178.0 255.2,191.0" class="cell"/>
-<polygon points="300.2,217.0 277.7,230.0 255.2,217.0 255.2,191.0 277.7,178.0 300.2,191.0" class="cell"/>
-<polygon points="345.2,217.0 322.7,230.0 300.2,217.0 300.2,191.0 322.7,178.0 345.2,191.0" class="cell"/>
-<polygon points="390.3,217.0 367.7,230.0 345.2,217.0 345.2,191.0 367.7,178.0 390.3,191.0" class="cell"/>
-<polygon points="435.3,217.0 412.8,230.0 390.3,217.0 390.3,191.0 412.8,178.0 435.3,191.0" class="cell"/>
-<polygon points="97.5,178.0 75.0,191.0 52.5,178.0 52.5,152.0 75.0,139.0 97.5,152.0" class="cell"/>
-<polygon points="142.6,178.0 120.1,191.0 97.5,178.0 97.5,152.0 120.1,139.0 142.6,152.0" class="cell"/>
-<polygon points="187.6,178.0 165.1,191.0 142.6,178.0 142.6,152.0 165.1,139.0 187.6,152.0" class="cell"/>
-<polygon points="232.6,178.0 210.1,191.0 187.6,178.0 187.6,152.0 210.1,139.0 232.6,152.0" class="cell"/>
-<polygon points="277.7,178.0 255.2,191.0 232.6,178.0 232.6,152.0 255.2,139.0 277.7,152.0" class="cell"/>
-<polygon points="322.7,178.0 300.2,191.0 277.7,178.0 277.7,152.0 300.2,139.0 322.7,152.0" class="cell"/>
-<polygon points="367.7,178.0 345.2,191.0 322.7,178.0 322.7,152.0 345.2,139.0 367.7,152.0" class="cell"/>
-<polygon points="412.8,178.0 390.3,191.0 367.7,178.0 367.7,152.0 390.3,139.0 412.8,152.0" class="cell"/>
-<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="hx def"/>
-<polygon points="120.1,139.0 97.5,152.0 75.0,139.0 75.0,113.0 97.5,100.0 120.1,113.0" class="cell"/>
-<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="hx def"/>
-<polygon points="165.1,139.0 142.6,152.0 120.1,139.0 120.1,113.0 142.6,100.0 165.1,113.0" class="cell"/>
-<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="hx def"/>
-<polygon points="210.1,139.0 187.6,152.0 165.1,139.0 165.1,113.0 187.6,100.0 210.1,113.0" class="cell"/>
-<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="hx def"/>
-<polygon points="255.2,139.0 232.6,152.0 210.1,139.0 210.1,113.0 232.6,100.0 255.2,113.0" class="cell"/>
-<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="hx def"/>
-<polygon points="300.2,139.0 277.7,152.0 255.2,139.0 255.2,113.0 277.7,100.0 300.2,113.0" class="cell"/>
-<polygon points="345.2,139.0 322.7,152.0 300.2,139.0 300.2,113.0 322.7,100.0 345.2,113.0" class="hx def"/>
-<polygon points="345.2,139.0 322.7,152.0 300.2,139.0 300.2,113.0 322.7,100.0 345.2,113.0" class="cell"/>
-<polygon points="390.3,139.0 367.7,152.0 345.2,139.0 345.2,113.0 367.7,100.0 390.3,113.0" class="hx def"/>
-<polygon points="390.3,139.0 367.7,152.0 345.2,139.0 345.2,113.0 367.7,100.0 390.3,113.0" class="cell"/>
-<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="hx def"/>
-<polygon points="142.6,100.0 120.1,113.0 97.5,100.0 97.5,74.0 120.1,61.0 142.6,74.0" class="cell"/>
-<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="hx def"/>
-<polygon points="187.6,100.0 165.1,113.0 142.6,100.0 142.6,74.0 165.1,61.0 187.6,74.0" class="cell"/>
-<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="hx def"/>
-<polygon points="232.6,100.0 210.1,113.0 187.6,100.0 187.6,74.0 210.1,61.0 232.6,74.0" class="cell"/>
-<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="hx def"/>
-<polygon points="277.7,100.0 255.2,113.0 232.6,100.0 232.6,74.0 255.2,61.0 277.7,74.0" class="cell"/>
-<polygon points="322.7,100.0 300.2,113.0 277.7,100.0 277.7,74.0 300.2,61.0 322.7,74.0" class="hx def"/>
-<polygon points="322.7,100.0 300.2,113.0 277.7,100.0 277.7,74.0 300.2,61.0 322.7,74.0" class="cell"/>
-<polygon points="367.7,100.0 345.2,113.0 322.7,100.0 322.7,74.0 345.2,61.0 367.7,74.0" class="hx def"/>
-<polygon points="367.7,100.0 345.2,113.0 322.7,100.0 322.7,74.0 345.2,61.0 367.7,74.0" class="cell"/>
-<polygon points="165.1,61.0 142.6,74.0 120.1,61.0 120.1,35.0 142.6,22.0 165.1,35.0" class="hx def"/>
-<polygon points="165.1,61.0 142.6,74.0 120.1,61.0 120.1,35.0 142.6,22.0 165.1,35.0" class="cell"/>
-<polygon points="210.1,61.0 187.6,74.0 165.1,61.0 165.1,35.0 187.6,22.0 210.1,35.0" class="hx def"/>
-<polygon points="210.1,61.0 187.6,74.0 165.1,61.0 165.1,35.0 187.6,22.0 210.1,35.0" class="cell"/>
-<polygon points="255.2,61.0 232.6,74.0 210.1,61.0 210.1,35.0 232.6,22.0 255.2,35.0" class="hx def"/>
-<polygon points="255.2,61.0 232.6,74.0 210.1,61.0 210.1,35.0 232.6,22.0 255.2,35.0" class="cell"/>
-<polygon points="300.2,61.0 277.7,74.0 255.2,61.0 255.2,35.0 277.7,22.0 300.2,35.0" class="hx def"/>
-<polygon points="300.2,61.0 277.7,74.0 255.2,61.0 255.2,35.0 277.7,22.0 300.2,35.0" class="cell"/>
-<polygon points="345.2,61.0 322.7,74.0 300.2,61.0 300.2,35.0 322.7,22.0 345.2,35.0" class="hx def"/>
-<polygon points="345.2,61.0 322.7,74.0 300.2,61.0 300.2,35.0 322.7,22.0 345.2,35.0" class="cell"/>
-<text class="sm" x="110.6" y="364.0" text-anchor="end">1</text>
-<text class="sm" x="88.1" y="325.0" text-anchor="end">2</text>
-<text class="sm" x="65.5" y="286.0" text-anchor="end">3</text>
-<text class="sm" x="43.0" y="247.0" text-anchor="end">4</text>
-<text class="sm" x="20.5" y="208.0" text-anchor="end">5</text>
-<text class="sm" x="43.0" y="169.0" text-anchor="end">6</text>
-<text class="sm" x="65.5" y="130.0" text-anchor="end">7</text>
-<text class="sm" x="88.1" y="91.0" text-anchor="end">8</text>
-<text class="sm" x="110.6" y="52.0" text-anchor="end">9</text>
-<text class="sm" x="52.5" y="406.0" text-anchor="middle">a</text>
-<text class="sm" x="97.5" y="406.0" text-anchor="middle">b</text>
-<text class="sm" x="142.6" y="406.0" text-anchor="middle">c</text>
-<text class="sm" x="187.6" y="406.0" text-anchor="middle">d</text>
-<text class="sm" x="232.6" y="406.0" text-anchor="middle">e</text>
-<text class="sm" x="277.7" y="406.0" text-anchor="middle">f</text>
-<text class="sm" x="322.7" y="406.0" text-anchor="middle">g</text>
-<text class="sm" x="367.7" y="406.0" text-anchor="middle">h</text>
-<text class="sm" x="412.8" y="406.0" text-anchor="middle">i</text>
-<circle class="att" cx="165.1" cy="317.0" r="9"/>
-<text class="lbl" x="165.1" y="337.0" text-anchor="middle">Inf</text>
-<circle class="att" cx="232.6" cy="278.0" r="9"/>
-<text class="lbl" x="232.6" y="298.0" text-anchor="middle">Cav</text>
-<circle class="def" cx="210.1" cy="83.0" r="9"/>
-<text class="lbl" x="210.1" y="103.0" text-anchor="middle">Kob</text>
-<circle class="def" cx="277.7" cy="122.0" r="9"/>
-<text class="lbl" x="277.7" y="142.0" text-anchor="middle">Trl</text>
-<text class="sm" x="30" y="426">Ranks 1–3: the attacker deploys here. Ranks 7–9: the defender. Ranks 4–6 are the ground between.</text>
-</svg><figcaption>Sixty-one hexes, files a to i and ranks 1 to 9. Circles are the attacker's units, and the shaded bands are the two deployment zones.</figcaption></figure>
+<figure><svg viewBox="0 0 434 393.7084555916037" role="img" aria-label="Deployment on the 91-hex board">
+<polygon points="149.0,334.3 149.0,353.9 132.0,363.7 115.0,353.9 115.0,334.3 132.0,324.4" class="hx att"/><polygon points="149.0,334.3 149.0,353.9 132.0,363.7 115.0,353.9 115.0,334.3 132.0,324.4" class="cell"/>
+<polygon points="183.0,334.3 183.0,353.9 166.0,363.7 149.0,353.9 149.0,334.3 166.0,324.4" class="hx att"/><polygon points="183.0,334.3 183.0,353.9 166.0,363.7 149.0,353.9 149.0,334.3 166.0,324.4" class="cell"/>
+<polygon points="217.0,334.3 217.0,353.9 200.0,363.7 183.0,353.9 183.0,334.3 200.0,324.4" class="hx att"/><polygon points="217.0,334.3 217.0,353.9 200.0,363.7 183.0,353.9 183.0,334.3 200.0,324.4" class="cell"/>
+<polygon points="251.0,334.3 251.0,353.9 234.0,363.7 217.0,353.9 217.0,334.3 234.0,324.4" class="hx att"/><polygon points="251.0,334.3 251.0,353.9 234.0,363.7 217.0,353.9 217.0,334.3 234.0,324.4" class="cell"/>
+<polygon points="285.0,334.3 285.0,353.9 268.0,363.7 251.0,353.9 251.0,334.3 268.0,324.4" class="hx att"/><polygon points="285.0,334.3 285.0,353.9 268.0,363.7 251.0,353.9 251.0,334.3 268.0,324.4" class="cell"/>
+<polygon points="319.0,334.3 319.0,353.9 302.0,363.7 285.0,353.9 285.0,334.3 302.0,324.4" class="hx att"/><polygon points="319.0,334.3 319.0,353.9 302.0,363.7 285.0,353.9 285.0,334.3 302.0,324.4" class="cell"/>
+<polygon points="132.0,304.8 132.0,324.4 115.0,334.3 98.0,324.4 98.0,304.8 115.0,295.0" class="hx att"/><polygon points="132.0,304.8 132.0,324.4 115.0,334.3 98.0,324.4 98.0,304.8 115.0,295.0" class="cell"/>
+<polygon points="166.0,304.8 166.0,324.4 149.0,334.3 132.0,324.4 132.0,304.8 149.0,295.0" class="hx att"/><polygon points="166.0,304.8 166.0,324.4 149.0,334.3 132.0,324.4 132.0,304.8 149.0,295.0" class="cell"/>
+<polygon points="200.0,304.8 200.0,324.4 183.0,334.3 166.0,324.4 166.0,304.8 183.0,295.0" class="hx att"/><polygon points="200.0,304.8 200.0,324.4 183.0,334.3 166.0,324.4 166.0,304.8 183.0,295.0" class="cell"/>
+<polygon points="234.0,304.8 234.0,324.4 217.0,334.3 200.0,324.4 200.0,304.8 217.0,295.0" class="hx att"/><polygon points="234.0,304.8 234.0,324.4 217.0,334.3 200.0,324.4 200.0,304.8 217.0,295.0" class="cell"/>
+<polygon points="268.0,304.8 268.0,324.4 251.0,334.3 234.0,324.4 234.0,304.8 251.0,295.0" class="hx att"/><polygon points="268.0,304.8 268.0,324.4 251.0,334.3 234.0,324.4 234.0,304.8 251.0,295.0" class="cell"/>
+<polygon points="302.0,304.8 302.0,324.4 285.0,334.3 268.0,324.4 268.0,304.8 285.0,295.0" class="hx att"/><polygon points="302.0,304.8 302.0,324.4 285.0,334.3 268.0,324.4 268.0,304.8 285.0,295.0" class="cell"/>
+<polygon points="336.0,304.8 336.0,324.4 319.0,334.3 302.0,324.4 302.0,304.8 319.0,295.0" class="hx att"/><polygon points="336.0,304.8 336.0,324.4 319.0,334.3 302.0,324.4 302.0,304.8 319.0,295.0" class="cell"/>
+<polygon points="115.0,275.4 115.0,295.0 98.0,304.8 81.0,295.0 81.0,275.4 98.0,265.6" class="hx att"/><polygon points="115.0,275.4 115.0,295.0 98.0,304.8 81.0,295.0 81.0,275.4 98.0,265.6" class="cell"/>
+<polygon points="149.0,275.4 149.0,295.0 132.0,304.8 115.0,295.0 115.0,275.4 132.0,265.6" class="hx att"/><polygon points="149.0,275.4 149.0,295.0 132.0,304.8 115.0,295.0 115.0,275.4 132.0,265.6" class="cell"/>
+<polygon points="183.0,275.4 183.0,295.0 166.0,304.8 149.0,295.0 149.0,275.4 166.0,265.6" class="hx att"/><polygon points="183.0,275.4 183.0,295.0 166.0,304.8 149.0,295.0 149.0,275.4 166.0,265.6" class="cell"/>
+<circle cx="166" cy="285.1888189818146" r="8" class="att"/><polygon points="217.0,275.4 217.0,295.0 200.0,304.8 183.0,295.0 183.0,275.4 200.0,265.6" class="hx att"/><polygon points="217.0,275.4 217.0,295.0 200.0,304.8 183.0,295.0 183.0,275.4 200.0,265.6" class="cell"/>
+<circle cx="200" cy="285.1888189818146" r="8" class="att"/><polygon points="251.0,275.4 251.0,295.0 234.0,304.8 217.0,295.0 217.0,275.4 234.0,265.6" class="hx att"/><polygon points="251.0,275.4 251.0,295.0 234.0,304.8 217.0,295.0 217.0,275.4 234.0,265.6" class="cell"/>
+<circle cx="234" cy="285.1888189818146" r="8" class="att"/><polygon points="285.0,275.4 285.0,295.0 268.0,304.8 251.0,295.0 251.0,275.4 268.0,265.6" class="hx att"/><polygon points="285.0,275.4 285.0,295.0 268.0,304.8 251.0,295.0 251.0,275.4 268.0,265.6" class="cell"/>
+<polygon points="319.0,275.4 319.0,295.0 302.0,304.8 285.0,295.0 285.0,275.4 302.0,265.6" class="hx att"/><polygon points="319.0,275.4 319.0,295.0 302.0,304.8 285.0,295.0 285.0,275.4 302.0,265.6" class="cell"/>
+<polygon points="353.0,275.4 353.0,295.0 336.0,304.8 319.0,295.0 319.0,275.4 336.0,265.6" class="hx att"/><polygon points="353.0,275.4 353.0,295.0 336.0,304.8 319.0,295.0 319.0,275.4 336.0,265.6" class="cell"/>
+<polygon points="98.0,245.9 98.0,265.6 81.0,275.4 64.0,265.6 64.0,245.9 81.0,236.1" class="hx "/><polygon points="98.0,245.9 98.0,265.6 81.0,275.4 64.0,265.6 64.0,245.9 81.0,236.1" class="cell"/>
+<polygon points="132.0,245.9 132.0,265.6 115.0,275.4 98.0,265.6 98.0,245.9 115.0,236.1" class="hx "/><polygon points="132.0,245.9 132.0,265.6 115.0,275.4 98.0,265.6 98.0,245.9 115.0,236.1" class="cell"/>
+<polygon points="166.0,245.9 166.0,265.6 149.0,275.4 132.0,265.6 132.0,245.9 149.0,236.1" class="hx "/><polygon points="166.0,245.9 166.0,265.6 149.0,275.4 132.0,265.6 132.0,245.9 149.0,236.1" class="cell"/>
+<polygon points="200.0,245.9 200.0,265.6 183.0,275.4 166.0,265.6 166.0,245.9 183.0,236.1" class="hx "/><polygon points="200.0,245.9 200.0,265.6 183.0,275.4 166.0,265.6 166.0,245.9 183.0,236.1" class="cell"/>
+<polygon points="234.0,245.9 234.0,265.6 217.0,275.4 200.0,265.6 200.0,245.9 217.0,236.1" class="hx "/><polygon points="234.0,245.9 234.0,265.6 217.0,275.4 200.0,265.6 200.0,245.9 217.0,236.1" class="cell"/>
+<polygon points="268.0,245.9 268.0,265.6 251.0,275.4 234.0,265.6 234.0,245.9 251.0,236.1" class="hx "/><polygon points="268.0,245.9 268.0,265.6 251.0,275.4 234.0,265.6 234.0,245.9 251.0,236.1" class="cell"/>
+<polygon points="302.0,245.9 302.0,265.6 285.0,275.4 268.0,265.6 268.0,245.9 285.0,236.1" class="hx "/><polygon points="302.0,245.9 302.0,265.6 285.0,275.4 268.0,265.6 268.0,245.9 285.0,236.1" class="cell"/>
+<polygon points="336.0,245.9 336.0,265.6 319.0,275.4 302.0,265.6 302.0,245.9 319.0,236.1" class="hx "/><polygon points="336.0,245.9 336.0,265.6 319.0,275.4 302.0,265.6 302.0,245.9 319.0,236.1" class="cell"/>
+<polygon points="370.0,245.9 370.0,265.6 353.0,275.4 336.0,265.6 336.0,245.9 353.0,236.1" class="hx "/><polygon points="370.0,245.9 370.0,265.6 353.0,275.4 336.0,265.6 336.0,245.9 353.0,236.1" class="cell"/>
+<polygon points="81.0,216.5 81.0,236.1 64.0,245.9 47.0,236.1 47.0,216.5 64.0,206.7" class="hx "/><polygon points="81.0,216.5 81.0,236.1 64.0,245.9 47.0,236.1 47.0,216.5 64.0,206.7" class="cell"/>
+<polygon points="115.0,216.5 115.0,236.1 98.0,245.9 81.0,236.1 81.0,216.5 98.0,206.7" class="hx "/><polygon points="115.0,216.5 115.0,236.1 98.0,245.9 81.0,236.1 81.0,216.5 98.0,206.7" class="cell"/>
+<polygon points="149.0,216.5 149.0,236.1 132.0,245.9 115.0,236.1 115.0,216.5 132.0,206.7" class="hx "/><polygon points="149.0,216.5 149.0,236.1 132.0,245.9 115.0,236.1 115.0,216.5 132.0,206.7" class="cell"/>
+<polygon points="183.0,216.5 183.0,236.1 166.0,245.9 149.0,236.1 149.0,216.5 166.0,206.7" class="hx "/><polygon points="183.0,216.5 183.0,236.1 166.0,245.9 149.0,236.1 149.0,216.5 166.0,206.7" class="cell"/>
+<polygon points="217.0,216.5 217.0,236.1 200.0,245.9 183.0,236.1 183.0,216.5 200.0,206.7" class="hx "/><polygon points="217.0,216.5 217.0,236.1 200.0,245.9 183.0,236.1 183.0,216.5 200.0,206.7" class="cell"/>
+<polygon points="251.0,216.5 251.0,236.1 234.0,245.9 217.0,236.1 217.0,216.5 234.0,206.7" class="hx "/><polygon points="251.0,216.5 251.0,236.1 234.0,245.9 217.0,236.1 217.0,216.5 234.0,206.7" class="cell"/>
+<polygon points="285.0,216.5 285.0,236.1 268.0,245.9 251.0,236.1 251.0,216.5 268.0,206.7" class="hx "/><polygon points="285.0,216.5 285.0,236.1 268.0,245.9 251.0,236.1 251.0,216.5 268.0,206.7" class="cell"/>
+<polygon points="319.0,216.5 319.0,236.1 302.0,245.9 285.0,236.1 285.0,216.5 302.0,206.7" class="hx "/><polygon points="319.0,216.5 319.0,236.1 302.0,245.9 285.0,236.1 285.0,216.5 302.0,206.7" class="cell"/>
+<polygon points="353.0,216.5 353.0,236.1 336.0,245.9 319.0,236.1 319.0,216.5 336.0,206.7" class="hx "/><polygon points="353.0,216.5 353.0,236.1 336.0,245.9 319.0,236.1 319.0,216.5 336.0,206.7" class="cell"/>
+<polygon points="387.0,216.5 387.0,236.1 370.0,245.9 353.0,236.1 353.0,216.5 370.0,206.7" class="hx "/><polygon points="387.0,216.5 387.0,236.1 370.0,245.9 353.0,236.1 353.0,216.5 370.0,206.7" class="cell"/>
+<polygon points="64.0,187.0 64.0,206.7 47.0,216.5 30.0,206.7 30.0,187.0 47.0,177.2" class="hx "/><polygon points="64.0,187.0 64.0,206.7 47.0,216.5 30.0,206.7 30.0,187.0 47.0,177.2" class="cell"/>
+<polygon points="98.0,187.0 98.0,206.7 81.0,216.5 64.0,206.7 64.0,187.0 81.0,177.2" class="hx "/><polygon points="98.0,187.0 98.0,206.7 81.0,216.5 64.0,206.7 64.0,187.0 81.0,177.2" class="cell"/>
+<polygon points="132.0,187.0 132.0,206.7 115.0,216.5 98.0,206.7 98.0,187.0 115.0,177.2" class="hx "/><polygon points="132.0,187.0 132.0,206.7 115.0,216.5 98.0,206.7 98.0,187.0 115.0,177.2" class="cell"/>
+<polygon points="166.0,187.0 166.0,206.7 149.0,216.5 132.0,206.7 132.0,187.0 149.0,177.2" class="hx "/><polygon points="166.0,187.0 166.0,206.7 149.0,216.5 132.0,206.7 132.0,187.0 149.0,177.2" class="cell"/>
+<polygon points="200.0,187.0 200.0,206.7 183.0,216.5 166.0,206.7 166.0,187.0 183.0,177.2" class="hx "/><polygon points="200.0,187.0 200.0,206.7 183.0,216.5 166.0,206.7 166.0,187.0 183.0,177.2" class="cell"/>
+<polygon points="234.0,187.0 234.0,206.7 217.0,216.5 200.0,206.7 200.0,187.0 217.0,177.2" class="hx "/><polygon points="234.0,187.0 234.0,206.7 217.0,216.5 200.0,206.7 200.0,187.0 217.0,177.2" class="cell"/>
+<polygon points="268.0,187.0 268.0,206.7 251.0,216.5 234.0,206.7 234.0,187.0 251.0,177.2" class="hx "/><polygon points="268.0,187.0 268.0,206.7 251.0,216.5 234.0,206.7 234.0,187.0 251.0,177.2" class="cell"/>
+<polygon points="302.0,187.0 302.0,206.7 285.0,216.5 268.0,206.7 268.0,187.0 285.0,177.2" class="hx "/><polygon points="302.0,187.0 302.0,206.7 285.0,216.5 268.0,206.7 268.0,187.0 285.0,177.2" class="cell"/>
+<polygon points="336.0,187.0 336.0,206.7 319.0,216.5 302.0,206.7 302.0,187.0 319.0,177.2" class="hx "/><polygon points="336.0,187.0 336.0,206.7 319.0,216.5 302.0,206.7 302.0,187.0 319.0,177.2" class="cell"/>
+<polygon points="370.0,187.0 370.0,206.7 353.0,216.5 336.0,206.7 336.0,187.0 353.0,177.2" class="hx "/><polygon points="370.0,187.0 370.0,206.7 353.0,216.5 336.0,206.7 336.0,187.0 353.0,177.2" class="cell"/>
+<polygon points="404.0,187.0 404.0,206.7 387.0,216.5 370.0,206.7 370.0,187.0 387.0,177.2" class="hx "/><polygon points="404.0,187.0 404.0,206.7 387.0,216.5 370.0,206.7 370.0,187.0 387.0,177.2" class="cell"/>
+<polygon points="81.0,157.6 81.0,177.2 64.0,187.0 47.0,177.2 47.0,157.6 64.0,147.8" class="hx "/><polygon points="81.0,157.6 81.0,177.2 64.0,187.0 47.0,177.2 47.0,157.6 64.0,147.8" class="cell"/>
+<polygon points="115.0,157.6 115.0,177.2 98.0,187.0 81.0,177.2 81.0,157.6 98.0,147.8" class="hx "/><polygon points="115.0,157.6 115.0,177.2 98.0,187.0 81.0,177.2 81.0,157.6 98.0,147.8" class="cell"/>
+<polygon points="149.0,157.6 149.0,177.2 132.0,187.0 115.0,177.2 115.0,157.6 132.0,147.8" class="hx "/><polygon points="149.0,157.6 149.0,177.2 132.0,187.0 115.0,177.2 115.0,157.6 132.0,147.8" class="cell"/>
+<polygon points="183.0,157.6 183.0,177.2 166.0,187.0 149.0,177.2 149.0,157.6 166.0,147.8" class="hx "/><polygon points="183.0,157.6 183.0,177.2 166.0,187.0 149.0,177.2 149.0,157.6 166.0,147.8" class="cell"/>
+<polygon points="217.0,157.6 217.0,177.2 200.0,187.0 183.0,177.2 183.0,157.6 200.0,147.8" class="hx "/><polygon points="217.0,157.6 217.0,177.2 200.0,187.0 183.0,177.2 183.0,157.6 200.0,147.8" class="cell"/>
+<polygon points="251.0,157.6 251.0,177.2 234.0,187.0 217.0,177.2 217.0,157.6 234.0,147.8" class="hx "/><polygon points="251.0,157.6 251.0,177.2 234.0,187.0 217.0,177.2 217.0,157.6 234.0,147.8" class="cell"/>
+<polygon points="285.0,157.6 285.0,177.2 268.0,187.0 251.0,177.2 251.0,157.6 268.0,147.8" class="hx "/><polygon points="285.0,157.6 285.0,177.2 268.0,187.0 251.0,177.2 251.0,157.6 268.0,147.8" class="cell"/>
+<polygon points="319.0,157.6 319.0,177.2 302.0,187.0 285.0,177.2 285.0,157.6 302.0,147.8" class="hx "/><polygon points="319.0,157.6 319.0,177.2 302.0,187.0 285.0,177.2 285.0,157.6 302.0,147.8" class="cell"/>
+<polygon points="353.0,157.6 353.0,177.2 336.0,187.0 319.0,177.2 319.0,157.6 336.0,147.8" class="hx "/><polygon points="353.0,157.6 353.0,177.2 336.0,187.0 319.0,177.2 319.0,157.6 336.0,147.8" class="cell"/>
+<polygon points="387.0,157.6 387.0,177.2 370.0,187.0 353.0,177.2 353.0,157.6 370.0,147.8" class="hx "/><polygon points="387.0,157.6 387.0,177.2 370.0,187.0 353.0,177.2 353.0,157.6 370.0,147.8" class="cell"/>
+<polygon points="98.0,128.1 98.0,147.8 81.0,157.6 64.0,147.8 64.0,128.1 81.0,118.3" class="hx "/><polygon points="98.0,128.1 98.0,147.8 81.0,157.6 64.0,147.8 64.0,128.1 81.0,118.3" class="cell"/>
+<polygon points="132.0,128.1 132.0,147.8 115.0,157.6 98.0,147.8 98.0,128.1 115.0,118.3" class="hx "/><polygon points="132.0,128.1 132.0,147.8 115.0,157.6 98.0,147.8 98.0,128.1 115.0,118.3" class="cell"/>
+<polygon points="166.0,128.1 166.0,147.8 149.0,157.6 132.0,147.8 132.0,128.1 149.0,118.3" class="hx "/><polygon points="166.0,128.1 166.0,147.8 149.0,157.6 132.0,147.8 132.0,128.1 149.0,118.3" class="cell"/>
+<polygon points="200.0,128.1 200.0,147.8 183.0,157.6 166.0,147.8 166.0,128.1 183.0,118.3" class="hx "/><polygon points="200.0,128.1 200.0,147.8 183.0,157.6 166.0,147.8 166.0,128.1 183.0,118.3" class="cell"/>
+<polygon points="234.0,128.1 234.0,147.8 217.0,157.6 200.0,147.8 200.0,128.1 217.0,118.3" class="hx "/><polygon points="234.0,128.1 234.0,147.8 217.0,157.6 200.0,147.8 200.0,128.1 217.0,118.3" class="cell"/>
+<polygon points="268.0,128.1 268.0,147.8 251.0,157.6 234.0,147.8 234.0,128.1 251.0,118.3" class="hx "/><polygon points="268.0,128.1 268.0,147.8 251.0,157.6 234.0,147.8 234.0,128.1 251.0,118.3" class="cell"/>
+<polygon points="302.0,128.1 302.0,147.8 285.0,157.6 268.0,147.8 268.0,128.1 285.0,118.3" class="hx "/><polygon points="302.0,128.1 302.0,147.8 285.0,157.6 268.0,147.8 268.0,128.1 285.0,118.3" class="cell"/>
+<polygon points="336.0,128.1 336.0,147.8 319.0,157.6 302.0,147.8 302.0,128.1 319.0,118.3" class="hx "/><polygon points="336.0,128.1 336.0,147.8 319.0,157.6 302.0,147.8 302.0,128.1 319.0,118.3" class="cell"/>
+<polygon points="370.0,128.1 370.0,147.8 353.0,157.6 336.0,147.8 336.0,128.1 353.0,118.3" class="hx "/><polygon points="370.0,128.1 370.0,147.8 353.0,157.6 336.0,147.8 336.0,128.1 353.0,118.3" class="cell"/>
+<polygon points="115.0,98.7 115.0,118.3 98.0,128.1 81.0,118.3 81.0,98.7 98.0,88.9" class="hx def"/><polygon points="115.0,98.7 115.0,118.3 98.0,128.1 81.0,118.3 81.0,98.7 98.0,88.9" class="cell"/>
+<polygon points="149.0,98.7 149.0,118.3 132.0,128.1 115.0,118.3 115.0,98.7 132.0,88.9" class="hx def"/><polygon points="149.0,98.7 149.0,118.3 132.0,128.1 115.0,118.3 115.0,98.7 132.0,88.9" class="cell"/>
+<polygon points="183.0,98.7 183.0,118.3 166.0,128.1 149.0,118.3 149.0,98.7 166.0,88.9" class="hx def"/><polygon points="183.0,98.7 183.0,118.3 166.0,128.1 149.0,118.3 149.0,98.7 166.0,88.9" class="cell"/>
+<circle cx="166" cy="108.5196366097891" r="8" class="def"/><polygon points="217.0,98.7 217.0,118.3 200.0,128.1 183.0,118.3 183.0,98.7 200.0,88.9" class="hx def"/><polygon points="217.0,98.7 217.0,118.3 200.0,128.1 183.0,118.3 183.0,98.7 200.0,88.9" class="cell"/>
+<circle cx="200" cy="108.5196366097891" r="8" class="def"/><polygon points="251.0,98.7 251.0,118.3 234.0,128.1 217.0,118.3 217.0,98.7 234.0,88.9" class="hx def"/><polygon points="251.0,98.7 251.0,118.3 234.0,128.1 217.0,118.3 217.0,98.7 234.0,88.9" class="cell"/>
+<circle cx="234" cy="108.5196366097891" r="8" class="def"/><polygon points="285.0,98.7 285.0,118.3 268.0,128.1 251.0,118.3 251.0,98.7 268.0,88.9" class="hx def"/><polygon points="285.0,98.7 285.0,118.3 268.0,128.1 251.0,118.3 251.0,98.7 268.0,88.9" class="cell"/>
+<polygon points="319.0,98.7 319.0,118.3 302.0,128.1 285.0,118.3 285.0,98.7 302.0,88.9" class="hx def"/><polygon points="319.0,98.7 319.0,118.3 302.0,128.1 285.0,118.3 285.0,98.7 302.0,88.9" class="cell"/>
+<polygon points="353.0,98.7 353.0,118.3 336.0,128.1 319.0,118.3 319.0,98.7 336.0,88.9" class="hx def"/><polygon points="353.0,98.7 353.0,118.3 336.0,128.1 319.0,118.3 319.0,98.7 336.0,88.9" class="cell"/>
+<polygon points="132.0,69.3 132.0,88.9 115.0,98.7 98.0,88.9 98.0,69.3 115.0,59.4" class="hx def"/><polygon points="132.0,69.3 132.0,88.9 115.0,98.7 98.0,88.9 98.0,69.3 115.0,59.4" class="cell"/>
+<polygon points="166.0,69.3 166.0,88.9 149.0,98.7 132.0,88.9 132.0,69.3 149.0,59.4" class="hx def"/><polygon points="166.0,69.3 166.0,88.9 149.0,98.7 132.0,88.9 132.0,69.3 149.0,59.4" class="cell"/>
+<polygon points="200.0,69.3 200.0,88.9 183.0,98.7 166.0,88.9 166.0,69.3 183.0,59.4" class="hx def"/><polygon points="200.0,69.3 200.0,88.9 183.0,98.7 166.0,88.9 166.0,69.3 183.0,59.4" class="cell"/>
+<polygon points="234.0,69.3 234.0,88.9 217.0,98.7 200.0,88.9 200.0,69.3 217.0,59.4" class="hx def"/><polygon points="234.0,69.3 234.0,88.9 217.0,98.7 200.0,88.9 200.0,69.3 217.0,59.4" class="cell"/>
+<polygon points="268.0,69.3 268.0,88.9 251.0,98.7 234.0,88.9 234.0,69.3 251.0,59.4" class="hx def"/><polygon points="268.0,69.3 268.0,88.9 251.0,98.7 234.0,88.9 234.0,69.3 251.0,59.4" class="cell"/>
+<polygon points="302.0,69.3 302.0,88.9 285.0,98.7 268.0,88.9 268.0,69.3 285.0,59.4" class="hx def"/><polygon points="302.0,69.3 302.0,88.9 285.0,98.7 268.0,88.9 268.0,69.3 285.0,59.4" class="cell"/>
+<polygon points="336.0,69.3 336.0,88.9 319.0,98.7 302.0,88.9 302.0,69.3 319.0,59.4" class="hx def"/><polygon points="336.0,69.3 336.0,88.9 319.0,98.7 302.0,88.9 302.0,69.3 319.0,59.4" class="cell"/>
+<polygon points="149.0,39.8 149.0,59.4 132.0,69.3 115.0,59.4 115.0,39.8 132.0,30.0" class="hx def"/><polygon points="149.0,39.8 149.0,59.4 132.0,69.3 115.0,59.4 115.0,39.8 132.0,30.0" class="cell"/>
+<polygon points="183.0,39.8 183.0,59.4 166.0,69.3 149.0,59.4 149.0,39.8 166.0,30.0" class="hx def"/><polygon points="183.0,39.8 183.0,59.4 166.0,69.3 149.0,59.4 149.0,39.8 166.0,30.0" class="cell"/>
+<polygon points="217.0,39.8 217.0,59.4 200.0,69.3 183.0,59.4 183.0,39.8 200.0,30.0" class="hx def"/><polygon points="217.0,39.8 217.0,59.4 200.0,69.3 183.0,59.4 183.0,39.8 200.0,30.0" class="cell"/>
+<polygon points="251.0,39.8 251.0,59.4 234.0,69.3 217.0,59.4 217.0,39.8 234.0,30.0" class="hx def"/><polygon points="251.0,39.8 251.0,59.4 234.0,69.3 217.0,59.4 217.0,39.8 234.0,30.0" class="cell"/>
+<polygon points="285.0,39.8 285.0,59.4 268.0,69.3 251.0,59.4 251.0,39.8 268.0,30.0" class="hx def"/><polygon points="285.0,39.8 285.0,59.4 268.0,69.3 251.0,59.4 251.0,39.8 268.0,30.0" class="cell"/>
+<polygon points="319.0,39.8 319.0,59.4 302.0,69.3 285.0,59.4 285.0,39.8 302.0,30.0" class="hx def"/><polygon points="319.0,39.8 319.0,59.4 302.0,69.3 285.0,59.4 285.0,39.8 302.0,30.0" class="cell"/>
+<text x="106.5" y="348.0785464391564" text-anchor="end" class="sm">1</text><text x="89.5" y="318.6336827104855" text-anchor="end" class="sm">2</text><text x="72.5" y="289.1888189818146" text-anchor="end" class="sm">3</text><text x="55.5" y="259.74395525314367" text-anchor="end" class="sm">4</text><text x="38.5" y="230.29909152447277" text-anchor="end" class="sm">5</text><text x="21.5" y="200.85422779580185" text-anchor="end" class="sm">6</text><text x="38.5" y="171.40936406713092" text-anchor="end" class="sm">7</text><text x="55.5" y="141.96450033846003" text-anchor="end" class="sm">8</text><text x="72.5" y="112.5196366097891" text-anchor="end" class="sm">9</text><text x="89.5" y="83.07477288111818" text-anchor="end" class="sm">10</text><text x="106.5" y="53.62990915244728" text-anchor="end" class="sm">11</text><text x="47" y="385.7084555916037" text-anchor="middle" class="sm">a</text><text x="81" y="385.7084555916037" text-anchor="middle" class="sm">b</text><text x="115" y="385.7084555916037" text-anchor="middle" class="sm">c</text><text x="132" y="385.7084555916037" text-anchor="middle" class="sm">d</text><text x="166" y="385.7084555916037" text-anchor="middle" class="sm">e</text><text x="200" y="385.7084555916037" text-anchor="middle" class="sm">f</text><text x="234" y="385.7084555916037" text-anchor="middle" class="sm">g</text><text x="268" y="385.7084555916037" text-anchor="middle" class="sm">h</text><text x="302" y="385.7084555916037" text-anchor="middle" class="sm">i</text><text x="336" y="385.7084555916037" text-anchor="middle" class="sm">j</text><text x="370" y="385.7084555916037" text-anchor="middle" class="sm">k</text></svg><figcaption>Ninety-one hexes. Attackers deploy on ranks 1–3; defenders on ranks 9–11. The example forces start at the front of their zones.</figcaption></figure>
 
 <h2 id="round">5. The round</h2>
 <p>A round is an hour of battle, and every unit acts once in it. The sides alternate: after each activation, the side with more units still to act goes next, and on a tie the side that did not act last. You choose which of your own units takes each of your turns.</p>
 <p>An activation is <strong>three actions</strong>. A unit attacks <strong>once</strong> per activation — one Fight, one Shoot, or one Blast. Further actions buy other activities, never a second attack.</p>
 <p>When every unit has acted, the round ends:</p>
 <ol>
-<li>Each side that has lost half its starting units to death or rout takes it once, that round only: every unit of that side still standing gains 1 disorder.</li>
 <li>An emplaced engine with only the enemy beside it changes hands. Every engine reloads.</li>
-<li>If either side has no unit still standing, the battle ends. If this was the sixth round, dusk ends it.</li>
+<li>If either side has no unit still standing, the battle ends. At the daily round limit, dusk ends the day. The default is six rounds; setup also offers eight.</li>
 </ol>
 <p>Alternating activation keeps a round readable. No side takes its whole army's worth of actions while the other watches, and a side that outnumbers the other spends its surplus at the end of the round.</p>
 
@@ -447,7 +378,9 @@
 
 <h2 id="move">7. Moving and breaking away</h2>
 <h3>Move</h3>
-<p>One Move action buys the unit's hexes (its Speed, section 2). Each hex costs from that budget by its terrain: 1 for open ground or a settlement, 2 for forest or shallows, 3 for swamp, and 1 more for each level of height climbed. Water cannot be entered. So a 1-hex-an-action infantry troop spends two actions to enter forest and three to enter swamp, and a 2-hex-an-action cavalry troop spends one and two.</p>
+<p>One Move action buys the unit's hexes (its Speed, section 2). Each hex costs from that budget by its terrain: 1 for open ground, a settlement or a bridge, 2 for forest or shallows, 3 for swamp, and 1 more for each level of height climbed. Water cannot be entered. So a 1-hex-an-action infantry troop spends two actions to enter forest and three to enter swamp, and a 2-hex-an-action cavalry troop spends one and two.</p>
+<p>An enemy controls each adjacent hex across a traversable edge. A Move may enter that zone but ends at its first contact hex. Moving through or out of contact requires Maneuver and its rolls (below). Splitting a route into several Moves cannot bypass this rule. Walls and cliffs interrupt control. A Charge ends at its first contact with its target and cannot pass through another enemy's zone. A critical Maneuver can clear the holders it checks, but ends when it reaches a new enemy's zone.</p>
+<p>Maneuver also checks terrain. Its adjacent step must fit one Speed of movement per action spent on the activity. A slow unit needs at least two actions to maneuver into forest and three into swamp; climbs add their usual cost. A critical Break off can follow a longer route within one Speed, ending at any new enemy contact.</p>
 <p>Movement banks across the whole activation, so a 2-hex troop that steps one open hex keeps the leftover hex for its next step. A unit may not enter an occupied hex, cross a standing wall, or cross a cliff. A breach in a wall is an ordinary crossing.</p>
 <p>A flier pays 1 a hex whatever the ground and crosses walls and cliffs. Flight buys no extra distance: how far a unit goes is still its Speed.</p>
 <h3>Charge</h3>
@@ -491,14 +424,15 @@
 <h2 id="wounds">8. Wounds</h2>
 <figure><svg viewBox="0 0 720 120" role="img" aria-label="Wound track from fresh to destroyed">
 <g transform="translate(20,20)">
-<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">0&ndash;1</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
-<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 Weakened</text><text class="sm" x="240" y="62" text-anchor="middle">&minus;2 to Strike</text><text class="sm" x="240" y="78" text-anchor="middle">and to Volley</text>
-<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">3 Broken</text><text class="sm" x="420" y="62" text-anchor="middle">as Weakened;</text><text class="sm" x="420" y="78" text-anchor="middle">one hit from gone</text>
+<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">0&ndash;1 wounds</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
+<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 wounds</text><text class="sm" x="240" y="62" text-anchor="middle">fights normally</text><text class="sm" x="240" y="78" text-anchor="middle">two health left</text>
+<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">3 wounds</text><text class="sm" x="420" y="62" text-anchor="middle">fights normally;</text><text class="sm" x="420" y="78" text-anchor="middle">one hit from gone</text>
 <rect x="540" y="0" width="120" height="40" rx="4" fill="var(--accent)"/><text class="lbl" x="600" y="25" text-anchor="middle" style="fill:var(--paper)">4 Destroyed</text><text class="sm" x="600" y="62" text-anchor="middle">removed</text>
 <path d="M120,20 L180,20 M300,20 L360,20 M480,20 L540,20" stroke="var(--rule)" stroke-width="2" marker-end="url(#arrow)"/>
 </g>
 <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
 </svg><figcaption>A hit adds one wound, a critical two. Nothing is rolled for damage.</figcaption></figure>
+<p>Wounds measure survival. One, two or three wounds leave attacks, saves, Defence, movement and range unchanged. The fourth wound destroys the unit. Taking a wound still triggers the separate morale save; disorder applies its own penalties.</p>
 <p>Damage is never rolled. A hit deals one wound, a critical hit two, and each unit holds four. The level difference between attacker and target does the work damage dice do elsewhere. A level-6 troop striking a level-2 troop hits on about 7 and criticals from 17; the level-2 troop hits only from 17 and cannot critical without help.</p>
 <p>A unit that enters battle already hurt starts with wounds: 0 above three-quarters of its hit points, 1 above half, 2 above a quarter, 3 with any left. After the battle they are written back the same way.</p>
 
@@ -522,10 +456,18 @@
 <p>A unit under Take cover holds its ground against an Overrun. Stoneskin (section 11) costs its unit no disorder, so a Press against it lands the wound alone.</p>
 
 <h3>Shooting</h3>
-<p>A shot reaches any target the shooter can see. Each band beyond the shooter's effective range costs &minus;2 on the roll, and nearer bands cost nothing. A target engaged with one of your own costs a further &minus;4, because the two are too close together to pick apart. Suppress and Pin buy what volume fire does to the troop under it. Nobody shoots while engaged, in either direction.</p>
+<table>
+<tr><th>Weapon Reach</th><th>Preferred distance</th><th>Allowed distance</th><th>Distance at &minus;2</th></tr>
+<tr><td>Short</td><td>2</td><td>1–3</td><td>1 or 3</td></tr>
+<tr><td>Medium</td><td>3</td><td>2–4</td><td>2 or 4</td></tr>
+<tr><td>Long</td><td>4</td><td>3–5</td><td>3 or 5</td></tr>
+<tr><td>Extreme</td><td>5–7</td><td>4–8</td><td>4 or 8</td></tr>
+</table>
+<p>Distance 1 normally means engagement. Across a wall or cliff, where the units are not engaged, only short weapons can fire across that edge, at &minus;2: distance 1 is one hex below their preferred distance. Medium, long and extreme weapons cannot fire that close. Fire, Suppress, Pin and artillery bombardment use the same range window. A wall segment uses a visible endpoint within the window, preferring one in the weapon's preferred band.</p>
+<p>A shot requires sight and a target within the preferred distances or one hex outside either end. Preferred range has no range penalty; one hex shorter or longer costs &minus;2. Anything closer or farther is unavailable. Extreme prefers five to seven hexes and can extend to eight at &minus;2; eight is the absolute shot limit. A target engaged with one of your own costs a further &minus;4, because the two are too close together to pick apart. Suppress and Pin buy what volume fire does to the troop under it. Nobody shoots while engaged, in either direction.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Fire</td><td>◆</td><td>A volley at any target you can see, at &minus;2 for every band beyond your effective range. Nearer bands cost nothing.</td></tr>
+<tr><td>Fire</td><td>◆</td><td>A volley in the preferred band, or one hex shorter or longer at &minus;2. Mountains block intervening shots; forests grant cover.</td></tr>
 <tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: &minus;2 to everything it rolls and to its Defence until the start of your next activation.</td></tr>
 <tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Maneuver as if in contact; a Maneuver that changes hex ends the pin, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
 </table></div>
@@ -547,7 +489,7 @@
 <table>
 <tr><th>Term</th><th>Value</th></tr>
 <tr><td>Base</td><td>The unit's Defence, off the sheet</td></tr>
-<tr><td>Circumstance</td><td>The best one of: +2 from its own Guard, +4 under Take cover, +2 from an adjacent unit's Guard when that unit defends allies, +2 or +4 from a Defense buff (section 11), +1 for forest cover against a shot. These never stack.</td></tr>
+<tr><td>Circumstance</td><td>The best one of: +2 from its own Guard, +4 under Take cover, +2 from an adjacent unit's Guard when that unit defends allies, +1 for mountain ground, or +1 for forest cover against shooting and Blast. These never stack.</td></tr>
 <tr><td>Disorder</td><td>&minus;1 for each point</td></tr>
 <tr><td>Outflanked</td><td>&minus;2 while engaged with two or more enemies</td></tr>
 <tr><td>Exposed</td><td>&minus;2 after a critically failed Strike or a charge, until the unit acts again</td></tr>
@@ -557,17 +499,26 @@
 <h2 id="disorder">9. Disorder and rout</h2>
 <p>Morale is one number: <strong>disorder</strong>, from 0 to 3 for every unit. Each point is &minus;1 to everything the unit rolls and &minus;1 to its Defence. At one or two disorder, the unit retains its ordinary activities, subject to the usual restrictions for contact, range and available actions.</p>
 <p>At <strong>three disorder</strong> the unit is <strong>routed</strong>: it may only Move or Maneuver, and it leaves the field when it reaches its own edge. Any maneuver it makes runs for that edge. Disorder caps at three. A routed unit relies on an ally's Rally, Inspire or Healing to recover. Clearing one point returns it to two disorder and restores its ordinary activities.</p>
-<h3>Morale dots and the retreat arrow</h3>
-<p>The <strong>three round dots below a unit</strong> record disorder. The four square boxes above them record wounds. Both tracks use the same convention: filling the last box or dot reaches the terminal state. The fourth wound destroys the unit; the third disorder point routs it. Every disorder point appears on the morale track.</p>
-<p>All filled pips in a track share its current colour, on both the board and the army cards. Health squares progress from one yellow to two orange, three red and four grey at death. Morale circles progress from one orange to two red and three grey at rout. Red means one point from the limit; grey means the track is full. A dead or routed miniature loses its colour, while each pip track retains its own severity colour.</p>
-<p>The flag turns grey and a <strong>retreat arrow</strong> appears when all three morale dots fill. The arrow points toward the unit's home edge &mdash; down toward rank 1 for an attacker, up toward rank 9 for a defender. It indicates rout and the direction of retreat; movement still happens during the unit's activation. Clearing the third dot restores the side's flag colour and removes the arrow.</p>
+<h3>Health and morale bars</h3>
+<p>Two bars beneath each unit show its remaining capacity. Both have the same length: the thicker upper bar shows <strong>health out of four</strong>, and the thinner lower bar shows <strong>morale out of three</strong>. Fine separators mark each point. Full green bars mean healthy and steady. Damage and disorder shrink the bars from right to left, leaving a subdued grey track. Empty health means dead; empty morale means routed.</p>
+<p>The rules still count wounds and disorder upward. Health is four minus wounds; morale is three minus disorder. Hover over a unit or its army card for both values, such as &ldquo;Health 2/4 &mdash; 2 wounds&rdquo; and &ldquo;Morale 1/3 &mdash; 2 disorder&rdquo;. Recovery refills the bars. A dead or routed miniature loses its colour; each bar keeps its own severity colour.</p>
+<div class="wrap"><table>
+<caption>Health bar</caption>
+<tr><th>Wounds</th><th>Health remaining</th><th>Display</th></tr>
+<tr><td>0</td><td>4/4</td><td>Full green bar</td></tr>
+<tr><td>1</td><td>3/4</td><td>Three quarters yellow</td></tr>
+<tr><td>2</td><td>2/4</td><td>Half orange</td></tr>
+<tr><td>3</td><td>1/4</td><td>One quarter red</td></tr>
+<tr><td>4</td><td>0/4</td><td>Empty grey track &mdash; dead</td></tr>
+</table></div>
+<p>The flag turns grey and a <strong>retreat arrow</strong> appears when the morale bar empties. The arrow points toward the unit's home edge &mdash; down toward rank 1 for an attacker, up toward rank 11 for a defender (rank 9 on the original board). It indicates rout and the direction of retreat; movement still happens during the unit's activation. Clearing one disorder refills the first third in red, restores the miniature and side flag colours, and removes the arrow.</p>
 <div class="wrap"><table>
 <caption>Morale for every unit, including Troll Marauders</caption>
-<tr><th>Disorder</th><th>Morale dots</th><th>Effect</th><th>Available activities</th></tr>
-<tr><td>0/3</td><td>All empty</td><td>Normal</td><td>Ordinary activities</td></tr>
-<tr><td>1/3</td><td>One orange dot</td><td>&minus;1 to rolls and Defence</td><td>Ordinary activities</td></tr>
-<tr><td>2/3</td><td>Both filled dots turn red</td><td>&minus;2 to rolls and Defence</td><td>Ordinary activities</td></tr>
-<tr><td>3/3</td><td>All three dots turn grey; grey flag and retreat arrow</td><td><strong>Routed</strong>; &minus;3 to rolls and Defence</td><td>Move or Maneuver; the unit leaves the field at its own edge</td></tr>
+<tr><th>Disorder</th><th>Morale remaining</th><th>Effect</th><th>Available activities</th></tr>
+<tr><td>0/3</td><td>3/3 &mdash; full green bar</td><td>Normal</td><td>Ordinary activities</td></tr>
+<tr><td>1/3</td><td>2/3 &mdash; two thirds orange</td><td>&minus;1 to rolls and Defence</td><td>Ordinary activities</td></tr>
+<tr><td>2/3</td><td>1/3 &mdash; one third red</td><td>&minus;2 to rolls and Defence</td><td>Ordinary activities</td></tr>
+<tr><td>3/3</td><td>0/3 &mdash; empty grey track; grey flag and retreat arrow</td><td><strong>Routed</strong>; &minus;3 to rolls and Defence</td><td>Move or Maneuver; the unit leaves the field at its own edge</td></tr>
 </table></div>
 <div class="wrap"><table>
 <tr><th>Disorder comes from</th><th>Points</th></tr>
@@ -578,11 +529,10 @@
 <tr><td>A critically failed Disengage</td><td>1, and you do not get away</td></tr>
 <tr><td>Holding a unit that Fighting retreats, on a failed roll</td><td>1</td></tr>
 <tr><td>A Controlling cast, on a failed Will save</td><td>1, or 2 on a critical failure</td></tr>
-<tr><td>Half your army gone</td><td>1 to every unit of that side still standing, once per battle</td></tr>
 </table></div>
 <h3>Rally</h3>
 <p><strong>Every unit below three disorder may Rally</strong>, in contact or in the open. A routed unit can recover through an ally's Rally, Inspire or Healing. At two disorder it regains its ordinary activities, including its own Rally.</p>
-<p>Rally and a Healing cast (section 11) are the only things that clear disorder. Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
+<p>Rally and a Healing cast (section 11) clear disorder during combat. Overnight Rally also clears disorder (section 13). Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
 <p>The roll says how much clears, and the activity says who else it reaches. One roll is read for every unit reached. On a success a unit with disorder clears 1, and a unit with none is <strong>inspired</strong>: +2 to its next roll.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
@@ -602,21 +552,27 @@
 
 <h2 id="ground">10. Ground, height and walls</h2>
 <p>Three layers shape the field. Terrain fills a hex and changes what checks cost; height decides who has the advantage; barriers sit on edges and decide where units may go. Forest hides, swamp slows, water blocks, height commands, walls bar the way.</p>
+<p>The terrain generation and painting screens warn when a river has no ground route between deployment zones. This is advisory: the GM may keep the map, reroll it, or paint bridges or shallows to connect the banks. A wide river can require several adjacent crossing hexes. The warning updates as the map changes.</p>
 <h3>Terrain</h3>
 <div class="wrap"><table>
 <tr><th>Terrain</th><th>To enter</th><th>Effect</th></tr>
 <tr><td>Open</td><td>1</td><td>&mdash;</td></tr>
 <tr><td>Settlement</td><td>1</td><td>A road through the walls; no cover of its own</td></tr>
-<tr><td>Forest</td><td>2</td><td>Cover: +1 Defence against a shot, unless the shooter stands higher</td></tr>
+<tr><td>Bridge</td><td>1</td><td>A ground crossing over water; no inherent cover or melee penalty. Elevation, occupied hexes and barriers still apply.</td></tr>
+<tr><td>Forest</td><td>2</td><td>Cover: +1 circumstance Defence against shooting and Blast for a unit in this hex or beyond it. Several forests still grant only +1.</td></tr>
 <tr><td>Shallows</td><td>2</td><td>A ford or a marsh edge: &minus;1 to Strike from it</td></tr>
-<tr><td>Swamp</td><td>3</td><td>&minus;1 to Strike from it</td></tr>
+<tr><td>Swamp</td><td>3</td><td>&minus;1 circumstance Defence. Attacks retain their normal modifier.</td></tr>
 <tr><td>Water</td><td>&mdash;</td><td>Impassable. Shots cross it.</td></tr>
 </table></div>
+<p>Terrain grants circumstance modifiers. Use the highest circumstance bonus and the worst circumstance penalty on each statistic. Mountain defence, forest cover and Guard bonuses never add together. Swamp does not add another Defence penalty to exposed or outflanked. Disorder and other conditions retain their separate effects.</p>
+<h3>Sight and screening</h3>
+<p>Trace a straight line between hex centres. An intervening hex at height 2 or higher blocks shooting and spells. You may target that mountain hex or shoot out of it; a second mountain blocks the line. Hills at height 1 allow sight. Forest along the line grants +1 Defence to the target against shooting and Blast, even when the attacker is higher. The attacker's own forest hex does not screen its outgoing attacks. Forest does not improve Will saves against Controlling.</p>
+<p>A line along a shared edge reads both hexes; touching a corner alone does not screen it. Every hex in a Blast Line or Burst must have sight from the caster. Flight changes movement, not sight. Walls retain their movement and garrison rules; they do not screen intervening shots.</p>
 <h3>Height</h3>
-<p>Every hex stands at height 0, 1 or 2. Count the difference between the two hexes:</p>
+<p>Height can be painted from &minus;2 to 2. Compare attacker and target:</p>
 <ul>
-<li>Attacking upward, in melee or with a shot, costs &minus;1 for each level of difference.</li>
-<li>Shooting downward counts the range one band closer, so one band's &minus;2 is not taken, and the target's forest cover does not apply.</li>
+<li>Attacking from higher ground grants +1 circumstance to melee, shooting and Blast attack rolls. This replaces the former uphill penalty. It does not stack with the Charge or garrison attack bonus; commitment remains separate.</li>
+<li>Standing at height 2 or higher grants +1 circumstance Defence against attacks. This mountain hex also blocks sight through it.</li>
 <li>Climbing costs 1 a level on top of the terrain.</li>
 <li>An edge with a difference of 2 is a <strong>cliff</strong>: nobody crosses it, and nobody is engaged across it.</li>
 </ul>
@@ -759,18 +715,39 @@
 
 <h2 id="siege">12. Siege engines</h2>
 <p>An engine is <strong>attached</strong> to a unit and rides with it, or <strong>emplaced</strong> on a hex of its own. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>
-<p>A loaded artillery piece replaces its unit's shooting profile, effective range and all: the unit shoots with the engine's launch bonus, from the engine's own Reach rather than its own, at the activity's price. An engine's Reach may be extreme, which no troop's own Salvo ever is; that is what siege equipment is for. No engine may fire while its crew is engaged, because nobody shoots in contact. A ram fights walls at +2 and does nothing else. Each engine fires once a round, whoever works it; where two friendly units both stand beside an emplacement, the crew is the first in deployment order.</p>
+<p>A loaded artillery piece replaces its unit's shooting profile and preferred range band: the unit shoots with the engine's launch bonus, from the engine's own Reach rather than its own, at the activity's price. An engine's Reach may be extreme, which no troop's own Salvo ever is; that is what siege equipment is for. No engine may fire while its crew is engaged, because nobody shoots in contact. A ram fights walls at +2 and does nothing else. Each engine fires once a round, whoever works it; where two friendly units both stand beside an emplacement, the crew is the first in deployment order.</p>
 <p>An emplaced engine never moves, so an emplaced ram can only ever batter a wall on an edge of the hex it deployed in. A ram is normally attached.</p>
 <p>A unit that is destroyed or routs abandons its engines where it stands. An emplacement left with only the enemy beside it changes hands at the end of the round — the engine is taken by standing on it, not by winning a fight over it — and an abandoned engine beside an enemy still standing at the end of the battle is captured.</p>
 
-<h2 id="end">13. Ending the battle</h2>
-<p>The battle ends at the end of a round: when a side has no unit still standing, or after the sixth round, whichever comes first. A unit is standing when it is neither destroyed nor routed nor gone from the field; a unit at two disorder still counts as standing.</p>
-<h3>Dusk</h3>
-<p>If both sides still stand after six rounds, both withdraw, keep their wounds and disorder, and the hex stays contested.</p>
-<h3>The kingdom's checks</h3>
-<p>A battle ends at wounds, disorder, units destroyed and engines captured. What the kingdom then makes of that result &mdash; Fame, Unrest, recovery &mdash; is a kingdom action of its own.</p>
-<h3>Back on the kingdom map</h3>
-<p>Wounds become hit points on the same four thresholds (section 8). Disorder becomes the army's demoralized value, keeping whichever is higher; an army at demoralized 3 disbands at upkeep unless it is rallied or supported. Split armies rejoin (section 4). Destroyed units disband; a captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement.</p>
+<h2 id="end">13. Dusk and the next day</h2>
+<p>The battle ends at the end of a round when a side has no unit still standing. A unit is standing when it is neither destroyed nor routed nor gone from the field; a unit at two disorder still counts as standing. Otherwise, dusk ends the day at the daily round limit: six rounds by default, or eight in setup.</p>
+<h3>The day's report</h3>
+<p>At dusk, resolve any pending persistent wound once before counting survivors. Both armies withdraw from contact and the hex stays contested. The report gives each army its own column with health, morale and unit outcomes. <strong>End battle</strong> returns to setup. <strong>Continue to recovery</strong> opens the recovery table before either army chooses its orders. After recovery, both armies choose whether to leave or remain. If both hold, <strong>Fight another day</strong> opens a battlefield choice, then deployment for the next day. Choose <strong>Same map</strong> to keep the current field or <strong>New map</strong> to generate and preview fresh terrain. The new map offers terrain, feature and fortification choices. Continuation requires both sides to have standing survivors.</p>
+<p>Destroyed units are permanently lost. Routed units leave this battle and take no part in overnight recovery or the next day's deployment. Keep their records for the campaign handoff. A unit that rallied before leaving the field and remains standing can continue.</p>
+<h3>Overnight recovery</h3>
+<p>Resolve recovery before choosing to withdraw or hold the field. The recovery table lists both armies with <strong>None</strong>, <strong>⚑ Morale</strong> (Rally), and <strong>♥ Health</strong> (Treat Wounded) columns. The footer shows each side’s shared recovery modifier. <strong>Roll Recovery</strong> commits all choices and resolves every selected unit together. Review all results before choosing orders.</p>
+<p>Each surviving unit may attempt <strong>one</strong> activity: Rally or Treat Wounded. Each side chooses any number of its survivors. Declare all choices for both sides before rolling. The first participant adds no penalty; each extra participant imposes <strong>&minus;2 on every recovery check for that side</strong>. Count both activities together: one participant gives 0, two give &minus;2, three give &minus;4, and so on. The opposing side counts its participants separately.</p>
+<table>
+<tr><th>Activity</th><th>Check</th><th>Success</th><th>Critical success</th></tr>
+<tr><td>Rally</td><td>Will against the level DC of the highest-level enemy still standing for the next day</td><td>Remove 1 disorder</td><td>Remove 2 disorder</td></tr>
+<tr><td>Treat Wounded</td><td>Fortitude against the recovering unit's own level DC</td><td>Remove 1 wound</td><td>Remove 2 wounds</td></tr>
+</table>
+<p>Both failure and critical failure leave the unit unchanged. Recovery stops at full health or morale. Rally changes morale alone; Treat Wounded changes wounds alone. A unit with full morale cannot choose Rally, and an unwounded unit cannot choose Treat Wounded. Neither activity requires a leader or a character skill check.</p>
+<p>Use <strong>d20 + the unit's save &minus; its current disorder &minus; 2 &times; (its side's participants &minus; 1)</strong>. Campaign Demoralized and battlefield disorder are the same track, so their &minus;1 per point applies once. For example, a unit with Will +12 and two disorder rolls at +10 alone, +8 with one other participant, or +6 with two others. Resolve each declared check once; its result is final for that night.</p>
+<h3>End-of-day decisions</h3>
+<p>After overnight recovery at a contested dusk, each army chooses <strong>Propose surrender</strong>, <strong>Withdraw</strong>, or <strong>Hold the field</strong>. Confirm both decisions before choosing the next battlefield. Recovery results stand even if an army then withdraws.</p>
+<ul>
+<li><strong>Propose surrender.</strong> The opposing side accepts or rejects the proposal. Acceptance ends the battle with the accepting side victorious. The players agree the campaign terms; the game preserves surviving units, wounds and morale. Rejection returns the proposing side to its decision. A proposal alone never ends the battle.</li>
+<li><strong>Withdraw.</strong> Leave the field with surviving troops, preserving wounds and morale. At dusk this requires no check and causes no extra casualties. If the opponent holds, they win the field. If both withdraw, the field stays contested and this battle ends.</li>
+<li><strong>Hold the field.</strong> Stay to contest the ground. If both sides hold, continue through the battlefield choice and deployment. If the enemy withdraws, hold the field as victor.</li>
+</ul>
+<p>Resolve any surrender proposal before confirming the other decisions. Recovery occurs once, before these decisions; changing an order grants no further recovery.</p>
+<h3>The next day's deployment</h3>
+<p>Keep wounds and disorder after recovery. Temporary combat conditions and spell effects expire overnight; actions and engine shots reset. On the same map, breached walls remain breached and emplacements keep their positions and ownership. On a new map, terrain and fortifications come from the new map settings. Fixed emplacements and abandoned equipment stay on the old field; the battle record retains that field and its equipment for the campaign handoff. Equipment losses remain. Surviving units redeploy in their normal home zones on the chosen board; attached engines still in their crews' possession move with them. Changing the map after recovery preserves the recovery results. The next day begins at round 1. The log retains the earlier days and recovery rolls.</p>
+<h3>Campaign morale and Routed armies</h3>
+<p><strong>Demoralized and disorder share one value.</strong> Import the campaign army's Demoralized value as starting disorder. Battle losses, combat rallies and overnight rallies change that same value. Export the final value directly, including improvements. Each point gives &minus;1 to checks and Defence; apply the penalty once.</p>
+<p>In the ReignMaker integration, an army that leaves the battle through rout retains the <strong>Routed</strong> campaign condition. <strong>Rally Troops</strong> costs one leader action and makes a leadership skill check at &minus;5. Success removes Routed and sets Demoralized to 2 (1/3 morale), preserving wounds. Failure leaves Routed in place. Every army still Routed at the <strong>end of the ReignMaker turn</strong> disbands. Disbanded and destroyed armies are permanent losses. This paid action replaces the proposed free post-battle retention check.</p>
+<p>Rally Troops and turn-end disbanding belong to ReignMaker; Battlefield provides the tactical outcome. A battlefield day does not itself advance the ReignMaker turn. Wounds become hit points on the same four thresholds (section 8). Split armies rejoin (section 4). A captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement. Fame, Unrest and other kingdom consequences remain campaign actions.</p>
 
 <h2 id="odds">14. Fighting against the odds</h2>
 <p>There are no points. Four things decide an uneven fight:</p>
@@ -778,17 +755,17 @@
 <li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive. Level sets the DC of the saves made against you: a wound from a high-level troop is harder to shrug off, and a line it repulses is harder to steady.</li>
 <li><strong>Morale.</strong> Every troop routs at three disorder. Will determines how well it resists repulse and hostile morale magic and how readily it rallies. Fortitude determines how well it resists disorder from wounds. A troll has strong Fortitude and weak Will.</li>
 <li><strong>Numbers.</strong> Outflanking pays only when it reaches a second side of the enemy, and a ridge or a river decides where that second side is. Three lesser units grind down one greater one through disorder, not through wounds.</li>
-<li><strong>Ground and time.</strong> Forest, high ground and walls favour the defender. Six rounds and the half-army check reward a decisive attacker and punish a hesitant one.</li>
+<li><strong>Ground and time.</strong> Forest, high ground and walls favour the defender. The daily round limit rewards a decisive attacker.</li>
 </ul>
 <p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
 
 <h2 id="ref">Quick reference</h2>
 <div class="wrap"><table class="ref">
 <tr><th>Verb</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
-<tr><td>Move</td><td>1 per Speed's worth</td><td>&mdash;</td><td>1 open or settlement, 2 forest or shallows, 3 swamp, +1 a level climbed. Movement banks across the activation. Not while engaged.</td></tr>
+<tr><td>Move</td><td>1 per Speed's worth</td><td>&mdash;</td><td>1 open, settlement or bridge, 2 forest or shallows, 3 swamp, +1 a level climbed. Movement banks across the activation. Not while engaged.</td></tr>
 <tr><td>Charge</td><td>1 &middot; 2 with Press &middot; 3 with Overrun</td><td>Strike + 2 vs Defence on arrival</td><td>One Speed of movement ending in contact, folded into the Fight at no cost of its own, by any route that engages nobody but the target: you charge the first unit you engage. Exposed until you next act. No +2 through difficult ground; from above, the target's save at &minus;2. Spends the activation's attack.</td></tr>
 <tr><td>Maneuver</td><td>1 Break off &middot; 2 Disengage &middot; 3 Fighting retreat</td><td>Break off: Reflex &minus; disorder vs the highest holder's attack DC. Above it, each holder's Reflex &minus; disorder vs your level DC</td><td>Break off: failure a free strike from each holder the roll missed, critical a free Move. Disengage: no check; a holder that fails is rooted. Fighting retreat: and it takes 1 disorder. Move one hex to reposition in contact or withdraw.</td></tr>
-<tr><td>Shoot</td><td>1 Fire &middot; 2 Suppress &middot; 3 Pin</td><td>Volley &minus; disorder vs Defence, &minus;2 a band beyond effective range</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude &minus; disorder vs your level DC or takes 1 disorder. Suppress: &minus;2 to everything, hit or miss, until your next activation. Pin: you are a holder at Volley + 10.</td></tr>
+<tr><td>Shoot</td><td>1 Fire &middot; 2 Suppress &middot; 3 Pin</td><td>Volley &minus; disorder vs Defence; &minus;2 one hex shorter or longer than Reach</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude &minus; disorder vs your level DC or takes 1 disorder. Suppress: &minus;2 to everything, hit or miss, until your next activation. Pin: you are a holder at Volley + 10.</td></tr>
 <tr><td>Commitment</td><td>1 or 2 extra</td><td>+2 per extra action, at most +4</td><td>Fight, Charge, Shoot, Rally, Blast and Healing: the activity roll. Controlling: its spell DC. Choose before resolution; spend only available actions.</td></tr>
 <tr><td>Fight</td><td>1 Strike &middot; 2 Press &middot; 3 Overrun</td><td>Strike vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude or takes 1 disorder &middot; a miss sends you to a Will save vs the target's level DC or 1 disorder &middot; critical failure exposes you. Press: roll the Fortitude save twice and keep the worse; failure causes 1 disorder. Overrun: drives them back a hex and takes their ground; a blocked retreat adds no disorder.</td></tr>
 <tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at one wound. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
@@ -798,13 +775,13 @@
 </table></div>
 <div class="wrap"><table class="ref">
 <tr><th>Modifier</th><th>Value</th></tr>
-<tr><td>Distance</td><td>1 engaged &middot; 2 short &middot; 3&ndash;4 medium &middot; 5&ndash;6 long &middot; 7&ndash;8 extreme &middot; 9+ out of range (never occurs on this board)</td></tr>
+<tr><td>Distance</td><td>1 engaged &middot; 2 short &middot; 3 medium &middot; 4 long &middot; 5–7 extreme &middot; 8 extended extreme at &minus;2 &middot; 9+ out of range. Weapons allow one hex outside either end of their preferred distances.</td></tr>
 <tr><td>One attack an activation</td><td>Fight, Shoot and Blast share the slot</td></tr>
 <tr><td>Disorder</td><td>&minus;1 a point on every roll and on Defence. At one or two, ordinary activities remain available. At three, routed &mdash; Move or Maneuver only, and the unit leaves by its own edge. An ally can clear disorder to restore its ordinary activities.</td></tr>
-<tr><td>Morale track</td><td>Three dots for every unit. The third full dot means routed. A grey flag and retreat arrow mark rout; clearing the third dot restores the side's flag colour and removes the arrow.</td></tr>
+<tr><td>Morale track</td><td>The thinner bar shows morale remaining: three minus disorder. It starts full and green, shrinks to two thirds orange and one third red, and empties at rout. A grey flag and retreat arrow mark rout; recovery refills the bar and restores the unit's colours.</td></tr>
 <tr><td>Outflanked</td><td>&minus;2 Defence while engaged with two or more enemies</td></tr>
 <tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike or a charge, until the unit acts again</td></tr>
-<tr><td>Weakened (2 wounds)</td><td>&minus;2 to Strike and Volley. Broken (3 wounds) is the same.</td></tr>
+<tr><td>Wounds</td><td>No performance penalties at one, two or three wounds. The fourth destroys the unit. Disorder applies its separate penalties.</td></tr>
 <tr><td>Inspired</td><td>+2 on the unit's next roll of any kind; a status bonus</td></tr>
 <tr><td>Suppressed</td><td>&minus;2 to everything the unit rolls and to its Defence until the shooter's next activation</td></tr>
 <tr><td>Pinned</td><td>Held by the shooter at Volley + 10; leaves its hex by Maneuver, which ends the pin when it changes hex; cannot charge</td></tr>
@@ -817,9 +794,10 @@
 <tr><td>Aegis</td><td>An attacker rolls Will against the caster's spell DC before it attacks; a failure wastes the attempt, actions and all. Ends once it has next acted</td></tr>
 <tr><td>Sure footing</td><td>Every hex costs it 1 on its next activation, and a charge through rough ground still lands the +2</td></tr>
 <tr><td>Flying</td><td>1 a hex on its next activation, crossing water, cliffs and standing walls</td></tr>
-<tr><td>Forest</td><td>+1 Defence against a shot, unless the shooter stands higher</td></tr>
-<tr><td>Swamp or shallows</td><td>&minus;1 to Strike from it</td></tr>
-<tr><td>Height</td><td>&minus;1 a level attacking upward. Shooting downward counts one band closer and beats cover. A charge from above puts the target's save at &minus;2.</td></tr>
+<tr><td>Forest</td><td>+1 circumstance Defence against shooting and Blast for units in or beyond the trees</td></tr>
+<tr><td>Swamp</td><td>&minus;1 circumstance Defence</td></tr>
+<tr><td>Shallows</td><td>&minus;1 to Strike from it</td></tr>
+<tr><td>Height</td><td>+1 circumstance attack from higher ground; mountain +1 Defence. Intervening mountains block sight; forest screens grant +1 ranged Defence. A charge from above puts the target's save at &minus;2.</td></tr>
 <tr><td>Into a melee</td><td>&minus;4 shooting at a target engaged with one of your own</td></tr>
 <tr><td>Wall</td><td>No crossing until breached, and nobody is engaged across it &middot; shots cross it &middot; garrisoned defender shoots at +1 &middot; DC 10 + tier + the highest standing defender's level &middot; tier + 1 boxes &middot; hit 1 box, crit 2 &middot; ram +2</td></tr>
 <tr><td>Cliff</td><td>Two levels on one edge: no crossing, nobody is engaged across it</td></tr>

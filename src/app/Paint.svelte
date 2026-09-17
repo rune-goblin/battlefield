@@ -5,6 +5,7 @@
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
+  import ConnectionWarning from './ConnectionWarning.svelte';
   import { game, generate, save } from './game.svelte.js';
 
   const UNDO_LIMIT = 5;
@@ -102,9 +103,12 @@
       <button disabled={!undoStack.length} onclick={undo}>Undo stroke</button>
       <button onclick={generate}>Regenerate</button>
     </div>
+    <ConnectionWarning board={game.setup.board} />
+    <p class="muted">Height 1 grants +1 when attacking lower ground. Height 2 adds mountain defence and blocks shots through the hex. Forest screens grant +1 ranged cover; swamp gives −1 Defence.</p>
+    <p class="muted">A bridge replaces a water hex with a one-point crossing. Paint adjacent bridge or shallows hexes across a wider river until the banks connect.</p>
     <p class="muted">
       A wall brush snaps to the nearest edge between two squares. Click the board first, then
-      <kbd>1</kbd>–<kbd>6</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>/<kbd>A</kbd>/<kbd>S</kbd>, <kbd>R</kbd> (repeat to cycle tier),
+      <kbd>1</kbd>–<kbd>7</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>/<kbd>A</kbd>/<kbd>S</kbd>, <kbd>R</kbd> (repeat to cycle tier),
       <kbd>X</kbd>, <kbd>Esc</kbd>. Wheel zooms, middle-drag or space-drag pans, double-click refits.
       Water sits at elevation 0; a difference of two levels between neighbours is a cliff.
     </p>

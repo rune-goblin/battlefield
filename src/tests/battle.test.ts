@@ -71,7 +71,7 @@ describe('deployment', () => {
   });
   it('starts the attacker out of shooting range of the defender', () => {
     const { state } = battle([]);
-    expect(rangeBetween(state, unit(state, 'u0'), unit(state, 'u2'))).toBe('long');
+    expect(rangeBetween(state, unit(state, 'u0'), unit(state, 'u2'))).toBe('extreme');
   });
 });
 
@@ -192,7 +192,7 @@ describe('the menu is filtered by situation', () => {
     expect(targets(offer(state, 'fight', 'u0'), 1)).toEqual([wall]);
     expect(types(state, 'u2')).toEqual(['shoot', 'guard', 'rally']);
     expect(targets(offer(state, 'shoot', 'u2'), 1)).toContain('u0');
-    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley! + 1);
+    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley! + 1 - 2);
   });
   it("offers a caster one row per tree its tradition grants", () => {
     // No tradition set falls back to arcane (cards.ts), whose grid is 0 in Healing.
@@ -929,26 +929,26 @@ describe('activities carry effects', () => {
 });
 
 describe('shooting', () => {
-  it('every shoot activity reaches the same target, whatever the band', () => {
+  it('every shoot activity reaches the same target, within Reach', () => {
     const { state } = battle([]);
     unit(state, 'u1').status = 'destroyed';
-    place(state, 'u0', 'c4');
+    place(state, 'u0', 'c5');
     const s = offer(state, 'shoot', 'u2');
     expect(targets(s, 1)).toEqual(['u0']);
     expect(targets(s, 2)).toEqual(['u0']);
     expect(targets(s, 3)).toEqual(['u0']);
   });
-  it('a shot two bands beyond effective range is at −4', () => {
+  it('rejects a target beyond the weapon range even with commitment', () => {
     const { state } = battle([]);
-    expect(rangeBetween(state, unit(state, 'u2'), unit(state, 'u0'))).toBe('long');
-    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley! - 4);
+    expect(targets(offer(state, 'shoot', 'u2'), 1)).not.toContain('u0');
+    expect(() => act(burn(state, 'u1'), {type:'shoot',activity:1,target:'u0',unit:'u2',focus:2}, scriptedRng([10]))).toThrow(/no target|not a target/);
   });
-  it('a shooter on higher ground counts the band one closer, so the penalty lifts', () => {
+  it('a shooter on higher ground gains one attack bonus', () => {
     const board = openBoard();
     board.squares[6][2].elevation = 1;
     const { state } = battle([], board);
-    place(state, 'u0', 'c4');
-    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley);
+    place(state, 'u0', 'c5');
+    expect(shootModifier(state, unit(state, 'u2'), unit(state, 'u0'))).toBe(unit(state, 'u2').stats.volley! + 1);
   });
   it('is −4 into a melee and +1 from behind a standing wall', () => {
     const board = openBoard();
@@ -969,21 +969,18 @@ describe('shooting', () => {
       return rangeBetween(hex, unit(hex, 'u0'), unit(hex, 'u2'));
     };
     expect(bandAt('c4')).toBe('short');
-    expect(bandAt('c6')).toBe('medium');
-    expect(bandAt('c8')).toBe('long');
-    expect(bandAt('c9')).toBe('extreme');
-    // Every shoot activity reaches an extreme target now — the offset window is gone, and the
-    // ceiling is the band itself. Beyond never occurs on this board: its own radius already
-    // caps extreme at 8, the farthest two hexes can ever be.
-    expect(targets(offer(hex, 'shoot', 'u2'), 1)).toEqual(['u0']);
-    // Manhattan distance already over-counts a square diagonal, so square keeps no cap.
+    expect(bandAt('c5')).toBe('medium');
+    expect(bandAt('c6')).toBe('long');
+    expect(bandAt('c8')).toBe('extreme');
+    expect(targets(offer(hex, 'shoot', 'u2'), 1)).toEqual([]);
     const sq = battle([], openBoard('square')).state;
     place(sq, 'u0', 'a1');
     place(sq, 'u2', 'h8');
-    expect(rangeBetween(sq, unit(sq, 'u0'), unit(sq, 'u2'))).toBe('extreme');
+    expect(rangeBetween(sq, unit(sq, 'u0'), unit(sq, 'u2'))).toBe('beyond');
   });
   it('Suppress bites on a miss', () => {
     const { state } = battle([]);
+    place(state, 'u0', 'c5');
     unit(state, 'u0').stats.defence = 99;
     const s = act(burn(state, 'u1'), { type: 'shoot', activity: 2, target: 'u0', unit: 'u2' }, scriptedRng([10]));
     expect(unit(s, 'u0').wounds).toBe(0);
@@ -991,6 +988,7 @@ describe('shooting', () => {
   });
   it('a pinned unit cannot Move and its pinner is a holder', () => {
     const { state } = battle([]);
+    place(state, 'u0', 'c5');
     const s = act(burn(state, 'u1'), { type: 'shoot', activity: 3, target: 'u0', unit: 'u2' }, scriptedRng([10]));
     const target = unit(s, 'u0');
     expect(target.pinnedBy).toBe('u2');
@@ -1042,13 +1040,14 @@ describe('a Fight is one roll', () => {
     expect(defenceOf(miss, unit(miss, 'u0'), null, false)).toBe(unit(miss, 'u0').stats.defence - 2);
   });
 
-  it('striking uphill or out of a swamp costs −1, and flanking costs the target −2 Defence', () => {
+  it('swamp lowers Defence and flanking costs the target −2 Defence', () => {
     const board = openBoard();
     board.squares[2][2].elevation = 1;
     board.squares[1][2].terrain = 'swamp';
     const { state } = battle([], board);
     place(state, 'u2', 'c3');
-    expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(unit(state, 'u0').stats.strike! - 2);
+    expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(unit(state, 'u0').stats.strike!);
+    expect(defenceOf(state, unit(state, 'u0'), null, false)).toBe(unit(state, 'u0').stats.defence - 1);
     place(state, 'u1', 'd3');
     expect(isOutflanked(state, unit(state, 'u2'))).toBe(true);
     expect(defenceOf(state, unit(state, 'u2'), null, false)).toBe(unit(state, 'u2').stats.defence - 2);
@@ -1164,7 +1163,7 @@ describe('maneuver', () => {
     expect(types(held(), 'u0')).not.toContain('maneuver');
   });
 
-  it('is offered even with nowhere to go, so a cornered unit is never stuck', () => {
+  it('rejects a maneuver with no destination while allowing a cornered unit to end its turn', () => {
     const { state } = battle([]);
     place(state, 'u0', 'a1');
     place(state, 'u1', 'a2');
@@ -1172,8 +1171,11 @@ describe('maneuver', () => {
     const w = activation(state, 'u0')!.maneuver!;
     expect(w.holders).toHaveLength(1);
     expect(w.targets).toEqual([]);
-    const s = act(state, { type: 'maneuver', activity: 1, unit: 'u0' }, scriptedRng([5]));
+    expect(w.activities.every(option => !option.legal)).toBe(true);
+    expect(() => act(state, { type: 'maneuver', activity: 1, unit: 'u0' }, scriptedRng([5]))).toThrow(/no destination/);
+    const s = endActivation(select(state, 'u0'), scriptedRng([5]));
     expect(notation(unit(s, 'u0').square)).toBe('a1');
+    expect(s.activated).toContain('u0');
   });
 });
 

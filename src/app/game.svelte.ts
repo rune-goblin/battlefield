@@ -1,14 +1,15 @@
 import {
-  act, at, COMBATANTS, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, OFFICIAL, parse, randomRng, select,
-  type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard,
+  act, COMBATANTS, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, canDeploy, OFFICIAL, parse, randomRng, select, recoverAtNight, startNextDay,
+  type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard, type RecoveryChoice,
 } from '../engine/index.js';
 import { migrateMorale } from './migrate-morale.js';
+import { answerSurrender, declareDayOrder, resolveDayOrders, type DayOrder } from '../engine/index.js';
 
 export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
 export interface SetupUnit { card: UnitCard; side: Side; square: string | null; engines: string[] }
 /** An engine deployed on a square of its own. `engines` on a SetupUnit is the attached kind. */
 export interface SetupEngine { name: string; side: Side; square: string | null }
-export interface Setup { spec: BoardSpec; board: Board | null; units: SetupUnit[]; emplacements: SetupEngine[] }
+export interface Setup { spec: BoardSpec; board: Board | null; units: SetupUnit[]; emplacements: SetupEngine[]; roundsPerDay?: number }
 
 // v3 -> v4: BattleState gained engines for emplacements. A v3 save deserialises without it
 // and throws the first time the board reads it.
@@ -32,14 +33,14 @@ function defaultSetup(): Setup {
     board: null,
     emplacements: [],
     units: [
-      { card: pick('Line Infantry'), side: 'attacker', square: 'c2', engines: [] },
-      { card: pick('Heavy Cavalry'), side: 'attacker', square: 'e2', engines: [] },
+      { card: pick('Line Infantry'), side: 'attacker', square: 'e3', engines: [] },
+      { card: pick('Heavy Cavalry'), side: 'attacker', square: 'g3', engines: [] },
       // Apprentice Magician Clique (L5) sits between Line Infantry (L6) and Heavy Cavalry (L7).
-      { card: pick('Apprentice Magician Clique'), side: 'attacker', square: 'd2', engines: [] },
-      { card: pick('Kobold Warriors'), side: 'defender', square: 'c7', engines: [] },
-      { card: pick('Troll Marauders'), side: 'defender', square: 'e7', engines: [] },
+      { card: pick('Apprentice Magician Clique'), side: 'attacker', square: 'f3', engines: [] },
+      { card: pick('Kobold Warriors'), side: 'defender', square: 'e9', engines: [] },
+      { card: pick('Troll Marauders'), side: 'defender', square: 'g9', engines: [] },
       // Mitflit Vermin Cavalry (L4) sits between Kobold Warriors (L3) and Troll Marauders (L8).
-      { card: pick('Mitflit Vermin Cavalry'), side: 'defender', square: 'd7', engines: [] },
+      { card: pick('Mitflit Vermin Cavalry'), side: 'defender', square: 'f9', engines: [] },
     ],
   };
 }
@@ -50,6 +51,7 @@ function load(): { stage: Stage; setup: Setup; battle: BattleState | null } {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.setup && STAGES.includes(parsed.stage)) {
+        parsed.setup.spec.size ??= parsed.setup.board?.squares.length ?? 11;
         if (!intact(parsed.battle)) parsed.battle = null;
         else parsed.battle = migrateMorale(parsed.battle);
         return parsed;
@@ -75,8 +77,8 @@ export function save() {
 export function generate() {
   const board = generateBoard($state.snapshot(game.setup.spec));
   game.setup.board = board;
-  for (const u of game.setup.units) if (u.square && at(board, parse(u.square)).terrain === 'water') u.square = null;
-  for (const e of game.setup.emplacements) if (e.square && at(board, parse(e.square)).terrain === 'water') e.square = null;
+  for (const u of game.setup.units) if (u.square && !canDeploy(board, u.side, u.card.tactics?.includes('ambush') ?? false, parse(u.square))) u.square = null;
+  for (const e of game.setup.emplacements) if (e.square && !canDeploy(board, e.side, false, parse(e.square))) e.square = null;
   save();
 }
 
@@ -128,6 +130,7 @@ export function startBattle() {
   game.battle = createBattle(
     {
       board: $state.snapshot(board),
+      roundsPerDay: game.setup.roundsPerDay,
       units: game.setup.units.map((u) => ({
         card: $state.snapshot(u.card),
         side: u.side,
@@ -186,6 +189,47 @@ export function backToSetup() {
   game.battle = null;
   game.history = [];
   game.stage = 'attackers';
+  save();
+}
+
+export function resolveNight(choices: RecoveryChoice[]) {
+  if (!game.battle) return;
+  game.battle = recoverAtNight(game.battle, choices, randomRng);
+  // A committed night is a new boundary: undo cannot reroll its recovery checks.
+  game.history = [];
+  save();
+}
+
+export function continueBattle(positions: Record<string, string>) {
+  if (!game.battle) return;
+  game.battle = startNextDay(game.battle, positions);
+  game.history = [];
+  save();
+}
+
+export function chooseNextBattlefield(board: Board | null) {
+  if (!game.battle || game.battle.phase !== 'ended' || game.battle.endedBy !== 'dusk') return;
+  game.battle.nextBoard = board;
+  save();
+}
+
+export function chooseDayOrder(side: Side, order: DayOrder) {
+  if (!game.battle) return;
+  game.battle = declareDayOrder(game.battle, side, order);
+  save();
+}
+
+export function confirmDayOrders() {
+  if (!game.battle) return;
+  game.battle = resolveDayOrders(game.battle);
+  game.history = [];
+  save();
+}
+
+export function respondToSurrender(side: Side, accept: boolean) {
+  if (!game.battle) return;
+  game.battle = answerSurrender(game.battle, side, accept);
+  game.history = [];
   save();
 }
 

@@ -9,12 +9,13 @@ export const HEX_TERRAINS: HexTerrain[] = ['plains', 'forest', 'hills', 'mountai
 export type Feature = 'none' | 'river' | 'lakeside';
 export const FEATURES: Feature[] = ['none', 'river', 'lakeside'];
 
-export type SquareTerrain = 'open' | 'forest' | 'swamp' | 'shallows' | 'water' | 'settlement';
+export type SquareTerrain = 'open' | 'forest' | 'swamp' | 'shallows' | 'water' | 'settlement' | 'bridge';
 
 export interface Construction { kind: 'fort'; tier: number; }
 
 export interface BoardSpec {
   base: HexTerrain;
+  size?: 9 | 11;
   feature?: Feature;
   construction?: Construction | null;
   grid?: GridKind;
@@ -33,7 +34,7 @@ export interface Board {
 
 // Boards are JSON in localStorage and in cloned battle states, so they carry the kind, not the
 // Grid itself.
-export function gridOf(board: Board): Grid { return gridFor(board.grid); }
+export function gridOf(board: Board): Grid { return gridFor(board.grid, board.squares.length); }
 
 export function at(board: Board, sq: Square): SquareState { return board.squares[sq.rank][sq.file]; }
 
@@ -55,21 +56,21 @@ interface Density {
   patchSize: [number, number];
 }
 
-// Counts are patches, not squares: trees on plains come as one or two copses, never scattered.
+// Small copses leave open approaches between rough patches.
 const DENSITY: Record<HexTerrain, Density> = {
   plains: { forestPatches: [0, 2], swampPatches: [0, 1], waterPatches: [0, 1], ridge: 'none', patchSize: [1, 3] },
-  forest: { forestPatches: [8, 11], swampPatches: [0, 2], waterPatches: [0, 1], ridge: 'none', patchSize: [3, 6] },
+  forest: { forestPatches: [9, 12], swampPatches: [0, 2], waterPatches: [0, 1], ridge: 'none', patchSize: [2, 4] },
   hills: { forestPatches: [1, 3], swampPatches: [0, 1], waterPatches: [0, 1], ridge: 'low', patchSize: [1, 3] },
-  mountains: { forestPatches: [4, 7], swampPatches: [0, 0], waterPatches: [0, 1], ridge: 'high', patchSize: [2, 4] },
-  swamp: { forestPatches: [1, 3], swampPatches: [8, 12], waterPatches: [1, 3], ridge: 'none', patchSize: [3, 6] },
+  mountains: { forestPatches: [3, 5], swampPatches: [0, 0], waterPatches: [0, 1], ridge: 'high', patchSize: [2, 4] },
+  swamp: { forestPatches: [1, 3], swampPatches: [7, 9], waterPatches: [1, 3], ridge: 'none', patchSize: [2, 4] },
   desert: { forestPatches: [0, 0], swampPatches: [0, 0], waterPatches: [0, 1], ridge: 'low', patchSize: [1, 2] },
 };
 
 export const DEPLOY_DEPTH = 3;
 
-export function deployRanks(side: 'attacker' | 'defender', ambush = false): number[] {
+export function deployRanks(side: 'attacker' | 'defender', ambush = false, dimension = SIZE): number[] {
   const depth = DEPLOY_DEPTH + (ambush ? 1 : 0);
-  return Array.from({ length: depth }, (_, i) => side === 'attacker' ? i : SIZE - 1 - i);
+  return Array.from({ length: depth }, (_, i) => side === 'attacker' ? i : dimension - 1 - i);
 }
 
 const DEPLOY_RANKS = new Set([...deployRanks('attacker'), ...deployRanks('defender')]);
@@ -83,6 +84,7 @@ function between(rnd: Random, [lo, hi]: [number, number]): number {
 function pick<T>(rnd: Random, items: T[]): T { return items[Math.floor(rnd() * items.length)]; }
 
 function emptyBoard(spec: BoardSpec): Board {
+  const SIZE = spec.size ?? 11;
   const squares = Array.from({ length: SIZE }, () =>
     Array.from({ length: SIZE }, (): SquareState => ({ terrain: 'open', elevation: 0 })));
   return { spec, grid: spec.grid ?? 'hex', squares, walls: {} };
@@ -90,20 +92,26 @@ function emptyBoard(spec: BoardSpec): Board {
 
 function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: number, allowed: (sq: Square) => boolean): void {
   const grid = gridOf(board);
-  const candidates = grid.cells().filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
+  const patchKeys = new Set<string>();
+  const eligible = (sq: Square) => at(board, sq).terrain === 'open' && allowed(sq)
+    && grid.neighbours(sq).every(n => patchKeys.has(notation(n)) || !['forest', 'swamp'].includes(at(board, n).terrain));
+  const candidates = grid.cells().filter(eligible);
   if (!candidates.length) return;
   const patch: Square[] = [pick(rnd, candidates)];
   at(board, patch[0]).terrain = terrain;
+  patchKeys.add(notation(patch[0]));
   while (patch.length < size) {
-    const frontier = patch.flatMap(sq => grid.neighbours(sq)).filter(sq => at(board, sq).terrain === 'open' && allowed(sq));
+    const frontier = patch.flatMap(sq => grid.neighbours(sq)).filter(eligible);
     if (!frontier.length) return;
     const next = pick(rnd, frontier);
     at(board, next).terrain = terrain;
     patch.push(next);
+    patchKeys.add(notation(next));
   }
 }
 
 function layRidge(board: Board, rnd: Random, high: boolean): void {
+  const SIZE = board.squares.length;
   const grid = gridOf(board);
   const length = between(rnd, [5, 8]);
   const rank = between(rnd, [2, SIZE - 3]);
@@ -128,8 +136,9 @@ function layRidge(board: Board, rnd: Random, high: boolean): void {
 // the hexagon a flank file exists on only part of that band, so a cell the shape lacks falls
 // back to whichever band rank does hold that file — the river must reach both flanks.
 function layRiver(board: Board, rnd: Random): void {
+  const SIZE = board.squares.length;
   const grid = gridOf(board);
-  const band = NEUTRAL_RANKS;
+  const band = Array.from({ length: SIZE - 2 * DEPLOY_DEPTH }, (_, i) => i + DEPLOY_DEPTH);
   let rank = between(rnd, [band[0], band[band.length - 1]]);
   const course: Square[] = [];
   const place = (file: number, r: number): Square => {
@@ -187,6 +196,7 @@ export function wallBudget(tier: number): number { return 4 + tier; }
 // The fort backs onto the defender's edge so the wall budget covers front and flanks; a
 // short budget leaves the gate open on one flank.
 function layFort(board: Board, rnd: Random, tier: number): void {
+  const SIZE = board.squares.length;
   const budget = wallBudget(tier);
   const width = budget >= 7 ? 3 : 2;
   const depth = budget >= 5 ? 2 : 1;
@@ -220,7 +230,7 @@ export function generateBoard(spec: BoardSpec): Board {
   if (feature === 'lakeside') layLake(board, rnd);
   if (spec.construction) layFort(board, rnd, spec.construction.tier);
 
-  const notDeploy = (sq: Square) => !DEPLOY_RANKS.has(sq.rank);
+  const notDeploy = (sq: Square) => sq.rank >= DEPLOY_DEPTH && sq.rank < board.squares.length - DEPLOY_DEPTH;
   const anywhere = () => true;
   for (let i = between(rnd, d.forestPatches); i > 0; i--) growPatch(board, rnd, 'forest', between(rnd, d.patchSize), anywhere);
   for (let i = between(rnd, d.swampPatches); i > 0; i--) growPatch(board, rnd, 'swamp', between(rnd, d.patchSize), anywhere);
@@ -234,7 +244,8 @@ export function count(board: Board, terrain: SquareTerrain): number {
 }
 
 export function render(board: Board): string {
-  const glyph: Record<SquareTerrain, string> = { open: '.', forest: 'T', swamp: '~', shallows: '=', water: 'W', settlement: '#' };
+  const SIZE = board.squares.length;
+  const glyph: Record<SquareTerrain, string> = { open: '.', forest: 'T', swamp: '~', shallows: '=', water: 'W', settlement: '#', bridge: 'B' };
   const grid = gridOf(board);
   const rows: string[] = [];
   // Odd rows of an odd-r hex board sit half a cell to the right; the shared edge between two
@@ -258,6 +269,6 @@ export function render(board: Board): string {
       rows.push(under);
     }
   }
-  rows.push('  ' + [...FILES].join('  '));
+  rows.push('  ' + [...FILES.slice(0, SIZE)].join('  '));
   return rows.join('\n');
 }

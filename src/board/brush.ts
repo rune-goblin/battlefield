@@ -40,5 +40,5 @@ export function brushColour(brush: Brush, theme: BoardTheme): number {
 export const sameBrush = (a: Brush | null, b: Brush | null): boolean =>
   JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
-/** Palette order, shared by the stage's buttons and the `1`–`6` keyboard brushes. */
-export const BRUSH_TERRAINS: SquareTerrain[] = ['open', 'forest', 'swamp', 'shallows', 'water', 'settlement'];
+/** Palette order, shared by the stage's buttons and the `1`–`7` keyboard brushes. */
+export const BRUSH_TERRAINS: SquareTerrain[] = ['open', 'forest', 'swamp', 'shallows', 'water', 'settlement', 'bridge'];

@@ -1,3 +1,4 @@
+import { forestCover, hasSight, isMountain } from './sight.js';
 import {
   at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
   type Board, type Square, type Wall,
@@ -27,11 +28,11 @@ export interface Deployment { card: UnitCard; side: Side; square: string; engine
 /** An engine deployed on a square of its own rather than attached to a unit. */
 export interface Emplacement { card: SiegeEngineCard; side: Side; square: string; }
 
-export interface BattleSetup { units: Deployment[]; board: Board; engines?: Emplacement[]; }
+export interface BattleSetup { units: Deployment[]; board: Board; engines?: Emplacement[]; roundsPerDay?: number; }
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
-export const homeRank = (s: Side) => (s === 'attacker' ? 0 : SIZE - 1);
+export const homeRank = (s: Side, dimension = SIZE) => (s === 'attacker' ? 0 : dimension - 1);
 
 export const sameSquare = (a: Square, b: Square) => a.file === b.file && a.rank === b.rank;
 
@@ -39,11 +40,13 @@ const grid = (state: BattleState) => gridOf(state.board);
 const dist = (state: BattleState, a: Square, b: Square) => grid(state).distance(a, b);
 
 export function canDeploy(board: Board, side: Side, ambush: boolean, sq: Square): boolean {
-  return gridOf(board).inBounds(sq) && deployRanks(side, ambush).includes(sq.rank) && at(board, sq).terrain !== 'water';
+  return gridOf(board).inBounds(sq) && deployRanks(side, ambush, board.squares.length).includes(sq.rank) && at(board, sq).terrain !== 'water';
 }
 
 // The rng is unused now that there is no initiative roll; callers still pass one.
 export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
+  const roundsPerDay = setup.roundsPerDay ?? LAST_ROUND;
+  if (!Number.isInteger(roundsPerDay) || roundsPerDay < 1) throw new Error('rounds per day must be a positive integer');
   const taken = new Set<string>();
   const units: Unit[] = setup.units.map((d, i) => {
     const traits = cardTraits(d.card);
@@ -76,12 +79,11 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     return engineState(e.card, e.side, sq, true);
   });
   const state: BattleState = {
+    day: 1, roundsPerDay, night: null,
     units, engines: emplaced, order: units.map((u) => u.id), round: 1,
     pending: 'attacker', active: null, begun: false, activated: [], lastSide: null,
     board: clone(setup.board),
     phase: 'battle', winner: null, endedBy: null,
-    startingCount: { attacker: count(units, 'attacker'), defender: count(units, 'defender') },
-    halfChecked: { attacker: false, defender: false },
     log: [{ round: 1, text: 'Round 1 begins.' }],
   };
   for (const u of state.units) if (isRouted(u)) abandonEngines(state, u);
@@ -93,7 +95,6 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
 const engineState = (e: SiegeEngineCard, side: Side, square: Square, emplaced: boolean): EngineState =>
   ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced });
 
-const count = (units: Unit[], side: Side) => units.filter((u) => u.side === side).length;
 
 export const unit = (state: BattleState, id: string): Unit => {
   const u = state.units.find((x) => x.id === id);
@@ -104,8 +105,6 @@ export const unit = (state: BattleState, id: string): Unit => {
 /** A full morale track routes the unit; every lower value still counts as standing. */
 export const isRouted = (u: Unit) => u.status === 'active' && u.disorder >= ROUTED_AT;
 export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < ROUTED_AT;
-export const isWeakened = (u: Unit) => u.wounds >= 2;
-export const isBroken = (u: Unit) => u.wounds >= 3;
 
 /** Units of `side` that may still act this round. */
 export function activatable(state: BattleState, side: Side): Unit[] {
@@ -241,14 +240,14 @@ export function attackRoll(state: BattleState, rng: Rng, attacker: Unit, target:
   return c;
 }
 
-export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false): number {
+export function defenceOf(state: BattleState, target: Unit, attacker: Unit | null, vsVolley: boolean, ignoresCover = false, origin?: Square): number {
   // Circumstance bonuses never stack; the highest applies.
   let circumstance = Math.max(target.guard?.defence ?? 0, auraOn(state, target));
-  const downhill = attacker ? elevation(state, attacker) > elevation(state, target) : false;
-  if (vsVolley && !ignoresCover && square(state, target).terrain === 'forest' && !downhill) circumstance = Math.max(circumstance, 1);
+  if (isMountain(state.board, target.square)) circumstance = Math.max(circumstance, 1);
+  if (vsVolley && !ignoresCover && attacker) circumstance = Math.max(circumstance, forestCover(state.board, origin ?? attacker.square, target.square));
   let penalty = target.disorder;
-  if (isOutflanked(state, target)) penalty += 2;
-  if (target.exposed) penalty += 2;
+  const terrainPenalty = square(state, target).terrain === 'swamp' ? 1 : 0;
+  penalty += Math.max(terrainPenalty, isOutflanked(state, target) ? 2 : 0, target.exposed ? 2 : 0);
   if (target.suppressedBy) penalty += 2;
   if (target.frightened) penalty += 1;
   return target.stats.defence + circumstance - penalty;
@@ -256,7 +255,7 @@ export function defenceOf(state: BattleState, target: Unit, attacker: Unit | nul
 
 export function reachOf(state: BattleState, u: Unit): number {
   if (u.stats.volley === null || u.stats.reach === null) return 0;
-  return REACH_RANK[u.stats.reach] - (isWeakened(u) ? 1 : 0);
+  return REACH_RANK[u.stats.reach];
 }
 
 /**
@@ -281,9 +280,7 @@ const crewedArtillery = (state: BattleState, u: Unit): EngineState | null =>
 const crewedRam = (state: BattleState, u: Unit): EngineState | null =>
   enginesOf(state, u).find((e) => e.status === 'crewed' && !e.fired && e.kind === 'ram') ?? null;
 
-/** The band a shot costs nothing extra to reach; every band beyond it is −2 on the roll
- * (`shootModifier`). A crewed engine replaces the unit's own shooting profile, effective range
- * and all, while it is loaded — but it buys no cheaper activity than anyone else's. */
+/** The weapon's preferred range band; a loaded engine supplies its own profile. */
 export function shootHome(state: BattleState, u: Unit): number {
   const e = crewedArtillery(state, u);
   const reach = e ? e.reach : u.stats.reach;
@@ -292,36 +289,67 @@ export function shootHome(state: BattleState, u: Unit): number {
 
 export const canShoot = (state: BattleState, u: Unit) => u.stats.volley !== null || crewedArtillery(state, u) !== null;
 
-const rangeRank = (r: Range) => (r === 'short' ? 1 : r === 'medium' ? 2 : r === 'long' ? 3 : r === 'extreme' ? 4 : r === 'beyond' ? 5 : 0);
+const SHOT_BANDS = ['short', 'medium', 'long', 'extreme'] as const;
 
-/** Whether a bare rank (1-4) names a real band rather than engaged (0) or beyond (5). */
-const inRange = (r: number) => r >= 1 && r <= 4;
-
-/** The band a shot at this target is priced in: the true band, one closer for a shooter that
- * stands higher. Engaged (0) and beyond (5) stay where they are. */
-function shotRank(state: BattleState, u: Unit, target: Unit): number {
-  const r = rangeRank(rangeBetween(state, u, target));
-  return inRange(r) && r > 1 && elevation(state, u) > elevation(state, target) ? r - 1 : r;
+/** Preferred distance interval. Short's normal distance is two; contact still bars shooting. */
+function shootPreferred(state: BattleState, u: Unit): { min: number; max: number } {
+  const home = shootHome(state, u);
+  const bands = BANDS[state.board.grid];
+  return { min: home === 1 ? 2 : bands[SHOT_BANDS[home - 2]] + 1, max: bands[SHOT_BANDS[home - 1]] };
 }
+
+/** Weapons flex one hex beyond either end of their preferred interval. */
+export function shootCeiling(state: BattleState, u: Unit): number {
+  return canShoot(state, u) ? shootPreferred(state, u).max + 1 : 0;
+}
+export function shootFloor(state: BattleState, u: Unit): number {
+  return Math.max(1, shootPreferred(state, u).min - 1);
+}
+export function shootRangeLabel(state: BattleState, u: Unit): string {
+  const preferred = shootPreferred(state, u);
+  const range = preferred.min === preferred.max ? `${preferred.min}` : `${preferred.min}–${preferred.max}`;
+  return `${range} hexes preferred · ${shootFloor(state, u)}–${shootCeiling(state, u)} allowed · −2 outside preferred`;
+}
+
+const shotFrom = (state: BattleState, u: Unit): Square => {
+  const engine = crewedArtillery(state, u);
+  return engine?.emplaced ? engine.square : u.square;
+};
+const canShootCell = (state: BattleState, u: Unit, to: Square): boolean => {
+  const from = shotFrom(state, u);
+  const distance = dist(state, from, to);
+  return distance >= shootFloor(state, u) && distance <= shootCeiling(state, u) && hasSight(state.board, from, to);
+};
+const canShootTarget = (state: BattleState, u: Unit, target: Unit): boolean =>
+  !isEngaged(state, u, target) && canShootCell(state, u, target.square);
+const shotRangePenalty = (state: BattleState, u: Unit, to: Square): number => {
+  const distance = dist(state, shotFrom(state, u), to);
+  const preferred = shootPreferred(state, u);
+  return distance < preferred.min || distance > preferred.max ? 2 : 0;
+};
+const wallShotCell = (state: BattleState, u: Unit, key: string): Square | undefined =>
+  wallCells(key).filter(cell => canShootCell(state, u, cell))
+    .sort((a, b) => shotRangePenalty(state, u, a) - shotRangePenalty(state, u, b))[0];
+const canShootWall = (state: BattleState, u: Unit, key: string): boolean => !!wallShotCell(state, u, key);
+
+export const highGroundBonus = (state: BattleState, from: Square, to: Square): number =>
+  at(state.board, from).elevation > at(state.board, to).elevation ? 1 : 0;
 
 export function strikeModifier(state: BattleState, u: Unit, target: Unit): number {
   let m = (u.stats.strike ?? 0) + rollBonus(u);
-  if (isWeakened(u)) m -= 2;
   m -= u.disorder;
-  if (square(state, u).terrain === 'swamp' || square(state, u).terrain === 'shallows') m -= 1;
-  m -= Math.max(0, elevation(state, target) - elevation(state, u));
+  if (square(state, u).terrain === 'shallows') m -= 1;
+  m += highGroundBonus(state, u.square, target.square);
   return m;
 }
 
 export function shootModifier(state: BattleState, u: Unit, target: Unit): number {
   const e = crewedArtillery(state, u);
   let m = (e ? e.launch : (u.stats.volley ?? 0)) + rollBonus(u);
-  if (isWeakened(u)) m -= 2;
+  m -= shotRangePenalty(state, u, target.square);
   m -= u.disorder;
-  m -= Math.max(0, elevation(state, target) - elevation(state, u));
-  m -= 2 * Math.max(0, shotRank(state, u, target) - shootHome(state, u));
+  m += Math.max(highGroundBonus(state, shotFrom(state, u), target.square), garrisoned(state, u) ? 1 : 0);
   if (state.units.some((a) => a.side === u.side && a.id !== u.id && isEngaged(state, target, a))) m -= 4;
-  if (garrisoned(state, u)) m += 1;
   return m;
 }
 
@@ -389,7 +417,7 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
     : `${target.name} has dug in: the critical lands as an ordinary hit.`);
   if (n <= 0) return 0;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
-  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
+  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
   log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (attacker.wrath) {
     attacker.wrath = false;
@@ -463,12 +491,12 @@ function attackGate(state: BattleState, rng: Rng, attacker: Unit, target: Unit):
   return false;
 }
 
-interface StrikeOpts { free?: boolean; pressed?: boolean; bonus?: number; saveShift?: number; label: string }
+interface StrikeOpts { free?: boolean; pressed?: boolean; circumstance?: number; bonus?: number; saveShift?: number; label: string }
 
 // `null` means Aegis wasted the whole attempt: no roll, no wound, nothing for `melee` to read.
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree | null {
   if (!attackGate(state, rng, u, target)) return null;
-  const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
+  const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + Math.max(0, (opts.circumstance ?? 0) - highGroundBonus(state, u.square, target.square)) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
   applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0);
@@ -483,7 +511,7 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
 /** What a charge carries into the Fight: `bonus` on the attack roll, `saveShift` on the
  * target's save against the wound, and `impact` — a cavalry charge applies Press, so a
  * Strike lands as a Press and a Press as an Overrun, at the price paid. */
-export interface MeleeOpts { bonus?: number; saveShift?: number; impact?: boolean }
+export interface MeleeOpts { circumstance?: number; bonus?: number; saveShift?: number; impact?: boolean }
 
 // A Fight is one roll, one way. A hit wounds, and the target's Fortitude save decides its
 // disorder; a miss repulses the attacker, whose Will save against the target's level DC
@@ -495,7 +523,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Ac
   const drive = eff.drive || (impact && eff.press);
   u.attacked = true;
   const degree = resolveStrike(state, rng, u, target, {
-    pressed: eff.press || impact, bonus: opts.bonus, saveShift: opts.saveShift, label: activity.verb,
+    pressed: eff.press || impact, circumstance: opts.circumstance, bonus: opts.bonus, saveShift: opts.saveShift, label: activity.verb,
   });
   if (degree === null) return;
   if (succeeded(degree)) {
@@ -545,7 +573,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: 
   const source = e ? `${u.name}'s ${e.name}` : `${u.name}'s volley`;
   u.attacked = true;
   if (!attackGate(state, rng, u, target)) return;
-  const c = attackRoll(state, rng, u, target, shootModifier(state, u, target) + bonus, defenceOf(state, target, u, true));
+  const c = attackRoll(state, rng, u, target, shootModifier(state, u, target) + bonus, defenceOf(state, target, u, true, false, shotFrom(state, u)));
   if (e) e.fired = true;
   log(state, u, `${u.name} ${activity.verb} at ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
   applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u);
@@ -594,6 +622,19 @@ const enterable = (state: BattleState, from: Square, to: Square, opts: StepOpts)
 const occupiedBy = (state: BattleState, u: Unit) =>
   new Set(state.units.filter((o) => o.status === 'active' && o.id !== u.id).map((o) => notation(o.square)));
 
+/** Entering an enemy's adjacent, unblocked hex ends ordinary movement. A Maneuver
+ * roll clears its starting holders; a new enemy's zone still ends that movement. */
+function controlCells(state: BattleState, u: Unit, cleared: ReadonlySet<string> = new Set()): Set<string> {
+  const cells = new Set<string>();
+  for (const enemy of state.units) {
+    if (enemy.side === u.side || enemy.status !== 'active' || cleared.has(enemy.id)) continue;
+    for (const cell of grid(state).neighbours(enemy.square)) {
+      if (barrierBetween(state.board, cell, enemy.square) === null) cells.add(notation(cell));
+    }
+  }
+  return cells;
+}
+
 /** Feet the unit may still spend: what earlier Move actions banked, plus what the rest buy. */
 export const movementBudget = (u: Unit) => Math.max(0, u.feet + u.actions * u.speed);
 
@@ -605,7 +646,7 @@ export const moveActionsFor = (u: Unit, feet: number) =>
 // Shared by moveReach and movePath: the one Stride ever asks the same question, "how far does
 // this budget carry, and through what". Where it may end is a separate question, asked after.
 const strideReach = (state: BattleState, u: Unit): ReachMap =>
-  reachable(state.board, u.square, { budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u) });
+  reachable(state.board, u.square, { budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u) });
 
 /** Every cell the unit can still Stride to, what it costs in feet, and in Move actions. */
 export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
@@ -671,7 +712,7 @@ function chargeBlocked(state: BattleState, u: Unit, target: Unit): Set<string> {
 
 const chargeRun = (state: BattleState, u: Unit, blocked: ReadonlySet<string>, evenGround = false): ReachMap =>
   reachable(state.board, u.square, {
-    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), evenGround, occupied: blocked,
+    budget: CHARGE_SPEEDS * u.speed, ...groundFor(u), evenGround, occupied: blocked, stopAt: controlCells(state, u),
   });
 
 /**
@@ -731,15 +772,15 @@ export function maneuverOutcome(state: BattleState, u: Unit, to: Square): 'repos
 }
 
 /** One adjacent destination, plus the free Move's reach on a critical success. */
-export function maneuverTargets(state: BattleState, u: Unit, feet = 0): Square[] {
+export function maneuverTargets(state: BattleState, u: Unit, feet = 0, actions = 1): Square[] {
   const g = grid(state);
   const routing = isRouted(u);
   const step = homewardStep(u);
   const cells = new Set((routing ? g.homeward(u.square, u.side) : g.neighbours(u.square))
-    .filter((n) => enterable(state, u.square, n, groundFor(u)) && canEndOn(u, state.board, n))
+    .filter((n) => enterable(state, u.square, n, groundFor(u)) && stepFeet(state.board, u.square, n, groundFor(u)) <= actions * u.speed && canEndOn(u, state.board, n))
     .map(notation));
   if (feet > 0 && u.speed > 0) {
-    const reach = reachable(state.board, u.square, { budget: feet, ...groundFor(u), occupied: occupiedBy(state, u) });
+    const reach = reachable(state.board, u.square, { budget: feet, ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u, new Set(holdersOf(state, u).map(h => h.id))) });
     for (const key of reach.keys()) {
       const sq = parse(key);
       if (sameSquare(sq, u.square) || !canEndOn(u, state.board, sq)) continue;
@@ -754,7 +795,7 @@ export function maneuverTargets(state: BattleState, u: Unit, feet = 0): Square[]
   return all;
 }
 
-const homewardStep = (u: Unit) => Math.sign(homeRank(u.side) - u.square.rank) || -1;
+const homewardStep = (u: Unit) => u.side === 'attacker' ? -1 : 1;
 
 // proto: reads the piece even when another unit fired it and the crew pinned with its own
 // Volley, so the escape DC can say launch + 10 for a shot that rolled Volley.
@@ -797,8 +838,6 @@ function leaveField(state: BattleState, u: Unit) {
 const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filter(([, w]) => w.remaining > 0).map(([k]) => k);
 const wallCells = (key: string) => key.split('|').map(parse);
 const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameSquare(c, u.square));
-const wallRank = (state: BattleState, u: Unit, key: string) =>
-  bandRank(state, Math.min(...wallCells(key).map((c) => dist(state, u.square, c))));
 
 const cellTarget = (id: string): ActivityTarget => ({ kind: 'cell', id, label: id });
 const unitTarget = (u: Unit): ActivityTarget => ({ kind: 'unit', id: u.id, label: u.name });
@@ -862,11 +901,12 @@ function burstShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
 function blastTargets(state: BattleState, u: Unit, index: ActivityIndex, ceiling: number): ActivityTarget[] {
   if (index === 1) {
     return state.units
-      .filter((e) => e.side !== u.side && e.status === 'active' && dist(state, e.square, u.square) <= ceiling)
+      .filter((e) => e.side !== u.side && e.status === 'active' && dist(state, e.square, u.square) <= ceiling && hasSight(state.board, u.square, e.square))
       .map(unitTarget);
   }
   const shapes = index === 2 ? lineShapes(state, u, ceiling) : burstShapes(state, u, ceiling);
   return shapes
+    .filter(shape => shape.every(cell => hasSight(state.board, u.square, cell)))
     .map((shape) => ({ shape, caught: enemiesIn(state, u, shape) }))
     .filter(({ caught }) => caught.length > 0)
     .map(({ shape, caught }) => ({ kind: 'cell' as const, id: shapeId(shape), label: caught.map((e) => e.name).join(', ') }));
@@ -921,9 +961,9 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
   switch (type) {
     case 'shoot': {
-      const targets: ActivityTarget[] = enemies.filter((e) => inRange(shotRank(state, u, e))).map(unitTarget);
+      const targets: ActivityTarget[] = enemies.filter((e) => canShootTarget(state, u, e)).map(unitTarget);
       if (u.side === 'attacker' && crewedArtillery(state, u)) {
-        targets.push(...wallKeys(state).filter((k) => inRange(wallRank(state, u, k))).map(wallTarget));
+        targets.push(...wallKeys(state).filter((k) => canShootWall(state, u, k)).map(wallTarget));
       }
       return { needsTarget: true, targets };
     }
@@ -947,7 +987,7 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
       if (tree === 'healing') return { needsTarget: true, targets: healTargets(state, u, index) };
       const pool = TREE_TARGET[tree] === 'enemy' ? enemies
         : state.units.filter((a) => a.side === u.side && a.status === 'active');
-      const inReach = pool.filter((t) => dist(state, t.square, u.square) <= ceiling);
+      const inReach = pool.filter((t) => dist(state, t.square, u.square) <= ceiling && hasSight(state.board, u.square, t.square));
       if (tree === 'movement' && index === 3) return { needsTarget: true, targets: translocateTargets(state, inReach) };
       return { needsTarget: true, targets: inReach.map(unitTarget) };
     }
@@ -1047,9 +1087,9 @@ function doManeuver(state: BattleState, rng: Rng, u: Unit, action: ManeuverActio
     log(state, u, `${u.name} cannot break contact and stays where it stands.`);
     return;
   }
-  maneuverTo(state, u, action.to, result.far);
+  maneuverTo(state, u, action.to, result.far, action.activity);
   follow(state, u, result.chasers);
-  if (isRouted(u) && u.square.rank === homeRank(u.side)) leaveField(state, u);
+  if (isRouted(u) && u.square.rank === homeRank(u.side, state.board.squares.length)) leaveField(state, u);
 }
 
 /**
@@ -1103,8 +1143,8 @@ function disengage(state: BattleState, rng: Rng, u: Unit, holders: Unit[], chase
 /**
  * Reposition or withdraw one hex; a critical Break off allows movement up to Speed.
  */
-function maneuverTo(state: BattleState, u: Unit, to: string | undefined, far: boolean) {
-  const options = maneuverTargets(state, u, far ? u.speed : 0);
+function maneuverTo(state: BattleState, u: Unit, to: string | undefined, far: boolean, actions: number) {
+  const options = maneuverTargets(state, u, far ? u.speed : 0, actions);
   if (!options.length) {
     log(state, u, `${u.name} has nowhere to go and holds where it stands.`);
     return;
@@ -1134,13 +1174,13 @@ function follow(state: BattleState, u: Unit, chasers: Unit[]) {
   for (const holder of chasers) {
     if (u.status !== 'active') return;
     if (!isStanding(holder) || holder.speed === 0 || holder.rooted > 0) continue;
-    if (isEngaged(state, holder, u)) continue;
+    if (engagedEnemies(state, holder).length) continue;
     const reach = reachable(state.board, holder.square, {
-      budget: holder.speed, flying: holder.flying, occupied: occupiedBy(state, holder),
+      budget: holder.speed, ...groundFor(holder), occupied: occupiedBy(state, holder), stopAt: controlCells(state, holder),
     });
     let best: { cell: string; feet: number } | null = null;
     for (const [cell, entry] of reach) {
-      if (cell === notation(holder.square) || !touching(state, parse(cell), u)) continue;
+      if (cell === notation(holder.square) || !touching(state, parse(cell), u) || !canEndOn(holder, state.board, parse(cell))) continue;
       if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) best = { cell, feet: entry.feet };
     }
     if (!best) { log(state, holder, `${holder.name} cannot follow ${u.name}.`); continue; }
@@ -1189,7 +1229,7 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
   // asks for. Each unit reads the pair its own way against its own Defence: better under sure
   // strike, worse under a ward of its own, and the first die alone when the two cancel. Only the
   // die `roll` throws carries; the DC it takes goes nowhere, since each hex reads its own below.
-  const first = roll(state, rng, u, modifier, defenceOf(state, caught[0], u, false)).roll;
+  const first = roll(state, rng, u, modifier, defenceOf(state, caught[0], u, true)).roll;
   const second = sureStrike || warded.size ? rng.d20() : null;
   if (second !== null) {
     log(state, u, `${activity.label} is thrown twice, ${first} and ${second}: ${sureStrike
@@ -1197,10 +1237,11 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
       : 'a warded hex keeps the worse, and the rest read the first'}.`);
   }
   for (const target of caught) {
-    const dc = defenceOf(state, target, u, false);
+    const dc = defenceOf(state, target, u, true);
+    const targetModifier = modifier + highGroundBonus(state, u.square, target.square);
     const c = second !== null && sureStrike !== warded.has(target.id)
-      ? readTwice([first, second], modifier, dc, sureStrike)
-      : readCheck(first, modifier, dc);
+      ? readTwice([first, second], targetModifier, dc, sureStrike)
+      : readCheck(first, targetModifier, dc);
     log(state, u, `${activity.label} catches ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
     const wounds = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
     applyWounds(state, rng, target, wounds, `${u.name}'s ${activity.label}`, u);
@@ -1390,18 +1431,18 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
   const focusBonus = ACTION_BONUS * (action.focus ?? 0);
   switch (activity.type) {
     case 'shoot': {
-      const outOfBand = (r: number) => !inRange(r);
       if (action.target && action.target.includes('|')) {
         const e = crewedArtillery(state, u);
         if (!e) { log(state, u, `${u.name} has nothing that can batter a wall from here.`); break; }
-        if (outOfBand(wallRank(state, u, action.target))) { log(state, u, `${u.name}'s shot falls short of the wall.`); break; }
+        if (!canShootWall(state, u, action.target)) { log(state, u, `${u.name}'s shot cannot reach the wall from this range or sight line.`); break; }
+        const rangePenalty = shotRangePenalty(state, u, wallShotCell(state, u, action.target)!);
         e.fired = true;
         u.attacked = true;
-        attackWall(state, rng, u, action.target, e.launch - u.disorder - (isWeakened(u) ? 2 : 0) + rollBonus(u) + focusBonus, 'bombards');
+        attackWall(state, rng, u, action.target, e.launch - u.disorder - rangePenalty + rollBonus(u) + focusBonus, 'bombards');
         break;
       }
       const target = unit(state, action.target!);
-      if (outOfBand(shotRank(state, u, target))) { log(state, u, `${u.name}'s shot falls short of ${target.name}.`); break; }
+      if (!canShootTarget(state, u, target)) { log(state, u, `${u.name}'s shot cannot reach ${target.name} from this range or sight line.`); break; }
       shootAt(state, rng, u, target, activity, focusBonus);
       break;
     }
@@ -1410,7 +1451,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
         const ram = crewedRam(state, u);
         if (ram) ram.fired = true;
         u.attacked = true;
-        const bonus = (u.stats.strike ?? 0) - u.disorder - (isWeakened(u) ? 2 : 0) + (ram ? 2 : 0) + rollBonus(u);
+        const bonus = (u.stats.strike ?? 0) - u.disorder + (ram ? 2 : 0) + rollBonus(u);
         attackWall(state, rng, u, action.target, bonus + focusBonus, ram ? 'rams' : 'hacks at');
         break;
       }
@@ -1516,7 +1557,7 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
   if (target.status !== 'active') return;
   const n = reduceWounds(target, 1);
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
-  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : isBroken(target) ? 'Broken' : isWeakened(target) ? 'Weakened' : '';
+  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
   log(state, target, `${target.name} takes 1 wound from persistent damage (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return; }
   if (target.stoneskin) {
@@ -1558,7 +1599,7 @@ function finish(state: BattleState, rng: Rng, u: Unit) {
   state.active = null;
   state.begun = false;
   const next = nextSide(state);
-  if (next === null) endRound(state);
+  if (next === null) endRound(state, rng);
   else state.pending = next;
 }
 
@@ -1649,12 +1690,13 @@ export function maneuverOffer(state: BattleState, unitId?: string): ManeuverOffe
   if (!holders.length && !engagedEnemies(state, u).length && !isRouted(u)) return null;
   const activities = ([1, 2, 3] as ActivityIndex[]).map((index): ActivityOption => {
     const w = MANEUVER[index - 1];
+    const targets = maneuverTargets(state, u, index === 1 ? u.speed : 0, index).map(sq => cellTarget(notation(sq)));
     // Above Break off the holders are the ones who roll, so with none there is nothing to buy.
     const reason = index > u.actions ? `needs ${index} actions`
-      : index > 1 && !holders.length ? 'nothing holds you' : null;
+      : index > 1 && !holders.length ? 'nothing holds you' : !targets.length ? 'no destination within the terrain budget' : null;
     return {
       activity: w.id, index, label: w.label, detail: w.detail, cost: index,
-      legal: reason === null, reason, needsTarget: false, targets: [],
+      legal: reason === null, reason, needsTarget: false, targets,
     };
   }) as [ActivityOption, ActivityOption, ActivityOption];
   return {
@@ -1665,7 +1707,7 @@ export function maneuverOffer(state: BattleState, unitId?: string): ManeuverOffe
       unit: h.id, name: h.name, dc: escapeDcFor(state, h, u),
       pinning: h.id === u.pinnedBy, follows: h.noRetreat && h.id !== u.pinnedBy,
     })),
-    targets: maneuverTargets(state, u, u.speed).map((sq) => cellTarget(notation(sq))),
+    targets: [...new Map(activities.filter(a => a.legal).flatMap(a => a.targets).map(t => [t.id, t])).values()],
   };
 }
 
@@ -1675,7 +1717,7 @@ function doManeuverAction(state: BattleState, rng: Rng, u: Unit, action: Maneuve
   const option = offer.activities[action.activity - 1];
   if (!option) throw new Error(`${u.name} has no maneuver ${action.activity}`);
   if (!option.legal) throw new Error(`${u.name} cannot ${option.label.toLowerCase()}: ${option.reason}`);
-  if (action.to && !offer.targets.some((t) => t.id === action.to)) throw new Error(`${u.name} cannot maneuver to ${action.to}`);
+  if (action.to && !option.targets.some((t) => t.id === action.to)) throw new Error(`${u.name} cannot maneuver to ${action.to}`);
   doManeuver(state, rng, u, action);
   return action.activity;
 }
@@ -1721,7 +1763,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}, ${carried.join(', ')}.`);
   u.exposed = true;
   log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
-  melee(state, rng, u, foe, activityOf('fight', wanted), { bonus: bonus + focus * ACTION_BONUS, saveShift, impact });
+  melee(state, rng, u, foe, activityOf('fight', wanted), { circumstance: bonus, bonus: focus * ACTION_BONUS, saveShift, impact });
   return cost;
 }
 
@@ -1747,16 +1789,11 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
 
 const standing = (state: BattleState, side: Side) => state.units.filter((u) => u.side === side && isStanding(u));
 
-function endRound(state: BattleState) {
+function endRound(state: BattleState, rng: Rng) {
   log(state, null, `End of round ${state.round}.`);
-  for (const side of ['attacker', 'defender'] as Side[]) {
-    if (state.halfChecked[side]) continue;
-    const lost = state.units.filter((u) => u.side === side && !isStanding(u)).length;
-    if (lost * 2 >= state.startingCount[side]) {
-      state.halfChecked[side] = true;
-      log(state, null, `Half of the ${side}'s army is gone; the line wavers.`);
-      for (const u of standing(state, side)) addDisorder(state, u, 1, 'half the army gone');
-    }
+  // Settle delayed wounds before dusk determines survivors and the day's result.
+  if (state.round >= state.roundsPerDay) {
+    for (const u of state.units) if (u.persistent) landPersistent(state, rng, u);
   }
   for (const u of state.units) for (const e of u.engines) e.fired = false;
   for (const e of state.engines) e.fired = false;
@@ -1771,7 +1808,7 @@ function endRound(state: BattleState) {
     captureEngines(state);
     return;
   }
-  if (state.round >= LAST_ROUND) {
+  if (state.round >= state.roundsPerDay) {
     state.phase = 'ended';
     state.endedBy = 'dusk';
     state.winner = 'draw';

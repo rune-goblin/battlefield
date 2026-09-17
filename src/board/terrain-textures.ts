@@ -159,6 +159,7 @@ export const GROUP_TERRAIN: Record<TerrainGroup, SquareTerrain> = {
 
 export function terrainGroup(board: Board, cell: Cell): TerrainGroup {
   const state = at(board, cell);
+  if (state.terrain === 'bridge') return 'water';
   if (state.terrain !== 'open') return state.terrain;
   return state.elevation >= 2 ? 'mountain' : state.elevation === 1 ? 'hills' : 'plains';
 }
@@ -284,7 +285,7 @@ function layWalls(board: Board, grid: Grid, groups: Record<string, TerrainGroup>
   }
 }
 
-/** Nine adjoining patches, each of several hexes, on the same 61-cell game board. Seed 0 is the
+/** Nine adjoining patches, each of several hexes, on the same 91-cell game board. Seed 0 is the
  * hand-placed reference layout; any other seed draws the patches, the heights and the walls
  * afresh, so the art can be judged on ground it was not tuned over. */
 export function createTextureSample(seed = 0): { board: Board; groups: Record<string, TerrainGroup> } {

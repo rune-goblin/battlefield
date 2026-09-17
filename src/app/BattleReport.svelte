@@ -1,0 +1,351 @@
+<script lang="ts">
+  import { canContinueBattle, deploymentCells, FEATURES, generateBoard, HEX_TERRAINS, isStanding, MAX_WOUNDS, nextDayBattlefield,
+    recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
+    type BoardSpec, type DayOrder, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
+  import type { TokenModel } from '../board/index.js';
+  import { backToSetup, chooseDayOrder, chooseNextBattlefield, confirmDayOrders, continueBattle, game, resolveNight, respondToSurrender } from './game.svelte.js';
+  import PixiBoard from './PixiBoard.svelte';
+  import ConnectionWarning from './ConnectionWarning.svelte';
+  import { gameMap } from './map-style.svelte.js';
+
+  type Step = 'report' | 'recovery' | 'orders' | 'battlefield' | 'deployment';
+  const steps: { id: Step; label: string }[] = [
+    { id: 'report', label: 'Report' }, { id: 'recovery', label: 'Recovery' },
+    { id: 'orders', label: 'Orders' }, { id: 'battlefield', label: 'Battlefield' }, { id: 'deployment', label: 'Deployment' },
+  ];
+  const b = $derived(game.battle!);
+  let step = $state<Step>('report');
+  let choices = $state<Record<string, RecoveryActivity | ''>>({});
+  let positions = $state<Record<string, string>>({});
+  let error = $state('');
+  let content: HTMLDivElement;
+  const resolved = $derived(b.night !== null);
+  const continuing = $derived(canContinueBattle(b));
+  const stage = $derived<Step>(!continuing ? 'report' : resolved && step === 'report' ? (b.dayOrders?.confirmed ? 'deployment' : 'orders') : step);
+  const dayOptions: { id: DayOrder; label: string; description: string }[] = [
+    { id: 'surrender', label: 'Propose surrender', description: 'Ask the opposing side to accept your surrender. Agree the terms together.' },
+    { id: 'withdraw', label: 'Withdraw', description: 'Leave the field with your surviving troops. The enemy holds it if they stay.' },
+    { id: 'hold', label: 'Hold the field', description: 'Stay to contest the ground. If both armies hold, prepare for another day.' },
+  ];
+  const surrenderPending = $derived(SIDES.some((side) => b.dayOrders?.choices[side] === 'surrender'));
+  const ordersReady = $derived(SIDES.every((side) => !!b.dayOrders?.choices[side]) && !surrenderPending);
+  const bothHold = $derived(SIDES.every((side) => b.dayOrders?.choices[side] === 'hold'));
+  const field = $derived(nextDayBattlefield(b));
+  const newMap = $derived(!!b.nextBoard);
+  const survivors = $derived(b.units.filter(isStanding));
+  const declarations = $derived<RecoveryChoice[]>(Object.entries(choices)
+    .filter(([, activity]) => activity !== '').map(([unit, activity]) => ({ unit, activity: activity as RecoveryActivity })));
+  const participants = (side: Side) => declarations.filter((c) => b.units.find((u) => u.id === c.unit)?.side === side).length;
+  const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'left' ? 'Left the field' : 'Standing';
+  const signed = (n: number) => n >= 0 ? `+${n}` : `−${-n}`;
+  const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
+    : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' ? `The ${b.winner === 'attacker' ? 'defender' : 'attacker'} surrenders.`
+    : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);
+  const deployReady = $derived(survivors.every((u) => positions[u.id] && deploymentCells(field, u).includes(positions[u.id]))
+    && new Set(Object.values(positions)).size === survivors.length);
+  const mapReady = $derived(Object.keys(suggestDeployment(field)).length === survivors.length);
+  const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
+    kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
+    cell: positions[u.id], wounds: u.wounds, disorder: u.disorder,
+    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, prop: null, pick: null, ring: null,
+  }] : []) : []);
+  function preview(u: Unit, activity: RecoveryActivity) {
+    const save = activity === 'rally' ? u.stats.will : u.stats.fortitude;
+    return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
+  }
+  $effect(() => { if (b.night !== null) positions = suggestDeployment(field); });
+  function go(next: Step) { step = next; error = ''; content?.scrollTo({ top: 0 }); }
+  function attempt(action: () => void) {
+    error = '';
+    try { action(); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+  }
+  function generateNext(changes: Partial<BoardSpec> = {}) {
+    attempt(() => chooseNextBattlefield(generateBoard({
+      ...(b.nextBoard?.spec ?? { ...b.board.spec, construction: null, seed: Math.floor(Math.random() * 1e9) }),
+      grid: b.board.grid, size: b.board.squares.length as 9 | 11, ...changes,
+    })));
+  }
+  function finishDecisions() {
+    attempt(() => {
+      if (!b.dayOrders?.confirmed) confirmDayOrders();
+      if (game.battle?.endedBy === 'dusk') go('battlefield');
+    });
+  }
+</script>
+
+<div class="report-scrim">
+  <section class="card report" aria-label="Battle report">
+    <header>
+      <p class="eyebrow">Day {b.day} complete · {b.round} rounds</p>
+      <h2>{title}</h2>
+      {#if continuing}
+        <ol class="steps" aria-label="Next day preparation">
+          {#each steps as item, index}
+            <li class:current={stage === item.id} class:complete={steps.findIndex((s) => s.id === stage) > index} aria-current={stage === item.id ? 'step' : undefined}>
+              <span>{index + 1}</span>{item.label}
+            </li>
+          {/each}
+        </ol>
+      {/if}
+    </header>
+    <div class="report-content" bind:this={content}>
+      {#if stage === 'battlefield'}
+        <p class="intro">Keep fighting over this ground, or move the surviving armies to a new field. Their health, morale, and recovery results carry forward.</p>
+        <div class="map-choices" role="group" aria-label="Tomorrow's map">
+          <button class:selected={!newMap} aria-pressed={!newMap} onclick={() => attempt(() => chooseNextBattlefield(null))}>
+            <span class="choice-mark">{!newMap ? '●' : '○'}</span><span><strong>Same map</strong><small>Keep this terrain, damaged walls, and emplacements.</small></span>
+          </button>
+          <button class:selected={newMap} aria-pressed={newMap} onclick={() => { if (!newMap) generateNext(); }}>
+            <span class="choice-mark">{newMap ? '●' : '○'}</span><span><strong>New map</strong><small>Generate fresh ground for the next day.</small></span>
+          </button>
+        </div>
+        <div class="field-layout">
+          <div class="map-preview" aria-label="Battlefield preview">
+            <PixiBoard board={field.board} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
+          </div>
+          <div class="map-settings">
+            <h3>{newMap ? 'New battlefield' : 'The current battlefield'}</h3>
+            {#if newMap}
+              <label>Terrain<select aria-label="Next battlefield terrain" value={field.board.spec.base} onchange={(e) => generateNext({ base: e.currentTarget.value as BoardSpec['base'] })}>{#each HEX_TERRAINS as terrain}<option value={terrain}>{terrain}</option>{/each}</select></label>
+              <label>Feature<select aria-label="Next battlefield feature" value={field.board.spec.feature ?? 'none'} onchange={(e) => generateNext({ feature: e.currentTarget.value as BoardSpec['feature'] })}>{#each FEATURES as feature}<option value={feature}>{feature}</option>{/each}</select></label>
+              <label>Fortification<select aria-label="Next battlefield fortification" value={field.board.spec.construction?.tier ?? -1} onchange={(e) => generateNext({ construction: Number(e.currentTarget.value) < 0 ? null : { kind: 'fort', tier: Number(e.currentTarget.value) } })}><option value={-1}>None</option>{#each [0, 1, 2, 3] as tier}<option value={tier}>Tier {tier}</option>{/each}</select></label>
+              <button onclick={() => generateNext({ seed: Math.floor(Math.random() * 1e9) })}>Generate another map</button>
+              <p class="muted">Fixed emplacements and abandoned equipment stay on the old field. Crewed attached engines travel with their surviving units.</p>
+            {:else}
+              <p>{field.board.spec.base} · {field.board.grid} grid</p>
+              <p class="muted">Terrain and breaches remain as they were at dusk. Survivors will redeploy in their home zones.</p>
+            {/if}
+            <ConnectionWarning board={field.board} />
+            {#if !mapReady}<p role="alert">This map has too few deployment cells for the survivors. Generate another map.</p>{/if}
+          </div>
+        </div>
+      {:else if stage === 'recovery'}
+        <div class="instruction"><strong>{resolved ? 'Recovery complete.' : 'Choose recovery for each unit.'}</strong><p>{resolved ? 'All results are final for this night. Review them before choosing to withdraw or hold.' : 'Choose None, Morale, or Health. Each extra participant gives every recovery check on its side −2. Success restores 1; critical success restores 2.'}</p></div>
+        <div class="recovery-table-wrap">
+          <table class="recovery-table">
+            <thead>
+              <tr><th rowspan="2" scope="col">Unit</th><th colspan="3" scope="colgroup" class="recovery-header">Recovery</th></tr>
+              <tr><th scope="col">None</th><th scope="col"><span aria-hidden="true">⚑</span> Morale</th><th scope="col"><span aria-hidden="true">♥</span> Health</th></tr>
+            </thead>
+            {#each SIDES as side}
+              <tbody class:attacking={side === 'attacker'} class:defending={side === 'defender'}>
+                <tr class="side-heading"><th colspan="4" scope="rowgroup">{side === 'attacker' ? 'Attacking army' : 'Defending army'}</th></tr>
+                {#each b.units.filter((u) => u.side === side) as u (u.id)}
+                  {@const result = b.night?.find((r) => r.unit === u.id)}
+                  {@const activity = resolved ? (result?.activity ?? '') : (choices[u.id] ?? '')}
+                  <tr class:lost={!isStanding(u)}>
+                    <th scope="row" class="recovery-unit">
+                      <strong>{u.name}</strong>
+                      <div class="meters"><span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span><span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span></div>
+                      {#if !isStanding(u)}<small>{status(u)} · Cannot recover</small>
+                      {:else if resolved}
+                        {#if result}<small class="check-preview">{result.check.degree.replaceAll('-', ' ')} · {result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small>
+                        {:else}<small>No recovery attempted.</small>{/if}
+                      {:else if activity}<small class="check-preview">{preview(u, activity)}</small>
+                      {:else}<small>{u.wounds === 0 && u.disorder === 0 ? 'At full health and morale.' : 'Choose a recovery activity.'}</small>{/if}
+                    </th>
+                    {#each [{ id: '', label: 'None' }, { id: 'rally', label: 'Morale' }, { id: 'treat', label: 'Health' }] as option}
+                      <td class="recovery-option">
+                        <input type="radio" name={`recovery-${u.id}`} aria-label={`${option.label} recovery for ${u.name}`}
+                          checked={activity === option.id} disabled={resolved || !isStanding(u) || (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
+                          onchange={() => choices[u.id] = option.id as RecoveryActivity | ''} />
+                      </td>
+                    {/each}
+                  </tr>
+                {/each}
+              </tbody>
+            {/each}
+          </table>
+        </div>
+      {:else}
+        {#if stage === 'deployment'}
+          <div class="deployment-heading"><p class="intro">{newMap ? 'New battlefield' : 'Same battlefield'} · Recovery is complete. Choose a deployment cell for each survivor.</p><button onclick={() => go('battlefield')}>Change map</button></div>
+          <div class="deployment-preview" aria-label="Survivor deployment preview">
+            <PixiBoard board={field.board} tokens={previewTokens} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
+          </div>
+        {:else}
+          <p class="intro">{continuing ? (stage === 'orders' ? 'Recovery is complete. Choose an end-of-day decision for each army.' : 'Review the survivors, then recover before choosing your next move.') : b.endedBy === 'surrender' ? 'The opponent accepted the surrender. Agree campaign terms together; surviving troops keep their wounds and morale.' : b.endedBy === 'withdrawal' ? 'Withdrawal is complete. Surviving troops keep their wounds and morale.' : 'The battle is over. Review the final army report.'}</p>
+        {/if}
+        <div class="armies">
+          {#each SIDES as side}
+            {@const army = b.units.filter((u) => u.side === side)}
+            {@const opponent = side === 'attacker' ? 'defender' : 'attacker'}
+            <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} report`}>
+              <div class="army-heading">
+                <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
+                <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
+              </div>
+              {#if stage === 'orders' && continuing}
+                <div class="day-decision">
+                  <strong class="decision-label">End-of-day decision</strong>
+                  <div class="day-options" role="group" aria-label={`${side} end-of-day decision`}>
+                    {#each dayOptions as option}
+                      <button class:selected={b.dayOrders?.choices[side] === option.id} aria-pressed={b.dayOrders?.choices[side] === option.id}
+                        onclick={() => attempt(() => chooseDayOrder(side, option.id))}>{option.label}</button>
+                    {/each}
+                  </div>
+                  <p class="decision-description">{dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.description ?? 'Choose whether to negotiate, leave, or stay.'}</p>
+                  {#if b.dayOrders?.choices[opponent] === 'surrender'}
+                    <div class="surrender-response" role="group" aria-label={`${side} response to surrender`}>
+                      <p>The {opponent} proposes surrender.</p>
+                      <div class="day-options">
+                        <button onclick={() => attempt(() => respondToSurrender(side, true))}>Accept surrender</button>
+                        <button onclick={() => attempt(() => respondToSurrender(side, false))}>Reject proposal</button>
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+              {:else if stage === 'report' && b.dayOrders && (b.dayOrders.choices[side] || b.endedBy === 'surrender')}
+                <p class="final-decision">{b.endedBy === 'surrender' ? (b.winner === side ? 'Accepted surrender' : 'Surrendered') : b.endedBy === 'withdrawal' ? (b.dayOrders.choices[side] === 'withdraw' ? 'Withdrawn' : 'Holds the field') : dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.label}</p>
+              {/if}
+              {#each army.filter((u) => stage === 'report' || stage === 'orders' || isStanding(u)) as u (u.id)}
+                <div class="report-unit" class:lost={!isStanding(u)}>
+                  <div class="unit-heading"><strong>{u.name}</strong>{#if stage === 'report'}<span class="outcome">{status(u)}</span>{/if}</div>
+                  <div class="meters">
+                    <span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span>
+                    <span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span>
+                  </div>
+                  {#if stage === 'deployment' || stage === 'orders'}
+                    {@const result = b.night?.find((r) => r.unit === u.id)}
+                    {#if result}<p class="recovery-result">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')}<small>{result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small></p>{/if}
+                  {/if}
+                  {#if stage === 'deployment'}
+                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
+                  {/if}
+                </div>
+              {/each}
+            </section>
+          {/each}
+        </div>
+        {#if continuing}<p class="loss-note">Routed and destroyed units stay out of the next day’s battle.</p>{/if}
+      {/if}
+    </div>
+    <footer>
+      {#if error}<p role="alert">{error}</p>{/if}
+      {#if stage === 'orders' && continuing}
+        <p class="decision-status" role="status">{surrenderPending ? 'Awaiting the opponent’s response to surrender.' : !ordersReady ? 'Choose a decision for both armies.' : bothHold ? 'Both armies will hold. Continue to choose the next battlefield.' : SIDES.every((s) => b.dayOrders?.choices[s] === 'withdraw') ? 'Both armies will withdraw. The field stays contested.' : `The ${b.dayOrders?.choices.attacker === 'withdraw' ? 'defender' : 'attacker'} will hold the field.`}</p>
+      {/if}
+      {#if stage === 'recovery' && !resolved}
+        <div class="recovery-modifiers" aria-live="polite">
+          {#each SIDES as side}<p><strong>{side === 'attacker' ? 'Attacker' : 'Defender'}</strong> · {participants(side)} {participants(side) === 1 ? 'unit' : 'units'} · <b>{signed(-recoveryPenalty(participants(side)))} recovery modifier</b></p>{/each}
+          <small>All selected units roll together. Each unit also applies its own morale penalty.</small>
+        </div>
+      {/if}
+      <div class="footer-actions">
+        <button class="end-battle" onclick={backToSetup}>End battle</button>
+        {#if stage === 'deployment'}
+          <button class="primary" disabled={!deployReady} onclick={() => attempt(() => continueBattle(positions))}>Begin day {b.day + 1}</button>
+        {:else if stage === 'recovery'}
+          {#if resolved}
+            <button class="primary" onclick={() => go('orders')}>Continue to orders</button>
+          {:else}
+            <button onclick={() => go('report')}>Back</button>
+            <button class="primary" disabled={!declarations.length} onclick={() => attempt(() => { resolveNight(declarations); go('recovery'); })}>Roll Recovery</button>
+            {#if !declarations.length}<button onclick={() => attempt(() => { resolveNight([]); go('orders'); })}>Continue without recovery</button>{/if}
+          {/if}
+        {:else if stage === 'battlefield'}
+          <button onclick={() => go('orders')}>Back</button>
+          <button class="primary" disabled={!mapReady} onclick={() => go('deployment')}>Continue to deployment</button>
+        {:else if stage === 'orders' && continuing}
+          <button onclick={() => go('recovery')}>Review recovery</button>
+          <button class="primary" disabled={!ordersReady} onclick={finishDecisions}>{bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
+        {:else if continuing}
+          <button class="primary" onclick={() => go('recovery')}>Continue to recovery</button>
+        {/if}
+      </div>
+    </footer>
+  </section>
+</div>
+
+<style>
+  .report-scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 1.25rem; background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(3px); }
+  .report { display: flex; flex-direction: column; width: min(70rem, 100%); max-height: 100%; padding: 0; overflow: hidden; }
+  header { padding: 1.4rem 1.6rem 0; }
+  .eyebrow { margin: 0 0 .35rem; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; }
+  h2 { margin: 0; padding: 0; border: 0; font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.2; }
+  .steps { display: flex; gap: 1.6rem; list-style: none; padding: 1rem 0; margin: .6rem 0 0; border-bottom: 1px solid var(--rule); }
+  .steps li { display: flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .85rem; }
+  .steps li span { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border: 1px solid var(--rule); border-radius: 50%; font-size: .75rem; }
+  .steps .current { color: var(--ink); font-weight: bold; }
+  .steps .current span { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+  .steps .complete span { border-color: var(--accent); color: var(--accent); }
+  .report-content { overflow-y: auto; min-height: 0; padding: 1.2rem 1.6rem; }
+  .intro { margin: 0 0 1rem; color: var(--muted); }
+  .armies, .map-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+  .army { padding: 1rem; border: 1px solid color-mix(in srgb, var(--army-color) 23%, var(--rule)); border-radius: 8px; background: color-mix(in srgb, var(--army-color) 7%, var(--card)); }
+  .attacking { --army-color: var(--att); }
+  .defending { --army-color: var(--def); }
+  .day-decision { padding: .7rem 0 .9rem; margin-bottom: .8rem; border-bottom: 1px solid color-mix(in srgb, var(--army-color) 25%, var(--rule)); }
+  .decision-label { font-size: .8rem; }
+  .day-options { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+  .day-options button { font-size: .8rem; padding: .4rem .55rem; }
+  .day-options button.selected { border-color: var(--army-color); background: color-mix(in srgb, var(--army-color) 15%, var(--card)); }
+  .decision-description { font-size: .8rem; color: var(--muted); margin: .5rem 0 0; }
+  .surrender-response { margin-top: .7rem; padding: .65rem; background: var(--card); border: 1px solid var(--army-color); border-radius: 5px; }
+  .surrender-response p { margin: 0; font-size: .85rem; }
+  .final-decision { color: var(--army-color); font-size: .85rem; }
+  .decision-status { margin: 0 0 .65rem; color: var(--muted); font-size: .85rem; }
+  .army-heading { padding-bottom: .5rem; }
+  h3 { margin: 0; }
+  .counts { font-size: .8rem; color: var(--muted); margin: .25rem 0 0; }
+  .report-unit { padding: .8rem; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: .55rem; }
+  .lost { opacity: .65; }
+  .unit-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .4rem; }
+  .outcome { color: var(--muted); font-size: .75rem; }
+  .meters { display: flex; gap: 1.25rem; font-size: .85rem; color: var(--muted); margin: .4rem 0; }
+  .meters b { color: var(--ink); font-weight: normal; }
+  .recovery-table-wrap { min-width: 22rem; }
+  .recovery-table thead { position: sticky; top: -1.2rem; background: var(--card); z-index: 1; }
+  .recovery-table { width: 100%; border-collapse: collapse; }
+  .recovery-table th, .recovery-table td { padding: .7rem .9rem; border-bottom: 1px solid var(--rule); }
+  .recovery-table thead th { font-size: .85rem; color: var(--muted); text-align: center; }
+  .recovery-table thead th:first-child[rowspan] { text-align: left; }
+  .recovery-table .recovery-header { color: var(--ink); font-size: 1rem; }
+  .recovery-table tbody { background: color-mix(in srgb, var(--army-color) 7%, var(--card)); }
+  .recovery-table .side-heading th { color: var(--army-color); text-align: left; font-size: .95rem; padding-top: 1rem; }
+  .recovery-unit { width: 64%; text-align: left; font-weight: normal; }
+  .recovery-unit > strong { display: block; margin-bottom: .35rem; }
+  .recovery-option { text-align: center; min-width: 4rem; }
+  .recovery-option input { width: 1.3rem; height: 1.3rem; accent-color: var(--accent); cursor: pointer; }
+  .recovery-option input:disabled { cursor: default; }
+  .recovery-modifiers { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; margin-bottom: .9rem; font-size: .85rem; }
+  .recovery-modifiers p { margin: 0; }
+  .recovery-modifiers small { flex-basis: 100%; margin: 0; }
+  .recovery-table .lost { opacity: .5; }
+  button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+  .choice { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .6rem; font-size: .85rem; }
+  small { display: block; font-size: .75rem; margin-top: .35rem; color: var(--muted); }
+  .check-preview { font-variant-numeric: tabular-nums; }
+  .instruction { padding: .75rem 1rem; border-left: 2px solid var(--accent); background: var(--band); margin-bottom: 1.25rem; }
+  .instruction p { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
+  .recovery-result { font-size: .85rem; margin: .6rem 0; }
+  .loss-note { font-size: .8rem; color: var(--muted); margin: .7rem 0 0; }
+  .map-choices button { display: flex; gap: .8rem; text-align: left; padding: 1rem; }
+  .map-choices strong { display: block; font-size: 1.1rem; }
+  .choice-mark { color: var(--accent); font-size: 1.1rem; }
+  .field-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(14rem, 1fr); gap: 1.25rem; margin-top: 1.2rem; }
+  .map-preview { position: relative; height: 22rem; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+  .map-settings { display: flex; flex-direction: column; gap: .75rem; }
+  .map-settings label { display: flex; justify-content: space-between; gap: .6rem; font-size: .85rem; }
+  .map-settings select { min-width: 8rem; }
+  .map-settings p { margin: 0; }
+  .deployment-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+  .deployment-heading button { white-space: nowrap; font-size: .8rem; }
+  .deployment-preview { position: relative; height: 18rem; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-bottom: 1rem; }
+  footer { padding: 1rem 1.6rem; border-top: 1px solid var(--rule); background: var(--card); }
+  .footer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
+  .end-battle { margin-right: auto; }
+  footer [role='alert'] { color: var(--bad); margin: 0 0 .6rem; }
+  @media (max-width: 650px) {
+    .armies, .map-choices, .field-layout { grid-template-columns: 1fr; }
+    .report-scrim { padding: .5rem; }
+    header { padding: 1rem 1rem 0; }
+    .report-content, footer { padding: 1rem; }
+    .steps { gap: .7rem; justify-content: space-between; }
+    .steps li { flex-direction: column; gap: .3rem; font-size: .7rem; }
+    .map-preview { height: 17rem; }
+    .recovery-table thead { top: -1rem; }
+    .recovery-table th, .recovery-table td { padding: .6rem .35rem; }
+    .recovery-option { min-width: 3.2rem; }
+  }
+</style>

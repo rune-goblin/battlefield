@@ -249,6 +249,16 @@ export interface LogEntry {
 export type Phase = 'battle' | 'ended';
 
 export interface BattleState {
+  /** One campaign battle may span several battlefield days. */
+  day: number;
+  roundsPerDay: number;
+  /** A non-null report commits this night's rolls and prevents repeat recovery. */
+  night: NightRecovery[] | null;
+  /** A chosen new battlefield, pending the next day's deployment. Null keeps this field. */
+  nextBoard?: Board | null;
+  /** Retain field damage and equipment left behind when the armies change maps. */
+  previousBattlefields?: { day: number; board: Board; engines: EngineState[] }[];
+  dayOrders?: { choices: Partial<Record<Side, DayOrder>>; confirmed: boolean };
   units: Unit[];
   /** Emplaced engines only. An attached engine lives on its unit's `engines` instead. */
   engines: EngineState[];
@@ -264,20 +274,24 @@ export interface BattleState {
   board: Board;
   phase: Phase;
   winner: Side | 'draw' | null;
-  endedBy: 'rout' | 'dusk' | null;
-  startingCount: Record<Side, number>;
-  halfChecked: Record<Side, boolean>;
+  endedBy: 'rout' | 'dusk' | 'withdrawal' | 'surrender' | null;
   log: LogEntry[];
+}
+
+export type RecoveryActivity = 'rally' | 'treat';
+export type DayOrder = 'surrender' | 'withdraw' | 'hold';
+export interface RecoveryChoice { unit: string; activity: RecoveryActivity }
+export interface NightRecovery extends RecoveryChoice {
+  check: CheckResult;
+  penalty: number;
+  recovered: number;
 }
 
 export type Range = 'engaged' | 'short' | 'medium' | 'long' | 'extreme' | 'beyond';
 export const REACH_RANK: Record<Reach, number> = { short: 1, medium: 2, long: 3, extreme: 4 };
 
-// Hex distance is true range where square's Manhattan distance over-counts a diagonal, so the
-// same ring covers 37 of 64 cells on hex against 25 on square. The fan is the geometry and no
-// threshold narrows it; the top band is capped instead. The hexagon board has radius 4, so 8 is
-// the farthest two hexes are ever apart — extreme's own ceiling, not an arbitrary cap.
+/** Distance-band upper bounds. Weapons prefer one band; spells use a band as a fixed ceiling. */
 export const BANDS: Record<GridKind, Record<Reach, number>> = {
-  square: { short: 2, medium: 4, long: 6, extreme: Infinity },
-  hex: { short: 2, medium: 4, long: 6, extreme: 8 },
+  square: { short: 2, medium: 3, long: 4, extreme: 7 },
+  hex: { short: 2, medium: 3, long: 4, extreme: 7 },
 };

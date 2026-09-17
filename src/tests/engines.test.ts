@@ -49,6 +49,7 @@ describe('siege engines', () => {
 
   it("a ballista's own reach carries the crew as far, once it is crewed", () => {
     const s0 = battle(['Ballista']);
+    unit(s0, 'u1').square = parse('c5');
     expect(offer(s0, 'shoot').activities[2].targets.map((t) => t.id)).toEqual(['u1']);
   });
 

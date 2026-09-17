@@ -1,0 +1,39 @@
+import { at, gridOf, notation, sameCell, type Board, type Cell, type Grid } from './board.js';
+
+// Cache geometry only: painting and battle mutations must read current terrain each time.
+const rays = new WeakMap<Grid, Map<string, Cell[]>>();
+
+/** Every hex crossed by the centre-to-centre sight line. A line along an edge reads both
+ * hexes; touching a corner alone does not screen the shot. This rule is reciprocal. */
+export function sightCells(board: Board, from: Cell, to: Cell): Cell[] {
+  const grid = gridOf(board);
+  let cache = rays.get(grid);
+  if (!cache) { cache = new Map(); rays.set(grid, cache); }
+  const key = [notation(from), notation(to)].sort().join('|');
+  const saved = cache.get(key);
+  if (saved) return saved;
+  const a = grid.center(from, 1), b = grid.center(to, 1);
+  const crossed = grid.cells().filter(cell => {
+    if (sameCell(cell, from) || sameCell(cell, to)) return false;
+    const vertices = grid.vertices(cell, 1);
+    let low = 0, high = 1;
+    for (let i = 0; i < vertices.length; i++) {
+      const p = vertices[i], q = vertices[(i + 1) % vertices.length];
+      const dx = q.x - p.x, dy = q.y - p.y;
+      const start = dx * (a.y - p.y) - dy * (a.x - p.x);
+      const delta = dx * (b.y - a.y) - dy * (b.x - a.x);
+      if (Math.abs(delta) < 1e-9) { if (start < -1e-9) return false; }
+      else if (delta > 0) low = Math.max(low, -start / delta);
+      else high = Math.min(high, -start / delta);
+    }
+    return high - low > 1e-8;
+  });
+  cache.set(key, crossed);
+  return crossed;
+}
+
+export const isMountain = (board: Board, cell: Cell): boolean => at(board, cell).elevation >= 2;
+export const hasSight = (board: Board, from: Cell, to: Cell): boolean =>
+  !sightCells(board, from, to).some(cell => isMountain(board, cell));
+export const forestCover = (board: Board, from: Cell, to: Cell): number =>
+  at(board, to).terrain === 'forest' || sightCells(board, from, to).some(cell => at(board, cell).terrain === 'forest') ? 1 : 0;

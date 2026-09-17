@@ -2,7 +2,8 @@ import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
 import { ART_ANCHOR_Y, actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
-import { healthPipColour, moralePipColour, type BoardTheme } from './theme.js';
+import type { BoardTheme } from './theme.js';
+import { statusBars, STATUS_TRACK, STATUS_OUTLINE, type StatusBar } from './status-bars.js';
 import type { TokenReaction } from './vfx/Effect.js';
 
 /** A ring is state, never chrome: the unit acting now, a free strike landing, or the piece a
@@ -400,7 +401,7 @@ export class Token extends PIXI.Container {
 
   private applyFilters(): void {
     const list: PIXI.Filter[] = [];
-    // Keep each pip track's severity colour when the miniature loses its colour.
+    // Keep each bar's severity colour when the miniature loses its colour.
     if (this.art) this.art.filters = this.desaturated ? [DESATURATE] : null;
     if (this.reaction?.spec.flash && this.flashFilter) list.push(this.flashFilter);
     this.filters = list.length ? list : null;
@@ -524,31 +525,13 @@ export class Token extends PIXI.Container {
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     this.decor.clear();
 
-    const pip = size * 0.11;
-    const step = size * 0.145;
-    const startX = -r * 0.85;
-    const woundY = size * 0.28;
-    const healthColour = healthPipColour(model.wounds);
-    for (let i = 0; i < MAX_WOUNDS; i++) {
-      const filled = i < model.wounds;
-      this.decor
-        .lineStyle(1, theme.rule, 1)
-        .beginFill(filled ? healthColour : theme.token.pipEmpty, 1)
-        .drawRect(startX + i * step - pip / 2, woundY - pip / 2, pip, pip)
-        .endFill();
-    }
-
-    const disorderY = woundY + size * 0.15;
-    const pipR = size * 0.05;
-    const moraleColour = moralePipColour(model.disorder);
-    for (let i = 0; i < ROUTED_AT; i++) {
-      const filled = i < model.disorder;
-      this.decor
-        .lineStyle(1, theme.rule, 1)
-        .beginFill(filled ? moraleColour : theme.token.pipEmpty, 1)
-        .drawCircle(startX + i * step, disorderY, pipR)
-        .endFill();
-    }
+    const bars = statusBars(model.wounds, model.disorder);
+    const width = size * 0.60;
+    const healthHeight = size * 0.08;
+    const moraleHeight = size * 0.045;
+    const y = size * 0.28;
+    this.drawStatusBar(bars.health, -width / 2, y, width, healthHeight);
+    this.drawStatusBar(bars.morale, -width / 2, y + healthHeight + size * 0.03, width, moraleHeight);
 
     if (model.engine) {
       const cx = -r * 0.72;
@@ -560,6 +543,21 @@ export class Token extends PIXI.Container {
         .drawRoundedRect(cx - cs / 2, cy - cs / 2, cs, cs, size * 0.04)
         .endFill();
     }
+  }
+
+  private drawStatusBar(bar: StatusBar, x: number, y: number, width: number, height: number): void {
+    const innerWidth = width - 2;
+    this.decor.lineStyle(0).beginFill(STATUS_TRACK).drawRect(x, y, width, height).endFill();
+    if (bar.remaining > 0) {
+      this.decor.beginFill(bar.colour)
+        .drawRect(x + 1, y + 1, innerWidth * bar.remaining / bar.max, height - 2).endFill();
+    }
+    this.decor.lineStyle(1, STATUS_OUTLINE, 0.5);
+    for (let i = 1; i < bar.max; i++) {
+      const tick = x + 1 + innerWidth * i / bar.max;
+      this.decor.moveTo(tick, y + 1).lineTo(tick, y + height - 1);
+    }
+    this.decor.lineStyle(1, STATUS_OUTLINE).drawRect(x, y, width, height);
   }
 
   /** The side's flag, top right — the only thing on the piece that says whose it is, now that

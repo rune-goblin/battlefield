@@ -4,19 +4,20 @@ export interface Cell { file: number; rank: number; }
 export type Square = Cell;
 export interface Point { x: number; y: number; }
 
-export const SIZE = 9;
-export const FILES = 'abcdefghi';
+export const SIZE = 11;
+export const FILES = 'abcdefghijk';
 export const RADIUS = (SIZE - 1) / 2;
 
 export function notation(c: Cell): string { return `${FILES[c.file]}${c.rank + 1}`; }
 export function parse(text: string): Cell { return { file: FILES.indexOf(text[0]), rank: Number(text.slice(1)) - 1 }; }
-export function inBounds(c: Cell): boolean { return c.file >= 0 && c.file < SIZE && c.rank >= 0 && c.rank < SIZE; }
+export function inBounds(c: Cell, dimension = SIZE): boolean { return c.file >= 0 && c.file < dimension && c.rank >= 0 && c.rank < dimension; }
 
-/** The hexagon of hexes: rows of 5·6·7·8·9·8·7·6·5, centred on e5. Every cell of it fits the
+/** The hexagon of hexes: radius five, centred on f6. Every cell of it fits the
  * SIZE × SIZE store, so `at()` never sees a hole — the trimmed corners simply go unused. */
-export function inHexagon(c: Cell): boolean {
-  if (!inBounds(c)) return false;
-  return cubeDistance(offsetToCube(c), offsetToCube({ file: RADIUS, rank: RADIUS })) <= RADIUS;
+export function inHexagon(c: Cell, dimension = SIZE): boolean {
+  const radius = (dimension - 1) / 2;
+  if (!inBounds(c, dimension)) return false;
+  return cubeDistance(offsetToCube(c), offsetToCube({ file: radius, rank: radius })) <= radius;
 }
 export function sameCell(a: Cell, b: Cell): boolean { return a.file === b.file && a.rank === b.rank; }
 
@@ -25,9 +26,9 @@ export function edgeKey(a: Cell, b: Cell): string {
   return `${x}|${y}`;
 }
 
-export function allSquares(): Cell[] {
+export function allSquares(dimension = SIZE): Cell[] {
   const out: Cell[] = [];
-  for (let rank = 0; rank < SIZE; rank++) for (let file = 0; file < SIZE; file++) out.push({ file, rank });
+  for (let rank = 0; rank < dimension; rank++) for (let file = 0; file < dimension; file++) out.push({ file, rank });
   return out;
 }
 
@@ -75,14 +76,15 @@ function sharedEdge(a: Point[], b: Point[]): [Point, Point] {
 }
 
 abstract class BaseGrid {
+  constructor(readonly dimension = SIZE) {}
   abstract kind: GridKind;
   abstract neighbours(c: Cell): Cell[];
   abstract distance(a: Cell, b: Cell): number;
   abstract vertices(c: Cell, size: number): Point[];
-  cells(): Cell[] { return allSquares(); }
+  cells(): Cell[] { return allSquares(this.dimension); }
   key(c: Cell): string { return notation(c); }
   parse(text: string): Cell { return parse(text); }
-  inBounds(c: Cell): boolean { return inBounds(c); }
+  inBounds(c: Cell): boolean { return inBounds(c, this.dimension); }
   edgeKey(a: Cell, b: Cell): string { return edgeKey(a, b); }
   rank(c: Cell): number { return c.rank; }
   homeward(c: Cell, side: 'attacker' | 'defender'): Cell[] {
@@ -110,7 +112,7 @@ class SquareGrid extends BaseGrid {
     return this.inBounds(c) ? c : null;
   }
   center(c: Cell, size: number): Point {
-    return { x: size * (c.file + 0.5), y: size * (SIZE - c.rank - 0.5) };
+    return { x: size * (c.file + 0.5), y: size * (this.dimension - c.rank - 0.5) };
   }
   vertices(c: Cell, size: number): Point[] {
     const { x, y } = this.center(c, size);
@@ -118,7 +120,7 @@ class SquareGrid extends BaseGrid {
     return [{ x: x - h, y: y - h }, { x: x + h, y: y - h }, { x: x + h, y: y + h }, { x: x - h, y: y + h }];
   }
   fromPoint(p: Point, size: number): Cell | null {
-    const c = { file: Math.floor(p.x / size), rank: SIZE - 1 - Math.floor(p.y / size) };
+    const c = { file: Math.floor(p.x / size), rank: this.dimension - 1 - Math.floor(p.y / size) };
     return this.inBounds(c) ? c : null;
   }
   collinear(a: Cell, b: Cell, c: Cell): boolean {
@@ -133,7 +135,7 @@ class SquareGrid extends BaseGrid {
     }
     return out;
   }
-  bounds(size: number) { return { width: size * SIZE, height: size * SIZE }; }
+  bounds(size: number) { return { width: size * this.dimension, height: size * this.dimension }; }
 }
 
 // `size` is the cell pitch: the distance between the centres of two neighbours in the same
@@ -142,23 +144,23 @@ const circumradius = (size: number) => size / Math.sqrt(3);
 
 class HexGrid extends BaseGrid {
   kind = 'hex' as const;
-  inBounds(c: Cell): boolean { return inHexagon(c); }
-  cells(): Cell[] { return allSquares().filter(inHexagon); }
+  inBounds(c: Cell): boolean { return inHexagon(c, this.dimension); }
+  cells(): Cell[] { return allSquares(this.dimension).filter(c => this.inBounds(c)); }
   neighbours(c: Cell): Cell[] {
     const cube = offsetToCube(c);
     return CUBE_DIRECTIONS
       .map((d) => cubeToOffset({ q: cube.q + d.q, r: cube.r + d.r, s: cube.s + d.s }))
-      .filter(inHexagon);
+      .filter(c => this.inBounds(c));
   }
   distance(a: Cell, b: Cell): number { return cubeDistance(offsetToCube(a), offsetToCube(b)); }
   beyond(from: Cell, through: Cell): Cell | null {
     const a = offsetToCube(from), b = offsetToCube(through);
     const c = cubeToOffset({ q: 2 * b.q - a.q, r: 2 * b.r - a.r, s: 2 * b.s - a.s });
-    return inHexagon(c) ? c : null;
+    return this.inBounds(c) ? c : null;
   }
   center(c: Cell, size: number): Point {
     const r = circumradius(size);
-    return { x: size * (c.file + 0.5 + 0.5 * (c.rank & 1)), y: this.bounds(size).height - r * (1 + 1.5 * c.rank) };
+    return { x: size * (c.file + 0.5 + 0.5 * ((c.rank & 1) - (((this.dimension - 1) / 2) & 1))), y: this.bounds(size).height - r * (1 + 1.5 * c.rank) };
   }
   vertices(c: Cell, size: number): Point[] {
     const { x, y } = this.center(c, size);
@@ -170,12 +172,12 @@ class HexGrid extends BaseGrid {
   }
   fromPoint(p: Point, size: number): Cell | null {
     const r = circumradius(size);
-    const dx = p.x - size * 0.5;
+    const dx = p.x - size * (0.5 - 0.5 * (((this.dimension - 1) / 2) & 1));
     const dy = this.bounds(size).height - r - p.y;
     const q = (Math.sqrt(3) / 3 * dx - dy / 3) / r;
     const row = (2 / 3 * dy) / r;
     const c = cubeToOffset(cubeRound(q, row, -q - row));
-    return inHexagon(c) ? c : null;
+    return this.inBounds(c) ? c : null;
   }
   // One shared cube coordinate is one of the three straight lines of hexes through the board.
   collinear(a: Cell, b: Cell, c: Cell): boolean {
@@ -192,15 +194,15 @@ class HexGrid extends BaseGrid {
     }
     return out;
   }
-  // The widest rank runs file 0 to SIZE − 1 with no indent, so the hexagon spans exactly
-  // SIZE cell pitches — half a pitch narrower than the rectangle of hexes it is cut from.
+  // Centre the widest rank for either odd or even row parity.
   bounds(size: number) {
     const r = circumradius(size);
-    return { width: size * SIZE, height: r * (1.5 * SIZE + 0.5) };
+    return { width: size * this.dimension, height: r * (1.5 * this.dimension + 0.5) };
   }
 }
 
 export interface Grid {
+  readonly dimension: number;
   kind: GridKind;
   cells(): Cell[];
   key(c: Cell): string;
@@ -228,4 +230,7 @@ export interface Grid {
 export const squareGrid: Grid = new SquareGrid();
 export const hexGrid: Grid = new HexGrid();
 
-export const gridFor = (kind: GridKind | undefined): Grid => (kind === 'square' ? squareGrid : hexGrid);
+const legacySquare = new SquareGrid(9);
+const legacyHex = new HexGrid(9);
+export const gridFor = (kind: GridKind | undefined, dimension = SIZE): Grid =>
+  dimension === 9 ? (kind === 'square' ? legacySquare : legacyHex) : (kind === 'square' ? squareGrid : hexGrid);

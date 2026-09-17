@@ -6,6 +6,7 @@
     type TargetArrow, type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
   } from '../board/index.js';
   import type { Board, Side, Tree } from '../engine/index.js';
+  import { statusBars } from '../board/status-bars.js';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
@@ -58,6 +59,13 @@
   let container: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let view: BoardView | undefined = $state();
+  let hoveredCell = $state<string | null>(null);
+  const hoverTitle = $derived.by(() => {
+    const unit = tokens.find((token) => token.kind === 'unit' && token.cell === hoveredCell);
+    if (!unit || unit.kind !== 'unit') return undefined;
+    const bars = statusBars(unit.wounds, unit.disorder);
+    return `${unit.name}\n${bars.health.label}\n${bars.morale.label}`;
+  });
 
   export function centerOn(cell: string) { view?.centerOn(cell); }
   export function screenOf(cell: string) { return view?.screenOf(cell) ?? null; }
@@ -73,7 +81,7 @@
   onMount(() => {
     view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });
     const off = [
-      view.on('hover', (e) => onhover?.(e)),
+      view.on('hover', (e) => { hoveredCell = e.cell; onhover?.(e); }),
       view.on('cell', (e) => oncell?.(e)),
       view.on('edge', (e) => onedge?.(e)),
       view.on('token', (e) => ontoken?.(e)),
@@ -132,6 +140,7 @@
     bind:this={canvas}
     tabindex="0"
     aria-label="Battle board"
+    title={hoverTitle}
     ondragover={ontraydrop && ((e) => e.preventDefault())}
     ondrop={ontraydrop && ((e) => { e.preventDefault(); ontraydrop(view?.cellAt(e.clientX, e.clientY) ?? null, e.dataTransfer); })}
   ></canvas>

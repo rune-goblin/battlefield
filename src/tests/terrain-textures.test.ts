@@ -135,7 +135,7 @@ describe('area mode', () => {
 
 it.each([0, 1, 7, 42, 1234, 99999])('exhibits every terrain group in a connected patch of multiple hexes (layout %i)', (seed) => {
   const { groups } = createTextureSample(seed);
-  expect(Object.keys(groups)).toHaveLength(61);
+  expect(Object.keys(groups)).toHaveLength(91);
   for (const group of TERRAIN_GROUPS) {
     const cells = hexGrid.cells().filter(cell => groups[hexGrid.key(cell)] === group);
     expect(cells.length).toBeGreaterThanOrEqual(3);

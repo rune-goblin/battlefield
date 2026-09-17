@@ -19,9 +19,9 @@ describe('generateBoard', () => {
     expect(every(boards, b => count(b, 'forest') <= 6 && count(b, 'swamp') <= 3 && count(b, 'water') <= 2)).toBe(true);
   });
 
-  it('forest hexes are mostly trees', () => {
+  it('forest boards leave most ground open between copses', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'forest', seed }));
-    expect(every(boards, b => count(b, 'forest') >= 30)).toBe(true);
+    expect(every(boards, b => count(b, 'forest') >= 18 && count(b, 'forest') <= 40)).toBe(true);
   });
 
   it('hills raise a ridge across the middle ranks only', () => {

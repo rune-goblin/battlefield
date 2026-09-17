@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { act, availableActions, createBattle, isOutflanked, moveReach, unit } from '../engine/battle.js';
-import { allSquares, hexGrid, notation, parse, squareGrid, type Grid } from '../engine/grid.js';
+import { allSquares, gridFor, notation, parse, squareGrid, type Grid } from '../engine/grid.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import type { BattleState } from '../engine/types.js';
 import type { Verb } from '../engine/ladders.js';
 
+const hexGrid = gridFor('hex', 9);
 const at = (grid: Grid, key: string) => grid.neighbours(parse(key)).map(notation).sort();
 
 describe.each([['square', squareGrid], ['hex', hexGrid]] as const)('%s grid', (_kind, grid) => {

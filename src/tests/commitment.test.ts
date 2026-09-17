@@ -64,7 +64,8 @@ describe('action commitment', () => {
   });
 
   it('allows concentrated Missile above the tradition activity cap', () => {
-    const s = act(setup(), { unit: 'u0', type: 'cast', spell: 'blast', activity: 1, target: 'u2', focus: 2 }, scriptedRng([10, 20]));
+    const state = setup(); unit(state, 'u2').square = parse('c5');
+    const s = act(state, { unit: 'u0', type: 'cast', spell: 'blast', activity: 1, target: 'u2', focus: 2 }, scriptedRng([10, 20]));
     expect(checkFor(s, 'Missile catches').modifier).toBe(15);
     expect(unit(s, 'u2').wounds).toBe(1);
     expect(unit(s, 'u0').castTrees).toContain('blast');
