@@ -1,0 +1,7 @@
+/* The browser page is the app's alone. Inside Foundry the page belongs to the host, so this
+   file stays out of the module build and `app.css` carries everything else. */
+html, body { height:100%; margin:0; overflow:hidden; overscroll-behavior:none; }
+/* Literal paper, not `var(--paper)`: the tokens live on the app's root, and this is only what
+   shows before the shell paints and under an overscroll bounce. */
+body { background:#f8f4ec; }
+@media (prefers-color-scheme: dark) { body { background:#1d1a17; } }

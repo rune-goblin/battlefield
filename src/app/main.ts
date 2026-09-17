@@ -1,10 +1,9 @@
 import { mount } from 'svelte';
 import App from './App.svelte';
+import { blockPageZoom } from './app-root.js';
+import './page.css';
 import './app.css';
 
-// A trackpad pinch reaches the page as a ctrl-wheel, and outside the canvas Chrome answers it
-// by zooming the whole document — the panel, the radial menu and the board's own canvas along
-// with it, and the zoom sticks across reloads. Only the board scales here; ⌘+/− still works.
-window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+blockPageZoom();
 
 mount(App, { target: document.getElementById('app')! });

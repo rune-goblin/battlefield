@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import Dock from './Dock.svelte';
+  import { withinApp } from '../app-root.js';
   import { setDock, ui } from './layout.svelte.js';
 
   interface Props {
@@ -37,6 +38,7 @@
   // letters and digits, and a field with focus keeps everything it is given.
   const CYCLE = { open: 'rail', rail: 'hidden', hidden: 'open' } as const;
   function onKey(e: KeyboardEvent) {
+    if (!withinApp(e.target)) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target instanceof HTMLElement && e.target.closest('input, select, textarea')) return;
     const side = e.key === '[' ? 'left' : e.key === ']' ? 'right' : null;

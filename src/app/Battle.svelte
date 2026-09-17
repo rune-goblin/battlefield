@@ -8,6 +8,7 @@
   import { actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
   import { onDestroy } from 'svelte';
+  import { withinApp } from './app-root.js';
   import { useNotifications } from './notification-context.js';
 
   const notifications = useNotifications();
@@ -641,6 +642,7 @@
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
 
   function onKey(e: KeyboardEvent) {
+    if (!withinApp(e.target)) return;
     // One Escape, one step back — the same walk out that a click off the target takes.
     if (e.key === 'Escape') { stepBack(); return; }
     if (blastOpen || activityPick) return;
