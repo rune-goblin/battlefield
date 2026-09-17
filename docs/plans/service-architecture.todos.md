@@ -23,7 +23,7 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - Notices are derived per client from adopted records and never enter the session or the socket, so each viewer reads their own part in the turn.
 - The one Foundry notification is the turn notice for a player whose window is hidden; a missed turn stalls the table.
 - Activity notices expire; every other notice ends by dismissal or by its trigger clearing, as the drag-feedback work decided.
-- The `service-architecture` workflow orchestrates, one phase per run, with the escalation ladder as code and the ledger as the cross-session progress record.
+- The session orchestrates with the built-in Workflow tool, one phase per workflow, writing its script from the plan. A saved 280-line orchestrator script was written and removed on 2026-09-18 as more machinery than the job needs.
 - The outcome operation ID derives from the battle ID, so a reloaded battle cannot apply its outcome twice.
 - ReignMaker owns writes to ReignMaker data through `applyBattleOutcome`; Battlefield reads no ReignMaker flags.
 

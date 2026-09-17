@@ -117,21 +117,18 @@ The work runs as waves. One wave is one executor session with one gate and one r
 
 | Role | Runs as | Duty |
 | --- | --- | --- |
-| Orchestrator | The `service-architecture` workflow, `.claude/workflows/service-architecture.js` | Runs one phase per invocation: each wave in order through the agents below, with the escalation ladder as code. It stops at the phase's human gate, at a wave Fable cannot pass, and at Wave 5.3. |
+| Orchestrator | The session, using the built-in Workflow tool | Runs one phase per workflow: each wave in order through the agents below, with the escalation table applied between attempts. It records the ledger, and stops at the phase's human gate, at a wave Fable cannot pass, and at Wave 5.3. |
 | Executor | `wave-executor`, with the wave's model passed as the `model` override | Builds exactly one wave and commits it. |
 | Counter | `census` | Measures call sites before a wave whose scope depends on a count. |
 | Gate | `test-verifier` | Runs the wave's gate after the executor reports and returns the decisive output. |
 | Reviewer | `wave-reviewer`, at its configured model | Checks the wave's diff against the invariants. APPROVE opens the next wave; BLOCK returns the wave to an executor. |
-| Scribe | A Sonnet agent at low effort | Appends the wave's ledger line, open calls, and oddities to the todos file and commits it. |
 | Mark | — | Plays each phase's human gate, rules on reserved judgment calls, and merges. |
 
 ### Running a phase
 
-Ask the session to use a workflow: "Use the `service-architecture` workflow for phase 0." The phase number is the workflow's argument; `{ phase: 2, startAt: '2.4' }` starts partway through. `/workflows` shows progress. A phase uses about four agents per wave before escalations, so a six-wave phase exceeds the default medium workflow size; say so in the request or raise "Dynamic workflow size" in `/config`.
+Ask the session: "Use a workflow to run phase 0 of `docs/service-architecture-plan.md`." The session checks the tree and the branch itself, then writes a short workflow script from this section: for each wave in the phase, `wave-executor` at the wave's model, then `test-verifier`, then `wave-reviewer`, in sequence, with the escalation table deciding the model for a retry. `/workflows` shows progress. A phase uses about three agents per wave before escalations, so a six-wave phase exceeds the default medium workflow size; say so in the request or raise "Dynamic workflow size" in `/config`.
 
-The preflight agent refuses a dirty tree, checks out `service-architecture`, and reads the ledger, so a rerun skips every wave the ledger marks APPROVE. Before phase 1 it also refuses to start until `CLAUDE.md` names `src/runtime`. An interrupted run resumes in the same session from its run ID; in a new session, rerun the phase and the ledger carries the progress.
-
-The workflow returns the approved waves, any stop with its cause, and the calls reserved for Mark. The session then reports the phase's human gate.
+When the workflow returns, the session writes one ledger line per wave in the todos file, adds any reserved calls under "Open, for Mark", and reports the phase's human gate. A later session reads the ledger and `git log --grep '^Arch '` to see where the run stands.
 
 ### Executor reading list
 
@@ -147,10 +144,10 @@ The workflow returns the approved waves, any stop with its cause, and the calls 
 - Start each phase from a clean tree on the `service-architecture` branch. Another session's uncommitted work in `src/` stops the run until Mark clears it.
 - Commit subjects start `Arch <wave>:`, for example `Arch 2.3: roster commands`. `git log --grep '^Arch '` is the progress record.
 - The standard gate is `npx vitest run`, `npm run check`, and `npx vite build`. From Wave 0.2 it adds `npm run build:foundry`. Each wave adds its own greps under **Done**.
-- A wave that edits `.svelte` files runs each touched component through the Svelte MCP `svelte-autofixer` before the gate; the workflow hands those files to the `svelte-file-editor` agent.
+- A wave that edits `.svelte` files runs each touched component through the Svelte MCP `svelte-autofixer` before the gate; the session hands those files to the `svelte-file-editor` agent.
 - Every judgment call goes into the todos file as a dated one-line bullet. Shortcuts carry `// proto:`. A call this file reserves for review is flagged in the executor's report and left open.
 - Tests follow `CLAUDE.md`. From Wave 1.1, `src/runtime` and `src/services` take direct tests for every invariant a wave names. Views and PIXI code stay under the prototype rules.
-- The workflow ends at each human gate and the session reports. Mark plays the build, answers open calls, and merges the branch on his word. No wave opens a browser or Foundry on its own.
+- The session stops at each human gate and reports. Mark plays the build, answers open calls, and merges the branch on his word. No wave opens a browser or Foundry on its own.
 
 ### Model assignment and escalation
 
@@ -241,7 +238,7 @@ Mark links `dist-foundry` into `Data/modules`, enables the module in a v14 world
 
 Review sections: [Shared state and local state](service-architecture-review.md#shared-state-and-local-state) and [Command and synchronization contract](service-architecture-review.md#command-and-synchronization-contract).
 
-Before Wave 1.1, the session proposes the `CLAUDE.md` amendment to Mark: the new directories in the layout section, and `src/runtime` and `src/services` exempt from prototype mode. The workflow's preflight refuses phase 1 until the edit is in.
+Before Wave 1.1, the session proposes the `CLAUDE.md` amendment to Mark: the new directories in the layout section, and `src/runtime` and `src/services` exempt from prototype mode. Phase 1 starts once Mark has made or approved the edit.
 
 ### Wave 1.1 † — Session record and browser repository
 
