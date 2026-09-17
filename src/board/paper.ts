@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { assetUrl } from './asset-base.js';
 
 /** The paper tiles `scripts/bake-paper.mjs` cuts, seamless, four from each sheet: the page as
  * scanned, and three grains levelled to a mean of 0.95 — a fine and a coarse grey cut that
@@ -23,14 +24,13 @@ export function isPage(name: PaperTexture): boolean { return name.endsWith('-pag
 /** Pixels across one tile. */
 export const PAPER_TILE = 1024;
 
-const DIR = `${import.meta.env.BASE_URL}art/terrain/paper/`;
 const pending = new Map<PaperTexture, Promise<PIXI.Texture | null>>();
 
 /** One tile, loaded once per page; null if the bake is missing, and the wash goes ungrained. */
 export function paperTexture(name: PaperTexture): Promise<PIXI.Texture | null> {
   let promise = pending.get(name);
   if (!promise) {
-    promise = PIXI.Assets.load<PIXI.Texture>(`${DIR}${name}.webp`).then((texture) => {
+    promise = PIXI.Assets.load<PIXI.Texture>(assetUrl(`art/terrain/paper/${name}.webp`)).then((texture) => {
       texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
       texture.baseTexture.mipmap = PIXI.MIPMAP_MODES.ON;
       return texture;

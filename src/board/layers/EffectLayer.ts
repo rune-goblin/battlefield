@@ -1,11 +1,10 @@
 import * as PIXI from 'pixi.js';
 import type { Grid, Point, Tree } from '../../engine/index.js';
+import { assetUrl } from '../asset-base.js';
 import type { BoardTheme } from '../theme.js';
 import { Effect, type TokenReaction } from '../vfx/Effect.js';
 import { recipe, SHEET } from '../vfx/recipes.js';
 import { hashSeed, primBase } from '../vfx/textures.js';
-
-const BASE = import.meta.env.BASE_URL;
 
 const sheets = new Map<string, PIXI.Texture[]>();
 let sheetLoad: Promise<void> | null = null;
@@ -16,7 +15,7 @@ let sheetLoad: Promise<void> | null = null;
 function loadSheets(): void {
   sheetLoad ??= Promise.all(
     Object.values(SHEET).map(async (name) => {
-      const sheet = await PIXI.Assets.load<PIXI.Spritesheet>(`${BASE}art/spell-vfx-spritesheets/${name}.json`);
+      const sheet = await PIXI.Assets.load<PIXI.Spritesheet>(assetUrl(`art/spell-vfx-spritesheets/${name}.json`));
       sheets.set(name, sheet.animations[name]);
     }),
   ).then(() => undefined, () => { sheetLoad = null; });

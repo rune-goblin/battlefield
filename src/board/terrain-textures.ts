@@ -1,5 +1,6 @@
 import terrainTextureFiles from 'virtual:terrain-textures';
 
+import { assetUrl } from './asset-base.js';
 import {
   at, edgeKey, generateBoard, gridOf, seededRandom,
   type Board, type Cell, type Grid, type Random, type SquareTerrain, type Wall,
@@ -72,7 +73,7 @@ export interface TerrainAppearance {
 export const TEXTURE_CHOICES = Object.fromEntries(TERRAIN_GROUPS.map(group => [group,
   terrainTextureFiles.filter(path => path.startsWith(`${group === 'shallows' ? 'water' : group}/`)).map(id => ({
     id, name: id.split('/').pop()!.replace(/\.[^.]+$/, '').replaceAll('_', ' '),
-    url: `${import.meta.env.BASE_URL}art/terrain/textures/${id.split('/').map(encodeURIComponent).join('/')}`,
+    url: assetUrl(`art/terrain/textures/${id.split('/').map(encodeURIComponent).join('/')}`),
   })),
 ])) as Record<TerrainGroup, TextureChoice[]>;
 export function defaultTextureSettings(): TerrainTextureSettings {

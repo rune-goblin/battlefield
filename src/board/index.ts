@@ -557,9 +557,10 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
 
 export { BoardApp } from './BoardApp.js';
 export { BoardContainer } from './BoardContainer.js';
+export { setAssetBase } from './asset-base.js';
 export { setVfxTimeScale } from './layers/EffectLayer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
-// DOM) that Token.ts also calls for the same art. Re-deriving the BASE_URL-prefixing here
+// DOM) that Token.ts also calls for the same art. Re-deriving the asset-base prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
 export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';

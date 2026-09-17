@@ -2,21 +2,21 @@ import * as PIXI from 'pixi.js';
 import { engineArt, troopArt } from '../engine/art.js';
 import type { Role, Tree } from '../engine/index.js';
 import bannerTemplate from './faction-banner.svg?raw';
+import { assetUrl } from './asset-base.js';
 
 // src/engine/art.ts stays free of Vite types (tsconfig.engine.json carries none) so it
-// type-checks as pure engine code; it returns paths without a leading slash. The BASE_URL
+// type-checks as pure engine code; it returns paths without a leading slash. The asset-base
 // prefix a non-root deploy needs lives here instead — src/board/ is covered by the main
 // tsconfig, which does include vite/client. See docs/plans/pixi-board.todos.md, "Wave 4
 // notes — art pipeline".
-const BASE = import.meta.env.BASE_URL;
 
 export function troopArtUrl(name: string, role: Role): string {
-  return BASE + troopArt(name, role);
+  return assetUrl(troopArt(name, role));
 }
 
 export function engineArtUrl(name: string): string | null {
   const path = engineArt(name);
-  return path ? BASE + path : null;
+  return path ? assetUrl(path) : null;
 }
 
 // proto: pf2e-trooper's *_strategy.webp renders put the miniature's own base ellipse about
@@ -51,7 +51,7 @@ export function bannerTexture(colour: number): PIXI.Texture {
  * action at all, and marks the cell a drag may not take. */
 export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'maneuver';
 
-export const actionIconUrl = (icon: ActionIcon): string => `${BASE}art/action-icons/${icon === 'maneuver' ? 'withdraw' : icon}.webp`;
+export const actionIconUrl = (icon: ActionIcon): string => assetUrl(`art/action-icons/${icon === 'maneuver' ? 'withdraw' : icon}.webp`);
 
 // One face per tree, for the picker that branches off Cast — a second ring, not a slice of
 // the first, so it needs its own art rather than the single generic `cast` face above.
@@ -60,7 +60,7 @@ const CAST_ICON: Record<Tree, string> = {
   offense: 'buff-attacks', defense: 'buff-defenses', movement: 'buff-movement',
 };
 
-export const castIconUrl = (tree: Tree): string => `${BASE}art/cast-icons/${CAST_ICON[tree]}.webp`;
+export const castIconUrl = (tree: Tree): string => assetUrl(`art/cast-icons/${CAST_ICON[tree]}.webp`);
 
 /** Targeting uses the selected spell tree's art instead of the generic Cast menu icon. */
 export type TargetIcon = ActionIcon | `cast:${Tree}`;

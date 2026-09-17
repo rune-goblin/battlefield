@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { assetUrl } from './asset-base.js';
 
 /** One quadrant of one baked terrain sheet. `scripts/bake-terrain.mjs` names them. */
 export type ScatterKind =
@@ -10,8 +11,6 @@ export type TerrainAtlas = Partial<Record<ScatterKind, PIXI.Texture[]>>;
 interface Manifest {
   [kind: string]: { sheet: string; frames: [number, number, number, number][] };
 }
-
-const DIR = `${import.meta.env.BASE_URL}art/terrain/`;
 
 let pending: Promise<TerrainAtlas | null> | null = null;
 
@@ -28,14 +27,14 @@ export function terrainAtlas(): Promise<TerrainAtlas | null> {
 }
 
 async function build(): Promise<TerrainAtlas | null> {
-  const response = await fetch(`${DIR}frames.json`);
+  const response = await fetch(assetUrl('art/terrain/frames.json'));
   if (!response.ok) return null;
   const manifest: Manifest = await response.json();
 
   const sheets = new Map<string, Promise<PIXI.Texture>>();
   const load = (name: string): Promise<PIXI.Texture> => {
     let sheet = sheets.get(name);
-    if (!sheet) { sheet = PIXI.Assets.load<PIXI.Texture>(DIR + name); sheets.set(name, sheet); }
+    if (!sheet) { sheet = PIXI.Assets.load<PIXI.Texture>(assetUrl(`art/terrain/${name}`)); sheets.set(name, sheet); }
     return sheet;
   };
 

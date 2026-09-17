@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { assetUrl } from './asset-base.js';
 import type { TerrainGroup } from './terrain-textures.js';
 
 export type InkFrames = Partial<Record<TerrainGroup, PIXI.Texture[]>>;
@@ -16,8 +17,6 @@ interface Manifest {
   sheet: string;
   frames: Partial<Record<TerrainGroup, [number, number, number, number][]>>;
 }
-
-const DIR = `${import.meta.env.BASE_URL}art/terrain/ink/`;
 
 let pending: Promise<InkAtlas | null> | null = null;
 
@@ -40,10 +39,10 @@ async function build(): Promise<InkAtlas | null> {
 }
 
 async function frames(manifestFile: string): Promise<InkFrames | null> {
-  const response = await fetch(DIR + manifestFile);
+  const response = await fetch(assetUrl(`art/terrain/ink/${manifestFile}`));
   if (!response.ok) return null;
   const manifest: Manifest = await response.json();
-  const sheet = await PIXI.Assets.load<PIXI.Texture>(DIR + manifest.sheet);
+  const sheet = await PIXI.Assets.load<PIXI.Texture>(assetUrl(`art/terrain/ink/${manifest.sheet}`));
   // Linework shrunk to a tenth without mipmaps sparkles; the fills spend most of their life
   // there.
   sheet.baseTexture.mipmap = PIXI.MIPMAP_MODES.ON;

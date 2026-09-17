@@ -27,6 +27,11 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - The outcome operation ID derives from the battle ID, so a reloaded battle cannot apply its outcome twice.
 - ReignMaker owns writes to ReignMaker data through `applyBattleOutcome`; Battlefield reads no ReignMaker flags.
 
+## Judgment calls
+
+- 2026-09-18, Wave 0.1: `assetUrl` computes at each call site rather than caching a module-level `DIR`/`BASE` constant, so a `setAssetBase` call still reaches art requests from modules already imported (`paper.ts`, `ink-sheet.ts`, `terrain-sheet.ts`, `EffectLayer.ts`). `terrain-textures.ts`'s `TEXTURE_CHOICES` stays an eager module-load computation, matching its prior behaviour.
+- 2026-09-18, Wave 0.1: exported `setAssetBase` from `src/board/index.ts`'s public barrel, since Foundry's adapter (Wave 0.2) calls it from outside `src/board`.
+
 ## Open, for Mark
 
 - **Stable ID format** (Wave 2.2). **Decision:**
@@ -36,3 +41,5 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 ## Ledger
 
 One line per wave: date, wave, model, commits, gate, verdict, escalations with their cause.
+
+- 2026-09-18, Wave 0.1, Sonnet, 1 commit, gate pass (`vitest run`, `npm run check`, `vite build`), no escalation.
