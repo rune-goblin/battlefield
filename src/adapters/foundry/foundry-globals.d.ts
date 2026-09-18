@@ -28,9 +28,6 @@ interface FoundryDieTerm {
   /** A synchronous draw through the platform's own generator (`CONFIG.Dice.randomUniform()`),
    * the seam the dice port uses. */
   randomFace(): number;
-  /** Settles on the next microtask when `results` already holds one entry per requested die —
-   * there is nothing left to draw, so no interactive fulfillment prompt runs. */
-  evaluate(options?: Record<string, unknown>): Promise<FoundryDieTerm>;
 }
 
 interface FoundryDieClass {

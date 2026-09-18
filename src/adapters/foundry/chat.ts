@@ -22,10 +22,10 @@ export interface ChatPoster {
 }
 
 /**
- * Builds one `Roll` per card from a `Die` term carrying the recorded face — a pre-filled
- * `results` entry leaves nothing for `evaluate()` to draw, so this replays the engine's own
- * roll rather than asking Foundry for a new one. Mirrors ReignMaker's `kingdomChatService`:
- * a chat failure is caught and logged, never rethrown, since the battle already committed.
+ * Builds one `Roll` per card from a `Die` term carrying the recorded face, so the card replays
+ * the engine's own roll rather than asking Foundry for a new one. Mirrors ReignMaker's
+ * `kingdomChatService`: a chat failure is caught and logged, never rethrown, since the battle
+ * already committed.
  */
 export function foundryChatPoster(): ChatPoster {
   return {
@@ -33,9 +33,11 @@ export function foundryChatPoster(): ChatPoster {
       try {
         // proto: the wave names the dice port's exact call but not this one; verified against
         // Foundry 14.365's own dice.mjs rather than taken from ReignMaker, whose players roll
-        // their own PF2e checks and never rebuild a Roll from a recorded face.
+        // their own PF2e checks and never rebuild a Roll from a recorded face. A `results`
+        // entry marks the term evaluated in the constructor, and `evaluate()` throws on a term
+        // that already is, so nothing evaluates this die; `Roll.fromTerms` reads `_evaluated`
+        // off the term and totals it, which is what `ChatMessage` demands of a posted roll.
         const die = new foundry.dice.terms.Die({ faces: 20, results: [{ result: face, active: true }] });
-        await die.evaluate();
         await ChatMessage.create({
           content,
           rolls: [Roll.fromTerms([die])],

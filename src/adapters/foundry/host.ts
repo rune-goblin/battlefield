@@ -115,6 +115,8 @@ export function createBattlefieldHost({
     });
     // This client's own executor is the one that just committed, so it is the one client that
     // should post the cards — not every client that happens to hold a copy of the record.
+    // proto: cards keep their order inside one commit; two commits landing back to back can
+    // interleave theirs, since nothing chains one publish onto the last.
     rt.subscribe((next) => { void publishCommit(next.lastCommit?.events ?? [], chat); });
     return rt;
   }
