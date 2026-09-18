@@ -7,7 +7,8 @@ import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
 import { submissionOf } from '../runtime/interactions.js';
-import type { ArchiveEntry } from '../runtime/ports.js';
+import type { ControlAssignment } from '../runtime/control.js';
+import type { ArchiveEntry, TableUser } from '../runtime/ports.js';
 import type { BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 
 export type Setup = BattleSetupDraft;
@@ -68,6 +69,9 @@ runtime.subscribe((session) => {
 export const viewerId = runtime.userId;
 export const gmUserId = () => runtime.gmUserId();
 
+/** Everyone the host would seat, for the GM's seating controls. */
+export const tableUsers = (): TableUser[] => runtime.tableUsers();
+
 const submit = (command: BattleCommand) => runtime.submit(command);
 
 /** A refusal the store makes on its own, shaped like the executor's so a view reads one thing. */
@@ -107,6 +111,16 @@ export const declareReady = (side: Side, ready: boolean) =>
 
 export const declaredReady = (side: Side): boolean =>
   submissionOf(game.interactions, 'army.readiness', side) === true;
+
+/** Who plays which army. The GM sends it; the authority fits it to the users it can see. */
+export const assignSeating = (control: ControlAssignment) => submit({
+  type: 'control.assign',
+  control: {
+    mode: control.mode,
+    gmSide: control.gmSide,
+    seats: { attacker: [...control.seats.attacker], defender: [...control.seats.defender] },
+  },
+});
 
 /** Deploy the prepared setup. The navigation store opens the battle stage on success. */
 export const startBattle = () => submit({ type: 'battle.start' });

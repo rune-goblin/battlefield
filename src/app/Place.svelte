@@ -2,6 +2,7 @@
   import { COMBATANTS, deployRanks, ENGINES, derivation, OFFICIAL, paceReason, ROSTER, type Side, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
+  import SeatingPanel from './SeatingPanel.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
@@ -392,6 +393,8 @@
       >{ready ? 'Ready — waiting for the other army' : `The ${sideWord} force is ready`}</button>
       <small>{otherReady ? `The ${otherWord} force is ready.` : `The ${otherWord} force is still forming up.`}</small>
     </div>
+
+    <SeatingPanel />
 
     <div class="row">
       <button onclick={() => void resetToExample()}>Reset to the example</button>

@@ -3,6 +3,7 @@
   import { loadSave } from './navigation.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { commandReporter } from './command-notices.js';
+  import { viewer } from './viewer.svelte.js';
 
   const run = commandReporter(useNotifications());
 
@@ -89,7 +90,7 @@
               <span class="muted">{progress(entry)} · {when(entry.savedAt)}</span>
             </div>
             <div class="actions">
-              <button onclick={() => void doLoad(entry.slot)}>Load</button>
+              <button disabled={!viewer.isGm} onclick={() => void doLoad(entry.slot)}>Load</button>
               <button onclick={() => void doExport(entry.slot, entry.name)}>Export</button>
               <button onclick={() => void doRemove(entry.slot)}>Remove</button>
             </div>
