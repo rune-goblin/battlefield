@@ -16,6 +16,9 @@ export function commandReporter(notifications: NotificationService) {
     if (result.ok) {
       notifications.dismiss(COMMAND_NOTICE);
       notifications.dismiss(STORAGE_NOTICE);
+    } else if (result.reason === 'timeout') {
+      // Nothing was refused: the authority never answered, and the command may yet commit.
+      // The `authority` notice speaks for that, raised from where the host watches the table.
     } else if (result.reason === 'storage') {
       notifications.show({
         id: STORAGE_NOTICE, title: 'Changes could not be saved', message: result.message, tone: 'warning',

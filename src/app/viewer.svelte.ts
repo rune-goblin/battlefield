@@ -1,5 +1,6 @@
 import type { Side } from '../engine/index.js';
 import { seatedOn } from '../runtime/control.js';
+import { authority } from './authority.svelte.js';
 import { game, gmUserId, viewerId } from './game.svelte.js';
 
 /**
@@ -20,14 +21,15 @@ export const viewer = {
 
   get isHolder(): boolean { return game.turn !== null && game.turn === viewerId; },
 
-  /** Whether this client's tactical controls are live. */
-  get mayAct(): boolean { return viewer.isHolder || viewer.isGm; },
+  /** Whether this client's tactical controls are live. With no primary GM at the table there
+   * is nobody to execute a command, so every client reads and none of them acts. */
+  get mayAct(): boolean { return authority.mayCommand && (viewer.isHolder || viewer.isGm); },
 
   seatedOn: (side: Side): boolean => seatedOn(game.control, side, viewerId),
 
   /** A decision one army makes: readiness, recovery, surrender, next-day deployment. Any user
    * seated on that side may answer, and the last word before the side confirms stands. */
-  decidesFor: (side: Side): boolean => viewer.isGm || viewer.seatedOn(side),
+  decidesFor: (side: Side): boolean => authority.mayCommand && (viewer.isGm || viewer.seatedOn(side)),
 };
 
 // proto: the turn and seat wording is reserved for review with the rest of the player-facing

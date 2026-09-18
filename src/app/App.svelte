@@ -11,9 +11,11 @@
   import { provideNotifications } from './notification-context.js';
   import Notifications from './Notifications.svelte';
   import { setAppRoot } from './app-root.js';
+  import { connectAuthority } from './authority.svelte.js';
 
   const notifications = provideNotifications();
   presentation.connectNotices(notifications, { userId: viewerId, get isGm() { return gmUserId() === viewerId; } });
+  connectAuthority(notifications);
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be
   // tuned and screenshotted without playing a battle up to a cast.
