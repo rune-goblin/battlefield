@@ -12,15 +12,17 @@
   interface Props { store: ClientStore; link: MemoryLink; title: string }
   const { store, link, title }: Props = $props();
 
-  let session = $state(store.session);
+  // svelte-ignore state_referenced_locally (the panel binds to one store for its life; the seed is that store's first record)
+  const { session: seed, userId } = store;
+  let session = $state(seed);
   let boardRef = $state<PixiBoard>();
 
   const notifications = createNotificationService();
   let notices = $state<readonly Notification[]>([]);
   notifications.subscribe((list) => { notices = list; });
 
-  const presentation = createPresentation(session);
-  presentation.connectNotices(notifications, { userId: store.userId, isGm: false });
+  const presentation = createPresentation(seed);
+  presentation.connectNotices(notifications, { userId, isGm: false });
   // proto: only the route and the burst play here — enough to show the same action landing on
   // both boards. The ring-flash and the resolved markers/arrows are Battle.svelte's own local
   // state, not part of `PresentationSink`, and this page has no target-marker overlay to feed.
@@ -30,7 +32,7 @@
     burst: (cell, tree, from) => boardRef?.burst(cell, tree, from),
     resolved: () => {},
   }));
-  store.subscribe((next) => { presentation.observe(next); session = next; });
+  $effect(() => store.subscribe((next) => { presentation.observe(next); session = next; }));
 
   const run = commandReporter(notifications);
 
@@ -62,7 +64,7 @@
       ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ] : []));
 
-  const isTurn = $derived(session.turn === store.userId);
+  const isTurn = $derived(session.turn === userId);
   const active = $derived(battle?.active ? battle.units.find((u) => u.id === battle.active) ?? null : null);
   const roster = $derived(battle
     ? battle.units.filter((u) => u.side === battle.pending && u.status === 'active' && !battle.activated.includes(u.id))
@@ -82,7 +84,7 @@
 <section class="panel">
   <header>
     <h2>{title}</h2>
-    <p>viewer <code>{store.userId}</code> &middot; revision {session.revision} &middot; turn {session.turn ?? '—'}</p>
+    <p>viewer <code>{userId}</code> &middot; revision {session.revision} &middot; turn {session.turn ?? '—'}</p>
   </header>
 
   <div class="board"><PixiBoard bind:this={boardRef} {board} {tokens} /></div>
