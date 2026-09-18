@@ -108,6 +108,46 @@ describe('the command executor', () => {
     expect(runtime.history[0].units[0].guard).toBeNull();
   });
 
+  it('rewinds to the battle before the last undoable commit', async () => {
+    const { runtime, published } = runtimeOn();
+    await runtime.submit({ type: 'action.resolve', action: guard });
+
+    const result = await runtime.undo();
+
+    expect(result).toMatchObject({ ok: true, revision: 2 });
+    expect(unit(runtime.session.battle!, 'u0').guard).toBeNull();
+    expect(runtime.history).toHaveLength(0);
+    expect(published.at(-1)).toBe(runtime.session);
+    expect(await runtime.undo()).toMatchObject({ ok: false, reason: 'stage' });
+  });
+
+  it('commits a direct change through the same queue', async () => {
+    const { runtime, repository } = runtimeOn();
+
+    const [action, cleared] = await Promise.all([
+      runtime.submit({ type: 'action.resolve', action: guard }),
+      runtime.change((session) => ({ ...session, battle: null }), 'clear'),
+    ]);
+
+    expect([action, cleared]).toMatchObject([{ ok: true, revision: 1 }, { ok: true, revision: 2 }]);
+    expect(repository.saves.map((s) => s.revision)).toEqual([1, 2]);
+    expect(runtime.session.battle).toBeNull();
+    expect(runtime.history).toHaveLength(0);
+  });
+
+  it('leaves the record and the history alone when a direct change throws', async () => {
+    const { runtime, repository } = runtimeOn();
+    await runtime.submit({ type: 'action.resolve', action: guard });
+    const committed = runtime.session;
+
+    const result = await runtime.change(() => { throw new Error('no board'); }, 'clear');
+
+    expect(result).toMatchObject({ ok: false, reason: 'engine', message: 'no board', revision: 1 });
+    expect(runtime.session).toBe(committed);
+    expect(runtime.history).toHaveLength(1);
+    expect(repository.saves).toHaveLength(1);
+  });
+
   it('refuses a command built for another battle', async () => {
     const { runtime, repository } = runtimeOn();
 

@@ -1,7 +1,7 @@
 import { randomRng, type BattleState } from '../engine/index.js';
 import { createActionResolutionService } from '../services/ActionResolutionService.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult } from './commands.js';
-import { createExecutor } from './executeCommand.js';
+import { createExecutor, type HistoryEffect, type SessionEdit } from './executeCommand.js';
 import type { DicePort, SessionRepository } from './ports.js';
 import type { BattleSession } from './session.js';
 
@@ -20,6 +20,9 @@ export interface Runtime {
    * always at the current revision; a remote client sends its own envelope. */
   submit(command: BattleCommand): Promise<CommandResult>;
   execute(envelope: CommandEnvelope): Promise<CommandResult>;
+  // proto: the writes Phase 2 has yet to turn into commands go through the same queue.
+  change(edit: SessionEdit, history?: HistoryEffect): Promise<CommandResult>;
+  undo(): Promise<CommandResult>;
   subscribe(listener: (session: BattleSession) => void): () => void;
 }
 
@@ -41,6 +44,8 @@ export function createRuntime({ repository, session, dice = randomRng }: Runtime
       command,
     }),
     execute: (envelope) => executor.execute(envelope),
+    change: (edit, history) => executor.change(edit, history),
+    undo: () => executor.undo(),
     subscribe: (listener) => executor.subscribe(listener),
   };
 }

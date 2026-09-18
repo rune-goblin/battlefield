@@ -1,6 +1,6 @@
 import type { BattleState } from '../engine/index.js';
 import type { ActionResolutionService } from '../services/ActionResolutionService.js';
-import type { BattleCommand, CommandEnvelope, CommandResult, CommandType, RejectionReason } from './commands.js';
+import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import type { SessionRepository } from './ports.js';
 import type { BattleSession } from './session.js';
 
@@ -34,12 +34,25 @@ export interface ExecutorOptions {
   actions: ActionResolutionService;
 }
 
+/** A change to the record, applied to the committed one inside the queue. A throw rejects. */
+export type SessionEdit = (session: BattleSession) => BattleSession;
+
+/** What a change does to the undo history. Setup, a committed night, a new day and resolved
+ * orders are boundaries the prototype's store already cleared. */
+export type HistoryEffect = 'keep' | 'clear';
+
 export interface Executor {
   /** The committed record. It changes at a successful save and nowhere else. */
   readonly session: BattleSession;
   /** Battle states to rewind to, oldest first, held in the authority's memory. */
   readonly history: readonly BattleState[];
   execute(envelope: CommandEnvelope): Promise<CommandResult>;
+  // proto: the store still writes setup, lifecycle transitions and the continuation directly.
+  // They commit here so the record keeps one writer and one order; Phase 2 turns each into a
+  // command and this goes.
+  change(edit: SessionEdit, history?: HistoryEffect): Promise<CommandResult>;
+  /** Rewind to the battle the last undoable commit replaced, under a new revision. */
+  undo(): Promise<CommandResult>;
   /** Called with each committed record, after the save that made it durable. */
   subscribe(listener: (session: BattleSession) => void): () => void;
 }
@@ -70,16 +83,14 @@ export function createExecutor({ repository, session: initial, actions }: Execut
     };
   }
 
-  async function run({ battleId, commandId, command }: CommandEnvelope): Promise<CommandResult> {
-    if (battleId !== session.battleId) return reject(commandId, 'battle', `${battleId} is not the battle under way`);
-    // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
-    if (!Object.hasOwn(UNDOABLE, command?.type)) return reject(commandId, 'unsupported', `${command?.type} is not a command`);
-    if (!session.battle) return reject(commandId, 'stage', 'no battle is under way');
-
+  /** Resolve, save, then publish. `record` runs once the write is durable. */
+  async function persist(
+    commandId: string, edit: SessionEdit, record: (previous: BattleSession) => void,
+  ): Promise<CommandResult> {
     const previous = session;
     let next: BattleSession;
     try {
-      next = commit(applyCommand(previous, command, actions), commandId);
+      next = commit(edit(previous), commandId);
     } catch (error) {
       return reject(commandId, 'engine', failure(error));
     }
@@ -90,21 +101,47 @@ export function createExecutor({ repository, session: initial, actions }: Execut
     }
 
     session = next;
-    if (UNDOABLE[command.type] && previous.battle) {
-      history = [...history.slice(1 - HISTORY_LIMIT), previous.battle];
-    }
+    record(previous);
     for (const listener of [...listeners]) listener(session);
     return { ok: true, commandId, revision: session.revision };
+  }
+
+  function run({ battleId, commandId, command }: CommandEnvelope): Promise<CommandResult> {
+    if (battleId !== session.battleId) return Promise.resolve(reject(commandId, 'battle', `${battleId} is not the battle under way`));
+    // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
+    if (!Object.hasOwn(UNDOABLE, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
+    if (!session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
+
+    return persist(commandId, (current) => applyCommand(current, command, actions), (previous) => {
+      if (UNDOABLE[command.type] && previous.battle) {
+        history = [...history.slice(1 - HISTORY_LIMIT), previous.battle];
+      }
+    });
+  }
+
+  function rewind(): Promise<CommandResult> {
+    const commandId = newCommandId();
+    const previous = history.at(-1);
+    if (!previous) return Promise.resolve(reject(commandId, 'stage', 'nothing to undo'));
+    return persist(commandId, (current) => ({ ...current, battle: previous }), () => {
+      history = history.slice(0, -1);
+    });
+  }
+
+  function enqueue(work: () => Promise<CommandResult>): Promise<CommandResult> {
+    const result = queue.then(work);
+    queue = result.catch(() => {});
+    return result;
   }
 
   return {
     get session() { return session; },
     get history() { return history; },
-    execute(envelope) {
-      const result = queue.then(() => run(envelope));
-      queue = result.catch(() => {});
-      return result;
+    execute(envelope) { return enqueue(() => run(envelope)); },
+    change(edit, effect = 'keep') {
+      return enqueue(() => persist(newCommandId(), edit, () => { if (effect === 'clear') history = []; }));
     },
+    undo() { return enqueue(rewind); },
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };
