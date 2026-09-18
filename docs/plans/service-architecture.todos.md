@@ -39,9 +39,18 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - 2026-09-18, Wave 0.2: `setAssetBase` runs from `install-asset-base.ts` at load, the first import in the Foundry entry, because `terrain-textures.ts` builds `TEXTURE_CHOICES` the moment it is evaluated. It imports `board/asset-base.js` directly: the barrel would pull in the modules it has to precede.
 - 2026-09-18, Wave 0.2: the PIXI shim enumerates the members the app uses rather than re-exporting a namespace, since a runtime global has no static exports; `npm run check` checks that list against pixi.js 7.4.3's own types.
 - 2026-09-18, Wave 0.2: `grep -c "PixiJS" dist-foundry/*.js` stands as written — the marker appears 5 times in the browser bundle and 0 in the module bundle, so it separates the two.
+- 2026-09-18, Wave 1.1: **reserved, `// proto:`** — the save migration reads the v4 `{ stage, setup, battle }` and derives the lifecycle stage from the battle alone, ignoring the old `stage` string. The old value named a setup tab, which is local state; a v4 save mid-setup therefore reopens at the first unfinished stage rather than the exact tab, until the navigation store of Wave 2.5.
+- 2026-09-18, Wave 1.1: **reserved, `// proto:`** — `battleId` is `battle-<base36 time>-<6 random base36>` and `rulesVersion` is the date `2026-09-18`, since the rules document carries no version of its own. Both ride with the ID formats reserved for Wave 2.2.
+- 2026-09-18, Wave 1.1: the session key is `battlefield.session.v1` and the record carries `schemaVersion` as well, so the key names the envelope and the field names the shape; `reviveSession` refuses any other `schemaVersion` and the load falls back to `battlefield.v4`, then to a fresh session.
+- 2026-09-18, Wave 1.1: the old key is removed inside `load`, after a session revives from the new key — not after `save` — so a write that never comes back intact leaves the v4 save in place.
+- 2026-09-18, Wave 1.1: `Setup`, `SetupUnit`, `SetupEngine`, `defaultSetup`, and `randomSeed` moved into `runtime/session.ts` (`Setup` is the review's `BattleSetupDraft`); `game.svelte.ts` re-exports the three types so its consumers keep their imports. `defaultSetup` now states `size: 11`, the value every reader already defaulted to, so a fresh record round-trips unchanged.
+- 2026-09-18, Wave 1.1: the repository exposes `loadSessionSync` beside the async port, and `game.svelte.ts` seeds from it. Module-level `$state` is built at import, and a promise would render the default board first; Wave 1.4's read store adopts published sessions and retires this.
+- 2026-09-18, Wave 1.1: `// proto:` — a rejected save stays silent, as it was before. Wave 1.4 raises it under the `storage` notice.
+- 2026-09-18, Wave 1.1: `BattleEvent` is `{ id, type }` until Wave 3.1 names the ten event types; `lastCommit` carries the shape from the start so the record does not change again.
 
 ## Open, for Mark
 
+- **Save migration shape** (Wave 1.1). The v4 stage is dropped, the lifecycle stage comes from the battle, `battleId` is `battle-<base36 time>-<random>`, and `rulesVersion` is a date. **Decision:**
 - **Stable ID format** (Wave 2.2). **Decision:**
 - **Event types and log tag names** (Wave 3.1). **Decision:**
 - **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). **Decision:**
