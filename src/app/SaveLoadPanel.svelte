@@ -10,7 +10,6 @@
   let saves = $state<ArchiveEntry[]>([]);
   let name = $state('');
   let error = $state<string | null>(null);
-  let fileInput = $state<HTMLInputElement>();
 
   async function refresh() {
     saves = await listSaves();
@@ -58,11 +57,15 @@
     });
   }
 
-  async function doImport(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
-    await guard(async () => { await importSave(await file.text()); await refresh(); });
-    if (fileInput) fileInput.value = '';
+  function pickImport() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (file) void guard(async () => { await importSave(await file.text()); await refresh(); });
+    };
+    input.click();
   }
 
   const when = (savedAt: number) => new Date(savedAt).toLocaleString();
@@ -95,9 +98,7 @@
           <li class="muted">No saved battles yet.</li>
         {/each}
       </ul>
-      <button onclick={() => fileInput?.click()}>Import…</button>
-      <input bind:this={fileInput} type="file" accept="application/json" class="file"
-        onchange={(e) => void doImport(e.currentTarget.files)} />
+      <button onclick={pickImport}>Import…</button>
     </div>
   {/if}
 </div>
@@ -120,5 +121,4 @@
   .muted { color: var(--muted); font-size: .78rem; }
   .actions { display: flex; gap: .25rem; flex: none; }
   .actions button { padding: .1rem .4rem; font-size: .78rem; }
-  .file { display: none; }
 </style>
