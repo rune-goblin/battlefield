@@ -2,6 +2,7 @@
 // wave that reaches for another global adds it here rather than widening these to `any`.
 declare const foundry: {
   applications: { api: { ApplicationV2: FoundryApplicationV2Class } };
+  utils: { saveDataToFile(data: string, type: string, filename: string): void };
 };
 
 declare const Hooks: {
@@ -11,7 +12,22 @@ declare const Hooks: {
 
 declare const game: {
   modules: { get(id: string): { api?: unknown } | undefined };
+  settings: {
+    register(namespace: string, key: string, data: FoundryWorldSettingConfig): void;
+    get(namespace: string, key: string): string;
+    set(namespace: string, key: string, value: string): Promise<string>;
+  };
 };
+
+/** The one setting shape the adapter registers: a world-scoped string, hidden from the
+ * config sheet. `onChange` carries the string Foundry stored, not the object it came from. */
+interface FoundryWorldSettingConfig {
+  scope: 'world';
+  config: false;
+  type: StringConstructor;
+  default: string;
+  onChange?: (value: string, options: Record<string, unknown>, userId: string) => void;
+}
 
 interface FoundryApplicationV2 {
   readonly rendered: boolean;

@@ -1,0 +1,99 @@
+import { describe, expect, it } from 'vitest';
+import { createFoundryArchive, ARCHIVE_LIMIT, type DownloadFile } from '../adapters/foundry/worldArchive.js';
+import { createFoundrySessionRepository } from '../adapters/foundry/worldSessionRepository.js';
+import type { WorldSettingStorage } from '../adapters/foundry/worldSettings.js';
+import { createSessionWatcher, parseDeliveredSession } from '../adapters/foundry/sessionWatcher.js';
+import { freshSession, type BattleSession } from '../runtime/session.js';
+
+function fakeStorage(initial = ''): WorldSettingStorage {
+  let value = initial;
+  return {
+    get: () => value,
+    async set(v) { value = v; },
+  };
+}
+
+describe('the Foundry session repository', () => {
+  it('loads a fresh session from an unset setting and round-trips a save', async () => {
+    const storage = fakeStorage();
+    const repo = createFoundrySessionRepository(storage);
+    const first = await repo.load();
+    expect(first.revision).toBe(0);
+
+    const changed: BattleSession = { ...first, revision: 3 };
+    await repo.save(changed);
+    expect(JSON.parse(storage.get()).revision).toBe(3);
+    expect((await repo.load()).revision).toBe(3);
+  });
+
+  it('falls back to a fresh session on a corrupt setting value', async () => {
+    const repo = createFoundrySessionRepository(fakeStorage('not json'));
+    expect((await repo.load()).revision).toBe(0);
+  });
+});
+
+describe('the Foundry archive', () => {
+  it('saves, lists, loads, exports, imports, and removes a battle', async () => {
+    const archive = createFoundryArchive(fakeStorage());
+    const session = freshSession();
+
+    const entry = await archive.save('Night one', session);
+    expect(await archive.list()).toEqual([entry]);
+    expect(await archive.load(entry.slot)).toEqual(session);
+
+    const exported = await archive.export(entry.slot);
+    const imported = await archive.import(exported);
+    expect(imported.slot).not.toBe(entry.slot);
+    expect(await archive.load(imported.slot)).toEqual(session);
+
+    await archive.remove(entry.slot);
+    expect((await archive.list()).map((e) => e.slot)).toEqual([imported.slot]);
+  });
+
+  it('evicts the oldest slot to a downloaded file once the cap is reached', async () => {
+    const storage = fakeStorage();
+    const downloaded: string[] = [];
+    const download: DownloadFile = (filename) => downloaded.push(filename);
+    const archive = createFoundryArchive(storage, download);
+
+    let firstSlot = '';
+    for (let i = 0; i < ARCHIVE_LIMIT; i++) {
+      const entry = await archive.save(`Save ${i}`, freshSession());
+      if (i === 0) firstSlot = entry.slot;
+    }
+    expect((await archive.list())).toHaveLength(ARCHIVE_LIMIT);
+    expect(downloaded).toHaveLength(0);
+
+    await archive.save('One too many', freshSession());
+    const remaining = await archive.list();
+    expect(remaining).toHaveLength(ARCHIVE_LIMIT);
+    expect(remaining.some((e) => e.slot === firstSlot)).toBe(false);
+    expect(downloaded).toHaveLength(1);
+  });
+});
+
+describe('the session setting delivered through reconcile', () => {
+  it('adopts a newer delivered session and ignores a stale one', () => {
+    const initial = freshSession();
+    const watcher = createSessionWatcher(initial);
+    const seen: BattleSession[] = [];
+    watcher.subscribe((s) => seen.push(s));
+
+    const newer: BattleSession = { ...initial, revision: 1 };
+    watcher.handleChange(JSON.stringify(newer));
+    expect(watcher.session.revision).toBe(1);
+    expect(seen).toHaveLength(1);
+
+    // A replayed or out-of-order delivery — including the writer's own commit echoed back —
+    // never moves the record backward.
+    watcher.handleChange(JSON.stringify(initial));
+    expect(watcher.session.revision).toBe(1);
+    expect(seen).toHaveLength(1);
+  });
+
+  it('ignores an unset or corrupt setting value', () => {
+    expect(parseDeliveredSession('')).toBeNull();
+    expect(parseDeliveredSession('not json')).toBeNull();
+    expect(parseDeliveredSession(42)).toBeNull();
+  });
+});
