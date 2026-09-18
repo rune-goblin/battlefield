@@ -328,9 +328,10 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     });
   }
 
-  /** Install a battle a campaign asked for. A battle under way is never overwritten — one
-   * battle at a time, and the GM leaves this one before the next import lands. The request is
-   * read inside the edit, so a malformed one rejects like any other refused command. */
+  /** Install a battle a campaign asked for. The request is read inside the edit, so a
+   * malformed one rejects like any other refused command. */
+  // proto: a battle under way is never overwritten — one battle at a time, and the GM leaves
+  // this one before the next import lands. Reserved with the rest of the import defaults.
   function install(
     commandId: string, battleId: string, request: BattleRequest, userId: string,
   ): Promise<CommandResult> {

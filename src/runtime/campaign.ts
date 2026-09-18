@@ -40,8 +40,9 @@ export interface BattleRequest {
   units: BattleRequestUnit[];
   emplacements?: BattleRequestEngine[];
   roundsPerDay?: number;
-  /** The army the GM plays; every other user at the table takes the other. Defaults to the
-   * defender, since a campaign's own army is the one that marched here. */
+  /** The army the GM plays; every other user at the table takes the other. */
+  // proto: the default is the defender, since a campaign's own army is the one that marched
+  // here. Reserved for review with the rest of the import defaults.
   gmSide?: Side;
 }
 
@@ -183,8 +184,8 @@ export function sessionFromRequest(request: BattleRequest, battleId = newBattleI
     control: freshControl(request.gmSide ?? 'defender'),
     setup: {
       spec,
-      // The caller describes the ground; the field is drawn here so the GM opens on it and
-      // paints from there.
+      // proto: the caller describes the ground and names no squares, so the field is drawn
+      // here and every piece arrives off the board for the table to deploy. Reserved.
       board: generateBoard(spec),
       units,
       emplacements: (request.emplacements ?? []).map((e) => ({
