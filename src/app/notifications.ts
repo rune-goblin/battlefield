@@ -35,12 +35,17 @@ export function createNotificationService() {
     },
     show(message: Notification) {
       const previous = messages.find(n => n.id === message.id);
-      if (previous?.title === message.title && previous.message === message.message
-        && previous.tone === message.tone && previous.expiresInMs === message.expiresInMs) return;
-      // A reused ID replaces the running notice and whatever timer was clearing it.
+      const same = previous?.title === message.title && previous.message === message.message
+        && previous.tone === message.tone && previous.expiresInMs === message.expiresInMs;
+      // A reused ID replaces the running notice and whatever timer was clearing it. An
+      // identical expiring notice keeps its text on screen without a republish, and still
+      // restarts the clock: two commits summarized the same way are two events, and the second
+      // must not inherit what the first had left to run.
       cancel(message.id);
-      messages = [...messages.filter(n => n.id !== message.id), { ...message }];
-      publish();
+      if (!same) {
+        messages = [...messages.filter(n => n.id !== message.id), { ...message }];
+        publish();
+      }
       if (message.expiresInMs !== undefined) timers.set(message.id, setTimeout(() => dismiss(message.id), message.expiresInMs));
     },
     dismiss,

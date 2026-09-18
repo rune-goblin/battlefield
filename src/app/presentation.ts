@@ -117,18 +117,22 @@ export interface Presentation {
   connectNotices(notifications: NotificationService, viewer: NoticeViewer): () => void;
 }
 
+interface NoticeHost { service: NotificationService; viewer: NoticeViewer }
+
+function deliver(host: NoticeHost, previous: BattleSession | null, next: BattleSession): void {
+  const { show, dismiss } = noticesFor(previous, next, host.viewer);
+  for (const message of show) host.service.show(message);
+  for (const id of dismiss) host.service.dismiss(id);
+}
+
 export function createPresentation(seed: BattleSession): Presentation {
   let last: BattleSession = seed;
   let sink: PresentationSink | null = null;
-  let notices: { service: NotificationService; viewer: NoticeViewer } | null = null;
+  let notices: NoticeHost | null = null;
   return {
     observe(session) {
       const play = commitPlay(last, session);
-      if (notices) {
-        const { show, dismiss } = noticesFor(last, session, notices.viewer);
-        for (const message of show) notices.service.show(message);
-        for (const id of dismiss) notices.service.dismiss(id);
-      }
+      if (notices) deliver(notices, last, session);
       last = session;
       if (!play || !sink) return;
       for (const route of play.routes) sink.route(route.unit, route.cells);
@@ -143,6 +147,10 @@ export function createPresentation(seed: BattleSession): Presentation {
     connectNotices(service, viewer) {
       const entry = { service, viewer };
       notices = entry;
+      // The record the client joined on was adopted before any host existed, and the runtime
+      // never replays it. Reading it as a first record raises the turn and decision notices a
+      // reload or a join has to show, and the null `previous` keeps the activity backlog out.
+      deliver(entry, null, last);
       return () => { if (notices === entry) notices = null; };
     },
   };

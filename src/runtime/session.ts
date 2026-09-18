@@ -248,8 +248,9 @@ export function reviveSession(value: unknown): BattleSession | null {
   if (s.lastCommit) {
     s.lastCommit.events ??= [];
     s.lastCommit.dice ??= [];
-    // A commit written before Wave 3.6 named no sender; treat it as nobody's, so it reads as
-    // another user's for the activity notice rather than silently matching every viewer.
+    // proto: a commit written before Wave 3.6 named no sender; treat it as nobody's, so it
+    // reads as another user's for the activity notice rather than matching every viewer. No
+    // schema bump — the migration's shape is reserved with the rest of the save migration.
     s.lastCommit.userId ??= '';
   }
   s.recentCommandIds ??= [];

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { createNotificationService, type Notification } from '../app/notifications.js';
+import { createPresentation } from '../app/presentation.js';
 import { ACTIVITY_NOTICE, DECISION_NOTICE, noticesFor, TURN_NOTICE } from '../app/session-notices.js';
 import { createBattle, type BattleState, type UnitCard } from '../engine/index.js';
 import type { SideControl } from '../runtime/control.js';
@@ -73,5 +75,40 @@ describe('session notices', () => {
     expect(opened.show.find((n) => n.id === DECISION_NOTICE)).toBeDefined();
     expect(closed.show.find((n) => n.id === DECISION_NOTICE)).toBeUndefined();
     expect(closed.dismiss).toContain(DECISION_NOTICE);
+  });
+});
+
+describe('session notices through the presentation module', () => {
+  const seeded = (session: BattleSession, userId: string) => {
+    const presentation = createPresentation(session);
+    const notifications = createNotificationService();
+    let shown: readonly Notification[] = [];
+    notifications.subscribe((messages) => { shown = messages; });
+    presentation.connectNotices(notifications, { userId, isGm: false });
+    return { presentation, shown: () => shown };
+  };
+
+  it('shows a joining client the open turn and no activity backlog', () => {
+    const joined: BattleSession = {
+      ...base, revision: 7, turn: 'alice',
+      lastCommit: { commandId: 'cmd-7', events: moved, dice: [], userId: 'alice' },
+    };
+
+    const { shown } = seeded(joined, 'bob');
+
+    expect(shown().find((n) => n.id === TURN_NOTICE)?.message).toContain('alice');
+    expect(shown().find((n) => n.id === ACTIVITY_NOTICE)).toBeUndefined();
+  });
+
+  it('summarizes the commits that arrive after the seed', () => {
+    const joined: BattleSession = { ...base, revision: 7, turn: 'alice' };
+    const { presentation, shown } = seeded(joined, 'bob');
+
+    presentation.observe({
+      ...joined, revision: 8,
+      lastCommit: { commandId: 'cmd-8', events: moved, dice: [], userId: 'alice' },
+    });
+
+    expect(shown().find((n) => n.id === ACTIVITY_NOTICE)).toBeDefined();
   });
 });
