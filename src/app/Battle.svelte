@@ -15,7 +15,11 @@
   const notifications = useNotifications();
   const DRAG_NOTICE = 'battle-drag';
   const run = commandReporter(notifications);
-  onDestroy(() => { notifications.dismiss(DRAG_NOTICE); notifications.dismiss(COMMAND_NOTICE); });
+  /** This view's own lifetime. Every timer and notice it opens is released together when it
+   * goes, the activation scope below included. */
+  const view = createScope('battle');
+  view.register({ label: 'notices', dispose: () => { notifications.dismiss(DRAG_NOTICE); notifications.dismiss(COMMAND_NOTICE); } });
+  onDestroy(() => view.close());
   import CommitmentPicker from './CommitmentPicker.svelte';
 
   let focus = $state(0);
@@ -32,6 +36,8 @@
   import MeleeChoices from './MeleeChoices.svelte';
   import { deselectUnit, endActivation, game, presentation, selectUnit, takeAction, undo } from './game.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
+  import { createScope } from './scope.js';
+  import { offTurnNote, turnNote, viewer } from './viewer.svelte.js';
 
   const b = $derived(game.battle!);
   // Only an army the player has actually chosen is active. The engine falls back to the first
@@ -48,6 +54,16 @@
   const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
   // Once an action is spent the choice is made: the engine refuses a second `select`.
   const locked = $derived(b.begun);
+
+  // Every client draws this board; the one whose turn it is plays it. A viewer outside the
+  // turn keeps the board's own reading tools — hover, popups, the log — and sends nothing.
+  const myTurn = $derived(viewer.mayAct);
+  function requireTurn(): boolean {
+    if (myTurn) return true;
+    // proto: the wording is reserved for review with the rest of the turn and seat text.
+    notifications.show({ id: COMMAND_NOTICE, title: 'Not your turn', message: offTurnNote(), tone: 'error' });
+    return false;
+  }
 
   let boardRef = $state<PixiBoard>();
 
@@ -79,14 +95,35 @@
     flashing = [...flashing, id];
     flashTimers.push(setTimeout(() => { flashing = flashing.filter((x) => x !== id); }, FLASH_MS));
   }
-  $effect(() => () => { for (const t of flashTimers) clearTimeout(t); });
+  // The flash belongs to the commit that caused it, not to the activation, so it outlives the
+  // activation scope and goes with the view.
+  view.register({ label: 'flash timers', dispose: () => { for (const t of flashTimers) clearTimeout(t); } });
   const flashSet = $derived(new Set(flashing));
 
   const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}`;
 
-  // A new unit drops every open popup and any in-flight drag preview — all of it is
-  // per-activation UI state, not part of the engine's own state.
-  $effect(() => { void active?.id; focus = 0; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null; castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null; blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null; });
+  /** Everything the local interaction holds: open popups, an unreleased drag, the refusal a
+   * drag left on the board. None of it is the engine's, and none of it survives the activation
+   * that opened it. */
+  function dropLocalInteraction() {
+    focus = 0; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null;
+    castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null;
+    blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null;
+    blockedCell = null; meleeTarget = null; meleeSelected = null;
+  }
+
+  /** One activation, named the way the executor names a turn: a new unit, a new activation, a
+   * new round, or a new holder closes the scope and everything registered against it. */
+  const activationKey = $derived(`${b.day}:${b.round}:${b.activated.length}:${b.pending}:${active?.id ?? ''}:${game.turn ?? ''}`);
+  let turnScope = createScope('');
+  view.register({ label: 'activation scope', dispose: () => turnScope.close() });
+  $effect(() => {
+    if (turnScope.key === activationKey) return;
+    turnScope.close();
+    turnScope = createScope(activationKey);
+    turnScope.register({ label: 'local interaction', dispose: dropLocalInteraction });
+    turnScope.register({ label: 'drag refusal', dispose: () => notifications.dismiss(DRAG_NOTICE) });
+  });
 
   function styleFor(offer: ActionOffer): HighlightStyle {
     if (offer.spell) return TREE_TARGET[offer.spell] === 'enemy' ? 'attack' : 'deploy';
@@ -108,9 +145,9 @@
   // The cell a drag has pulled to that the piece may not take — an X goes there, since the
   // refusal reads where the player is pulling rather than on the piece under their finger.
   let blockedCell = $state<string | null>(null);
+  // A refusal survives release so the player has time to read it; the activation scope above
+  // takes it away with everything else it opened.
   const blockedNotice = $derived($notifications.find(n => n.id === DRAG_NOTICE));
-  // A refusal survives release so the player has time to read it. A new activation clears it.
-  $effect(() => { void active?.id; blockedCell = null; notifications.dismiss(DRAG_NOTICE); meleeTarget = null; meleeSelected = null; });
 
   function explainBlocked(cell: string, enemy?: Unit) {
     const reason = active ? dragBlockReason(b, active, cell) : null;
@@ -624,13 +661,16 @@
     pending = null;
     armed = null;
     const row = p?.rows[p.index];
-    if (!p || !row || !active) return;
+    if (!p || !row || !active || !requireTurn()) return;
     const unit = active.id;
+    const scope = turnScope;
     if (row.kind === 'advance') await run(takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus }));
     else if (row.kind === 'charge') await run(takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus }));
     else if (row.kind === 'move') await run(takeAction({ type: 'move', unit, to: row.cell }));
     else if (act?.maneuver) await performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
-    meleeTarget = null; meleeSelected = null;
+    // The reply can land after this activation ended; the scope that opened the melee choice
+    // has already taken it away, and the next one's is not ours to clear.
+    if (!scope.closed) { meleeTarget = null; meleeSelected = null; }
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -842,7 +882,7 @@
   const aimCells = $derived(aim ? targetingPreview?.cells ?? [] : []);
   let resolvedMarkers = $state<TargetMarker[]>([]);
   let resolutionTimer: ReturnType<typeof setTimeout> | null = null;
-  $effect(() => () => { if (resolutionTimer) clearTimeout(resolutionTimer); });
+  view.register({ label: 'resolution timer', dispose: () => { if (resolutionTimer) clearTimeout(resolutionTimer); } });
 
   // The board plays the commit, not the command: every flash, burst, arrow and mark comes from
   // the events the record carries, so a client that issued nothing shows the same execution.
@@ -937,14 +977,14 @@
   ]);
 
   async function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
-    if (!active) return;
+    if (!active || !requireTurn()) return;
     const resolution = new TargetingService(b, active, offer, opt).resolve(target);
     if (!resolution) return;
     await run(takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 }));
   }
 
   async function performManeuver(activity: ActivityIndex, to?: string) {
-    if (!active) return;
+    if (!active || !requireTurn()) return;
     await run(takeAction({ type: 'maneuver', unit: active.id, activity, to }));
   }
 
@@ -1028,8 +1068,9 @@
     }
     // Nothing open and bare ground under the click: the pick goes back and the side is
     // choosing again. A unit that has already spent an action keeps its turn — `deselect`
-    // refuses — so the click reads as a miss rather than losing what was done.
-    void run(deselectUnit());
+    // refuses — so the click reads as a miss rather than losing what was done. A viewer
+    // outside the turn is just looking at the ground, so nothing is sent and nothing is said.
+    if (myTurn) void run(deselectUnit());
   }
   function onToken(e: BoardEventOf<'token'>) {
     notifications.dismiss(DRAG_NOTICE);
@@ -1092,6 +1133,7 @@
   function pickUnit(u: Unit, centre = true) {
     if (locked && u.id !== b.active) return;
     if (u.status !== 'active' || u.side !== b.pending || b.activated.includes(u.id)) return;
+    if (!requireTurn()) return;
     void run(selectUnit(u.id));
     if (centre) boardRef?.centerOn(notation(u.square));
   }
@@ -1179,13 +1221,14 @@
       {#snippet status()}
         <strong>Day {b.day} · Round {b.round} / {b.roundsPerDay}</strong>
         <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span>
+        <span class="turn" class:mine={viewer.isHolder}>{turnNote()}</span>
         {#if active}<span class="muted">· {active.name}{locked ? ' is committed' : ''}</span>
-        {:else}<span class="muted">· choose an army</span>{/if}
+        {:else}<span class="muted">· {myTurn ? 'choose an army' : 'watching'}</span>{/if}
         <span class="muted">· {spec}</span>
       {/snippet}
       {#snippet tools()}
-        <button onclick={() => void run(undo())} disabled={!game.history.length} title="Undo the last action">Undo</button>
-        <button onclick={() => void run(leaveBattle())}>New battle</button>
+        <button onclick={() => void run(undo())} disabled={!viewer.isGm || !game.history.length} title="Undo the last action">Undo</button>
+        <button onclick={() => void run(leaveBattle())} disabled={!viewer.isGm}>New battle</button>
       {/snippet}
     </TopBar>
   {/snippet}
@@ -1226,7 +1269,7 @@
       {anchored}
       {shot}
       selected={selectedHex}
-      draggable={blastOpen || activityPick ? null : active?.id ?? null}
+      draggable={blastOpen || activityPick || !myTurn ? null : active?.id ?? null}
       pickableEdges={pickerService ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id) : arming?.edges ?? []}
       onhover={(e) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; }}
       oncell={active ? onCell : undefined}
@@ -1543,9 +1586,11 @@
         <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
       {/if}
 
-      <button class="end-turn" onclick={() => void run(endActivation())}>End turn</button>
-    {:else}
+      <button class="end-turn" disabled={!myTurn} onclick={() => void run(endActivation())}>End turn</button>
+    {:else if myTurn}
       <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
+    {:else}
+      <p class="muted">{turnNote()}. The board shows every move as it is made.</p>
     {/if}
   {/snippet}
 
@@ -1555,6 +1600,9 @@
 </AppShell>
 
 <style>
+  .turn { padding: .05rem .45rem; border: 1px solid var(--rule); border-radius: 999px; font-size: .8rem; color: var(--muted); }
+  .turn.mine { border-color: var(--accent); color: var(--ink); }
+
   .mapwrap { width: 100%; height: 100%; }
   .mapwrap.aiming { cursor: crosshair; }
   .blast-targets, .activity-targets { max-height: 10rem; overflow-y: auto; }

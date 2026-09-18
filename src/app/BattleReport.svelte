@@ -5,6 +5,7 @@
   import type { TokenModel } from '../board/index.js';
   import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
   import { allSubmitted, hasSubmitted, submissionOf } from '../runtime/interactions.js';
+  import { viewer } from './viewer.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
@@ -45,6 +46,8 @@
   const sideOf = (unit: string) => b.units.find((u) => u.id === unit)?.side;
   const declarationsFor = (side: Side) => declarations.filter((c) => sideOf(c.unit) === side);
   const participants = (side: Side) => declarationsFor(side).length;
+  /** Whether this viewer answers for that army: any user seated on it, and the GM for either. */
+  const mine = (side: Side) => viewer.decidesFor(side);
   /** An army's recovery waits in the record until the other army declares too. */
   const committed = (side: Side) => hasSubmitted(game.interactions, 'night.recovery', side);
   const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'left' ? 'Left the field' : 'Standing';
@@ -106,10 +109,10 @@
       {#if stage === 'battlefield'}
         <p class="intro">Keep fighting over this ground, or move the surviving armies to a new field. Their health, morale, and recovery results carry forward.</p>
         <div class="map-choices" role="group" aria-label="Tomorrow's map">
-          <button class:selected={!newMap} aria-pressed={!newMap} onclick={() => void attempt(chooseNextBattlefield(null))}>
+          <button class:selected={!newMap} aria-pressed={!newMap} disabled={!viewer.isGm} onclick={() => void attempt(chooseNextBattlefield(null))}>
             <span class="choice-mark">{!newMap ? '●' : '○'}</span><span><strong>Same map</strong><small>Keep this terrain, damaged walls, and emplacements.</small></span>
           </button>
-          <button class:selected={newMap} aria-pressed={newMap} onclick={() => { if (!newMap) generateNext(); }}>
+          <button class:selected={newMap} aria-pressed={newMap} disabled={!viewer.isGm} onclick={() => { if (!newMap) generateNext(); }}>
             <span class="choice-mark">{newMap ? '●' : '○'}</span><span><strong>New map</strong><small>Generate fresh ground for the next day.</small></span>
           </button>
         </div>
@@ -191,7 +194,7 @@
               </div>
               {#if stage === 'deployment'}
                 <div class="deploy-confirm">
-                  <button class:selected={deployed(side)} disabled={!sideDeployReady(side) || deployed(side)}
+                  <button class:selected={deployed(side)} disabled={!mine(side) || !sideDeployReady(side) || deployed(side)}
                     onclick={() => void attempt(declareDeployment(side, placementOf(side)))}>
                     {deployed(side) ? 'Deployment submitted' : 'Submit deployment'}
                   </button>
@@ -203,7 +206,7 @@
                   <div class="day-options" role="group" aria-label={`${side} end-of-day decision`}>
                     {#each dayOptions as option (option.id)}
                       <button class:selected={b.dayOrders?.choices[side] === option.id} aria-pressed={b.dayOrders?.choices[side] === option.id}
-                        onclick={() => void attempt(chooseDayOrder(side, option.id))}>{option.label}</button>
+                        disabled={!mine(side)} onclick={() => void attempt(chooseDayOrder(side, option.id))}>{option.label}</button>
                     {/each}
                   </div>
                   <p class="decision-description">{dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.description ?? 'Choose whether to negotiate, leave, or stay.'}</p>
@@ -211,8 +214,8 @@
                     <div class="surrender-response" role="group" aria-label={`${side} response to surrender`}>
                       <p>The {opponent} proposes surrender.</p>
                       <div class="day-options">
-                        <button onclick={() => void attempt(respondToSurrender(side, true))}>Accept surrender</button>
-                        <button onclick={() => void attempt(respondToSurrender(side, false))}>Reject proposal</button>
+                        <button disabled={!mine(side)} onclick={() => void attempt(respondToSurrender(side, true))}>Accept surrender</button>
+                        <button disabled={!mine(side)} onclick={() => void attempt(respondToSurrender(side, false))}>Reject proposal</button>
                       </div>
                     </div>
                   {/if}
@@ -232,7 +235,7 @@
                     {#if result}<p class="recovery-result">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')}<small>{result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small></p>{/if}
                   {/if}
                   {#if stage === 'deployment'}
-                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell (cell)}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
+                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} disabled={!mine(side)} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell (cell)}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
                   {/if}
                 </div>
               {/each}
@@ -253,16 +256,16 @@
         </div>
       {/if}
       <div class="footer-actions">
-        <button class="end-battle" onclick={() => void attempt(leaveBattle())}>End battle</button>
+        <button class="end-battle" disabled={!viewer.isGm} onclick={() => void attempt(leaveBattle())}>End battle</button>
         {#if stage === 'deployment'}
-          <button class="primary" disabled={!deployReady} onclick={() => void attempt(startNextDay())}>Begin day {b.day + 1}</button>
+          <button class="primary" disabled={!deployReady || !viewer.isGm} onclick={() => void attempt(startNextDay())}>Begin day {b.day + 1}</button>
         {:else if stage === 'recovery'}
           {#if resolved}
             <button class="primary" onclick={() => go('orders')}>Continue to orders</button>
           {:else}
             <button onclick={() => go('report')}>Back</button>
             {#each SIDES as side (side)}
-              <button class="primary" disabled={committed(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>
+              <button class="primary" disabled={committed(side) || !mine(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>
                 {committed(side) ? `The ${side} has declared` : `Commit ${side} recovery`}
               </button>
             {/each}
@@ -272,7 +275,7 @@
           <button class="primary" disabled={!mapReady} onclick={() => go('deployment')}>Continue to deployment</button>
         {:else if stage === 'orders' && continuing}
           <button onclick={() => go('recovery')}>Review recovery</button>
-          <button class="primary" disabled={!ordersReady} onclick={() => void finishDecisions()}>{bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
+          <button class="primary" disabled={!ordersReady || !viewer.isGm} onclick={() => void finishDecisions()}>{bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
         {:else if continuing}
           <button class="primary" onclick={() => go('recovery')}>Continue to recovery</button>
         {/if}

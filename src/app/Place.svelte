@@ -15,6 +15,7 @@
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
+  import { viewer } from './viewer.svelte.js';
 
   interface Props { side: Side }
   let { side }: Props = $props();
@@ -386,7 +387,7 @@
     <div class="readiness">
       <button
         class="primary" class:selected={ready}
-        disabled={!ready && unplaced > 0}
+        disabled={!viewer.decidesFor(side) || (!ready && unplaced > 0)}
         onclick={() => void run(declareReady(side, !ready))}
       >{ready ? 'Ready — waiting for the other army' : `The ${sideWord} force is ready`}</button>
       <small>{otherReady ? `The ${otherWord} force is ready.` : `The ${otherWord} force is still forming up.`}</small>
