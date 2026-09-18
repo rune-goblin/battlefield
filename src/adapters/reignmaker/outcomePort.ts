@@ -4,8 +4,8 @@ import type {
 
 export const REIGNMAKER_MODULE_ID = 'pf2e-reignmaker';
 
-/** What the host's module registry answers. Foundry's own `game.modules` satisfies it, and the
- * global stays in the Foundry adapter. */
+/** The host's module registry, handed in by the caller so the VTT global it reads stays inside
+ * the Foundry adapter. */
 export type ModuleLookup = (id: string) => { api?: unknown } | undefined;
 
 type ApplyBattleOutcome = (outcome: BattleOutcome, operationId: string) => Promise<unknown>;
