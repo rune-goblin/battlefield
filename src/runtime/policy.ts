@@ -115,9 +115,15 @@ export interface SeatPolicy {
   presence: PresencePort;
 }
 
-/** One local user, seated on both sides and GM of the table. The browser plays this way;
- * Wave 4.4 reads the world's users instead. */
+/** One local user, seated on both sides and GM of the table. The browser plays this way; a
+ * hosted table reads its own users instead. */
 export const hotSeatPolicy = (userId = HOT_SEAT_USER): SeatPolicy => ({
   userId,
-  presence: { online: () => true, gmUserId: () => userId, users: () => [userId] },
+  presence: {
+    online: () => true,
+    gmUserId: () => userId,
+    users: () => [userId],
+    // proto: the hot seat's own label, reserved for review with the rest of the seat wording.
+    displayName: () => 'This browser',
+  },
 });

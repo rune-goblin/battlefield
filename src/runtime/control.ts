@@ -93,3 +93,19 @@ export function seatUsers(control: SideControl, presence: PresencePort): SideCon
 export const assignControl = (
   control: SideControl, assignment: ControlAssignment, presence: PresencePort,
 ): SideControl => seatUsers({ ...assignment, next: control.next }, presence);
+
+const sameOrder = (a: string[], b: string[]): boolean =>
+  a.length === b.length && a.every((user, index) => user === b[index]);
+
+/**
+ * The seating the table's users now call for, or null when the record already holds it. The
+ * authority runs this when the host's roster changes: `auto` rebuilds the player side from it,
+ * and a manual seating loses the users the host no longer has. The null answer is what keeps a
+ * roster event that changes nothing from costing a commit.
+ */
+export function reseatAssignment(control: SideControl, presence: PresencePort): ControlAssignment | null {
+  const next = seatUsers(control, presence);
+  if (sameOrder(next.seats.attacker, control.seats.attacker)
+    && sameOrder(next.seats.defender, control.seats.defender)) return null;
+  return { mode: next.mode, gmSide: next.gmSide, seats: next.seats };
+}

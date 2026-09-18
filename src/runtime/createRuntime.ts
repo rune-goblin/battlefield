@@ -8,7 +8,7 @@ import type { BattleCommand, CommandEnvelope, CommandResult } from './commands.j
 import { recordDice } from './dice.js';
 import { createExecutor, type HistorySnapshot } from './executeCommand.js';
 import { hotSeatPolicy, type SeatPolicy } from './policy.js';
-import type { BattleArchive, DicePort, SessionRepository } from './ports.js';
+import type { BattleArchive, DicePort, SessionRepository, TableUser } from './ports.js';
 import type { BattleSession } from './session.js';
 
 export interface RuntimeOptions {
@@ -30,6 +30,8 @@ export interface Runtime {
   /** The user who answers for a side nobody holds and may issue any command. A client compares
    * it with its own user to know whether the controls it shows are live. */
   gmUserId(): string;
+  /** Everyone the host would seat, for the GM's seating controls. */
+  tableUsers(): TableUser[];
   /** Run a command as this client's user, at whatever revision the authority holds. A remote
    * client sends its own envelope, built against the revision it can see. */
   submit(command: BattleCommand): Promise<CommandResult>;
@@ -61,6 +63,9 @@ export function createRuntime({
     get history() { return executor.history; },
     userId: policy.userId,
     gmUserId: () => policy.presence.gmUserId(),
+    tableUsers: () => policy.presence.users().map((id) => ({
+      id, name: policy.presence.displayName(id), online: policy.presence.online(id),
+    })),
     submit: (command) => executor.submit(command, policy.userId),
     execute: (envelope) => executor.execute(envelope),
     subscribe: (listener) => executor.subscribe(listener),

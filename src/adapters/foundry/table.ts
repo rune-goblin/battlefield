@@ -11,7 +11,13 @@ export interface TableUsers {
   primaryGmId(): string | null;
   isActive(userId: string): boolean;
   activeUserIds(): string[];
+  /** Everyone the world holds, connected or not, with the name they are known by. Seats come
+   * from this roster, so a player who steps away for a round keeps their place. */
+  worldUsers(): WorldUser[];
 }
+
+/** A world user, as the seating reads them. */
+export interface WorldUser { id: string; name: string }
 
 export function foundryTableUsers(): TableUsers {
   return {
@@ -19,6 +25,7 @@ export function foundryTableUsers(): TableUsers {
     primaryGmId: () => game.users.activeGM?.id ?? null,
     isActive: (userId) => game.users.get(userId)?.active === true,
     activeUserIds: () => game.users.filter((user) => user.active).map((user) => user.id),
+    worldUsers: () => game.users.contents.map((user) => ({ id: user.id, name: user.name })),
   };
 }
 
@@ -29,12 +36,14 @@ export const holdsAuthority = (users: TableUsers): boolean => {
   return primary !== null && primary === users.currentUserId();
 };
 
-/** Who is at the table, for the executor's turn rotation and its permission checks. A side
- * with nobody online falls to the primary GM; Wave 4.4 builds the seating over the same port. */
+/** Who is at the table, for the executor's turn rotation, its permission checks, and the GM's
+ * seating controls. Seats come from the world's whole roster and `online` is what skips a seat
+ * whose player is away; a side with nobody online falls to the primary GM. */
 export const foundryPresence = (users: TableUsers): PresencePort => ({
   online: (userId) => users.isActive(userId),
   gmUserId: () => users.primaryGmId() ?? users.currentUserId(),
-  users: () => users.activeUserIds(),
+  users: () => users.worldUsers().map((user) => user.id),
+  displayName: (userId) => users.worldUsers().find((user) => user.id === userId)?.name ?? userId,
 });
 
 /**

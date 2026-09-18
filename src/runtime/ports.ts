@@ -53,6 +53,16 @@ export interface PresencePort {
   online(userId: string): boolean;
   /** The GM who answers for a side nobody is holding, and who may issue any command. */
   gmUserId(): string;
-  /** Every user the host would seat. `auto` control rebuilds the player side from it. */
+  /** Every user the host would seat, connected or not. `auto` control rebuilds the player side
+   * from it, and a manual seating drops the users it no longer names. */
   users(): string[];
+  /** What a seat editor calls this user. The host's own name for them, never an ID. */
+  displayName(userId: string): string;
+}
+
+/** One of the host's users, as the seating controls read them. */
+export interface TableUser {
+  id: string;
+  name: string;
+  online: boolean;
 }

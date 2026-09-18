@@ -50,7 +50,7 @@ function runtimeOn(session: BattleSession): Runtime {
   // Seated on both sides so the two armies can answer through one client, as a hot seat does.
   const policy: SeatPolicy = {
     userId: GM,
-    presence: { online: () => true, gmUserId: () => GM, users: () => [GM] },
+    presence: { online: () => true, gmUserId: () => GM, users: () => [GM], displayName: (id) => id },
   };
   return createRuntime({
     repository: fakeRepository(session), archive: fakeArchive(), session, dice: scriptedRng([10]), policy,

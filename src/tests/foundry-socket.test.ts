@@ -112,13 +112,14 @@ function fakeWorld(initial = storedSession()) {
   };
 }
 
-interface FakeTable { primaryGm: string | null; active: string[] }
+interface FakeTable { primaryGm: string | null; active: string[]; world?: string[] }
 
 const fakeUsers = (currentUserId: string, table: FakeTable): TableUsers => ({
   currentUserId: () => currentUserId,
   primaryGmId: () => table.primaryGm,
   isActive: (userId) => table.active.includes(userId),
   activeUserIds: () => [...table.active],
+  worldUsers: () => (table.world ?? [PRIMARY, SECOND_GM, PLAYER]).map((id) => ({ id, name: id })),
 });
 
 interface Client { host: BattlefieldHost; status: string[] }
@@ -279,6 +280,43 @@ describe('the socket transport and the primary GM', () => {
     expect(t.second.host.runtime!.session.revision).toBe(t.world.stored.revision);
     expect(t.second.host.runtime!.history).toHaveLength(0);
     expect(t.player.status).toContain('handoff');
+  });
+});
+
+describe('world seating on the primary GM', () => {
+  const autoSession = (): BattleSession => ({
+    ...storedSession(),
+    control: { mode: 'auto', gmSide: 'attacker', seats: { attacker: [], defender: [] }, next: { attacker: 0, defender: 0 } },
+  });
+
+  it('rebuilds the player side when the world gains a user, and commits nothing when it has not changed', async () => {
+    const table: FakeTable = { primaryGm: PRIMARY, active: [PRIMARY, PLAYER], world: [PRIMARY, PLAYER] };
+    const t = table3(fakeWorld(autoSession()), table);
+    await t.ready;
+    expect(t.world.stored.control.seats).toEqual({ attacker: [PRIMARY], defender: [PLAYER] });
+    const committed = t.world.saves;
+
+    table.world = [PRIMARY, PLAYER, SECOND_GM];
+    await t.primary.host.reseat();
+
+    expect(t.world.stored.control.seats).toEqual({ attacker: [PRIMARY], defender: [PLAYER, SECOND_GM] });
+    expect(t.world.saves).toBe(committed + 1);
+
+    await t.primary.host.reseat();
+
+    expect(t.world.saves).toBe(committed + 1);
+  });
+
+  it('leaves the seating to the primary GM', async () => {
+    const table: FakeTable = { primaryGm: PRIMARY, active: [PRIMARY, PLAYER], world: [PRIMARY, PLAYER] };
+    const t = table3(fakeWorld(autoSession()), table);
+    await t.ready;
+    const committed = t.world.saves;
+
+    table.world = [PRIMARY, PLAYER, SECOND_GM];
+    await Promise.all([t.second.host.reseat(), t.player.host.reseat()]);
+
+    expect(t.world.saves).toBe(committed);
   });
 });
 

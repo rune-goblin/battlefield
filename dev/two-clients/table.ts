@@ -14,7 +14,9 @@ export const GM = 'gm';
 export const ALICE = 'alice';
 export const BOB = 'bob';
 
-const presence: PresencePort = { online: () => true, gmUserId: () => GM, users: () => [GM, ALICE, BOB] };
+const presence: PresencePort = {
+  online: () => true, gmUserId: () => GM, users: () => [GM, ALICE, BOB], displayName: (id) => id,
+};
 
 function memoryStorage(): WebStorage {
   const items: Record<string, string> = {};

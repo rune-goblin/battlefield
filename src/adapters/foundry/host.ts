@@ -1,4 +1,5 @@
 import { newCommandId, type BattleCommand, type CommandResult, type RejectionReason } from '../../runtime/commands.js';
+import { reseatAssignment } from '../../runtime/control.js';
 import { createRuntime, type Runtime } from '../../runtime/createRuntime.js';
 import type { BattleArchive, DicePort, SessionRepository } from '../../runtime/ports.js';
 import type { BattleSession } from '../../runtime/session.js';
@@ -44,6 +45,12 @@ export interface BattlefieldHost {
    * history starts empty; the one that loses it drops its executor and sends like a player.
    */
   refresh(): Promise<void>;
+  /**
+   * Fit the seating to the users the world now holds. The primary GM commits it; every other
+   * client reads the result off the record. A roster event that changes no seat commits
+   * nothing.
+   */
+  reseat(): Promise<void>;
   /** Every message off the module channel, guarded before anything reads it. */
   handleMessage(raw: unknown): void;
   /** One command, run here when this client is the primary GM and sent over the socket when it
@@ -77,6 +84,7 @@ export function createBattlefieldHost({
   let started = false;
   let gate = closedGate();
 
+  const presence = foundryPresence(users);
   const report = (): void => onAuthority?.({ primaryGm, handingOff, unanswered });
 
   const transport = createSocketTransport({ channel, userId: () => users.currentUserId(), records });
@@ -111,7 +119,7 @@ export function createBattlefieldHost({
       archive,
       session,
       dice,
-      policy: { userId: users.currentUserId(), presence: foundryPresence(users) },
+      policy: { userId: users.currentUserId(), presence },
     });
     // This client's own executor is the one that just committed, so it is the one client that
     // should post the cards — not every client that happens to hold a copy of the record.
@@ -121,6 +129,15 @@ export function createBattlefieldHost({
     return rt;
   }
 
+  async function reseat(): Promise<void> {
+    const executor = runtime;
+    if (!executor) return;
+    const control = reseatAssignment(executor.session.control, presence);
+    // A refusal — a finalized battle, an authority that has just moved — leaves the seating
+    // where it stands, and the next roster event asks again.
+    if (control) await executor.submit({ type: 'control.assign', control });
+  }
+
   async function refresh(): Promise<void> {
     const next = users.primaryGmId();
     // A handoff is one primary giving way to another. Losing the last GM is the `absent` case,
@@ -128,7 +145,11 @@ export function createBattlefieldHost({
     if (next !== primaryGm && primaryGm !== null && next !== null) handingOff = true;
     primaryGm = next;
     const take = next !== null && next === users.currentUserId();
-    if (started && take === (runtime !== null)) { report(); return; }
+    if (started && take === (runtime !== null)) {
+      report();
+      await reseat();
+      return;
+    }
 
     if (started) gate = closedGate();
     started = true;
@@ -140,6 +161,7 @@ export function createBattlefieldHost({
       gate.open();
       report();
     }
+    await reseat();
   }
 
   async function serve(request: CommandRequestMessage): Promise<void> {
@@ -170,6 +192,7 @@ export function createBattlefieldHost({
     get session() { return runtime?.session ?? delivered; },
     transport,
     refresh,
+    reseat,
 
     handleMessage(raw) {
       const message = asSocketMessage(raw);

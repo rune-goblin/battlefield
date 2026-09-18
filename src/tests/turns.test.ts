@@ -39,7 +39,9 @@ function fakeRepository(): SessionRepository & { readonly saves: BattleSession[]
 }
 
 function presenceOf(offline: string[] = []): PresencePort {
-  return { online: (userId) => !offline.includes(userId), gmUserId: () => GM, users: () => [] };
+  return {
+    online: (userId) => !offline.includes(userId), gmUserId: () => GM, users: () => [], displayName: (id) => id,
+  };
 }
 
 function tableOf(session: BattleSession, offline: string[] = []) {

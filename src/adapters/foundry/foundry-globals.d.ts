@@ -44,6 +44,8 @@ declare const Hooks: {
   /** Fired on every client when a user connects or disconnects, which is when `activeGM` can
    * move from one client to another. */
   on(hook: 'userConnected', handler: () => void): number;
+  /** The world's roster changing, which is what `auto` seating is built from. */
+  on(hook: 'createUser' | 'updateUser' | 'deleteUser', handler: () => void): number;
 };
 
 declare const game: {
@@ -57,6 +59,8 @@ declare const game: {
   users: {
     /** The first active GM by ID, the same answer on every client, or null with none online. */
     activeGM: FoundryUser | null;
+    /** Every user document in the world, connected or not. */
+    contents: FoundryUser[];
     get(id: string): FoundryUser | undefined;
     filter(test: (user: FoundryUser) => boolean): FoundryUser[];
   };
@@ -69,6 +73,8 @@ declare const game: {
 
 interface FoundryUser {
   id: string;
+  /** The name the world knows them by, which is what a seat editor shows. */
+  name: string;
   /** Connected right now. `isGM` covers assistants too, so the primary comes from `activeGM`. */
   active: boolean;
   isGM: boolean;

@@ -15,7 +15,9 @@ const SEATED = ['A', 'B', 'D'];
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', tactics: [] };
 
-const presence: PresencePort = { online: () => true, gmUserId: () => GM, users: () => [GM, ...SEATED] };
+const presence: PresencePort = {
+  online: () => true, gmUserId: () => GM, users: () => [GM, ...SEATED], displayName: (id) => id,
+};
 const policy: SeatPolicy = { userId: GM, presence };
 
 const guard = (unitId: string): TacticalAction => ({ type: 'guard', activity: 1, unit: unitId });
