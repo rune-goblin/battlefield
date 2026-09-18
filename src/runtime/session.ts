@@ -11,9 +11,11 @@ export const RULES_VERSION = '2026-09-18';
 export type LifecycleStage = 'setup' | 'deployment' | 'battle' | 'aftermath' | 'finalized';
 const LIFECYCLE_STAGES: LifecycleStage[] = ['setup', 'deployment', 'battle', 'aftermath', 'finalized'];
 
-export interface SetupUnit { card: UnitCard; side: Side; square: string | null; engines: string[] }
+/** An engine riding with a unit, named by the library card it came from. */
+export interface SetupEquipment { id: string; name: string }
+export interface SetupUnit { id: string; card: UnitCard; side: Side; square: string | null; engines: SetupEquipment[] }
 /** An engine deployed on a square of its own. `engines` on a SetupUnit is the attached kind. */
-export interface SetupEngine { name: string; side: Side; square: string | null }
+export interface SetupEngine { id: string; name: string; side: Side; square: string | null }
 export interface BattleSetupDraft {
   spec: BoardSpec;
   board: Board | null;
@@ -40,27 +42,34 @@ export interface BattleSession {
   recentCommandIds: string[];
 }
 
-// proto: ID format reserved for review with the unit and equipment IDs of Wave 2.2.
-export const newBattleId = (): string =>
-  `battle-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+// proto: ID format reserved for review. One shape for every identity the record holds.
+const mintId = (prefix: string): string =>
+  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+export const newBattleId = (): string => mintId('battle');
+/** A piece takes its ID when it enters setup and keeps it through the battle and beyond. */
+export const newUnitId = (): string => mintId('unit');
+export const newEquipmentId = (): string => mintId('eq');
 
 export const randomSeed = () => Math.floor(Math.random() * 1e9);
 
 export function defaultSetup(): BattleSetupDraft {
   const pick = (name: string) => [...COMBATANTS, ...OFFICIAL].find((c) => c.name === name)!;
+  const unit = (name: string, side: Side, square: string): SetupUnit =>
+    ({ id: newUnitId(), card: pick(name), side, square, engines: [] });
   return {
     spec: { base: 'plains', size: 11, feature: 'none', construction: null, seed: randomSeed() },
     board: null,
     emplacements: [],
     units: [
-      { card: pick('Line Infantry'), side: 'attacker', square: 'e3', engines: [] },
-      { card: pick('Heavy Cavalry'), side: 'attacker', square: 'g3', engines: [] },
+      unit('Line Infantry', 'attacker', 'e3'),
+      unit('Heavy Cavalry', 'attacker', 'g3'),
       // Apprentice Magician Clique (L5) sits between Line Infantry (L6) and Heavy Cavalry (L7).
-      { card: pick('Apprentice Magician Clique'), side: 'attacker', square: 'f3', engines: [] },
-      { card: pick('Kobold Warriors'), side: 'defender', square: 'e9', engines: [] },
-      { card: pick('Troll Marauders'), side: 'defender', square: 'g9', engines: [] },
+      unit('Apprentice Magician Clique', 'attacker', 'f3'),
+      unit('Kobold Warriors', 'defender', 'e9'),
+      unit('Troll Marauders', 'defender', 'g9'),
       // Mitflit Vermin Cavalry (L4) sits between Kobold Warriors (L3) and Troll Marauders (L8).
-      { card: pick('Mitflit Vermin Cavalry'), side: 'defender', square: 'f9', engines: [] },
+      unit('Mitflit Vermin Cavalry', 'defender', 'f9'),
     ],
   };
 }
@@ -106,11 +115,32 @@ function isSetupDraft(value: unknown): value is BattleSetupDraft {
   return !!s && typeof s === 'object' && !!s.spec && typeof s.spec === 'object' && Array.isArray(s.units);
 }
 
-/** Fill the fields a setup gained after it was written. */
+/** Fill the fields a setup gained after it was written. A setup written before Wave 2.2 named
+ * its pieces by array position and its attached engines by name alone; both take IDs here. */
 function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
   setup.spec.size ??= (setup.board?.squares.length as 9 | 11 | undefined) ?? 11;
   setup.emplacements ??= [];
+  for (const u of setup.units) {
+    if (!u.id) u.id = newUnitId();
+    const engines = (u.engines ?? []) as (SetupEquipment | string)[];
+    u.engines = engines.map((e) => (typeof e === 'string'
+      ? { id: newEquipmentId(), name: e }
+      : { ...e, id: e.id || newEquipmentId() }));
+  }
+  for (const e of setup.emplacements) if (!e.id) e.id = newEquipmentId();
   return setup;
+}
+
+/** A battle keeps the unit IDs it was created with; its engines predate equipment IDs, and
+ * nothing outside the record referred to them, so they take fresh ones. */
+function repairBattleIds(battle: BattleState): BattleState {
+  const engines = [
+    ...battle.engines,
+    ...battle.units.flatMap((u) => u.engines),
+    ...(battle.previousBattlefields ?? []).flatMap((f) => f.engines),
+  ];
+  for (const e of engines) if (!e.id) e.id = newEquipmentId();
+  return battle;
 }
 
 export function isBattleSession(value: unknown): value is BattleSession {
@@ -129,7 +159,7 @@ export function isBattleSession(value: unknown): value is BattleSession {
 }
 
 function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleId: string): BattleSession {
-  const battle = saved && intactBattle(saved) ? migrateMorale(saved) : null;
+  const battle = saved && intactBattle(saved) ? repairBattleIds(migrateMorale(saved)) : null;
   return {
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
@@ -148,7 +178,7 @@ export function reviveSession(value: unknown): BattleSession | null {
   const s = value as BattleSession | null;
   if (!s || typeof s !== 'object' || s.schemaVersion !== SCHEMA_VERSION || !isSetupDraft(s.setup)) return null;
   repairSetup(s.setup);
-  s.battle = s.battle && intactBattle(s.battle) ? migrateMorale(s.battle) : null;
+  s.battle = s.battle && intactBattle(s.battle) ? repairBattleIds(migrateMorale(s.battle)) : null;
   s.stage = LIFECYCLE_STAGES.includes(s.stage) ? s.stage : s.battle ? 'battle' : 'setup';
   if (!s.battle && s.stage === 'battle') s.stage = 'setup';
   s.lastCommit ??= null;

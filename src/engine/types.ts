@@ -17,6 +17,8 @@ export const ACTION_BONUS = 2;
 export const ROUTED_AT = 3;
 
 export interface EngineState {
+  /** The equipment ID the piece took in setup, kept through capture, days, and export. */
+  id: string;
   name: string;
   kind: EngineKind;
   launch: number;

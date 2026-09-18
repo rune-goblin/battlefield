@@ -100,7 +100,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
   it('applies the same minimum range and flex penalty to wall bombardment',()=>{
     const b=battlefield(kind),u=unit(b,'u0');
     const wall='e6|f6';b.board.walls[wall]={tier:1,boxes:2,remaining:2};
-    u.engines.push({name:'Artillery',kind:'artillery',reach:'extreme',launch:11,side:'attacker',square:u.square,fired:false,status:'crewed',emplaced:false});
+    u.engines.push({id:'eq-artillery',name:'Artillery',kind:'artillery',reach:'extreme',launch:11,side:'attacker',square:u.square,fired:false,status:'crewed',emplaced:false});
     expect(targets(b,'shoot')).not.toContain(wall);
     u.engines[0].reach='long';
     expect(targets(b,'shoot')).toContain(wall);
@@ -167,7 +167,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
   it('measures an emplaced weapon from its hex, including sight and cover',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.stats.volley=null;u.stats.reach=null;foe.square=parse('h6');
-    b.engines.push({name:'Test engine',kind:'artillery',reach:'long',launch:11,side:'attacker',square:parse('d6'),fired:false,status:'crewed',emplaced:true});
+    b.engines.push({id:'eq-test-engine',name:'Test engine',kind:'artillery',reach:'long',launch:11,side:'attacker',square:parse('d6'),fired:false,status:'crewed',emplaced:true});
     at(b.board,u.square).elevation=2;
     expect(targets(b,'shoot')).toContain(foe.id);
     at(b.board,parse('f6')).terrain='forest';

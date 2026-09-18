@@ -43,7 +43,7 @@ describe('wounds record survival without reducing performance', () => {
     const b = state('square'); const u = b.units[0];
     const wall = edgeKey(u.square, parse('c3'));
     b.board.walls[wall] = {tier: 1, boxes: 2, remaining: 2};
-    u.engines.push({name:'Flame Bellows',kind:'artillery',launch:14,reach:'short',fired:false,emplaced:false,status:'crewed',square:u.square,side:u.side});
+    u.engines.push({id:'eq-bellows',name:'Flame Bellows',kind:'artillery',launch:14,reach:'short',fired:false,emplaced:false,status:'crewed',square:u.square,side:u.side});
     const modifier = (wounds: number) => {
       u.wounds = wounds;
       return act(select(b, u.id), {type,unit:u.id,activity:1,target:wall}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;

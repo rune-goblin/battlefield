@@ -14,8 +14,8 @@ function setupSession(): BattleSession {
     setup: {
       spec: { base: 'plains', size: 9, feature: 'none', construction: null, seed: 1 },
       board: openBoard('square', 9),
-      units: [{ card: infantry, side: 'attacker', square: 'a1', engines: [] }],
-      emplacements: [{ name: 'Ballista', side: 'attacker', square: 'b1' }],
+      units: [{ id: 'unit-1', card: infantry, side: 'attacker', square: 'a1', engines: [] }],
+      emplacements: [{ id: 'eq-1', name: 'Ballista', side: 'attacker', square: 'b1' }],
     },
   };
 }

@@ -16,7 +16,7 @@ function battle(engines: string[], wallTier?: number) {
   if (wallTier) board.walls[edgeKey(parse('c6'), parse('c7'))] = { tier: wallTier, boxes: wallTier + 1, remaining: wallTier + 1 };
   return createBattle({
     units: [
-      { card: infantry, side: 'attacker', square: 'c2', engines: engines.map(engine) },
+      { card: infantry, side: 'attacker', square: 'c2', engines: engines.map((name) => ({ card: engine(name) })) },
       { card: kobolds, side: 'defender', square: 'c7' },
     ],
     board,

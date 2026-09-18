@@ -5,7 +5,8 @@
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
-  import { game, resetSetup, save, type SetupUnit } from './game.svelte.js';
+  import { game, resetSetup, save, type SetupEngine, type SetupUnit } from './game.svelte.js';
+  import { newEquipmentId, newUnitId } from '../runtime/session.js';
 
   interface Props { side: Side }
   let { side }: Props = $props();
@@ -14,7 +15,7 @@
   const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
 
   /** What the sidebar has picked up: one of this side's units, or one of its emplacements. */
-  type Pick = { kind: 'unit' | 'engine'; i: number };
+  type Pick = { kind: 'unit' | 'engine'; id: string };
   let selected = $state<Pick | null>(null);
   // Set on a tray item's dragstart, read back from DataTransfer on drop — dragstart is the
   // only point a native drag gives Svelte a hook, so it also drives the live deploy-wash
@@ -24,21 +25,21 @@
   const units = $derived(game.setup.units);
   const emplacements = $derived(game.setup.emplacements);
   const board = $derived(game.setup.board!);
-  const mine = $derived(units.map((u, i) => ({ u, i })).filter(({ u }) => u.side === side));
-  const myEngines = $derived(emplacements.map((e, i) => ({ e, i })).filter(({ e }) => e.side === side));
+  const mine = $derived(units.filter((u) => u.side === side));
+  const myEngines = $derived(emplacements.filter((e) => e.side === side));
   const ambush = (u: SetupUnit) => (u.card.tactics ?? []).includes('ambush');
 
   // A selected piece deploys on its own side's ranks; with nothing selected the wash shows
   // this stage's side, so the player always sees where its next unit may go.
-  const picked = $derived(selected?.kind === 'unit' ? units[selected.i] : null);
+  const picked = $derived(selected?.kind === 'unit' ? units.find((u) => u.id === selected!.id) ?? null : null);
   const pickedAmbush = $derived(picked ? ambush(picked) : false);
 
   // Every square something already stands on, whichever side owns it — two pieces never
   // share a square at deployment, so the wash is the same set for units and engines alike.
   function occupied(exclude: Pick | null): Set<string> {
     const out = new Set<string>();
-    units.forEach((u, i) => { if (u.square && !(exclude?.kind === 'unit' && exclude.i === i)) out.add(u.square); });
-    emplacements.forEach((e, i) => { if (e.square && !(exclude?.kind === 'engine' && exclude.i === i)) out.add(e.square); });
+    for (const u of units) if (u.square && !(exclude?.kind === 'unit' && exclude.id === u.id)) out.add(u.square);
+    for (const e of emplacements) if (e.square && !(exclude?.kind === 'engine' && exclude.id === e.id)) out.add(e.square);
     return out;
   }
 
@@ -61,9 +62,9 @@
   let boardRef = $state<PixiBoard>();
 
   const tokens = $derived.by<TokenModel[]>(() => [
-    ...units.flatMap((u, i) => u.square ? [{
+    ...units.flatMap((u) => u.square ? [{
       kind: 'unit' as const,
-      id: `u${i}`,
+      id: u.id,
       side: u.side,
       name: u.card.name,
       role: u.card.role,
@@ -71,51 +72,56 @@
       cell: u.square,
       wounds: 0,
       disorder: 0,
-      engine: u.engines[0] ?? null,
+      engine: u.engines[0]?.name ?? null,
       prop: null,
       pick: null,
-      ring: selected?.kind === 'unit' && selected.i === i ? 'selected' as const : null,
+      ring: selected?.kind === 'unit' && selected.id === u.id ? 'selected' as const : null,
     }] : []),
-    ...emplacements.flatMap((e, i) => e.square ? [{
+    ...emplacements.flatMap((e) => e.square ? [{
       kind: 'engine' as const,
-      id: `e${i}`,
+      id: e.id,
       side: e.side,
       name: e.name,
       cell: e.square,
-      ring: selected?.kind === 'engine' && selected.i === i ? 'selected' as const : null,
+      ring: selected?.kind === 'engine' && selected.id === e.id ? 'selected' as const : null,
     }] : []),
   ]);
 
   const wallsTier = $derived(Math.max(-1, ...Object.values(board.walls).map((w) => w.tier)) + 1);
 
   function add(card: UnitCard) {
-    units.push({ card: structuredClone($state.snapshot(card)), side, square: null, engines: [] });
-    selected = { kind: 'unit', i: units.length - 1 };
+    const id = newUnitId();
+    units.push({ id, card: structuredClone($state.snapshot(card)), side, square: null, engines: [] });
+    selected = { kind: 'unit', id };
     save();
   }
 
-  function removeUnit(i: number) {
-    units.splice(i, 1);
+  function removeUnit(id: string) {
+    const i = units.findIndex((u) => u.id === id);
+    if (i >= 0) units.splice(i, 1);
     selected = null;
     save();
   }
-  function removeEmplacement(i: number) {
-    emplacements.splice(i, 1);
+  function removeEmplacement(id: string) {
+    const i = emplacements.findIndex((e) => e.id === id);
+    if (i >= 0) emplacements.splice(i, 1);
     selected = null;
     save();
   }
   function unplace(p: Pick) {
-    if (p.kind === 'unit') units[p.i].square = null;
-    else emplacements[p.i].square = null;
+    const piece = pieceAt(p);
+    if (piece) piece.square = null;
     save();
   }
 
-  const pieceAt = (p: Pick) => (p.kind === 'unit' ? units[p.i] : emplacements[p.i]);
+  const pieceAt = (p: Pick): SetupUnit | SetupEngine | undefined =>
+    (p.kind === 'unit' ? units.find((u) => u.id === p.id) : emplacements.find((e) => e.id === p.id));
 
   /** Put the selected piece down, then jump to this side's next unplaced piece. */
   function placeOn(n: string) {
-    if (!selected || !pieceAt(selected) || !highlight.has(n)) return;
-    pieceAt(selected).square = n;
+    const piece = selected && pieceAt(selected);
+    if (!piece || !highlight.has(n)) return;
+    piece.square = n;
     selected = nextUnplaced();
     save();
   }
@@ -133,21 +139,23 @@
 
   function placeAuto(p: Pick) {
     const cell = autoCell(p);
-    if (!cell || !pieceAt(p)) return;
-    pieceAt(p).square = cell;
+    const piece = pieceAt(p);
+    if (!cell || !piece) return;
+    piece.square = cell;
     selected = nextUnplaced();
     save();
   }
 
   function nextUnplaced(): Pick | null {
-    const u = mine.find(({ u }) => u.square === null);
-    if (u) return { kind: 'unit', i: u.i };
-    const e = myEngines.find(({ e }) => e.square === null);
-    return e ? { kind: 'engine', i: e.i } : null;
+    const u = mine.find((u) => u.square === null);
+    if (u) return { kind: 'unit', id: u.id };
+    const e = myEngines.find((e) => e.square === null);
+    return e ? { kind: 'engine', id: e.id } : null;
   }
 
-  const idOf = (p: Pick) => `${p.kind === 'unit' ? 'u' : 'e'}${p.i}`;
-  const pickOf = (id: string): Pick => ({ kind: id[0] === 'u' ? 'unit' : 'engine', i: Number(id.slice(1)) });
+  /** A token carries its piece's own ID, so the kind comes from which list holds it. */
+  const pickOf = (id: string): Pick =>
+    ({ kind: units.some((u) => u.id === id) ? 'unit' : 'engine', id });
 
   function onCell(e: BoardEventOf<'cell'>) { placeOn(e.cell); }
   function onToken(e: BoardEventOf<'token'>) {
@@ -172,7 +180,7 @@
   }
 
   function onTrayDragStart(p: Pick, e: DragEvent) {
-    e.dataTransfer?.setData('text/plain', idOf(p));
+    e.dataTransfer?.setData('text/plain', p.id);
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
       // Dragging the icon carries the miniature already; dragging the rest of the row would
@@ -190,9 +198,10 @@
   function onTrayDrop(cell: string | null, data: DataTransfer | null) {
     const raw = data?.getData('text/plain');
     const p = raw ? pickOf(raw) : dragging;
+    const piece = p && pieceAt(p);
     dragging = null;
-    if (cell === null || !p || !pieceAt(p) || !highlight.has(cell)) return;
-    pieceAt(p).square = cell;
+    if (cell === null || !piece || !highlight.has(cell)) return;
+    piece.square = cell;
     save();
   }
 
@@ -203,22 +212,35 @@
   // engine rides with that unit instead.
   let engineHost = $state<string>('emplace');
   function addEngine() {
+    const id = newEquipmentId();
     if (engineHost === 'emplace') {
-      emplacements.push({ name: engineName, side, square: null });
-      selected = { kind: 'engine', i: emplacements.length - 1 };
+      emplacements.push({ id, name: engineName, side, square: null });
+      selected = { kind: 'engine', id };
     } else {
-      units[Number(engineHost)]?.engines.push(engineName);
+      units.find((u) => u.id === engineHost)?.engines.push({ id, name: engineName });
     }
     save();
   }
-  function detach(u: SetupUnit, i: number) { u.engines.splice(i, 1); save(); }
+  function detach(u: SetupUnit, id: string) {
+    const i = u.engines.findIndex((e) => e.id === id);
+    if (i >= 0) u.engines.splice(i, 1);
+    save();
+  }
 
   function generate() {
     const other: Side = side === 'attacker' ? 'defender' : 'attacker';
     const opponentCards = units.filter((u) => u.side === other).map((u) => $state.snapshot(u.card) as UnitCard);
     const force = generateForce(opponentCards, seededRandom(Math.floor(Math.random() * 1e9)), { attacking: side === 'attacker', wallsTier });
     for (let i = units.length - 1; i >= 0; i--) if (units[i].side === side) units.splice(i, 1);
-    for (const { card, engine } of force) units.push({ card: structuredClone(card), side, square: null, engines: engine ? [engine.name] : [] });
+    for (const { card, engine } of force) {
+      units.push({
+        id: newUnitId(),
+        card: structuredClone(card),
+        side,
+        square: null,
+        engines: engine ? [{ id: newEquipmentId(), name: engine.name }] : [],
+      });
+    }
     selected = nextUnplaced();
     save();
   }
@@ -229,7 +251,7 @@
   };
   const engineCard = (name: string) => ENGINES.find((e) => e.name === name);
   const sideWord = $derived(side === 'attacker' ? 'attacking' : 'defending');
-  const unplaced = $derived(mine.filter(({ u }) => !u.square).length + myEngines.filter(({ e }) => !e.square).length);
+  const unplaced = $derived(mine.filter((u) => !u.square).length + myEngines.filter((e) => !e.square).length);
 </script>
 
 {#snippet grip(label: string)}
@@ -276,7 +298,7 @@
   {#snippet float()}
     <MapControls
       board={boardRef}
-      army={() => [...mine.map(({ u }) => u.square), ...myEngines.map(({ e }) => e.square)].filter((sq) => sq !== null)}
+      army={() => [...mine.map((u) => u.square), ...myEngines.map((e) => e.square)].filter((sq) => sq !== null)}
       armyLabel="Frame the {sideWord} force"
     />
   {/snippet}
@@ -307,7 +329,7 @@
         <select bind:value={engineName}>{#each ENGINES as e (e.name)}<option value={e.name}>{e.name} · L{e.level} {e.kind}{e.reach ? ' ' + e.reach : ''} +{e.launch}</option>{/each}</select>
         <select bind:value={engineHost}>
           <option value="emplace">on its own square</option>
-          {#each mine as { u, i } (i)}<option value={String(i)}>with {u.card.name}</option>{/each}
+          {#each mine as u (u.id)}<option value={u.id}>with {u.card.name}</option>{/each}
         </select>
         <button onclick={addEngine}>Add engine</button>
       </div>
@@ -320,13 +342,13 @@
 
     <h3 class={side === 'attacker' ? 'side-att' : 'side-def'}>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
     <div class="unitlist" style:--side={side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
-      {#each mine as { u, i } (i)}
-        {@const p = { kind: 'unit' as const, i }}
+      {#each mine as u (u.id)}
+        {@const p = { kind: 'unit' as const, id: u.id }}
         <div
           class="piece"
-          class:sel={selected?.kind === 'unit' && selected.i === i}
+          class:sel={selected?.kind === 'unit' && selected.id === u.id}
           class:down={!!u.square}
-          class:lift={dragging?.kind === 'unit' && dragging.i === i}
+          class:lift={dragging?.kind === 'unit' && dragging.id === u.id}
           role="button"
           tabindex="0"
           draggable="true"
@@ -341,7 +363,7 @@
               <h4 class="name">{u.card.name}</h4>
               <p class="meta">{u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(' · ') : ''}</p>
             </div>
-            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeUnit(i); }} title="Take out of the force" aria-label="Remove {u.card.name}">×</button>
+            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeUnit(u.id); }} title="Take out of the force" aria-label="Remove {u.card.name}">×</button>
           </div>
 
           {@render statBlock(u.card)}
@@ -361,8 +383,8 @@
           <div class="details">
             {@render sheetLines(u.card)}
             <p class="line where">{u.square ? `Standing on ${u.square}` : `Off the board · deploys on ${deployNote(u)}`}</p>
-            {#each u.engines as e, ei (ei)}
-              <p class="line">⚙ {e} rides along <button class="kill inline" onclick={(ev) => { ev.stopPropagation(); detach(u, ei); }} title="Leave the engine behind" aria-label="Detach {e}">×</button></p>
+            {#each u.engines as e (e.id)}
+              <p class="line">⚙ {e.name} rides along <button class="kill inline" onclick={(ev) => { ev.stopPropagation(); detach(u, e.id); }} title="Leave the engine behind" aria-label="Detach {e.name}">×</button></p>
             {/each}
           </div>
         </div>
@@ -370,15 +392,15 @@
         <p class="muted">No units yet. Add one from the roster, or generate a force.</p>
       {/each}
 
-      {#each myEngines as { e, i } (i)}
+      {#each myEngines as e (e.id)}
         {@const c = engineCard(e.name)}
         {@const art = engineArtUrl(e.name)}
-        {@const p = { kind: 'engine' as const, i }}
+        {@const p = { kind: 'engine' as const, id: e.id }}
         <div
           class="piece engine"
-          class:sel={selected?.kind === 'engine' && selected.i === i}
+          class:sel={selected?.kind === 'engine' && selected.id === e.id}
           class:down={!!e.square}
-          class:lift={dragging?.kind === 'engine' && dragging.i === i}
+          class:lift={dragging?.kind === 'engine' && dragging.id === e.id}
           role="button"
           tabindex="0"
           draggable="true"
@@ -393,7 +415,7 @@
               <h4 class="name">{e.name}</h4>
               <p class="meta">emplacement{c ? ` · ${c.kind}` : ''}</p>
             </div>
-            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeEmplacement(i); }} title="Take out of the force" aria-label="Remove {e.name}">×</button>
+            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeEmplacement(e.id); }} title="Take out of the force" aria-label="Remove {e.name}">×</button>
           </div>
 
           {#if c}

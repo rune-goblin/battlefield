@@ -921,10 +921,10 @@
     // Abandoned and captured engines stand alone on the square they were left.
     ...b.units.flatMap((u) => u.engines
       .filter((e) => e.status !== 'crewed')
-      .map((e, i): EngineTokenModel => ({ kind: 'engine', id: `${u.id}:engine:${i}`, side: u.side, name: e.name, cell: notation(e.square), ring: null }))),
+      .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: u.side, name: e.name, cell: notation(e.square), ring: null }))),
     // An emplacement is a board object in its own right, drawn whoever is working it.
-    ...b.engines.map((e, i): EngineTokenModel =>
-      ({ kind: 'engine', id: `engine:${i}`, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
+    ...b.engines.map((e): EngineTokenModel =>
+      ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ]);
 
   async function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {

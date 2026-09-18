@@ -23,10 +23,19 @@ import {
   type TargetOffer, type TargetRef, type Unit, type ManeuverAction, type ManeuverOffer,
 } from './types.js';
 
-export interface Deployment { card: UnitCard; side: Side; square: string; engines?: SiegeEngineCard[]; }
+/** An engine riding with a unit. Its `id` is the equipment ID setup gave it. */
+export interface AttachedEngine { card: SiegeEngineCard; id?: string; }
+
+export interface Deployment { id?: string; card: UnitCard; side: Side; square: string; engines?: AttachedEngine[]; }
 
 /** An engine deployed on a square of its own rather than attached to a unit. */
-export interface Emplacement { card: SiegeEngineCard; side: Side; square: string; }
+export interface Emplacement { id?: string; card: SiegeEngineCard; side: Side; square: string; }
+
+/** A deployment that carries no ID keeps the positional identity every battle used before
+ * setup minted stable ones, so a save written then still names the same units. */
+const positionalUnitId = (index: number) => `u${index}`;
+const positionalAttachedId = (unitId: string, slot: number) => `${unitId}:engine:${slot}`;
+const positionalEmplacedId = (index: number) => `engine:${index}`;
 
 export interface BattleSetup { units: Deployment[]; board: Board; engines?: Emplacement[]; roundsPerDay?: number; }
 
@@ -48,21 +57,23 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
   const roundsPerDay = setup.roundsPerDay ?? LAST_ROUND;
   if (!Number.isInteger(roundsPerDay) || roundsPerDay < 1) throw new Error('rounds per day must be a positive integer');
   const taken = new Set<string>();
-  const units: Unit[] = setup.units.map((d, i) => {
+  const units: Unit[] = setup.units.map((d, index) => {
     const traits = cardTraits(d.card);
     const sq = parse(d.square);
     if (!canDeploy(setup.board, d.side, traits.tactics.includes('ambush'), sq)) throw new Error(`${d.card.name} cannot deploy on ${d.square}`);
     if (taken.has(d.square)) throw new Error(`${d.square} is already occupied`);
     taken.add(d.square);
+    const id = d.id ?? positionalUnitId(index);
     return {
-      id: `u${i}`, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
+      id, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
       noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
-      engines: (d.engines ?? []).map((e) => engineState(e, d.side, sq, false)),
+      engines: (d.engines ?? []).map((e, slot) =>
+        engineState(e.card, e.id ?? positionalAttachedId(id, slot), d.side, sq, false)),
       square: sq, wounds: d.card.wounds ?? 0, disorder: Math.max(0, Math.min(ROUTED_AT, d.card.disorder ?? 0)), status: 'active' as const,
       guard: null, rooted: 0, exposed: false, inspired: false,
       suppressedBy: null, pinnedBy: null, frightened: false, stunned: false, persistent: null,
@@ -71,12 +82,12 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       sureFooting: false, flies: false,
     };
   });
-  const emplaced = (setup.engines ?? []).map((e) => {
+  const emplaced = (setup.engines ?? []).map((e, index) => {
     const sq = parse(e.square);
     if (!canDeploy(setup.board, e.side, false, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
     if (taken.has(e.square)) throw new Error(`${e.square} is already occupied`);
     taken.add(e.square);
-    return engineState(e.card, e.side, sq, true);
+    return engineState(e.card, e.id ?? positionalEmplacedId(index), e.side, sq, true);
   });
   const state: BattleState = {
     day: 1, roundsPerDay, night: null,
@@ -92,8 +103,8 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
   return state;
 }
 
-const engineState = (e: SiegeEngineCard, side: Side, square: Square, emplaced: boolean): EngineState =>
-  ({ name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced });
+const engineState = (e: SiegeEngineCard, id: string, side: Side, square: Square, emplaced: boolean): EngineState =>
+  ({ id, name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced });
 
 
 export const unit = (state: BattleState, id: string): Unit => {

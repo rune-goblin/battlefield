@@ -72,7 +72,7 @@ describe('three-pip morale', () => {
 
   it('normalizes imported disorder and abandons an engine on a routed starting unit', () => {
     const battle = createBattle({ board: openBoard(), units: [
-      { card: { ...caster, disorder: 6 }, side: 'attacker', square: 'c2', engines: [ENGINES.find(e => e.name === 'Catapult')!] },
+      { card: { ...caster, disorder: 6 }, side: 'attacker', square: 'c2', engines: [{ card: ENGINES.find(e => e.name === 'Catapult')! }] },
       { card: caster, side: 'defender', square: 'c7' },
     ] });
     expect(unit(battle, 'u0').disorder).toBe(ROUTED_AT);

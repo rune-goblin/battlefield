@@ -124,11 +124,11 @@ function holdAfterRecovery(state: ReturnType<typeof dusk>) {
 describe('another battlefield day', () => {
   it('previews a new map and carries survivors and recovery while archiving the old field', () => {
     const state = dusk();
-    const engine = { name: 'Catapult', kind: 'artillery' as const, launch: 12, reach: 'long' as const, fired: true,
+    const engine = { id: 'eq-catapult', name: 'Catapult', kind: 'artillery' as const, launch: 12, reach: 'long' as const, fired: true,
       status: 'crewed' as const, side: 'attacker' as const, square: parse('c2'), emplaced: false };
     state.units[0].engines = [engine];
-    state.units[3].engines = [{ ...engine, side: 'defender', status: 'abandoned', square: parse('e7') }];
-    state.engines = [{ ...engine, emplaced: true, square: parse('b2') }];
+    state.units[3].engines = [{ ...engine, id: 'eq-abandoned', side: 'defender', status: 'abandoned', square: parse('e7') }];
+    state.engines = [{ ...engine, id: 'eq-emplaced', emplaced: true, square: parse('b2') }];
     state.board.walls['a1|b1'] = { tier: 1, boxes: 2, remaining: 0 };
     state.nextBoard = openBoard('hex', 11);
     state.nextBoard.spec.seed = 17;
@@ -162,10 +162,10 @@ describe('another battlefield day', () => {
 
   it('preserves equipment ownership and recomputes emplacement crews after redeployment', () => {
     const state = dusk();
-    const engine = { name: 'Catapult', kind: 'artillery' as const, launch: 12, reach: 'long' as const, fired: true,
+    const engine = { id: 'eq-catapult', name: 'Catapult', kind: 'artillery' as const, launch: 12, reach: 'long' as const, fired: true,
       status: 'crewed' as const, side: 'attacker' as const, square: parse('c2'), emplaced: false };
     state.units[0].engines = [engine];
-    state.engines = [{ ...engine, status: 'abandoned', square: parse('b2'), emplaced: true }];
+    state.engines = [{ ...engine, id: 'eq-emplaced', status: 'abandoned', square: parse('b2'), emplaced: true }];
     const night = holdAfterRecovery(recoverAtNight(state, [], scriptedRng([10])));
     const positions = suggestDeployment(night);
     positions.u0 = 'b3';

@@ -134,14 +134,17 @@ export async function startBattle() {
         board,
         roundsPerDay: setup.roundsPerDay,
         units: setup.units.map((u) => ({
+          id: u.id,
           card: u.card,
           side: u.side,
           square: u.square!,
-          engines: u.engines.map((n) => ENGINES.find((e) => e.name === n)!).filter(Boolean),
+          engines: u.engines
+            .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)! }))
+            .filter((e) => e.card),
         })),
         engines: setup.emplacements
           .filter((e) => e.square)
-          .map((e) => ({ card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square! }))
+          .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square! }))
           .filter((e) => e.card),
       },
       randomRng,
