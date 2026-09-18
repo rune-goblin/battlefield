@@ -6,8 +6,11 @@ declare const foundry: {
 };
 
 declare const Hooks: {
-  once(hook: 'init', handler: () => void): number;
+  once(hook: 'init' | 'ready', handler: () => void): number;
   on(hook: 'getSceneControlButtons', handler: (controls: SceneControlSet) => void): number;
+  /** Fired on every client when a user connects or disconnects, which is when `activeGM` can
+   * move from one client to another. */
+  on(hook: 'userConnected', handler: () => void): number;
 };
 
 declare const game: {
@@ -17,7 +20,26 @@ declare const game: {
     get(namespace: string, key: string): string;
     set(namespace: string, key: string, value: string): Promise<string>;
   };
+  user: FoundryUser | null;
+  users: {
+    /** The first active GM by ID, the same answer on every client, or null with none online. */
+    activeGM: FoundryUser | null;
+    get(id: string): FoundryUser | undefined;
+    filter(test: (user: FoundryUser) => boolean): FoundryUser[];
+  };
+  /** The socket.io client Foundry connects with. Absent before the connection opens. */
+  socket: {
+    emit(channel: string, message: unknown): void;
+    on(channel: string, handler: (message: unknown) => void): void;
+  } | null;
 };
+
+interface FoundryUser {
+  id: string;
+  /** Connected right now. `isGM` covers assistants too, so the primary comes from `activeGM`. */
+  active: boolean;
+  isGM: boolean;
+}
 
 /** The one setting shape the adapter registers: a world-scoped string, hidden from the
  * config sheet. `onChange` carries the string Foundry stored, not the object it came from. */

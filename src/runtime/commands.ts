@@ -121,8 +121,10 @@ export interface CommandEnvelope {
   command: BattleCommand;
 }
 
-/** `storage` takes its own notice in Wave 1.4; every other reason reads as a refused command. */
-export type RejectionReason = 'battle' | 'stage' | 'revision' | 'permission' | 'unsupported' | 'engine' | 'storage';
+/** `storage` takes its own notice in Wave 1.4; every other reason reads as a refused command,
+ * except `timeout`: the authority never answered, so whether the command committed is unknown
+ * and the client waits for the next record or resends the same command ID. */
+export type RejectionReason = 'battle' | 'stage' | 'revision' | 'permission' | 'unsupported' | 'engine' | 'storage' | 'timeout';
 
 export interface CommandAccepted { ok: true; commandId: string; revision: number }
 export interface CommandRejected {
