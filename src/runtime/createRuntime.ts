@@ -1,5 +1,6 @@
 import { randomRng } from '../engine/index.js';
 import { createActionResolutionService } from '../services/ActionResolutionService.js';
+import { createArmyPreparationService } from '../services/ArmyPreparationService.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult } from './commands.js';
 import { createExecutor, type HistoryEffect, type HistorySnapshot, type SessionEdit } from './executeCommand.js';
@@ -34,6 +35,7 @@ export function createRuntime({ repository, session, dice = randomRng }: Runtime
     session,
     actions: createActionResolutionService({ dice }),
     map: createMapPreparationService(),
+    army: createArmyPreparationService(),
   });
 
   return {

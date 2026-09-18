@@ -1,10 +1,11 @@
 import {
   createBattle, ENGINES, randomRng, recoverAtNight, startNextDay,
-  type Board, type BoardSpec, type BattleState, type Side, type RecoveryChoice,
+  type Board, type BoardSpec, type BattleState, type Side, type RecoveryChoice, type UnitCard,
 } from '../engine/index.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
-import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type TacticalAction } from '../runtime/commands.js';
+import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
+import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot, SessionEdit } from '../runtime/executeCommand.js';
 import { defaultSetup, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
 import { answerSurrender, declareDayOrder, resolveDayOrders, type DayOrder } from '../engine/index.js';
@@ -64,11 +65,23 @@ function battleOf(s: BattleSession): BattleState {
 
 export const save = () => write((s) => ({ ...s, setup: $state.snapshot(game.setup) }));
 
-/** `MapPreparationService` computes the next `setup` on the executor's own copy, so the panel's
- * local one resyncs from the committed record afterward — unlike `save`, which still carries
- * the panel's own edit in, for the fields Phase 2 has yet to turn into a command. */
+/** The record's board the panel's copy was taken from. */
+let syncedBoard = runtime.session.setup.board;
+
+/** The services compute the next `setup` on the executor's own copy, so the panel's local one
+ * resyncs from the committed record afterward — unlike `save`, which still carries the panel's
+ * own edit in, for the fields Phase 2 has yet to turn into a command. The board is replaced
+ * only when the record's own changed: a fresh object costs the PIXI view a full redraw, and a
+ * placement command leaves the terrain exactly where it was. */
 function syncSetup(): void {
-  game.setup = structuredClone(runtime.session.setup);
+  const committed = runtime.session.setup;
+  const next = structuredClone(committed);
+  game.setup.spec = next.spec;
+  game.setup.units = next.units;
+  game.setup.emplacements = next.emplacements;
+  game.setup.roundsPerDay = next.roundsPerDay;
+  if (committed.board !== syncedBoard) game.setup.board = next.board;
+  syncedBoard = committed.board;
 }
 
 async function submitSetup(command: BattleCommand): Promise<CommandResult> {
@@ -83,12 +96,21 @@ export const editSpec = (spec: Partial<BoardSpec>) => submitSetup({ type: 'setup
 export const setRoundsPerDay = (roundsPerDay: number) => submitSetup({ type: 'setup.setRoundsPerDay', roundsPerDay });
 export const paintStroke = (stroke: PaintStroke) => submitSetup({ type: 'setup.paint', stroke });
 
-/** One side is ready when it has a unit and everything it owns stands on a square. */
-function readyIn(setup: Setup, side: Side): boolean {
-  const us = setup.units.filter((u) => u.side === side);
-  return us.length > 0 && us.every((u) => u.square !== null)
-    && setup.emplacements.filter((e) => e.side === side).every((e) => e.square !== null);
-}
+// Plain data crosses the command boundary: a Svelte proxy would reach `structuredClone` in the
+// service, and a socket in Phase 4.
+const plain = (piece: PieceRef): PieceRef => ({ kind: piece.kind, id: piece.id });
+
+export const addUnit = (side: Side, card: UnitCard) =>
+  submitSetup({ type: 'army.addUnit', side, card: $state.snapshot(card) as UnitCard });
+export const removeUnit = (unitId: string) => submitSetup({ type: 'army.removeUnit', unitId });
+export const addEmplacement = (side: Side, engine: string) => submitSetup({ type: 'army.addEmplacement', side, engine });
+export const removeEmplacement = (emplacementId: string) => submitSetup({ type: 'army.removeEmplacement', emplacementId });
+export const attachEquipment = (unitId: string, engine: string) => submitSetup({ type: 'army.attachEquipment', unitId, engine });
+export const detachEquipment = (unitId: string, equipmentId: string) => submitSetup({ type: 'army.detachEquipment', unitId, equipmentId });
+export const placePiece = (piece: PieceRef, square: string) => submitSetup({ type: 'army.place', piece: plain(piece), square });
+export const unplacePiece = (piece: PieceRef) => submitSetup({ type: 'army.unplace', piece: plain(piece) });
+export const autoPlacePiece = (piece: PieceRef) => submitSetup({ type: 'army.autoPlace', piece: plain(piece) });
+export const generateForce = (side: Side) => submitSetup({ type: 'army.generateForce', side });
 
 export const sideReady = (side: Side): boolean => readyIn(game.setup, side);
 

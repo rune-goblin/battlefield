@@ -1,4 +1,4 @@
-import type { Action, BoardSpec, SquareTerrain } from '../engine/index.js';
+import type { Action, BoardSpec, Side, SquareTerrain, UnitCard } from '../engine/index.js';
 
 /** Wave 1.3 makes `unit` required in the engine's `Acts`. Until then the boundary carries the
  * requirement, so an action names its unit before it reaches the executor. */
@@ -15,6 +15,9 @@ export type PaintBrush =
 
 export interface PaintStroke { cells: string[]; edges: string[]; brush: PaintBrush }
 
+/** A piece in setup: one of a side's units, or one of its emplaced engines. */
+export interface PieceRef { kind: 'unit' | 'engine'; id: string }
+
 export type BattleCommand =
   | { type: 'activation.select'; unitId: string }
   | { type: 'activation.deselect' }
@@ -24,7 +27,18 @@ export type BattleCommand =
   | { type: 'setup.rerollSeed' }
   | { type: 'setup.editSpec'; spec: Partial<BoardSpec> }
   | { type: 'setup.setRoundsPerDay'; roundsPerDay: number }
-  | { type: 'setup.paint'; stroke: PaintStroke };
+  | { type: 'setup.paint'; stroke: PaintStroke }
+  | { type: 'army.addUnit'; side: Side; card: UnitCard }
+  | { type: 'army.removeUnit'; unitId: string }
+  | { type: 'army.addEmplacement'; side: Side; engine: string }
+  | { type: 'army.removeEmplacement'; emplacementId: string }
+  | { type: 'army.attachEquipment'; unitId: string; engine: string }
+  | { type: 'army.detachEquipment'; unitId: string; equipmentId: string }
+  | { type: 'army.place'; piece: PieceRef; square: string }
+  | { type: 'army.unplace'; piece: PieceRef }
+  | { type: 'army.autoPlace'; piece: PieceRef }
+  /** The seed rides along so the authority's draw is reproducible from the envelope. */
+  | { type: 'army.generateForce'; side: Side; seed?: number };
 
 export type CommandType = BattleCommand['type'];
 
@@ -32,6 +46,9 @@ export type CommandType = BattleCommand['type'];
  * placements before one exists. The executor gates each side of this table on `session.battle`. */
 export const SETUP_COMMANDS: ReadonlySet<CommandType> = new Set([
   'setup.generate', 'setup.rerollSeed', 'setup.editSpec', 'setup.setRoundsPerDay', 'setup.paint',
+  'army.addUnit', 'army.removeUnit', 'army.addEmplacement', 'army.removeEmplacement',
+  'army.attachEquipment', 'army.detachEquipment',
+  'army.place', 'army.unplace', 'army.autoPlace', 'army.generateForce',
 ] satisfies CommandType[]);
 
 export interface CommandEnvelope {

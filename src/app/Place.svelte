@@ -1,12 +1,16 @@
 <script lang="ts">
-  import { at, COMBATANTS, deployRanks, ENGINES, derivation, generateForce, gridOf, notation, OFFICIAL, paceReason, parse, seededRandom, ROSTER, SIZE, type Side, type Square, type UnitCard } from '../engine/index.js';
+  import { COMBATANTS, deployRanks, ENGINES, derivation, OFFICIAL, paceReason, ROSTER, type Side, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
-  import { game, resetSetup, save, type SetupEngine, type SetupUnit } from './game.svelte.js';
-  import { newEquipmentId, newUnitId } from '../runtime/session.js';
+  import {
+    addEmplacement, addUnit, attachEquipment, autoPlacePiece, detachEquipment, game, generateForce,
+    placePiece, removeEmplacement, removeUnit, resetSetup, unplacePiece, type SetupEngine, type SetupUnit,
+  } from './game.svelte.js';
+  import { autoCell, cellsFor, deployableCells, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
+  import type { PieceRef } from '../runtime/commands.js';
 
   interface Props { side: Side }
   let { side }: Props = $props();
@@ -15,49 +19,25 @@
   const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
 
   /** What the sidebar has picked up: one of this side's units, or one of its emplacements. */
-  type Pick = { kind: 'unit' | 'engine'; id: string };
-  let selected = $state<Pick | null>(null);
+  let selected = $state<PieceRef | null>(null);
   // Set on a tray item's dragstart, read back from DataTransfer on drop — dragstart is the
   // only point a native drag gives Svelte a hook, so it also drives the live deploy-wash
   // highlight during that drag.
-  let dragging = $state<Pick | null>(null);
+  let dragging = $state<PieceRef | null>(null);
 
   const units = $derived(game.setup.units);
   const emplacements = $derived(game.setup.emplacements);
   const board = $derived(game.setup.board!);
   const mine = $derived(units.filter((u) => u.side === side));
   const myEngines = $derived(emplacements.filter((e) => e.side === side));
-  const ambush = (u: SetupUnit) => (u.card.tactics ?? []).includes('ambush');
 
   // A selected piece deploys on its own side's ranks; with nothing selected the wash shows
   // this stage's side, so the player always sees where its next unit may go.
   const picked = $derived(selected?.kind === 'unit' ? units.find((u) => u.id === selected!.id) ?? null : null);
-  const pickedAmbush = $derived(picked ? ambush(picked) : false);
+  const pickedAmbush = $derived(picked ? isAmbush(picked) : false);
 
-  // Every square something already stands on, whichever side owns it — two pieces never
-  // share a square at deployment, so the wash is the same set for units and engines alike.
-  function occupied(exclude: Pick | null): Set<string> {
-    const out = new Set<string>();
-    for (const u of units) if (u.square && !(exclude?.kind === 'unit' && exclude.id === u.id)) out.add(u.square);
-    for (const e of emplacements) if (e.square && !(exclude?.kind === 'engine' && exclude.id === e.id)) out.add(e.square);
-    return out;
-  }
-
-  /** The open deploy-rank cells for one piece — excluding its own square lets a placed,
-   * selected piece's current square count as a destination, which a token move needs. */
-  function deployCells(forSide: Side, forAmbush: boolean, exclude: Pick | null): Set<string> {
-    const taken = occupied(exclude);
-    const ranks = new Set(deployRanks(forSide, forAmbush, game.setup.board?.squares.length));
-    const out = new Set<string>();
-    for (const sq of gridOf(board).cells()) {
-      if (!ranks.has(sq.rank)) continue;
-      const n = notation(sq);
-      if (at(board, sq).terrain !== 'water' && !taken.has(n)) out.add(n);
-    }
-    return out;
-  }
-  const highlight = $derived(deployCells(side, pickedAmbush, selected));
-  const highlightCells = $derived([...highlight]);
+  const highlightCells = $derived(deployableCells(game.setup, side, pickedAmbush, selected));
+  const highlight = $derived(new Set(highlightCells));
 
   let boardRef = $state<PixiBoard>();
 
@@ -87,77 +67,49 @@
     }] : []),
   ]);
 
-  const wallsTier = $derived(Math.max(-1, ...Object.values(board.walls).map((w) => w.tier)) + 1);
-
-  function add(card: UnitCard) {
-    const id = newUnitId();
-    units.push({ id, card: structuredClone($state.snapshot(card)), side, square: null, engines: [] });
-    selected = { kind: 'unit', id };
-    save();
+  async function add(card: UnitCard) {
+    const result = await addUnit(side, card);
+    if (result.ok) selected = lastPick('unit');
   }
 
-  function removeUnit(id: string) {
-    const i = units.findIndex((u) => u.id === id);
-    if (i >= 0) units.splice(i, 1);
+  /** Take a piece out of the force. The tray loses it, so nothing stays selected. */
+  function drop(p: PieceRef) {
     selected = null;
-    save();
-  }
-  function removeEmplacement(id: string) {
-    const i = emplacements.findIndex((e) => e.id === id);
-    if (i >= 0) emplacements.splice(i, 1);
-    selected = null;
-    save();
-  }
-  function unplace(p: Pick) {
-    const piece = pieceAt(p);
-    if (piece) piece.square = null;
-    save();
+    return p.kind === 'unit' ? removeUnit(p.id) : removeEmplacement(p.id);
   }
 
-  const pieceAt = (p: Pick): SetupUnit | SetupEngine | undefined =>
-    (p.kind === 'unit' ? units.find((u) => u.id === p.id) : emplacements.find((e) => e.id === p.id));
+  const pieceAt = (p: PieceRef): SetupUnit | SetupEngine | undefined => pieceOf(game.setup, p);
 
   /** Put the selected piece down, then jump to this side's next unplaced piece. */
-  function placeOn(n: string) {
-    const piece = selected && pieceAt(selected);
-    if (!piece || !highlight.has(n)) return;
-    piece.square = n;
-    selected = nextUnplaced();
-    save();
-  }
-  /** Where the Place button puts a piece: nearest its own edge, then nearest the centre file. */
-  function autoCell(p: Pick): string | null {
-    const piece = pieceAt(p);
-    if (!piece) return null;
-    const forAmbush = p.kind === 'unit' && ambush(piece as SetupUnit);
-    const open = [...deployCells(piece.side, forAmbush, p)].map(parse);
-    if (!open.length) return null;
-    const home = (c: Square) => (piece.side === 'attacker' ? c.rank : (game.setup.board?.squares.length ?? SIZE) - 1 - c.rank);
-    open.sort((a, b) => home(a) - home(b) || Math.abs(a.file - (board.squares.length - 1) / 2) - Math.abs(b.file - (board.squares.length - 1) / 2));
-    return notation(open[0]);
+  async function placeOn(n: string) {
+    if (!selected || !highlight.has(n)) return;
+    const result = await placePiece(selected, n);
+    if (result.ok) selected = nextUnplaced();
   }
 
-  function placeAuto(p: Pick) {
-    const cell = autoCell(p);
-    const piece = pieceAt(p);
-    if (!cell || !piece) return;
-    piece.square = cell;
-    selected = nextUnplaced();
-    save();
+  async function placeAuto(p: PieceRef) {
+    const result = await autoPlacePiece(p);
+    if (result.ok) selected = nextUnplaced();
   }
 
-  function nextUnplaced(): Pick | null {
+  function nextUnplaced(): PieceRef | null {
     const u = mine.find((u) => u.square === null);
     if (u) return { kind: 'unit', id: u.id };
     const e = myEngines.find((e) => e.square === null);
     return e ? { kind: 'engine', id: e.id } : null;
   }
 
+  /** The piece a command just appended: the service mints its ID, so the tray names it back. */
+  function lastPick(kind: 'unit' | 'engine'): PieceRef | null {
+    const piece = (kind === 'unit' ? mine : myEngines).at(-1);
+    return piece ? { kind, id: piece.id } : null;
+  }
+
   /** A token carries its piece's own ID, so the kind comes from which list holds it. */
-  const pickOf = (id: string): Pick =>
+  const pickOf = (id: string): PieceRef =>
     ({ kind: units.some((u) => u.id === id) ? 'unit' : 'engine', id });
 
-  function onCell(e: BoardEventOf<'cell'>) { placeOn(e.cell); }
+  function onCell(e: BoardEventOf<'cell'>) { void placeOn(e.cell); }
   function onToken(e: BoardEventOf<'token'>) {
     const p = pickOf(e.id);
     // Only this stage's own pieces answer: the other side's tokens are there to deploy
@@ -173,13 +125,11 @@
     const p = pickOf(e.id);
     const piece = pieceAt(p);
     if (!piece || piece.side !== side) return;
-    const forAmbush = p.kind === 'unit' && ambush(piece as SetupUnit);
-    if (!deployCells(piece.side, forAmbush, p).has(e.cell)) return;
-    piece.square = e.cell;
-    save();
+    if (!cellsFor(game.setup, p).includes(e.cell)) return;
+    void placePiece(p, e.cell);
   }
 
-  function onTrayDragStart(p: Pick, e: DragEvent) {
+  function onTrayDragStart(p: PieceRef, e: DragEvent) {
     e.dataTransfer?.setData('text/plain', p.id);
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
@@ -198,11 +148,9 @@
   function onTrayDrop(cell: string | null, data: DataTransfer | null) {
     const raw = data?.getData('text/plain');
     const p = raw ? pickOf(raw) : dragging;
-    const piece = p && pieceAt(p);
     dragging = null;
-    if (cell === null || !piece || !highlight.has(cell)) return;
-    piece.square = cell;
-    save();
+    if (cell === null || !p || !pieceAt(p) || !highlight.has(cell)) return;
+    void placePiece(p, cell);
   }
 
   const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', reflex: 'Ref', perception: 'Per' };
@@ -211,42 +159,19 @@
   // 'emplace' drops the engine on a square of its own; anything else is a unit index and the
   // engine rides with that unit instead.
   let engineHost = $state<string>('emplace');
-  function addEngine() {
-    const id = newEquipmentId();
-    if (engineHost === 'emplace') {
-      emplacements.push({ id, name: engineName, side, square: null });
-      selected = { kind: 'engine', id };
-    } else {
-      units.find((u) => u.id === engineHost)?.engines.push({ id, name: engineName });
-    }
-    save();
-  }
-  function detach(u: SetupUnit, id: string) {
-    const i = u.engines.findIndex((e) => e.id === id);
-    if (i >= 0) u.engines.splice(i, 1);
-    save();
+  async function addEngine() {
+    if (engineHost !== 'emplace') return void attachEquipment(engineHost, engineName);
+    const result = await addEmplacement(side, engineName);
+    if (result.ok) selected = lastPick('engine');
   }
 
-  function generate() {
-    const other: Side = side === 'attacker' ? 'defender' : 'attacker';
-    const opponentCards = units.filter((u) => u.side === other).map((u) => $state.snapshot(u.card) as UnitCard);
-    const force = generateForce(opponentCards, seededRandom(Math.floor(Math.random() * 1e9)), { attacking: side === 'attacker', wallsTier });
-    for (let i = units.length - 1; i >= 0; i--) if (units[i].side === side) units.splice(i, 1);
-    for (const { card, engine } of force) {
-      units.push({
-        id: newUnitId(),
-        card: structuredClone(card),
-        side,
-        square: null,
-        engines: engine ? [{ id: newEquipmentId(), name: engine.name }] : [],
-      });
-    }
-    selected = nextUnplaced();
-    save();
+  async function generate() {
+    const result = await generateForce(side);
+    if (result.ok) selected = nextUnplaced();
   }
 
   const deployNote = (u: SetupUnit) => {
-    const ranks = deployRanks(u.side, ambush(u), game.setup.board?.squares.length).map((r) => r + 1);
+    const ranks = deployRanks(u.side, isAmbush(u), game.setup.board?.squares.length).map((r) => r + 1);
     return `ranks ${Math.min(...ranks)}–${Math.max(...ranks)}`;
   };
   const engineCard = (name: string) => ENGINES.find((e) => e.name === name);
@@ -363,7 +288,7 @@
               <h4 class="name">{u.card.name}</h4>
               <p class="meta">{u.card.role}{u.card.tactics?.length ? ' · ' + u.card.tactics.join(' · ') : ''}</p>
             </div>
-            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeUnit(u.id); }} title="Take out of the force" aria-label="Remove {u.card.name}">×</button>
+            <button class="kill" onclick={(ev) => { ev.stopPropagation(); drop(p); }} title="Take out of the force" aria-label="Remove {u.card.name}">×</button>
           </div>
 
           {@render statBlock(u.card)}
@@ -374,9 +299,9 @@
               <span class="level">{u.card.level}</span>
             </div>
             {#if u.square}
-              <button class="deploy set" onclick={(ev) => { ev.stopPropagation(); unplace(p); }} title="Take it off the board">{u.square}<span class="undo">↩</span></button>
+              <button class="deploy set" onclick={(ev) => { ev.stopPropagation(); unplacePiece(p); }} title="Take it off the board">{u.square}<span class="undo">↩</span></button>
             {:else}
-              <button class="deploy" disabled={!autoCell(p)} onclick={(ev) => { ev.stopPropagation(); placeAuto(p); }} title={`Put it on the board · ${deployNote(u)}`}>Place</button>
+              <button class="deploy" disabled={!autoCell(game.setup, p)} onclick={(ev) => { ev.stopPropagation(); placeAuto(p); }} title={`Put it on the board · ${deployNote(u)}`}>Place</button>
             {/if}
           </div>
 
@@ -384,7 +309,7 @@
             {@render sheetLines(u.card)}
             <p class="line where">{u.square ? `Standing on ${u.square}` : `Off the board · deploys on ${deployNote(u)}`}</p>
             {#each u.engines as e (e.id)}
-              <p class="line">⚙ {e.name} rides along <button class="kill inline" onclick={(ev) => { ev.stopPropagation(); detach(u, e.id); }} title="Leave the engine behind" aria-label="Detach {e.name}">×</button></p>
+              <p class="line">⚙ {e.name} rides along <button class="kill inline" onclick={(ev) => { ev.stopPropagation(); detachEquipment(u.id, e.id); }} title="Leave the engine behind" aria-label="Detach {e.name}">×</button></p>
             {/each}
           </div>
         </div>
@@ -415,7 +340,7 @@
               <h4 class="name">{e.name}</h4>
               <p class="meta">emplacement{c ? ` · ${c.kind}` : ''}</p>
             </div>
-            <button class="kill" onclick={(ev) => { ev.stopPropagation(); removeEmplacement(e.id); }} title="Take out of the force" aria-label="Remove {e.name}">×</button>
+            <button class="kill" onclick={(ev) => { ev.stopPropagation(); drop(p); }} title="Take out of the force" aria-label="Remove {e.name}">×</button>
           </div>
 
           {#if c}
@@ -432,9 +357,9 @@
               {#if c}<span class="level">{c.level}</span>{/if}
             </div>
             {#if e.square}
-              <button class="deploy set" onclick={(ev) => { ev.stopPropagation(); unplace(p); }} title="Take it off the board">{e.square}<span class="undo">↩</span></button>
+              <button class="deploy set" onclick={(ev) => { ev.stopPropagation(); unplacePiece(p); }} title="Take it off the board">{e.square}<span class="undo">↩</span></button>
             {:else}
-              <button class="deploy" disabled={!autoCell(p)} onclick={(ev) => { ev.stopPropagation(); placeAuto(p); }} title="Put it on the board">Place</button>
+              <button class="deploy" disabled={!autoCell(game.setup, p)} onclick={(ev) => { ev.stopPropagation(); placeAuto(p); }} title="Put it on the board">Place</button>
             {/if}
           </div>
 

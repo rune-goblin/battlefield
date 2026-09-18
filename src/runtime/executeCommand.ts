@@ -1,5 +1,6 @@
 import type { BattleState } from '../engine/index.js';
 import type { ActionResolutionService } from '../services/ActionResolutionService.js';
+import type { ArmyPreparationService } from '../services/ArmyPreparationService.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
 import { newCommandId, SETUP_COMMANDS, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import type { SessionRepository } from './ports.js';
@@ -22,10 +23,26 @@ const UNDOABLE: Record<CommandType, boolean> = {
   'setup.editSpec': false,
   'setup.setRoundsPerDay': false,
   'setup.paint': true,
+  'army.addUnit': false,
+  'army.removeUnit': false,
+  'army.addEmplacement': false,
+  'army.removeEmplacement': false,
+  'army.attachEquipment': false,
+  'army.detachEquipment': false,
+  'army.place': false,
+  'army.unplace': false,
+  'army.autoPlace': false,
+  'army.generateForce': false,
 };
 
+export interface Services {
+  actions: ActionResolutionService;
+  map: MapPreparationService;
+  army: ArmyPreparationService;
+}
+
 function applyCommand(
-  session: BattleSession, command: BattleCommand, actions: ActionResolutionService, map: MapPreparationService,
+  session: BattleSession, command: BattleCommand, { actions, map, army }: Services,
 ): BattleSession {
   switch (command.type) {
     case 'activation.select': return actions.select(session, command.unitId);
@@ -37,14 +54,22 @@ function applyCommand(
     case 'setup.editSpec': return map.editSpec(session, command.spec);
     case 'setup.setRoundsPerDay': return map.setRoundsPerDay(session, command.roundsPerDay);
     case 'setup.paint': return map.paint(session, command.stroke);
+    case 'army.addUnit': return army.addUnit(session, command.side, command.card);
+    case 'army.removeUnit': return army.removeUnit(session, command.unitId);
+    case 'army.addEmplacement': return army.addEmplacement(session, command.side, command.engine);
+    case 'army.removeEmplacement': return army.removeEmplacement(session, command.emplacementId);
+    case 'army.attachEquipment': return army.attachEquipment(session, command.unitId, command.engine);
+    case 'army.detachEquipment': return army.detachEquipment(session, command.unitId, command.equipmentId);
+    case 'army.place': return army.place(session, command.piece, command.square);
+    case 'army.unplace': return army.unplace(session, command.piece);
+    case 'army.autoPlace': return army.autoPlace(session, command.piece);
+    case 'army.generateForce': return army.generateForce(session, command.side, command.seed);
   }
 }
 
-export interface ExecutorOptions {
+export interface ExecutorOptions extends Services {
   repository: SessionRepository;
   session: BattleSession;
-  actions: ActionResolutionService;
-  map: MapPreparationService;
 }
 
 /** A change to the record, applied to the committed one inside the queue. A throw rejects. */
@@ -84,7 +109,7 @@ const failure = (error: unknown): string => (error instanceof Error ? error.mess
  * until the record is durable: validate, resolve, bump the revision, save, then publish.
  * A rejection returns a result and leaves the session and the undo history as they were.
  */
-export function createExecutor({ repository, session: initial, actions, map }: ExecutorOptions): Executor {
+export function createExecutor({ repository, session: initial, ...services }: ExecutorOptions): Executor {
   let session = initial;
   let history: HistorySnapshot[] = [];
   const listeners = new Set<(session: BattleSession) => void>();
@@ -136,7 +161,7 @@ export function createExecutor({ repository, session: initial, actions, map }: E
       return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
     }
 
-    return persist(commandId, (current) => applyCommand(current, command, actions, map), (previous) => {
+    return persist(commandId, (current) => applyCommand(current, command, services), (previous) => {
       if (!UNDOABLE[command.type]) return;
       history = [...history.slice(1 - HISTORY_LIMIT),
         previous.battle ? { kind: 'battle', battle: previous.battle } : { kind: 'setup', setup: previous.setup }];
