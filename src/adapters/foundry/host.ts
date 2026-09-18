@@ -75,7 +75,7 @@ export function createBattlefieldHost({
 
   const report = (): void => onAuthority?.({ primaryGm, handingOff, unanswered });
 
-  const transport = createSocketTransport({ channel, userId: users.currentUserId(), records });
+  const transport = createSocketTransport({ channel, userId: () => users.currentUserId(), records });
 
   // A delivered record is word from the authority, so it ends both the handoff this client was
   // waiting out and the doubt a lost reply left.

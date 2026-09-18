@@ -11,8 +11,9 @@ export type RecordFeed = (listener: (session: BattleSession) => void) => () => v
 
 export interface SocketTransportOptions {
   channel: SocketChannel;
-  /** This client's user, which a reply is addressed to. */
-  userId: string;
+  /** This client's user, which a reply is addressed to. Read at each reply: the module
+   * registers its socket listener at `init`, before Foundry has built `game.user`. */
+  userId: () => string;
   records: RecordFeed;
   timeoutMs?: number;
 }
@@ -57,7 +58,7 @@ export function createSocketTransport({
     },
 
     handleReply(message) {
-      if (message.targetId !== userId) return;
+      if (message.targetId !== userId()) return;
       // Unknown here means another client's reply, or one to a request that has already timed
       // out. Either way this client has nothing to settle.
       const pending = waiting.get(message.requestId);
