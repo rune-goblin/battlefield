@@ -1,3 +1,4 @@
+import type { CommandEnvelope, CommandResult } from './commands.js';
 import type { BattleSession } from './session.js';
 
 /** The one durable copy of the record. `load` always resolves: an unreadable or foreign save
@@ -34,6 +35,16 @@ export interface BattleArchive {
  * rule; Wave 3.1 wraps it to record the faces a transition drew. */
 export interface DicePort {
   d20(): number;
+}
+
+/** A client's line to the authority. `request` carries one command and waits for the reply,
+ * which names a revision and nothing more. State travels on `onRecord` alone: the authority
+ * saves the record, the host delivers it, and every client adopts it. A reply lost on the way
+ * back therefore costs nothing the next delivered record does not repair. */
+export interface TransportPort {
+  request(envelope: CommandEnvelope): Promise<CommandResult>;
+  /** Returns the call that stops the deliveries. */
+  onRecord(listener: (session: BattleSession) => void): () => void;
 }
 
 /** Who is at the table. The executor reads it when a turn opens — an offline seat is skipped
