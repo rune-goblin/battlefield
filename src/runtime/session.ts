@@ -196,6 +196,8 @@ export function reviveSession(value: unknown): BattleSession | null {
   s.battle = s.battle && intactBattle(s.battle) ? repairBattleIds(migrateMorale(s.battle)) : null;
   s.stage = LIFECYCLE_STAGES.includes(s.stage) ? s.stage : s.battle ? 'battle' : 'setup';
   if (!s.battle && s.stage === 'battle') s.stage = 'setup';
+  // proto: no schema bump for the two fields Wave 2.4 added; an empty submission is what a
+  // record written before them meant. The migration's shape is reserved for review.
   s.nightDeclarations ??= {};
   s.nextDeployment ??= {};
   s.lastCommit ??= null;

@@ -123,6 +123,18 @@ describe('the browser session repository', () => {
 });
 
 describe('the session record', () => {
+  it('fills the per-side submissions a record written before them lacks', () => {
+    const storage = fakeStorage();
+    const { nightDeclarations, nextDeployment, ...older } = freshSession();
+    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, revision: 9 }));
+
+    const loaded = loadSessionSync(storage);
+
+    expect(loaded.revision).toBe(9);
+    expect(loaded.nightDeclarations).toEqual({});
+    expect(loaded.nextDeployment).toEqual({});
+  });
+
   it('refuses a record of another schema version', () => {
     expect(migrateLegacySave({ setup: null })).toBeNull();
     expect(isBattleSession({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 })).toBe(false);
