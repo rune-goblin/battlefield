@@ -60,13 +60,21 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - 2026-09-18, Wave 1.3: the measured census undercounted by two — `melee-plan.test.ts:30` and `movement-control.test.ts:49` also omit `unit` — found by an exhaustive grep of `act(` rather than the census table, then confirmed complete by a clean `tsc --noEmit -p tsconfig.engine.json` and `npm run check`.
 - 2026-09-18, Wave 1.3: `Battle.svelte`'s `advance` and `charge` literals (lines 632–633) also need `unit`, since `Acts.unit` is required for every action type, not only `move` and `maneuver` as the wave text named; `commit()` and `performManeuver()` now guard `if (!active) return;` before naming `active.id`, matching `performActivity`'s existing guard, instead of asserting a possibly-null unit non-null.
 - 2026-09-18, Wave 1.3: `battle.test.ts`'s `refresh` helper resolves its unit via `activeUnit(state)!.id` before calling `act`, since the helper is generic over any battle state and previously relied on the engine's own fallback.
+- 2026-09-18, Wave 1.4: `// proto:` — the executor gains `change(edit, history)`, the write path for the setup, lifecycle and continuation functions Phase 2 has yet to turn into commands. Two writers would leave the executor holding a pre-night battle after `resolveNight`, and the next tactical command would act on it and publish day one again; one queue keeps one record and one order. Phase 2 removes it.
+- 2026-09-18, Wave 1.4: undo moved onto the executor (`runtime.undo`), which rewinds to the battle its own history kept and commits it under a new revision; the boundaries that cleared the prototype's stack — a committed night, a new day, resolved orders, an answered surrender, a new battle — pass `'clear'` to `change`.
+- 2026-09-18, Wave 1.4: a direct change draws a command ID and fills `lastCommit` and `recentCommandIds` like a command, so the record carries one commit shape whichever path wrote it.
+- 2026-09-18, Wave 1.4: the read store adopts `battle` and `history` from each published record and leaves `setup` alone. The setup panels edit `game.setup` continuously, and replacing that object on every save would drop an edit made between the write and the publish; `game.setup` is seeded with a `structuredClone` of the record's, so an unsaved edit never reaches the executor's copy.
+- 2026-09-18, Wave 1.4: `game.stage` stays the local setup tab and every write derives the record's lifecycle stage from the battle, as Wave 1.1 decided. `startBattle` moves the local stage only after its commit succeeds; `backToSetup` moves first, as it did.
+- 2026-09-18, Wave 1.4: `endActivation()` names the active unit from `game.battle.active`, since `activation.end` carries a unit ID. With no active unit the store refuses locally and sends nothing, in place of the old silent return.
+- 2026-09-18, Wave 1.4: `deselectUnit` still commits when the engine returns the same state, so a stray click on bare ground costs a revision and a write — the prototype saved on that click too.
+- 2026-09-18, Wave 1.4: `app/command-notices.ts` holds the `command` and `storage` IDs and one `commandReporter(notifications)` for both views. A success dismisses both notices, so a failed save stands until the next save gets through. The wording carries over from the notices it replaces: "Action unavailable" from `Battle.svelte`'s `commit` and "Changes could not be saved" from `TextureLab.svelte`.
 
 ## Open, for Mark
 
 - **Save migration shape** (Wave 1.1). The v4 stage is dropped, the lifecycle stage comes from the battle, `battleId` is `battle-<base36 time>-<random>`, and `rulesVersion` is a date. **Decision:**
 - **Stable ID format** (Wave 2.2). Wave 1.2 draws command IDs as `cmd-<base36 time>-<random>`, the battle ID's pattern. **Decision:**
 - **Event types and log tag names** (Wave 3.1). **Decision:**
-- **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). **Decision:**
+- **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). Wave 1.4 keeps "Action unavailable" for a refused command and "Changes could not be saved" for a failed write, both carried over from the notices they replace. **Decision:**
 - **Window title and scene-control tooltip** (Wave 0.2 drafted "Battlefield"; outside the reserved list, offered at gate 0). **Decision:**
 
 ## Ledger

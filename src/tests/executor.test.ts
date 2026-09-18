@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, scriptedRng, unit, type UnitCard } from '../engine/index.js';
+import { createLocalRepository, loadSessionSync, type WebStorage } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
@@ -146,6 +147,27 @@ describe('the command executor', () => {
     expect(runtime.session).toBe(committed);
     expect(runtime.history).toHaveLength(1);
     expect(repository.saves).toHaveLength(1);
+  });
+
+  it('leaves a played activation where a reload finds it', async () => {
+    const items: Record<string, string> = {};
+    const storage: WebStorage = {
+      getItem: (key) => items[key] ?? null,
+      setItem: (key, value) => { items[key] = value; },
+      removeItem: (key) => { delete items[key]; },
+    };
+    const session = battleSession();
+    const runtime = createRuntime({ repository: createLocalRepository(storage), session, dice: scriptedRng([10]) });
+
+    await runtime.submit({ type: 'activation.select', unitId: 'u0' });
+    await runtime.submit({ type: 'action.resolve', action: guard });
+    await runtime.submit({ type: 'activation.end', unitId: 'u0' });
+
+    const reloaded = loadSessionSync(storage);
+    expect(reloaded.revision).toBe(3);
+    expect(reloaded.battleId).toBe(session.battleId);
+    expect(reloaded.battle!.activated).toEqual(['u0']);
+    expect(unit(reloaded.battle!, 'u0').guard).not.toBeNull();
   });
 
   it('refuses a command built for another battle', async () => {
