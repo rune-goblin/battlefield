@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
+import type { PaintStroke } from '../runtime/commands.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
 import { openBoard } from './helpers.js';
@@ -31,7 +32,7 @@ function runtimeOn(session = setupSession()) {
   return createRuntime({ repository: fakeRepository(session), session });
 }
 
-const waterStroke = { cells: ['a1', 'b1'], edges: [], brush: { kind: 'terrain', terrain: 'water' } } as const;
+const waterStroke: PaintStroke = { cells: ['a1', 'b1'], edges: [], brush: { kind: 'terrain', terrain: 'water' } };
 
 describe('map preparation', () => {
   it('unplaces a unit and an emplacement painted underwater', async () => {
