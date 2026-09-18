@@ -111,6 +111,7 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - 2026-09-18, Wave 2.5: all three stage transitions move the local tab only after the commit is accepted, where Wave 1.4 let `backToSetup` move first. A refused `battle.returnToSetup` used to leave the player on the setup panels over a live battle, with the next setup command refused.
 - 2026-09-18, Wave 2.5: `game.setup` stays a `structuredClone` of the committed draft rather than the record's own object, now adopted inside `runtime.subscribe` in place of Wave 2.1's `syncSetup()` calls. No view writes it any more, so the clone guards only against an accidental reach into the executor's record; the board identity check of Wave 2.3 rides along unchanged.
 - 2026-09-18, Wave 2.5: `forward()` returns `go: () => Promise<CommandResult> | null` — null for the steps that only turn the page — so `StageNav` can await the one step that submits a command and report a refusal, closing the Wave 1.4 reviewer note about a silent storage failure at "Begin the battle".
+- 2026-09-18, Wave 2.5: **reserved, `// proto:`** — the transitions' refusal messages, which the `command` notice shows verbatim: "the attacker has a piece still off the board", "this battle is finalized", "the battle is still being fought", and "the day ended at dusk and the battle can go on". They join the open player-facing wording item.
 - 2026-09-18, Wave 2.5: the Svelte MCP `svelte-autofixer` was unavailable in this session, as in Waves 2.1–2.4; `npm run check`'s svelte-check pass over the six touched components stood in for it.
 
 ## Open, for Mark
@@ -118,7 +119,7 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - **Save migration shape** (Wave 1.1). The v4 stage is dropped, the lifecycle stage comes from the battle, `battleId` is `battle-<base36 time>-<random>`, and `rulesVersion` is a date. **Decision:**
 - **Stable ID format** (Wave 2.2). Units are `unit-<base36 time>-<6 random base36>`, equipment `eq-<...>`, matching the battle ID of Wave 1.1 and the command ID of Wave 1.2. A deployment that names no ID still falls back to `u0…`, which keeps the engine suite and every save written before this wave. **Decision:**
 - **Event types and log tag names** (Wave 3.1). **Decision:**
-- **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). Wave 1.4 keeps "Action unavailable" for a refused command and "Changes could not be saved" for a failed write, both carried over from the notices they replace. **Decision:**
+- **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). Wave 1.4 keeps "Action unavailable" for a refused command and "Changes could not be saved" for a failed write, both carried over from the notices they replace. Wave 2.4 adds the per-side recovery and deployment lines; Wave 2.5 adds the lifecycle refusals ("the attacker has a piece still off the board", "this battle is finalized"). **Decision:**
 - **Window title and scene-control tooltip** (Wave 0.2 drafted "Battlefield"; outside the reserved list, offered at gate 0). **Decision:**
 
 ## Ledger
