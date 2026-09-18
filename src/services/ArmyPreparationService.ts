@@ -100,10 +100,10 @@ function unitOf(setup: BattleSetupDraft, unitId: string): SetupUnit {
 }
 
 function withUnit(session: BattleSession, unitId: string, edit: (u: SetupUnit) => SetupUnit): BattleSession {
-  unitOf(session.setup, unitId);
+  const unit = unitOf(session.setup, unitId);
   return withSetup(session, {
     ...session.setup,
-    units: session.setup.units.map((u) => (u.id === unitId ? edit(u) : u)),
+    units: session.setup.units.map((u) => (u === unit ? edit(u) : u)),
   });
 }
 
