@@ -5,6 +5,7 @@ import { createBattleContinuationService } from '../services/BattleContinuationS
 import { createBattleManager } from '../services/BattleManager.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult } from './commands.js';
+import { recordDice } from './dice.js';
 import { createExecutor, type HistorySnapshot } from './executeCommand.js';
 import type { BattleArchive, DicePort, SessionRepository } from './ports.js';
 import type { BattleSession } from './session.js';
@@ -30,14 +31,17 @@ export interface Runtime {
 
 /** The one place that wires the services, the ports, and the executor together. */
 export function createRuntime({ repository, archive, session, dice = randomRng }: RuntimeOptions): Runtime {
+  // Every service rolls through the recorder, so a commit holds the faces its own rules read.
+  const recorder = recordDice(dice);
   const executor = createExecutor({
     repository,
     archive,
     session,
-    actions: createActionResolutionService({ dice }),
+    dice: recorder,
+    actions: createActionResolutionService({ dice: recorder }),
     map: createMapPreparationService(),
     army: createArmyPreparationService(),
-    continuation: createBattleContinuationService({ dice }),
+    continuation: createBattleContinuationService({ dice: recorder }),
     manager: createBattleManager(),
   });
 

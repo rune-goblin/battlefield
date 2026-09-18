@@ -107,7 +107,7 @@ describe('the browser session repository', () => {
       revision: 4,
       stage: 'battle',
       battle: battleState(),
-      lastCommit: { commandId: 'c1', events: [] },
+      lastCommit: { commandId: 'c1', events: [], dice: [] },
       recentCommandIds: ['c1'],
     };
 

@@ -2,6 +2,7 @@ import {
   COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT,
   type BattleState, type Board, type BoardSpec, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
+import type { BattleEvent } from './events.js';
 
 export const SCHEMA_VERSION = 1;
 // proto: the rules document carries no version of its own, so the record dates them. Reserved
@@ -24,10 +25,9 @@ export interface BattleSetupDraft {
   roundsPerDay?: number;
 }
 
-/** Wave 3.1 names the ten execution events; until then a commit carries the shape alone. */
-export interface BattleEvent { id: string; type: string }
-
-export interface CommitRecord { commandId: string; events: BattleEvent[] }
+/** What the last commit did and what it drew. `dice` holds the faces of the transition in
+ * order, so a chat card is rebuilt from the same numbers the rules read. */
+export interface CommitRecord { commandId: string; events: BattleEvent[]; dice: number[] }
 
 /** A side's submission for the coming night or day, held until the other side's arrives.
  * Wave 3.5 moves both under `InteractionRecord`; the shapes are the same data. */
@@ -167,7 +167,8 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && !!s.nightDeclarations && typeof s.nightDeclarations === 'object'
     && !!s.nextDeployment && typeof s.nextDeployment === 'object'
     && (s.lastCommit === null
-      || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string' && Array.isArray(s.lastCommit.events)))
+      || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string'
+        && Array.isArray(s.lastCommit.events) && Array.isArray(s.lastCommit.dice)))
     && Array.isArray(s.recentCommandIds);
 }
 
@@ -201,6 +202,12 @@ export function reviveSession(value: unknown): BattleSession | null {
   s.nightDeclarations ??= {};
   s.nextDeployment ??= {};
   s.lastCommit ??= null;
+  // A commit written before Wave 3.1 recorded neither events nor dice; an empty list is what
+  // it meant, and a record from before those fields still loads.
+  if (s.lastCommit) {
+    s.lastCommit.events ??= [];
+    s.lastCommit.dice ??= [];
+  }
   s.recentCommandIds ??= [];
   return isBattleSession(s) ? s : null;
 }

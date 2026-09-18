@@ -5,6 +5,8 @@ import type { BattleContinuationService } from '../services/BattleContinuationSe
 import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
 import { COMMAND_STAGE, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
+import type { DiceRecorder } from './dice.js';
+import { stampEvents, type BattleEventBody } from './events.js';
 import type { BattleArchive, SessionRepository } from './ports.js';
 import { migrateSession, type BattleSession, type BattleSetupDraft } from './session.js';
 
@@ -100,10 +102,15 @@ export interface ExecutorOptions extends Services {
   repository: SessionRepository;
   archive: BattleArchive;
   session: BattleSession;
+  /** The same dice the services roll, wrapped so each transition's faces reach its commit. */
+  dice: DiceRecorder;
 }
 
 /** A change to the record, applied to the committed one inside the queue. A throw rejects. */
 type SessionEdit = (session: BattleSession) => BattleSession;
+
+/** What the transition did, derived from the two records once the edit has run. */
+type EventSource = (previous: BattleSession, next: BattleSession) => BattleEventBody[];
 
 /** What an undoable commit replaced. A tactical command replaces the battle; a setup command
  * (so far, only a paint stroke) replaces the whole setup draft, board and placements together,
@@ -129,7 +136,7 @@ const failure = (error: unknown): string => (error instanceof Error ? error.mess
  * until the record is durable: validate, resolve, bump the revision, save, then publish.
  * A rejection returns a result and leaves the session and the undo history as they were.
  */
-export function createExecutor({ repository, archive, session: initial, ...services }: ExecutorOptions): Executor {
+export function createExecutor({ repository, archive, dice, session: initial, ...services }: ExecutorOptions): Executor {
   let session = initial;
   let history: HistorySnapshot[] = [];
   const listeners = new Set<(session: BattleSession) => void>();
@@ -138,24 +145,34 @@ export function createExecutor({ repository, archive, session: initial, ...servi
   const reject = (commandId: string, reason: RejectionReason, message: string): CommandResult =>
     ({ ok: false, commandId, revision: session.revision, reason, message });
 
-  function commit(next: BattleSession, commandId: string): BattleSession {
+  /** The two commands that resolve rules carry events. A setup or lifecycle command replaces
+   * whole boards and forces, which a client adopts rather than plays. */
+  function eventsOf(command: BattleCommand, previous: BattleSession, next: BattleSession): BattleEventBody[] {
+    if (command.type === 'action.resolve') return services.actions.events(previous, next, command.action);
+    if (command.type === 'activation.end') return services.actions.events(previous, next);
+    return [];
+  }
+
+  function commit(next: BattleSession, commandId: string, events: BattleEventBody[], faces: number[]): BattleSession {
     return {
       ...next,
       revision: next.revision + 1,
-      // Wave 3.1 fills the events of the transition.
-      lastCommit: { commandId, events: [] },
+      lastCommit: { commandId, events: stampEvents(commandId, events), dice: faces },
       recentCommandIds: [...next.recentCommandIds, commandId].slice(-RECENT_COMMAND_IDS),
     };
   }
 
   /** Resolve, save, then publish. `record` runs once the write is durable. */
   async function persist(
-    commandId: string, edit: SessionEdit, record: (previous: BattleSession) => void,
+    commandId: string, edit: SessionEdit, record: (previous: BattleSession) => void, describe: EventSource = () => [],
   ): Promise<CommandResult> {
     const previous = session;
     let next: BattleSession;
+    // Faces a rejected edit drew belong to no commit; drop them before this one rolls.
+    dice.take();
     try {
-      next = commit(edit(previous), commandId);
+      const edited = edit(previous);
+      next = commit(edited, commandId, describe(previous, edited), dice.take());
     } catch (error) {
       return reject(commandId, 'engine', failure(error));
     }
@@ -192,7 +209,7 @@ export function createExecutor({ repository, archive, session: initial, ...servi
       if (effect !== 'push') return;
       history = [...history.slice(1 - HISTORY_LIMIT),
         previous.battle ? { kind: 'battle', battle: previous.battle } : { kind: 'setup', setup: previous.setup }];
-    });
+    }, (previous, next) => eventsOf(command, previous, next));
   }
 
   function rewind(commandId: string): Promise<CommandResult> {
