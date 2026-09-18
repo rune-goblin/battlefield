@@ -46,6 +46,48 @@ export interface SourceBinding {
   baseline: ImportBaseline;
 }
 
+/** The absolute values a campaign writeback puts on its copy of a unit. */
+export interface WritebackValues {
+  hitPoints: number;
+  demoralized: number;
+}
+
+export type WritebackStatus = 'pending' | 'written' | 'conflict';
+
+/** Who applies the outcome: the campaign module in one call, or the troop actors one at a
+ * time. */
+export type WritebackVia = 'campaign' | 'actors';
+
+/** The single step that hands the whole outcome to a campaign module. */
+export const CAMPAIGN_TARGET = 'campaign';
+
+export interface WritebackTarget {
+  /** The unit whose actor this step writes, or `CAMPAIGN_TARGET` for the one call that hands
+   * the prepared outcome over whole. */
+  unitId: string;
+  name: string;
+  actorUuid: string | null;
+  /** Absolute, so a resumed run writes the numbers the interrupted one meant to rather than
+   * numbers derived again from a record that has moved. Null on the campaign step. */
+  desired: WritebackValues | null;
+  /** What the import read, so a retry tells an untouched copy from one edited outside the
+   * battle. Null on the campaign step. */
+  baseline: WritebackValues | null;
+  status: WritebackStatus;
+  /** Why the GM has to look at this one. */
+  problem?: string;
+}
+
+/** How far the campaign writeback got. It rides on the record, so an interrupted run resumes
+ * at the first unfinished target and a second run over a finished one writes nothing. */
+export interface WritebackRecord {
+  /** Derived from the battle ID, so the host API refuses a second application of the same
+   * battle however often it is asked. */
+  operationId: string;
+  via: WritebackVia;
+  targets: WritebackTarget[];
+}
+
 /** What the last commit did and what it drew. `dice` holds the faces of the transition in
  * order, so a chat card is rebuilt from the same numbers the rules read. `userId` is who sent
  * it, so a viewer's own commit can be told apart from another user's for the activity notice. */
@@ -67,6 +109,9 @@ export interface BattleSession {
   control: SideControl;
   /** What each imported unit came from. Empty for a battle nobody imported. */
   sources: SourceBinding[];
+  /** The campaign writeback, from the GM's confirmation to the last target. Null until one
+   * opens; it survives a reload, which is what lets an interrupted run resume. */
+  writeback: WritebackRecord | null;
   /** The user whose activation is open, named in the commit that made their side pending.
    * Null whenever no battle is running. */
   turn: string | null;
@@ -120,6 +165,7 @@ export function freshSession(battleId = newBattleId()): BattleSession {
     interactions: [],
     control: hotSeatControl(),
     sources: [],
+    writeback: null,
     turn: null,
     lastCommit: null,
     recentCommandIds: [],
@@ -189,6 +235,21 @@ const intactInteraction = (value: unknown): boolean => {
     && !!i.submissions && typeof i.submissions === 'object';
 };
 
+const isWritebackRecord = (value: unknown): value is WritebackRecord => {
+  const w = value as WritebackRecord | null;
+  return !!w && typeof w === 'object' && typeof w.operationId === 'string'
+    && (w.via === 'campaign' || w.via === 'actors') && Array.isArray(w.targets);
+};
+
+/** A writeback with a target still to write. Undo and loading stay shut while one stands: the
+ * campaign already holds part of this result. */
+export const writebackRunning = (session: BattleSession): boolean =>
+  !!session.writeback && session.writeback.targets.some((t) => t.status !== 'written');
+
+/** Every target written. The battle finalizes on this and on nothing else. */
+export const writebackComplete = (session: BattleSession): boolean =>
+  !!session.writeback && session.writeback.targets.every((t) => t.status === 'written');
+
 export function isBattleSession(value: unknown): value is BattleSession {
   const s = value as BattleSession | null;
   return !!s && typeof s === 'object'
@@ -202,6 +263,7 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && Array.isArray(s.interactions) && s.interactions.every(intactInteraction)
     && isSideControl(s.control)
     && Array.isArray(s.sources)
+    && (s.writeback === null || isWritebackRecord(s.writeback))
     && (s.turn === null || typeof s.turn === 'string')
     && (s.lastCommit === null
       || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string'
@@ -223,6 +285,7 @@ function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleI
     interactions: [],
     control: hotSeatControl(),
     sources: [],
+    writeback: null,
     turn: null,
     lastCommit: null,
     recentCommandIds: [],
@@ -268,6 +331,9 @@ export function reviveSession(value: unknown): BattleSession | null {
   // proto: no schema bump for the source bindings Wave 5.1 added. A record written before them
   // was nobody's import, and an empty list says so. The migration's shape is reserved.
   if (!Array.isArray(s.sources)) s.sources = [];
+  // proto: no schema bump for the writeback Wave 5.5 added. A record written before it applied
+  // no outcome, and a null record says so. The migration's shape is reserved.
+  if (!isWritebackRecord(s.writeback)) s.writeback = null;
   s.turn ??= null;
   s.lastCommit ??= null;
   // A commit written before Wave 3.1 recorded neither events nor dice; an empty list is what

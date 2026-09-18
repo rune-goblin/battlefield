@@ -4,6 +4,7 @@ import type { ArmyPreparationService } from '../services/ArmyPreparationService.
 import type { BattleContinuationService } from '../services/BattleContinuationService.js';
 import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
+import { abandonWriteback, beginWriteback, markWritebackTarget } from '../services/OutcomeApplicationService.js';
 import { pruneSources, sessionFromRequest, type BattleRequest } from './campaign.js';
 import { COMMAND_STAGE, newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import { openTurn, seatUsers } from './control.js';
@@ -12,7 +13,7 @@ import { stampEvents, type BattleEventBody } from './events.js';
 import { clearObsolete, dropInteraction } from './interactions.js';
 import { assignSeats, reassignTurn, refuseCommand } from './policy.js';
 import type { BattleArchive, PresencePort, SessionRepository } from './ports.js';
-import { migrateSession, type BattleSession, type BattleSetupDraft } from './session.js';
+import { migrateSession, writebackRunning, type BattleSession, type BattleSetupDraft } from './session.js';
 import type { Side } from '../engine/index.js';
 
 /** How far undo walks back, the depth the prototype's store kept. */
@@ -56,6 +57,11 @@ const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'se
   'battle.returnToSetup': 'clear',
   'battle.reset': 'clear',
   'battle.finalize': 'clear',
+  // The campaign holds part of this result the moment the first target lands, so undo closes
+  // at the start of the writeback rather than at its end.
+  'outcome.begin': 'clear',
+  'outcome.markTarget': 'keep',
+  'outcome.abandon': 'keep',
   'control.assign': 'keep',
   'turn.reassign': 'keep',
 };
@@ -70,6 +76,11 @@ export interface Services {
 
 /** What a finalized record still answers: leaving the battle, or replacing it outright. */
 const AFTER_FINAL: CommandType[] = ['battle.returnToSetup', 'session.load', 'session.install'];
+
+/** What a record answers while the campaign writeback is under way. Undo and loading are shut
+ * out: part of the result already sits in the campaign, and rewinding the battle behind it
+ * would leave the two disagreeing. */
+const DURING_WRITEBACK: CommandType[] = ['outcome.markTarget', 'outcome.abandon'];
 
 function applyCommand(
   session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' | 'session.install' }>,
@@ -109,6 +120,9 @@ function applyCommand(
     case 'battle.returnToSetup': return manager.returnToSetup(session);
     case 'battle.reset': return manager.reset(session);
     case 'battle.finalize': return manager.finalize(session);
+    case 'outcome.begin': return beginWriteback(session, command.operationId, command.via);
+    case 'outcome.markTarget': return markWritebackTarget(session, command.unitId, command.status, command.problem);
+    case 'outcome.abandon': return abandonWriteback(session);
   }
 }
 
@@ -259,6 +273,10 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     // outright with a loaded save, reopens the record.
     if (session.stage === 'finalized' && !AFTER_FINAL.includes(command.type)) {
       return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
+    }
+    // proto: the wording is reserved for review with the rest of the player-facing text.
+    if (writebackRunning(session) && !DURING_WRITEBACK.includes(command.type)) {
+      return Promise.resolve(reject(commandId, 'stage', 'the campaign outcome is being applied'));
     }
     const refusal = refuseCommand(session, command, userId, presence);
     if (refusal) return Promise.resolve(reject(commandId, 'permission', refusal));

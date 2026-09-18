@@ -5,7 +5,7 @@ import {
 } from '../engine/index.js';
 import type { PaintStroke } from '../runtime/commands.js';
 import { submissionOf } from '../runtime/interactions.js';
-import { defaultSetup, type BattleSession } from '../runtime/session.js';
+import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
 
@@ -75,10 +75,12 @@ export function createBattleManager(): BattleManager {
       ...session, ...cleared(), stage: 'battle', battle: battleFrom(session),
     }),
 
-    returnToSetup: (session) => ({ ...session, ...cleared(), stage: 'setup', battle: null }),
+    // The writeback belongs to the battle that was fought; a battle left behind takes it along,
+    // so the next one cannot resume into another battle's operation.
+    returnToSetup: (session) => ({ ...session, ...cleared(), stage: 'setup', battle: null, writeback: null }),
 
     reset: (session) => ({
-      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(), battle: null,
+      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(), battle: null, writeback: null,
     }),
 
     startNextDay: (session) => {
@@ -98,6 +100,11 @@ export function createBattleManager(): BattleManager {
       const battle = battleOf(session);
       if (battle.phase !== 'ended') throw new Error('the battle is still being fought');
       if (canContinueBattle(battle)) throw new Error('the day ended at dusk and the battle can go on');
+      // An imported battle reaches `finalized` through its writeback and no other way: the
+      // campaign holds the result before the record closes on it.
+      if ((session.sources.length > 0 || session.writeback) && !writebackComplete(session)) {
+        throw new Error('the campaign outcome has not been applied');
+      }
       return { ...session, ...cleared(), stage: 'finalized' };
     },
 

@@ -1,6 +1,7 @@
 import type { Action, BoardSpec, DayOrder, RecoveryChoice, Side, SquareTerrain, UnitCard } from '../engine/index.js';
 import type { BattleRequest } from './campaign.js';
 import type { ControlAssignment } from './control.js';
+import type { WritebackVia } from './session.js';
 
 /** Wave 1.3 makes `unit` required in the engine's `Acts`. Until then the boundary carries the
  * requirement, so an action names its unit before it reaches the executor. */
@@ -63,6 +64,15 @@ export type BattleCommand =
   | { type: 'session.undo' }
   /** Replace the running record with a saved one, migrated and installed at the next revision. */
   | { type: 'session.load'; slot: string }
+  /** Open the campaign writeback. The operation ID derives from the battle ID, and the record
+   * lists every target the run will write. Undo closes here and loading stays shut until the
+   * writeback ends. */
+  | { type: 'outcome.begin'; operationId: string; via: WritebackVia }
+  /** One target written, or one the GM has to look at before the run goes on. */
+  | { type: 'outcome.markTarget'; unitId: string; status: 'written' | 'conflict'; problem?: string }
+  /** Drop an unfinished writeback, so a conflict the GM settles elsewhere does not wedge the
+   * record behind a closed undo and a blocked load. */
+  | { type: 'outcome.abandon' }
   /** Replace the record with a battle a campaign asked for. The battle ID rides along, so the
    * caller records it whatever the authority answers and a resent command installs the same
    * battle rather than a second one. */
@@ -107,6 +117,9 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'battle.returnToSetup': 'battle',
   'battle.reset': 'setup',
   'battle.finalize': 'battle',
+  'outcome.begin': 'battle',
+  'outcome.markTarget': 'battle',
+  'outcome.abandon': 'battle',
   'control.assign': 'any',
   'turn.reassign': 'battle',
   'session.undo': 'any',
