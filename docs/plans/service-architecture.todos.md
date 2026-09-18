@@ -47,11 +47,21 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - 2026-09-18, Wave 1.1: the repository exposes `loadSessionSync` beside the async port, and `game.svelte.ts` seeds from it. Module-level `$state` is built at import, and a promise would render the default board first; Wave 1.4's read store adopts published sessions and retires this.
 - 2026-09-18, Wave 1.1: `// proto:` — a rejected save stays silent, as it was before. Wave 1.4 raises it under the `storage` notice.
 - 2026-09-18, Wave 1.1: `BattleEvent` is `{ id, type }` until Wave 3.1 names the ten event types; `lastCommit` carries the shape from the start so the record does not change again.
+- 2026-09-18, Wave 1.2: `expectedRevision` rides on every envelope and the executor does not yet enforce it — Wave 3.3 owns that, along with answering a resent command ID. Enforcing it here would refuse the second of two commands issued together, which is this wave's own ordering test.
+- 2026-09-18, Wave 1.2: the executor's validation covers the battle ID, a known command type, and a battle under way. Stage, seat, and turn permissions arrive with the policy in Wave 3.3.
+- 2026-09-18, Wave 1.2: `recentCommandIds` is recorded at each commit and capped at twenty, so the list Wave 3.3 reads exists from the first command.
+- 2026-09-18, Wave 1.2: a rejection resolves as `{ ok: false, reason, message }` rather than throwing, so Wave 1.4 reads the reason to choose between the `command` and `storage` notices, and one lost command cannot break the queue.
+- 2026-09-18, Wave 1.2: `ActionResolutionService` takes and returns the whole `BattleSession`, not the `BattleState`. It shares the executor's working record that way, and a later workflow that touches more than `battle` needs no new signature.
+- 2026-09-18, Wave 1.2: **reserved, `// proto:`** — a command ID is `cmd-<base36 time>-<6 random base36>`, matching the battle ID of Wave 1.1. It rides with the ID formats reserved for Wave 2.2.
+- 2026-09-18, Wave 1.2: `TacticalAction = Action & { unit: string }` in `runtime/commands.ts` holds the requirement at the boundary until Wave 1.3 makes `Acts.unit` required in the engine.
+- 2026-09-18, Wave 1.2: `DicePort` is declared in `runtime/ports.ts` with the engine's `Rng` shape rather than re-exporting `Rng`, so Wave 3.1 can wrap it to record faces without touching the engine. `createRuntime` defaults it to `randomRng`.
+- 2026-09-18, Wave 1.2: undo history is pushed for `action.resolve` and `activation.end` alone, capped at thirty, which is what the prototype's store did; a selection is not an activation.
+- 2026-09-18, Wave 1.2: `createRuntime` takes the loaded session rather than awaiting `repository.load`, since the browser store is seeded before its first render (the Wave 1.1 call); it exposes `submit`, which fills the envelope from the committed record, beside `execute` for a client that builds its own.
 
 ## Open, for Mark
 
 - **Save migration shape** (Wave 1.1). The v4 stage is dropped, the lifecycle stage comes from the battle, `battleId` is `battle-<base36 time>-<random>`, and `rulesVersion` is a date. **Decision:**
-- **Stable ID format** (Wave 2.2). **Decision:**
+- **Stable ID format** (Wave 2.2). Wave 1.2 draws command IDs as `cmd-<base36 time>-<random>`, the battle ID's pattern. **Decision:**
 - **Event types and log tag names** (Wave 3.1). **Decision:**
 - **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). **Decision:**
 - **Window title and scene-control tooltip** (Wave 0.2 drafted "Battlefield"; outside the reserved list, offered at gate 0). **Decision:**
