@@ -257,6 +257,15 @@ export interface Activation {
   charges: ChargeOption[];
 }
 
+// proto: the tag names are reserved for review with the list of execution events.
+/** The mark on the few log lines a comparison of two states cannot explain: a free strike,
+ * a cast, and the second die a Blast throws. Every other line is read from `check`, from the
+ * turn boundary, or from the state itself. */
+export type LogTag =
+  | { kind: 'freeStrike'; attacker: string; target: string }
+  | { kind: 'spell'; caster: string; tree: Tree; activity: ActivityIndex; targets: string[] }
+  | { kind: 'secondDie'; faces: [number, number] };
+
 export interface LogEntry {
   round: number;
   unit?: string;
@@ -264,6 +273,7 @@ export interface LogEntry {
   turn?: 'start' | 'end';
   text: string;
   check?: CheckResult;
+  tag?: LogTag;
 }
 
 export type Phase = 'battle' | 'ended';

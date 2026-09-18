@@ -20,7 +20,7 @@ import {
   type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
   type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep, type MeleePlan, type AdvanceAction,
   type Range, type ActivityAction, type ActivityOption, type ActivityTarget, type Side,
-  type TargetOffer, type TargetRef, type Unit, type ManeuverAction, type ManeuverOffer,
+  type TargetOffer, type TargetRef, type Unit, type ManeuverAction, type ManeuverOffer, type LogTag,
 } from './types.js';
 
 /** An engine riding with a unit. Its `id` is the equipment ID setup gave it. */
@@ -391,8 +391,8 @@ export function routDcFor(state: BattleState, u: Unit): number {
   return levelDc(Math.max(0, ...pool.map((e) => e.level)));
 }
 
-const log =(state: BattleState, u: Unit | null, text: string, c?: CheckResult) =>
-  state.log.push({ round: state.round, unit: u?.id, text, check: c });
+const log =(state: BattleState, u: Unit | null, text: string, c?: CheckResult, tag?: LogTag) =>
+  state.log.push({ round: state.round, unit: u?.id, text, check: c, tag });
 
 const degreeWord: Record<Degree, string> = {
   'critical-failure': 'critical failure', failure: 'failure', success: 'success', 'critical-success': 'critical success',
@@ -508,7 +508,8 @@ interface StrikeOpts { free?: boolean; pressed?: boolean; circumstance?: number;
 function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts: StrikeOpts): Degree | null {
   if (!attackGate(state, rng, u, target)) return null;
   const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + Math.max(0, (opts.circumstance ?? 0) - highGroundBonus(state, u.square, target.square)) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
-  log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+  log(state, u, `${u.name} ${opts.label} ${target.name}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c,
+    opts.free ? { kind: 'freeStrike', attacker: u.id, target: target.id } : undefined);
   const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
   applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0);
   // A charger is exposed already, so the critical miss has nothing left to take.
@@ -1313,7 +1314,8 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
   const shape = index === 1 ? [unit(state, action.target!).square] : action.target!.split('+').map(parse);
   const caught = enemiesIn(state, u, shape);
   u.attacked = true;
-  log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`);
+  log(state, u, `${u.name} casts ${activity.label} on ${shape.map(notation).join(', ')}.`, undefined,
+    { kind: 'spell', caster: u.id, tree: 'blast', activity: index, targets: caught.map((t) => t.id) });
   const modifier = spellAttackModifier(u) + ACTION_BONUS * (action.focus ?? 0);
   // Every aegis in the shape gates the cast, and one failure wastes the whole activity,
   // "actions and all" — the rule reads on the activity, not on the hex that carries it.
@@ -1331,7 +1333,8 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
   if (second !== null) {
     log(state, u, `${activity.label} is thrown twice, ${first} and ${second}: ${sureStrike
       ? 'sure strike keeps the better, and a warded hex reads the first alone'
-      : 'a warded hex keeps the worse, and the rest read the first'}.`);
+      : 'a warded hex keeps the worse, and the rest read the first'}.`, undefined,
+    { kind: 'secondDie', faces: [first, second] });
   }
   for (const target of caught) {
     const dc = defenceOf(state, target, u, true);
@@ -1401,12 +1404,13 @@ function healOne(state: BattleState, target: Unit, degree: Degree) {
 /** Translocate, the one buff that happens at cast time: the ally is set down whatever lies
  * between, and the leap is none of its own actions. No check, and no free strike from anything
  * it was in contact with. */
-function translocate(state: BattleState, u: Unit, label: string, action: ActivityAction) {
+function translocate(state: BattleState, u: Unit, label: string, index: ActivityIndex, action: ActivityAction) {
   const [home, landing] = (action.target ?? '').split('+');
   const ally = unitAt(state, parse(home));
   if (!ally || !landing) { log(state, u, `${u.name}'s ${label} finds nobody to move.`); return; }
   const held = engagedEnemies(state, ally).length > 0;
-  log(state, u, `${u.name} casts ${label} on ${ally.name}.`);
+  log(state, u, `${u.name} casts ${label} on ${ally.name}.`, undefined,
+    { kind: 'spell', caster: u.id, tree: 'movement', activity: index, targets: [ally.id] });
   moveTo(state, ally, parse(landing));
   log(state, ally, `${ally.name} is set down on ${landing}${held ? ', out of contact with nothing to strike it' : ''}.`);
 
@@ -1424,7 +1428,8 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     case 'healing': {
       const targets = action.target!.split('+').map((id) => unit(state, id));
       const activity = castActivityOf('healing', index);
-      log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`);
+      log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`, undefined,
+        { kind: 'spell', caster: u.id, tree, activity: index, targets: targets.map((t) => t.id) });
       const modifier = healingModifier(u) + ACTION_BONUS * (action.focus ?? 0);
       const cast = roll(state, rng, u, modifier, levelDc(targets[0].level));
       for (const target of targets) {
@@ -1438,7 +1443,9 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       const target = castTarget(state, u, tree, action);
       if (!target) break;
       const c = roll(state, rng, target, willModifier(target), controllingDc(u) + ACTION_BONUS * (action.focus ?? 0));
-      log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c);
+      // Controlling announces itself through the target's own save, so the tag rides there.
+      log(state, target, `${target.name} resists ${u.name}'s ${TREE_LABEL[tree]}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${degreeWord[c.degree]}.`, c,
+        { kind: 'spell', caster: u.id, tree, activity: index, targets: [target.id] });
       if (c.degree === 'critical-success') break;
       if (c.degree === 'success') {
         target.frightened = true;
@@ -1460,7 +1467,8 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       const target = castTarget(state, u, tree, action);
       if (!target) break;
       const activity = castActivityOf('offense', index);
-      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
+      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`, undefined,
+        { kind: 'spell', caster: u.id, tree, activity: index, targets: [target.id] });
       if (index === 1) {
         if (target.sureStrike) { log(state, target, `${target.name} is already rolling its next attack twice.`); break; }
         target.sureStrike = true;
@@ -1487,7 +1495,8 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       const target = castTarget(state, u, tree, action);
       if (!target) break;
       const activity = castActivityOf('defense', index);
-      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
+      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`, undefined,
+        { kind: 'spell', caster: u.id, tree, activity: index, targets: [target.id] });
       if (index === 1) {
         if (target.ward) { log(state, target, `${target.name} is already warded.`); break; }
         target.ward = true;
@@ -1508,10 +1517,11 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     }
     case 'movement': {
       const activity = castActivityOf('movement', index);
-      if (index === 3) { translocate(state, u, activity.label, action); break; }
+      if (index === 3) { translocate(state, u, activity.label, index, action); break; }
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`);
+      log(state, u, `${u.name} casts ${activity.label} on ${target.name}.`, undefined,
+        { kind: 'spell', caster: u.id, tree, activity: index, targets: [target.id] });
       if (index === 1) {
         target.sureFooting = true;
         log(state, target, `${target.name} has sure footing: every hex costs it 1 on its next activation, and a charge through rough ground still lands its +2.`);
