@@ -1,16 +1,15 @@
 <script lang="ts">
-  import { canContinueBattle, deploymentCells, FEATURES, generateBoard, HEX_TERRAINS, isStanding, MAX_WOUNDS, nextDayBattlefield,
+  import { canContinueBattle, deploymentCells, FEATURES, HEX_TERRAINS, isStanding, MAX_WOUNDS, nextDayBattlefield,
     recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
     type BoardSpec, type DayOrder, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
-  import { backToSetup, chooseDayOrder, chooseNextBattlefield, confirmDayOrders, continueBattle, game, resolveNight, respondToSurrender } from './game.svelte.js';
+  import { backToSetup, chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
-  import type { CommandResult } from '../runtime/commands.js';
   const notifications = useNotifications();
   const attempt = commandReporter(notifications);
   onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
@@ -41,14 +40,29 @@
   const survivors = $derived(b.units.filter(isStanding));
   const declarations = $derived<RecoveryChoice[]>(Object.entries(choices)
     .filter(([, activity]) => activity !== '').map(([unit, activity]) => ({ unit, activity: activity as RecoveryActivity })));
-  const participants = (side: Side) => declarations.filter((c) => b.units.find((u) => u.id === c.unit)?.side === side).length;
+  const sideOf = (unit: string) => b.units.find((u) => u.id === unit)?.side;
+  const declarationsFor = (side: Side) => declarations.filter((c) => sideOf(c.unit) === side);
+  const participants = (side: Side) => declarationsFor(side).length;
+  /** An army's recovery waits in the record until the other army declares too. */
+  const committed = (side: Side) => !!game.nightDeclarations[side];
   const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'left' ? 'Left the field' : 'Standing';
   const signed = (n: number) => n >= 0 ? `+${n}` : `−${-n}`;
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
     : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' ? `The ${b.winner === 'attacker' ? 'defender' : 'attacker'} surrenders.`
     : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);
-  const deployReady = $derived(survivors.every((u) => positions[u.id] && deploymentCells(field, u).includes(positions[u.id]))
-    && new Set(Object.values(positions)).size === survivors.length);
+  const survivorsOf = (side: Side) => survivors.filter((u) => u.side === side);
+  const placementOf = (side: Side): Record<string, string> =>
+    Object.fromEntries(survivorsOf(side).filter((u) => positions[u.id]).map((u) => [u.id, positions[u.id]]));
+  const sideDeployReady = (side: Side) => survivorsOf(side).every((u) => positions[u.id] && deploymentCells(field, u).includes(positions[u.id]))
+    && new Set(Object.values(placementOf(side))).size === survivorsOf(side).length;
+  /** The record holds the cells this army submitted; an edit since then leaves them behind. */
+  const deployed = (side: Side) => {
+    const held = game.nextDeployment[side];
+    const local = placementOf(side);
+    return !!held && Object.keys(held).length === Object.keys(local).length
+      && Object.entries(local).every(([id, cell]) => held[id] === cell);
+  };
+  const deployReady = $derived(SIDES.every((side) => !!game.nextDeployment[side]));
   const mapReady = $derived(Object.keys(suggestDeployment(field)).length === survivors.length);
   const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
     kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
@@ -61,15 +75,9 @@
   }
   $effect(() => { if (b.night !== null) positions = suggestDeployment(field); });
   function go(next: Step) { step = next; notifications.dismiss(COMMAND_NOTICE); content?.scrollTo({ top: 0 }); }
-  /** Each step reads the record the command committed, so it waits for the result first. */
-  async function runThen(pending: Promise<CommandResult>, next: Step) {
-    if ((await attempt(pending)).ok) go(next);
-  }
+  /** The authority generates tomorrow's field over the spec it already holds. */
   function generateNext(changes: Partial<BoardSpec> = {}) {
-    void attempt(chooseNextBattlefield(generateBoard({
-      ...(b.nextBoard?.spec ?? { ...b.board.spec, construction: null, seed: Math.floor(Math.random() * 1e9) }),
-      grid: b.board.grid, size: b.board.squares.length as 9 | 11, ...changes,
-    })));
+    void attempt(chooseNextBattlefield(changes));
   }
   async function finishDecisions() {
     if (!b.dayOrders?.confirmed && !(await attempt(confirmDayOrders())).ok) return;
@@ -151,7 +159,7 @@
                     {#each [{ id: '', label: 'None' }, { id: 'rally', label: 'Morale' }, { id: 'treat', label: 'Health' }] as option (option.id)}
                       <td class="recovery-option">
                         <input type="radio" name={`recovery-${u.id}`} aria-label={`${option.label} recovery for ${u.name}`}
-                          checked={activity === option.id} disabled={resolved || !isStanding(u) || (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
+                          checked={activity === option.id} disabled={resolved || committed(side) || !isStanding(u) || (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
                           onchange={() => choices[u.id] = option.id as RecoveryActivity | ''} />
                       </td>
                     {/each}
@@ -179,7 +187,15 @@
                 <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
                 <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
               </div>
-              {#if stage === 'orders' && continuing}
+              {#if stage === 'deployment'}
+                <div class="deploy-confirm">
+                  <button class:selected={deployed(side)} disabled={!sideDeployReady(side) || deployed(side)}
+                    onclick={() => void attempt(declareDeployment(side, placementOf(side)))}>
+                    {deployed(side) ? 'Deployment submitted' : 'Submit deployment'}
+                  </button>
+                  <small>{deployed(side) ? 'Waiting for both armies before the day begins.' : 'Choose a cell for every survivor, then submit.'}</small>
+                </div>
+              {:else if stage === 'orders' && continuing}
                 <div class="day-decision">
                   <strong class="decision-label">End-of-day decision</strong>
                   <div class="day-options" role="group" aria-label={`${side} end-of-day decision`}>
@@ -230,21 +246,24 @@
       {/if}
       {#if stage === 'recovery' && !resolved}
         <div class="recovery-modifiers" aria-live="polite">
-          {#each SIDES as side (side)}<p><strong>{side === 'attacker' ? 'Attacker' : 'Defender'}</strong> · {participants(side)} {participants(side) === 1 ? 'unit' : 'units'} · <b>{signed(-recoveryPenalty(participants(side)))} recovery modifier</b></p>{/each}
-          <small>All selected units roll together. Each unit also applies its own morale penalty.</small>
+          {#each SIDES as side (side)}<p><strong>{side === 'attacker' ? 'Attacker' : 'Defender'}</strong> · {participants(side)} {participants(side) === 1 ? 'unit' : 'units'} · <b>{signed(-recoveryPenalty(participants(side)))} recovery modifier</b>{#if committed(side)} · declared{/if}</p>{/each}
+          <small>Both armies declare, then every selected unit rolls together. Each unit also applies its own morale penalty.</small>
         </div>
       {/if}
       <div class="footer-actions">
         <button class="end-battle" onclick={() => void attempt(backToSetup())}>End battle</button>
         {#if stage === 'deployment'}
-          <button class="primary" disabled={!deployReady} onclick={() => void attempt(continueBattle(positions))}>Begin day {b.day + 1}</button>
+          <button class="primary" disabled={!deployReady} onclick={() => void attempt(startNextDay())}>Begin day {b.day + 1}</button>
         {:else if stage === 'recovery'}
           {#if resolved}
             <button class="primary" onclick={() => go('orders')}>Continue to orders</button>
           {:else}
             <button onclick={() => go('report')}>Back</button>
-            <button class="primary" disabled={!declarations.length} onclick={() => void runThen(resolveNight(declarations), 'recovery')}>Roll Recovery</button>
-            {#if !declarations.length}<button onclick={() => void runThen(resolveNight([]), 'orders')}>Continue without recovery</button>{/if}
+            {#each SIDES as side (side)}
+              <button class="primary" disabled={committed(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>
+                {committed(side) ? `The ${side} has declared` : `Commit ${side} recovery`}
+              </button>
+            {/each}
           {/if}
         {:else if stage === 'battlefield'}
           <button onclick={() => go('orders')}>Back</button>
@@ -287,6 +306,8 @@
   .surrender-response { margin-top: .7rem; padding: .65rem; background: var(--card); border: 1px solid var(--army-color); border-radius: 5px; }
   .surrender-response p { margin: 0; font-size: .85rem; }
   .final-decision { color: var(--army-color); font-size: .85rem; }
+  .deploy-confirm { padding: .6rem 0 .8rem; margin-bottom: .6rem; border-bottom: 1px solid color-mix(in srgb, var(--army-color) 25%, var(--rule)); }
+  .deploy-confirm button.selected { border-color: var(--army-color); background: color-mix(in srgb, var(--army-color) 15%, var(--card)); }
   .decision-status { margin: 0 0 .65rem; color: var(--muted); font-size: .85rem; }
   .army-heading { padding-bottom: .5rem; }
   h3 { margin: 0; }

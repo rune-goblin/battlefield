@@ -1,6 +1,6 @@
 import {
-  createBattle, ENGINES, randomRng, recoverAtNight, startNextDay,
-  type Board, type BoardSpec, type BattleState, type Side, type RecoveryChoice, type UnitCard,
+  createBattle, ENGINES, randomRng,
+  type BoardSpec, type Side, type RecoveryChoice, type UnitCard,
 } from '../engine/index.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
@@ -8,7 +8,7 @@ import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot, SessionEdit } from '../runtime/executeCommand.js';
 import { defaultSetup, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
-import { answerSurrender, declareDayOrder, resolveDayOrders, type DayOrder } from '../engine/index.js';
+import { type DayOrder } from '../engine/index.js';
 
 export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
 export type Setup = BattleSetupDraft;
@@ -35,12 +35,16 @@ export const game = $state({
   setup: structuredClone(runtime.session.setup),
   battle: runtime.session.battle,
   history: [] as HistorySnapshot[],
+  nightDeclarations: runtime.session.nightDeclarations,
+  nextDeployment: runtime.session.nextDeployment,
 });
 
 // The read store: every committed record lands here, whichever path wrote it.
 runtime.subscribe((session) => {
   game.battle = session.battle;
   game.history = [...runtime.history];
+  game.nightDeclarations = session.nightDeclarations;
+  game.nextDeployment = session.nextDeployment;
 });
 
 /** The record's lifecycle stage follows the battle; which setup tab is open is local. */
@@ -57,11 +61,6 @@ const submit = (command: BattleCommand) => runtime.submit(command);
 const refuse = (message: string): Promise<CommandResult> => Promise.resolve({
   ok: false, commandId: newCommandId(), revision: runtime.session.revision, reason: 'stage', message,
 });
-
-function battleOf(s: BattleSession): BattleState {
-  if (!s.battle) throw new Error('no battle is under way');
-  return s.battle;
-}
 
 export const save = () => write((s) => ({ ...s, setup: $state.snapshot(game.setup) }));
 
@@ -200,38 +199,40 @@ export async function undo(): Promise<CommandResult> {
   return result;
 }
 
+/** The night and the coming day belong to the battle that was under way; ending it drops them. */
+const ended = { nightDeclarations: {}, nextDeployment: {} };
+
 export function backToSetup() {
   game.stage = 'attackers';
-  return write((s) => ({ ...s, battle: null }), 'clear');
+  return write((s) => ({ ...s, ...ended, battle: null }), 'clear');
 }
 
-// A committed night is a new boundary: undo cannot reroll its recovery checks.
-export const resolveNight = (choices: RecoveryChoice[]) =>
-  write((s) => ({ ...s, battle: recoverAtNight(battleOf(s), choices, randomRng) }), 'clear');
-
-export const continueBattle = (positions: Record<string, string>) =>
-  write((s) => ({ ...s, battle: startNextDay(battleOf(s), positions) }), 'clear');
-
-export const chooseNextBattlefield = (board: Board | null) => write((s) => {
-  const battle = battleOf(s);
-  if (battle.phase !== 'ended' || battle.endedBy !== 'dusk') throw new Error('the day is not over');
-  return { ...s, battle: { ...battle, nextBoard: board } };
-});
+/** Each army declares its own recovery. The night rolls once the second declaration lands. */
+export const declareRecovery = (side: Side, choices: RecoveryChoice[]) =>
+  submit({ type: 'continuation.declareRecovery', side, choices: choices.map((c) => ({ ...c })) });
 
 export const chooseDayOrder = (side: Side, order: DayOrder) =>
-  write((s) => ({ ...s, battle: declareDayOrder(battleOf(s), side, order) }));
+  submit({ type: 'continuation.declareDayOrder', side, order });
 
-export const confirmDayOrders = () =>
-  write((s) => ({ ...s, battle: resolveDayOrders(battleOf(s)) }), 'clear');
+export const confirmDayOrders = () => submit({ type: 'continuation.confirmDayOrders' });
 
 export const respondToSurrender = (side: Side, accept: boolean) =>
-  write((s) => ({ ...s, battle: answerSurrender(battleOf(s), side, accept) }), 'clear');
+  submit({ type: 'continuation.answerSurrender', side, accept });
+
+/** Null keeps today's ground; a partial spec generates tomorrow's on the authority. */
+export const chooseNextBattlefield = (spec: Partial<BoardSpec> | null) =>
+  submit({ type: 'continuation.chooseBattlefield', spec: spec && { ...spec } });
+
+export const declareDeployment = (side: Side, positions: Record<string, string>) =>
+  submit({ type: 'continuation.declareDeployment', side, positions: { ...positions } });
+
+export const startNextDay = () => submit({ type: 'continuation.startNextDay' });
 
 export function resetSetup() {
   game.setup = defaultSetup();
   game.stage = 'board';
   const setup = $state.snapshot(game.setup);
-  return write((s) => ({ ...s, setup, battle: null }), 'clear');
+  return write((s) => ({ ...s, ...ended, setup, battle: null }), 'clear');
 }
 
 // Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
