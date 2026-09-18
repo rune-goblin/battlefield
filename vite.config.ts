@@ -29,6 +29,17 @@ export const terrainTextures = (): Plugin => ({
 export default defineConfig({
   plugins: [svelte(), terrainTextures()],
   base: './',
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    // The two-client dev page (Wave 3.7) rides along as a second page rather than a separate
+    // script: `vite build`'s default input is `index.html` alone, and this is the one other
+    // entry the standard gate needs to cover.
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        twoClients: fileURLToPath(new URL('./dev/two-clients/index.html', import.meta.url)),
+      },
+    },
+  },
   test: { include: ['src/tests/**/*.test.ts'] },
 });

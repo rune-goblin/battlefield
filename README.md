@@ -50,6 +50,8 @@ docs         the adapter contract and the board's API/mount doc; docs/plans hold
              plans and their judgment calls, which are history rather than rules
 dev/foundry-mount  a prototype page (`npx vite`, not part of the production build) proving the
              board mounts into a stage this code doesn't own — see docs/pixi-board.md
+dev/two-clients  two app instances over the in-memory transport and one authority, with delay
+             and drop controls per client — built by `vite build` too, at `/dev/two-clients/`
 ```
 
 `npm test` runs the engine specs. `npm run check` type-checks the app and compiles the engine with no DOM types to keep it portable.
