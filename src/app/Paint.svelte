@@ -1,63 +1,26 @@
 <script lang="ts">
   import { BRUSH_TERRAINS, sameBrush, type BoardEventOf, type Brush } from '../board/index.js';
-  import { parse, type Board } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
-  import { game, generate, save } from './game.svelte.js';
+  import { game, generate, paintStroke, undo } from './game.svelte.js';
+  import { useNotifications } from './notification-context.js';
+  import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
+  import { onDestroy } from 'svelte';
 
-  const UNDO_LIMIT = 5;
+  const notifications = useNotifications();
+  const run = commandReporter(notifications);
+  onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
 
   let brush = $state<Brush | null>({ kind: 'terrain', terrain: 'open' });
-  let undoStack = $state<Board[]>([]);
   const on = (b: Brush) => sameBrush(b, brush);
 
-  function paintCell(board: Board, key: string, b: Brush): void {
-    const sq = parse(key);
-    const square = board.squares[sq.rank][sq.file];
-    if (b.kind === 'terrain') {
-      square.terrain = b.terrain;
-      if (b.terrain === 'water') square.elevation = 0;
-    } else if (b.kind === 'elevation') {
-      square.elevation = b.level;
-    } else if (b.kind === 'erase') {
-      square.terrain = 'open';
-      square.elevation = 0;
-    }
-  }
-
-  function paintEdge(board: Board, key: string, b: Brush): void {
-    if (b.kind === 'wall') board.walls[key] = { tier: b.tier, boxes: b.tier + 1, remaining: b.tier + 1 };
-    else if (b.kind === 'wall-clear' || b.kind === 'erase') delete board.walls[key];
-  }
-
-  // One store write per stroke: the whole pending set lands on a copy, which then replaces
-  // the board. The copy doubles as the undo snapshot.
+  // The service applies the stroke and clears whatever placement it puts on water; the
+  // executor's own history holds the undo snapshot now, not a local stack here.
   function apply(event: BoardEventOf<'paint'>): void {
-    const current = game.setup.board;
-    if (!current) return;
-    const before = $state.snapshot(current) as Board;
-    const board = $state.snapshot(current) as Board;
-    for (const key of event.cells) paintCell(board, key, event.brush);
-    for (const key of event.edges) paintEdge(board, key, event.brush);
-    for (const unit of game.setup.units) {
-      if (!unit.square) continue;
-      const sq = parse(unit.square);
-      if (board.squares[sq.rank][sq.file].terrain === 'water') unit.square = null;
-    }
-    undoStack = [...undoStack, before].slice(-UNDO_LIMIT);
-    game.setup.board = board;
-    save();
-  }
-
-  function undo(): void {
-    const previous = undoStack.at(-1);
-    if (!previous) return;
-    undoStack = undoStack.slice(0, -1);
-    game.setup.board = previous;
-    save();
+    void run(paintStroke({ cells: event.cells, edges: event.edges, brush: event.brush }));
   }
 
   let boardRef = $state<PixiBoard>();
@@ -100,8 +63,8 @@
       <button class:on={on({ kind: 'wall-clear' })} onclick={() => (brush = { kind: 'wall-clear' })}>remove wall</button>
     </div>
     <div class="row">
-      <button disabled={!undoStack.length} onclick={undo}>Undo stroke</button>
-      <button onclick={generate}>Regenerate</button>
+      <button disabled={!game.history.length} onclick={() => void run(undo())}>Undo stroke</button>
+      <button onclick={() => void run(generate())}>Regenerate</button>
     </div>
     <ConnectionWarning board={game.setup.board} />
     <p class="muted">Height 1 grants +1 when attacking lower ground. Height 2 adds mountain defence and blocks shots through the hex. Forest screens grant +1 ranged cover; swamp gives −1 Defence.</p>

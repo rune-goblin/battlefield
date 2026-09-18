@@ -1,7 +1,8 @@
-import { randomRng, type BattleState } from '../engine/index.js';
+import { randomRng } from '../engine/index.js';
 import { createActionResolutionService } from '../services/ActionResolutionService.js';
+import { createMapPreparationService } from '../services/MapPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult } from './commands.js';
-import { createExecutor, type HistoryEffect, type SessionEdit } from './executeCommand.js';
+import { createExecutor, type HistoryEffect, type HistorySnapshot, type SessionEdit } from './executeCommand.js';
 import type { DicePort, SessionRepository } from './ports.js';
 import type { BattleSession } from './session.js';
 
@@ -15,7 +16,7 @@ export interface RuntimeOptions {
 
 export interface Runtime {
   readonly session: BattleSession;
-  readonly history: readonly BattleState[];
+  readonly history: readonly HistorySnapshot[];
   /** Build the envelope from the committed record and run it. The hot seat's one client is
    * always at the current revision; a remote client sends its own envelope. */
   submit(command: BattleCommand): Promise<CommandResult>;
@@ -32,6 +33,7 @@ export function createRuntime({ repository, session, dice = randomRng }: Runtime
     repository,
     session,
     actions: createActionResolutionService({ dice }),
+    map: createMapPreparationService(),
   });
 
   return {

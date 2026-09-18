@@ -1,12 +1,12 @@
 import {
-  createBattle, ENGINES, generateBoard, canDeploy, parse, randomRng, recoverAtNight, startNextDay,
-  type BattleState, type Board, type Side, type RecoveryChoice,
+  createBattle, ENGINES, randomRng, recoverAtNight, startNextDay,
+  type Board, type BoardSpec, type BattleState, type Side, type RecoveryChoice,
 } from '../engine/index.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
-import { newCommandId, type BattleCommand, type CommandResult, type TacticalAction } from '../runtime/commands.js';
-import type { SessionEdit } from '../runtime/executeCommand.js';
-import { defaultSetup, randomSeed, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
+import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type TacticalAction } from '../runtime/commands.js';
+import type { HistorySnapshot, SessionEdit } from '../runtime/executeCommand.js';
+import { defaultSetup, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
 import { answerSurrender, declareDayOrder, resolveDayOrders, type DayOrder } from '../engine/index.js';
 
 export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
@@ -33,7 +33,7 @@ export const game = $state({
   // copy stays untouched between saves.
   setup: structuredClone(runtime.session.setup),
   battle: runtime.session.battle,
-  history: [] as BattleState[],
+  history: [] as HistorySnapshot[],
 });
 
 // The read store: every committed record lands here, whichever path wrote it.
@@ -64,18 +64,24 @@ function battleOf(s: BattleSession): BattleState {
 
 export const save = () => write((s) => ({ ...s, setup: $state.snapshot(game.setup) }));
 
-export function generate() {
-  const board = generateBoard($state.snapshot(game.setup.spec));
-  game.setup.board = board;
-  for (const u of game.setup.units) if (u.square && !canDeploy(board, u.side, u.card.tactics?.includes('ambush') ?? false, parse(u.square))) u.square = null;
-  for (const e of game.setup.emplacements) if (e.square && !canDeploy(board, e.side, false, parse(e.square))) e.square = null;
-  return save();
+/** `MapPreparationService` computes the next `setup` on the executor's own copy, so the panel's
+ * local one resyncs from the committed record afterward — unlike `save`, which still carries
+ * the panel's own edit in, for the fields Phase 2 has yet to turn into a command. */
+function syncSetup(): void {
+  game.setup = structuredClone(runtime.session.setup);
 }
 
-export function rerollSeed() {
-  game.setup.spec.seed = randomSeed();
-  return generate();
+async function submitSetup(command: BattleCommand): Promise<CommandResult> {
+  const result = await submit(command);
+  if (result.ok) syncSetup();
+  return result;
 }
+
+export const generate = () => submitSetup({ type: 'setup.generate' });
+export const rerollSeed = () => submitSetup({ type: 'setup.rerollSeed' });
+export const editSpec = (spec: Partial<BoardSpec>) => submitSetup({ type: 'setup.editSpec', spec });
+export const setRoundsPerDay = (roundsPerDay: number) => submitSetup({ type: 'setup.setRoundsPerDay', roundsPerDay });
+export const paintStroke = (stroke: PaintStroke) => submitSetup({ type: 'setup.paint', stroke });
 
 /** One side is ready when it has a unit and everything it owns stands on a square. */
 function readyIn(setup: Setup, side: Side): boolean {
@@ -161,7 +167,13 @@ export function endActivation() {
   return id ? submit({ type: 'activation.end', unitId: id }) : refuse('no unit is activating');
 }
 
-export const undo = () => runtime.undo();
+/** A setup undo restores a whole `BattleSetupDraft` snapshot; resync the local copy the same
+ * way a setup command does. A battle undo leaves `setup` untouched, so this is a no-op then. */
+export async function undo(): Promise<CommandResult> {
+  const result = await runtime.undo();
+  if (result.ok) syncSetup();
+  return result;
+}
 
 export function backToSetup() {
   game.stage = 'attackers';

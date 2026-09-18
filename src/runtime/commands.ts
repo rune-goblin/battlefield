@@ -1,16 +1,38 @@
-import type { Action } from '../engine/index.js';
+import type { Action, BoardSpec, SquareTerrain } from '../engine/index.js';
 
 /** Wave 1.3 makes `unit` required in the engine's `Acts`. Until then the boundary carries the
  * requirement, so an action names its unit before it reaches the executor. */
 export type TacticalAction = Action & { unit: string };
 
+/** Mirrors `board/brush.ts`'s `Brush` structurally, declared fresh so `runtime` names no type
+ * from `src/board` — the command boundary carries plain data, not a board-library import. */
+export type PaintBrush =
+  | { kind: 'terrain'; terrain: SquareTerrain }
+  | { kind: 'elevation'; level: number }
+  | { kind: 'wall'; tier: number }
+  | { kind: 'wall-clear' }
+  | { kind: 'erase' };
+
+export interface PaintStroke { cells: string[]; edges: string[]; brush: PaintBrush }
+
 export type BattleCommand =
   | { type: 'activation.select'; unitId: string }
   | { type: 'activation.deselect' }
   | { type: 'action.resolve'; action: TacticalAction }
-  | { type: 'activation.end'; unitId: string };
+  | { type: 'activation.end'; unitId: string }
+  | { type: 'setup.generate' }
+  | { type: 'setup.rerollSeed' }
+  | { type: 'setup.editSpec'; spec: Partial<BoardSpec> }
+  | { type: 'setup.setRoundsPerDay'; roundsPerDay: number }
+  | { type: 'setup.paint'; stroke: PaintStroke };
 
 export type CommandType = BattleCommand['type'];
+
+/** Tactical commands act on the battle in progress; setup commands prepare the board and
+ * placements before one exists. The executor gates each side of this table on `session.battle`. */
+export const SETUP_COMMANDS: ReadonlySet<CommandType> = new Set([
+  'setup.generate', 'setup.rerollSeed', 'setup.editSpec', 'setup.setRoundsPerDay', 'setup.paint',
+] satisfies CommandType[]);
 
 export interface CommandEnvelope {
   battleId: string;

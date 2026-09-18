@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, scriptedRng, unit, type UnitCard } from '../engine/index.js';
+import { createBattle, scriptedRng, unit, type BattleState, type UnitCard } from '../engine/index.js';
 import { createLocalRepository, loadSessionSync, type WebStorage } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
@@ -106,7 +106,8 @@ describe('the command executor', () => {
 
     await runtime.submit({ type: 'action.resolve', action: guard });
     expect(runtime.history).toHaveLength(1);
-    expect(runtime.history[0].units[0].guard).toBeNull();
+    expect(runtime.history[0]).toMatchObject({ kind: 'battle' });
+    expect((runtime.history[0] as { kind: 'battle'; battle: BattleState }).battle.units[0].guard).toBeNull();
   });
 
   it('rewinds to the battle before the last undoable commit', async () => {
