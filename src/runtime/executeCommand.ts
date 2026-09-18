@@ -1,6 +1,7 @@
 import type { BattleState } from '../engine/index.js';
 import type { ActionResolutionService } from '../services/ActionResolutionService.js';
 import type { ArmyPreparationService } from '../services/ArmyPreparationService.js';
+import type { BattleContinuationService } from '../services/BattleContinuationService.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
 import { newCommandId, SETUP_COMMANDS, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import type { SessionRepository } from './ports.js';
@@ -11,38 +12,47 @@ const HISTORY_LIMIT = 30;
 /** Wave 3.3 answers a command ID found here with success; the executor records them from here. */
 const RECENT_COMMAND_IDS = 20;
 
-/** Selection is not an activation, so undo still rewinds to the last completed one. A generated
- * or reworded board is not undoable either — only a paint stroke was, in the prototype. */
-const UNDOABLE: Record<CommandType, boolean> = {
-  'activation.select': false,
-  'activation.deselect': false,
-  'action.resolve': true,
-  'activation.end': true,
-  'setup.generate': false,
-  'setup.rerollSeed': false,
-  'setup.editSpec': false,
-  'setup.setRoundsPerDay': false,
-  'setup.paint': true,
-  'army.addUnit': false,
-  'army.removeUnit': false,
-  'army.addEmplacement': false,
-  'army.removeEmplacement': false,
-  'army.attachEquipment': false,
-  'army.detachEquipment': false,
-  'army.place': false,
-  'army.unplace': false,
-  'army.autoPlace': false,
-  'army.generateForce': false,
+/** What a command does to the undo history. `push` records what it replaced; `clear` is a
+ * boundary undo cannot cross, as the prototype's store held them. Selection is not an
+ * activation, and a generated or reworded board was never undoable — only a paint stroke was. */
+const HISTORY: Record<CommandType, 'push' | 'keep' | 'clear'> = {
+  'activation.select': 'keep',
+  'activation.deselect': 'keep',
+  'action.resolve': 'push',
+  'activation.end': 'push',
+  'setup.generate': 'keep',
+  'setup.rerollSeed': 'keep',
+  'setup.editSpec': 'keep',
+  'setup.setRoundsPerDay': 'keep',
+  'setup.paint': 'push',
+  'army.addUnit': 'keep',
+  'army.removeUnit': 'keep',
+  'army.addEmplacement': 'keep',
+  'army.removeEmplacement': 'keep',
+  'army.attachEquipment': 'keep',
+  'army.detachEquipment': 'keep',
+  'army.place': 'keep',
+  'army.unplace': 'keep',
+  'army.autoPlace': 'keep',
+  'army.generateForce': 'keep',
+  'continuation.declareRecovery': 'clear',
+  'continuation.declareDayOrder': 'keep',
+  'continuation.confirmDayOrders': 'clear',
+  'continuation.answerSurrender': 'clear',
+  'continuation.chooseBattlefield': 'keep',
+  'continuation.declareDeployment': 'keep',
+  'continuation.startNextDay': 'clear',
 };
 
 export interface Services {
   actions: ActionResolutionService;
   map: MapPreparationService;
   army: ArmyPreparationService;
+  continuation: BattleContinuationService;
 }
 
 function applyCommand(
-  session: BattleSession, command: BattleCommand, { actions, map, army }: Services,
+  session: BattleSession, command: BattleCommand, { actions, map, army, continuation }: Services,
 ): BattleSession {
   switch (command.type) {
     case 'activation.select': return actions.select(session, command.unitId);
@@ -64,6 +74,13 @@ function applyCommand(
     case 'army.unplace': return army.unplace(session, command.piece);
     case 'army.autoPlace': return army.autoPlace(session, command.piece);
     case 'army.generateForce': return army.generateForce(session, command.side, command.seed);
+    case 'continuation.declareRecovery': return continuation.declareRecovery(session, command.side, command.choices);
+    case 'continuation.declareDayOrder': return continuation.declareDayOrder(session, command.side, command.order);
+    case 'continuation.confirmDayOrders': return continuation.confirmDayOrders(session);
+    case 'continuation.answerSurrender': return continuation.answerSurrender(session, command.side, command.accept);
+    case 'continuation.chooseBattlefield': return continuation.chooseBattlefield(session, command.spec);
+    case 'continuation.declareDeployment': return continuation.declareDeployment(session, command.side, command.positions);
+    case 'continuation.startNextDay': return continuation.startNextDay(session);
   }
 }
 
@@ -154,7 +171,7 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
   function run({ battleId, commandId, command }: CommandEnvelope): Promise<CommandResult> {
     if (battleId !== session.battleId) return Promise.resolve(reject(commandId, 'battle', `${battleId} is not the battle under way`));
     // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
-    if (!Object.hasOwn(UNDOABLE, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
+    if (!Object.hasOwn(HISTORY, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
     if (SETUP_COMMANDS.has(command.type)) {
       if (session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
     } else if (!session.battle) {
@@ -162,7 +179,9 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
     }
 
     return persist(commandId, (current) => applyCommand(current, command, services), (previous) => {
-      if (!UNDOABLE[command.type]) return;
+      const effect = HISTORY[command.type];
+      if (effect === 'clear') history = [];
+      if (effect !== 'push') return;
       history = [...history.slice(1 - HISTORY_LIMIT),
         previous.battle ? { kind: 'battle', battle: previous.battle } : { kind: 'setup', setup: previous.setup }];
     });

@@ -1,6 +1,6 @@
 import {
   COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT,
-  type BattleState, type Board, type BoardSpec, type Side, type UnitCard, type Unit,
+  type BattleState, type Board, type BoardSpec, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 
 export const SCHEMA_VERSION = 1;
@@ -29,6 +29,10 @@ export interface BattleEvent { id: string; type: string }
 
 export interface CommitRecord { commandId: string; events: BattleEvent[] }
 
+/** A side's submission for the coming night or day, held until the other side's arrives.
+ * Wave 3.5 moves both under `InteractionRecord`; the shapes are the same data. */
+export type SideSubmissions<T> = Partial<Record<Side, T>>;
+
 export interface BattleSession {
   schemaVersion: number;
   rulesVersion: string;
@@ -37,6 +41,11 @@ export interface BattleSession {
   stage: LifecycleStage;
   setup: BattleSetupDraft;
   battle: BattleState | null;
+  /** Each side's recovery declarations. The night rolls when the second side declares. */
+  nightDeclarations: SideSubmissions<RecoveryChoice[]>;
+  /** Each side's placements for the coming day. `startNextDay` consumes them once both sides
+   * hold a legal deployment; a change of battlefield clears them. */
+  nextDeployment: SideSubmissions<Record<string, string>>;
   lastCommit: CommitRecord | null;
   /** The most recent command IDs, so a resent command is answered instead of re-run. */
   recentCommandIds: string[];
@@ -83,6 +92,8 @@ export function freshSession(battleId = newBattleId()): BattleSession {
     stage: 'setup',
     setup: defaultSetup(),
     battle: null,
+    nightDeclarations: {},
+    nextDeployment: {},
     lastCommit: null,
     recentCommandIds: [],
   };
@@ -153,6 +164,8 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && LIFECYCLE_STAGES.includes(s.stage)
     && isSetupDraft(s.setup) && Array.isArray(s.setup.emplacements)
     && (s.battle === null || intactBattle(s.battle))
+    && !!s.nightDeclarations && typeof s.nightDeclarations === 'object'
+    && !!s.nextDeployment && typeof s.nextDeployment === 'object'
     && (s.lastCommit === null
       || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string' && Array.isArray(s.lastCommit.events)))
     && Array.isArray(s.recentCommandIds);
@@ -168,6 +181,8 @@ function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleI
     stage: battle ? 'battle' : 'setup',
     setup: repairSetup(setup),
     battle,
+    nightDeclarations: {},
+    nextDeployment: {},
     lastCommit: null,
     recentCommandIds: [],
   };
@@ -181,6 +196,8 @@ export function reviveSession(value: unknown): BattleSession | null {
   s.battle = s.battle && intactBattle(s.battle) ? repairBattleIds(migrateMorale(s.battle)) : null;
   s.stage = LIFECYCLE_STAGES.includes(s.stage) ? s.stage : s.battle ? 'battle' : 'setup';
   if (!s.battle && s.stage === 'battle') s.stage = 'setup';
+  s.nightDeclarations ??= {};
+  s.nextDeployment ??= {};
   s.lastCommit ??= null;
   s.recentCommandIds ??= [];
   return isBattleSession(s) ? s : null;

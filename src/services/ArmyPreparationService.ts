@@ -1,6 +1,6 @@
 import {
-  canDeploy, ENGINES, generateForce as buildForce, gridOf, notation, parse, seededRandom,
-  type Board, type Side, type Square, type UnitCard,
+  canDeploy, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isStanding, notation, parse, seededRandom,
+  type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
 import {
@@ -76,6 +76,28 @@ export function autoCell(setup: BattleSetupDraft, ref: PieceRef): string | null 
   const home = (c: Square) => (piece.side === 'attacker' ? c.rank : size - 1 - c.rank);
   open.sort((a, b) => home(a) - home(b) || Math.abs(a.file - (size - 1) / 2) - Math.abs(b.file - (size - 1) / 2));
   return notation(open[0]);
+}
+
+/**
+ * Deployment validation for a later day. The survivors redeploy on the coming field, which the
+ * engine's `deploymentCells` rules over; `complete` demands a cell for every survivor of the
+ * side, which starting the day needs and a submission still being built does not.
+ */
+export function deploymentProblem(
+  field: BattleState, side: Side, positions: Record<string, string> | undefined, complete = false,
+): string | null {
+  if (!positions) return `the ${side} has not chosen a deployment`;
+  const survivors = field.units.filter((u) => u.side === side && isStanding(u));
+  const taken = new Set<string>();
+  for (const [unitId, cell] of Object.entries(positions)) {
+    const u = survivors.find((s) => s.id === unitId);
+    if (!u) return `${unitId} does not deploy for the ${side}`;
+    if (!deploymentCells(field, u).includes(cell)) return `${u.name} cannot deploy on ${cell}`;
+    if (taken.has(cell)) return `${cell} is taken twice`;
+    taken.add(cell);
+  }
+  if (complete && survivors.some((u) => !positions[u.id])) return `every standing ${side} unit needs a deployment cell`;
+  return null;
 }
 
 /** One side is ready when it has a unit and everything it owns stands on a square. */

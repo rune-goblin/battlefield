@@ -1,4 +1,4 @@
-import type { Action, BoardSpec, Side, SquareTerrain, UnitCard } from '../engine/index.js';
+import type { Action, BoardSpec, DayOrder, RecoveryChoice, Side, SquareTerrain, UnitCard } from '../engine/index.js';
 
 /** Wave 1.3 makes `unit` required in the engine's `Acts`. Until then the boundary carries the
  * requirement, so an action names its unit before it reaches the executor. */
@@ -38,7 +38,15 @@ export type BattleCommand =
   | { type: 'army.unplace'; piece: PieceRef }
   | { type: 'army.autoPlace'; piece: PieceRef }
   /** The seed rides along so the authority's draw is reproducible from the envelope. */
-  | { type: 'army.generateForce'; side: Side; seed?: number };
+  | { type: 'army.generateForce'; side: Side; seed?: number }
+  | { type: 'continuation.declareRecovery'; side: Side; choices: RecoveryChoice[] }
+  | { type: 'continuation.declareDayOrder'; side: Side; order: DayOrder }
+  | { type: 'continuation.confirmDayOrders' }
+  | { type: 'continuation.answerSurrender'; side: Side; accept: boolean }
+  /** Null keeps today's ground; a partial spec generates tomorrow's on the authority. */
+  | { type: 'continuation.chooseBattlefield'; spec: Partial<BoardSpec> | null }
+  | { type: 'continuation.declareDeployment'; side: Side; positions: Record<string, string> }
+  | { type: 'continuation.startNextDay' };
 
 export type CommandType = BattleCommand['type'];
 
