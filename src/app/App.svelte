@@ -17,17 +17,16 @@
   // tuned and screenshotted without playing a battle up to a cast.
   const vfxLab = new URLSearchParams(location.search).has('vfx');
 
-  let root: HTMLElement;
-  $effect(() => {
-    setAppRoot(root);
+  function appRoot(el: HTMLElement) {
+    setAppRoot(el);
     return () => setAppRoot(null);
-  });
+  }
 </script>
 
 <!-- Every stage mounts its own AppShell: the shell is the layout, the stage says what goes in
      its layers. App itself only decides which stage is on. The root around them is what the
      app's CSS hangs off and what tells a key press inside the app from one outside it. -->
-<div class="battlefield-root" bind:this={root}>
+<div class="battlefield-root" {@attach appRoot}>
   {#if import.meta.env.DEV && textureLab.open}
     <TextureLab />
   {:else if vfxLab}
