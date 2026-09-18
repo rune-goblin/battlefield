@@ -2,6 +2,7 @@ import {
   COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT,
   type BattleState, type Board, type BoardSpec, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
+import { hotSeatControl, isSideControl, type SideControl } from './control.js';
 import type { BattleEvent } from './events.js';
 
 export const SCHEMA_VERSION = 1;
@@ -46,6 +47,11 @@ export interface BattleSession {
   /** Each side's placements for the coming day. `startNextDay` consumes them once both sides
    * hold a legal deployment; a change of battlefield clears them. */
   nextDeployment: SideSubmissions<Record<string, string>>;
+  /** Who plays each side and where each side's rotation stands. */
+  control: SideControl;
+  /** The user whose activation is open, named in the commit that made their side pending.
+   * Null whenever no battle is running. */
+  turn: string | null;
   lastCommit: CommitRecord | null;
   /** The most recent command IDs, so a resent command is answered instead of re-run. */
   recentCommandIds: string[];
@@ -94,6 +100,8 @@ export function freshSession(battleId = newBattleId()): BattleSession {
     battle: null,
     nightDeclarations: {},
     nextDeployment: {},
+    control: hotSeatControl(),
+    turn: null,
     lastCommit: null,
     recentCommandIds: [],
   };
@@ -166,6 +174,8 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && (s.battle === null || intactBattle(s.battle))
     && !!s.nightDeclarations && typeof s.nightDeclarations === 'object'
     && !!s.nextDeployment && typeof s.nextDeployment === 'object'
+    && isSideControl(s.control)
+    && (s.turn === null || typeof s.turn === 'string')
     && (s.lastCommit === null
       || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string'
         && Array.isArray(s.lastCommit.events) && Array.isArray(s.lastCommit.dice)))
@@ -184,6 +194,8 @@ function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleI
     battle,
     nightDeclarations: {},
     nextDeployment: {},
+    control: hotSeatControl(),
+    turn: null,
     lastCommit: null,
     recentCommandIds: [],
   };
@@ -201,6 +213,10 @@ export function reviveSession(value: unknown): BattleSession | null {
   // record written before them meant. The migration's shape is reserved for review.
   s.nightDeclarations ??= {};
   s.nextDeployment ??= {};
+  // A record written before Wave 3.3 knew no seats. It loads into the hot seat, and a host
+  // with real users reseats it as the save is installed.
+  if (!isSideControl(s.control)) s.control = hotSeatControl();
+  s.turn ??= null;
   s.lastCommit ??= null;
   // A commit written before Wave 3.1 recorded neither events nor dice; an empty list is what
   // it meant, and a record from before those fields still loads.

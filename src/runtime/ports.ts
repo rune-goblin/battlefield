@@ -35,3 +35,13 @@ export interface BattleArchive {
 export interface DicePort {
   d20(): number;
 }
+
+/** Who is at the table. The executor reads it when a turn opens — an offline seat is skipped
+ * and a side with nobody online falls to the GM — and when it checks who sent a command. */
+export interface PresencePort {
+  online(userId: string): boolean;
+  /** The GM who answers for a side nobody is holding, and who may issue any command. */
+  gmUserId(): string;
+  /** Every user the host would seat. `auto` control rebuilds the player side from it. */
+  users(): string[];
+}

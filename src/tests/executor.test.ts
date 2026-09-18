@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createBattle, scriptedRng, unit, type BattleState, type UnitCard } from '../engine/index.js';
 import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync, type WebStorage } from '../adapters/browser/localRepository.js';
+import { HOT_SEAT_USER } from '../runtime/control.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
@@ -188,7 +189,7 @@ describe('the command executor', () => {
     const { runtime, repository } = runtimeOn();
 
     const result = await runtime.execute({
-      battleId: 'battle-elsewhere', commandId: 'c1', expectedRevision: 0,
+      battleId: 'battle-elsewhere', commandId: 'c1', expectedRevision: 0, userId: HOT_SEAT_USER,
       command: { type: 'activation.select', unitId: 'u0' },
     });
 

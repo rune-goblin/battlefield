@@ -4,15 +4,18 @@ import type { ArmyPreparationService } from '../services/ArmyPreparationService.
 import type { BattleContinuationService } from '../services/BattleContinuationService.js';
 import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
-import { COMMAND_STAGE, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
+import { COMMAND_STAGE, newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
+import { openTurn, seatUsers } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
-import type { BattleArchive, SessionRepository } from './ports.js';
+import { assignSeats, reassignTurn, refuseCommand } from './policy.js';
+import type { BattleArchive, PresencePort, SessionRepository } from './ports.js';
 import { migrateSession, type BattleSession, type BattleSetupDraft } from './session.js';
+import type { Side } from '../engine/index.js';
 
 /** How far undo walks back, the depth the prototype's store kept. */
 const HISTORY_LIMIT = 30;
-/** Wave 3.3 answers a command ID found here with success; the executor records them from here. */
+/** A command ID found among these is answered with success rather than run again. */
 const RECENT_COMMAND_IDS = 20;
 
 /** What a command does to the undo history. `push` records what it replaced; `clear` is a
@@ -50,6 +53,8 @@ const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load'>, 'pu
   'battle.returnToSetup': 'clear',
   'battle.reset': 'clear',
   'battle.finalize': 'clear',
+  'control.assign': 'keep',
+  'turn.reassign': 'keep',
 };
 
 export interface Services {
@@ -62,9 +67,11 @@ export interface Services {
 
 function applyCommand(
   session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' }>,
-  { actions, map, army, continuation, manager }: Services,
+  { actions, map, army, continuation, manager }: Services, presence: PresencePort,
 ): BattleSession {
   switch (command.type) {
+    case 'control.assign': return assignSeats(session, command.control, presence);
+    case 'turn.reassign': return reassignTurn(session, command.userId, presence);
     case 'activation.select': return actions.select(session, command.unitId);
     case 'activation.deselect': return actions.deselect(session);
     case 'action.resolve': return actions.act(session, command.action);
@@ -104,6 +111,8 @@ export interface ExecutorOptions extends Services {
   session: BattleSession;
   /** The same dice the services roll, wrapped so each transition's faces reach its commit. */
   dice: DiceRecorder;
+  /** Who is at the table, for naming a turn holder and for judging who sent a command. */
+  presence: PresencePort;
 }
 
 /** A change to the record, applied to the committed one inside the queue. A throw rejects. */
@@ -112,12 +121,22 @@ type SessionEdit = (session: BattleSession) => BattleSession;
 /** What the transition did, derived from the two records once the edit has run. */
 type EventSource = (previous: BattleSession, next: BattleSession) => BattleEventBody[];
 
+interface Persistence {
+  edit: SessionEdit;
+  /** Run once the write is durable, with the record the commit replaced. */
+  record?: (previous: BattleSession) => void;
+  describe?: EventSource;
+  /** Undo restores the turn its own snapshot holds; every other commit opens one afresh. */
+  seat?: boolean;
+}
+
 /** What an undoable commit replaced. A tactical command replaces the battle; a setup command
  * (so far, only a paint stroke) replaces the whole setup draft, board and placements together,
- * so undo restores both from one snapshot. */
-export type HistorySnapshot =
+ * so undo restores both from one snapshot. The turn holder and the rotation pointers travel
+ * with it: they move with the tactical state and have to come back with it. */
+export type HistorySnapshot = { turn: string | null; next: Record<Side, number> } & (
   | { kind: 'battle'; battle: BattleState }
-  | { kind: 'setup'; setup: BattleSetupDraft };
+  | { kind: 'setup'; setup: BattleSetupDraft });
 
 export interface Executor {
   /** The committed record. It changes at a successful save and nowhere else. */
@@ -125,9 +144,17 @@ export interface Executor {
   /** Snapshots to rewind to, oldest first, held in the authority's memory. */
   readonly history: readonly HistorySnapshot[];
   execute(envelope: CommandEnvelope): Promise<CommandResult>;
+  /** Run a command from a client that holds the authority itself. The envelope is built inside
+   * the queue, at whatever revision is current, because such a client has no stale copy to
+   * guard against — it is reading the record it is writing. */
+  submit(command: BattleCommand, userId: string): Promise<CommandResult>;
   /** Called with each committed record, after the save that made it durable. */
   subscribe(listener: (session: BattleSession) => void): () => void;
 }
+
+/** Which activation the record stands in. It changes when one ends and the next opens, which
+ * is exactly when the executor names a turn holder; an action within an activation leaves it. */
+const activationKey = (b: BattleState): string => `${b.day}:${b.round}:${b.activated.length}:${b.pending}`;
 
 const failure = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
@@ -136,7 +163,7 @@ const failure = (error: unknown): string => (error instanceof Error ? error.mess
  * until the record is durable: validate, resolve, bump the revision, save, then publish.
  * A rejection returns a result and leaves the session and the undo history as they were.
  */
-export function createExecutor({ repository, archive, dice, session: initial, ...services }: ExecutorOptions): Executor {
+export function createExecutor({ repository, archive, dice, presence, session: initial, ...services }: ExecutorOptions): Executor {
   let session = initial;
   let history: HistorySnapshot[] = [];
   const listeners = new Set<(session: BattleSession) => void>();
@@ -153,6 +180,18 @@ export function createExecutor({ repository, archive, dice, session: initial, ..
     return [];
   }
 
+  /** Name the turn holder in the commit that opened the activation, and move that side's
+   * pointer with it. A record with no battle running holds no turn. */
+  function seatTurn(previous: BattleSession, next: BattleSession): BattleSession {
+    const after = next.battle;
+    if (!after || after.phase !== 'battle') return next.turn === null ? next : { ...next, turn: null };
+    const before = previous.battle;
+    const standing = before?.phase === 'battle' && activationKey(before) === activationKey(after);
+    if (next.turn && standing) return next;
+    const { holder, control } = openTurn(next.control, after.pending, presence);
+    return { ...next, turn: holder, control };
+  }
+
   function commit(next: BattleSession, commandId: string, events: BattleEventBody[], faces: number[]): BattleSession {
     return {
       ...next,
@@ -163,16 +202,15 @@ export function createExecutor({ repository, archive, dice, session: initial, ..
   }
 
   /** Resolve, save, then publish. `record` runs once the write is durable. */
-  async function persist(
-    commandId: string, edit: SessionEdit, record: (previous: BattleSession) => void, describe: EventSource = () => [],
-  ): Promise<CommandResult> {
+  async function persist(commandId: string, { edit, record = () => {}, describe = () => [], seat = true }: Persistence): Promise<CommandResult> {
     const previous = session;
     let next: BattleSession;
     // Faces a rejected edit drew belong to no commit; drop them before this one rolls.
     dice.take();
     try {
       const edited = edit(previous);
-      next = commit(edited, commandId, describe(previous, edited), dice.take());
+      const events = describe(previous, edited);
+      next = commit(seat ? seatTurn(previous, edited) : edited, commandId, events, dice.take());
     } catch (error) {
       return reject(commandId, 'engine', failure(error));
     }
@@ -188,10 +226,18 @@ export function createExecutor({ repository, archive, dice, session: initial, ..
     return { ok: true, commandId, revision: session.revision };
   }
 
-  function run({ battleId, commandId, command }: CommandEnvelope): Promise<CommandResult> {
+  function run({ battleId, commandId, expectedRevision, userId, command }: CommandEnvelope): Promise<CommandResult> {
     if (battleId !== session.battleId) return Promise.resolve(reject(commandId, 'battle', `${battleId} is not the battle under way`));
+    // A client whose reply was lost resends the same command ID. The commit already happened,
+    // so answer it with the revision that holds it rather than running the command twice.
+    if (session.recentCommandIds.includes(commandId)) return Promise.resolve({ ok: true, commandId, revision: session.revision });
     // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
     if (!Object.hasOwn(COMMAND_STAGE, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
+    // proto: the wording of a stale-revision refusal is reserved for review with the rest of
+    // the turn and seat text. The revision travels with it so the client can refresh and ask.
+    if (expectedRevision !== session.revision) {
+      return Promise.resolve(reject(commandId, 'revision', `the battle has moved on to revision ${session.revision}`));
+    }
     const stage = COMMAND_STAGE[command.type];
     if (stage === 'setup' && session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
     if (stage === 'battle' && !session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
@@ -200,24 +246,39 @@ export function createExecutor({ repository, archive, dice, session: initial, ..
     if (session.stage === 'finalized' && command.type !== 'battle.returnToSetup' && command.type !== 'session.load') {
       return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
     }
+    const refusal = refuseCommand(session, command, userId, presence);
+    if (refusal) return Promise.resolve(reject(commandId, 'permission', refusal));
     if (command.type === 'session.undo') return rewind(commandId);
     if (command.type === 'session.load') return loadSession(commandId, command.slot);
 
-    return persist(commandId, (current) => applyCommand(current, command, services), (previous) => {
-      const effect = HISTORY[command.type];
-      if (effect === 'clear') history = [];
-      if (effect !== 'push') return;
-      history = [...history.slice(1 - HISTORY_LIMIT),
-        previous.battle ? { kind: 'battle', battle: previous.battle } : { kind: 'setup', setup: previous.setup }];
-    }, (previous, next) => eventsOf(command, previous, next));
+    return persist(commandId, {
+      edit: (current) => applyCommand(current, command, services, presence),
+      record: (previous) => {
+        const effect = HISTORY[command.type];
+        if (effect === 'clear') history = [];
+        if (effect !== 'push') return;
+        const turn = previous.turn;
+        const next = previous.control.next;
+        history = [...history.slice(1 - HISTORY_LIMIT), previous.battle
+          ? { kind: 'battle', battle: previous.battle, turn, next }
+          : { kind: 'setup', setup: previous.setup, turn, next }];
+      },
+      describe: (previous, next) => eventsOf(command, previous, next),
+    });
   }
 
   function rewind(commandId: string): Promise<CommandResult> {
     const previous = history.at(-1);
     if (!previous) return Promise.resolve(reject(commandId, 'stage', 'nothing to undo'));
-    return persist(commandId, (current) => (previous.kind === 'battle'
-      ? { ...current, battle: previous.battle } : { ...current, setup: previous.setup }), () => {
-      history = history.slice(0, -1);
+    return persist(commandId, {
+      edit: (current) => ({
+        ...current,
+        ...(previous.kind === 'battle' ? { battle: previous.battle } : { setup: previous.setup }),
+        turn: previous.turn,
+        control: { ...current.control, next: previous.next },
+      }),
+      record: () => { history = history.slice(0, -1); },
+      seat: false,
     });
   }
 
@@ -231,11 +292,19 @@ export function createExecutor({ repository, archive, dice, session: initial, ..
     } catch (error) {
       return reject(commandId, 'storage', failure(error));
     }
-    return persist(commandId, (current) => {
-      const migrated = migrateSession(raw);
-      if (!migrated) throw new Error(`${slot} is not a battlefield save`);
-      return { ...migrated, revision: current.revision, nightDeclarations: {}, nextDeployment: {}, recentCommandIds: [] };
-    }, () => { history = []; });
+    return persist(commandId, {
+      edit: (current) => {
+        const migrated = migrateSession(raw);
+        if (!migrated) throw new Error(`${slot} is not a battlefield save`);
+        return {
+          ...migrated, revision: current.revision, nightDeclarations: {}, nextDeployment: {}, recentCommandIds: [],
+          // A save carried from another table names users this one may not have; the seating
+          // is refitted here and the turn opens again under it.
+          control: seatUsers(migrated.control, presence), turn: null,
+        };
+      },
+      record: () => { history = []; },
+    });
   }
 
   function enqueue(work: () => Promise<CommandResult>): Promise<CommandResult> {
@@ -248,6 +317,11 @@ export function createExecutor({ repository, archive, dice, session: initial, ..
     get session() { return session; },
     get history() { return history; },
     execute(envelope) { return enqueue(() => run(envelope)); },
+    submit(command, userId) {
+      return enqueue(() => run({
+        battleId: session.battleId, commandId: newCommandId(), expectedRevision: session.revision, userId, command,
+      }));
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };

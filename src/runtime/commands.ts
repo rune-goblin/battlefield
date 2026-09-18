@@ -1,4 +1,5 @@
 import type { Action, BoardSpec, DayOrder, RecoveryChoice, Side, SquareTerrain, UnitCard } from '../engine/index.js';
+import type { ControlAssignment } from './control.js';
 
 /** Wave 1.3 makes `unit` required in the engine's `Acts`. Until then the boundary carries the
  * requirement, so an action names its unit before it reaches the executor. */
@@ -51,6 +52,10 @@ export type BattleCommand =
   | { type: 'battle.returnToSetup' }
   | { type: 'battle.reset' }
   | { type: 'battle.finalize' }
+  /** Seat the table by hand, or switch back to the automatic split. */
+  | { type: 'control.assign'; control: ControlAssignment }
+  /** Hand the open turn to another seat on the pending side, for a player who has dropped. */
+  | { type: 'turn.reassign'; userId: string }
   /** Rewind to the snapshot the last undoable commit replaced, under a new revision. */
   | { type: 'session.undo' }
   /** Replace the running record with a saved one, migrated and installed at the next revision. */
@@ -94,6 +99,8 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'battle.returnToSetup': 'battle',
   'battle.reset': 'setup',
   'battle.finalize': 'battle',
+  'control.assign': 'any',
+  'turn.reassign': 'battle',
   'session.undo': 'any',
   'session.load': 'any',
 };
@@ -102,13 +109,17 @@ export interface CommandEnvelope {
   battleId: string;
   /** Stable across retries: the same command resent carries the same ID. */
   commandId: string;
-  /** The revision the client built this command against. Wave 3.3 enforces it. */
+  /** The revision the client built this command against. A command built against an earlier
+   * one is refused, so a resent command cannot land on a later activation. */
   expectedRevision: number;
+  /** Who sent it. The executor derives permissions from this and the record, never from a
+   * claim inside the command. */
+  userId: string;
   command: BattleCommand;
 }
 
 /** `storage` takes its own notice in Wave 1.4; every other reason reads as a refused command. */
-export type RejectionReason = 'battle' | 'stage' | 'unsupported' | 'engine' | 'storage';
+export type RejectionReason = 'battle' | 'stage' | 'revision' | 'permission' | 'unsupported' | 'engine' | 'storage';
 
 export interface CommandAccepted { ok: true; commandId: string; revision: number }
 export interface CommandRejected {
