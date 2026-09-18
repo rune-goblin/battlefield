@@ -6,7 +6,8 @@
   import Place from './Place.svelte';
   import Battle from './Battle.svelte';
   import VfxGallery from './VfxGallery.svelte';
-  import { game, STAGE_SIDE } from './game.svelte.js';
+  import { game } from './game.svelte.js';
+  import { nav, STAGE_SIDE } from './navigation.svelte.js';
   import { provideNotifications } from './notification-context.js';
   import Notifications from './Notifications.svelte';
   import { setAppRoot } from './app-root.js';
@@ -31,11 +32,11 @@
     <TextureLab />
   {:else if vfxLab}
     <VfxGallery />
-  {:else if game.stage === 'battle' && game.battle}
+  {:else if nav.stage === 'battle' && game.battle}
     <Battle />
-  {:else if STAGE_SIDE[game.stage] && game.setup.board}
-    <Place side={STAGE_SIDE[game.stage]!} />
-  {:else if game.stage === 'paint' && game.setup.board}
+  {:else if STAGE_SIDE[nav.stage] && game.setup.board}
+    <Place side={STAGE_SIDE[nav.stage]!} />
+  {:else if nav.stage === 'paint' && game.setup.board}
     <Paint />
   {:else}
     <BoardSetup />

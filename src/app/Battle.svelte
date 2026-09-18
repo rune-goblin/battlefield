@@ -30,7 +30,8 @@
   import { cellsForTarget, targetingIcon, TargetingService, type TargetMarker } from './targeting.js';
   import ArmyReel from './ArmyReel.svelte';
   import MeleeChoices from './MeleeChoices.svelte';
-  import { backToSetup, deselectUnit, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
+  import { deselectUnit, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
+  import { leaveBattle } from './navigation.svelte.js';
 
   const b = $derived(game.battle!);
   // Only an army the player has actually chosen is active. The engine falls back to the first
@@ -1186,7 +1187,7 @@
       {/snippet}
       {#snippet tools()}
         <button onclick={() => void run(undo())} disabled={!game.history.length} title="Undo the last action">Undo</button>
-        <button onclick={() => void run(backToSetup())}>New battle</button>
+        <button onclick={() => void run(leaveBattle())}>New battle</button>
       {/snippet}
     </TopBar>
   {/snippet}

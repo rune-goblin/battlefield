@@ -4,28 +4,16 @@ import { createRuntime } from '../runtime/createRuntime.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
-import type { BattleSession, BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
+import type { BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 
-export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
 export type Setup = BattleSetupDraft;
 export type { SetupEngine, SetupUnit };
 
-const STAGES: Stage[] = ['board', 'paint', 'attackers', 'defenders', 'battle'];
-/** The side each deployment stage edits. */
-export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker', defenders: 'defender' };
-
 const runtime = createRuntime({ repository: createLocalRepository(), session: loadSessionSync() });
 
-/** The record keeps the lifecycle stage. Which setup tab was open is local state, with no
- * store of its own until Wave 2.5, so a reload resumes at the first unfinished one. */
-function openingStage(s: BattleSession): Stage {
-  if (s.battle) return 'battle';
-  if (!s.setup.board) return 'board';
-  return readyIn(s.setup, 'attacker') ? 'defenders' : 'attackers';
-}
-
+/** What every view reads. The committed record lands here and nothing else writes it; a view
+ * that wants a change submits a command and waits for the record that comes back. */
 export const game = $state({
-  stage: openingStage(runtime.session),
   // A copy of the committed draft, kept so a view that reads it cannot reach the executor's
   // own record. Every command's result lands here through `adoptSetup`.
   setup: structuredClone(runtime.session.setup),
@@ -50,7 +38,6 @@ function adoptSetup(committed: BattleSetupDraft): void {
   adoptedBoard = committed.board;
 }
 
-// The read store: every committed record lands here, and nothing else writes it.
 runtime.subscribe((session) => {
   game.battle = session.battle;
   game.history = [...runtime.history];
@@ -90,40 +77,8 @@ export const generateForce = (side: Side) => submit({ type: 'army.generateForce'
 
 export const sideReady = (side: Side): boolean => readyIn(game.setup, side);
 
-export const ready = () => sideReady('attacker') && sideReady('defender');
-
-/** What the rail's forward button does and says on the current stage. */
-export function forward(): { label: string; enabled: boolean; go: () => void } {
-  if (game.stage === 'board') return { label: 'Next: paint', enabled: !!game.setup.board, go: next };
-  if (game.stage === 'paint') return { label: 'Next: the attacking force', enabled: !!game.setup.board, go: next };
-  if (game.stage === 'attackers') return { label: 'Next: the defending force', enabled: sideReady('attacker'), go: next };
-  return { label: 'Begin the battle', enabled: ready(), go: startBattle };
-}
-
-export function next() {
-  const i = STAGES.indexOf(game.stage);
-  if (i < STAGES.length - 2) game.stage = STAGES[i + 1];
-}
-
-export function back() {
-  const i = STAGES.indexOf(game.stage);
-  if (i > 0) game.stage = STAGES[i - 1];
-}
-
-/** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach — the rail's
- * step buttons use this so switching between board/paint/attackers/defenders during setup
- * doesn't cost a walk back through every stage in between. `battle` isn't a valid target:
- * it's reached only through `startBattle`, once both sides are ready. */
-export function goToStage(stage: Stage) {
-  if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
-  game.stage = stage;
-}
-
-export async function startBattle(): Promise<CommandResult> {
-  const result = await submit({ type: 'battle.start' });
-  if (result.ok) game.stage = 'battle';
-  return result;
-}
+/** Deploy the prepared setup. The navigation store opens the battle stage on success. */
+export const startBattle = () => submit({ type: 'battle.start' });
 
 export const takeAction = (action: TacticalAction) => submit({ type: 'action.resolve', action });
 
@@ -143,12 +98,11 @@ export function endActivation() {
 
 export const undo = () => submit({ type: 'session.undo' });
 
-/** Drop the battle under way and reopen its setup draft on the deployment tab. */
-export async function backToSetup(): Promise<CommandResult> {
-  const result = await submit({ type: 'battle.returnToSetup' });
-  if (result.ok) game.stage = 'attackers';
-  return result;
-}
+/** Drop the battle under way and reopen the setup draft that made it. */
+export const endBattle = () => submit({ type: 'battle.returnToSetup' });
+
+/** Throw the draft away and start from the example force. */
+export const resetSetup = () => submit({ type: 'battle.reset' });
 
 /** Each army declares its own recovery. The night rolls once the second declaration lands. */
 export const declareRecovery = (side: Side, choices: RecoveryChoice[]) =>
@@ -170,12 +124,6 @@ export const declareDeployment = (side: Side, positions: Record<string, string>)
   submit({ type: 'continuation.declareDeployment', side, positions: { ...positions } });
 
 export const startNextDay = () => submit({ type: 'continuation.startNextDay' });
-
-export async function resetSetup(): Promise<CommandResult> {
-  const result = await submit({ type: 'battle.reset' });
-  if (result.ok) game.stage = 'board';
-  return result;
-}
 
 // Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
 if (import.meta.hot) import.meta.hot.accept(() => import.meta.hot!.invalidate());

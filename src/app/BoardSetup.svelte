@@ -5,7 +5,8 @@
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
-  import { editSpec, game, generate, goToStage, rerollSeed, setRoundsPerDay } from './game.svelte.js';
+  import { editSpec, game, generate, rerollSeed, setRoundsPerDay } from './game.svelte.js';
+  import { goToStage } from './navigation.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
   import { onDestroy } from 'svelte';

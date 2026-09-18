@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { back, forward, game, goToStage, type Stage } from './game.svelte.js';
+  import { game } from './game.svelte.js';
+  import { back, forward, goToStage, nav, type Stage } from './navigation.svelte.js';
+  import { useNotifications } from './notification-context.js';
+  import { commandReporter } from './command-notices.js';
+
+  const run = commandReporter(useNotifications());
 
   const STAGES: { id: Stage; label: string }[] = [
     { id: 'board', label: '1 · Battlefield' }, { id: 'paint', label: '2 · Paint' },
@@ -10,19 +15,24 @@
   // Every setup stage can be jumped to once the board exists; `battle` never can — it's
   // reached only through the primary button below, once both sides are ready.
   const reachable = (id: Stage) => id !== 'battle' && (id === 'board' || !!game.setup.board);
+
+  async function advance() {
+    const pending = step.go();
+    if (pending) await run(pending);
+  }
 </script>
 
 <div class="stagenav">
   <div class="steps">
     {#each STAGES as s (s.id)}
       <button
-        class="step" class:on={game.stage === s.id}
+        class="step" class:on={nav.stage === s.id}
         disabled={!reachable(s.id)} onclick={() => goToStage(s.id)}
       >{s.label}</button>
     {/each}
   </div>
-  <button onclick={back} disabled={game.stage === 'board'}>Back</button>
-  <button class="primary" disabled={!step.enabled} onclick={step.go}>{step.label}</button>
+  <button onclick={back} disabled={nav.stage === 'board'}>Back</button>
+  <button class="primary" disabled={!step.enabled} onclick={() => void advance()}>{step.label}</button>
 </div>
 
 <style>

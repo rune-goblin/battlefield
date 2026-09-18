@@ -4,7 +4,7 @@ export type DockState = 'open' | 'rail' | 'hidden';
 export type DockSide = 'left' | 'right';
 
 // View state, not game state: which panels this player has open belongs to this browser, and
-// must never travel to another seat. Hence its own key, and never `game.save()`.
+// must never travel to another seat. Hence its own key, outside the session record.
 const KEY = 'battlefield.ui.v1';
 
 interface Saved { left: DockState; right: DockState }

@@ -7,8 +7,9 @@
   import StageNav from './StageNav.svelte';
   import {
     addEmplacement, addUnit, attachEquipment, autoPlacePiece, detachEquipment, game, generateForce,
-    placePiece, removeEmplacement, removeUnit, resetSetup, unplacePiece, type SetupEngine, type SetupUnit,
+    placePiece, removeEmplacement, removeUnit, unplacePiece, type SetupEngine, type SetupUnit,
   } from './game.svelte.js';
+  import { resetToExample } from './navigation.svelte.js';
   import { autoCell, cellsFor, deployableCells, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
   import type { PieceRef } from '../runtime/commands.js';
 
@@ -371,7 +372,7 @@
     </div>
 
     <div class="row">
-      <button onclick={resetSetup}>Reset to the example</button>
+      <button onclick={() => void resetToExample()}>Reset to the example</button>
     </div>
   {/snippet}
 </AppShell>

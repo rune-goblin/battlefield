@@ -3,7 +3,8 @@
     recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
     type BoardSpec, type DayOrder, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
-  import { backToSetup, chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
+  import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
+  import { leaveBattle } from './navigation.svelte.js';
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { gameMap } from './map-style.svelte.js';
@@ -251,7 +252,7 @@
         </div>
       {/if}
       <div class="footer-actions">
-        <button class="end-battle" onclick={() => void attempt(backToSetup())}>End battle</button>
+        <button class="end-battle" onclick={() => void attempt(leaveBattle())}>End battle</button>
         {#if stage === 'deployment'}
           <button class="primary" disabled={!deployReady} onclick={() => void attempt(startNextDay())}>Begin day {b.day + 1}</button>
         {:else if stage === 'recovery'}
