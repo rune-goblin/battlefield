@@ -6,7 +6,7 @@ import {
 import type { NotificationService } from './notifications.js';
 
 // The browser holds its own authority: the one local user executes every command it issues.
-// The Foundry adapter reports `game.users.activeGM` over this instead.
+// Under Foundry the adapter reports the table's active GM over this instead.
 const state = $state<AuthorityState>({ primaryGm: HOT_SEAT_USER, handingOff: false, unanswered: false });
 
 const listeners = new Set<(status: AuthorityStatus) => void>();

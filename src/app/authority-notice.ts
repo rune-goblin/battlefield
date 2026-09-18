@@ -4,7 +4,7 @@ import type { Notification } from './notifications.js';
 export const AUTHORITY_NOTICE = 'authority';
 
 export interface AuthorityState {
-  /** The client that executes: Foundry's `activeGM`, or the local user in the browser. */
+  /** The client that executes: the table's active GM, or the local user in the browser. */
   primaryGm: string | null;
   /** The authority is moving from one client to another. */
   handingOff: boolean;
