@@ -1,15 +1,19 @@
 import type { BoardSpec, DayOrder, RecoveryChoice, Side, UnitCard } from '../engine/index.js';
+import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
+import type { ArchiveEntry } from '../runtime/ports.js';
 import type { BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 
 export type Setup = BattleSetupDraft;
 export type { SetupEngine, SetupUnit };
+export type { ArchiveEntry };
 
-const runtime = createRuntime({ repository: createLocalRepository(), session: loadSessionSync() });
+const archive = createLocalArchive();
+const runtime = createRuntime({ repository: createLocalRepository(), archive, session: loadSessionSync() });
 
 /** What every view reads. The committed record lands here and nothing else writes it; a view
  * that wants a change submits a command and waits for the record that comes back. */
@@ -124,6 +128,15 @@ export const declareDeployment = (side: Side, positions: Record<string, string>)
   submit({ type: 'continuation.declareDeployment', side, positions: { ...positions } });
 
 export const startNextDay = () => submit({ type: 'continuation.startNextDay' });
+
+export const listSaves = (): Promise<ArchiveEntry[]> => archive.list();
+// Reads the record straight from the executor: `game.setup` is the panel's own copy, and a
+// battle in progress has no local shadow at all.
+export const saveBattle = (name: string): Promise<ArchiveEntry> => archive.save(name, runtime.session);
+export const loadBattle = (slot: string) => submit({ type: 'session.load', slot });
+export const removeSave = (slot: string): Promise<void> => archive.remove(slot);
+export const exportSave = (slot: string): Promise<string> => archive.export(slot);
+export const importSave = (data: string): Promise<ArchiveEntry> => archive.import(data);
 
 // Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
 if (import.meta.hot) import.meta.hot.accept(() => import.meta.hot!.invalidate());

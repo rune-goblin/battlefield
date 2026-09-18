@@ -4,7 +4,7 @@ import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
 import { autoCell, cellsFor, deployableCells, sideReady } from '../services/ArmyPreparationService.js';
-import { openBoard } from './helpers.js';
+import { fakeArchive, openBoard } from './helpers.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const scouts: UnitCard = { name: 'Scouts', level: 4, role: 'cavalry', tactics: ['ambush'] };
@@ -32,7 +32,7 @@ function fakeRepository(session: BattleSession): SessionRepository {
 }
 
 function runtimeOn(session = setupSession()) {
-  return createRuntime({ repository: fakeRepository(session), session });
+  return createRuntime({ repository: fakeRepository(session), archive: fakeArchive(), session });
 }
 
 describe('army preparation', () => {

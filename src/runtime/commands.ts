@@ -52,7 +52,9 @@ export type BattleCommand =
   | { type: 'battle.reset' }
   | { type: 'battle.finalize' }
   /** Rewind to the snapshot the last undoable commit replaced, under a new revision. */
-  | { type: 'session.undo' };
+  | { type: 'session.undo' }
+  /** Replace the running record with a saved one, migrated and installed at the next revision. */
+  | { type: 'session.load'; slot: string };
 
 export type CommandType = BattleCommand['type'];
 
@@ -93,6 +95,7 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'battle.reset': 'setup',
   'battle.finalize': 'battle',
   'session.undo': 'any',
+  'session.load': 'any',
 };
 
 export interface CommandEnvelope {

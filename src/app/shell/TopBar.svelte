@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { MAP_STYLES, MAP_STYLE_LABELS, mapSettings, setMapStyle } from '../map-style.svelte.js';
+  import SaveLoadPanel from '../SaveLoadPanel.svelte';
   import { setDock, toggleDock, ui } from './layout.svelte.js';
 
   interface Props {
@@ -42,6 +43,7 @@
         ></button>
       {/each}
     </div>
+    <SaveLoadPanel />
     <nav>
       <!-- The labs are otherwise reachable only by typing the query param. Both read it once
            on load, so these are real navigations; the game survives one through localStorage. -->

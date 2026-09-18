@@ -3,7 +3,7 @@ import { createBattle, suggestDeployment, type BattleState, type UnitCard } from
 import { createRuntime, type Runtime } from '../runtime/createRuntime.js';
 import type { DicePort, SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
-import { openBoard } from './helpers.js';
+import { fakeArchive, openBoard } from './helpers.js';
 
 const card = (name: string, disorder: number): UnitCard =>
   ({ name, level: 6, role: 'infantry', disorder, wounds: 1, overrides: { will: 14, fortitude: 14 } });
@@ -39,7 +39,7 @@ function countingDice(): DicePort & { rolls: number } {
 function runtimeOn(battle = duskBattle()) {
   const session: BattleSession = { ...freshSession(), stage: 'battle', battle };
   const dice = countingDice();
-  return { runtime: createRuntime({ repository: fakeRepository(session), session, dice }), dice };
+  return { runtime: createRuntime({ repository: fakeRepository(session), archive: fakeArchive(), session, dice }), dice };
 }
 
 const rally = (unit: string) => [{ unit, activity: 'rally' as const }];

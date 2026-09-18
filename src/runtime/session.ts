@@ -214,3 +214,10 @@ export function migrateLegacySave(value: unknown, battleId = newBattleId()): Bat
   const session = sessionFrom(raw.setup, (raw.battle ?? null) as BattleState | null, battleId);
   return isBattleSession(session) ? session : null;
 }
+
+/** Read a save at whatever schema it was written in: the current envelope, or the pre-session
+ * `{ stage, setup, battle }` shape. An archived slot can predate the schema running now, the
+ * same way `battlefield.v4` can. Nothing else is recognized. */
+export function migrateSession(value: unknown, battleId = newBattleId()): BattleSession | null {
+  return reviveSession(value) ?? migrateLegacySave(value, battleId);
+}

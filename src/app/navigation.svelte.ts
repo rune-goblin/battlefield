@@ -1,6 +1,6 @@
 import type { Side } from '../engine/index.js';
 import type { CommandResult } from '../runtime/commands.js';
-import { endBattle, game, resetSetup, sideReady, startBattle } from './game.svelte.js';
+import { endBattle, game, loadBattle, resetSetup, sideReady, startBattle } from './game.svelte.js';
 
 /** Which panel is open. The record keeps the lifecycle stage; which setup tab a client looks
  * at is local to that client and never reaches the executor. */
@@ -57,6 +57,14 @@ export async function leaveBattle(): Promise<CommandResult> {
 export async function resetToExample(): Promise<CommandResult> {
   const result = await resetSetup();
   if (result.ok) nav.stage = 'board';
+  return result;
+}
+
+/** A loaded save can land at any stage; the read store has already adopted it by the time this
+ * resolves, so `openingStage` reads the record it landed on rather than the one it replaced. */
+export async function loadSave(slot: string): Promise<CommandResult> {
+  const result = await loadBattle(slot);
+  if (result.ok) nav.stage = openingStage();
   return result;
 }
 

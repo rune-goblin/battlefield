@@ -6,11 +6,12 @@ import { createBattleManager } from '../services/BattleManager.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult } from './commands.js';
 import { createExecutor, type HistorySnapshot } from './executeCommand.js';
-import type { DicePort, SessionRepository } from './ports.js';
+import type { BattleArchive, DicePort, SessionRepository } from './ports.js';
 import type { BattleSession } from './session.js';
 
 export interface RuntimeOptions {
   repository: SessionRepository;
+  archive: BattleArchive;
   /** The record the host already holds. The store is seeded before its first render, so the
    * runtime is built around a session rather than loading one. */
   session: BattleSession;
@@ -28,9 +29,10 @@ export interface Runtime {
 }
 
 /** The one place that wires the services, the ports, and the executor together. */
-export function createRuntime({ repository, session, dice = randomRng }: RuntimeOptions): Runtime {
+export function createRuntime({ repository, archive, session, dice = randomRng }: RuntimeOptions): Runtime {
   const executor = createExecutor({
     repository,
+    archive,
     session,
     actions: createActionResolutionService({ dice }),
     map: createMapPreparationService(),

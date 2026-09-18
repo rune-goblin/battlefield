@@ -5,8 +5,8 @@ import type { BattleContinuationService } from '../services/BattleContinuationSe
 import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
 import { COMMAND_STAGE, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
-import type { SessionRepository } from './ports.js';
-import type { BattleSession, BattleSetupDraft } from './session.js';
+import type { BattleArchive, SessionRepository } from './ports.js';
+import { migrateSession, type BattleSession, type BattleSetupDraft } from './session.js';
 
 /** How far undo walks back, the depth the prototype's store kept. */
 const HISTORY_LIMIT = 30;
@@ -17,7 +17,7 @@ const RECENT_COMMAND_IDS = 20;
  * boundary undo cannot cross, as the prototype's store held them. Selection is not an
  * activation, and a generated or reworded board was never undoable — only a paint stroke was.
  * `session.undo` is absent: it consumes the history rather than adding to it. */
-const HISTORY: Record<Exclude<CommandType, 'session.undo'>, 'push' | 'keep' | 'clear'> = {
+const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load'>, 'push' | 'keep' | 'clear'> = {
   'activation.select': 'keep',
   'activation.deselect': 'keep',
   'action.resolve': 'push',
@@ -59,7 +59,7 @@ export interface Services {
 }
 
 function applyCommand(
-  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' }>,
+  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' }>,
   { actions, map, army, continuation, manager }: Services,
 ): BattleSession {
   switch (command.type) {
@@ -98,6 +98,7 @@ function applyCommand(
 
 export interface ExecutorOptions extends Services {
   repository: SessionRepository;
+  archive: BattleArchive;
   session: BattleSession;
 }
 
@@ -128,7 +129,7 @@ const failure = (error: unknown): string => (error instanceof Error ? error.mess
  * until the record is durable: validate, resolve, bump the revision, save, then publish.
  * A rejection returns a result and leaves the session and the undo history as they were.
  */
-export function createExecutor({ repository, session: initial, ...services }: ExecutorOptions): Executor {
+export function createExecutor({ repository, archive, session: initial, ...services }: ExecutorOptions): Executor {
   let session = initial;
   let history: HistorySnapshot[] = [];
   const listeners = new Set<(session: BattleSession) => void>();
@@ -177,11 +178,13 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
     const stage = COMMAND_STAGE[command.type];
     if (stage === 'setup' && session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
     if (stage === 'battle' && !session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
-    // A finalized battle has been reported to the campaign. Only leaving it reopens the record.
-    if (session.stage === 'finalized' && command.type !== 'battle.returnToSetup') {
+    // A finalized battle has been reported to the campaign. Only leaving it, or replacing it
+    // outright with a loaded save, reopens the record.
+    if (session.stage === 'finalized' && command.type !== 'battle.returnToSetup' && command.type !== 'session.load') {
       return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
     }
     if (command.type === 'session.undo') return rewind(commandId);
+    if (command.type === 'session.load') return loadSession(commandId, command.slot);
 
     return persist(commandId, (current) => applyCommand(current, command, services), (previous) => {
       const effect = HISTORY[command.type];
@@ -199,6 +202,23 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
       ? { ...current, battle: previous.battle } : { ...current, setup: previous.setup }), () => {
       history = history.slice(0, -1);
     });
+  }
+
+  /** Replace the record with a saved one. `migrateSession` runs inside the edit so a foreign
+   * or corrupt slot rejects as an ordinary `engine` failure, through the same commit path
+   * every other command takes — the authority still persists before it acknowledges. */
+  async function loadSession(commandId: string, slot: string): Promise<CommandResult> {
+    let raw: unknown;
+    try {
+      raw = await archive.load(slot);
+    } catch (error) {
+      return reject(commandId, 'storage', failure(error));
+    }
+    return persist(commandId, (current) => {
+      const migrated = migrateSession(raw);
+      if (!migrated) throw new Error(`${slot} is not a battlefield save`);
+      return { ...migrated, revision: current.revision, nightDeclarations: {}, nextDeployment: {}, recentCommandIds: [] };
+    }, () => { history = []; });
   }
 
   function enqueue(work: () => Promise<CommandResult>): Promise<CommandResult> {

@@ -3,7 +3,7 @@ import type { UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession, type BattleSetupDraft } from '../runtime/session.js';
-import { openBoard } from './helpers.js';
+import { fakeArchive, openBoard } from './helpers.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', tactics: [] };
@@ -30,7 +30,7 @@ function fakeRepository(session: BattleSession): SessionRepository {
 
 function runtimeOn(setup = draft()) {
   const session: BattleSession = { ...freshSession(), setup };
-  return createRuntime({ repository: fakeRepository(session), session });
+  return createRuntime({ repository: fakeRepository(session), archive: fakeArchive(), session });
 }
 
 describe('the battle manager', () => {
@@ -101,6 +101,7 @@ describe('the battle manager', () => {
     battle.units[1].status = 'destroyed';
     const ended = createRuntime({
       repository: fakeRepository({ ...freshSession(), stage: 'battle', battle }),
+      archive: fakeArchive(),
       session: { ...freshSession(), stage: 'battle', battle },
     });
 

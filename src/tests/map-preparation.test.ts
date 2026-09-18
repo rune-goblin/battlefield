@@ -4,7 +4,7 @@ import { createRuntime } from '../runtime/createRuntime.js';
 import type { PaintStroke } from '../runtime/commands.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
-import { openBoard } from './helpers.js';
+import { fakeArchive, openBoard } from './helpers.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
 
@@ -29,7 +29,7 @@ function fakeRepository(session: BattleSession): SessionRepository {
 }
 
 function runtimeOn(session = setupSession()) {
-  return createRuntime({ repository: fakeRepository(session), session });
+  return createRuntime({ repository: fakeRepository(session), archive: fakeArchive(), session });
 }
 
 const waterStroke: PaintStroke = { cells: ['a1', 'b1'], edges: [], brush: { kind: 'terrain', terrain: 'water' } };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, scriptedRng, unit, type BattleState, type UnitCard } from '../engine/index.js';
+import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync, type WebStorage } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
@@ -42,9 +43,18 @@ function fakeRepository(session: BattleSession): FakeRepository {
 function runtimeOn(session = battleSession()) {
   const repository = fakeRepository(session);
   const published: BattleSession[] = [];
-  const runtime = createRuntime({ repository, session, dice: scriptedRng([10]) });
+  const runtime = createRuntime({ repository, archive: createLocalArchive(fakeStorage()), session, dice: scriptedRng([10]) });
   runtime.subscribe((s) => published.push(s));
   return { runtime, repository, published };
+}
+
+function fakeStorage(): WebStorage {
+  const items: Record<string, string> = {};
+  return {
+    getItem: (key) => items[key] ?? null,
+    setItem: (key, value) => { items[key] = value; },
+    removeItem: (key) => { delete items[key]; },
+  };
 }
 
 const guard = { type: 'guard', activity: 1, unit: 'u0' } as const;
@@ -159,7 +169,9 @@ describe('the command executor', () => {
       removeItem: (key) => { delete items[key]; },
     };
     const session = battleSession();
-    const runtime = createRuntime({ repository: createLocalRepository(storage), session, dice: scriptedRng([10]) });
+    const runtime = createRuntime({
+      repository: createLocalRepository(storage), archive: createLocalArchive(storage), session, dice: scriptedRng([10]),
+    });
 
     await runtime.submit({ type: 'activation.select', unitId: 'u0' });
     await runtime.submit({ type: 'action.resolve', action: guard });
