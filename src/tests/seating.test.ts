@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, scriptedRng, type Side, type UnitCard } from '../engine/index.js';
 import type { CommandEnvelope } from '../runtime/commands.js';
-import { reseatAssignment, type SideControl } from '../runtime/control.js';
+import { openTurn, reseatAssignment, type SideControl } from '../runtime/control.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { BattleArchive, PresencePort } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
@@ -56,6 +56,27 @@ describe('world seating', () => {
     const assignment = reseatAssignment(control, presenceOf([GM, 'A', 'B']));
 
     expect(assignment).toMatchObject({ mode: 'auto', seats: { attacker: [GM], defender: ['A', 'B'] } });
+  });
+
+  it('seats the GM alone on both sides when the GM plays both', () => {
+    const control: SideControl = { ...controlOf('auto', { attacker: [GM], defender: ['A', 'B'] }), gmSide: 'both' };
+
+    const assignment = reseatAssignment(control, presenceOf([GM, 'A', 'B']));
+
+    expect(assignment).toMatchObject({ mode: 'auto', gmSide: 'both', seats: { attacker: [GM], defender: [GM] } });
+  });
+
+  it('opens every turn to the GM when the GM plays both', async () => {
+    const presence = presenceOf([GM, 'A']);
+    const { runtime } = tableOf(battleSession(controlOf('auto', { attacker: [GM], defender: ['A'] })), presence);
+
+    const result = await runtime.submit({
+      type: 'control.assign', control: { mode: 'auto', gmSide: 'both', seats: { attacker: [], defender: [] } },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(openTurn(runtime.session.control, 'attacker', presence).holder).toBe(GM);
+    expect(openTurn(runtime.session.control, 'defender', presence).holder).toBe(GM);
   });
 
   it('asks for no change when the seating already fits the table', () => {

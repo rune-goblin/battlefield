@@ -5,7 +5,7 @@ import type { BoardTheme, HighlightStyle } from '../theme.js';
 
 export type { HighlightStyle } from '../theme.js';
 
-const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'attack'];
+const HIGHLIGHT_ORDER: HighlightStyle[] = ['deploy', 'moveFar3', 'moveFar', 'move', 'attack', 'invalid'];
 
 /** Reach reads as ink, never colour: the terrain keeps the board's only palette, so a band is
  * a wash the map shows straight through. Three levels, and the cheaper the ground the more
@@ -22,6 +22,7 @@ const SHADE: Record<HighlightStyle, { wash: number; outline: boolean }> = {
   moveFar: { wash: MID, outline: false },
   moveFar3: { wash: FAINT, outline: false },
   attack: { wash: STRONG, outline: true },
+  invalid: { wash: 0.4, outline: true },
 };
 
 // The drag arrow's head, as fractions of cell size: how far its tip stops short of the
@@ -127,8 +128,9 @@ export class OverlayLayer {
       const cells = this.highlights.get(style);
       if (!cells?.size) continue;
       const shade = SHADE[style];
-      for (const key of cells) this.fillCell(g, key, this.theme.ink, shade.wash);
-      if (shade.outline) for (const key of cells) this.strokeCell(g, key, this.theme.ink, 0.3, 1.5);
+      const colour = style === 'invalid' ? this.theme.overlay.shot : this.theme.ink;
+      for (const key of cells) this.fillCell(g, key, colour, shade.wash);
+      if (shade.outline) for (const key of cells) this.strokeCell(g, key, colour, style === 'invalid' ? 0.95 : 0.3, style === 'invalid' ? 3 : 1.5);
     }
 
     if (this.paintPreview) {
@@ -138,7 +140,7 @@ export class OverlayLayer {
 
     if (this.dragPath.length > 1) this.strokePath(g, this.dragPath, this.theme.overlay.selected, 0.9, 3);
 
-    if (this.hoverCell) this.strokeCell(g, this.hoverCell, this.theme.overlay.hover, 0.6, 2);
+    if (this.hoverCell && !this.highlights.get('invalid')?.has(this.hoverCell)) this.strokeCell(g, this.hoverCell, this.theme.overlay.hover, 0.6, 2);
     if (this.hoverEdge) this.strokeEdge(g, this.hoverEdge, this.theme.overlay.selected, 0.9, 5);
     if (this.selection) {
       const colour = this.selection.side === 'attacker' ? this.theme.attacker : this.theme.defender;

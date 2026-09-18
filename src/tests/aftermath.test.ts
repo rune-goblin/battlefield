@@ -19,19 +19,26 @@ function dusk() {
   return state;
 }
 
+/** Both armies through the night, the attacker with those choices and the defender with none. */
+const bothRecover = (state: ReturnType<typeof dusk>, attacker: Parameters<typeof recoverAtNight>[2], rng = scriptedRng([10])) =>
+  recoverAtNight(recoverAtNight(state, 'attacker', attacker, rng), 'defender', [], rng);
+
 describe('end-of-day decisions', () => {
   it('resolves recovery before decisions and requires both holds before deployment', () => {
     const state = dusk();
     expect(() => declareDayOrder(state, 'attacker', 'hold')).toThrow(/recovery/);
-    const recovered = recoverAtNight(state, [{ unit: 'u0', activity: 'rally' }], scriptedRng([20]));
-    expect(recovered.units[0].disorder).toBe(0);
+    const half = recoverAtNight(state, 'attacker', [{ unit: 'u0', activity: 'rally' }], scriptedRng([20]));
+    expect(half.units[0].disorder).toBe(0);
+    // One army's night is not the night: the other still has to roll before orders open.
+    expect(() => declareDayOrder(half, 'attacker', 'hold')).toThrow(/recovery/);
+    const recovered = recoverAtNight(half, 'defender', [], scriptedRng([20]));
     expect(() => startNextDay(recovered, suggestDeployment(recovered))).toThrow(/both holds/);
     const attacker = declareDayOrder(recovered, 'attacker', 'hold');
     expect(() => resolveDayOrders(attacker)).toThrow(/both armies/);
     const next = resolveDayOrders(declareDayOrder(attacker, 'defender', 'hold'));
     expect(next.endedBy).toBe('dusk');
     expect(() => resolveDayOrders(next)).toThrow(/already/);
-    expect(() => recoverAtNight(next, [], scriptedRng([10]))).toThrow(/already/);
+    expect(() => recoverAtNight(next, 'attacker', [], scriptedRng([10]))).toThrow(/already/);
     expect(startNextDay(next, suggestDeployment(next)).day).toBe(2);
     expect(state.dayOrders).toBeUndefined();
   });
@@ -39,16 +46,16 @@ describe('end-of-day decisions', () => {
   it.each([
     ['withdraw', 'hold', 'defender'], ['hold', 'withdraw', 'attacker'], ['withdraw', 'withdraw', 'draw'],
   ] as const)('resolves %s / %s without additional casualties', (attacker, defender, winner) => {
-    const state = recoverAtNight(dusk(), [], scriptedRng([10]));
+    const state = bothRecover(dusk(), []);
     const next = resolveDayOrders(declareDayOrder(declareDayOrder(state, 'attacker', attacker), 'defender', defender));
     expect(next.endedBy).toBe('withdrawal'); expect(next.winner).toBe(winner);
     expect(next.units).toEqual(state.units);
     expect(canContinueBattle(next)).toBe(false);
-    expect(() => recoverAtNight(next, [], scriptedRng([10]))).toThrow(/dusk/);
+    expect(() => recoverAtNight(next, 'attacker', [], scriptedRng([10]))).toThrow(/dusk/);
   });
 
   it('requires the opponent to accept surrender and returns a rejected proposal to its decision', () => {
-    const state = declareDayOrder(declareDayOrder(recoverAtNight(dusk(), [], scriptedRng([10])), 'defender', 'hold'), 'attacker', 'surrender');
+    const state = declareDayOrder(declareDayOrder(bothRecover(dusk(), []), 'defender', 'hold'), 'attacker', 'surrender');
     expect(state.endedBy).toBe('dusk'); expect(state.winner).toBe('draw');
     expect(() => resolveDayOrders(state)).toThrow(/respond/);
     expect(() => answerSurrender(state, 'attacker', true)).toThrow(/has not proposed/);
@@ -65,12 +72,14 @@ describe('end-of-day decisions', () => {
 describe('overnight recovery', () => {
   it('shares a penalty across both activities per side and counts morale once', () => {
     const state = dusk();
-    const next = recoverAtNight(state, [
-      { unit: 'u0', activity: 'rally' }, { unit: 'u1', activity: 'treat' }, { unit: 'u2', activity: 'rally' },
-    ], scriptedRng([15]));
-    expect(next.night!.map((r) => [r.penalty, r.check.modifier, r.check.dc])).toEqual([
-      [2, 10, levelDc(6)], [2, 11, levelDc(6)], [0, 13, levelDc(6)],
+    const rng = scriptedRng([15]);
+    const next = recoverAtNight(recoverAtNight(state, 'attacker', [
+      { unit: 'u0', activity: 'rally' }, { unit: 'u1', activity: 'treat' },
+    ], rng), 'defender', [{ unit: 'u2', activity: 'rally' }], rng);
+    expect(next.night!.attacker!.map((r) => [r.penalty, r.check.modifier, r.check.dc])).toEqual([
+      [2, 10, levelDc(6)], [2, 11, levelDc(6)],
     ]);
+    expect(next.night!.defender!.map((r) => [r.penalty, r.check.modifier, r.check.dc])).toEqual([[0, 13, levelDc(6)]]);
     expect(next.units[0].disorder).toBe(1);
     expect(next.units[1].wounds).toBe(2);
     expect(next.units[1].disorder).toBe(1);
@@ -80,31 +89,35 @@ describe('overnight recovery', () => {
 
   it('critical recovery restores two of only its own track and caps at full', () => {
     const state = dusk();
-    const healed = recoverAtNight(state, [{ unit: 'u0', activity: 'treat' }, { unit: 'u2', activity: 'treat' }], scriptedRng([20]));
+    const rng = scriptedRng([20]);
+    const healed = recoverAtNight(recoverAtNight(state, 'attacker', [{ unit: 'u0', activity: 'treat' }], rng), 'defender', [{ unit: 'u2', activity: 'treat' }], rng);
     expect(healed.units[0].wounds).toBe(0);
     expect(healed.units[0].disorder).toBe(2);
-    expect(healed.night!.map((r) => r.recovered)).toEqual([2, 1]);
-    const rallied = recoverAtNight(state, [{ unit: 'u0', activity: 'rally' }], scriptedRng([20]));
+    expect([...healed.night!.attacker!, ...healed.night!.defender!].map((r) => r.recovered)).toEqual([2, 1]);
+    const rallied = recoverAtNight(state, 'attacker', [{ unit: 'u0', activity: 'rally' }], scriptedRng([20]));
     expect(rallied.units[0].disorder).toBe(0);
     expect(rallied.units[0].wounds).toBe(2);
   });
 
   it('both failures preserve wounds and morale', () => {
-    const next = recoverAtNight(dusk(), [{ unit: 'u0', activity: 'treat' }, { unit: 'u1', activity: 'rally' }], scriptedRng([1, 5]));
-    expect(next.night!.map((r) => r.check.degree)).toEqual(['critical-failure', 'failure']);
-    expect(next.night!.map((r) => r.recovered)).toEqual([0, 0]);
+    const next = recoverAtNight(dusk(), 'attacker', [{ unit: 'u0', activity: 'treat' }, { unit: 'u1', activity: 'rally' }], scriptedRng([1, 5]));
+    expect(next.night!.attacker!.map((r) => r.check.degree)).toEqual(['critical-failure', 'failure']);
+    expect(next.night!.attacker!.map((r) => r.recovered)).toEqual([0, 0]);
     expect(next.units.slice(0, 2).map((u) => [u.wounds, u.disorder])).toEqual([[2, 2], [3, 1]]);
   });
 
-  it('validates every declaration before rolling and prevents repeat nights', () => {
+  it('validates every declaration before rolling and lets each army roll once', () => {
     const state = dusk();
     let rolls = 0;
     const rng = { d20: () => { rolls++; return 20; } };
-    expect(() => recoverAtNight(state, [{ unit: 'u0', activity: 'rally' }, { unit: 'u3', activity: 'rally' }], rng)).toThrow(/standing/);
-    expect(() => recoverAtNight(state, [{ unit: 'u0', activity: 'rally' }, { unit: 'u0', activity: 'treat' }], rng)).toThrow(/once/);
+    expect(() => recoverAtNight(state, 'defender', [{ unit: 'u2', activity: 'rally' }, { unit: 'u3', activity: 'rally' }], rng)).toThrow(/standing/);
+    expect(() => recoverAtNight(state, 'attacker', [{ unit: 'u0', activity: 'rally' }, { unit: 'u0', activity: 'treat' }], rng)).toThrow(/once/);
+    expect(() => recoverAtNight(state, 'defender', [{ unit: 'u0', activity: 'rally' }], rng)).toThrow(/does not recover for the defender/);
     expect(rolls).toBe(0);
-    const next = recoverAtNight(state, [], rng);
-    expect(() => recoverAtNight(JSON.parse(JSON.stringify(next)), [], rng)).toThrow(/already/);
+    const next = recoverAtNight(state, 'attacker', [], rng);
+    expect(() => recoverAtNight(JSON.parse(JSON.stringify(next)), 'attacker', [], rng)).toThrow(/already/);
+    // The other army is free to roll after, and its choices stay its own.
+    expect(recoverAtNight(next, 'defender', [{ unit: 'u2', activity: 'rally' }], rng).units[2].disorder).toBe(0);
   });
 
   it('bases rally DC on enemies returning tomorrow', () => {
@@ -133,7 +146,7 @@ describe('another battlefield day', () => {
     state.nextBoard = openBoard('hex', 11);
     state.nextBoard.spec.seed = 17;
     state.nextBoard.squares[4][4].terrain = 'forest';
-    const night = holdAfterRecovery(recoverAtNight(state, [{ unit: 'u0', activity: 'rally' }], scriptedRng([20])));
+    const night = holdAfterRecovery(bothRecover(state, [{ unit: 'u0', activity: 'rally' }], scriptedRng([20])));
     // Serialization preserves the selected map and the committed recovery result.
     const preview = nextDayBattlefield(JSON.parse(JSON.stringify(night)));
     expect(preview.board).toEqual(state.nextBoard);
@@ -166,7 +179,7 @@ describe('another battlefield day', () => {
       status: 'crewed' as const, side: 'attacker' as const, square: parse('c2'), emplaced: false };
     state.units[0].engines = [engine];
     state.engines = [{ ...engine, id: 'eq-emplaced', status: 'abandoned', square: parse('b2'), emplaced: true }];
-    const night = holdAfterRecovery(recoverAtNight(state, [], scriptedRng([10])));
+    const night = holdAfterRecovery(bothRecover(state, []));
     const positions = suggestDeployment(night);
     positions.u0 = 'b3';
     const next = startNextDay(night, positions);
@@ -195,7 +208,7 @@ describe('another battlefield day', () => {
     state.units[0].suppressedBy = 'u2'; state.units[0].inspired = true;
     state.board.walls['a1|b1'] = { tier: 1, boxes: 2, remaining: 0 };
     state.roundsPerDay = 8;
-    const night = holdAfterRecovery(recoverAtNight(state, [], scriptedRng([10])));
+    const night = holdAfterRecovery(bothRecover(state, []));
     const next = startNextDay(night, suggestDeployment(night));
     expect(next.day).toBe(2); expect(next.round).toBe(1); expect(next.roundsPerDay).toBe(8);
     expect(next.units.filter(isStanding).map((u) => u.id)).toEqual(['u0', 'u2']);
@@ -231,5 +244,9 @@ describe('another battlefield day', () => {
     const next = migrateMorale(old);
     expect(next.day).toBe(1); expect(next.roundsPerDay).toBe(6); expect(next.night).toBeNull();
     expect(next.units[0].disorder).toBe(2);
+    // A night rolled for both armies at once splits into each army's own, both counted as rolled.
+    const rolled = bothRecover(dusk(), [{ unit: 'u0', activity: 'rally' }]);
+    const joint = JSON.parse(JSON.stringify({ ...rolled, night: [...rolled.night!.attacker!, ...rolled.night!.defender!] }));
+    expect(migrateMorale(joint).night).toEqual({ attacker: rolled.night!.attacker, defender: [] });
   });
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Side } from '../engine/index.js';
-  import type { ControlAssignment } from '../runtime/control.js';
+  import type { ControlAssignment, GmSide } from '../runtime/control.js';
   import { commandReporter } from './command-notices.js';
   import { assignSeating, game, tableUsers } from './game.svelte.js';
   import { useNotifications } from './notification-context.js';
@@ -16,8 +16,14 @@
   const away = (id: string): boolean => users.some((u) => u.id === id && !u.online);
 
   const SIDES: Side[] = ['attacker', 'defender'];
+  const GM_SIDES: GmSide[] = ['attacker', 'defender', 'both'];
   // proto: the seat wording is reserved for review with the rest of the player-facing text.
-  const armyWord = (side: Side): string => (side === 'attacker' ? 'attacking army' : 'defending army');
+  const GM_PLAYS: Record<GmSide, string> = {
+    attacker: 'The GM plays the attackers',
+    defender: 'The GM plays the defenders',
+    both: 'The GM plays both armies',
+  };
+  const byHand = $derived(viewer.isGm && control.mode === 'manual');
 
   const seatsNow = (): Record<Side, string[]> =>
     ({ attacker: [...control.seats.attacker], defender: [...control.seats.defender] });
@@ -54,68 +60,85 @@
 
   const unseated = (side: Side) => users.filter((u) => !control.seats[side].includes(u.id));
   let picked = $state<Record<Side, string>>({ attacker: '', defender: '' });
+  let open = $state(false);
 </script>
 
-{#if viewer.isGm}
-  <div class="seating">
-    <h3>Seating</h3>
-    <div class="modes">
-      <button class:selected={control.mode === 'auto'} aria-pressed={control.mode === 'auto'} onclick={() => void send({ mode: 'auto' })}>
-        The GM takes one army
-      </button>
-      <button class:selected={control.mode === 'manual'} aria-pressed={control.mode === 'manual'} onclick={() => void send({ mode: 'manual' })}>
-        Seat players by hand
-      </button>
-    </div>
-
-    {#if control.mode === 'auto'}
-      <p class="muted">The GM plays one army and every other player takes the other.</p>
-      <div class="modes">
-        {#each SIDES as side (side)}
-          <button class:selected={control.gmSide === side} aria-pressed={control.gmSide === side} onclick={() => void send({ gmSide: side })}>
-            The GM plays the {armyWord(side)}
-          </button>
-        {/each}
-      </div>
-    {/if}
-
-    {#each SIDES as side (side)}
-      <div class="army" class:att={side === 'attacker'}>
-        <h4>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h4>
-        <ol>
-          {#each control.seats[side] as userId, i (userId)}
-            <li>
-              <span class="who" class:away={away(userId)}>{named(userId)}{away(userId) ? ' · away' : ''}</span>
-              <span class="order">
-                <button disabled={i === 0} onclick={() => void shift(side, i, -1)} aria-label="Act earlier">↑</button>
-                <button disabled={i === control.seats[side].length - 1} onclick={() => void shift(side, i, 1)} aria-label="Act later">↓</button>
-                <button onclick={() => void unseat(side, userId)} aria-label="Take the seat back">×</button>
-              </span>
-            </li>
-          {:else}
-            <li class="muted">Nobody — the GM plays this army.</li>
+<div class="seating">
+  <button onclick={() => (open = !open)} aria-expanded={open}>Seating</button>
+  {#if open}
+    <div class="panel">
+      {#if viewer.isGm}
+        <div class="modes">
+          {#each GM_SIDES as choice (choice)}
+            <button
+              class:selected={control.mode === 'auto' && control.gmSide === choice}
+              aria-pressed={control.mode === 'auto' && control.gmSide === choice}
+              onclick={() => void send({ mode: 'auto', gmSide: choice })}
+            >{GM_PLAYS[choice]}</button>
           {/each}
-        </ol>
-        <div class="add">
-          <select bind:value={picked[side]}>
-            <option value="">Seat someone…</option>
-            {#each unseated(side) as u (u.id)}<option value={u.id}>{u.name}</option>{/each}
-          </select>
-          <button disabled={!picked[side]} onclick={() => { void seat(side, picked[side]); picked[side] = ''; }}>Seat</button>
         </div>
-      </div>
-    {/each}
-    <p class="muted">Each army's activations pass down its list in turn. A seat whose player is away is skipped.</p>
-  </div>
-{/if}
+        <p class="muted">
+          {#if control.mode === 'manual'}
+            The seats below are set by hand.
+          {:else if control.gmSide === 'both'}
+            The GM plays both armies and every player watches.
+          {:else}
+            The GM plays one army and every player takes the other.
+          {/if}
+        </p>
+      {/if}
+
+      {#each SIDES as side (side)}
+        <div class="army" class:att={side === 'attacker'}>
+          <h4>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h4>
+          <ol>
+            {#each control.seats[side] as userId, i (userId)}
+              <li>
+                <span class="who" class:away={away(userId)}>{named(userId)}{away(userId) ? ' · away' : ''}</span>
+                {#if byHand}
+                  <span class="order">
+                    <button disabled={i === 0} onclick={() => void shift(side, i, -1)} aria-label="Act earlier">↑</button>
+                    <button disabled={i === control.seats[side].length - 1} onclick={() => void shift(side, i, 1)} aria-label="Act later">↓</button>
+                    <button onclick={() => void unseat(side, userId)} aria-label="Take the seat back">×</button>
+                  </span>
+                {/if}
+              </li>
+            {:else}
+              <li class="muted">Nobody — the GM plays this army.</li>
+            {/each}
+          </ol>
+          {#if byHand}
+            <div class="add">
+              <select bind:value={picked[side]}>
+                <option value="">Seat someone…</option>
+                {#each unseated(side) as u (u.id)}<option value={u.id}>{u.name}</option>{/each}
+              </select>
+              <button disabled={!picked[side]} onclick={() => { void seat(side, picked[side]); picked[side] = ''; }}>Seat</button>
+            </div>
+          {/if}
+        </div>
+      {/each}
+      <p class="muted">Each army's activations pass down its list in turn. A seat whose player is away is skipped.</p>
+
+      {#if viewer.isGm && control.mode === 'auto'}
+        <button class="hand" onclick={() => void send({ mode: 'manual' })}>Seat players by hand</button>
+      {/if}
+    </div>
+  {/if}
+</div>
 
 <style>
-  .seating { display: flex; flex-direction: column; gap: .4rem; margin-top: .8rem; padding: .6rem; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; font-size: .85rem; }
-  h3 { margin: 0; font-size: .95rem; }
+  .seating { position: relative; }
+  .panel {
+    position: absolute; right: 0; top: calc(100% + .3rem); z-index: 10; width: 20rem;
+    display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: .85rem;
+  }
+  .hand { align-self: flex-start; }
   h4 { margin: 0 0 .2rem; font-size: .85rem; color: var(--def); }
   .att h4 { color: var(--att); }
-  .modes { display: flex; gap: .3rem; flex-wrap: wrap; }
-  .modes button { flex: 1; min-width: 8rem; }
+  .modes { display: flex; flex-direction: column; gap: .3rem; }
   button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
   .muted { color: var(--muted); margin: 0; font-size: .78rem; }
   ol { list-style: none; margin: 0 0 .3rem; padding: 0; display: flex; flex-direction: column; gap: .2rem; }

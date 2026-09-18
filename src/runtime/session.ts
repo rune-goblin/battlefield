@@ -1,6 +1,6 @@
 import {
   COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES,
-  type BattleState, type Board, type BoardSpec, type RecoveryChoice, type Side, type UnitCard, type Unit,
+  type BattleState, type Board, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
 import type { BattleEvent } from './events.js';
@@ -184,6 +184,12 @@ export function migrateMorale(battle: BattleState): BattleState {
   battle.day ??= 1;
   battle.roundsPerDay ??= LAST_ROUND;
   battle.night ??= null;
+  if (Array.isArray(battle.night)) {
+    // Before armies rolled separately, one night rolled both at once, so both have had theirs.
+    const rolled: NightRecovery[] = battle.night;
+    const sideOf = (id: string) => battle.units.find((u) => u.id === id)?.side ?? 'attacker';
+    battle.night = Object.fromEntries(SIDES.map((side) => [side, rolled.filter((r) => sideOf(r.unit) === side)]));
+  }
   for (const u of battle.units) {
     delete (u as Unit & { quality?: number }).quality;
     u.disorder = Math.max(0, Math.min(ROUTED_AT, u.disorder));

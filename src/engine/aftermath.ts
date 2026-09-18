@@ -3,7 +3,7 @@ import { canDeploy, crewOf, isStanding, unit } from './battle.js';
 import { check } from './check.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
-import { ACTIONS_PER_ACTIVATION, SIDES, type BattleState, type DayOrder, type RecoveryChoice, type Side, type Unit } from './types.js';
+import { ACTIONS_PER_ACTIVATION, SIDES, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -12,13 +12,19 @@ export function canContinueBattle(state: BattleState): boolean {
     && SIDES.every((side) => state.units.some((u) => u.side === side && isStanding(u)));
 }
 
+/** Whether that army has rolled its recovery tonight. */
+export const hasRecovered = (state: BattleState, side: Side): boolean => state.night?.[side] !== undefined;
+
+/** Both armies have rolled; the day's decisions can follow. */
+export const nightResolved = (state: BattleState): boolean => SIDES.every((side) => hasRecovered(state, side));
+
 export function canPrepareNextDay(state: BattleState): boolean {
-  return canContinueBattle(state) && state.night !== null && state.dayOrders?.confirmed === true
+  return canContinueBattle(state) && nightResolved(state) && state.dayOrders?.confirmed === true
     && SIDES.every((side) => state.dayOrders?.choices[side] === 'hold');
 }
 
 function requireDayDecision(state: BattleState) {
-  if (!canContinueBattle(state) || state.night === null) throw new Error('resolve recovery before choosing day decisions');
+  if (!canContinueBattle(state) || !nightResolved(state)) throw new Error('resolve recovery before choosing day decisions');
 }
 
 export function declareDayOrder(input: BattleState, side: Side, order: DayOrder): BattleState {
@@ -82,27 +88,30 @@ export function recoveryDc(state: BattleState, choice: RecoveryChoice): number {
     .filter((enemy) => enemy.side !== u.side && isStanding(enemy)).map((enemy) => enemy.level)));
 }
 
-/** Commit both armies' declarations before rolling. Each unit gets one choice; both
- * activities share its side's penalty. Stats exclude the shared morale track. */
-export function recoverAtNight(input: BattleState, choices: RecoveryChoice[], rng: Rng): BattleState {
+/** One army declares and rolls at once; the other army rolls on its own, before or after.
+ * Each unit gets one choice; both activities share the army's penalty. Stats exclude the
+ * shared morale track. */
+export function recoverAtNight(input: BattleState, side: Side, choices: RecoveryChoice[], rng: Rng): BattleState {
   if (!canContinueBattle(input)) throw new Error('overnight recovery requires a contested dusk');
-  if (input.night !== null) throw new Error('this night has already been resolved');
+  if (!SIDES.includes(side)) throw new Error('invalid side');
+  if (hasRecovered(input, side)) throw new Error(`the ${side} has already recovered tonight`);
   const seen = new Set<string>();
-  const counts: Record<Side, number> = { attacker: 0, defender: 0 };
   for (const choice of choices) {
     const u = unit(input, choice.unit);
+    if (u.side !== side) throw new Error(`${u.name} does not recover for the ${side}`);
     if (!isStanding(u)) throw new Error('only standing units can recover overnight');
     if (seen.has(u.id)) throw new Error('a unit may attempt recovery only once per night');
     if (choice.activity !== 'rally' && choice.activity !== 'treat') throw new Error('unknown recovery activity');
     if ((choice.activity === 'rally' ? u.disorder : u.wounds) <= 0) throw new Error('the unit has nothing to recover');
     seen.add(u.id);
-    counts[u.side]++;
   }
   const state = clone(input);
-  state.night = [];
+  const penalty = recoveryPenalty(choices.length);
+  const results: NightRecovery[] = [];
+  state.night = { ...(state.night ?? {}), [side]: results };
   // Earlier saves may contain decisions made before recovery. Choose again with the results.
   state.dayOrders = undefined;
-  state.log.push({ round: state.round, text: `Night ${state.day}. Recovery declarations committed: attacker ${counts.attacker} (${-recoveryPenalty(counts.attacker)}), defender ${counts.defender} (${-recoveryPenalty(counts.defender)}).` });
+  state.log.push({ round: state.round, text: `Night ${state.day}. The ${side} declares ${choices.length} ${choices.length === 1 ? 'recovery' : 'recoveries'} (${-penalty}).` });
   for (const u of state.units) {
     // Keep losses in the report and campaign handoff, but remove routed survivors from play.
     if (u.status === 'active' && !isStanding(u)) u.status = 'left';
@@ -110,14 +119,13 @@ export function recoverAtNight(input: BattleState, choices: RecoveryChoice[], rn
   }
   for (const choice of choices) {
     const u = unit(state, choice.unit);
-    const penalty = recoveryPenalty(counts[u.side]);
     const modifier = (choice.activity === 'rally' ? u.stats.will : u.stats.fortitude) - u.disorder - penalty;
     const result = check(rng, modifier, recoveryDc(input, choice));
     const amount = result.degree === 'critical-success' ? 2 : result.degree === 'success' ? 1 : 0;
     const field = choice.activity === 'rally' ? 'disorder' : 'wounds';
     const recovered = Math.min(u[field], amount);
     u[field] -= recovered;
-    state.night.push({ ...choice, check: result, penalty, recovered });
+    results.push({ ...choice, check: result, penalty, recovered });
     state.log.push({ round: state.round, unit: u.id, check: result,
       text: `${u.name} ${choice.activity === 'rally' ? 'rallies' : 'treats wounded'}: ${result.roll} + ${modifier} = ${result.total} vs DC ${result.dc}, ${result.degree.replaceAll('-', ' ')}. Restores ${recovered} ${choice.activity === 'rally' ? 'morale' : 'health'}.` });
   }

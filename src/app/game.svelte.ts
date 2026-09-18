@@ -149,7 +149,7 @@ export const endBattle = () => submit({ type: 'battle.returnToSetup' });
 /** Throw the draft away and start from the example force. */
 export const resetSetup = () => submit({ type: 'battle.reset' });
 
-/** Each army declares its own recovery. The night rolls once the second declaration lands. */
+/** Each army declares its own recovery and rolls it at once. */
 export const declareRecovery = (side: Side, choices: RecoveryChoice[]) =>
   submit({ type: 'continuation.declareRecovery', side, choices: choices.map((c) => ({ ...c })) });
 

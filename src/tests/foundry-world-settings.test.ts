@@ -26,6 +26,11 @@ describe('the Foundry session repository', () => {
     expect((await repo.load()).revision).toBe(3);
   });
 
+  it('opens a new world with the GM on one army and the players on the other', async () => {
+    const session = await createFoundrySessionRepository(fakeStorage()).load();
+    expect(session.control).toMatchObject({ mode: 'auto', gmSide: 'defender' });
+  });
+
   it('falls back to a fresh session on a corrupt setting value', async () => {
     const repo = createFoundrySessionRepository(fakeStorage('not json'));
     expect((await repo.load()).revision).toBe(0);

@@ -177,6 +177,11 @@ describe('installing a requested battle', () => {
       type: 'session.install', battleId: 'battle-2', request: request({ gmSide: 'attacker' }),
     });
     expect(runtime.session.control.seats).toEqual({ attacker: [GM], defender: [PLAYER] });
+
+    await runtime.submit({
+      type: 'session.install', battleId: 'battle-3', request: request({ gmSide: 'both' }),
+    });
+    expect(runtime.session.control.seats).toEqual({ attacker: [GM], defender: [GM] });
   });
 
   it('refuses a player and leaves the record where it stands', async () => {

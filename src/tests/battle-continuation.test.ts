@@ -45,7 +45,7 @@ function runtimeOn(battle = duskBattle()) {
 
 const rally = (unit: string) => [{ unit, activity: 'rally' as const }];
 
-/** Both sides declare recovery and hold, which is the state the deployment step opens in. */
+/** Both sides roll recovery and hold, which is the state the deployment step opens in. */
 async function nightAndHolds(runtime: Runtime) {
   await runtime.submit({ type: 'continuation.declareRecovery', side: 'attacker', choices: rally('u0') });
   await runtime.submit({ type: 'continuation.declareRecovery', side: 'defender', choices: rally('u1') });
@@ -55,26 +55,28 @@ async function nightAndHolds(runtime: Runtime) {
 }
 
 describe('battle continuation', () => {
-  it('rolls the night once, with both sides’ choices', async () => {
+  it('rolls each army’s night as it declares, independently of the other', async () => {
     const { runtime, dice } = runtimeOn();
 
     const first = await runtime.submit({ type: 'continuation.declareRecovery', side: 'attacker', choices: rally('u0') });
 
     expect(first.ok).toBe(true);
+    expect(runtime.session.battle!.night!.attacker!.map((r) => r.unit)).toEqual(['u0']);
+    expect(runtime.session.battle!.night!.defender).toBeUndefined();
+    expect(dice.rolls).toBe(1);
+    // The declaration stays open on the record: the defender is still owed its night.
     expect(submissionOf(runtime.session.interactions, 'night.recovery', 'attacker')).toEqual(rally('u0'));
-    expect(runtime.session.battle!.night).toBeNull();
-    expect(dice.rolls).toBe(0);
-
-    await runtime.submit({ type: 'continuation.declareRecovery', side: 'defender', choices: rally('u1') });
-
-    expect(runtime.session.battle!.night!.map((r) => r.unit)).toEqual(['u0', 'u1']);
-    expect(dice.rolls).toBe(2);
-    // The declarations stay on the record, closed: the report shows what each army chose.
-    expect(interactionOf(runtime.session.interactions, 'night.recovery')!.status).toBe('closed');
+    expect(interactionOf(runtime.session.interactions, 'night.recovery')!.status).toBe('open');
 
     const again = await runtime.submit({ type: 'continuation.declareRecovery', side: 'attacker', choices: rally('u0') });
     expect(again).toMatchObject({ ok: false, reason: 'engine' });
+    expect(dice.rolls).toBe(1);
+
+    await runtime.submit({ type: 'continuation.declareRecovery', side: 'defender', choices: rally('u1') });
+
+    expect(runtime.session.battle!.night!.defender!.map((r) => r.unit)).toEqual(['u1']);
     expect(dice.rolls).toBe(2);
+    expect(interactionOf(runtime.session.interactions, 'night.recovery')!.status).toBe('closed');
   });
 
   it('refuses recovery declared for the other side’s units', async () => {

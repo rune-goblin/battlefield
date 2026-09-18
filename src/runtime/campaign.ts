@@ -3,7 +3,7 @@ import {
   type BoardSpec, type Reach, type Role, type Side, type UnitCard,
 } from '../engine/index.js';
 import type { BattleCommand, CommandResult, RejectionReason } from './commands.js';
-import { freshControl } from './control.js';
+import { freshControl, isGmSide, type GmSide } from './control.js';
 import {
   freshSession, newBattleId, newEquipmentId, newUnitId,
   type BattleSession, type ImportBaseline, type SetupUnit, type SourceBinding,
@@ -40,10 +40,11 @@ export interface BattleRequest {
   units: BattleRequestUnit[];
   emplacements?: BattleRequestEngine[];
   roundsPerDay?: number;
-  /** The army the GM plays; every other user at the table takes the other. */
+  /** The army the GM plays; every other user at the table takes the other. `both` seats the
+   * GM alone. */
   // proto: the default is the defender, since a campaign's own army is the one that marched
   // here. Reserved for review with the rest of the import defaults.
-  gmSide?: Side;
+  gmSide?: GmSide;
 }
 
 export type CreateBattleRefusal = RejectionReason | 'invalid';
@@ -151,7 +152,7 @@ export function battleRequestProblems(request: unknown): string[] {
   if (r.roundsPerDay !== undefined && !counted(r.roundsPerDay, 1)) {
     out.push(`${String(r.roundsPerDay)} is no count of rounds in a day`);
   }
-  if (r.gmSide !== undefined && !SIDES.includes(r.gmSide)) out.push(`the GM plays no side called ${String(r.gmSide)}`);
+  if (r.gmSide !== undefined && !isGmSide(r.gmSide)) out.push(`the GM plays no side called ${String(r.gmSide)}`);
   return out;
 }
 

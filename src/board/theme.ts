@@ -4,8 +4,8 @@ import type { SquareTerrain, Tree } from '../engine/index.js';
 // band, 'moveFar'/'moveFar3' the costed band at two and three actions — one shade per extra
 // action. The drag preview reuses 'move'/'moveFar' for its near/far path cells. The washes
 // themselves are ink at three alphas; see `OverlayLayer`.
-export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3';
-export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3'];
+export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3' | 'invalid';
+export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3', 'invalid'];
 
 export interface BoardTheme {
   mode: 'light' | 'dark';

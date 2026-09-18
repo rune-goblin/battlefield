@@ -50,10 +50,12 @@
     onbrush?: (brush: Brush | null) => void;
     /** A native drag (e.g. a tray item) released over the canvas; `cell` is null outside the grid. */
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
+    /** Native tray drags use HTML drag events rather than the board's pointer hover. */
+    ontrayhover?: (cell: string | null) => void;
   }
   let {
     board, terrainAppearance = null, inkMap = null, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
-    onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop,
+    onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop, ontrayhover,
   }: Props = $props();
 
   let container: HTMLDivElement;
@@ -141,7 +143,8 @@
     tabindex="0"
     aria-label="Battle board"
     title={hoverTitle}
-    ondragover={ontraydrop && ((e) => e.preventDefault())}
+    ondragover={ontraydrop && ((e) => { e.preventDefault(); ontrayhover?.(view?.cellAt(e.clientX, e.clientY) ?? null); })}
+    ondragleave={ontrayhover && (() => ontrayhover(null))}
     ondrop={ontraydrop && ((e) => { e.preventDefault(); ontraydrop(view?.cellAt(e.clientX, e.clientY) ?? null, e.dataTransfer); })}
   ></canvas>
 </div>

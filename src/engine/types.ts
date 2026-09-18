@@ -282,8 +282,9 @@ export interface BattleState {
   /** One campaign battle may span several battlefield days. */
   day: number;
   roundsPerDay: number;
-  /** A non-null report commits this night's rolls and prevents repeat recovery. */
-  night: NightRecovery[] | null;
+  /** Each army's rolls, recorded the moment that army rolls; an army present here has had its
+   * night. Null before either army rolls. */
+  night: Partial<Record<Side, NightRecovery[]>> | null;
   /** A chosen new battlefield, pending the next day's deployment. Null keeps this field. */
   nextBoard?: Board | null;
   /** Retain field damage and equipment left behind when the armies change maps. */

@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { COMBATANTS, deployRanks, ENGINES, derivation, OFFICIAL, paceReason, ROSTER, type Side, type UnitCard } from '../engine/index.js';
+  import { COMBATANTS, deployRanks, ENGINES, derivation, gridOf, notation, OFFICIAL, paceReason, ROSTER, type Side, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
-  import SeatingPanel from './SeatingPanel.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
@@ -34,6 +33,7 @@
   // only point a native drag gives Svelte a hook, so it also drives the live deploy-wash
   // highlight during that drag.
   let dragging = $state<PieceRef | null>(null);
+  let hoveredCell = $state<string | null>(null);
 
   const units = $derived(game.setup.units);
   const emplacements = $derived(game.setup.emplacements);
@@ -46,8 +46,12 @@
   const picked = $derived(selected?.kind === 'unit' ? units.find((u) => u.id === selected!.id) ?? null : null);
   const pickedAmbush = $derived(picked ? isAmbush(picked) : false);
 
-  const highlightCells = $derived(deployableCells(game.setup, side, pickedAmbush, selected));
-  const highlight = $derived(new Set(highlightCells));
+  // The wash describes the whole deployment zone. Occupancy and terrain only decide whether
+  // the current placement is legal, so placing a piece leaves the zone intact beneath it.
+  const deploymentRanks = $derived(new Set(deployRanks(side, pickedAmbush, board.squares.length)));
+  const highlightCells = $derived(gridOf(board).cells().filter(cell => deploymentRanks.has(cell.rank)).map(notation));
+  const legalCells = $derived(new Set(deployableCells(game.setup, side, pickedAmbush, selected)));
+  const invalidCell = $derived(selected && hoveredCell && !legalCells.has(hoveredCell) ? hoveredCell : null);
 
   let boardRef = $state<PixiBoard>();
 
@@ -92,7 +96,7 @@
 
   /** Put the selected piece down, then jump to this side's next unplaced piece. */
   async function placeOn(n: string) {
-    if (!selected || !highlight.has(n)) return;
+    if (!selected || !legalCells.has(n)) return;
     const result = await placePiece(selected, n);
     if (result.ok) selected = nextUnplaced();
   }
@@ -128,7 +132,7 @@
   }
 
   // A board-internal drag of an already-placed token. Validated against that piece's own
-  // side/ambush ranks (not `highlight`, which follows the sidebar and may be stale mid-drag):
+  // side/ambush ranks (not `legalCells`, which follows the sidebar and may be stale mid-drag):
   // an invalid or occupied drop is a no-op, so the token stays put and TokenLayer's next
   // render snaps it back on its own.
   function onTokenDrop(e: BoardEventOf<'drop'>) {
@@ -137,6 +141,14 @@
     if (!piece || piece.side !== side) return;
     if (!cellsFor(game.setup, p).includes(e.cell)) return;
     void placePiece(p, e.cell);
+  }
+
+  function onTokenDrag(e: BoardEventOf<'drag'>) {
+    if (e.cell === null) return;
+    const p = pickOf(e.id);
+    if (pieceAt(p)?.side !== side) return;
+    selected = p;
+    hoveredCell = e.cell;
   }
 
   function onTrayDragStart(p: PieceRef, e: DragEvent) {
@@ -159,7 +171,7 @@
     const raw = data?.getData('text/plain');
     const p = raw ? pickOf(raw) : dragging;
     dragging = null;
-    if (cell === null || !p || !pieceAt(p) || !highlight.has(cell)) return;
+    if (cell === null || !p || pieceAt(p)?.side !== side || !cellsFor(game.setup, p).includes(cell)) return;
     void placePiece(p, cell);
   }
 
@@ -244,7 +256,10 @@
   {/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} {board} {tokens} mode="place" fill highlights={[{ style: 'deploy', cells: highlightCells }]} oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop}
+    <PixiBoard bind:this={boardRef} {board} {tokens} mode="place" fill
+      highlights={[{ style: 'deploy', cells: highlightCells }, { style: 'invalid', cells: invalidCell ? [invalidCell] : [] }]}
+      onhover={(e) => { hoveredCell = e.cell; }} ondrag={onTokenDrag} ontrayhover={(cell) => { hoveredCell = cell; }}
+      oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop}
       terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 
@@ -393,8 +408,6 @@
       >{ready ? 'Ready — waiting for the other army' : `The ${sideWord} force is ready`}</button>
       <small>{otherReady ? `The ${otherWord} force is ready.` : `The ${otherWord} force is still forming up.`}</small>
     </div>
-
-    <SeatingPanel />
 
     <div class="row">
       <button onclick={() => void resetToExample()}>Reset to the example</button>

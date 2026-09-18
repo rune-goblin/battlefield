@@ -1,17 +1,17 @@
 import {
   answerSurrender as answerSurrenderProposal, canContinueBattle, declareDayOrder as declareOrder,
-  generateBoard, nextDayBattlefield, recoverAtNight, resolveDayOrders, SIDES,
+  generateBoard, nextDayBattlefield, nightResolved, recoverAtNight, resolveDayOrders, SIDES,
   type BattleState, type BoardSpec, type DayOrder, type RecoveryChoice, type Side,
 } from '../engine/index.js';
-import { allSubmitted, closeInteraction, dropInteraction, submissionOf, submitTo } from '../runtime/interactions.js';
+import { closeInteraction, dropInteraction, submitTo } from '../runtime/interactions.js';
 import type { DicePort } from '../runtime/ports.js';
 import { randomSeed, type BattleSession } from '../runtime/session.js';
 import { deploymentProblem } from './ArmyPreparationService.js';
 
 /**
- * The night between two days and the ground the next one is fought on. Recovery and deployment
- * arrive one side at a time and wait in the record: the night rolls when the second side
- * declares, and `BattleManager` starts the day once both deployments are legal.
+ * The night between two days and the ground the next one is fought on. Each army declares and
+ * rolls its own recovery; deployments arrive one side at a time and wait in the record, and
+ * `BattleManager` starts the day once both are legal.
  */
 export interface BattleContinuationService {
   declareRecovery(session: BattleSession, side: Side, choices: RecoveryChoice[], userId: string): BattleSession;
@@ -46,7 +46,7 @@ function nextSpec(battle: BattleState, changes: Partial<BoardSpec>): BoardSpec {
 
 /** The night is the wall between the deployment and the field it was chosen on. */
 function requireNight(battle: BattleState): BattleState {
-  if (!canContinueBattle(battle) || battle.night === null) {
+  if (!canContinueBattle(battle) || !nightResolved(battle)) {
     throw new Error('resolve recovery before deploying for the next day');
   }
   return battle;
@@ -55,23 +55,11 @@ function requireNight(battle: BattleState): BattleState {
 export function createBattleContinuationService({ dice }: { dice: DicePort }): BattleContinuationService {
   return {
     declareRecovery: (session, side, choices, userId) => {
-      const battle = battleOf(session);
-      if (!canContinueBattle(battle)) throw new Error('overnight recovery requires a contested dusk');
-      if (battle.night !== null) throw new Error('this night has already been resolved');
-      for (const choice of choices) {
-        if (battle.units.find((u) => u.id === choice.unit)?.side !== requireSide(side)) {
-          throw new Error(`${choice.unit} does not recover for the ${side}`);
-        }
-      }
+      const rolled = recoverAtNight(battleOf(session), requireSide(side), choices, dice);
+      // The declaration stays on the record so the other army is told its night still waits;
+      // once both have rolled there is nothing left to answer.
       const declared = submitTo(session, 'night.recovery', side, choices.map((c) => ({ ...c })), userId);
-      if (!allSubmitted(declared.interactions, 'night.recovery')) return declared;
-      // Both armies' declarations reach the engine together, in side order, so one night rolls
-      // once and the dice fall in the same sequence whichever side declared first.
-      const together = SIDES.flatMap((s) => submissionOf(declared.interactions, 'night.recovery', s)!);
-      return {
-        ...closeInteraction(declared, 'night.recovery'),
-        battle: recoverAtNight(battle, together, dice),
-      };
+      return withBattle(nightResolved(rolled) ? closeInteraction(declared, 'night.recovery') : declared, rolled);
     },
 
     declareDayOrder: (session, side, order) =>

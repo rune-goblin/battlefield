@@ -3,13 +3,19 @@ import type { PresencePort } from './ports.js';
 
 /**
  * Who plays each side. `auto`, the default, gives the GM one side and every other user at the
- * table the other; `manual` is the GM's hand-built seating and shares every other rule. The
+ * table the other, or gives the GM both and seats nobody else, which is how a GM plays a battle
+ * through alone. `manual` is the GM's hand-built seating and shares every other rule. The
  * engine knows sides and units alone, so seats and turns live here and in the session record.
  */
+export type GmSide = Side | 'both';
+
+export const isGmSide = (value: unknown): value is GmSide =>
+  value === 'attacker' || value === 'defender' || value === 'both';
+
 export interface SideControl {
   mode: 'auto' | 'manual';
-  /** The side the GM plays in `auto` mode. */
-  gmSide: Side;
+  /** What the GM plays in `auto` mode. */
+  gmSide: GmSide;
   /** User IDs in turn order. */
   seats: Record<Side, string[]>;
   /** Where each side's rotation stands. It runs on across rounds and days, so players sharing
@@ -24,16 +30,12 @@ export const HOT_SEAT_USER = 'local';
 
 const otherSide = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 
-export const freshControl = (gmSide: Side = 'attacker'): SideControl =>
+export const freshControl = (gmSide: GmSide = 'attacker'): SideControl =>
   ({ mode: 'auto', gmSide, seats: { attacker: [], defender: [] }, next: { attacker: 0, defender: 0 } });
 
 /** One user at both seats, and that user is the GM. */
-export const hotSeatControl = (userId = HOT_SEAT_USER): SideControl => ({
-  mode: 'manual',
-  gmSide: 'attacker',
-  seats: { attacker: [userId], defender: [userId] },
-  next: { attacker: 0, defender: 0 },
-});
+export const hotSeatControl = (userId = HOT_SEAT_USER): SideControl =>
+  ({ ...freshControl('both'), seats: { attacker: [userId], defender: [userId] } });
 
 export const seatedOn = (control: SideControl, side: Side, userId: string): boolean =>
   control.seats[side].includes(userId);
@@ -42,7 +44,7 @@ export function isSideControl(value: unknown): value is SideControl {
   const c = value as SideControl | null;
   return !!c && typeof c === 'object'
     && (c.mode === 'auto' || c.mode === 'manual')
-    && (c.gmSide === 'attacker' || c.gmSide === 'defender')
+    && isGmSide(c.gmSide)
     && !!c.seats && Array.isArray(c.seats.attacker) && Array.isArray(c.seats.defender)
     && !!c.next && Number.isInteger(c.next.attacker) && Number.isInteger(c.next.defender);
 }
@@ -67,7 +69,7 @@ export function openTurn(control: SideControl, side: Side, presence: PresencePor
 
 /**
  * Fit the seating to the users the host reports. `auto` rebuilds it: the GM holds `gmSide` and
- * every other user takes the other side. `manual` keeps its order and drops users the host no
+ * every other user takes the other side, or watches when the GM holds both. `manual` keeps its order and drops users the host no
  * longer has, which is what a save carried from another table needs.
  */
 export function seatUsers(control: SideControl, presence: PresencePort): SideControl {
@@ -82,6 +84,7 @@ export function seatUsers(control: SideControl, presence: PresencePort): SideCon
     };
   }
   const gm = presence.gmUserId();
+  if (control.gmSide === 'both') return { ...control, seats: { attacker: [gm], defender: [gm] } };
   const seats: Record<Side, string[]> = { attacker: [], defender: [] };
   seats[control.gmSide] = [gm];
   seats[otherSide(control.gmSide)] = presence.users().filter((u) => u !== gm);

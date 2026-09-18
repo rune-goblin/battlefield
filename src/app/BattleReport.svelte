@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { canContinueBattle, deploymentCells, FEATURES, HEX_TERRAINS, isStanding, MAX_WOUNDS, nextDayBattlefield,
-    recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
-    type BoardSpec, type DayOrder, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
+  import { canContinueBattle, deploymentCells, FEATURES, hasRecovered, HEX_TERRAINS, isStanding, MAX_WOUNDS, nextDayBattlefield,
+    nightResolved, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
+    type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
   import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
-  import { allSubmitted, hasSubmitted, submissionOf } from '../runtime/interactions.js';
+  import { allSubmitted, submissionOf } from '../runtime/interactions.js';
   import { viewer } from './viewer.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { gameMap } from './map-style.svelte.js';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
   const notifications = useNotifications();
@@ -27,7 +27,7 @@
   let choices = $state<Record<string, RecoveryActivity | ''>>({});
   let positions = $state<Record<string, string>>({});
   let content: HTMLDivElement;
-  const resolved = $derived(b.night !== null);
+  const resolved = $derived(nightResolved(b));
   const continuing = $derived(canContinueBattle(b));
   const stage = $derived<Step>(!continuing ? 'report' : resolved && step === 'report' ? (b.dayOrders?.confirmed ? 'deployment' : 'orders') : step);
   const dayOptions: { id: DayOrder; label: string; description: string }[] = [
@@ -48,8 +48,49 @@
   const participants = (side: Side) => declarationsFor(side).length;
   /** Whether this viewer answers for that army: any user seated on it, and the GM for either. */
   const mine = (side: Side) => viewer.decidesFor(side);
-  /** An army's recovery waits in the record until the other army declares too. */
-  const committed = (side: Side) => hasSubmitted(game.interactions, 'night.recovery', side);
+  const rolled = (side: Side) => hasRecovered(b, side);
+  const resultOf = (u: Unit) => b.night?.[u.side]?.find((r) => r.unit === u.id);
+  const recoveryOptions: { id: RecoveryActivity | ''; label: string; mark: string }[] = [
+    { id: '', label: 'None', mark: '' }, { id: 'rally', label: 'Morale', mark: '⚑' }, { id: 'treat', label: 'Health', mark: '♥' },
+  ];
+  /** How many of each army's results the viewer has been shown. An army's rolls arrive in one
+   * record; the view then reveals them one unit at a time, with a die tumbling over each. */
+  let shown = $state<Record<Side, number>>({ attacker: 0, defender: 0 });
+  let tumbling = $state<{ unit: string; face: number } | null>(null);
+  const playing = new Set<Side>();
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  const wait = (ms: number) => new Promise<void>((resolve) => {
+    const timer = setTimeout(() => { timers.delete(timer); resolve(); }, ms);
+    timers.add(timer);
+  });
+  onDestroy(() => timers.forEach(clearTimeout));
+  async function playRolls(side: Side, results: NightRecovery[]) {
+    playing.add(side);
+    for (let i = shown[side]; i < results.length; i++) {
+      for (let tick = 0; tick < 9; tick++) {
+        tumbling = { unit: results[i].unit, face: 1 + Math.floor(Math.random() * 20) };
+        await wait(55);
+      }
+      tumbling = null;
+      shown[side] = i + 1;
+      await wait(450);
+    }
+    playing.delete(side);
+  }
+  let seenNight = false;
+  $effect(() => {
+    for (const side of SIDES) {
+      const results = b.night?.[side];
+      untrack(() => {
+        if (!results) shown[side] = 0;
+        // Results already on the record when the report opens were rolled earlier; play only a roll that lands while it is open.
+        else if (!seenNight) shown[side] = results.length;
+        else if (shown[side] < results.length && !playing.has(side)) void playRolls(side, results);
+      });
+    }
+    seenNight = true;
+  });
+  const outcome = (r: NightRecovery) => r.recovered === 0 ? `fails to recover` : `recovers ${r.recovered} ${r.activity === 'rally' ? 'morale' : 'health'}`;
   const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'left' ? 'Left the field' : 'Standing';
   const signed = (n: number) => n >= 0 ? `+${n}` : `−${-n}`;
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
@@ -78,7 +119,7 @@
     const save = activity === 'rally' ? u.stats.will : u.stats.fortitude;
     return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
   }
-  $effect(() => { if (b.night !== null) positions = suggestDeployment(field); });
+  $effect(() => { if (resolved) positions = suggestDeployment(field); });
   function go(next: Step) { step = next; notifications.dismiss(COMMAND_NOTICE); content?.scrollTo({ top: 0 }); }
   /** The authority generates tomorrow's field over the spec it already holds. */
   function generateNext(changes: Partial<BoardSpec> = {}) {
@@ -137,42 +178,55 @@
           </div>
         </div>
       {:else if stage === 'recovery'}
-        <div class="instruction"><strong>{resolved ? 'Recovery complete.' : 'Choose recovery for each unit.'}</strong><p>{resolved ? 'All results are final for this night. Review them before choosing to withdraw or hold.' : 'Choose None, Morale, or Health. Each extra participant gives every recovery check on its side −2. Success restores 1; critical success restores 2.'}</p></div>
-        <div class="recovery-table-wrap">
-          <table class="recovery-table">
-            <thead>
-              <tr><th rowspan="2" scope="col">Unit</th><th colspan="3" scope="colgroup" class="recovery-header">Recovery</th></tr>
-              <tr><th scope="col">None</th><th scope="col"><span aria-hidden="true">⚑</span> Morale</th><th scope="col"><span aria-hidden="true">♥</span> Health</th></tr>
-            </thead>
-            {#each SIDES as side (side)}
-              <tbody class:attacking={side === 'attacker'} class:defending={side === 'defender'}>
-                <tr class="side-heading"><th colspan="4" scope="rowgroup">{side === 'attacker' ? 'Attacking army' : 'Defending army'}</th></tr>
-                {#each b.units.filter((u) => u.side === side) as u (u.id)}
-                  {@const result = b.night?.find((r) => r.unit === u.id)}
-                  {@const activity = resolved ? (result?.activity ?? '') : (choices[u.id] ?? '')}
-                  <tr class:lost={!isStanding(u)}>
-                    <th scope="row" class="recovery-unit">
-                      <strong>{u.name}</strong>
-                      <div class="meters"><span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span><span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span></div>
-                      {#if !isStanding(u)}<small>{status(u)} · Cannot recover</small>
-                      {:else if resolved}
-                        {#if result}<small class="check-preview">{result.check.degree.replaceAll('-', ' ')} · {result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small>
-                        {:else}<small>No recovery attempted.</small>{/if}
-                      {:else if activity}<small class="check-preview">{preview(u, activity)}</small>
-                      {:else}<small>{u.wounds === 0 && u.disorder === 0 ? 'At full health and morale.' : 'Choose a recovery activity.'}</small>{/if}
-                    </th>
-                    {#each [{ id: '', label: 'None' }, { id: 'rally', label: 'Morale' }, { id: 'treat', label: 'Health' }] as option (option.id)}
-                      <td class="recovery-option">
-                        <input type="radio" name={`recovery-${u.id}`} aria-label={`${option.label} recovery for ${u.name}`}
-                          checked={activity === option.id} disabled={resolved || committed(side) || !isStanding(u) || (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
-                          onchange={() => choices[u.id] = option.id as RecoveryActivity | ''} />
-                      </td>
-                    {/each}
-                  </tr>
-                {/each}
-              </tbody>
-            {/each}
-          </table>
+        <div class="instruction"><strong>{resolved ? 'Recovery complete.' : 'Each army tends its own troops.'}</strong><p>{resolved ? 'All results are final for this night. Review them before choosing to withdraw or hold.' : 'Choose None, Morale, or Health for each survivor, then roll. Each extra participant gives every recovery check on its side −2. Success restores 1; critical success restores 2.'}</p></div>
+        <div class="armies">
+          {#each SIDES as side (side)}
+            {@const army = b.units.filter((u) => u.side === side)}
+            <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} recovery`}>
+              <div class="army-heading">
+                <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
+                <p class="counts" aria-live="polite">{rolled(side) ? `${b.night![side]!.length} rolled` : `${participants(side)} ${participants(side) === 1 ? 'unit' : 'units'}`} · <b>{signed(-recoveryPenalty(rolled(side) ? b.night![side]!.length : participants(side)))} recovery modifier</b></p>
+              </div>
+              {#each army as u (u.id)}
+                {@const result = resultOf(u)}
+                {@const activity = rolled(side) ? (result?.activity ?? '') : (choices[u.id] ?? '')}
+                {@const revealed = !!result && b.night![side]!.indexOf(result) < shown[side]}
+                {@const rolling = tumbling?.unit === u.id}
+                <div class="report-unit" class:lost={!isStanding(u)} class:rolling class:revealed class:recovered={revealed && result!.recovered > 0} class:failed={revealed && result!.recovered === 0}>
+                  <div class="unit-heading"><strong>{u.name}</strong>
+                    {#if rolling}<span class="die tumbling" aria-hidden="true">{tumbling!.face}</span>
+                    {:else if revealed}<span class="die" aria-label={`Rolled ${result!.check.roll}`}>{result!.check.roll}</span>{/if}
+                  </div>
+                  <div class="meters"><span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span><span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span></div>
+                  {#if !isStanding(u)}<small>{status(u)} · Cannot recover</small>
+                  {:else if rolled(side)}
+                    {#if !result}<small>Sat out the night.</small>
+                    {:else if revealed}
+                      <p class="recovery-outcome">{u.name} {outcome(result)}.<small class="check-preview">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')} · {result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc}</small></p>
+                    {:else}<small>{result.activity === 'rally' ? 'Rallying…' : 'Treating wounded…'}</small>{/if}
+                  {:else}
+                    <div class="recovery-choice" role="radiogroup" aria-label={`Recovery for ${u.name}`}>
+                      {#each recoveryOptions as option (option.id)}
+                        {@const barred = (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
+                        <button type="button" role="radio" aria-checked={activity === option.id} class:selected={activity === option.id} disabled={!mine(side) || barred}
+                          onclick={() => choices[u.id] = option.id}>{#if option.mark}<span aria-hidden="true">{option.mark}</span> {/if}{option.label}</button>
+                      {/each}
+                    </div>
+                    {#if activity}<small class="check-preview">{preview(u, activity)}</small>
+                    {:else}<small>{u.wounds === 0 && u.disorder === 0 ? 'At full health and morale.' : 'Choose a recovery activity.'}</small>{/if}
+                  {/if}
+                </div>
+              {/each}
+              <div class="army-roll">
+                {#if rolled(side)}
+                  <p class="counts">{shown[side] < b.night![side]!.length ? 'Rolling…' : 'Recovery complete.'}</p>
+                {:else}
+                  <button class="primary" disabled={!mine(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>Roll {side} recovery</button>
+                  <small>{participants(side) === 0 ? 'No unit recovers; rolling ends this army’s night.' : 'Rolls every chosen unit in turn. Choices are final once rolled.'}</small>
+                {/if}
+              </div>
+            </section>
+          {/each}
         </div>
       {:else}
         {#if stage === 'deployment'}
@@ -231,7 +285,7 @@
                     <span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span>
                   </div>
                   {#if stage === 'deployment' || stage === 'orders'}
-                    {@const result = b.night?.find((r) => r.unit === u.id)}
+                    {@const result = resultOf(u)}
                     {#if result}<p class="recovery-result">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')}<small>{result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small></p>{/if}
                   {/if}
                   {#if stage === 'deployment'}
@@ -249,12 +303,6 @@
       {#if stage === 'orders' && continuing}
         <p class="decision-status" role="status">{surrenderPending ? 'Awaiting the opponent’s response to surrender.' : !ordersReady ? 'Choose a decision for both armies.' : bothHold ? 'Both armies will hold. Continue to choose the next battlefield.' : SIDES.every((s) => b.dayOrders?.choices[s] === 'withdraw') ? 'Both armies will withdraw. The field stays contested.' : `The ${b.dayOrders?.choices.attacker === 'withdraw' ? 'defender' : 'attacker'} will hold the field.`}</p>
       {/if}
-      {#if stage === 'recovery' && !resolved}
-        <div class="recovery-modifiers" aria-live="polite">
-          {#each SIDES as side (side)}<p><strong>{side === 'attacker' ? 'Attacker' : 'Defender'}</strong> · {participants(side)} {participants(side) === 1 ? 'unit' : 'units'} · <b>{signed(-recoveryPenalty(participants(side)))} recovery modifier</b>{#if committed(side)} · declared{/if}</p>{/each}
-          <small>Both armies declare, then every selected unit rolls together. Each unit also applies its own morale penalty.</small>
-        </div>
-      {/if}
       <div class="footer-actions">
         <button class="end-battle" disabled={!viewer.isGm} onclick={() => void attempt(leaveBattle())}>End battle</button>
         {#if stage === 'deployment'}
@@ -263,12 +311,8 @@
           {#if resolved}
             <button class="primary" onclick={() => go('orders')}>Continue to orders</button>
           {:else}
+            <p class="decision-status" role="status">{SIDES.some(rolled) ? `Waiting for the ${SIDES.find((s) => !rolled(s))} to roll.` : 'Each army rolls its own recovery.'}</p>
             <button onclick={() => go('report')}>Back</button>
-            {#each SIDES as side (side)}
-              <button class="primary" disabled={committed(side) || !mine(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>
-                {committed(side) ? `The ${side} has declared` : `Commit ${side} recovery`}
-              </button>
-            {/each}
           {/if}
         {:else if stage === 'battlefield'}
           <button onclick={() => go('orders')}>Back</button>
@@ -317,30 +361,32 @@
   .army-heading { padding-bottom: .5rem; }
   h3 { margin: 0; }
   .counts { font-size: .8rem; color: var(--muted); margin: .25rem 0 0; }
-  .report-unit { padding: .8rem; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: .55rem; }
+  .report-unit { padding: .8rem; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: .55rem; transition: background-color .25s, border-color .25s, box-shadow .25s; }
   .lost { opacity: .65; }
   .unit-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .4rem; }
   .outcome { color: var(--muted); font-size: .75rem; }
   .meters { display: flex; gap: 1.25rem; font-size: .85rem; color: var(--muted); margin: .4rem 0; }
   .meters b { color: var(--ink); font-weight: normal; }
-  .recovery-table-wrap { min-width: 22rem; }
-  .recovery-table thead { position: sticky; top: -1.2rem; background: var(--card); z-index: 1; }
-  .recovery-table { width: 100%; border-collapse: collapse; }
-  .recovery-table th, .recovery-table td { padding: .7rem .9rem; border-bottom: 1px solid var(--rule); }
-  .recovery-table thead th { font-size: .85rem; color: var(--muted); text-align: center; }
-  .recovery-table thead th:first-child[rowspan] { text-align: left; }
-  .recovery-table .recovery-header { color: var(--ink); font-size: 1rem; }
-  .recovery-table tbody { background: color-mix(in srgb, var(--army-color) 7%, var(--card)); }
-  .recovery-table .side-heading th { color: var(--army-color); text-align: left; font-size: .95rem; padding-top: 1rem; }
-  .recovery-unit { width: 64%; text-align: left; font-weight: normal; }
-  .recovery-unit > strong { display: block; margin-bottom: .35rem; }
-  .recovery-option { text-align: center; min-width: 4rem; }
-  .recovery-option input { width: 1.3rem; height: 1.3rem; accent-color: var(--accent); cursor: pointer; }
-  .recovery-option input:disabled { cursor: default; }
-  .recovery-modifiers { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; margin-bottom: .9rem; font-size: .85rem; }
-  .recovery-modifiers p { margin: 0; }
-  .recovery-modifiers small { flex-basis: 100%; margin: 0; }
-  .recovery-table .lost { opacity: .5; }
+  .recovery-choice { display: flex; gap: .3rem; margin-top: .5rem; }
+  .recovery-choice button { flex: 1; font-size: .8rem; padding: .4rem .3rem; }
+  .recovery-choice button.selected { border-color: var(--army-color); background: color-mix(in srgb, var(--army-color) 15%, var(--card)); }
+  .army-roll { display: flex; flex-direction: column; align-items: stretch; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid color-mix(in srgb, var(--army-color) 25%, var(--rule)); }
+  .army-roll .counts { margin: 0; }
+  .report-unit.rolling { border-color: var(--army-color); background: color-mix(in srgb, var(--army-color) 14%, var(--card)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--army-color) 25%, transparent); }
+  .report-unit.revealed { animation: settle .6s ease-out; }
+  .report-unit.recovered { border-color: var(--good); }
+  .report-unit.failed { border-color: var(--rule); }
+  @keyframes settle { from { background-color: color-mix(in srgb, var(--army-color) 22%, var(--card)); } to { background-color: transparent; } }
+  .die { display: inline-grid; place-items: center; min-width: 1.7rem; height: 1.7rem; padding: 0 .3rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--paper); font-variant-numeric: tabular-nums; font-size: .85rem; font-weight: bold; }
+  .die.tumbling { animation: tumble .11s linear infinite; border-color: var(--army-color); }
+  @keyframes tumble { from { transform: rotate(-8deg) scale(1.05); } to { transform: rotate(8deg) scale(.95); } }
+  .recovered .die { border-color: var(--good); color: var(--good); }
+  .failed .die { color: var(--muted); }
+  .recovery-outcome { margin: .4rem 0 0; font-size: .9rem; }
+  .recovered .recovery-outcome { color: var(--good); }
+  .failed .recovery-outcome { color: var(--muted); }
+  .recovery-outcome small { color: var(--muted); }
+  .footer-actions .decision-status { margin: 0; align-self: center; }
   button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
   .choice { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .6rem; font-size: .85rem; }
   small { display: block; font-size: .75rem; margin-top: .35rem; color: var(--muted); }
@@ -372,8 +418,5 @@
     .steps { gap: .7rem; justify-content: space-between; }
     .steps li { flex-direction: column; gap: .3rem; font-size: .7rem; }
     .map-preview { height: 17rem; }
-    .recovery-table thead { top: -1rem; }
-    .recovery-table th, .recovery-table td { padding: .6rem .35rem; }
-    .recovery-option { min-width: 3.2rem; }
   }
 </style>
