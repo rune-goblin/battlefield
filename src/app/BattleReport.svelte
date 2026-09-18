@@ -84,7 +84,7 @@
       <h2>{title}</h2>
       {#if continuing}
         <ol class="steps" aria-label="Next day preparation">
-          {#each steps as item, index}
+          {#each steps as item, index (item.id)}
             <li class:current={stage === item.id} class:complete={steps.findIndex((s) => s.id === stage) > index} aria-current={stage === item.id ? 'step' : undefined}>
               <span>{index + 1}</span>{item.label}
             </li>
@@ -110,9 +110,9 @@
           <div class="map-settings">
             <h3>{newMap ? 'New battlefield' : 'The current battlefield'}</h3>
             {#if newMap}
-              <label>Terrain<select aria-label="Next battlefield terrain" value={field.board.spec.base} onchange={(e) => generateNext({ base: e.currentTarget.value as BoardSpec['base'] })}>{#each HEX_TERRAINS as terrain}<option value={terrain}>{terrain}</option>{/each}</select></label>
-              <label>Feature<select aria-label="Next battlefield feature" value={field.board.spec.feature ?? 'none'} onchange={(e) => generateNext({ feature: e.currentTarget.value as BoardSpec['feature'] })}>{#each FEATURES as feature}<option value={feature}>{feature}</option>{/each}</select></label>
-              <label>Fortification<select aria-label="Next battlefield fortification" value={field.board.spec.construction?.tier ?? -1} onchange={(e) => generateNext({ construction: Number(e.currentTarget.value) < 0 ? null : { kind: 'fort', tier: Number(e.currentTarget.value) } })}><option value={-1}>None</option>{#each [0, 1, 2, 3] as tier}<option value={tier}>Tier {tier}</option>{/each}</select></label>
+              <label>Terrain<select aria-label="Next battlefield terrain" value={field.board.spec.base} onchange={(e) => generateNext({ base: e.currentTarget.value as BoardSpec['base'] })}>{#each HEX_TERRAINS as terrain (terrain)}<option value={terrain}>{terrain}</option>{/each}</select></label>
+              <label>Feature<select aria-label="Next battlefield feature" value={field.board.spec.feature ?? 'none'} onchange={(e) => generateNext({ feature: e.currentTarget.value as BoardSpec['feature'] })}>{#each FEATURES as feature (feature)}<option value={feature}>{feature}</option>{/each}</select></label>
+              <label>Fortification<select aria-label="Next battlefield fortification" value={field.board.spec.construction?.tier ?? -1} onchange={(e) => generateNext({ construction: Number(e.currentTarget.value) < 0 ? null : { kind: 'fort', tier: Number(e.currentTarget.value) } })}><option value={-1}>None</option>{#each [0, 1, 2, 3] as tier (tier)}<option value={tier}>Tier {tier}</option>{/each}</select></label>
               <button onclick={() => generateNext({ seed: Math.floor(Math.random() * 1e9) })}>Generate another map</button>
               <p class="muted">Fixed emplacements and abandoned equipment stay on the old field. Crewed attached engines travel with their surviving units.</p>
             {:else}
@@ -131,7 +131,7 @@
               <tr><th rowspan="2" scope="col">Unit</th><th colspan="3" scope="colgroup" class="recovery-header">Recovery</th></tr>
               <tr><th scope="col">None</th><th scope="col"><span aria-hidden="true">⚑</span> Morale</th><th scope="col"><span aria-hidden="true">♥</span> Health</th></tr>
             </thead>
-            {#each SIDES as side}
+            {#each SIDES as side (side)}
               <tbody class:attacking={side === 'attacker'} class:defending={side === 'defender'}>
                 <tr class="side-heading"><th colspan="4" scope="rowgroup">{side === 'attacker' ? 'Attacking army' : 'Defending army'}</th></tr>
                 {#each b.units.filter((u) => u.side === side) as u (u.id)}
@@ -148,7 +148,7 @@
                       {:else if activity}<small class="check-preview">{preview(u, activity)}</small>
                       {:else}<small>{u.wounds === 0 && u.disorder === 0 ? 'At full health and morale.' : 'Choose a recovery activity.'}</small>{/if}
                     </th>
-                    {#each [{ id: '', label: 'None' }, { id: 'rally', label: 'Morale' }, { id: 'treat', label: 'Health' }] as option}
+                    {#each [{ id: '', label: 'None' }, { id: 'rally', label: 'Morale' }, { id: 'treat', label: 'Health' }] as option (option.id)}
                       <td class="recovery-option">
                         <input type="radio" name={`recovery-${u.id}`} aria-label={`${option.label} recovery for ${u.name}`}
                           checked={activity === option.id} disabled={resolved || !isStanding(u) || (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
@@ -171,7 +171,7 @@
           <p class="intro">{continuing ? (stage === 'orders' ? 'Recovery is complete. Choose an end-of-day decision for each army.' : 'Review the survivors, then recover before choosing your next move.') : b.endedBy === 'surrender' ? 'The opponent accepted the surrender. Agree campaign terms together; surviving troops keep their wounds and morale.' : b.endedBy === 'withdrawal' ? 'Withdrawal is complete. Surviving troops keep their wounds and morale.' : 'The battle is over. Review the final army report.'}</p>
         {/if}
         <div class="armies">
-          {#each SIDES as side}
+          {#each SIDES as side (side)}
             {@const army = b.units.filter((u) => u.side === side)}
             {@const opponent = side === 'attacker' ? 'defender' : 'attacker'}
             <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} report`}>
@@ -183,7 +183,7 @@
                 <div class="day-decision">
                   <strong class="decision-label">End-of-day decision</strong>
                   <div class="day-options" role="group" aria-label={`${side} end-of-day decision`}>
-                    {#each dayOptions as option}
+                    {#each dayOptions as option (option.id)}
                       <button class:selected={b.dayOrders?.choices[side] === option.id} aria-pressed={b.dayOrders?.choices[side] === option.id}
                         onclick={() => void attempt(chooseDayOrder(side, option.id))}>{option.label}</button>
                     {/each}
@@ -214,7 +214,7 @@
                     {#if result}<p class="recovery-result">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')}<small>{result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small></p>{/if}
                   {/if}
                   {#if stage === 'deployment'}
-                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
+                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell (cell)}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
                   {/if}
                 </div>
               {/each}
@@ -230,7 +230,7 @@
       {/if}
       {#if stage === 'recovery' && !resolved}
         <div class="recovery-modifiers" aria-live="polite">
-          {#each SIDES as side}<p><strong>{side === 'attacker' ? 'Attacker' : 'Defender'}</strong> · {participants(side)} {participants(side) === 1 ? 'unit' : 'units'} · <b>{signed(-recoveryPenalty(participants(side)))} recovery modifier</b></p>{/each}
+          {#each SIDES as side (side)}<p><strong>{side === 'attacker' ? 'Attacker' : 'Defender'}</strong> · {participants(side)} {participants(side) === 1 ? 'unit' : 'units'} · <b>{signed(-recoveryPenalty(participants(side)))} recovery modifier</b></p>{/each}
           <small>All selected units roll together. Each unit also applies its own morale penalty.</small>
         </div>
       {/if}
