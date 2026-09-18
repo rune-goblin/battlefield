@@ -34,6 +34,7 @@
   // highlight during that drag.
   let dragging = $state<PieceRef | null>(null);
   let hoveredCell = $state<string | null>(null);
+  $effect(() => { void side; selected = null; dragging = null; hoveredCell = null; });
 
   const units = $derived(game.setup.units);
   const emplacements = $derived(game.setup.emplacements);
