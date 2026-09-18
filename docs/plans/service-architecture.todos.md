@@ -45,9 +45,12 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - **Stable ID format** (Wave 2.2). **Decision:**
 - **Event types and log tag names** (Wave 3.1). **Decision:**
 - **Player-facing wording for turns, seats, and notices** (Waves 3.5, 3.6, 4.4). **Decision:**
+- **Window title and scene-control tooltip** (Wave 0.2 drafted "Battlefield"; outside the reserved list, offered at gate 0). **Decision:**
 
 ## Ledger
 
 One line per wave: date, wave, model, commits, gate, verdict, escalations with their cause.
 
-- 2026-09-18, Wave 0.1, Sonnet, 1 commit, gate pass (`vitest run`, `npm run check`, `vite build`), no escalation.
+- 2026-09-18, Wave 0.1, Sonnet, 0b6b3c0, gate pass, APPROVE, no escalation. Reviewer note for 0.2: `TEXTURE_CHOICES` bakes its URLs at module evaluation, so `setAssetBase` must run before the barrel loads.
+- 2026-09-18, Wave 0.2, Opus, 61b86f9 a4404f6 81bb941 + a674697 (svelte autofixer), gate pass with `build:foundry`, APPROVE, no escalation. Reviewer notes carried forward: `withinApp` returns true with no root, so the ctrl-wheel listener installed at `init` cancels page-wide before the window opens (masked by Foundry's own handler); two quick `open()` calls can mount the shell twice before `rendered` flips; `VfxGallery.svelte`'s `svelte:window` keydown is ungated; `_preClose` unmounts before the close animation, so the window shrinks empty.
+- 2026-09-18, Phase 0 stopped at Human gate 0. Link `dist-foundry` into `Data/modules/battlefield` (the id `assetUrl` depends on).
