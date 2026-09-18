@@ -1,77 +1,46 @@
 import {
-  act, COMBATANTS, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, canDeploy, OFFICIAL, parse, randomRng, select, recoverAtNight, startNextDay,
-  type Action, type BattleState, type Board, type BoardSpec, type Side, type UnitCard, type RecoveryChoice,
+  act, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, canDeploy, parse, randomRng, select, recoverAtNight, startNextDay,
+  type Action, type BattleState, type Board, type Side, type RecoveryChoice,
 } from '../engine/index.js';
-import { migrateMorale } from './migrate-morale.js';
+import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
+import { defaultSetup, randomSeed, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
 import { answerSurrender, declareDayOrder, resolveDayOrders, type DayOrder } from '../engine/index.js';
 
 export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
-export interface SetupUnit { card: UnitCard; side: Side; square: string | null; engines: string[] }
-/** An engine deployed on a square of its own. `engines` on a SetupUnit is the attached kind. */
-export interface SetupEngine { name: string; side: Side; square: string | null }
-export interface Setup { spec: BoardSpec; board: Board | null; units: SetupUnit[]; emplacements: SetupEngine[]; roundsPerDay?: number }
+export type Setup = BattleSetupDraft;
+export type { SetupEngine, SetupUnit };
 
-// v3 -> v4: BattleState gained engines for emplacements. A v3 save deserialises without it
-// and throws the first time the board reads it.
-const KEY = 'battlefield.v4';
-// A save written before a field existed still parses; it crashes later, at render. Drop it
-// here so a missed KEY bump costs a fresh start rather than a broken board.
-const intact = (b: BattleState | null | undefined): boolean =>
-  !!b && Array.isArray(b.units) && Array.isArray(b.engines) && Array.isArray(b.log)
-  // Units gained `selfBuffs`, which `finish` reads on every activation.
-  && b.units.every((u) => Array.isArray(u.selfBuffs));
 const STAGES: Stage[] = ['board', 'paint', 'attackers', 'defenders', 'battle'];
 /** The side each deployment stage edits. */
 export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker', defenders: 'defender' };
 
-const randomSeed = () => Math.floor(Math.random() * 1e9);
+const repository = createLocalRepository();
+let session = loadSessionSync();
 
-function defaultSetup(): Setup {
-  const pick = (name: string) => [...COMBATANTS, ...OFFICIAL].find((c) => c.name === name)!;
-  return {
-    spec: { base: 'plains', feature: 'none', construction: null, seed: randomSeed() },
-    board: null,
-    emplacements: [],
-    units: [
-      { card: pick('Line Infantry'), side: 'attacker', square: 'e3', engines: [] },
-      { card: pick('Heavy Cavalry'), side: 'attacker', square: 'g3', engines: [] },
-      // Apprentice Magician Clique (L5) sits between Line Infantry (L6) and Heavy Cavalry (L7).
-      { card: pick('Apprentice Magician Clique'), side: 'attacker', square: 'f3', engines: [] },
-      { card: pick('Kobold Warriors'), side: 'defender', square: 'e9', engines: [] },
-      { card: pick('Troll Marauders'), side: 'defender', square: 'g9', engines: [] },
-      // Mitflit Vermin Cavalry (L4) sits between Kobold Warriors (L3) and Troll Marauders (L8).
-      { card: pick('Mitflit Vermin Cavalry'), side: 'defender', square: 'f9', engines: [] },
-    ],
-  };
+/** The record keeps the lifecycle stage. Which setup tab was open is local state, with no
+ * store of its own until Wave 2.5, so a reload resumes at the first unfinished one. */
+function openingStage(s: BattleSession): Stage {
+  if (s.battle) return 'battle';
+  if (!s.setup.board) return 'board';
+  return readyIn(s.setup, 'attacker') ? 'defenders' : 'attackers';
 }
-
-function load(): { stage: Stage; setup: Setup; battle: BattleState | null } {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.setup && STAGES.includes(parsed.stage)) {
-        parsed.setup.spec.size ??= parsed.setup.board?.squares.length ?? 11;
-        if (!intact(parsed.battle)) parsed.battle = null;
-        else parsed.battle = migrateMorale(parsed.battle);
-        return parsed;
-      }
-    }
-  } catch { /* fresh start */ }
-  return { stage: 'board', setup: defaultSetup(), battle: null };
-}
-
-const saved = load();
 
 export const game = $state({
-  stage: (saved.battle ? 'battle' : saved.stage === 'battle' ? 'defenders' : saved.stage) as Stage,
-  setup: saved.setup,
-  battle: saved.battle as BattleState | null,
+  stage: openingStage(session),
+  setup: session.setup,
+  battle: session.battle,
   history: [] as BattleState[],
 });
 
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ stage: game.stage, setup: game.setup, battle: game.battle })); } catch { /* storage unavailable */ }
+  session = {
+    ...session,
+    stage: game.battle ? 'battle' : 'setup',
+    setup: $state.snapshot(game.setup),
+    battle: $state.snapshot(game.battle),
+  };
+  // proto: a failed write is silent, as it was. Wave 1.4 raises it under the `storage` notice.
+  void repository.save(session).catch(() => {});
 }
 
 export function generate() {
@@ -88,11 +57,13 @@ export function rerollSeed() {
 }
 
 /** One side is ready when it has a unit and everything it owns stands on a square. */
-export function sideReady(side: Side): boolean {
-  const us = game.setup.units.filter((u) => u.side === side);
+function readyIn(setup: Setup, side: Side): boolean {
+  const us = setup.units.filter((u) => u.side === side);
   return us.length > 0 && us.every((u) => u.square !== null)
-    && game.setup.emplacements.filter((e) => e.side === side).every((e) => e.square !== null);
+    && setup.emplacements.filter((e) => e.side === side).every((e) => e.square !== null);
 }
+
+export const sideReady = (side: Side): boolean => readyIn(game.setup, side);
 
 export const ready = () => sideReady('attacker') && sideReady('defender');
 
@@ -242,5 +213,5 @@ export function resetSetup() {
   save();
 }
 
-// Module-level $state is seeded once from localStorage; a hot patch would keep the old game.
+// Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
 if (import.meta.hot) import.meta.hot.accept(() => import.meta.hot!.invalidate());

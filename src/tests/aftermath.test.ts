@@ -4,7 +4,7 @@ import { createBattle, endActivation, isStanding } from '../engine/battle.js';
 import { scriptedRng } from '../engine/rng.js';
 import { levelDc } from '../engine/tables.js';
 import { parse } from '../engine/board.js';
-import { migrateMorale } from '../app/migrate-morale.js';
+import { migrateMorale } from '../runtime/session.js';
 import { openBoard } from './helpers.js';
 
 function dusk() {
