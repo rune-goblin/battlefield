@@ -82,6 +82,15 @@ Dated bullets, appended by whoever runs a wave of `docs/service-architecture-pla
 - 2026-09-18, Wave 2.2: `Place.svelte`'s `Pick` is `{ kind, id }`, tokens carry the piece's own ID, and `pickOf` reads the kind from which list holds the ID. `idOf` goes — a token ID no longer encodes a position. Wave 2.3 moves these mutations behind `ArmyPreparationService`; the selection contract is already by ID for it.
 - 2026-09-18, Wave 2.2: the Svelte MCP `svelte-autofixer` was unavailable in this session, as in Wave 2.1; `npm run check`'s svelte-check pass over `Place.svelte` and `Battle.svelte` stood in for it.
 
+- 2026-09-18, Wave 2.3: `army.addUnit` carries the whole `UnitCard` rather than a library name, so a campaign card imported in Phase 5 needs no library entry to enter a force. `army.addEmplacement` and `army.attachEquipment` carry an engine name instead, since `ENGINES` is the one closed list and the service validates the name against it.
+- 2026-09-18, Wave 2.3: the service mints the new piece's ID, so `Place.svelte` selects the piece the command appended — `mine.at(-1)` after the commit — rather than naming an ID it minted itself. A client that minted IDs would decide identity before the authority accepted the command.
+- 2026-09-18, Wave 2.3: the deployment queries (`deployableCells`, `cellsFor`, `autoCell`, `sideReady`, `isAmbush`, `pieceOf`) are exported from the service as pure functions over a `BattleSetupDraft` and called straight from the view for the deploy wash and the Place button's enabled state. A query needs no commit, and the view's own pre-check keeps an invalid drop a silent no-op instead of a refused command.
+- 2026-09-18, Wave 2.3: no `army.*` command is undoable, matching Wave 2.1 — the prototype's only setup undo was a paint stroke. All ten are in `SETUP_COMMANDS`, so the executor refuses them once a battle is under way.
+- 2026-09-18, Wave 2.3: `army.generateForce` takes an optional seed on the envelope and defaults to `randomSeed()`; the store sends none and the tests send one, so a generated force is reproducible from the command when it matters.
+- 2026-09-18, Wave 2.3: `syncSetup()` now assigns the record's fields onto the panel's `game.setup` and replaces `board` only when the record's own board object changed. Replacing the whole draft gave the board a fresh identity on every placement, and `PixiBoard`'s `setBoard` effect redraws the terrain on identity alone.
+- 2026-09-18, Wave 2.3: the store normalizes a `PieceRef` and a `UnitCard` to plain data before submitting (`plain`, `$state.snapshot`), since a Svelte proxy reaching `structuredClone` inside the service would throw.
+- 2026-09-18, Wave 2.3: the Svelte MCP `svelte-autofixer` was unavailable in this session, as in Waves 2.1 and 2.2; `npm run check`'s svelte-check pass over `Place.svelte` stood in for it.
+
 ## Open, for Mark
 
 - **Save migration shape** (Wave 1.1). The v4 stage is dropped, the lifecycle stage comes from the battle, `battleId` is `battle-<base36 time>-<random>`, and `rulesVersion` is a date. **Decision:**
