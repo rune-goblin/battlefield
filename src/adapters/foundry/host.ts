@@ -3,6 +3,8 @@ import { reseatAssignment } from '../../runtime/control.js';
 import { createRuntime, type Runtime } from '../../runtime/createRuntime.js';
 import type { BattleArchive, DicePort, SessionRepository } from '../../runtime/ports.js';
 import type { BattleSession } from '../../runtime/session.js';
+import type { ActorWritebackPort, CampaignOutcomePort } from '../../services/OutcomeApplicationService.js';
+import { foundryCampaignPort, foundryTroopWriteback } from './campaign.js';
 import { foundryChatPoster, publishCommit, type ChatPoster } from './chat.js';
 import {
   asSocketMessage, envelopeOf, errorOf, resultOf,
@@ -30,6 +32,9 @@ export interface BattlefieldHostOptions {
   /** Where a resolved check's chat card goes. Defaults to the real `ChatMessage.create`
    * wrapper; tests hand in a fake that just records the cards it was given. */
   chat?: ChatPoster;
+  /** Where the final outcome goes. ReignMaker when it is installed, the troop actors otherwise. */
+  campaign?: CampaignOutcomePort;
+  actors?: ActorWritebackPort;
   onAuthority?: (report: AuthorityReport) => void;
 }
 
@@ -74,7 +79,8 @@ const closedGate = (): Gate => {
  * handoff, which is what pauses commands while the new primary loads the committed record.
  */
 export function createBattlefieldHost({
-  users, channel, repository, archive, records, dice, chat = foundryChatPoster(), onAuthority,
+  users, channel, repository, archive, records, dice, chat = foundryChatPoster(),
+  campaign = foundryCampaignPort(), actors = foundryTroopWriteback(), onAuthority,
 }: BattlefieldHostOptions): BattlefieldHost {
   let runtime: Runtime | null = null;
   let delivered: BattleSession | null = null;
@@ -120,6 +126,8 @@ export function createBattlefieldHost({
       session,
       dice,
       policy: { userId: users.currentUserId(), presence },
+      campaign,
+      actors,
     });
     // This client's own executor is the one that just committed, so it is the one client that
     // should post the cards — not every client that happens to hold a copy of the record.

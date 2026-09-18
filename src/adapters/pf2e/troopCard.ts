@@ -97,11 +97,13 @@ const badgeOf = (item: TroopItem): number =>
  * Perception already carry the penalty and `cardFromActor` hands back what it took.
  */
 export function demoralizedOf(actor: TroopActor): number {
-  const stacks = itemsOf(actor)
-    .filter((it) => slugOf(it) === DEMORALIZED)
-    .map((it) => badgeOf(it));
+  const stacks = demoralizedItems(actor).map((it) => badgeOf(it));
   return stacks.length ? Math.max(0, ...stacks) : 0;
 }
+
+/** The effects the writeback rewrites at the end of a battle. */
+export const demoralizedItems = (actor: TroopActor): TroopItem[] =>
+  itemsOf(actor).filter((it) => slugOf(it) === DEMORALIZED);
 
 /**
  * Wounds off the hit-point thresholds, the inverse of the writeback ladder in the adapter

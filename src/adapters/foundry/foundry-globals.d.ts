@@ -16,6 +16,10 @@ declare const ChatMessage: {
   }): Promise<unknown>;
 };
 
+/** Foundry's document resolver. The campaign writeback reaches a troop actor with it and
+ * touches no other collection. */
+declare function fromUuid(uuid: string): Promise<unknown>;
+
 declare const Roll: {
   /** Builds a Roll from terms that are already evaluated (or all unevaluated); the chat
    * adapter hands it one `Die` term carrying the recorded face. */

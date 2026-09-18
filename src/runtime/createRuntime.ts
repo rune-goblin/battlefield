@@ -4,6 +4,10 @@ import { createArmyPreparationService } from '../services/ArmyPreparationService
 import { createBattleContinuationService } from '../services/BattleContinuationService.js';
 import { createBattleManager } from '../services/BattleManager.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
+import {
+  createOutcomeApplicationService,
+  type ActorWritebackPort, type BattleOutcome, type CampaignOutcomePort, type WritebackReport,
+} from '../services/OutcomeApplicationService.js';
 import type { BattleCommand, CommandEnvelope, CommandResult } from './commands.js';
 import { recordDice } from './dice.js';
 import { createExecutor, type HistorySnapshot } from './executeCommand.js';
@@ -20,6 +24,10 @@ export interface RuntimeOptions {
   dice?: DicePort;
   /** Who this client acts as, and the table it acts at. The browser plays hot seat. */
   policy?: SeatPolicy;
+  /** The campaign module that applies the final outcome. Absent hands the work to `actors`. */
+  campaign?: CampaignOutcomePort | null;
+  /** Troop actors, for the writeback a campaign module is not there to do. */
+  actors?: ActorWritebackPort | null;
 }
 
 export interface Runtime {
@@ -37,11 +45,18 @@ export interface Runtime {
   submit(command: BattleCommand): Promise<CommandResult>;
   execute(envelope: CommandEnvelope): Promise<CommandResult>;
   subscribe(listener: (session: BattleSession) => void): () => void;
+  /**
+   * Hand the GM's confirmed outcome to the campaign, one target at a time, committing each
+   * one's progress before the next. It lives here because the runtime is built on the client
+   * that holds the authority, and that client performs every actor mutation. Call it again
+   * after an interruption to resume, or after it finished to write nothing.
+   */
+  applyOutcome(outcome: BattleOutcome, revision: number): Promise<WritebackReport>;
 }
 
 /** The one place that wires the services, the ports, and the executor together. */
 export function createRuntime({
-  repository, archive, session, dice = randomRng, policy = hotSeatPolicy(),
+  repository, archive, session, dice = randomRng, policy = hotSeatPolicy(), campaign = null, actors = null,
 }: RuntimeOptions): Runtime {
   // Every service rolls through the recorder, so a commit holds the faces its own rules read.
   const recorder = recordDice(dice);
@@ -57,6 +72,7 @@ export function createRuntime({
     continuation: createBattleContinuationService({ dice: recorder }),
     manager: createBattleManager(),
   });
+  const outcomes = createOutcomeApplicationService({ campaign, actors });
 
   return {
     get session() { return executor.session; },
@@ -69,5 +85,11 @@ export function createRuntime({
     submit: (command) => executor.submit(command, policy.userId),
     execute: (envelope) => executor.execute(envelope),
     subscribe: (listener) => executor.subscribe(listener),
+    applyOutcome: (outcome, revision) => outcomes.applyOutcome({
+      outcome,
+      revision,
+      session: () => executor.session,
+      submit: (command) => executor.submit(command, policy.userId),
+    }),
   };
 }
