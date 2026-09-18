@@ -9,9 +9,11 @@
   import { gameMap } from './map-style.svelte.js';
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
+  import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
+  import type { CommandResult } from '../runtime/commands.js';
   const notifications = useNotifications();
-  const NOTICE = 'battle-report';
-  onDestroy(() => notifications.dismiss(NOTICE));
+  const attempt = commandReporter(notifications);
+  onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
 
   type Step = 'report' | 'recovery' | 'orders' | 'battlefield' | 'deployment';
   const steps: { id: Step; label: string }[] = [
@@ -58,24 +60,20 @@
     return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
   }
   $effect(() => { if (b.night !== null) positions = suggestDeployment(field); });
-  function go(next: Step) { step = next; notifications.dismiss(NOTICE); content?.scrollTo({ top: 0 }); }
-  function attempt(action: () => void) {
-    notifications.dismiss(NOTICE);
-    try { action(); } catch (e) {
-      notifications.show({ id: NOTICE, title: 'Action unavailable', message: e instanceof Error ? e.message : String(e), tone: 'error' });
-    }
+  function go(next: Step) { step = next; notifications.dismiss(COMMAND_NOTICE); content?.scrollTo({ top: 0 }); }
+  /** Each step reads the record the command committed, so it waits for the result first. */
+  async function runThen(pending: Promise<CommandResult>, next: Step) {
+    if ((await attempt(pending)).ok) go(next);
   }
   function generateNext(changes: Partial<BoardSpec> = {}) {
-    attempt(() => chooseNextBattlefield(generateBoard({
+    void attempt(chooseNextBattlefield(generateBoard({
       ...(b.nextBoard?.spec ?? { ...b.board.spec, construction: null, seed: Math.floor(Math.random() * 1e9) }),
       grid: b.board.grid, size: b.board.squares.length as 9 | 11, ...changes,
     })));
   }
-  function finishDecisions() {
-    attempt(() => {
-      if (!b.dayOrders?.confirmed) confirmDayOrders();
-      if (game.battle?.endedBy === 'dusk') go('battlefield');
-    });
+  async function finishDecisions() {
+    if (!b.dayOrders?.confirmed && !(await attempt(confirmDayOrders())).ok) return;
+    if (game.battle?.endedBy === 'dusk') go('battlefield');
   }
 </script>
 
@@ -98,7 +96,7 @@
       {#if stage === 'battlefield'}
         <p class="intro">Keep fighting over this ground, or move the surviving armies to a new field. Their health, morale, and recovery results carry forward.</p>
         <div class="map-choices" role="group" aria-label="Tomorrow's map">
-          <button class:selected={!newMap} aria-pressed={!newMap} onclick={() => attempt(() => chooseNextBattlefield(null))}>
+          <button class:selected={!newMap} aria-pressed={!newMap} onclick={() => void attempt(chooseNextBattlefield(null))}>
             <span class="choice-mark">{!newMap ? '●' : '○'}</span><span><strong>Same map</strong><small>Keep this terrain, damaged walls, and emplacements.</small></span>
           </button>
           <button class:selected={newMap} aria-pressed={newMap} onclick={() => { if (!newMap) generateNext(); }}>
@@ -187,7 +185,7 @@
                   <div class="day-options" role="group" aria-label={`${side} end-of-day decision`}>
                     {#each dayOptions as option}
                       <button class:selected={b.dayOrders?.choices[side] === option.id} aria-pressed={b.dayOrders?.choices[side] === option.id}
-                        onclick={() => attempt(() => chooseDayOrder(side, option.id))}>{option.label}</button>
+                        onclick={() => void attempt(chooseDayOrder(side, option.id))}>{option.label}</button>
                     {/each}
                   </div>
                   <p class="decision-description">{dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.description ?? 'Choose whether to negotiate, leave, or stay.'}</p>
@@ -195,8 +193,8 @@
                     <div class="surrender-response" role="group" aria-label={`${side} response to surrender`}>
                       <p>The {opponent} proposes surrender.</p>
                       <div class="day-options">
-                        <button onclick={() => attempt(() => respondToSurrender(side, true))}>Accept surrender</button>
-                        <button onclick={() => attempt(() => respondToSurrender(side, false))}>Reject proposal</button>
+                        <button onclick={() => void attempt(respondToSurrender(side, true))}>Accept surrender</button>
+                        <button onclick={() => void attempt(respondToSurrender(side, false))}>Reject proposal</button>
                       </div>
                     </div>
                   {/if}
@@ -237,23 +235,23 @@
         </div>
       {/if}
       <div class="footer-actions">
-        <button class="end-battle" onclick={backToSetup}>End battle</button>
+        <button class="end-battle" onclick={() => void attempt(backToSetup())}>End battle</button>
         {#if stage === 'deployment'}
-          <button class="primary" disabled={!deployReady} onclick={() => attempt(() => continueBattle(positions))}>Begin day {b.day + 1}</button>
+          <button class="primary" disabled={!deployReady} onclick={() => void attempt(continueBattle(positions))}>Begin day {b.day + 1}</button>
         {:else if stage === 'recovery'}
           {#if resolved}
             <button class="primary" onclick={() => go('orders')}>Continue to orders</button>
           {:else}
             <button onclick={() => go('report')}>Back</button>
-            <button class="primary" disabled={!declarations.length} onclick={() => attempt(() => { resolveNight(declarations); go('recovery'); })}>Roll Recovery</button>
-            {#if !declarations.length}<button onclick={() => attempt(() => { resolveNight([]); go('orders'); })}>Continue without recovery</button>{/if}
+            <button class="primary" disabled={!declarations.length} onclick={() => void runThen(resolveNight(declarations), 'recovery')}>Roll Recovery</button>
+            {#if !declarations.length}<button onclick={() => void runThen(resolveNight([]), 'orders')}>Continue without recovery</button>{/if}
           {/if}
         {:else if stage === 'battlefield'}
           <button onclick={() => go('orders')}>Back</button>
           <button class="primary" disabled={!mapReady} onclick={() => go('deployment')}>Continue to deployment</button>
         {:else if stage === 'orders' && continuing}
           <button onclick={() => go('recovery')}>Review recovery</button>
-          <button class="primary" disabled={!ordersReady} onclick={finishDecisions}>{bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
+          <button class="primary" disabled={!ordersReady} onclick={() => void finishDecisions()}>{bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
         {:else if continuing}
           <button class="primary" onclick={() => go('recovery')}>Continue to recovery</button>
         {/if}

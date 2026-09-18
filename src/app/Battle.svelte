@@ -10,10 +10,12 @@
   import { onDestroy } from 'svelte';
   import { withinApp } from './app-root.js';
   import { useNotifications } from './notification-context.js';
+  import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
 
   const notifications = useNotifications();
   const DRAG_NOTICE = 'battle-drag';
-  onDestroy(() => notifications.dismiss(DRAG_NOTICE));
+  const run = commandReporter(notifications);
+  onDestroy(() => { notifications.dismiss(DRAG_NOTICE); notifications.dismiss(COMMAND_NOTICE); });
   import CommitmentPicker from './CommitmentPicker.svelte';
 
   let focus = $state(0);
@@ -307,7 +309,7 @@
   function confirmPicker() {
     const offer = pickerOffer, option = pickerActivity, target = activityPick?.target;
     if (!offer || !option?.legal || (option.needsTarget && !target)) return;
-    performActivity(offer, option, target);
+    void performActivity(offer, option, target);
     activityPick = null; targetHover = null;
   }
 
@@ -346,7 +348,7 @@
 
   function confirmBlast() {
     if (!blastOffer || !blastActivity?.legal || !blastSelection) return;
-    performActivity(blastOffer, blastActivity, blastSelection.id);
+    void performActivity(blastOffer, blastActivity, blastSelection.id);
     blastOpen = false; chooseBlastLevel(null);
   }
   const armedProp = $derived(props.find((p) => p.key === armed && p.legal) ?? null);
@@ -615,28 +617,25 @@
   /** A plain move can confirm on its row. Melee always keeps its explicit confirmation. */
   function choose(i: number) {
     if (!pending) return;
-    if (pending.index === i && pending.rows[i].kind === 'move') { commit(); return; }
+    if (pending.index === i && pending.rows[i].kind === 'move') { void commit(); return; }
     focus = 0;
     pending = { ...pending, index: i, activity: null };
   }
 
-  function commit() {
+  async function commit() {
     const p = pending;
     pending = null;
     armed = null;
     const row = p?.rows[p.index];
     if (!p || !row || !active) return;
+    const unit = active.id;
     // The piece walks the route the drag traced, not the straight line to where it ends.
-    boardRef?.setRoute(active.id, row.path);
-    try {
-      if (row.kind === 'advance') takeAction({ type: 'advance', unit: active.id, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus });
-      else if (row.kind === 'charge') takeAction({ type: 'charge', unit: active.id, target: row.enemy, activity: p.activity ?? undefined, focus });
-      else if (row.kind === 'move') takeAction({ type: 'move', unit: active.id, to: row.cell });
-      else if (act?.maneuver) performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
-      meleeTarget = null; meleeSelected = null;
-    } catch (error) {
-      notifications.show({ id: DRAG_NOTICE, title: 'Action unavailable', message: error instanceof Error ? error.message : String(error), tone: 'error' });
-    }
+    boardRef?.setRoute(unit, row.path);
+    if (row.kind === 'advance') await run(takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus }));
+    else if (row.kind === 'charge') await run(takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus }));
+    else if (row.kind === 'move') await run(takeAction({ type: 'move', unit, to: row.cell }));
+    else if (act?.maneuver) await performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
+    meleeTarget = null; meleeSelected = null;
   }
 
   const stepBy = (key: string, length: number) => (key === 'ArrowDown' ? 1 : length - 1);
@@ -647,7 +646,7 @@
     if (e.key === 'Escape') { stepBack(); return; }
     if (blastOpen || activityPick) return;
     if (pending) {
-      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      if (e.key === 'Enter') { e.preventDefault(); void commit(); }
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         focus = 0;
@@ -928,12 +927,13 @@
       ({ kind: 'engine', id: `engine:${i}`, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ]);
 
-  function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
+  async function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
     if (!active) return;
     const resolution = new TargetingService(b, active, offer, opt).resolve(target);
     if (!resolution) return;
     const before = game.battle!.log.length;
-    takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 });
+    const result = await run(takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 }));
+    if (!result.ok) return;
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
     resolvedMarkers = resolution.markers;
     resolvedArrows = resolution.arrows;
@@ -942,10 +942,10 @@
     for (const effect of resolution.effects) boardRef?.burst(effect.cell, effect.tree, effect.from);
   }
 
-  function performManeuver(activity: ActivityIndex, to?: string) {
+  async function performManeuver(activity: ActivityIndex, to?: string) {
     if (!active) return;
     const before = game.battle!.log.length;
-    takeAction({ type: 'maneuver', unit: active.id, activity, to });
+    await run(takeAction({ type: 'maneuver', unit: active.id, activity, to }));
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 
@@ -1000,7 +1000,7 @@
       activityPick = { key: offerKey(group.offer), index: row.index, selected: service.pickCell(a.cell)?.selected ?? [] };
       return;
     }
-    performActivity(group.offer, row, matches[0]?.id);
+    void performActivity(group.offer, row, matches[0]?.id);
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
@@ -1012,7 +1012,7 @@
     // meaning something new, so a verb picked by mistake costs one click to undo.
     if (pending) {
       if (pending.cell === e.cell) {
-        if (picked?.kind !== 'charge' && picked?.kind !== 'advance') commit();
+        if (picked?.kind !== 'charge' && picked?.kind !== 'advance') void commit();
         return;
       }
       stepBack();
@@ -1030,7 +1030,7 @@
     // Nothing open and bare ground under the click: the pick goes back and the side is
     // choosing again. A unit that has already spent an action keeps its turn — `deselect`
     // refuses — so the click reads as a miss rather than losing what was done.
-    deselectUnit();
+    void run(deselectUnit());
   }
   function onToken(e: BoardEventOf<'token'>) {
     notifications.dismiss(DRAG_NOTICE);
@@ -1093,7 +1093,7 @@
   function pickUnit(u: Unit, centre = true) {
     if (locked && u.id !== b.active) return;
     if (u.status !== 'active' || u.side !== b.pending || b.activated.includes(u.id)) return;
-    selectUnit(u.id);
+    void run(selectUnit(u.id));
     if (centre) boardRef?.centerOn(notation(u.square));
   }
 
@@ -1185,8 +1185,8 @@
         <span class="muted">· {spec}</span>
       {/snippet}
       {#snippet tools()}
-        <button onclick={undo} disabled={!game.history.length} title="Undo the last action">Undo</button>
-        <button onclick={backToSetup}>New battle</button>
+        <button onclick={() => void run(undo())} disabled={!game.history.length} title="Undo the last action">Undo</button>
+        <button onclick={() => void run(backToSetup())}>New battle</button>
       {/snippet}
     </TopBar>
   {/snippet}
@@ -1544,7 +1544,7 @@
         <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
       {/if}
 
-      <button class="end-turn" onclick={() => endActivation()}>End turn</button>
+      <button class="end-turn" onclick={() => void run(endActivation())}>End turn</button>
     {:else}
       <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
     {/if}
