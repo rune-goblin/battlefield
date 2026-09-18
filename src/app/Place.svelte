@@ -6,15 +6,22 @@
   import { AppShell, MapControls, TopBar } from './shell/index.js';
   import StageNav from './StageNav.svelte';
   import {
-    addEmplacement, addUnit, attachEquipment, autoPlacePiece, detachEquipment, game, generateForce,
-    placePiece, removeEmplacement, removeUnit, unplacePiece, type SetupEngine, type SetupUnit,
+    addEmplacement, addUnit, attachEquipment, autoPlacePiece, declaredReady, declareReady, detachEquipment,
+    game, generateForce, placePiece, removeEmplacement, removeUnit, unplacePiece, type SetupEngine, type SetupUnit,
   } from './game.svelte.js';
   import { resetToExample } from './navigation.svelte.js';
   import { autoCell, cellsFor, deployableCells, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
   import type { PieceRef } from '../runtime/commands.js';
+  import { onDestroy } from 'svelte';
+  import { useNotifications } from './notification-context.js';
+  import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
 
   interface Props { side: Side }
   let { side }: Props = $props();
+
+  const notifications = useNotifications();
+  const run = commandReporter(notifications);
+  onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
 
   let rosterName = $state(COMBATANTS[0].name);
   const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
@@ -178,6 +185,11 @@
   const engineCard = (name: string) => ENGINES.find((e) => e.name === name);
   const sideWord = $derived(side === 'attacker' ? 'attacking' : 'defending');
   const unplaced = $derived(mine.filter((u) => !u.square).length + myEngines.filter((e) => !e.square).length);
+  const other = $derived<Side>(side === 'attacker' ? 'defender' : 'attacker');
+  const otherWord = $derived(other === 'attacker' ? 'attacking' : 'defending');
+  // proto: the readiness wording is reserved for review with the rest of the player-facing text.
+  const ready = $derived(declaredReady(side));
+  const otherReady = $derived(declaredReady(other));
 </script>
 
 {#snippet grip(label: string)}
@@ -371,6 +383,15 @@
       {/each}
     </div>
 
+    <div class="readiness">
+      <button
+        class="primary" class:selected={ready}
+        disabled={!ready && unplaced > 0}
+        onclick={() => void run(declareReady(side, !ready))}
+      >{ready ? 'Ready — waiting for the other army' : `The ${sideWord} force is ready`}</button>
+      <small>{otherReady ? `The ${otherWord} force is ready.` : `The ${otherWord} force is still forming up.`}</small>
+    </div>
+
     <div class="row">
       <button onclick={() => void resetToExample()}>Reset to the example</button>
     </div>
@@ -458,6 +479,10 @@
   .line { margin: 0; font-size: .72rem; line-height: 1.4; color: var(--muted); font-variant-numeric: tabular-nums; }
   .where { color: var(--ink); }
   .piece:not(.down) .where { font-style: italic; color: var(--muted); }
+
+  .readiness { display: flex; flex-direction: column; gap: .3rem; margin-top: .6rem; }
+  .readiness button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+  .readiness small { font-size: .75rem; color: var(--muted); }
 
   .kill { border: 0; background: none; color: var(--muted); padding: 0 .2rem; font-size: 1rem; line-height: 1; opacity: .5; }
   .kill:hover:not(:disabled) { color: var(--bad); opacity: 1; border-color: transparent; }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, type BattleState, type UnitCard } from '../engine/index.js';
+import { submissionOf } from '../runtime/interactions.js';
 import {
   freshSession, isBattleSession, migrateLegacySave, SCHEMA_VERSION, type BattleSession,
 } from '../runtime/session.js';
@@ -123,16 +124,18 @@ describe('the browser session repository', () => {
 });
 
 describe('the session record', () => {
-  it('fills the per-side submissions a record written before them lacks', () => {
+  it('folds the per-side submissions of an older record into its interactions', () => {
     const storage = fakeStorage();
-    const { nightDeclarations, nextDeployment, ...older } = freshSession();
-    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, revision: 9 }));
+    const { interactions, ...older } = freshSession();
+    const held = { nightDeclarations: { attacker: [{ unit: 'u0', activity: 'rally' }] }, nextDeployment: {} };
+    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, ...held, revision: 9 }));
 
     const loaded = loadSessionSync(storage);
 
     expect(loaded.revision).toBe(9);
-    expect(loaded.nightDeclarations).toEqual({});
-    expect(loaded.nextDeployment).toEqual({});
+    expect(loaded.interactions.map((i) => i.kind)).toEqual(['night.recovery']);
+    expect(submissionOf(loaded.interactions, 'night.recovery', 'attacker')).toEqual([{ unit: 'u0', activity: 'rally' }]);
+    expect(submissionOf(loaded.interactions, 'night.recovery', 'defender')).toBeUndefined();
   });
 
   it('refuses a record of another schema version', () => {

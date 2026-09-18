@@ -8,6 +8,7 @@ import { COMMAND_STAGE, newCommandId, type BattleCommand, type CommandEnvelope, 
 import { openTurn, seatUsers } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
+import { clearObsolete, dropInteraction } from './interactions.js';
 import { assignSeats, reassignTurn, refuseCommand } from './policy.js';
 import type { BattleArchive, PresencePort, SessionRepository } from './ports.js';
 import { migrateSession, type BattleSession, type BattleSetupDraft } from './session.js';
@@ -42,6 +43,7 @@ const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load'>, 'pu
   'army.unplace': 'keep',
   'army.autoPlace': 'keep',
   'army.generateForce': 'keep',
+  'army.declareReady': 'keep',
   'continuation.declareRecovery': 'clear',
   'continuation.declareDayOrder': 'keep',
   'continuation.confirmDayOrders': 'clear',
@@ -67,7 +69,7 @@ export interface Services {
 
 function applyCommand(
   session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' }>,
-  { actions, map, army, continuation, manager }: Services, presence: PresencePort,
+  { actions, map, army, continuation, manager }: Services, presence: PresencePort, userId: string,
 ): BattleSession {
   switch (command.type) {
     case 'control.assign': return assignSeats(session, command.control, presence);
@@ -91,12 +93,13 @@ function applyCommand(
     case 'army.unplace': return army.unplace(session, command.piece);
     case 'army.autoPlace': return army.autoPlace(session, command.piece);
     case 'army.generateForce': return army.generateForce(session, command.side, command.seed);
-    case 'continuation.declareRecovery': return continuation.declareRecovery(session, command.side, command.choices);
+    case 'army.declareReady': return army.declareReady(session, command.side, command.ready, userId);
+    case 'continuation.declareRecovery': return continuation.declareRecovery(session, command.side, command.choices, userId);
     case 'continuation.declareDayOrder': return continuation.declareDayOrder(session, command.side, command.order);
     case 'continuation.confirmDayOrders': return continuation.confirmDayOrders(session);
-    case 'continuation.answerSurrender': return continuation.answerSurrender(session, command.side, command.accept);
+    case 'continuation.answerSurrender': return continuation.answerSurrender(session, command.side, command.accept, userId);
     case 'continuation.chooseBattlefield': return continuation.chooseBattlefield(session, command.spec);
-    case 'continuation.declareDeployment': return continuation.declareDeployment(session, command.side, command.positions);
+    case 'continuation.declareDeployment': return continuation.declareDeployment(session, command.side, command.positions, userId);
     case 'continuation.startNextDay': return manager.startNextDay(session);
     case 'battle.start': return manager.start(session);
     case 'battle.returnToSetup': return manager.returnToSetup(session);
@@ -208,7 +211,9 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     // Faces a rejected edit drew belong to no commit; drop them before this one rolls.
     dice.take();
     try {
-      const edited = edit(previous);
+      // The commit that moves the stage or the day is the commit that drops the decisions the
+      // old one was waiting on: one record never carries an answer to a question that is gone.
+      const edited = clearObsolete(edit(previous));
       const events = describe(previous, edited);
       next = commit(seat ? seatTurn(previous, edited) : edited, commandId, events, dice.take());
     } catch (error) {
@@ -252,7 +257,13 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     if (command.type === 'session.load') return loadSession(commandId, command.slot);
 
     return persist(commandId, {
-      edit: (current) => applyCommand(current, command, services, presence),
+      edit: (current) => {
+        const next = applyCommand(current, command, services, presence, userId);
+        // A board or a force that changed after an army called itself ready needs that word
+        // again: the other army agreed to fight what was on the table a moment ago.
+        return COMMAND_STAGE[command.type] === 'setup' && command.type !== 'army.declareReady'
+          ? dropInteraction(next, 'army.readiness') : next;
+      },
       record: (previous) => {
         const effect = HISTORY[command.type];
         if (effect === 'clear') history = [];
@@ -297,7 +308,7 @@ export function createExecutor({ repository, archive, dice, presence, session: i
         const migrated = migrateSession(raw);
         if (!migrated) throw new Error(`${slot} is not a battlefield save`);
         return {
-          ...migrated, revision: current.revision, nightDeclarations: {}, nextDeployment: {}, recentCommandIds: [],
+          ...migrated, revision: current.revision, interactions: [], recentCommandIds: [],
           // A save carried from another table names users this one may not have; the seating
           // is refitted here and the turn opens again under it.
           control: seatUsers(migrated.control, presence), turn: null,

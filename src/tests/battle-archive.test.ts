@@ -71,8 +71,7 @@ describe('loading a save', () => {
     expect(result).toMatchObject({ ok: true, revision: 2 });
     expect(runtime.session.revision).toBe(2);
     expect(runtime.session.battleId).not.toBe(running.battleId);
-    expect(runtime.session.nightDeclarations).toEqual({});
-    expect(runtime.session.nextDeployment).toEqual({});
+    expect(runtime.session.interactions).toEqual([]);
     expect(runtime.history).toHaveLength(0);
   });
 

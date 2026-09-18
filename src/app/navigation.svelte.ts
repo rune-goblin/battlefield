@@ -1,6 +1,6 @@
 import type { Side } from '../engine/index.js';
 import type { CommandResult } from '../runtime/commands.js';
-import { endBattle, game, loadBattle, resetSetup, sideReady, startBattle } from './game.svelte.js';
+import { declaredReady, endBattle, game, loadBattle, resetSetup, sideReady, startBattle } from './game.svelte.js';
 
 /** Which panel is open. The record keeps the lifecycle stage; which setup tab a client looks
  * at is local to that client and never reaches the executor. */
@@ -81,5 +81,6 @@ export function forward(): ForwardStep {
   if (nav.stage === 'board') return { label: 'Next: paint', enabled: !!game.setup.board, go: page };
   if (nav.stage === 'paint') return { label: 'Next: the attacking force', enabled: !!game.setup.board, go: page };
   if (nav.stage === 'attackers') return { label: 'Next: the defending force', enabled: sideReady('attacker'), go: page };
-  return { label: 'Begin the battle', enabled: sideReady('attacker') && sideReady('defender'), go: beginBattle };
+  // Both armies call themselves ready on their own panel; the battle begins on their word.
+  return { label: 'Begin the battle', enabled: declaredReady('attacker') && declaredReady('defender'), go: beginBattle };
 }

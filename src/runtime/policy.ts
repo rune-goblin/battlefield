@@ -32,6 +32,7 @@ export const COMMAND_SCOPE: Record<CommandType, CommandScope> = {
   'army.unplace': 'side',
   'army.autoPlace': 'side',
   'army.generateForce': 'side',
+  'army.declareReady': 'side',
   'continuation.declareRecovery': 'side',
   'continuation.declareDayOrder': 'side',
   'continuation.confirmDayOrders': 'gm',
@@ -59,6 +60,7 @@ export function commandSide(session: BattleSession, command: BattleCommand): Sid
     case 'army.addUnit':
     case 'army.addEmplacement':
     case 'army.generateForce':
+    case 'army.declareReady':
     case 'continuation.declareRecovery':
     case 'continuation.declareDayOrder':
     case 'continuation.answerSurrender':

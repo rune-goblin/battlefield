@@ -1,9 +1,10 @@
 import {
-  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT,
+  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES,
   type BattleState, type Board, type BoardSpec, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
 import type { BattleEvent } from './events.js';
+import type { InteractionKind, InteractionRecord } from './interactions.js';
 
 export const SCHEMA_VERSION = 1;
 // proto: the rules document carries no version of its own, so the record dates them. Reserved
@@ -30,10 +31,6 @@ export interface BattleSetupDraft {
  * order, so a chat card is rebuilt from the same numbers the rules read. */
 export interface CommitRecord { commandId: string; events: BattleEvent[]; dice: number[] }
 
-/** A side's submission for the coming night or day, held until the other side's arrives.
- * Wave 3.5 moves both under `InteractionRecord`; the shapes are the same data. */
-export type SideSubmissions<T> = Partial<Record<Side, T>>;
-
 export interface BattleSession {
   schemaVersion: number;
   rulesVersion: string;
@@ -42,11 +39,10 @@ export interface BattleSession {
   stage: LifecycleStage;
   setup: BattleSetupDraft;
   battle: BattleState | null;
-  /** Each side's recovery declarations. The night rolls when the second side declares. */
-  nightDeclarations: SideSubmissions<RecoveryChoice[]>;
-  /** Each side's placements for the coming day. `startNextDay` consumes them once both sides
-   * hold a legal deployment; a change of battlefield clears them. */
-  nextDeployment: SideSubmissions<Record<string, string>>;
+  /** The shared decisions this stage and day are waiting on: side readiness, recovery
+   * declarations, surrender responses, and next-day deployment. Each carries its own scope,
+   * and a commit that leaves that scope clears it. */
+  interactions: InteractionRecord[];
   /** Who plays each side and where each side's rotation stands. */
   control: SideControl;
   /** The user whose activation is open, named in the commit that made their side pending.
@@ -65,6 +61,7 @@ export const newBattleId = (): string => mintId('battle');
 /** A piece takes its ID when it enters setup and keeps it through the battle and beyond. */
 export const newUnitId = (): string => mintId('unit');
 export const newEquipmentId = (): string => mintId('eq');
+export const newInteractionId = (): string => mintId('int');
 
 export const randomSeed = () => Math.floor(Math.random() * 1e9);
 
@@ -98,8 +95,7 @@ export function freshSession(battleId = newBattleId()): BattleSession {
     stage: 'setup',
     setup: defaultSetup(),
     battle: null,
-    nightDeclarations: {},
-    nextDeployment: {},
+    interactions: [],
     control: hotSeatControl(),
     turn: null,
     lastCommit: null,
@@ -162,6 +158,14 @@ function repairBattleIds(battle: BattleState): BattleState {
   return battle;
 }
 
+const intactInteraction = (value: unknown): boolean => {
+  const i = value as InteractionRecord | null;
+  return !!i && typeof i === 'object' && typeof i.id === 'string' && typeof i.kind === 'string'
+    && Array.isArray(i.participants) && !!i.scope && typeof i.scope === 'object'
+    && (i.status === 'open' || i.status === 'closed')
+    && !!i.submissions && typeof i.submissions === 'object';
+};
+
 export function isBattleSession(value: unknown): value is BattleSession {
   const s = value as BattleSession | null;
   return !!s && typeof s === 'object'
@@ -172,8 +176,7 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && LIFECYCLE_STAGES.includes(s.stage)
     && isSetupDraft(s.setup) && Array.isArray(s.setup.emplacements)
     && (s.battle === null || intactBattle(s.battle))
-    && !!s.nightDeclarations && typeof s.nightDeclarations === 'object'
-    && !!s.nextDeployment && typeof s.nextDeployment === 'object'
+    && Array.isArray(s.interactions) && s.interactions.every(intactInteraction)
     && isSideControl(s.control)
     && (s.turn === null || typeof s.turn === 'string')
     && (s.lastCommit === null
@@ -192,13 +195,34 @@ function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleI
     stage: battle ? 'battle' : 'setup',
     setup: repairSetup(setup),
     battle,
-    nightDeclarations: {},
-    nextDeployment: {},
+    interactions: [],
     control: hotSeatControl(),
     turn: null,
     lastCommit: null,
     recentCommandIds: [],
   };
+}
+
+/** The two fields Wave 2.4 put on the record, which Wave 3.5 folded into interactions. A save
+ * written between those waves holds its night and its coming day here. */
+interface HeldSubmissions {
+  nightDeclarations?: Partial<Record<Side, RecoveryChoice[]>>;
+  nextDeployment?: Partial<Record<Side, Record<string, string>>>;
+}
+
+/** The same submissions, as the interactions that hold them now, scoped to where the record
+ * stands. A save mid-night therefore keeps the declaration the other army is waiting on. */
+function foldSubmissions(s: BattleSession & HeldSubmissions): InteractionRecord[] {
+  const scope = { stage: s.stage, day: s.battle?.day ?? null };
+  const held: [InteractionKind, Partial<Record<Side, unknown>> | undefined][] = [
+    ['night.recovery', s.nightDeclarations], ['nextDay.deployment', s.nextDeployment],
+  ];
+  delete s.nightDeclarations;
+  delete s.nextDeployment;
+  return held.flatMap(([kind, submissions]) => (submissions && Object.keys(submissions).length
+    // No user is recorded on a folded submission: the save predates the question.
+    ? [{ id: newInteractionId(), kind, initiator: '', participants: [...SIDES], scope, status: 'open' as const, submissions: { ...submissions } } as InteractionRecord]
+    : []));
 }
 
 /** Read a record written by this schema, repairing what it predates. Null for anything else. */
@@ -209,10 +233,9 @@ export function reviveSession(value: unknown): BattleSession | null {
   s.battle = s.battle && intactBattle(s.battle) ? repairBattleIds(migrateMorale(s.battle)) : null;
   s.stage = LIFECYCLE_STAGES.includes(s.stage) ? s.stage : s.battle ? 'battle' : 'setup';
   if (!s.battle && s.stage === 'battle') s.stage = 'setup';
-  // proto: no schema bump for the two fields Wave 2.4 added; an empty submission is what a
-  // record written before them meant. The migration's shape is reserved for review.
-  s.nightDeclarations ??= {};
-  s.nextDeployment ??= {};
+  // proto: no schema bump for the interactions Wave 3.5 added; a record written before them
+  // carried the same submissions in two fields of its own. The migration's shape is reserved.
+  s.interactions = Array.isArray(s.interactions) ? s.interactions.filter(intactInteraction) : foldSubmissions(s);
   // A record written before Wave 3.3 knew no seats. It loads into the hot seat, and a host
   // with real users reseats it as the save is installed.
   if (!isSideControl(s.control)) s.control = hotSeatControl();

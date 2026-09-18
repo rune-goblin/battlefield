@@ -27,6 +27,9 @@ export interface Runtime {
   readonly history: readonly HistorySnapshot[];
   /** The user this client submits as. */
   readonly userId: string;
+  /** The user who answers for a side nobody holds and may issue any command. A client compares
+   * it with its own user to know whether the controls it shows are live. */
+  gmUserId(): string;
   /** Run a command as this client's user, at whatever revision the authority holds. A remote
    * client sends its own envelope, built against the revision it can see. */
   submit(command: BattleCommand): Promise<CommandResult>;
@@ -57,6 +60,7 @@ export function createRuntime({
     get session() { return executor.session; },
     get history() { return executor.history; },
     userId: policy.userId,
+    gmUserId: () => policy.presence.gmUserId(),
     submit: (command) => executor.submit(command, policy.userId),
     execute: (envelope) => executor.execute(envelope),
     subscribe: (listener) => executor.subscribe(listener),

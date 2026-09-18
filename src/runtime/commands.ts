@@ -40,6 +40,8 @@ export type BattleCommand =
   | { type: 'army.autoPlace'; piece: PieceRef }
   /** The seed rides along so the authority's draw is reproducible from the envelope. */
   | { type: 'army.generateForce'; side: Side; seed?: number }
+  /** One army calls itself deployed, or takes that word back. The battle starts once both have. */
+  | { type: 'army.declareReady'; side: Side; ready: boolean }
   | { type: 'continuation.declareRecovery'; side: Side; choices: RecoveryChoice[] }
   | { type: 'continuation.declareDayOrder'; side: Side; order: DayOrder }
   | { type: 'continuation.confirmDayOrders' }
@@ -88,6 +90,7 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'army.unplace': 'setup',
   'army.autoPlace': 'setup',
   'army.generateForce': 'setup',
+  'army.declareReady': 'setup',
   'continuation.declareRecovery': 'battle',
   'continuation.declareDayOrder': 'battle',
   'continuation.confirmDayOrders': 'battle',

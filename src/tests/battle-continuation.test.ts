@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, suggestDeployment, type BattleState, type UnitCard } from '../engine/index.js';
 import { createRuntime, type Runtime } from '../runtime/createRuntime.js';
+import { interactionOf, submissionOf } from '../runtime/interactions.js';
 import type { DicePort, SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
 import { fakeArchive, openBoard } from './helpers.js';
@@ -60,7 +61,7 @@ describe('battle continuation', () => {
     const first = await runtime.submit({ type: 'continuation.declareRecovery', side: 'attacker', choices: rally('u0') });
 
     expect(first.ok).toBe(true);
-    expect(runtime.session.nightDeclarations.attacker).toEqual(rally('u0'));
+    expect(submissionOf(runtime.session.interactions, 'night.recovery', 'attacker')).toEqual(rally('u0'));
     expect(runtime.session.battle!.night).toBeNull();
     expect(dice.rolls).toBe(0);
 
@@ -68,7 +69,8 @@ describe('battle continuation', () => {
 
     expect(runtime.session.battle!.night!.map((r) => r.unit)).toEqual(['u0', 'u1']);
     expect(dice.rolls).toBe(2);
-    expect(runtime.session.nightDeclarations).toEqual({});
+    // The declarations stay on the record, closed: the report shows what each army chose.
+    expect(interactionOf(runtime.session.interactions, 'night.recovery')!.status).toBe('closed');
 
     const again = await runtime.submit({ type: 'continuation.declareRecovery', side: 'attacker', choices: rally('u0') });
     expect(again).toMatchObject({ ok: false, reason: 'engine' });
@@ -81,23 +83,23 @@ describe('battle continuation', () => {
     const result = await runtime.submit({ type: 'continuation.declareRecovery', side: 'attacker', choices: rally('u1') });
 
     expect(result).toMatchObject({ ok: false, reason: 'engine' });
-    expect(runtime.session.nightDeclarations).toEqual({});
+    expect(runtime.session.interactions).toEqual([]);
   });
 
-  it('clears nextDeployment when a new battlefield is chosen', async () => {
+  it('clears the collected deployment when a new battlefield is chosen', async () => {
     const { runtime } = runtimeOn();
     await nightAndHolds(runtime);
     const field = suggestDeployment(runtime.session.battle!);
 
     await runtime.submit({ type: 'continuation.declareDeployment', side: 'attacker', positions: { u0: field.u0 } });
     await runtime.submit({ type: 'continuation.declareDeployment', side: 'defender', positions: { u1: field.u1, u2: field.u2 } });
-    expect(Object.keys(runtime.session.nextDeployment)).toEqual(['attacker', 'defender']);
+    expect(Object.keys(interactionOf(runtime.session.interactions, 'nextDay.deployment')!.submissions)).toEqual(['attacker', 'defender']);
 
     const chosen = await runtime.submit({ type: 'continuation.chooseBattlefield', spec: { base: 'forest', seed: 3 } });
 
     expect(chosen.ok).toBe(true);
     expect(runtime.session.battle!.nextBoard).not.toBeNull();
-    expect(runtime.session.nextDeployment).toEqual({});
+    expect(interactionOf(runtime.session.interactions, 'nextDay.deployment')).toBeNull();
   });
 
   it('refuses a side’s deployment on a square it cannot take', async () => {
@@ -108,7 +110,7 @@ describe('battle continuation', () => {
     const result = await runtime.submit({ type: 'continuation.declareDeployment', side: 'attacker', positions: { u0: 'c5' } });
 
     expect(result).toMatchObject({ ok: false, reason: 'engine' });
-    expect(runtime.session.nextDeployment).toEqual({});
+    expect(interactionOf(runtime.session.interactions, 'nextDay.deployment')).toBeNull();
   });
 
   it('refuses the next day while a side is invalid, and starts it once both sides are in', async () => {
@@ -138,7 +140,8 @@ describe('battle continuation', () => {
     expect(started.ok).toBe(true);
     expect(runtime.session.battle!.day).toBe(2);
     expect(runtime.session.battle!.phase).toBe('battle');
-    expect(runtime.session.nextDeployment).toEqual({});
+    // Day two is a scope of its own, so day one's deployment and recovery records are gone.
+    expect(runtime.session.interactions).toEqual([]);
   });
 
   it('answers a surrender proposal and refuses a continuation command with no battle', async () => {

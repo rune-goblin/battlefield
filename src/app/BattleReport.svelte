@@ -4,6 +4,7 @@
     type BoardSpec, type DayOrder, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
   import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
+  import { allSubmitted, hasSubmitted, submissionOf } from '../runtime/interactions.js';
   import { leaveBattle } from './navigation.svelte.js';
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
@@ -45,7 +46,7 @@
   const declarationsFor = (side: Side) => declarations.filter((c) => sideOf(c.unit) === side);
   const participants = (side: Side) => declarationsFor(side).length;
   /** An army's recovery waits in the record until the other army declares too. */
-  const committed = (side: Side) => !!game.nightDeclarations[side];
+  const committed = (side: Side) => hasSubmitted(game.interactions, 'night.recovery', side);
   const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'left' ? 'Left the field' : 'Standing';
   const signed = (n: number) => n >= 0 ? `+${n}` : `−${-n}`;
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
@@ -58,12 +59,12 @@
     && new Set(Object.values(placementOf(side))).size === survivorsOf(side).length;
   /** The record holds the cells this army submitted; an edit since then leaves them behind. */
   const deployed = (side: Side) => {
-    const held = game.nextDeployment[side];
+    const held = submissionOf(game.interactions, 'nextDay.deployment', side);
     const local = placementOf(side);
     return !!held && Object.keys(held).length === Object.keys(local).length
       && Object.entries(local).every(([id, cell]) => held[id] === cell);
   };
-  const deployReady = $derived(SIDES.every((side) => !!game.nextDeployment[side]));
+  const deployReady = $derived(allSubmitted(game.interactions, 'nextDay.deployment'));
   const mapReady = $derived(Object.keys(suggestDeployment(field)).length === survivors.length);
   const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
     kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,

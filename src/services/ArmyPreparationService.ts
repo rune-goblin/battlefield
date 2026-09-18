@@ -3,6 +3,7 @@ import {
   type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
+import { submitTo } from '../runtime/interactions.js';
 import {
   newEquipmentId, newUnitId, randomSeed,
   type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit,
@@ -24,6 +25,8 @@ export interface ArmyPreparationService {
   unplace(session: BattleSession, piece: PieceRef): BattleSession;
   autoPlace(session: BattleSession, piece: PieceRef): BattleSession;
   generateForce(session: BattleSession, side: Side, seed?: number): BattleSession;
+  /** One army's word that it has finished deploying, which `battle.start` waits for. */
+  declareReady(session: BattleSession, side: Side, ready: boolean, userId: string): BattleSession;
 }
 
 export const isAmbush = (u: SetupUnit): boolean => (u.card.tactics ?? []).includes('ambush');
@@ -231,6 +234,13 @@ export function createArmyPreparationService(): ArmyPreparationService {
           })),
         ],
       });
+    },
+
+    declareReady: (session, side, ready, userId) => {
+      // proto: the wording a refusal shows is reserved for review with the rest of the
+      // player-facing text.
+      if (ready && !sideReady(session.setup, side)) throw new Error(`the ${side} has a piece still off the board`);
+      return submitTo(session, 'army.readiness', side, ready, userId);
     },
   };
 }

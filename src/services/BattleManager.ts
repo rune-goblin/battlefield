@@ -4,7 +4,8 @@ import {
   type BattleState,
 } from '../engine/index.js';
 import type { PaintStroke } from '../runtime/commands.js';
-import { defaultSetup, type BattleSession, type BattleSetupDraft } from '../runtime/session.js';
+import { submissionOf } from '../runtime/interactions.js';
+import { defaultSetup, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
 
@@ -34,15 +35,20 @@ function battleOf(session: BattleSession): BattleState {
   return session.battle;
 }
 
-/** The night and the coming day belong to the battle that was under way; every transition
- * that ends one drops them. */
-const cleared = () => ({ nightDeclarations: {}, nextDeployment: {} });
+/** The decisions belong to the stage and the day that asked for them; a transition that ends
+ * one drops them all, rather than leaving the next stage an answer to an older question. */
+const cleared = () => ({ interactions: [] });
 
-function battleFrom(setup: BattleSetupDraft): BattleState {
+function battleFrom(session: BattleSession): BattleState {
+  const setup = session.setup;
   const board = setup.board;
   if (!board) throw new Error('generate a board first');
   for (const side of SIDES) {
     if (!sideReady(setup, side)) throw new Error(`the ${side} has a piece still off the board`);
+    // proto: the wording is reserved for review with the rest of the player-facing text.
+    if (submissionOf(session.interactions, 'army.readiness', side) !== true) {
+      throw new Error(`the ${side} has not called itself ready`);
+    }
   }
   return createBattle({
     board,
@@ -66,7 +72,7 @@ function battleFrom(setup: BattleSetupDraft): BattleState {
 export function createBattleManager(): BattleManager {
   return {
     start: (session) => ({
-      ...session, ...cleared(), stage: 'battle', battle: battleFrom(session.setup),
+      ...session, ...cleared(), stage: 'battle', battle: battleFrom(session),
     }),
 
     returnToSetup: (session) => ({ ...session, ...cleared(), stage: 'setup', battle: null }),
@@ -80,9 +86,10 @@ export function createBattleManager(): BattleManager {
       const field = nextDayBattlefield(battle);
       const positions: Record<string, string> = {};
       for (const side of SIDES) {
-        const problem = deploymentProblem(field, side, session.nextDeployment[side], true);
+        const declared = submissionOf(session.interactions, 'nextDay.deployment', side);
+        const problem = deploymentProblem(field, side, declared, true);
         if (problem) throw new Error(problem);
-        Object.assign(positions, session.nextDeployment[side]);
+        Object.assign(positions, declared);
       }
       return { ...session, ...cleared(), battle: beginNextDay(battle, positions) };
     },

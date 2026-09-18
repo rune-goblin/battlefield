@@ -6,6 +6,7 @@ import { createPresentation } from './presentation.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
+import { submissionOf } from '../runtime/interactions.js';
 import type { ArchiveEntry } from '../runtime/ports.js';
 import type { BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 
@@ -24,8 +25,12 @@ export const game = $state({
   setup: structuredClone(runtime.session.setup),
   battle: runtime.session.battle,
   history: [] as HistorySnapshot[],
-  nightDeclarations: runtime.session.nightDeclarations,
-  nextDeployment: runtime.session.nextDeployment,
+  /** The shared decisions this stage is waiting on. A panel reads its side's submission here
+   * rather than holding one of its own. */
+  interactions: runtime.session.interactions,
+  /** Whose activation is open, for every client to show. */
+  turn: runtime.session.turn,
+  control: runtime.session.control,
 });
 
 /** The record's board the local copy was taken from. It is replaced only when the record's own
@@ -52,10 +57,16 @@ runtime.subscribe((session) => {
   presentation.observe(session);
   game.battle = session.battle;
   game.history = [...runtime.history];
-  game.nightDeclarations = session.nightDeclarations;
-  game.nextDeployment = session.nextDeployment;
+  game.interactions = session.interactions;
+  game.turn = session.turn;
+  game.control = session.control;
   adoptSetup(session.setup);
 });
+
+/** Who this client plays as, and who answers for the table. The panels read their own part in
+ * the record from these. */
+export const viewerId = runtime.userId;
+export const gmUserId = () => runtime.gmUserId();
 
 const submit = (command: BattleCommand) => runtime.submit(command);
 
@@ -86,7 +97,16 @@ export const unplacePiece = (piece: PieceRef) => submit({ type: 'army.unplace', 
 export const autoPlacePiece = (piece: PieceRef) => submit({ type: 'army.autoPlace', piece: plain(piece) });
 export const generateForce = (side: Side) => submit({ type: 'army.generateForce', side });
 
+/** Every piece of this army stands on a square. The word that starts a battle is the
+ * declaration below; this is what lets an army give it. */
 export const sideReady = (side: Side): boolean => readyIn(game.setup, side);
+
+/** One army's word that it has finished deploying. The battle starts once both have given it. */
+export const declareReady = (side: Side, ready: boolean) =>
+  submit({ type: 'army.declareReady', side, ready });
+
+export const declaredReady = (side: Side): boolean =>
+  submissionOf(game.interactions, 'army.readiness', side) === true;
 
 /** Deploy the prepared setup. The navigation store opens the battle stage on success. */
 export const startBattle = () => submit({ type: 'battle.start' });
