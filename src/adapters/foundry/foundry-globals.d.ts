@@ -38,6 +38,12 @@ interface FoundryRoll {
   readonly total: number | undefined;
 }
 
+/** The host's own toast rail, outside the app's window. The module raises one of these: the
+ * turn notice for a player whose window is away. */
+declare const ui: {
+  notifications: { info(message: string): void };
+};
+
 declare const Hooks: {
   once(hook: 'init' | 'ready', handler: () => void): number;
   on(hook: 'getSceneControlButtons', handler: (controls: SceneControlSet) => void): number;

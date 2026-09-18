@@ -11,6 +11,12 @@ export class BattlefieldApp extends ApplicationV2 {
     return BattlefieldApp.#instance?.rendered ? BattlefieldApp.#instance : null;
   }
 
+  /** Whether the shell is on screen to show a notice at all. */
+  static get visible(): boolean {
+    const app = BattlefieldApp.current;
+    return app !== null && !app.minimized;
+  }
+
   static async open(): Promise<BattlefieldApp> {
     const existing = BattlefieldApp.current;
     if (existing) {

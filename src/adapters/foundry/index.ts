@@ -10,6 +10,7 @@ import { MODULE_ID } from './module-id.js';
 import { createSessionWatcher } from './sessionWatcher.js';
 import { foundrySocketChannel } from './socket.js';
 import { foundryTableUsers } from './table.js';
+import { announceThroughHost, createTurnAnnouncer } from './turnNotice.js';
 import { createFoundryArchive } from './worldArchive.js';
 import { createFoundrySessionRepository } from './worldSessionRepository.js';
 import { registerFoundrySettings, SESSION_SETTING } from './worldSettings.js';
@@ -43,6 +44,11 @@ Hooks.once('init', () => {
     onAuthority: reportAuthority,
   });
   channel.on((message) => host?.handleMessage(message));
+  sessionWatcher.subscribe(createTurnAnnouncer({
+    viewer: () => ({ userId: users.currentUserId(), isGm: users.primaryGmId() === users.currentUserId() }),
+    visible: () => BattlefieldApp.visible,
+    notify: announceThroughHost,
+  }));
 });
 
 Hooks.once('ready', () => {
