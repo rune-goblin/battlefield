@@ -2,8 +2,9 @@ import type { BattleState } from '../engine/index.js';
 import type { ActionResolutionService } from '../services/ActionResolutionService.js';
 import type { ArmyPreparationService } from '../services/ArmyPreparationService.js';
 import type { BattleContinuationService } from '../services/BattleContinuationService.js';
+import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
-import { newCommandId, SETUP_COMMANDS, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
+import { COMMAND_STAGE, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import type { SessionRepository } from './ports.js';
 import type { BattleSession, BattleSetupDraft } from './session.js';
 
@@ -14,8 +15,9 @@ const RECENT_COMMAND_IDS = 20;
 
 /** What a command does to the undo history. `push` records what it replaced; `clear` is a
  * boundary undo cannot cross, as the prototype's store held them. Selection is not an
- * activation, and a generated or reworded board was never undoable — only a paint stroke was. */
-const HISTORY: Record<CommandType, 'push' | 'keep' | 'clear'> = {
+ * activation, and a generated or reworded board was never undoable — only a paint stroke was.
+ * `session.undo` is absent: it consumes the history rather than adding to it. */
+const HISTORY: Record<Exclude<CommandType, 'session.undo'>, 'push' | 'keep' | 'clear'> = {
   'activation.select': 'keep',
   'activation.deselect': 'keep',
   'action.resolve': 'push',
@@ -42,6 +44,10 @@ const HISTORY: Record<CommandType, 'push' | 'keep' | 'clear'> = {
   'continuation.chooseBattlefield': 'keep',
   'continuation.declareDeployment': 'keep',
   'continuation.startNextDay': 'clear',
+  'battle.start': 'clear',
+  'battle.returnToSetup': 'clear',
+  'battle.reset': 'clear',
+  'battle.finalize': 'clear',
 };
 
 export interface Services {
@@ -49,10 +55,12 @@ export interface Services {
   map: MapPreparationService;
   army: ArmyPreparationService;
   continuation: BattleContinuationService;
+  manager: BattleManager;
 }
 
 function applyCommand(
-  session: BattleSession, command: BattleCommand, { actions, map, army, continuation }: Services,
+  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' }>,
+  { actions, map, army, continuation, manager }: Services,
 ): BattleSession {
   switch (command.type) {
     case 'activation.select': return actions.select(session, command.unitId);
@@ -63,7 +71,7 @@ function applyCommand(
     case 'setup.rerollSeed': return map.rerollSeed(session);
     case 'setup.editSpec': return map.editSpec(session, command.spec);
     case 'setup.setRoundsPerDay': return map.setRoundsPerDay(session, command.roundsPerDay);
-    case 'setup.paint': return map.paint(session, command.stroke);
+    case 'setup.paint': return manager.paint(session, command.stroke);
     case 'army.addUnit': return army.addUnit(session, command.side, command.card);
     case 'army.removeUnit': return army.removeUnit(session, command.unitId);
     case 'army.addEmplacement': return army.addEmplacement(session, command.side, command.engine);
@@ -80,7 +88,11 @@ function applyCommand(
     case 'continuation.answerSurrender': return continuation.answerSurrender(session, command.side, command.accept);
     case 'continuation.chooseBattlefield': return continuation.chooseBattlefield(session, command.spec);
     case 'continuation.declareDeployment': return continuation.declareDeployment(session, command.side, command.positions);
-    case 'continuation.startNextDay': return continuation.startNextDay(session);
+    case 'continuation.startNextDay': return manager.startNextDay(session);
+    case 'battle.start': return manager.start(session);
+    case 'battle.returnToSetup': return manager.returnToSetup(session);
+    case 'battle.reset': return manager.reset(session);
+    case 'battle.finalize': return manager.finalize(session);
   }
 }
 
@@ -90,11 +102,7 @@ export interface ExecutorOptions extends Services {
 }
 
 /** A change to the record, applied to the committed one inside the queue. A throw rejects. */
-export type SessionEdit = (session: BattleSession) => BattleSession;
-
-/** What a change does to the undo history. Setup, a committed night, a new day and resolved
- * orders are boundaries the prototype's store already cleared. */
-export type HistoryEffect = 'keep' | 'clear';
+type SessionEdit = (session: BattleSession) => BattleSession;
 
 /** What an undoable commit replaced. A tactical command replaces the battle; a setup command
  * (so far, only a paint stroke) replaces the whole setup draft, board and placements together,
@@ -109,12 +117,6 @@ export interface Executor {
   /** Snapshots to rewind to, oldest first, held in the authority's memory. */
   readonly history: readonly HistorySnapshot[];
   execute(envelope: CommandEnvelope): Promise<CommandResult>;
-  // proto: the store still writes lifecycle transitions and the continuation directly. They
-  // commit here so the record keeps one writer and one order; Phase 2 turns each into a
-  // command and this goes.
-  change(edit: SessionEdit, history?: HistoryEffect): Promise<CommandResult>;
-  /** Rewind to the snapshot the last undoable commit replaced, under a new revision. */
-  undo(): Promise<CommandResult>;
   /** Called with each committed record, after the save that made it durable. */
   subscribe(listener: (session: BattleSession) => void): () => void;
 }
@@ -171,12 +173,15 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
   function run({ battleId, commandId, command }: CommandEnvelope): Promise<CommandResult> {
     if (battleId !== session.battleId) return Promise.resolve(reject(commandId, 'battle', `${battleId} is not the battle under way`));
     // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
-    if (!Object.hasOwn(HISTORY, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
-    if (SETUP_COMMANDS.has(command.type)) {
-      if (session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
-    } else if (!session.battle) {
-      return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
+    if (!Object.hasOwn(COMMAND_STAGE, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
+    const stage = COMMAND_STAGE[command.type];
+    if (stage === 'setup' && session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
+    if (stage === 'battle' && !session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
+    // A finalized battle has been reported to the campaign. Only leaving it reopens the record.
+    if (session.stage === 'finalized' && command.type !== 'battle.returnToSetup') {
+      return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
     }
+    if (command.type === 'session.undo') return rewind(commandId);
 
     return persist(commandId, (current) => applyCommand(current, command, services), (previous) => {
       const effect = HISTORY[command.type];
@@ -187,8 +192,7 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
     });
   }
 
-  function rewind(): Promise<CommandResult> {
-    const commandId = newCommandId();
+  function rewind(commandId: string): Promise<CommandResult> {
     const previous = history.at(-1);
     if (!previous) return Promise.resolve(reject(commandId, 'stage', 'nothing to undo'));
     return persist(commandId, (current) => (previous.kind === 'battle'
@@ -207,10 +211,6 @@ export function createExecutor({ repository, session: initial, ...services }: Ex
     get session() { return session; },
     get history() { return history; },
     execute(envelope) { return enqueue(() => run(envelope)); },
-    change(edit, effect = 'keep') {
-      return enqueue(() => persist(newCommandId(), edit, () => { if (effect === 'clear') history = []; }));
-    },
-    undo() { return enqueue(rewind); },
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };

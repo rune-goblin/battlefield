@@ -100,6 +100,23 @@ export function deploymentProblem(
   return null;
 }
 
+/** The setup as it stands on a freshly painted board: a piece whose square turned to water is
+ * off the board again. Painting only ever adds water or leaves a square as it was, so a stroke
+ * never needs `canDeploy`'s rank and ambush rules, only the one terrain it can newly forbid. */
+export function clearWaterPlacements(board: Board, setup: BattleSetupDraft): BattleSetupDraft {
+  const onWater = (square: string | null): boolean => {
+    if (!square) return false;
+    const sq = parse(square);
+    return board.squares[sq.rank][sq.file].terrain === 'water';
+  };
+  return {
+    ...setup,
+    board,
+    units: setup.units.map((u) => (onWater(u.square) ? { ...u, square: null } : u)),
+    emplacements: setup.emplacements.map((e) => (onWater(e.square) ? { ...e, square: null } : e)),
+  };
+}
+
 /** One side is ready when it has a unit and everything it owns stands on a square. */
 export function sideReady(setup: BattleSetupDraft, side: Side): boolean {
   const us = setup.units.filter((u) => u.side === side);

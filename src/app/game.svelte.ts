@@ -1,14 +1,10 @@
-import {
-  createBattle, ENGINES, randomRng,
-  type BoardSpec, type Side, type RecoveryChoice, type UnitCard,
-} from '../engine/index.js';
+import type { BoardSpec, DayOrder, RecoveryChoice, Side, UnitCard } from '../engine/index.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
-import type { HistorySnapshot, SessionEdit } from '../runtime/executeCommand.js';
-import { defaultSetup, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
-import { type DayOrder } from '../engine/index.js';
+import type { HistorySnapshot } from '../runtime/executeCommand.js';
+import type { BattleSession, BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 
 export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
 export type Setup = BattleSetupDraft;
@@ -30,8 +26,8 @@ function openingStage(s: BattleSession): Stage {
 
 export const game = $state({
   stage: openingStage(runtime.session),
-  // The setup panels edit this copy and `save` writes it to the record; the executor's own
-  // copy stays untouched between saves.
+  // A copy of the committed draft, kept so a view that reads it cannot reach the executor's
+  // own record. Every command's result lands here through `adoptSetup`.
   setup: structuredClone(runtime.session.setup),
   battle: runtime.session.battle,
   history: [] as HistorySnapshot[],
@@ -39,21 +35,29 @@ export const game = $state({
   nextDeployment: runtime.session.nextDeployment,
 });
 
-// The read store: every committed record lands here, whichever path wrote it.
+/** The record's board the local copy was taken from. It is replaced only when the record's own
+ * changed: a fresh object costs the PIXI view a full redraw, and a placement command leaves the
+ * terrain exactly where it was. */
+let adoptedBoard = runtime.session.setup.board;
+
+function adoptSetup(committed: BattleSetupDraft): void {
+  const next = structuredClone(committed);
+  game.setup.spec = next.spec;
+  game.setup.units = next.units;
+  game.setup.emplacements = next.emplacements;
+  game.setup.roundsPerDay = next.roundsPerDay;
+  if (committed.board !== adoptedBoard) game.setup.board = next.board;
+  adoptedBoard = committed.board;
+}
+
+// The read store: every committed record lands here, and nothing else writes it.
 runtime.subscribe((session) => {
   game.battle = session.battle;
   game.history = [...runtime.history];
   game.nightDeclarations = session.nightDeclarations;
   game.nextDeployment = session.nextDeployment;
+  adoptSetup(session.setup);
 });
-
-/** The record's lifecycle stage follows the battle; which setup tab is open is local. */
-const staged = (s: BattleSession): BattleSession => ({ ...s, stage: s.battle ? 'battle' : 'setup' });
-
-// proto: the writes Phase 2 turns into commands. They commit through the executor so the
-// record has one writer, and they carry the store's own state in rather than a service's.
-const write = (edit: SessionEdit, history: 'keep' | 'clear' = 'keep') =>
-  runtime.change((s) => staged(edit(s)), history);
 
 const submit = (command: BattleCommand) => runtime.submit(command);
 
@@ -62,54 +66,27 @@ const refuse = (message: string): Promise<CommandResult> => Promise.resolve({
   ok: false, commandId: newCommandId(), revision: runtime.session.revision, reason: 'stage', message,
 });
 
-export const save = () => write((s) => ({ ...s, setup: $state.snapshot(game.setup) }));
-
-/** The record's board the panel's copy was taken from. */
-let syncedBoard = runtime.session.setup.board;
-
-/** The services compute the next `setup` on the executor's own copy, so the panel's local one
- * resyncs from the committed record afterward — unlike `save`, which still carries the panel's
- * own edit in, for the fields Phase 2 has yet to turn into a command. The board is replaced
- * only when the record's own changed: a fresh object costs the PIXI view a full redraw, and a
- * placement command leaves the terrain exactly where it was. */
-function syncSetup(): void {
-  const committed = runtime.session.setup;
-  const next = structuredClone(committed);
-  game.setup.spec = next.spec;
-  game.setup.units = next.units;
-  game.setup.emplacements = next.emplacements;
-  game.setup.roundsPerDay = next.roundsPerDay;
-  if (committed.board !== syncedBoard) game.setup.board = next.board;
-  syncedBoard = committed.board;
-}
-
-async function submitSetup(command: BattleCommand): Promise<CommandResult> {
-  const result = await submit(command);
-  if (result.ok) syncSetup();
-  return result;
-}
-
-export const generate = () => submitSetup({ type: 'setup.generate' });
-export const rerollSeed = () => submitSetup({ type: 'setup.rerollSeed' });
-export const editSpec = (spec: Partial<BoardSpec>) => submitSetup({ type: 'setup.editSpec', spec });
-export const setRoundsPerDay = (roundsPerDay: number) => submitSetup({ type: 'setup.setRoundsPerDay', roundsPerDay });
-export const paintStroke = (stroke: PaintStroke) => submitSetup({ type: 'setup.paint', stroke });
+export const generate = () => submit({ type: 'setup.generate' });
+export const rerollSeed = () => submit({ type: 'setup.rerollSeed' });
+export const editSpec = (spec: Partial<BoardSpec>) => submit({ type: 'setup.editSpec', spec });
+export const setRoundsPerDay = (roundsPerDay: number) => submit({ type: 'setup.setRoundsPerDay', roundsPerDay });
+export const paintStroke = (stroke: PaintStroke) => submit({ type: 'setup.paint', stroke });
 
 // Plain data crosses the command boundary: a Svelte proxy would reach `structuredClone` in the
 // service, and a socket in Phase 4.
 const plain = (piece: PieceRef): PieceRef => ({ kind: piece.kind, id: piece.id });
 
 export const addUnit = (side: Side, card: UnitCard) =>
-  submitSetup({ type: 'army.addUnit', side, card: $state.snapshot(card) as UnitCard });
-export const removeUnit = (unitId: string) => submitSetup({ type: 'army.removeUnit', unitId });
-export const addEmplacement = (side: Side, engine: string) => submitSetup({ type: 'army.addEmplacement', side, engine });
-export const removeEmplacement = (emplacementId: string) => submitSetup({ type: 'army.removeEmplacement', emplacementId });
-export const attachEquipment = (unitId: string, engine: string) => submitSetup({ type: 'army.attachEquipment', unitId, engine });
-export const detachEquipment = (unitId: string, equipmentId: string) => submitSetup({ type: 'army.detachEquipment', unitId, equipmentId });
-export const placePiece = (piece: PieceRef, square: string) => submitSetup({ type: 'army.place', piece: plain(piece), square });
-export const unplacePiece = (piece: PieceRef) => submitSetup({ type: 'army.unplace', piece: plain(piece) });
-export const autoPlacePiece = (piece: PieceRef) => submitSetup({ type: 'army.autoPlace', piece: plain(piece) });
-export const generateForce = (side: Side) => submitSetup({ type: 'army.generateForce', side });
+  submit({ type: 'army.addUnit', side, card: $state.snapshot(card) as UnitCard });
+export const removeUnit = (unitId: string) => submit({ type: 'army.removeUnit', unitId });
+export const addEmplacement = (side: Side, engine: string) => submit({ type: 'army.addEmplacement', side, engine });
+export const removeEmplacement = (emplacementId: string) => submit({ type: 'army.removeEmplacement', emplacementId });
+export const attachEquipment = (unitId: string, engine: string) => submit({ type: 'army.attachEquipment', unitId, engine });
+export const detachEquipment = (unitId: string, equipmentId: string) => submit({ type: 'army.detachEquipment', unitId, equipmentId });
+export const placePiece = (piece: PieceRef, square: string) => submit({ type: 'army.place', piece: plain(piece), square });
+export const unplacePiece = (piece: PieceRef) => submit({ type: 'army.unplace', piece: plain(piece) });
+export const autoPlacePiece = (piece: PieceRef) => submit({ type: 'army.autoPlace', piece: plain(piece) });
+export const generateForce = (side: Side) => submit({ type: 'army.generateForce', side });
 
 export const sideReady = (side: Side): boolean => readyIn(game.setup, side);
 
@@ -125,12 +102,12 @@ export function forward(): { label: string; enabled: boolean; go: () => void } {
 
 export function next() {
   const i = STAGES.indexOf(game.stage);
-  if (i < STAGES.length - 2) { game.stage = STAGES[i + 1]; void save(); }
+  if (i < STAGES.length - 2) game.stage = STAGES[i + 1];
 }
 
 export function back() {
   const i = STAGES.indexOf(game.stage);
-  if (i > 0) { game.stage = STAGES[i - 1]; void save(); }
+  if (i > 0) game.stage = STAGES[i - 1];
 }
 
 /** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach — the rail's
@@ -140,37 +117,10 @@ export function back() {
 export function goToStage(stage: Stage) {
   if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
   game.stage = stage;
-  void save();
 }
 
-export async function startBattle() {
-  const setup = $state.snapshot(game.setup);
-  const board = setup.board;
-  if (!board) return refuse('generate a board first');
-  const result = await write((s) => ({
-    ...s,
-    setup,
-    battle: createBattle(
-      {
-        board,
-        roundsPerDay: setup.roundsPerDay,
-        units: setup.units.map((u) => ({
-          id: u.id,
-          card: u.card,
-          side: u.side,
-          square: u.square!,
-          engines: u.engines
-            .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)! }))
-            .filter((e) => e.card),
-        })),
-        engines: setup.emplacements
-          .filter((e) => e.square)
-          .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square! }))
-          .filter((e) => e.card),
-      },
-      randomRng,
-    ),
-  }), 'clear');
+export async function startBattle(): Promise<CommandResult> {
+  const result = await submit({ type: 'battle.start' });
   if (result.ok) game.stage = 'battle';
   return result;
 }
@@ -191,20 +141,13 @@ export function endActivation() {
   return id ? submit({ type: 'activation.end', unitId: id }) : refuse('no unit is activating');
 }
 
-/** A setup undo restores a whole `BattleSetupDraft` snapshot; resync the local copy the same
- * way a setup command does. A battle undo leaves `setup` untouched, so this is a no-op then. */
-export async function undo(): Promise<CommandResult> {
-  const result = await runtime.undo();
-  if (result.ok) syncSetup();
+export const undo = () => submit({ type: 'session.undo' });
+
+/** Drop the battle under way and reopen its setup draft on the deployment tab. */
+export async function backToSetup(): Promise<CommandResult> {
+  const result = await submit({ type: 'battle.returnToSetup' });
+  if (result.ok) game.stage = 'attackers';
   return result;
-}
-
-/** The night and the coming day belong to the battle that was under way; ending it drops them. */
-const ended = { nightDeclarations: {}, nextDeployment: {} };
-
-export function backToSetup() {
-  game.stage = 'attackers';
-  return write((s) => ({ ...s, ...ended, battle: null }), 'clear');
 }
 
 /** Each army declares its own recovery. The night rolls once the second declaration lands. */
@@ -228,11 +171,10 @@ export const declareDeployment = (side: Side, positions: Record<string, string>)
 
 export const startNextDay = () => submit({ type: 'continuation.startNextDay' });
 
-export function resetSetup() {
-  game.setup = defaultSetup();
-  game.stage = 'board';
-  const setup = $state.snapshot(game.setup);
-  return write((s) => ({ ...s, ...ended, setup, battle: null }), 'clear');
+export async function resetSetup(): Promise<CommandResult> {
+  const result = await submit({ type: 'battle.reset' });
+  if (result.ok) game.stage = 'board';
+  return result;
 }
 
 // Module-level $state is seeded once from the saved session; a hot patch would keep the old game.

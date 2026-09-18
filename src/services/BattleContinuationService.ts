@@ -1,6 +1,6 @@
 import {
   answerSurrender as answerSurrenderProposal, canContinueBattle, declareDayOrder as declareOrder,
-  generateBoard, nextDayBattlefield, recoverAtNight, resolveDayOrders, SIDES, startNextDay as beginNextDay,
+  generateBoard, nextDayBattlefield, recoverAtNight, resolveDayOrders, SIDES,
   type BattleState, type BoardSpec, type DayOrder, type RecoveryChoice, type Side,
 } from '../engine/index.js';
 import type { DicePort } from '../runtime/ports.js';
@@ -8,9 +8,9 @@ import { randomSeed, type BattleSession } from '../runtime/session.js';
 import { deploymentProblem } from './ArmyPreparationService.js';
 
 /**
- * The night between two days and the day that follows it. Recovery and deployment arrive one
- * side at a time and wait in the record: the night rolls when the second side declares, and
- * the next day starts when both deployments are legal.
+ * The night between two days and the ground the next one is fought on. Recovery and deployment
+ * arrive one side at a time and wait in the record: the night rolls when the second side
+ * declares, and `BattleManager` starts the day once both deployments are legal.
  */
 export interface BattleContinuationService {
   declareRecovery(session: BattleSession, side: Side, choices: RecoveryChoice[]): BattleSession;
@@ -20,7 +20,6 @@ export interface BattleContinuationService {
   /** A partial spec generates tomorrow's field over today's; null keeps the ground as it is. */
   chooseBattlefield(session: BattleSession, spec: Partial<BoardSpec> | null): BattleSession;
   declareDeployment(session: BattleSession, side: Side, positions: Record<string, string>): BattleSession;
-  startNextDay(session: BattleSession): BattleSession;
 }
 
 function battleOf(session: BattleSession): BattleState {
@@ -94,22 +93,6 @@ export function createBattleContinuationService({ dice }: { dice: DicePort }): B
       const problem = deploymentProblem(field, requireSide(side), positions);
       if (problem) throw new Error(problem);
       return { ...session, nextDeployment: { ...session.nextDeployment, [side]: { ...positions } } };
-    },
-
-    startNextDay: (session) => {
-      const battle = battleOf(session);
-      const field = nextDayBattlefield(battle);
-      const positions: Record<string, string> = {};
-      for (const side of SIDES) {
-        const problem = deploymentProblem(field, side, session.nextDeployment[side], true);
-        if (problem) throw new Error(problem);
-        Object.assign(positions, session.nextDeployment[side]);
-      }
-      return {
-        ...withBattle(session, beginNextDay(battle, positions)),
-        nightDeclarations: {},
-        nextDeployment: {},
-      };
     },
   };
 }

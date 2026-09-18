@@ -50,7 +50,7 @@ describe('map preparation', () => {
     const runtime = runtimeOn();
 
     await runtime.submit({ type: 'setup.paint', stroke: waterStroke });
-    const result = await runtime.undo();
+    const result = await runtime.submit({ type: 'session.undo' });
 
     expect(result.ok).toBe(true);
     expect(runtime.session.setup.units[0].square).toBe('a1');

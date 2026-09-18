@@ -10,7 +10,6 @@ export interface MapPreparationService {
   rerollSeed(session: BattleSession): BattleSession;
   editSpec(session: BattleSession, spec: Partial<BoardSpec>): BattleSession;
   setRoundsPerDay(session: BattleSession, roundsPerDay: number): BattleSession;
-  paint(session: BattleSession, stroke: PaintStroke): BattleSession;
 }
 
 function paintCell(board: Board, key: string, brush: PaintBrush): void {
@@ -32,7 +31,9 @@ function paintEdge(board: Board, key: string, brush: PaintBrush): void {
   else if (brush.kind === 'wall-clear' || brush.kind === 'erase') delete board.walls[key];
 }
 
-function applyStroke(board: Board, stroke: PaintStroke): Board {
+/** The terrain half of a stroke. `BattleManager` joins it to the placement cleanup, so the
+ * board and the pieces standing on it move in one commit. */
+export function applyStroke(board: Board, stroke: PaintStroke): Board {
   const next = structuredClone(board);
   for (const key of stroke.cells) paintCell(next, key, stroke.brush);
   for (const key of stroke.edges) paintEdge(next, key, stroke.brush);
@@ -48,22 +49,6 @@ function clearUndeployable(board: Board, setup: BattleSetupDraft): BattleSetupDr
       ? { ...u, square: null } : u)),
     emplacements: setup.emplacements.map((e) => (e.square && !canDeploy(board, e.side, false, parse(e.square))
       ? { ...e, square: null } : e)),
-  };
-}
-
-/** Painting only ever turns a square to water or leaves it as it was; a stroke never needs
- * `canDeploy`'s rank and ambush rules, only the one terrain it can newly forbid. */
-function clearWaterPlacements(board: Board, setup: BattleSetupDraft): BattleSetupDraft {
-  const onWater = (square: string | null): boolean => {
-    if (!square) return false;
-    const sq = parse(square);
-    return board.squares[sq.rank][sq.file].terrain === 'water';
-  };
-  return {
-    ...setup,
-    board,
-    units: setup.units.map((u) => (onWater(u.square) ? { ...u, square: null } : u)),
-    emplacements: setup.emplacements.map((e) => (onWater(e.square) ? { ...e, square: null } : e)),
   };
 }
 
@@ -84,11 +69,5 @@ export function createMapPreparationService(): MapPreparationService {
     editSpec: (session, spec) => withSetup(session, { ...session.setup, spec: { ...session.setup.spec, ...spec } }),
 
     setRoundsPerDay: (session, roundsPerDay) => withSetup(session, { ...session.setup, roundsPerDay }),
-
-    paint: (session, stroke) => {
-      const board = session.setup.board;
-      if (!board) throw new Error('no board to paint');
-      return withSetup(session, clearWaterPlacements(applyStroke(board, stroke), session.setup));
-    },
   };
 }

@@ -152,7 +152,7 @@ describe('battle continuation', () => {
     expect(runtime.session.battle!.endedBy).toBe('surrender');
     expect(runtime.session.battle!.winner).toBe('defender');
 
-    await runtime.change((s) => ({ ...s, battle: null }));
+    await runtime.submit({ type: 'battle.returnToSetup' });
     const orphan = await runtime.submit({ type: 'continuation.confirmDayOrders' });
     expect(orphan).toMatchObject({ ok: false, reason: 'stage' });
   });

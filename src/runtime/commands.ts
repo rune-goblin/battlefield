@@ -46,18 +46,54 @@ export type BattleCommand =
   /** Null keeps today's ground; a partial spec generates tomorrow's on the authority. */
   | { type: 'continuation.chooseBattlefield'; spec: Partial<BoardSpec> | null }
   | { type: 'continuation.declareDeployment'; side: Side; positions: Record<string, string> }
-  | { type: 'continuation.startNextDay' };
+  | { type: 'continuation.startNextDay' }
+  | { type: 'battle.start' }
+  | { type: 'battle.returnToSetup' }
+  | { type: 'battle.reset' }
+  | { type: 'battle.finalize' }
+  /** Rewind to the snapshot the last undoable commit replaced, under a new revision. */
+  | { type: 'session.undo' };
 
 export type CommandType = BattleCommand['type'];
 
-/** Tactical commands act on the battle in progress; setup commands prepare the board and
- * placements before one exists. The executor gates each side of this table on `session.battle`. */
-export const SETUP_COMMANDS: ReadonlySet<CommandType> = new Set([
-  'setup.generate', 'setup.rerollSeed', 'setup.editSpec', 'setup.setRoundsPerDay', 'setup.paint',
-  'army.addUnit', 'army.removeUnit', 'army.addEmplacement', 'army.removeEmplacement',
-  'army.attachEquipment', 'army.detachEquipment',
-  'army.place', 'army.unplace', 'army.autoPlace', 'army.generateForce',
-] satisfies CommandType[]);
+/** Which side of the line a command stands on: `setup` prepares the board and the forces
+ * before a battle exists, `battle` acts on the one under way, `any` crosses it. The executor
+ * gates every command on this table and `session.battle`. */
+export type CommandStage = 'setup' | 'battle' | 'any';
+
+export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
+  'activation.select': 'battle',
+  'activation.deselect': 'battle',
+  'action.resolve': 'battle',
+  'activation.end': 'battle',
+  'setup.generate': 'setup',
+  'setup.rerollSeed': 'setup',
+  'setup.editSpec': 'setup',
+  'setup.setRoundsPerDay': 'setup',
+  'setup.paint': 'setup',
+  'army.addUnit': 'setup',
+  'army.removeUnit': 'setup',
+  'army.addEmplacement': 'setup',
+  'army.removeEmplacement': 'setup',
+  'army.attachEquipment': 'setup',
+  'army.detachEquipment': 'setup',
+  'army.place': 'setup',
+  'army.unplace': 'setup',
+  'army.autoPlace': 'setup',
+  'army.generateForce': 'setup',
+  'continuation.declareRecovery': 'battle',
+  'continuation.declareDayOrder': 'battle',
+  'continuation.confirmDayOrders': 'battle',
+  'continuation.answerSurrender': 'battle',
+  'continuation.chooseBattlefield': 'battle',
+  'continuation.declareDeployment': 'battle',
+  'continuation.startNextDay': 'battle',
+  'battle.start': 'setup',
+  'battle.returnToSetup': 'battle',
+  'battle.reset': 'setup',
+  'battle.finalize': 'battle',
+  'session.undo': 'any',
+};
 
 export interface CommandEnvelope {
   battleId: string;

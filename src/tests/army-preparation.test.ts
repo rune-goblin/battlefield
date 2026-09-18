@@ -131,12 +131,15 @@ describe('army preparation', () => {
   });
 
   it('refuses every army command once the battle is under way', async () => {
-    const runtime = runtimeOn();
+    const runtime = runtimeOn({
+      ...setupSession(),
+      stage: 'battle',
+      battle: createBattle({
+        board: openBoard(),
+        units: [{ card: infantry, side: 'attacker', square: 'c2' }, { card: scouts, side: 'defender', square: 'c7' }],
+      }),
+    });
 
-    await runtime.change((s) => ({ ...s, battle: createBattle({
-      board: openBoard(),
-      units: [{ card: infantry, side: 'attacker', square: 'c2' }, { card: scouts, side: 'defender', square: 'c7' }],
-    }) }));
     const result = await runtime.submit({ type: 'army.addUnit', side: 'attacker', card: scouts });
 
     expect(result.ok).toBe(false);

@@ -114,37 +114,38 @@ describe('the command executor', () => {
     const { runtime, published } = runtimeOn();
     await runtime.submit({ type: 'action.resolve', action: guard });
 
-    const result = await runtime.undo();
+    const result = await runtime.submit({ type: 'session.undo' });
 
     expect(result).toMatchObject({ ok: true, revision: 2 });
     expect(unit(runtime.session.battle!, 'u0').guard).toBeNull();
     expect(runtime.history).toHaveLength(0);
     expect(published.at(-1)).toBe(runtime.session);
-    expect(await runtime.undo()).toMatchObject({ ok: false, reason: 'stage' });
+    expect(await runtime.submit({ type: 'session.undo' })).toMatchObject({ ok: false, reason: 'stage' });
   });
 
-  it('commits a direct change through the same queue', async () => {
+  it('runs a lifecycle transition through the same queue', async () => {
     const { runtime, repository } = runtimeOn();
 
     const [action, cleared] = await Promise.all([
       runtime.submit({ type: 'action.resolve', action: guard }),
-      runtime.change((session) => ({ ...session, battle: null }), 'clear'),
+      runtime.submit({ type: 'battle.returnToSetup' }),
     ]);
 
     expect([action, cleared]).toMatchObject([{ ok: true, revision: 1 }, { ok: true, revision: 2 }]);
     expect(repository.saves.map((s) => s.revision)).toEqual([1, 2]);
     expect(runtime.session.battle).toBeNull();
+    expect(runtime.session.stage).toBe('setup');
     expect(runtime.history).toHaveLength(0);
   });
 
-  it('leaves the record and the history alone when a direct change throws', async () => {
+  it('leaves the record and the history alone when a transition throws', async () => {
     const { runtime, repository } = runtimeOn();
     await runtime.submit({ type: 'action.resolve', action: guard });
     const committed = runtime.session;
 
-    const result = await runtime.change(() => { throw new Error('no board'); }, 'clear');
+    const result = await runtime.submit({ type: 'battle.finalize' });
 
-    expect(result).toMatchObject({ ok: false, reason: 'engine', message: 'no board', revision: 1 });
+    expect(result).toMatchObject({ ok: false, reason: 'engine', revision: 1 });
     expect(runtime.session).toBe(committed);
     expect(runtime.history).toHaveLength(1);
     expect(repository.saves).toHaveLength(1);
