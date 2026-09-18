@@ -3,7 +3,43 @@
 declare const foundry: {
   applications: { api: { ApplicationV2: FoundryApplicationV2Class } };
   utils: { saveDataToFile(data: string, type: string, filename: string): void };
+  dice: { terms: { Die: FoundryDieClass } };
 };
+
+/** The one Foundry document call the chat adapter makes; `flags` is where it stamps the
+ * committed event's ID. */
+declare const ChatMessage: {
+  create(data: {
+    content: string;
+    rolls?: FoundryRoll[];
+    flags?: Record<string, Record<string, unknown>>;
+  }): Promise<unknown>;
+};
+
+declare const Roll: {
+  /** Builds a Roll from terms that are already evaluated (or all unevaluated); the chat
+   * adapter hands it one `Die` term carrying the recorded face. */
+  fromTerms(terms: FoundryDieTerm[]): FoundryRoll;
+};
+
+interface FoundryDieResult { result: number; active: boolean }
+
+interface FoundryDieTerm {
+  /** A synchronous draw through the platform's own generator (`CONFIG.Dice.randomUniform()`),
+   * the seam the dice port uses. */
+  randomFace(): number;
+  /** Settles on the next microtask when `results` already holds one entry per requested die —
+   * there is nothing left to draw, so no interactive fulfillment prompt runs. */
+  evaluate(options?: Record<string, unknown>): Promise<FoundryDieTerm>;
+}
+
+interface FoundryDieClass {
+  new (data: { faces: number; results?: FoundryDieResult[] }): FoundryDieTerm;
+}
+
+interface FoundryRoll {
+  readonly total: number | undefined;
+}
 
 declare const Hooks: {
   once(hook: 'init' | 'ready', handler: () => void): number;

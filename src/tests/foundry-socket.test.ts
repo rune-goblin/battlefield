@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ChatPoster } from '../adapters/foundry/chat.js';
 import { createBattlefieldHost, type BattlefieldHost } from '../adapters/foundry/host.js';
 import { asSocketMessage, PROTOCOL_VERSION, type SocketChannel, type SocketMessage } from '../adapters/foundry/socket.js';
 import { REPLY_TIMEOUT_MS } from '../adapters/foundry/socketTransport.js';
 import { holdsAuthority, primaryGmRepository, type TableUsers } from '../adapters/foundry/table.js';
 import { authorityStatus, commandsEnabled } from '../app/authority-notice.js';
-import { createBattle, scriptedRng, type Side, type UnitCard } from '../engine/index.js';
+import { createBattle, parse, scriptedRng, unit, type Side, type UnitCard } from '../engine/index.js';
 import type { BattleCommand, CommandEnvelope } from '../runtime/commands.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
@@ -33,6 +34,29 @@ function storedSession(): BattleSession {
     }),
     control: { mode: 'manual', gmSide: 'attacker', seats, next: { attacker: 0, defender: 0 } },
     turn: SECOND_GM,
+  };
+}
+
+/** Two adjacent units, so the primary GM can resolve an attack roll and draw a `checkResolved`
+ * event for the chat publisher to read. The GM's own override needs no seat or open turn. The
+ * defender deploys at its legal rank and is moved next to the attacker afterward, the way
+ * `execution-events.test.ts` positions units `canDeploy` would otherwise refuse. */
+function meleeSession(): BattleSession {
+  const seats: Record<Side, string[]> = { attacker: [PRIMARY], defender: [PLAYER] };
+  const battle = createBattle({
+    board: openBoard(),
+    units: [
+      { card: infantry, side: 'attacker', square: 'c2' },
+      { card: infantry, side: 'defender', square: 'c7' },
+    ],
+  });
+  unit(battle, 'u1').square = parse('c3');
+  return {
+    ...freshSession(),
+    stage: 'battle',
+    battle,
+    control: { mode: 'manual', gmSide: 'attacker', seats, next: { attacker: 0, defender: 0 } },
+    turn: PRIMARY,
   };
 }
 
@@ -101,6 +125,7 @@ interface Client { host: BattlefieldHost; status: string[] }
 
 function clientOn(
   userId: string, bus: ReturnType<typeof fakeBus>, world: ReturnType<typeof fakeWorld>, table: FakeTable,
+  chat?: ChatPoster,
 ): Client {
   const channel = bus.connect(userId);
   const status: string[] = [];
@@ -111,18 +136,22 @@ function clientOn(
     archive: fakeArchive(),
     records: world.records,
     dice: scriptedRng([10]),
+    chat,
     onAuthority: (report) => status.push(authorityStatus(report)),
   });
   channel.on((message) => host.handleMessage(message));
   return { host, status };
 }
 
-function table3(world = fakeWorld(), table: FakeTable = { primaryGm: PRIMARY, active: [PRIMARY, SECOND_GM, PLAYER] }) {
+function table3(
+  world = fakeWorld(), table: FakeTable = { primaryGm: PRIMARY, active: [PRIMARY, SECOND_GM, PLAYER] },
+  chat?: ChatPoster,
+) {
   const bus = fakeBus();
   const clients = {
-    primary: clientOn(PRIMARY, bus, world, table),
-    second: clientOn(SECOND_GM, bus, world, table),
-    player: clientOn(PLAYER, bus, world, table),
+    primary: clientOn(PRIMARY, bus, world, table, chat),
+    second: clientOn(SECOND_GM, bus, world, table, chat),
+    player: clientOn(PLAYER, bus, world, table, chat),
   };
   world.publish();
   const ready = Promise.all(Object.values(clients).map((c) => c.host.refresh()));
@@ -250,6 +279,26 @@ describe('the socket transport and the primary GM', () => {
     expect(t.second.host.runtime!.session.revision).toBe(t.world.stored.revision);
     expect(t.second.host.runtime!.history).toHaveLength(0);
     expect(t.player.status).toContain('handoff');
+  });
+});
+
+describe('the primary GM\'s chat publisher', () => {
+  it('posts one chat card per checkResolved event, stamped with its event ID', async () => {
+    const posted: { eventId: string; face: number }[] = [];
+    const chat: ChatPoster = { post: async (card) => { posted.push({ eventId: card.eventId, face: card.face }); } };
+    const t = table3(fakeWorld(meleeSession()), undefined, chat);
+    await t.ready;
+
+    const result = await t.primary.host.submit({
+      type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' },
+    });
+
+    expect(result.ok).toBe(true);
+    // A miss with this scripted roll also draws the repulsed-attacker Will save, so the melee
+    // yields two real checks, and each posts its own card under its own event ID.
+    const events = t.primary.host.runtime!.session.lastCommit!.events.filter((e) => e.type === 'checkResolved');
+    expect(events).toHaveLength(2);
+    expect(posted).toEqual(events.map((e) => ({ eventId: e.id, face: 10 })));
   });
 });
 

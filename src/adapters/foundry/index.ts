@@ -3,6 +3,8 @@ import { blockPageZoom } from '../../app/app-root.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
+import { foundryChatPoster } from './chat.js';
+import { foundryDice } from './foundryDice.js';
 import { createBattlefieldHost, type BattlefieldHost } from './host.js';
 import { MODULE_ID } from './module-id.js';
 import { createSessionWatcher } from './sessionWatcher.js';
@@ -36,6 +38,8 @@ Hooks.once('init', () => {
     repository: createFoundrySessionRepository(),
     archive: createFoundryArchive(),
     records: (listener) => sessionWatcher.subscribe(listener),
+    dice: foundryDice(),
+    chat: foundryChatPoster(),
     onAuthority: reportAuthority,
   });
   channel.on((message) => host?.handleMessage(message));
