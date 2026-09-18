@@ -4,6 +4,7 @@ import type { ArmyPreparationService } from '../services/ArmyPreparationService.
 import type { BattleContinuationService } from '../services/BattleContinuationService.js';
 import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
+import { pruneSources, sessionFromRequest, type BattleRequest } from './campaign.js';
 import { COMMAND_STAGE, newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import { openTurn, seatUsers } from './control.js';
 import type { DiceRecorder } from './dice.js';
@@ -23,7 +24,7 @@ const RECENT_COMMAND_IDS = 20;
  * boundary undo cannot cross, as the prototype's store held them. Selection is not an
  * activation, and a generated or reworded board was never undoable — only a paint stroke was.
  * `session.undo` is absent: it consumes the history rather than adding to it. */
-const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load'>, 'push' | 'keep' | 'clear'> = {
+const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'session.install'>, 'push' | 'keep' | 'clear'> = {
   'activation.select': 'keep',
   'activation.deselect': 'keep',
   'action.resolve': 'push',
@@ -67,8 +68,11 @@ export interface Services {
   manager: BattleManager;
 }
 
+/** What a finalized record still answers: leaving the battle, or replacing it outright. */
+const AFTER_FINAL: CommandType[] = ['battle.returnToSetup', 'session.load', 'session.install'];
+
 function applyCommand(
-  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' }>,
+  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' | 'session.install' }>,
   { actions, map, army, continuation, manager }: Services, presence: PresencePort, userId: string,
 ): BattleSession {
   switch (command.type) {
@@ -218,7 +222,7 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     try {
       // The commit that moves the stage or the day is the commit that drops the decisions the
       // old one was waiting on: one record never carries an answer to a question that is gone.
-      const edited = clearObsolete(edit(previous));
+      const edited = pruneSources(clearObsolete(edit(previous)));
       const events = describe(previous, edited);
       next = commit(seat ? seatTurn(previous, edited) : edited, commandId, events, dice.take(), userId);
     } catch (error) {
@@ -253,13 +257,14 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     if (stage === 'battle' && !session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
     // A finalized battle has been reported to the campaign. Only leaving it, or replacing it
     // outright with a loaded save, reopens the record.
-    if (session.stage === 'finalized' && command.type !== 'battle.returnToSetup' && command.type !== 'session.load') {
+    if (session.stage === 'finalized' && !AFTER_FINAL.includes(command.type)) {
       return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
     }
     const refusal = refuseCommand(session, command, userId, presence);
     if (refusal) return Promise.resolve(reject(commandId, 'permission', refusal));
     if (command.type === 'session.undo') return rewind(commandId, userId);
     if (command.type === 'session.load') return loadSession(commandId, command.slot, userId);
+    if (command.type === 'session.install') return install(commandId, command.battleId, command.request, userId);
 
     return persist(commandId, userId, {
       edit: (current) => {
@@ -318,6 +323,25 @@ export function createExecutor({ repository, archive, dice, presence, session: i
           // is refitted here and the turn opens again under it.
           control: seatUsers(migrated.control, presence), turn: null,
         };
+      },
+      record: () => { history = []; },
+    });
+  }
+
+  /** Install a battle a campaign asked for. A battle under way is never overwritten — one
+   * battle at a time, and the GM leaves this one before the next import lands. The request is
+   * read inside the edit, so a malformed one rejects like any other refused command. */
+  function install(
+    commandId: string, battleId: string, request: BattleRequest, userId: string,
+  ): Promise<CommandResult> {
+    if (session.battle && session.stage !== 'finalized') {
+      return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
+    }
+    return persist(commandId, userId, {
+      edit: (current) => {
+        const built = sessionFromRequest(request, battleId);
+        // The imported seating knows no users; the table's own seats it, as a load does.
+        return { ...built, revision: current.revision, control: seatUsers(built.control, presence) };
       },
       record: () => { history = []; },
     });

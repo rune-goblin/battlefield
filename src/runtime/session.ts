@@ -27,6 +27,25 @@ export interface BattleSetupDraft {
   roundsPerDay?: number;
 }
 
+/** What a campaign's copy of a unit held when the battle imported it. The writeback compares
+ * an actor against this before it touches it, so an edit made outside the battle shows up as a
+ * conflict rather than being overwritten. */
+export interface ImportBaseline {
+  hitPoints: number;
+  maxHitPoints: number;
+  /** Demoralized stacks read off the actor; the battle carries them as disorder. */
+  demoralized: number;
+}
+
+/** Where a unit came from. Actor UUIDs and campaign IDs live here, beside the record and
+ * outside the rules: the engine never sees one. */
+export interface SourceBinding {
+  unitId: string;
+  actorUuid: string;
+  campaignId?: string;
+  baseline: ImportBaseline;
+}
+
 /** What the last commit did and what it drew. `dice` holds the faces of the transition in
  * order, so a chat card is rebuilt from the same numbers the rules read. `userId` is who sent
  * it, so a viewer's own commit can be told apart from another user's for the activity notice. */
@@ -46,6 +65,8 @@ export interface BattleSession {
   interactions: InteractionRecord[];
   /** Who plays each side and where each side's rotation stands. */
   control: SideControl;
+  /** What each imported unit came from. Empty for a battle nobody imported. */
+  sources: SourceBinding[];
   /** The user whose activation is open, named in the commit that made their side pending.
    * Null whenever no battle is running. */
   turn: string | null;
@@ -98,6 +119,7 @@ export function freshSession(battleId = newBattleId()): BattleSession {
     battle: null,
     interactions: [],
     control: hotSeatControl(),
+    sources: [],
     turn: null,
     lastCommit: null,
     recentCommandIds: [],
@@ -179,6 +201,7 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && (s.battle === null || intactBattle(s.battle))
     && Array.isArray(s.interactions) && s.interactions.every(intactInteraction)
     && isSideControl(s.control)
+    && Array.isArray(s.sources)
     && (s.turn === null || typeof s.turn === 'string')
     && (s.lastCommit === null
       || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string'
@@ -199,6 +222,7 @@ function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleI
     battle,
     interactions: [],
     control: hotSeatControl(),
+    sources: [],
     turn: null,
     lastCommit: null,
     recentCommandIds: [],
@@ -241,6 +265,9 @@ export function reviveSession(value: unknown): BattleSession | null {
   // A record written before Wave 3.3 knew no seats. It loads into the hot seat, and a host
   // with real users reseats it as the save is installed.
   if (!isSideControl(s.control)) s.control = hotSeatControl();
+  // proto: no schema bump for the source bindings Wave 5.1 added. A record written before them
+  // was nobody's import, and an empty list says so. The migration's shape is reserved.
+  if (!Array.isArray(s.sources)) s.sources = [];
   s.turn ??= null;
   s.lastCommit ??= null;
   // A commit written before Wave 3.1 recorded neither events nor dice; an empty list is what

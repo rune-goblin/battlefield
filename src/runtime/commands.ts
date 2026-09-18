@@ -1,4 +1,5 @@
 import type { Action, BoardSpec, DayOrder, RecoveryChoice, Side, SquareTerrain, UnitCard } from '../engine/index.js';
+import type { BattleRequest } from './campaign.js';
 import type { ControlAssignment } from './control.js';
 
 /** Wave 1.3 makes `unit` required in the engine's `Acts`. Until then the boundary carries the
@@ -61,7 +62,11 @@ export type BattleCommand =
   /** Rewind to the snapshot the last undoable commit replaced, under a new revision. */
   | { type: 'session.undo' }
   /** Replace the running record with a saved one, migrated and installed at the next revision. */
-  | { type: 'session.load'; slot: string };
+  | { type: 'session.load'; slot: string }
+  /** Replace the record with a battle a campaign asked for. The battle ID rides along, so the
+   * caller records it whatever the authority answers and a resent command installs the same
+   * battle rather than a second one. */
+  | { type: 'session.install'; battleId: string; request: BattleRequest };
 
 export type CommandType = BattleCommand['type'];
 
@@ -106,6 +111,7 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'turn.reassign': 'battle',
   'session.undo': 'any',
   'session.load': 'any',
+  'session.install': 'any',
 };
 
 export interface CommandEnvelope {

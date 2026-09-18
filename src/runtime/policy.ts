@@ -48,6 +48,7 @@ export const COMMAND_SCOPE: Record<CommandType, CommandScope> = {
   'turn.reassign': 'gm',
   'session.undo': 'gm',
   'session.load': 'gm',
+  'session.install': 'gm',
 };
 
 const pieceSide = (session: BattleSession, piece: PieceRef): Side | null => (piece.kind === 'unit'

@@ -7,6 +7,7 @@ import { foundryChatPoster } from './chat.js';
 import { foundryDice } from './foundryDice.js';
 import { createBattlefieldHost, type BattlefieldHost } from './host.js';
 import { MODULE_ID } from './module-id.js';
+import { createModuleApi } from './moduleApi.js';
 import { createSessionWatcher } from './sessionWatcher.js';
 import { foundrySocketChannel } from './socket.js';
 import { foundryTableUsers } from './table.js';
@@ -27,7 +28,13 @@ export let host: BattlefieldHost | null = null;
 Hooks.once('init', () => {
   blockPageZoom();
   const module = game.modules.get(MODULE_ID);
-  if (module) module.api = { open: () => BattlefieldApp.open(), close: () => BattlefieldApp.close() };
+  if (module) {
+    module.api = createModuleApi({
+      submit: () => { const client = host; return client ? (command) => client.submit(command) : null; },
+      open: () => BattlefieldApp.open(),
+      close: () => BattlefieldApp.close(),
+    });
+  }
   registerFoundrySettings((raw) => sessionWatcher.handleChange(raw));
   // Registered here, before `ready`, because Foundry replays the socket events it buffered
   // during startup. The host's readiness gate is what holds them until it can answer.
