@@ -1,8 +1,11 @@
 import {
-  act, createBattle, deselect, endActivation as endActivationEngine, ENGINES, generateBoard, canDeploy, parse, randomRng, select, recoverAtNight, startNextDay,
-  type Action, type BattleState, type Board, type Side, type RecoveryChoice,
+  createBattle, ENGINES, generateBoard, canDeploy, parse, randomRng, recoverAtNight, startNextDay,
+  type BattleState, type Board, type Side, type RecoveryChoice,
 } from '../engine/index.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
+import { createRuntime } from '../runtime/createRuntime.js';
+import { newCommandId, type BattleCommand, type CommandResult, type TacticalAction } from '../runtime/commands.js';
+import type { SessionEdit } from '../runtime/executeCommand.js';
 import { defaultSetup, randomSeed, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
 import { answerSurrender, declareDayOrder, resolveDayOrders, type DayOrder } from '../engine/index.js';
 
@@ -14,8 +17,7 @@ const STAGES: Stage[] = ['board', 'paint', 'attackers', 'defenders', 'battle'];
 /** The side each deployment stage edits. */
 export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker', defenders: 'defender' };
 
-const repository = createLocalRepository();
-let session = loadSessionSync();
+const runtime = createRuntime({ repository: createLocalRepository(), session: loadSessionSync() });
 
 /** The record keeps the lifecycle stage. Which setup tab was open is local state, with no
  * store of its own until Wave 2.5, so a reload resumes at the first unfinished one. */
@@ -26,34 +28,53 @@ function openingStage(s: BattleSession): Stage {
 }
 
 export const game = $state({
-  stage: openingStage(session),
-  setup: session.setup,
-  battle: session.battle,
+  stage: openingStage(runtime.session),
+  // The setup panels edit this copy and `save` writes it to the record; the executor's own
+  // copy stays untouched between saves.
+  setup: structuredClone(runtime.session.setup),
+  battle: runtime.session.battle,
   history: [] as BattleState[],
 });
 
-export function save() {
-  session = {
-    ...session,
-    stage: game.battle ? 'battle' : 'setup',
-    setup: $state.snapshot(game.setup),
-    battle: $state.snapshot(game.battle),
-  };
-  // proto: a failed write is silent, as it was. Wave 1.4 raises it under the `storage` notice.
-  void repository.save(session).catch(() => {});
+// The read store: every committed record lands here, whichever path wrote it.
+runtime.subscribe((session) => {
+  game.battle = session.battle;
+  game.history = [...runtime.history];
+});
+
+/** The record's lifecycle stage follows the battle; which setup tab is open is local. */
+const staged = (s: BattleSession): BattleSession => ({ ...s, stage: s.battle ? 'battle' : 'setup' });
+
+// proto: the writes Phase 2 turns into commands. They commit through the executor so the
+// record has one writer, and they carry the store's own state in rather than a service's.
+const write = (edit: SessionEdit, history: 'keep' | 'clear' = 'keep') =>
+  runtime.change((s) => staged(edit(s)), history);
+
+const submit = (command: BattleCommand) => runtime.submit(command);
+
+/** A refusal the store makes on its own, shaped like the executor's so a view reads one thing. */
+const refuse = (message: string): Promise<CommandResult> => Promise.resolve({
+  ok: false, commandId: newCommandId(), revision: runtime.session.revision, reason: 'stage', message,
+});
+
+function battleOf(s: BattleSession): BattleState {
+  if (!s.battle) throw new Error('no battle is under way');
+  return s.battle;
 }
+
+export const save = () => write((s) => ({ ...s, setup: $state.snapshot(game.setup) }));
 
 export function generate() {
   const board = generateBoard($state.snapshot(game.setup.spec));
   game.setup.board = board;
   for (const u of game.setup.units) if (u.square && !canDeploy(board, u.side, u.card.tactics?.includes('ambush') ?? false, parse(u.square))) u.square = null;
   for (const e of game.setup.emplacements) if (e.square && !canDeploy(board, e.side, false, parse(e.square))) e.square = null;
-  save();
+  return save();
 }
 
 export function rerollSeed() {
   game.setup.spec.seed = randomSeed();
-  generate();
+  return generate();
 }
 
 /** One side is ready when it has a unit and everything it owns stands on a square. */
@@ -77,12 +98,12 @@ export function forward(): { label: string; enabled: boolean; go: () => void } {
 
 export function next() {
   const i = STAGES.indexOf(game.stage);
-  if (i < STAGES.length - 2) { game.stage = STAGES[i + 1]; save(); }
+  if (i < STAGES.length - 2) { game.stage = STAGES[i + 1]; void save(); }
 }
 
 export function back() {
   const i = STAGES.indexOf(game.stage);
-  if (i > 0) { game.stage = STAGES[i - 1]; save(); }
+  if (i > 0) { game.stage = STAGES[i - 1]; void save(); }
 }
 
 /** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach — the rail's
@@ -92,125 +113,88 @@ export function back() {
 export function goToStage(stage: Stage) {
   if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
   game.stage = stage;
-  save();
+  void save();
 }
 
-export function startBattle() {
-  const board = game.setup.board;
-  if (!board) return;
-  game.battle = createBattle(
-    {
-      board: $state.snapshot(board),
-      roundsPerDay: game.setup.roundsPerDay,
-      units: game.setup.units.map((u) => ({
-        card: $state.snapshot(u.card),
-        side: u.side,
-        square: u.square!,
-        engines: u.engines.map((n) => ENGINES.find((e) => e.name === n)!).filter(Boolean),
-      })),
-      engines: game.setup.emplacements
-        .filter((e) => e.square)
-        .map((e) => ({ card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square! }))
-        .filter((e) => e.card),
-    },
-    randomRng,
-  );
-  game.history = [];
-  game.stage = 'battle';
-  save();
+export async function startBattle() {
+  const setup = $state.snapshot(game.setup);
+  const board = setup.board;
+  if (!board) return refuse('generate a board first');
+  const result = await write((s) => ({
+    ...s,
+    setup,
+    battle: createBattle(
+      {
+        board,
+        roundsPerDay: setup.roundsPerDay,
+        units: setup.units.map((u) => ({
+          card: u.card,
+          side: u.side,
+          square: u.square!,
+          engines: u.engines.map((n) => ENGINES.find((e) => e.name === n)!).filter(Boolean),
+        })),
+        engines: setup.emplacements
+          .filter((e) => e.square)
+          .map((e) => ({ card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square! }))
+          .filter((e) => e.card),
+      },
+      randomRng,
+    ),
+  }), 'clear');
+  if (result.ok) game.stage = 'battle';
+  return result;
 }
 
-export function takeAction(action: Action) {
-  if (!game.battle) return;
-  const next = act(game.battle, action, randomRng);
-  game.history = [...game.history.slice(-30), game.battle];
-  game.battle = next;
-  save();
-}
+export const takeAction = (action: TacticalAction) => submit({ type: 'action.resolve', action });
 
 // Choosing which of the pending side's units acts next is not an activation itself — no
 // history entry, so Undo still rewinds to the last completed activation, not to a mid-pick
 // selection.
-export function selectUnit(id: string) {
-  if (!game.battle) return;
-  game.battle = select(game.battle, id);
-  save();
-}
+export const selectUnit = (id: string) => submit({ type: 'activation.select', unitId: id });
 
-export function deselectUnit() {
-  if (!game.battle) return;
-  game.battle = deselect(game.battle);
-  save();
-}
+export const deselectUnit = () => submit({ type: 'activation.deselect' });
 
 /** Stop the active unit's activation with actions unspent — also the pass, since a unit that
  * has done nothing may end too. */
 export function endActivation() {
-  if (!game.battle) return;
-  game.history = [...game.history.slice(-30), game.battle];
-  game.battle = endActivationEngine(game.battle, randomRng);
-  save();
+  const id = game.battle?.active;
+  return id ? submit({ type: 'activation.end', unitId: id }) : refuse('no unit is activating');
 }
 
-export function undo() {
-  const prev = game.history.pop();
-  if (prev) { game.battle = prev; save(); }
-}
+export const undo = () => runtime.undo();
 
 export function backToSetup() {
-  game.battle = null;
-  game.history = [];
   game.stage = 'attackers';
-  save();
+  return write((s) => ({ ...s, battle: null }), 'clear');
 }
 
-export function resolveNight(choices: RecoveryChoice[]) {
-  if (!game.battle) return;
-  game.battle = recoverAtNight(game.battle, choices, randomRng);
-  // A committed night is a new boundary: undo cannot reroll its recovery checks.
-  game.history = [];
-  save();
-}
+// A committed night is a new boundary: undo cannot reroll its recovery checks.
+export const resolveNight = (choices: RecoveryChoice[]) =>
+  write((s) => ({ ...s, battle: recoverAtNight(battleOf(s), choices, randomRng) }), 'clear');
 
-export function continueBattle(positions: Record<string, string>) {
-  if (!game.battle) return;
-  game.battle = startNextDay(game.battle, positions);
-  game.history = [];
-  save();
-}
+export const continueBattle = (positions: Record<string, string>) =>
+  write((s) => ({ ...s, battle: startNextDay(battleOf(s), positions) }), 'clear');
 
-export function chooseNextBattlefield(board: Board | null) {
-  if (!game.battle || game.battle.phase !== 'ended' || game.battle.endedBy !== 'dusk') return;
-  game.battle.nextBoard = board;
-  save();
-}
+export const chooseNextBattlefield = (board: Board | null) => write((s) => {
+  const battle = battleOf(s);
+  if (battle.phase !== 'ended' || battle.endedBy !== 'dusk') throw new Error('the day is not over');
+  return { ...s, battle: { ...battle, nextBoard: board } };
+});
 
-export function chooseDayOrder(side: Side, order: DayOrder) {
-  if (!game.battle) return;
-  game.battle = declareDayOrder(game.battle, side, order);
-  save();
-}
+export const chooseDayOrder = (side: Side, order: DayOrder) =>
+  write((s) => ({ ...s, battle: declareDayOrder(battleOf(s), side, order) }));
 
-export function confirmDayOrders() {
-  if (!game.battle) return;
-  game.battle = resolveDayOrders(game.battle);
-  game.history = [];
-  save();
-}
+export const confirmDayOrders = () =>
+  write((s) => ({ ...s, battle: resolveDayOrders(battleOf(s)) }), 'clear');
 
-export function respondToSurrender(side: Side, accept: boolean) {
-  if (!game.battle) return;
-  game.battle = answerSurrender(game.battle, side, accept);
-  game.history = [];
-  save();
-}
+export const respondToSurrender = (side: Side, accept: boolean) =>
+  write((s) => ({ ...s, battle: answerSurrender(battleOf(s), side, accept) }), 'clear');
 
 export function resetSetup() {
   game.setup = defaultSetup();
-  game.battle = null;
-  game.history = [];
   game.stage = 'board';
-  save();
+  const setup = $state.snapshot(game.setup);
+  return write((s) => ({ ...s, setup, battle: null }), 'clear');
 }
 
 // Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
