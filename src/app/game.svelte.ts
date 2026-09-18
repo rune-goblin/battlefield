@@ -2,6 +2,7 @@ import type { BoardSpec, DayOrder, RecoveryChoice, Side, UnitCard } from '../eng
 import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
+import { createPresentation } from './presentation.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
@@ -42,7 +43,13 @@ function adoptSetup(committed: BattleSetupDraft): void {
   adoptedBoard = committed.board;
 }
 
+/** What the board plays after each commit. It observes the record before the store adopts it: a
+ * token spends its route on the move the new positions trigger, so the route has to be on the
+ * board before the tokens are. */
+export const presentation = createPresentation(runtime.session);
+
 runtime.subscribe((session) => {
+  presentation.observe(session);
   game.battle = session.battle;
   game.history = [...runtime.history];
   game.nightDeclarations = session.nightDeclarations;

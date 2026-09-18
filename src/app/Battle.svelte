@@ -7,7 +7,7 @@
   } from '../engine/index.js';
   import { actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { withinApp } from './app-root.js';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
@@ -30,7 +30,7 @@
   import { cellsForTarget, targetingIcon, TargetingService, type TargetMarker } from './targeting.js';
   import ArmyReel from './ArmyReel.svelte';
   import MeleeChoices from './MeleeChoices.svelte';
-  import { deselectUnit, endActivation, game, selectUnit, takeAction, undo } from './game.svelte.js';
+  import { deselectUnit, endActivation, game, presentation, selectUnit, takeAction, undo } from './game.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
 
   const b = $derived(game.battle!);
@@ -72,10 +72,6 @@
   );
   const hot = $derived(hoveredCard ?? hoveredPiece);
 
-  // The only place `resolveStrike` is called with `free: true` (doManeuver's covering
-  // strikes) — the sole channel to flag a free strike for the token pulse without a
-  // dedicated field on the log entry.
-  const FREE_STRIKE_RE = /strikes the maneuvering/;
   const FLASH_MS = 700;
   let flashing = $state<string[]>([]);
   let flashTimers: ReturnType<typeof setTimeout>[] = [];
@@ -630,8 +626,6 @@
     const row = p?.rows[p.index];
     if (!p || !row || !active) return;
     const unit = active.id;
-    // The piece walks the route the drag traced, not the straight line to where it ends.
-    boardRef?.setRoute(unit, row.path);
     if (row.kind === 'advance') await run(takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus }));
     else if (row.kind === 'charge') await run(takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus }));
     else if (row.kind === 'move') await run(takeAction({ type: 'move', unit, to: row.cell }));
@@ -850,6 +844,20 @@
   let resolutionTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => () => { if (resolutionTimer) clearTimeout(resolutionTimer); });
 
+  // The board plays the commit, not the command: every flash, burst, arrow and mark comes from
+  // the events the record carries, so a client that issued nothing shows the same execution.
+  onMount(() => presentation.connect({
+    route: (unit, cells) => boardRef?.setRoute(unit, cells),
+    flash,
+    burst: (cell, tree, from) => boardRef?.burst(cell, tree, from),
+    resolved: (markers, arrows) => {
+      resolvedMarkers = markers;
+      resolvedArrows = arrows;
+      if (resolutionTimer) clearTimeout(resolutionTimer);
+      resolutionTimer = setTimeout(() => { resolvedMarkers = []; resolvedArrows = []; resolutionTimer = null; }, 800);
+    },
+  }));
+
   function hoverTargetMarker(id: string | null) {
     if (id) { hoveredCell = null; hoveredEdge = null; }
     if (blastOpen) blastHover = id;
@@ -932,22 +940,12 @@
     if (!active) return;
     const resolution = new TargetingService(b, active, offer, opt).resolve(target);
     if (!resolution) return;
-    const before = game.battle!.log.length;
-    const result = await run(takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 }));
-    if (!result.ok) return;
-    for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
-    resolvedMarkers = resolution.markers;
-    resolvedArrows = resolution.arrows;
-    if (resolutionTimer) clearTimeout(resolutionTimer);
-    resolutionTimer = setTimeout(() => { resolvedMarkers = []; resolvedArrows = []; resolutionTimer = null; }, 800);
-    for (const effect of resolution.effects) boardRef?.burst(effect.cell, effect.tree, effect.from);
+    await run(takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 }));
   }
 
   async function performManeuver(activity: ActivityIndex, to?: string) {
     if (!active) return;
-    const before = game.battle!.log.length;
     await run(takeAction({ type: 'maneuver', unit: active.id, activity, to }));
-    for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
