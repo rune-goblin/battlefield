@@ -20,12 +20,13 @@ const TEXTURE_TILE = 32;
 // its own thinner setting — broken water over the pale bed, against open water's full cover.
 // Boulders and mounds hang off elevation rather than terrain: this board has no mountain or
 // hill terrain type, and height is what that art is drawing.
-// proto: the sheets' desert and badlands quadrants have no terrain to land on yet — see
-// docs/plans/pixi-board.todos.md.
+// proto: rough ground takes the badlands quadrant; the desert quadrant has no terrain yet —
+// see docs/plans/pixi-board.todos.md.
 interface Scenery { kind: ScatterKind; style?: ScatterStyle }
 const SCATTER_TERRAIN: Partial<Record<SquareTerrain, Scenery>> = {
   open: { kind: 'plains' },
   forest: { kind: 'trees' },
+  rough: { kind: 'badlands' },
   swamp: { kind: 'swamp' },
   water: { kind: 'water' },
   bridge: { kind: 'water' },
@@ -361,6 +362,12 @@ export class TerrainLayer {
       case 'forest':
         for (const [x, y, r] of [[6, 9, 2.6], [19, 6, 2.2], [11, 21, 2.8], [25, 23, 2.2], [16, 15, 2.4]] as const) {
           g.beginFill(ink, 0.55).drawCircle(x, y, r).endFill();
+        }
+        break;
+      case 'rough':
+        g.lineStyle(1.2, ink, 0.45);
+        for (const [x, y] of [[4, 8], [17, 5], [27, 13], [8, 22], [21, 25]] as const) {
+          g.moveTo(x, y).lineTo(x + 3, y - 3).lineTo(x + 6, y);
         }
         break;
       case 'swamp':

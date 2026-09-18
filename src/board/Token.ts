@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
-import { ART_ANCHOR_Y, actionIconUrl, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
+import { ART_ANCHOR_Y, actionIconUrl, bannerTexture, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
 import type { BoardTheme } from './theme.js';
 import { statusBars, STATUS_TRACK, STATUS_OUTLINE, type StatusBar } from './status-bars.js';
@@ -29,9 +29,12 @@ export interface UnitTokenModel {
   disorder: number;
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
-  /** The action prop riding on the piece: what is being aimed at it right now, or the shield
-   * a guarding unit keeps until it acts again. */
+  engineId?: string;
+  /** The action prop riding on the piece: what is being aimed at it right now. */
   prop: ActionIcon | null;
+  /** Everything the piece is under, top of the column last. A status that joins the list
+   * announces itself over the piece before it takes its place. */
+  statuses: readonly StatusIcon[];
   ring: TokenRing | null;
   pick: TokenPick | null;
 }
@@ -68,6 +71,12 @@ const FLAG_RATIO = 0.32;
  * is what the arc's head is aimed at rather than a badge hung off the piece. */
 const PROP_RATIO = 0.3;
 const SHOT_PROP_RATIO = 0.9;
+/** A status joining the column: large over the piece, growing as it fades in, held, then down
+ * into its slot. Several joining at once take turns, each starting as the last begins to settle. */
+const STATUS_INTRO = { ratio: 0.85, from: 0.6, fadeMs: 300, holdMs: 500, settleMs: 400 };
+/** The column climbs the piece's right side from the prop's corner and stops short of the flag.
+ * Icons shrink, then overlap, as it fills. */
+const STATUS_COLUMN = { x: 0.88, bottom: 0.62, top: -0.3, minRatio: 0.2, pitch: 0.9 };
 // The cloth's mass sits above the middle of the square template — it tapers to a point at the
 // bottom — so the level rides a little high of the sprite's own centre.
 const FLAG_TEXT_Y = -0.07;
@@ -179,6 +188,10 @@ export class Token extends PIXI.Container {
   private propSprite: PIXI.Sprite | null = null;
   private propIcon: ActionIcon | null = null;
   private propGeneration = 0;
+  private readonly statusColumn = Object.assign(new PIXI.Container(), { sortableChildren: true });
+  private statuses: { icon: StatusIcon; sprite: PIXI.Sprite | null; intro: number | null }[] = [];
+  /** False until the first draw: a piece that mounts already guarding has nothing to announce. */
+  private settled = false;
 
   private readonly routArrow = new PIXI.Graphics();
   private readonly ring = new PIXI.Graphics();
@@ -200,6 +213,8 @@ export class Token extends PIXI.Container {
   // until the first `place()`, so mounting never tweens in from the origin.
   private lastCell: string | null = null;
   private tween: Tween | null = null;
+
+  get moving(): boolean { return this.tween !== null; }
   private route: string[] | null = null;
 
   constructor(id: string) {
@@ -244,12 +259,14 @@ export class Token extends PIXI.Container {
       this.drawBadge(model.level, size, theme);
       this.updateEngineChip(model.engine, size);
       this.updateProp(model.prop, size);
+      this.updateStatuses(model.statuses, size);
     } else {
       this.decor.clear();
       this.badge?.destroy();
       this.badge = null;
       this.updateEngineChip(null, size);
       this.updateProp(null, size);
+      this.updateStatuses([], size);
     }
 
     this.setPick(model.kind === 'unit' ? model.pick : null);
@@ -262,10 +279,12 @@ export class Token extends PIXI.Container {
     // order — flag under its own level, both under the arrow and ring.
     if (this.flag) this.addChild(this.flag);
     if (this.badge) this.addChild(this.badge);
+    this.addChild(this.statusColumn);
     if (this.propSprite) this.addChild(this.propSprite);
     this.addChild(this.routArrow);
     if (model.ring === 'flash') this.addChild(this.ring);
     else this.addChildAt(this.ring, 0);
+    this.settled = true;
   }
 
   /** A still of the miniature where it currently stands, for the layer to leave behind while
@@ -324,6 +343,7 @@ export class Token extends PIXI.Container {
       this.position.set(point.x, point.y);
       if (t >= 1) this.tween = null;
     }
+    if (this.statuses.some((held) => held.intro !== null)) this.layoutStatuses(this.size);
     if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
     else if (this.ringKind) this.breathe();
     if (this.pick === 'ready') this.breathePick();
@@ -512,7 +532,7 @@ export class Token extends PIXI.Container {
   // The silhouette is baked narrower than the art, so each is scaled to the footprint from
   // its own width; both hinge on the anchor row, dropped together.
   private layoutArt(size: number): void {
-    const target = size * TOKEN_FOOTPRINT_RATIO;
+    const target = size * (this.model?.kind === 'engine' ? 1 : TOKEN_FOOTPRINT_RATIO);
     if (this.art) {
       this.art.scale.set(target / Math.max(this.art.texture.width, 1));
       this.art.position.set(0, size * ART_DROP);
@@ -679,6 +699,54 @@ export class Token extends PIXI.Container {
     this.propSprite.scale.set((size * (shot ? SHOT_PROP_RATIO : PROP_RATIO)) / Math.max(width, height, 1));
     if (shot) this.propSprite.position.set(0, 0);
     else this.propSprite.position.set(r * 0.88, r * 0.62);
+  }
+
+  private updateStatuses(wanted: readonly StatusIcon[], size: number): void {
+    for (const gone of this.statuses.filter((held) => !wanted.includes(held.icon))) gone.sprite?.destroy();
+    const kept = this.statuses.filter((held) => wanted.includes(held.icon));
+    const { fadeMs, holdMs } = STATUS_INTRO;
+    let turn = Math.max(performance.now(), ...kept.map((held) => (held.intro ?? -Infinity) + fadeMs + holdMs));
+    this.statuses = wanted.map((icon) => {
+      const held = kept.find((k) => k.icon === icon);
+      if (held) return held;
+      const entry = { icon, sprite: null as PIXI.Sprite | null, intro: this.settled ? turn : null };
+      if (this.settled) turn += fadeMs + holdMs;
+      PIXI.Assets.load<PIXI.Texture>(statusIconUrl(icon))
+        .then((texture) => {
+          if (this.destroyed || !this.statuses.includes(entry)) return;
+          entry.sprite = new PIXI.Sprite(texture);
+          entry.sprite.anchor.set(0.5);
+          this.statusColumn.addChild(entry.sprite);
+          this.layoutStatuses(this.size);
+        })
+        .catch(() => {});
+      return entry;
+    });
+    this.layoutStatuses(size);
+  }
+
+  private layoutStatuses(size: number): void {
+    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
+    const { x, bottom, top, minRatio, pitch } = STATUS_COLUMN;
+    const gaps = Math.max(1, this.statuses.length - 1);
+    const span = r * (bottom - top);
+    const ratio = Math.max(minRatio, Math.min(PROP_RATIO, span / (gaps * pitch * size)));
+    const step = Math.min(ratio * size * pitch, span / gaps);
+    const now = performance.now();
+    const { ratio: large, from, fadeMs, holdMs, settleMs } = STATUS_INTRO;
+    this.statuses.forEach((held, slot) => {
+      if (!held.sprite) return;
+      const unit = size / Math.max(held.sprite.texture.width, held.sprite.texture.height, 1);
+      const t = held.intro === null ? Infinity : now - held.intro;
+      if (t >= fadeMs + holdMs + settleMs) held.intro = null;
+      const fade = Math.max(0, Math.min(1, t / fadeMs));
+      const settle = held.intro === null ? 1 : easeInOut(Math.max(0, t - fadeMs - holdMs) / settleMs);
+      held.sprite.alpha = fade;
+      held.sprite.scale.set(unit * (large * (from + (1 - from) * (1 - (1 - fade) ** 3)) * (1 - settle) + ratio * settle));
+      held.sprite.position.set(r * x * settle, (r * bottom - slot * step) * settle);
+      // The one arriving rides over the ones already seated.
+      held.sprite.zIndex = held.intro === null ? slot : 100 + slot;
+    });
   }
 
   private drawRoutArrow(routed: boolean, side: Side, size: number, theme: BoardTheme): void {

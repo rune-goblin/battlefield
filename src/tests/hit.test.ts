@@ -53,3 +53,13 @@ describe.each([['square', squareGrid], ['hex', hexGrid]] as [string, Grid][])('%
     expect(hitTest(centre, { grid, size: SIZE, edges: () => true, tokens })).toEqual({ kind: 'cell', id: 'd4' });
   });
 });
+
+
+it('opens the siege badge while the rest of the occupied hex selects its unit', () => {
+  const grid = hexGrid;
+  const centre = grid.center(grid.parse('d4'), SIZE);
+  const badge = { id: 'siege-1', x: centre.x - 18, y: centre.y - 18, size: 18 };
+  const tokens = () => [{ id: 'unit-1', cell: 'd4', badge }];
+  expect(hitTest(badge, { grid, size: SIZE, tokens })).toEqual({ kind: 'token', id: 'siege-1' });
+  expect(hitTest(centre, { grid, size: SIZE, tokens })).toEqual({ kind: 'token', id: 'unit-1' });
+});

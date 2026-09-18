@@ -1,20 +1,27 @@
 import { notation, type BattleState, type Tree, type Verb } from '../engine/index.js';
-import type { TargetArrow, TargetIcon } from '../board/index.js';
+import type { PopupPart, TargetArrow, TargetIcon } from '../board/index.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
 import { unitOf } from './battle-lookup.js';
 import type { NotificationService } from './notifications.js';
 import { noticesFor, type NoticeViewer } from './session-notices.js';
+import { conditionWord, effectWord, RESISTED, ROUTED, wordFor, type ResultWord } from './result-words.js';
 import type { TargetMarker } from './targeting.js';
 
+/** What floats over a piece at one moment: a word, or every bar a blow moved, side by side.
+ * `cell` is where the piece stands once the commit settles, for a piece the board has already
+ * taken off. */
+export interface ResultPopup { unit: string; cell: string; parts: PopupPart[] }
+
 /** What one commit shows on the board: the roads walked, the pieces that struck free, the
- * spell effects, and the marks the blows left. */
+ * spell effects, the marks the blows left, and the word each roll came to. */
 export interface CommitPlay {
   routes: { unit: string; cells: string[] }[];
   flashes: string[];
   bursts: { cell: string; tree: Tree; from: string }[];
   markers: TargetMarker[];
   arrows: TargetArrow[];
+  popups: ResultPopup[];
 }
 
 export interface PresentationSink {
@@ -23,6 +30,7 @@ export interface PresentationSink {
   burst(cell: string, tree: Tree, from: string): void;
   /** The afterglow of a resolved action: marks where it landed and arrows to each. */
   resolved(markers: TargetMarker[], arrows: TargetArrow[]): void;
+  popup(popup: ResultPopup): void;
 }
 
 function cellOf(battle: BattleState, id: string): string | null {
@@ -70,6 +78,53 @@ function marksOf(events: readonly BattleEvent[], battle: BattleState, actor: str
   return marks;
 }
 
+function wordOf(event: BattleEvent): { unit: string; word: ResultWord | null } | null {
+  if (event.type === 'checkResolved') return event.lands && { unit: event.lands.unit, word: wordFor(event.lands.reads, event.check.degree) };
+  if (event.type === 'freeStrikeResolved') return event.check && { unit: event.target, word: wordFor('attack', event.check.degree) };
+  // A cast carries a check only where the target's own save announces it. The degree matters to
+  // nobody: a target that shrugs the whole cast off resisted it, and every other outcome shows
+  // as the condition or the disorder it left.
+  if (event.type === 'spellResolved') return event.check?.degree === 'critical-success' && event.targets.length ? { unit: event.targets[0], word: RESISTED } : null;
+  return null;
+}
+
+function effectOf(event: BattleEvent): { unit: string; word: ResultWord } | null {
+  if (event.type === 'woundsChanged') return { unit: event.unit, word: effectWord('wounds', event.to - event.from) };
+  if (event.type === 'disorderChanged') return { unit: event.unit, word: effectWord('morale', event.to - event.from) };
+  if (event.type === 'conditionGained') return { unit: event.unit, word: conditionWord(event.condition) };
+  return event.type === 'unitRouted' ? { unit: event.unit, word: ROUTED } : null;
+}
+
+/** The events list every roll before any change of state, which would read a Blast's hits down
+ * the line and only then its wounds. Each effect is moved up to follow the last word over its
+ * own piece, so a blow reads as its result and then what it cost. The bars one blow moved show
+ * together, and so do the conditions it left. */
+const kindOf = (event: BattleEvent): 'bars' | 'conditions' | null =>
+  event.type === 'woundsChanged' || event.type === 'disorderChanged' ? 'bars' : event.type === 'conditionGained' ? 'conditions' : null;
+
+function popupsOf(events: readonly BattleEvent[], battle: BattleState): ResultPopup[] {
+  const popups: ResultPopup[] = [];
+  const kinds = new Map<ResultPopup, 'bars' | 'conditions'>();
+  const popupOf = (said: { unit: string; word: ResultWord | null } | null): ResultPopup | null => {
+    const cell = said && cellOf(battle, said.unit);
+    return said?.word && cell ? { unit: said.unit, cell, parts: [said.word] } : null;
+  };
+  for (const event of events) {
+    const word = popupOf(wordOf(event));
+    if (word) popups.push(word);
+  }
+  for (const event of events) {
+    const effect = popupOf(effectOf(event));
+    if (!effect) continue;
+    const last = popups.map((p) => p.unit).lastIndexOf(effect.unit);
+    const kind = kindOf(event);
+    if (kind && last >= 0 && kinds.get(popups[last]) === kind) popups[last].parts.push(...effect.parts);
+    else popups.splice(last < 0 ? popups.length : last + 1, 0, effect);
+    if (kind) kinds.set(effect, kind);
+  }
+  return popups;
+}
+
 function playFor(events: readonly BattleEvent[], battle: BattleState, actor: string | null): CommitPlay {
   const marks = [...marksOf(events, battle, actor)]
     .flatMap(([id, mark]) => {
@@ -93,6 +148,7 @@ function playFor(events: readonly BattleEvent[], battle: BattleState, actor: str
       cells: [to], anchorCells: [to], geometry: 'hex', icon: mark.icon,
     })),
     arrows: marks.map(({ mark, to, from }) => ({ from, to, toCells: [to], tone: mark.tone })),
+    popups: popupsOf(events, battle),
   };
 }
 
@@ -139,6 +195,7 @@ export function createPresentation(seed: BattleSession): Presentation {
       for (const unit of play.flashes) sink.flash(unit);
       for (const burst of play.bursts) sink.burst(burst.cell, burst.tree, burst.from);
       if (play.markers.length || play.arrows.length) sink.resolved(play.markers, play.arrows);
+      for (const popup of play.popups) sink.popup(popup);
     },
     connect(next) {
       sink = next;

@@ -51,6 +51,16 @@ export function bannerTexture(colour: number): PIXI.Texture {
  * action at all, and marks the cell a drag may not take. */
 export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'maneuver';
 
+/** What a piece is under until it lapses, in the order the column stacks it: the stance it chose,
+ * what enemies did to it, then what its own side cast on it. Each names a file in
+ * `art/condition-icons/`. */
+export type StatusIcon =
+  | 'guard'
+  | 'pinned' | 'rooted' | 'suppressed' | 'stunned' | 'frightened' | 'exposed' | 'persistent'
+  | 'aegis' | 'warded' | 'stoneskin' | 'sure-strike' | 'wrath' | 'hasted' | 'sure-footing' | 'burst-of-speed' | 'inspired';
+
+export const statusIconUrl = (icon: StatusIcon): string => assetUrl(`art/condition-icons/${icon}.webp`);
+
 export const actionIconUrl = (icon: ActionIcon): string => assetUrl(`art/action-icons/${icon === 'maneuver' ? 'withdraw' : icon}.webp`);
 
 // One face per tree, for the picker that branches off Cast — a second ring, not a slice of

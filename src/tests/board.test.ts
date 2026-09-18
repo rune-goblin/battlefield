@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { at, barrierBetween, count, generateBoard, gridOf, NEUTRAL_RANKS, parse, SIZE, wallBudget, type Board } from '../engine/board.js';
+import { hasGroundConnection } from '../engine/connectivity.js';
 
 const cells = (b: Board) => gridOf(b).cells();
 
@@ -16,28 +17,33 @@ describe('generateBoard', () => {
 
   it('plains carry few trees and marsh', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'plains', seed }));
-    expect(every(boards, b => count(b, 'forest') <= 6 && count(b, 'swamp') <= 3 && count(b, 'water') <= 2)).toBe(true);
+    expect(every(boards, b => count(b, 'forest') <= 9 && count(b, 'swamp') <= 3 && count(b, 'water') <= 2)).toBe(true);
   });
 
-  it('forest boards leave most ground open between copses', () => {
+  it('forest boards run from a quarter to two thirds wooded', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'forest', seed }));
-    expect(every(boards, b => count(b, 'forest') >= 18 && count(b, 'forest') <= 40)).toBe(true);
+    expect(every(boards, b => count(b, 'forest') >= 22 && count(b, 'forest') <= 60)).toBe(true);
   });
 
-  it('hills raise a ridge across the middle ranks only', () => {
+  it('hills raise a quarter of the board or more, off the home ranks, with no cliff', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'hills', seed }));
-    expect(every(boards, b => cells(b).some(sq => at(b, sq).elevation === 1))).toBe(true);
+    expect(every(boards, b => cells(b).filter(sq => at(b, sq).elevation > 0).length >= 22)).toBe(true);
     expect(every(boards, b => cells(b).every(sq => at(b, sq).elevation === 0 || (sq.rank >= 2 && sq.rank <= SIZE - 3)))).toBe(true);
-    expect(every(boards, b => cells(b).every(sq => at(b, sq).elevation < 2))).toBe(true);
+    expect(every(boards, b => cells(b).every(sq => gridOf(b).neighbours(sq).every(n => barrierBetween(b, sq, n)?.kind !== 'cliff')))).toBe(true);
+  });
+
+  it('cliffs never seal one deployment zone from the other', () => {
+    const boards = seeds.map(seed => generateBoard({ base: 'mountains', feature: 'lakeside', seed }));
+    expect(every(boards, hasGroundConnection)).toBe(true);
   });
 
   it('mountains have a peak that makes a cliff', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'mountains', seed }));
     expect(boards.some(b => cells(b).some(sq => at(b, sq).elevation === 2))).toBe(true);
-    const b = boards.find(b => cells(b).some(sq => at(b, sq).elevation === 2))!;
-    const peak = cells(b).find(sq => at(b, sq).elevation === 2)!;
-    const low = [{ file: peak.file, rank: peak.rank + 1 }, { file: peak.file, rank: peak.rank - 1 }, { file: peak.file + 1, rank: peak.rank }, { file: peak.file - 1, rank: peak.rank }]
-      .find(sq => sq.rank >= 0 && sq.rank < SIZE && sq.file >= 0 && sq.file < SIZE && at(b, sq).elevation === 0);
+    const foot = (b: Board, sq: { file: number; rank: number }) => gridOf(b).neighbours(sq).find(n => at(b, n).elevation === 0);
+    const b = boards.find(b => cells(b).some(sq => at(b, sq).elevation === 2 && foot(b, sq)))!;
+    const peak = cells(b).find(sq => at(b, sq).elevation === 2 && foot(b, sq))!;
+    const low = foot(b, peak);
     expect(low && barrierBetween(b, peak, low)).toEqual({ kind: 'cliff' });
   });
 
@@ -85,7 +91,7 @@ describe('generateBoard', () => {
     for (const base of ['plains', 'forest', 'hills', 'mountains', 'swamp', 'desert'] as const) {
       for (const feature of ['none', 'river', 'lakeside'] as const) {
         const b = generateBoard({ base, feature, construction: { kind: 'fort', tier: 3 }, seed: 5 });
-        for (const rank of [0, 1, 2, 5, 6, 7]) {
+        for (const rank of [0, 1, 2, SIZE - 3, SIZE - 2, SIZE - 1]) {
           const open = cells(b).filter(sq => sq.rank === rank && at(b, sq).terrain !== 'water').length;
           expect(open).toBeGreaterThanOrEqual(4);
         }

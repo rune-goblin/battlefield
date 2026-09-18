@@ -9,7 +9,11 @@ export type Hit =
  * never by the art: the miniature is drawn taller than its own cell and overhangs the one
  * behind it, so hit-testing its pixels puts part of every piece out of reach and part of the
  * ground behind it inside a piece. Wave 4's TokenLayer supplies these. */
-export interface TokenPlacement { id: string; cell: string }
+export interface TokenPlacement {
+  id: string;
+  cell: string;
+  badge?: { id: string; x: number; y: number; size: number };
+}
 export type TokenPlacementProvider = () => readonly TokenPlacement[];
 
 /** An edge is live within this fraction of a cell of the segment. No handles. */
@@ -30,6 +34,24 @@ function segmentDistance(p: Point, a: Point, b: Point): number {
   const lengthSquared = dx * dx + dy * dy;
   const t = lengthSquared ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared)) : 0;
   return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
+}
+
+/** Project an off-board drag onto a nearby outer edge. Interior edges never qualify. */
+export function boundaryCellAt(point: Point, grid: Grid, size: number): Cell | null {
+  let closest: Cell | null = null, distance = size * .6;
+  for (const cell of grid.cells()) {
+    if (grid.neighbours(cell).length === (grid.kind === 'hex' ? 6 : 4)) continue;
+    const center = grid.center(cell, size), vertices = grid.vertices(cell, size);
+    for (let i = 0; i < vertices.length; i++) {
+      const a = vertices[i], b = vertices[(i + 1) % vertices.length];
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const outside = { x: mid.x + (mid.x - center.x) * .01, y: mid.y + (mid.y - center.y) * .01 };
+      if (grid.fromPoint(outside, size)) continue;
+      const d = segmentDistance(point, a, b);
+      if (d < distance) { distance = d; closest = cell; }
+    }
+  }
+  return closest;
 }
 
 export interface EdgeCandidate {
@@ -68,11 +90,14 @@ export function nearestEdge(point: Point, cell: Cell, grid: Grid, size: number):
  * unit and an engine left on the ground answers with whichever the layer lists first, which is
  * the unit — `setTokens` takes them in that order. */
 export function hitTest(point: Point, { grid, size, edges, tokens }: HitOptions): Hit | null {
+  const placements = tokens?.() ?? [];
+  const badge = placements.map(t => t.badge).find(b => b && Math.abs(point.x - b.x) <= b.size / 2 && Math.abs(point.y - b.y) <= b.size / 2);
+  if (badge) return { kind: 'token', id: badge.id };
   const cell = grid.fromPoint(point, size);
   if (!cell) return null;
   const key = grid.key(cell);
 
-  const token = tokens?.().find((t) => t.cell === key);
+  const token = placements.find((t) => t.cell === key);
   if (token) return { kind: 'token', id: token.id };
 
   if (edges) {

@@ -14,7 +14,7 @@ if (manifest.id !== MODULE_ID) {
 
 const OUT_DIR = 'dist-foundry';
 
-// The art is what `assetUrl` fetches at `modules/<id>/art/...`, and `module.json` is what
+// The art and fonts are what `assetUrl` fetches at `modules/<id>/...`, and `module.json` is what
 // Foundry reads to find the bundle. Both sit beside the build output, which is the folder
 // Foundry serves as the module.
 const moduleFiles = (): Plugin => ({
@@ -22,6 +22,7 @@ const moduleFiles = (): Plugin => ({
   apply: 'build',
   closeBundle() {
     cpSync(here('./public/art'), here(`./${OUT_DIR}/art`), { recursive: true });
+    cpSync(here('./public/fonts'), here(`./${OUT_DIR}/fonts`), { recursive: true });
     cpSync(here('./module.json'), here(`./${OUT_DIR}/module.json`));
   },
 });

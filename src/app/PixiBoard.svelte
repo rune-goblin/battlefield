@@ -2,7 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import type { TerrainAppearance } from '../board/terrain-textures.js';
   import {
-    createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardView, type Brush,
+    createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardPopup, type BoardView, type Brush,
     type TargetArrow, type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
   } from '../board/index.js';
   import type { Board, Side, Tree } from '../engine/index.js';
@@ -75,6 +75,7 @@
   export function setRoute(id: string, cells: readonly string[]) { view?.setRoute(id, cells); }
   /** Plays a one-shot spell animation on `cell` — see `BoardView.burst`. */
   export function burst(cell: string, tree: Tree, from?: string | null) { view?.burst(cell, tree, from); }
+  export function popup(popup: BoardPopup) { view?.popup(popup); }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
   export function setGrid(settings: GridUpdate) { view?.setGrid(settings); }

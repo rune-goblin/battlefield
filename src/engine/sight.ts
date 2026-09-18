@@ -1,4 +1,5 @@
 import { at, gridOf, notation, sameCell, type Board, type Cell, type Grid } from './board.js';
+import { blocksSight, FOREST_BLOCKS_AT, TERRAIN } from './terrain.js';
 
 // Cache geometry only: painting and battle mutations must read current terrain each time.
 const rays = new WeakMap<Grid, Map<string, Cell[]>>();
@@ -33,7 +34,15 @@ export function sightCells(board: Board, from: Cell, to: Cell): Cell[] {
 }
 
 export const isMountain = (board: Board, cell: Cell): boolean => at(board, cell).elevation >= 2;
-export const hasSight = (board: Board, from: Cell, to: Cell): boolean =>
-  !sightCells(board, from, to).some(cell => isMountain(board, cell));
-export const forestCover = (board: Board, from: Cell, to: Cell): number =>
-  at(board, to).terrain === 'forest' || sightCells(board, from, to).some(cell => at(board, cell).terrain === 'forest') ? 1 : 0;
+
+const forestsAlong = (board: Board, from: Cell, to: Cell): number =>
+  sightCells(board, from, to).filter(cell => at(board, cell).terrain === 'forest').length;
+
+export function hasSight(board: Board, from: Cell, to: Cell): boolean {
+  const a = at(board, from).elevation, b = at(board, to).elevation;
+  return !sightCells(board, from, to).some(cell => blocksSight(at(board, cell).elevation, a, b))
+    && forestsAlong(board, from, to) < FOREST_BLOCKS_AT;
+}
+
+export const coverBetween = (board: Board, from: Cell, to: Cell): number =>
+  TERRAIN[at(board, to).terrain].cover || sightCells(board, from, to).some(cell => TERRAIN[at(board, cell).terrain].cover) ? 1 : 0;

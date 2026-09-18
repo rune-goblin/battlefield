@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, at, availableActions, canDeploy, createBattle, defenceOf, deployRanks,
-  forestCover, generateBoard, gridFor, gridOf, hasSight, homeRank, notation, parse,
+  coverBetween, generateBoard, gridFor, gridOf, hasSight, homeRank, notation, parse,
   shootModifier, sightCells, strikeModifier, unit, type GridKind, type UnitCard,
 } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
@@ -44,24 +44,15 @@ describe('larger battlefield', () => {
     expect(homeRank('defender',b.squares.length)).toBe(8);
     expect(gridFor('hex',9).fromPoint(gridFor('hex',9).center(parse('e5'),40),40)).toEqual(parse('e5'));
   });
-  it.each(['forest','swamp'] as const)('leaves open gaps between small %s patches across 200 seeds', base => {
+  it.each(['forest','swamp'] as const)('covers a steady share of the board with %s across 200 seeds', base => {
     let total=0;
     for(let seed=1;seed<=200;seed++) {
-      const b=generateBoard({base,seed}); const g=gridOf(b); const seen=new Set<string>();
-      total+=g.cells().filter(c=>at(b,c).terrain===base).length;
-      for(const c of g.cells()) {
-        if(seen.has(notation(c))||!['forest','swamp'].includes(at(b,c).terrain))continue;
-        const component=[c];seen.add(notation(c));
-        for(let i=0;i<component.length;i++)for(const n of g.neighbours(component[i])) {
-          if(seen.has(notation(n))||!['forest','swamp'].includes(at(b,n).terrain))continue;
-          seen.add(notation(n));component.push(n);
-        }
-        expect(component.length).toBeLessThanOrEqual(4);
-      }
+      const b=generateBoard({base,seed});
+      total+=gridOf(b).cells().filter(c=>at(b,c).terrain===base).length;
     }
     const fraction=total/(200*91);
-    expect(fraction).toBeGreaterThan(base==='forest'?.30:.20);
-    expect(fraction).toBeLessThan(base==='forest'?.40:.30);
+    expect(fraction).toBeGreaterThan(base==='forest'?.40:.30);
+    expect(fraction).toBeLessThan(base==='forest'?.52:.43);
   });
 });
 
@@ -78,7 +69,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
       for(const index of [1,2,3])expect(targets(b,'shoot',index).includes(foe.id)).toBe(legal);
       if(legal) expect(shootModifier(b,u,foe)).toBe(u.stats.volley! - (preferred?0:2));
     }
-    u.square=parse('d1');foe.square=parse('i11');at(b.board,u.square).elevation=2;
+    u.square=parse('a1');foe.square=parse('k11');at(b.board,u.square).elevation=2;
     expect(()=>act(b,{unit:u.id,type:'shoot',activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow();
   });
   it.each([['e6',-2],['f6',0],['g6',-2]] as const)('resolves medium shots at %s with a %i range modifier', (cell, penalty)=>{
@@ -88,14 +79,26 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     const check=result.log.find(e=>e.text.includes('fires at'))!.check!;
     expect(check.modifier).toBe(u.stats.volley!+penalty);
   });
-  it('rejects targets two hexes outside long preference even with height and commitment',()=>{
+  it('extends a shot one hex a level downhill, and leaves the near end where it was',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
+    foe.square=parse('i6');
+    expect(targets(b,'shoot')).toEqual([]);
+    at(b.board,u.square).elevation=1;
+    expect(targets(b,'shoot')).toContain(foe.id);
+    expect(shootModifier(b,u,foe)).toBe(u.stats.volley!+1-2);
     at(b.board,u.square).elevation=2;
-    for (const cell of ['e6','i6']) {
-      foe.square=parse(cell);
-      expect(targets(b,'shoot')).toEqual([]);
-      expect(()=>act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow(/no target/);
-    }
+    expect(shootModifier(b,u,foe)).toBe(u.stats.volley!+1);
+    foe.square=parse('e6');
+    expect(targets(b,'shoot')).toEqual([]);
+    expect(()=>act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow(/no target/);
+  });
+  it('takes −1 on every attack made uphill',()=>{
+    const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
+    at(b.board,foe.square).elevation=1;
+    expect(shootModifier(b,u,foe)).toBe(u.stats.volley!-1);
+    expect(strikeModifier(b,u,foe)).toBe(u.stats.strike!-1);
+    at(b.board,u.square).terrain='shallows';
+    expect(strikeModifier(b,u,foe)).toBe(u.stats.strike!-1);
   });
   it('applies the same minimum range and flex penalty to wall bombardment',()=>{
     const b=battlefield(kind),u=unit(b,'u0');
@@ -136,14 +139,29 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     foe.square=parse('e6');u.stats.reach='medium';
     expect(targets(b,'shoot')).toContain(foe.id);expect(targets(b,'cast')).toContain(foe.id);
     expect(defenceOf(b,foe,u,true)).toBe(foe.stats.defence+1);
-    // Painting updates sight despite cached geometry.
+    // Painting updates sight despite cached geometry. A hill hides the flat behind it from the
+    // flat in front, and from a rise no higher than its crest; a shooter above the crest sees over.
     foe.square=parse('g6');at(b.board,parse('e6')).elevation=1;
+    expect(targets(b,'shoot')).toEqual([]);
+    at(b.board,u.square).elevation=1;
+    expect(targets(b,'shoot')).toEqual([]);
+    at(b.board,foe.square).elevation=1;
+    expect(hasSight(b.board,u.square,foe.square)).toBe(true);
+    at(b.board,foe.square).elevation=0;at(b.board,u.square).elevation=2;
     expect(targets(b,'shoot')).toContain(foe.id);
+  });
+  it('closes a line that crosses two forest hexes, and screens through a settlement',()=>{
+    const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
+    at(b.board,parse('e6')).terrain='settlement';
+    expect(hasSight(b.board,u.square,foe.square)).toBe(true);
+    expect(defenceOf(b,foe,u,true)).toBe(foe.stats.defence+1);
+    at(b.board,parse('e6')).terrain='forest';at(b.board,parse('f6')).terrain='forest';
+    expect(hasSight(b.board,u.square,foe.square)).toBe(false);
   });
   it('applies forest screening to shots and Blast, without stacking cover or Guard',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     at(b.board,parse('e6')).terrain='forest';at(b.board,foe.square).terrain='forest';
-    expect(forestCover(b.board,u.square,foe.square)).toBe(1);
+    expect(coverBetween(b.board,u.square,foe.square)).toBe(1);
     expect(targets(b,'shoot')).toContain(foe.id);
     expect(defenceOf(b,foe,u,true)).toBe(foe.stats.defence+1);
     expect(defenceOf(b,foe,u,false)).toBe(foe.stats.defence);
@@ -155,10 +173,10 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     foe.guard={defence:2,cap:false,holds:false};
     expect(defenceOf(b,foe,u,true)).toBe(foe.stats.defence+2);
   });
-  it('makes swamp vulnerable without reducing attacks; mountain and Guard bonuses do not stack',()=>{
+  it('makes swamp cost Defence and Strike; mountain and Guard bonuses do not stack',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     at(b.board,u.square).terrain='swamp';
-    expect(strikeModifier(b,u,foe)).toBe(u.stats.strike);
+    expect(strikeModifier(b,u,foe)).toBe(u.stats.strike!-1);
     expect(defenceOf(b,u,foe,false)).toBe(u.stats.defence-1);
     at(b.board,u.square).terrain='open';at(b.board,u.square).elevation=2;
     u.guard={defence:2,cap:false,holds:false};

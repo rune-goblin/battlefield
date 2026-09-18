@@ -12,6 +12,7 @@ import { DEFAULT_MAP_LINES, MapLineLayer } from './layers/MapLineLayer.js';
 import { InkLayer, type InkMapAppearance } from './layers/InkLayer.js';
 import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
+import { PopupLayer, type BoardPopup } from './layers/PopupLayer.js';
 import type { TargetArrow } from './target-point.js';
 import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
@@ -72,6 +73,9 @@ export interface BoardView {
    * actually lands, unlike `setCast`'s held aim line. `from` is the caster's cell for a
    * spell that flies in; it defaults to the cast being aimed, if there is one. */
   burst(cell: string, tree: Tree, from?: string | null): void;
+  /** Floats a word over a piece: the result of a roll, or a condition it just took. Words take
+   * turns in the order given, and all of them wait for the pieces to stop moving. */
+  popup(popup: BoardPopup): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
@@ -191,6 +195,10 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
   );
   const labelLayer = new LabelLayer(layers.createLayer('labels'), opts.parent);
+  const popupLayer = new PopupLayer(layers.createLayer('popups'), opts.parent, opts.ticker, {
+    positionOf: (id) => tokenLayer.positionOf(id),
+    moving: () => tokenLayer.moving(),
+  });
 
   let currentBoard: Board | null = null;
   let inkMap: InkMapAppearance | null = null;
@@ -231,6 +239,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       shotLayer.setGeometry(null, 0, opts.theme);
       castLayer.setGeometry(null, 0, opts.theme);
       effectLayer.setGeometry(null, 0, opts.theme);
+      popupLayer.setGeometry(null, 0);
       tokenLayer.setGeometry(null, 0, opts.theme);
       return;
     }
@@ -256,6 +265,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     shotLayer.setGeometry(grid, size, opts.theme);
     castLayer.setGeometry(grid, size, opts.theme);
     effectLayer.setGeometry(grid, size, opts.theme);
+    popupLayer.setGeometry(grid, size);
     tokenLayer.setGeometry(grid, size, opts.theme);
     interaction.clamp();
   }
@@ -406,6 +416,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const origin = castLayer.resolve();
       effectLayer.burst(cell, tree, from ?? origin);
     },
+    popup(popup) {
+      popupLayer.show(popup);
+    },
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);
     },
@@ -510,6 +523,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       tokenLayer.destroy();
       castLayer.destroy();
       effectLayer.destroy();
+      popupLayer.destroy();
       boardContainer.destroy({ children: true });
     },
   };
@@ -559,10 +573,11 @@ export { BoardApp } from './BoardApp.js';
 export { BoardContainer } from './BoardContainer.js';
 export { setAssetBase } from './asset-base.js';
 export { setVfxTimeScale } from './layers/EffectLayer.js';
+export type { BoardPopup, PopupIcon, PopupPart, PopupTone } from './layers/PopupLayer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the asset-base prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
-export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon } from './art.js';
+export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';

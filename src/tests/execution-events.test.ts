@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createBattle, parse, scriptedRng, unit, type Rng, type UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
+import { createActionResolutionService } from '../services/ActionResolutionService.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
@@ -64,6 +65,69 @@ describe('execution events', () => {
     // in front of an otherwise identical transition.
     expect(runtime.session.lastCommit!.dice.slice(0, 2)).toEqual([7, 7]);
     expect(runtime.session.lastCommit!.dice).toEqual([7, ...plain.session.lastCommit!.dice]);
+  });
+
+  it('lands an attack on its target and the brace against its wound on the piece that rolled it', async () => {
+    // A 19 hits, and the Kobolds roll a 10 to brace against the wound.
+    const runtime = runtimeOn(battleSession('c3'), scriptedRng([19, 10]));
+
+    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
+
+    const checks = runtime.session.lastCommit!.events.filter((e) => e.type === 'checkResolved');
+    expect(checks.map((e) => [e.unit, e.lands])).toEqual([
+      ['u0', { unit: 'u1', reads: 'attack' }],
+      ['u1', { unit: 'u1', reads: 'brace' }],
+    ]);
+  });
+
+  it('lands a missed attack on its target and the repulse on the attacker', async () => {
+    // A 2 misses, so the attacker rolls a 10 against the repulse.
+    const runtime = runtimeOn(battleSession('c3'), scriptedRng([2, 10]));
+
+    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
+
+    const checks = runtime.session.lastCommit!.events.filter((e) => e.type === 'checkResolved');
+    expect(checks.map((e) => [e.unit, e.lands])).toEqual([
+      ['u0', { unit: 'u1', reads: 'attack' }],
+      ['u0', { unit: 'u0', reads: 'repulse' }],
+    ]);
+  });
+
+  it('yields no condition for the root a unit takes on itself', async () => {
+    const runtime = runtimeOn(battleSession(), scriptedRng([10]));
+
+    const result = await runtime.submit({ type: 'action.resolve', action: { type: 'guard', activity: 3, unit: 'u0' } });
+
+    expect(result.ok).toBe(true);
+    expect(runtime.session.lastCommit!.events.filter((e) => e.type === 'conditionGained')).toEqual([]);
+  });
+
+  it('yields the condition a critical miss leaves on the attacker', async () => {
+    // A natural 1 misses critically and exposes the attacker; the 10 is its repulse save.
+    const runtime = runtimeOn(battleSession('c3'), scriptedRng([1, 10]));
+
+    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
+
+    expect(runtime.session.lastCommit!.events.filter((e) => e.type === 'conditionGained')).toMatchObject([
+      { unit: 'u0', condition: 'exposed' },
+    ]);
+  });
+
+  it('yields each condition a shot leaves, and a second pin on a piece already pinned', () => {
+    const service = createActionResolutionService({ dice: scriptedRng([]) });
+    const before = battleSession();
+    const pinned = structuredClone(before);
+    Object.assign(unit(pinned.battle!, 'u1'), { suppressedBy: 'u0', pinnedBy: 'u0' });
+    const again = structuredClone(pinned);
+    Object.assign(unit(again.battle!, 'u1'), { pinnedBy: 'u9' });
+
+    expect(service.events(before, pinned).filter((e) => e.type === 'conditionGained')).toEqual([
+      { type: 'conditionGained', unit: 'u1', condition: 'suppressed' },
+      { type: 'conditionGained', unit: 'u1', condition: 'pinned' },
+    ]);
+    expect(service.events(pinned, again).filter((e) => e.type === 'conditionGained')).toEqual([
+      { type: 'conditionGained', unit: 'u1', condition: 'pinned' },
+    ]);
   });
 
   it('yields the route a move walked', async () => {

@@ -12,8 +12,8 @@
   const FRAME = ['c3', 'e6'];
   const board = generateBoard({ base: 'plains', feature: 'none', construction: null, seed: 7 });
   const tokens: TokenModel[] = [
-    { kind: 'unit', id: 'caster', side: 'attacker', name: 'Apprentice Magician Clique', role: 'infantry', level: 5, cell: CASTER, wounds: 0, disorder: 0, engine: null, prop: null, pick: null, ring: null },
-    { kind: 'unit', id: 'target', side: 'defender', name: 'Kobold Warriors', role: 'infantry', level: 3, cell: TARGET, wounds: 1, disorder: 0, engine: null, prop: null, pick: null, ring: null },
+    { kind: 'unit', id: 'caster', side: 'attacker', name: 'Apprentice Magician Clique', role: 'infantry', level: 5, cell: CASTER, wounds: 0, disorder: 0, engine: null, prop: null, statuses: [], pick: null, ring: null },
+    { kind: 'unit', id: 'target', side: 'defender', name: 'Kobold Warriors', role: 'infantry', level: 3, cell: TARGET, wounds: 1, disorder: 0, engine: null, prop: null, statuses: [], pick: null, ring: null },
   ];
 
   const panes: Partial<Record<Tree, PixiBoard>> = $state({});

@@ -17,6 +17,12 @@ export const ACTION_BONUS = 2;
 export const ROUTED_AT = 3;
 
 export interface EngineState {
+  speed?: number | null;
+  loadCost?: number;
+  loadSteps?: number;
+  /** Completed load steps. Older saves begin loaded. */
+  loaded?: number;
+  hauling?: boolean;
   /** The equipment ID the piece took in setup, kept through capture, days, and export. */
   id: string;
   name: string;
@@ -28,9 +34,8 @@ export interface EngineState {
   square: Square;
   /** Who works it now. An emplaced engine changes this when it is captured. */
   side: Side;
-  /** Emplaced: it holds its deployment square, is worked by whichever friendly unit stands
-   * in or beside it, and changes hands when only the enemy is left beside it. An attached
-   * engine instead rides with its unit and is only lost when that unit is. */
+  /** Emplaced equipment stays on the ground until hauled. Equipment in a unit's array
+   * travels with that unit only while hauling; otherwise movement leaves it on the ground. */
   emplaced: boolean;
 }
 
@@ -72,10 +77,12 @@ export interface Unit {
   /** Movement banked by Move actions already taken and not yet spent, in feet. */
   feet: number;
   engines: EngineState[];
+  /** Attack-profile selection during siege validation and resolution. */
+  operatingEngine?: string;
   square: Square;
   wounds: number;
   disorder: number;
-  status: 'active' | 'destroyed' | 'left';
+  status: 'active' | 'destroyed' | 'left' | 'camp';
   /** The Guard in force until this unit next activates. `cap` is Dig in's wound cap, `holds`
    * Take cover's refusal of an Overrun's shove. */
   guard: { defence: 2 | 4; cap: boolean; holds: boolean } | null;
@@ -106,6 +113,8 @@ export interface Unit {
    * fell on has next acted, so `finish` holds these over the activation that cast them: a
    * caster's own ward stands through the enemy's turn (section 11). */
   selfBuffs: DefenceBuff[];
+  /** Extra movement in feet for the next activation, or this activation after a self-cast. */
+  movementBonus?: number;
   sureFooting: boolean;
   /** Flies on its next activation only; `flying` is the troop that always does. */
   flies: boolean;
@@ -126,6 +135,18 @@ export interface ActivityAction extends Acts {
 /** Stride to `to`, spending as many Move actions as the route costs. */
 export interface MoveAction extends Acts { type: 'move'; to: string }
 
+/** Move to a deployment-zone boundary and spend one action to leave the battlefield. */
+export interface FleeAction extends Acts { type: 'flee'; to: string }
+export interface FleePlan {
+  cell: string;
+  path: string[];
+  feet: number;
+  moveActions: number;
+  actions: number;
+  modifier: number;
+  dc: number;
+}
+
 /** Break contact by one of the three activities, then move. `to` is the cell to leave for; a
  * critical Break off is the only one that carries further than a single hex. */
 export interface ManeuverAction extends Acts { type: 'maneuver'; activity: ActivityIndex; to?: string }
@@ -138,7 +159,16 @@ export interface AdvanceAction extends Acts {
   type: 'advance'; target: string; via: string; finish: 'fight' | 'charge'; activity?: ActivityIndex; focus?: number;
 }
 
-export type Action = ActivityAction | MoveAction | ManeuverAction | ChargeAction | AdvanceAction;
+export interface SiegeAction extends Acts {
+  type: 'siege';
+  engine: string;
+  operation: 'load' | 'haul' | 'release' | 'attack';
+  activity?: ActivityIndex;
+  target?: string;
+  focus?: number;
+}
+
+export type Action = SiegeAction | ActivityAction | MoveAction | ManeuverAction | ChargeAction | AdvanceAction | FleeAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -266,6 +296,12 @@ export type LogTag =
   | { kind: 'spell'; caster: string; tree: Tree; activity: ActivityIndex; targets: string[] }
   | { kind: 'secondDie'; faces: [number, number] };
 
+/** Where a check's result lands and how it reads. An attack lands on its target as a hit or a
+ * miss; a failed repulse save and an attack an aegis turned each have their own word; a brace
+ * against a wound says nothing, since the disorder it costs speaks for it. A check line without
+ * one lands on its roller as a plain check. */
+export interface CheckLanding { unit: string; reads: 'attack' | 'check' | 'repulse' | 'brace' | 'aegis' }
+
 export interface LogEntry {
   round: number;
   unit?: string;
@@ -274,6 +310,7 @@ export interface LogEntry {
   text: string;
   check?: CheckResult;
   tag?: LogTag;
+  lands?: CheckLanding;
 }
 
 export type Phase = 'battle' | 'ended';

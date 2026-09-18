@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { canContinueBattle, deploymentCells, FEATURES, hasRecovered, HEX_TERRAINS, isStanding, MAX_WOUNDS, nextDayBattlefield,
+  import { canContinueBattle, deploymentCells, FEATURES, hasRecovered, HEX_TERRAINS, isStanding, isSurvivor, MAX_WOUNDS, nextDayBattlefield,
     nightResolved, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
     type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
@@ -40,7 +40,7 @@
   const bothHold = $derived(SIDES.every((side) => b.dayOrders?.choices[side] === 'hold'));
   const field = $derived(nextDayBattlefield(b));
   const newMap = $derived(!!b.nextBoard);
-  const survivors = $derived(b.units.filter(isStanding));
+  const survivors = $derived(b.units.filter(isSurvivor));
   const declarations = $derived<RecoveryChoice[]>(Object.entries(choices)
     .filter(([, activity]) => activity !== '').map(([unit, activity]) => ({ unit, activity: activity as RecoveryActivity })));
   const sideOf = (unit: string) => b.units.find((u) => u.id === unit)?.side;
@@ -49,6 +49,8 @@
   /** Whether this viewer answers for that army: any user seated on it, and the GM for either. */
   const mine = (side: Side) => viewer.decidesFor(side);
   const rolled = (side: Side) => hasRecovered(b, side);
+  /** Units in the army's night: its declared choices until it rolls, its rolled results after. */
+  const recovering = (side: Side) => rolled(side) ? b.night![side]!.length : participants(side);
   const resultOf = (u: Unit) => b.night?.[u.side]?.find((r) => r.unit === u.id);
   const recoveryOptions: { id: RecoveryActivity | ''; label: string; mark: string }[] = [
     { id: '', label: 'None', mark: '' }, { id: 'rally', label: 'Morale', mark: '⚑' }, { id: 'treat', label: 'Health', mark: '♥' },
@@ -91,7 +93,7 @@
     seenNight = true;
   });
   const outcome = (r: NightRecovery) => r.recovered === 0 ? `fails to recover` : `recovers ${r.recovered} ${r.activity === 'rally' ? 'morale' : 'health'}`;
-  const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'left' ? 'Left the field' : 'Standing';
+  const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'camp' ? 'In camp' : u.status === 'left' ? 'Left the field' : 'Standing';
   const signed = (n: number) => n >= 0 ? `+${n}` : `−${-n}`;
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
     : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' ? `The ${b.winner === 'attacker' ? 'defender' : 'attacker'} surrenders.`
@@ -113,7 +115,7 @@
   const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
     kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
     cell: positions[u.id], wounds: u.wounds, disorder: u.disorder,
-    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, prop: null, pick: null, ring: null,
+    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, prop: null, statuses: [], pick: null, ring: null,
   }] : []) : []);
   function preview(u: Unit, activity: RecoveryActivity) {
     const save = activity === 'rally' ? u.stats.will : u.stats.fortitude;
@@ -185,20 +187,20 @@
             <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} recovery`}>
               <div class="army-heading">
                 <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
-                <p class="counts" aria-live="polite">{rolled(side) ? `${b.night![side]!.length} rolled` : `${participants(side)} ${participants(side) === 1 ? 'unit' : 'units'}`} · <b>{signed(-recoveryPenalty(rolled(side) ? b.night![side]!.length : participants(side)))} recovery modifier</b></p>
+                <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status === 'camp').length} in camp · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
               </div>
               {#each army as u (u.id)}
                 {@const result = resultOf(u)}
                 {@const activity = rolled(side) ? (result?.activity ?? '') : (choices[u.id] ?? '')}
                 {@const revealed = !!result && b.night![side]!.indexOf(result) < shown[side]}
                 {@const rolling = tumbling?.unit === u.id}
-                <div class="report-unit" class:lost={!isStanding(u)} class:rolling class:revealed class:recovered={revealed && result!.recovered > 0} class:failed={revealed && result!.recovered === 0}>
+                <div class="report-unit" class:lost={!isSurvivor(u)} class:rolling class:revealed class:recovered={revealed && result!.recovered > 0} class:failed={revealed && result!.recovered === 0}>
                   <div class="unit-heading"><strong>{u.name}</strong>
                     {#if rolling}<span class="die tumbling" aria-hidden="true">{tumbling!.face}</span>
                     {:else if revealed}<span class="die" aria-label={`Rolled ${result!.check.roll}`}>{result!.check.roll}</span>{/if}
                   </div>
                   <div class="meters"><span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span><span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span></div>
-                  {#if !isStanding(u)}<small>{status(u)} · Cannot recover</small>
+                  {#if !isSurvivor(u)}<small>{status(u)} · Cannot recover</small>
                   {:else if rolled(side)}
                     {#if !result}<small>Sat out the night.</small>
                     {:else if revealed}
@@ -219,11 +221,11 @@
               {/each}
               <div class="army-roll">
                 {#if rolled(side)}
-                  <p class="counts">{shown[side] < b.night![side]!.length ? 'Rolling…' : 'Recovery complete.'}</p>
+                  <p class="counts">{shown[side] < recovering(side) ? 'Rolling…' : 'Recovery complete.'}</p>
                 {:else}
                   <button class="primary" disabled={!mine(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>Roll {side} recovery</button>
-                  <small>{participants(side) === 0 ? 'No unit recovers; rolling ends this army’s night.' : 'Rolls every chosen unit in turn. Choices are final once rolled.'}</small>
                 {/if}
+                <p class="roll-penalty" aria-live="polite"><b>{signed(-recoveryPenalty(recovering(side)))}</b> on every check · {recovering(side)} {recovering(side) === 1 ? 'unit' : 'units'} recovering{#if !rolled(side) && recovering(side) > 1} · each unit past the first costs −2{/if}</p>
               </div>
             </section>
           {/each}
@@ -244,7 +246,7 @@
             <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} report`}>
               <div class="army-heading">
                 <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
-                <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
+                <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status === 'camp').length} in camp · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
               </div>
               {#if stage === 'deployment'}
                 <div class="deploy-confirm">
@@ -277,8 +279,8 @@
               {:else if stage === 'report' && b.dayOrders && (b.dayOrders.choices[side] || b.endedBy === 'surrender')}
                 <p class="final-decision">{b.endedBy === 'surrender' ? (b.winner === side ? 'Accepted surrender' : 'Surrendered') : b.endedBy === 'withdrawal' ? (b.dayOrders.choices[side] === 'withdraw' ? 'Withdrawn' : 'Holds the field') : dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.label}</p>
               {/if}
-              {#each army.filter((u) => stage === 'report' || stage === 'orders' || isStanding(u)) as u (u.id)}
-                <div class="report-unit" class:lost={!isStanding(u)}>
+              {#each army.filter((u) => stage === 'report' || stage === 'orders' || isSurvivor(u)) as u (u.id)}
+                <div class="report-unit" class:lost={!isSurvivor(u)}>
                   <div class="unit-heading"><strong>{u.name}</strong>{#if stage === 'report'}<span class="outcome">{status(u)}</span>{/if}</div>
                   <div class="meters">
                     <span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span>
@@ -370,8 +372,10 @@
   .recovery-choice { display: flex; gap: .3rem; margin-top: .5rem; }
   .recovery-choice button { flex: 1; font-size: .8rem; padding: .4rem .3rem; }
   .recovery-choice button.selected { border-color: var(--army-color); background: color-mix(in srgb, var(--army-color) 15%, var(--card)); }
-  .army-roll { display: flex; flex-direction: column; align-items: stretch; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid color-mix(in srgb, var(--army-color) 25%, var(--rule)); }
+  .army-roll { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid color-mix(in srgb, var(--army-color) 25%, var(--rule)); }
   .army-roll .counts { margin: 0; }
+  .roll-penalty { margin: 0; font-size: .85rem; color: var(--muted); }
+  .roll-penalty b { color: var(--ink); font-variant-numeric: tabular-nums; }
   .report-unit.rolling { border-color: var(--army-color); background: color-mix(in srgb, var(--army-color) 14%, var(--card)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--army-color) 25%, transparent); }
   .report-unit.revealed { animation: settle .6s ease-out; }
   .report-unit.recovered { border-color: var(--good); }

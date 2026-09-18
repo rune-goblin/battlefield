@@ -49,6 +49,7 @@ export const LAYER_ORDER = [
   'effects',        // flames, frames and sparks
   'labels',         // coordinate labels
   'mapLines',       // terrain-area outlines and elevation rings
+  'popups',         // the word a roll came to, floated over the piece it landed on
 ] as const;
 
 /**

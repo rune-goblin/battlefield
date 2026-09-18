@@ -2140,3 +2140,55 @@ The guesses, in one line each, so the review has a list to strike from:
 - Renamed Withdraw to Maneuver in the engine, activation API, UI and rules. Reposition keeps contact; Withdraw ends contact. Both use the existing Break off / Disengage / Fighting retreat costs and check effects. A failed Break off still moves after free strikes; a critical failure stays put. The ladder remains available for either outcome.
 - Adjacent destinations include positions in contact even when clear destinations exist. A routed unit moves homeward while engaged as well. Occupancy, terrain, barriers, roots and zero Speed constrain movement. A change of hex clears Pin. A pursuer already in contact stays in its hex.
 - Retained the existing outflanking rule and its −2 Defence penalty. Mark clarified that flanking already exists and this change must not add another penalty or replace its calculation.
+
+
+## Terrain effects — 2026-09-18
+
+- Section 10 now holds a terrain table (enter, Defence, attack from it, sight, charge, Guard)
+  and a height table. Mark: "I think we should give units attacking downhill a +1 and units
+  attacking uphill a −1", and "One additional range for each height could be interesting."
+  Both reverse the movement-range review, which had removed the uphill penalty and the
+  downhill range extension; the reversal is deliberate.
+- New in the rules and **not yet in the engine**: attacking uphill −1; +1 hex of shooting range
+  a level downhill; the general sight rule (an intervening hex blocks when it is at least as
+  high as the higher unit and higher than the lower), which makes hills hide dead ground and
+  subsumes the mountain rule; two forest hexes on a line block it; settlement gives cover,
+  screens like forest and stops a charge; swamp takes −1 Strike; shallows and swamp
+  allow Brace alone; cornered (an Overrun blocked by water, a cliff or a wall lands as a Press
+  and 1 disorder). Built the same day; see the last entry of this section.
+- Judgment calls: attack ±1 is flat, range extends per level, so a peak is not a 5-point
+  fortress on top of its +1 Defence; the range extension is shooting alone, Blast and
+  Controlling keep fixed ceilings; cornered adds disorder where the old rule said "without
+  extra disorder", because pinning an enemy against the river should be worth something.
+- Home for the engine work: a `src/engine/terrain.ts` table that `path.ts`, `sight.ts` and
+  `battle.ts` read, in place of their scattered literals. `ActionResolutionService` is a
+  workflow over `act` and needs no change.
+- **Rough ground forbids the charge** (2026-09-18). Mark: "We can just put charge, yes/no, and
+  we don't need to track the +2." This reverses the 2026-09-05 line (a charge through rough
+  ground kept its discount and exposure and lost the +2). Only a two-hex unit could ever make
+  that charge, and it bought one free hex for −2 Defence. Now a charge's path may not enter
+  forest, settlement, swamp or shallows, or climb; Sure footing opens them. Built the same
+  day: every `chargeRun` is an `evenGround` run and `chargeBonus` is gone.
+- **Rough ground and the engine build** (2026-09-18). Mark: "Yes, add rough ground and build
+  the engine work." `src/engine/terrain.ts` holds section 10's table (`TERRAIN`) and the three
+  height functions; `path.ts` prices from it, `sight.ts` reads cover and the sight rule from
+  it, `battle.ts` reads the penalties, the range extension, Brace-only and cornered. Rough is
+  the eighth `SquareTerrain`: 2 to enter, no charge, nothing else. Judgment calls:
+  - The generator lays rough patches last, after water, so every existing seed keeps the
+    forest, swamp and water it had. Desert 4–6 patches, mountains 3–5, hills 2–4, plains 0–1.
+  - A shooter on a rise no higher than the crest between it and a lower target is blocked: the
+    rule is read literally, and only a shooter above the crest sees over it.
+  - Two units at one height see each other across a hex of that height, mountains included.
+    The old rule blocked every line across a height-2 hex.
+  - Cornered reads the one hex directly behind the target: water, a cliff or a standing wall.
+    A native flier is never cornered. The disorder goes through `addDisorder`, so it can rout.
+  - Water stays open to a charge in the table: only a flier enters it, and a flier's charge
+    over water was legal before.
+  - Uphill −1 and the terrain Strike penalty are both circumstance penalties, so the worse one
+    applies alone. The range −2 and the into-melee −4 stay separate.
+  - proto: rough ground borrows the desert texture group and the badlands scatter, and sits
+    last in the painter (key 8) so the older hotkeys keep their places. No screenshot taken.
+  - Melee choice (2026-09-18): any click off the Attack/Charge buttons closes it, the target
+    unit included. The buttons name no cost; the review popup prices the chosen activity.
+    A drag's verdict on the piece under it (`attack`, `no`) draws at cell size above the
+    carried token, and the open choice keeps the cheapest plan's route lit. No screenshot taken.

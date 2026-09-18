@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { MAX_WOUNDS, ROUTED_AT, notation, type Unit } from '../engine/index.js';
   import { troopArtUrl } from '../board/index.js';
   import { statusBars, statusColourCss, STATUS_TRACK, STATUS_OUTLINE } from '../board/status-bars.js';
@@ -14,8 +15,9 @@
     hovered: string | null;
     pick: (u: Unit) => void;
     hover: (id: string | null) => void;
+    below?: Snippet;
   }
-  let { units, activated, selected, locked, hovered, pick, hover }: Props = $props();
+  let { units, activated, selected, locked, hovered, pick, hover, below }: Props = $props();
 
   const done = $derived(new Set(activated));
   const side = $derived(units[0]?.side === 'defender' ? 'var(--def)' : 'var(--att)');
@@ -23,7 +25,8 @@
   const spent = $derived(units.filter((u) => done.has(u.id)));
 </script>
 
-<div class="army-reel" style:--side={side}>
+<div class="reel-position" style:--side={side}>
+<div class="army-reel">
   {#each ready as u (u.id)}
     {@const bars = statusBars(u.wounds, u.disorder)}
     <button
@@ -66,6 +69,8 @@
     {/each}
   {/if}
 </div>
+{#if below}{@render below()}{/if}
+</div>
 
 <style>
   /* The army reel hangs over the top of the map rather than sitting in the chrome: it takes no
@@ -73,7 +78,7 @@
      the cards themselves take the pointer — the strip around them belongs to the map.
      It centres on the canvas, not on the strip the docks leave: the board does not move when
      a panel opens, so the armies over it must not move either. */
-  .army-reel {
+  .reel-position {
     /* The picked card lights in its own army's colour, not the shell accent: an accent ring on a
        blue card reads as a different side. --hi drives it toward the ink so it stands out from
        the card's own edge in either palette. */
@@ -82,6 +87,8 @@
     top: calc(var(--inset-top, 0px) + .5rem);
     left: .5rem;
     right: .5rem;
+  }
+  .army-reel {
     display: flex; align-items: flex-start; justify-content: safe center;
     gap: .4rem; overflow-x: auto; padding: .15rem;
   }

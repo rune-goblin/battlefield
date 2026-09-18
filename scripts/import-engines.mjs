@@ -21,12 +21,19 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
     // siege equipment is for.
     reach: ram ? null : Number.isNaN(rangeFt) ? 'medium' : rangeFt <= 60 ? 'short' : rangeFt <= 120 ? 'medium' : 'extreme',
     defence: d.defenses?.ac ?? 10 + level,
+    // Thirty sheet feet become one 10-foot battlefield hex, as for troops.
+    // Engines retain half-hex pacing so slower equipment costs two Moves per hex.
+    // Portable equipment travels at its crew's pace; mounted equipment needs a listed speed.
+    speed: /portable/.test(d.usage ?? '') ? null : /tracks/.test(d.speed ?? '') ? 0 : Math.ceil(Number(/^(\d+)/.exec(d.speed ?? '')?.[1] ?? 0) / 15) * 5,
+    loadCost: ram ? 0 : ({ Single: 1, Two: 2, Three: 3 }[/\bLoad (Single|Two|Three) Actions?/.exec(text)?.[1]] ?? 1),
+    loadSteps: ram ? 0 : Number(/\bLoad[^]*?(\d+) times?/.exec(text)?.[1] ?? 1),
+
     source: d.source?.book ?? '',
   };
 }).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 
 const body = engines.map((e) =>
-  `  { name: ${JSON.stringify(e.name)}, level: ${e.level}, kind: '${e.kind}', launch: ${e.launch}, reach: ${e.reach ? `'${e.reach}'` : 'null'}, defence: ${e.defence} }, // ${e.source}`).join('\n');
+  `  { name: ${JSON.stringify(e.name)}, level: ${e.level}, kind: '${e.kind}', launch: ${e.launch}, reach: ${e.reach ? `'${e.reach}'` : 'null'}, defence: ${e.defence}, speed: ${e.speed}, loadCost: ${e.loadCost}, loadSteps: ${e.loadSteps} }, // ${e.source}`).join('\n');
 
 writeFileSync(new URL('../src/engine/engines.ts', import.meta.url),
 `import type { SiegeEngineCard } from './cards.js';

@@ -161,6 +161,8 @@ export const GROUP_TERRAIN: Record<TerrainGroup, SquareTerrain> = {
 export function terrainGroup(board: Board, cell: Cell): TerrainGroup {
   const state = at(board, cell);
   if (state.terrain === 'bridge') return 'water';
+  // proto: rough ground borrows the desert textures until it has a library of its own.
+  if (state.terrain === 'rough') return 'desert';
   if (state.terrain !== 'open') return state.terrain;
   return state.elevation >= 2 ? 'mountain' : state.elevation === 1 ? 'hills' : 'plains';
 }

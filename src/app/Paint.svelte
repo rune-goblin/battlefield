@@ -67,7 +67,7 @@
       <button onclick={() => void run(generate())}>Regenerate</button>
     </div>
     <ConnectionWarning board={game.setup.board} />
-    <p class="muted">Height 1 grants +1 when attacking lower ground. Height 2 adds mountain defence and blocks shots through the hex. Forest screens grant +1 ranged cover; swamp gives −1 Defence.</p>
+    <p class="muted">Higher ground attacks at +1 and shoots a hex further a level; lower ground attacks at −1. A hex as high as the higher unit blocks the shot across it, and height 2 adds mountain defence. Forest and settlement grant +1 ranged cover; rough ground stops a charge; swamp gives −1 Defence and Strike.</p>
     <p class="muted">A bridge replaces a water hex with a one-point crossing. Paint adjacent bridge or shallows hexes across a wider river until the banks connect.</p>
     <p class="muted">
       A wall brush snaps to the nearest edge between two squares. Click the board first, then

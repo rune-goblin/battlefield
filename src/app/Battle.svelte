@@ -1,13 +1,15 @@
 <script lang="ts">
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, dragBlockReason, meleePlans, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, ROUTED_AT, movePath, notation,
-    at, isMountain, shootCeiling, shootRangeLabel, offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
+    at, isMountain, TERRAIN_NOTE, shootCeiling, shootRangeLabel, offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
-    type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type MeleePlan,
+    type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type MeleePlan, type FleePlan,
+    fleePlan, fleeBlockReason, siegeEngines, siegeReason, siegeAttackOffer, engineSpeed, engineLoadSteps, engineLoadCost, engineLoaded,
+    type EngineState, type SiegeAction,
   } from '../engine/index.js';
-  import { actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
+  import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type StatusIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { withinApp } from './app-root.js';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
@@ -33,6 +35,7 @@
   import TargetMarkers from './TargetMarkers.svelte';
   import { cellsForTarget, targetingIcon, TargetingService, type TargetMarker } from './targeting.js';
   import ArmyReel from './ArmyReel.svelte';
+  import BattleAnnouncement from './BattleAnnouncement.svelte';
   import MeleeChoices from './MeleeChoices.svelte';
   import { deselectUnit, endActivation, game, presentation, selectUnit, takeAction, undo } from './game.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
@@ -52,6 +55,43 @@
   let meleeTarget = $state<string | null>(null);
   let meleeSelected = $state<'fight' | 'charge' | null>(null);
   const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
+  let siegeOpen = $state(false);
+  let siegeSelected = $state<string | null>(null);
+  let siegeBusy = $state(false);
+  const siegeEquipment = $derived(active ? siegeEngines(b, active) : []);
+  const siegeEngine = $derived(siegeSelected ? siegeEquipment.find(e => e.id === siegeSelected) ?? null : siegeEquipment[0] ?? null);
+  const siegeOffer = $derived(active && siegeEngine ? siegeAttackOffer(b, active, siegeEngine) : null);
+
+  async function openSiege(id?: string) {
+    if (!requireTurn()) return;
+    if (id && !siegeEquipment.some(e => e.id === id)) {
+      const crew = b.units.find(u => siegeEngines(b, u).some(e => e.id === id));
+      if (!crew || (locked && active?.id !== crew.id)) return;
+      const result = await run(selectUnit(crew.id));
+      if (!result.ok) return;
+      await tick();
+    }
+    cancelAction();
+    siegeSelected = id ?? siegeEquipment[0]?.id ?? null;
+    siegeOpen = true;
+  }
+
+  async function operateSiege(operation: SiegeAction['operation']) {
+    if (!active || !siegeEngine || siegeBusy || !requireTurn()) return;
+    if (operation === 'attack') {
+      if (!siegeOffer) return;
+      siegeSelected = siegeEngine.id;
+      openActivityPicker(siegeOffer);
+      activityPick = { key: 'siege', index: null, selected: [] };
+      siegeOpen = false;
+      return;
+    }
+    siegeBusy = true;
+    try {
+      await run(takeAction({ type: 'siege', unit: active.id, engine: siegeEngine.id, operation }));
+    } finally { siegeBusy = false; }
+  }
+
   // Once an action is spent the choice is made: the engine refuses a second `select`.
   const locked = $derived(b.begun);
 
@@ -106,6 +146,7 @@
    * drag left on the board. None of it is the engine's, and none of it survives the activation
    * that opened it. */
   function dropLocalInteraction() {
+    siegeOpen = false; siegeSelected = null;
     focus = 0; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null;
     castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null;
     blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null;
@@ -140,7 +181,8 @@
   interface AdvancePreview { kind: 'advance'; cell: string; enemy: string; feet: number; actions: number; path: string[]; plan: MeleePlan }
   // Maneuver previews connect the starting hex to the chosen destination.
   interface ManeuverPreview { kind: 'maneuver'; cell: string; path: string[] }
-  type Preview = MovePreview | ChargePreview | ManeuverPreview | AdvancePreview;
+  interface FleePreview extends FleePlan { kind: 'flee' }
+  type Preview = MovePreview | ChargePreview | ManeuverPreview | AdvancePreview | FleePreview;
   let drag = $state<Preview | null>(null);
   // The cell a drag has pulled to that the piece may not take — an X goes there, since the
   // refusal reads where the player is pulling rather than on the piece under their finger.
@@ -162,7 +204,15 @@
   interface Parked { cell: string; rows: Preview[]; index: number; activity: ActivityIndex | null }
   let pending = $state<Parked | null>(null);
   const picked = $derived(pending?.rows[pending.index] ?? null);
-  const preview = $derived(drag ?? picked);
+  // The open melee choice keeps the route the drag drew, until a choice parks its own.
+  const meleeRoute = $derived.by<Preview | null>(() => {
+    if (!meleeTarget || !active) return null;
+    const plan = [...(meleeOptions.get(meleeTarget) ?? [])].sort((x, y) => x.moveActions - y.moveActions)[0];
+    if (plan?.via) return advanceRow(plan);
+    const charge = act?.charges.find((c) => c.unit === meleeTarget);
+    return charge ? chargeRow(charge) : null;
+  });
+  const preview = $derived(drag ?? picked ?? meleeRoute);
   // Touching a board object opens the other popup: every activity that can act on *that*, which
   // is `offersAt`'s whole job. Grouped by verb, because the props are what the eye lands on —
   // a tile row across the top, then the chosen verb's three activities beneath it.
@@ -306,7 +356,7 @@
   // Cast and Rally show their activities before asking for a target.
   let activityPick = $state<{ key: string; index: ActivityIndex | null; selected: string[]; target?: string } | null>(null);
   let targetHover = $state<string | null>(null);
-  const pickerOffer = $derived(offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
+  const pickerOffer = $derived(activityPick?.key === 'siege' ? siegeOffer : offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
   const pickerActivity = $derived(pickerOffer?.activities.find((o) => o.index === activityPick?.index) ?? null);
   const pickerService = $derived(active && pickerOffer && pickerActivity ? new TargetingService(b, active, pickerOffer, pickerActivity) : null);
   const pickerTargets = $derived(pickerService?.choices ?? []);
@@ -402,6 +452,7 @@
 
   /** Cancel the whole action so the next click on the acting unit opens its wheel. */
   function cancelAction() {
+    siegeOpen = false; siegeSelected = null;
     focus = 0;
     aim = null; pending = null; radial = null; castPick = null;
     armed = null; armedTree = null;
@@ -421,6 +472,7 @@
       if (activityPick.target) { activityPick = { ...activityPick, target: undefined }; return; }
       if (activityPick.selected.length) { activityPick = { ...activityPick, selected: activityPick.selected.slice(0, -1) }; return; }
       if (activityPick.index !== null) { focus = 0; activityPick = { ...activityPick, index: null }; return; }
+      if (activityPick.key === 'siege') { activityPick = null; siegeOpen = true; return; }
       const wasCast = pickerOffer?.type === 'cast';
       activityPick = null;
       if (wasCast) castPick = castOffers();
@@ -449,6 +501,7 @@
       if (active) radial = { cell: notation(active.square) };
       return;
     }
+    if (siegeOpen) { siegeOpen = false; return; }
     radial = null;
   }
 
@@ -515,10 +568,12 @@
   }
 
   let radial = $state<{ cell: string } | null>(null);
-  const radialItems = $derived(props.map((p) => ({
-    key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal,
-  })));
+  const radialItems = $derived([
+    ...props.map((p) => ({ key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal })),
+    ...(siegeEquipment.length ? [{ key: 'siege', src: engineArtUrl(siegeEquipment[0].name) ?? actionIconUrl('shoot'), label: 'Siege engine', legal: true }] : []),
+  ]);
   const pickProp = (key: string) => {
+    if (key === 'siege') { void openSiege(); return; }
     const p = props.find((x) => x.key === key);
     if (p) takeProp(p);
   };
@@ -584,6 +639,8 @@
     // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
     for (const c of act.charges) if (c.cell === cell) rows.push(chargeRow(c));
     if (act.maneuver?.targets.some((t) => t.id === cell)) rows.push({ kind: 'maneuver', cell, path: [notation(active.square), cell] });
+    const escape = fleePlan(b, active, cell);
+    if (escape) rows.push({ kind: 'flee', ...escape });
     return rows;
   }
 
@@ -598,6 +655,15 @@
     pending = null; aim = null; notifications.dismiss(DRAG_NOTICE);
     meleeTarget = null; meleeSelected = null;
     dragTarget = null;
+    if (e.exit) {
+      const escape = fleePlan(b, active, e.cell);
+      if (escape) { drag = { kind: 'flee', ...escape }; blockedCell = null; }
+      else {
+        drag = null; blockedCell = e.cell;
+        notifications.show({ id: DRAG_NOTICE, title: 'Cannot flee here', message: fleeBlockReason(b, active, e.cell), tone: 'error' });
+      }
+      return;
+    }
     // Pulling into a piece is a melee and nothing else: the charge that closes on it, or the
     // fight already in contact. The swords go on the target the moment either one stands up.
     const enemy = enemyAt(e.cell);
@@ -633,6 +699,12 @@
     notifications.dismiss(DRAG_NOTICE);
     dragTarget = null;
     if (!active || !act || e.id !== active.id) return;
+    if (e.exit) {
+      const escape = fleePlan(b, active, e.cell);
+      pending = escape ? { cell: e.cell, rows: [{ kind: 'flee', ...escape }], index: 0, activity: null } : null;
+      if (!escape) notifications.show({ id: DRAG_NOTICE, title: 'Cannot flee here', message: fleeBlockReason(b, active, e.cell), tone: 'error' });
+      return;
+    }
     // Dropped on a piece: the charge, or the fight it is already in. A shot is aimed by
     // touching a target, never by dragging into one — a drag is the unit going there.
     const enemy = enemyAt(e.cell);
@@ -664,7 +736,8 @@
     if (!p || !row || !active || !requireTurn()) return;
     const unit = active.id;
     const scope = turnScope;
-    if (row.kind === 'advance') await run(takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus }));
+    if (row.kind === 'flee') await run(takeAction({ type: 'flee', unit, to: row.cell }));
+    else if (row.kind === 'advance') await run(takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus }));
     else if (row.kind === 'charge') await run(takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus }));
     else if (row.kind === 'move') await run(takeAction({ type: 'move', unit, to: row.cell }));
     else if (act?.maneuver) await performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
@@ -731,11 +804,13 @@
   const actions = (n: number) => `${n} action${n === 1 ? '' : 's'}`;
   const actionCost = (n: number) => (n === 0 ? 'free, on banked movement' : actions(n));
   const rowLabel = (row: Preview) =>
-    row.kind === 'charge' ? `Charge ${enemyName(row.enemy)}`
+    row.kind === 'flee' ? 'Flee'
+      : row.kind === 'charge' ? `Charge ${enemyName(row.enemy)}`
       : row.kind === 'advance' ? `Move + ${row.plan.kind === 'charge' ? 'Charge' : 'Attack'} ${enemyName(row.enemy)}`
       : row.kind === 'maneuver' ? (active && maneuverOutcome(b, active, parse(row.cell)) === 'reposition' ? 'Reposition here' : 'Withdraw here') : 'Move here';
   const rowDetail = (row: Preview) =>
-    row.kind === 'charge' ? `${actions(row.actions)}, melee included`
+    row.kind === 'flee' ? `${row.moveActions ? `${actions(row.moveActions)} to move + ` : ''}1 action to flee · morale DC ${row.dc}`
+      : row.kind === 'charge' ? `${actions(row.actions)}, melee included`
       : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + 1 to ${row.plan.kind === 'charge' ? 'charge' : 'attack'}`
       : row.kind === 'maneuver' ? maneuverDetail(row.cell)
         : actionCost(row.actions);
@@ -759,7 +834,7 @@
 
   /** What each reading of a drop actually costs. */
   const dropCost = (row: Preview): number =>
-    row.kind === 'move' ? row.actions
+    row.kind === 'move' || row.kind === 'flee' ? row.actions
       : row.kind === 'charge' || row.kind === 'advance' ? chargeCost(row, chargeActivity) + focus
         : act?.maneuver?.activities[maneuverActivity - 1].cost ?? maneuverActivity;
   const cost = $derived(picked ? dropCost(picked) : aimed ? (aimed.cost ?? 0) + (aimGroup && canFocus(aimGroup.offer.type, aimGroup.offer.spell) ? focus : 0) : 0);
@@ -767,6 +842,7 @@
 
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
     if (!preview) return [];
+    if (preview.kind === 'flee') return [{ style: 'move', cells: preview.path.slice(1) }, { style: 'deploy', cells: [preview.cell] }];
     if (preview.kind === 'charge') return [{ style: 'attack', cells: preview.path.slice(1) }];
     if (preview.kind === 'advance') return [
       { style: 'move', cells: preview.plan.movePath.slice(1) },
@@ -890,6 +966,7 @@
     route: (unit, cells) => boardRef?.setRoute(unit, cells),
     flash,
     burst: (cell, tree, from) => boardRef?.burst(cell, tree, from),
+    popup: ({ unit, ...popup }) => boardRef?.popup({ token: unit, ...popup }),
     resolved: (markers, arrows) => {
       resolvedMarkers = markers;
       resolvedArrows = arrows;
@@ -929,14 +1006,27 @@
     ...previewHighlights,
   ]);
 
-  /** What rides on a piece: the verb being aimed at it right now, or the shield a guarding
-   * unit keeps until it acts again. State the board can show is state the panel need not. */
+  /** The verb being aimed at a piece right now. */
   function propOn(u: Unit): ActionIcon | null {
     if (dragTarget?.id === u.id) return dragTarget.attack ? 'attack' : 'no';
     if ((picked?.kind === 'charge' || picked?.kind === 'advance') && picked.enemy === u.id) {
       return picked.kind === 'charge' || picked.plan.kind === 'charge' ? 'charge' : 'attack';
     }
-    return u.guard ? 'block' : null;
+    return null;
+  }
+
+  /** Everything a piece is under, which the board stacks beside it. State the board can show is
+   * state the panel need not. */
+  function statusesOn(u: Unit): StatusIcon[] {
+    const held: [unknown, StatusIcon][] = [
+      [u.guard, 'guard'],
+      [u.pinnedBy, 'pinned'], [u.rooted > 0, 'rooted'], [u.suppressedBy, 'suppressed'], [u.stunned, 'stunned'],
+      [u.frightened, 'frightened'], [u.exposed, 'exposed'], [u.persistent, 'persistent'],
+      [u.aegis, 'aegis'], [u.ward, 'warded'], [u.stoneskin, 'stoneskin'], [u.sureStrike, 'sure-strike'],
+      [u.wrath, 'wrath'], [u.haste > 0, 'hasted'], [u.sureFooting, 'sure-footing'],
+      [(u.movementBonus ?? 0) > 0, 'burst-of-speed'], [u.inspired, 'inspired'],
+    ];
+    return held.flatMap(([on, icon]) => (on ? [icon] : []));
   }
 
   // The acting piece's own hex, in its side's colour: once a unit is picked, the board stops
@@ -951,6 +1041,11 @@
     return b.activated.includes(u.id) ? 'spent' : 'ready';
   }
 
+  const boardEngines = $derived([...b.engines, ...b.units.flatMap(u => u.engines)]);
+  function engineOn(u: Unit): EngineState | undefined {
+    return u.engines.find(e => e.status === 'crewed')
+      ?? boardEngines.find(e => notation(e.square) === notation(u.square));
+  }
   const tokens = $derived.by<TokenModel[]>(() => [
     ...b.units.filter((u) => u.status === 'active').map((u): UnitTokenModel => ({
       kind: 'unit',
@@ -962,25 +1057,25 @@
       cell: notation(u.square),
       wounds: u.wounds,
       disorder: u.disorder,
-      engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
+      engine: engineOn(u)?.name ?? null,
+      engineId: engineOn(u)?.id,
       prop: propOn(u),
+      statuses: statusesOn(u),
       pick: pickOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
     })),
-    // Abandoned and captured engines stand alone on the square they were left.
-    ...b.units.flatMap((u) => u.engines
-      .filter((e) => e.status !== 'crewed')
-      .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: u.side, name: e.name, cell: notation(e.square), ring: null }))),
-    // An emplacement is a board object in its own right, drawn whoever is working it.
-    ...b.engines.map((e): EngineTokenModel =>
-      ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
+    ...boardEngines.filter(e => !b.units.some(u => u.status === 'active' && notation(u.square) === notation(e.square)))
+      .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ]);
 
   async function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
     if (!active || !requireTurn()) return;
     const resolution = new TargetingService(b, active, offer, opt).resolve(target);
     if (!resolution) return;
-    await run(takeAction({ ...resolution.action, focus: canFocus(offer.type, offer.spell) ? focus : 0 }));
+    const commitment = canFocus(offer.type, offer.spell) ? focus : 0;
+    if (activityPick?.key === 'siege' && siegeEngine) {
+      await run(takeAction({ type: 'siege', operation: 'attack', engine: siegeEngine.id, unit: active.id, activity: opt.index, target, focus: commitment }));
+    } else await run(takeAction({ ...resolution.action, focus: commitment }));
   }
 
   async function performManeuver(activity: ActivityIndex, to?: string) {
@@ -1043,6 +1138,7 @@
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
+    if (siegeOpen) { siegeOpen = false; return; }
     notifications.dismiss(DRAG_NOTICE);
     if (activityPick) { pickActivityCell(e.cell); return; }
     if (blastOpen) { pickBlastCell(e.cell); return; }
@@ -1074,6 +1170,8 @@
   }
   function onToken(e: BoardEventOf<'token'>) {
     notifications.dismiss(DRAG_NOTICE);
+    if (!activityPick && boardEngines.some(engine => engine.id === e.id)) { void openSiege(e.id); return; }
+    if (siegeOpen) { siegeOpen = false; return; }
     if (activityPick) { const cell = cellOf(e.id); if (cell) pickActivityCell(cell); return; }
     if (blastOpen) { const cell = cellOf(e.id); if (cell) pickBlastCell(cell); return; }
     // Before an army is chosen the board is the second way into the army reel.
@@ -1090,6 +1188,7 @@
     }
     if (aim) { stepBack(); return; }
     if (castPick) { stepBack(); return; }
+    if (meleeTarget) { meleeTarget = null; meleeSelected = null; return; }
     const u = b.units.find((x) => x.id === e.id);
     const cell = u ? notation(u.square) : '';
     const p = arming;
@@ -1122,10 +1221,20 @@
   /** The ring is the menu while it is open: the board answers nothing (`frozen`), and a press
    * anywhere off the ring closes it and does nothing else. */
   function onWindowPointerDown(e: PointerEvent) {
+    meleeAtPress = meleeTarget;
     if (!radial && !castPick) return;
     if (e.target instanceof Element && e.target.closest('.radial')) return;
     radial = null;
     castPick = null;
+  }
+
+  // The board emits nothing for a click off the grid, so the melee choice closes here. A drop
+  // that opened the choice also ends in a click; `meleeAtPress` tells that one apart.
+  let meleeAtPress: string | null = null;
+  function onWindowClick(e: MouseEvent) {
+    if (!meleeTarget || meleeTarget !== meleeAtPress || pending || aim) return;
+    if (e.target instanceof Element && e.target.closest('.melee-choices')) return;
+    meleeTarget = null; meleeSelected = null;
   }
 
   /** `centre` is off when the pick came off the board: the piece is already under the pointer,
@@ -1141,9 +1250,9 @@
   const status = (u: Unit) => [
     isRouted(u) ? 'routed' : '',
     isMountain(b.board, u.square) ? 'mountain +1 Defence' : '',
-    at(b.board, u.square).terrain === 'forest' ? 'forest +1 ranged cover' : '',
-    at(b.board, u.square).terrain === 'swamp' ? 'swamp −1 Defence' : '',
-    at(b.board, u.square).elevation > 0 ? 'higher-ground attacks +1' : '',
+    TERRAIN_NOTE[at(b.board, u.square).terrain],
+    u.engines.some(e => e.hauling) ? `hauling ${u.engines.find(e => e.hauling)!.name}` : '',
+    at(b.board, u.square).elevation > 0 ? 'attacks +1 and shots +1 hex a level downhill' : '',
     u.guard ? `guarded +${u.guard.defence} Defence` : '',
     u.rooted ? 'rooted' : '',
     u.exposed ? 'exposed' : '',
@@ -1159,6 +1268,7 @@
     u.ward ? 'warded' : '',
     u.stoneskin ? 'stoneskin' : '',
     u.aegis ? 'aegis' : '',
+    u.movementBonus ? `burst of speed +${u.movementBonus / 10} movement` : '',
     u.sureFooting ? 'sure footing' : '',
     u.flies ? 'flying' : '',
     b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
@@ -1213,7 +1323,7 @@
   <BattleReport />
 {/snippet}
 
-<svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} />
+<svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} onclick={onWindowClick} />
 
 <AppShell leftTitle="Orders" leftWidth={24} rightTitle="Battle log" rightWidth={21} modal={b.phase === 'ended' ? result : undefined}>
   {#snippet top()}
@@ -1240,6 +1350,7 @@
       armyLabel="Frame the {active?.side ?? b.pending} force"
     />
     {#if b.phase === 'battle'}
+      <BattleAnnouncement kind="round" text={`Round ${b.round}`} cue={`${b.day}:${b.round}`} />
       <ArmyReel
         units={roster}
         activated={b.activated}
@@ -1248,7 +1359,12 @@
         hovered={hoveredPiece}
         pick={pickUnit}
         hover={(id) => { hoveredCard = id; }}
-      />
+      >
+        {#snippet below()}
+          <BattleAnnouncement kind="side" text={b.pending === 'attacker' ? 'Attackers' : 'Defenders'}
+            side={b.pending} afterRound={b.activated.length === 0} cue={`${b.day}:${b.round}:${b.activated.length}:${b.pending}`} />
+        {/snippet}
+      </ArmyReel>
     {/if}
   {/snippet}
 
@@ -1287,15 +1403,57 @@
         screenOf={(cell) => boardRef?.screenOf(cell) ?? null} radiusOf={(cell) => boardRef?.cellRadius(cell) ?? null} choose={chooseMelee} />
     {/if}
     <TargetMarkers targets={targetMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
+      opacity={targetingService?.placement ? 0.75 : 1}
       cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={targetingChoice?.id ?? null}
       hover={hoverTargetMarker} choose={chooseTargetMarker} />
     <TargetMarkers targets={resolvedMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
       cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={null} resolved
       hover={() => {}} choose={() => {}} />
+    {#if siegeOpen && active && siegeEngine}
+      <BoardPopup cell={notation(active.square)} close={cancelAction}>
+        <div class="siege-heading">
+          <img src={engineArtUrl(siegeEngine.name) ?? actionIconUrl('shoot')} alt="" />
+          <div><strong>{siegeEngine.name}</strong><div class="muted">{siegeEngine.hauling ? 'Hauling' : engineSpeed(siegeEngine) === 0 ? 'Fixed emplacement' : 'In this hex'}</div></div>
+        </div>
+        {#if siegeEquipment.length > 1}
+          <div class="siege-selector" aria-label="Siege engines">
+            {#each siegeEquipment as engine (engine.id)}
+              <button class:on={engine.id === siegeEngine.id} onclick={() => { siegeSelected = engine.id; }}>{engine.name}</button>
+            {/each}
+          </div>
+        {/if}
+        <p class="popup-escapes" aria-live="polite">
+          {#if siegeEngine.kind === 'ram'}Ram · attacks adjacent walls
+          {:else}{engineLoaded(siegeEngine) ? 'Loaded' : `Loading ${siegeEngine.loaded ?? 0}/${engineLoadSteps(siegeEngine)}`} · {siegeEngine.fired ? 'Fired this round' : 'Ready to fire this round'}{/if}
+          {#if engineSpeed(siegeEngine) !== 0} · {Math.min(active.speed, engineSpeed(siegeEngine) ?? active.speed)} ft per Move while hauling{/if}
+        </p>
+        {#if siegeEngine.kind !== 'ram'}
+          {@const reason = siegeReason(b, active, siegeEngine, 'load')}
+          <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Complete one loading step'} onclick={() => operateSiege('load')}>
+            <span class="popup-verb">Load <ActionCost n={engineLoadCost(siegeEngine)} /></span>
+            <span class="muted">{reason ?? `Complete one of ${engineLoadSteps(siegeEngine)} loading steps`}</span>
+          </button>
+        {/if}
+        {@const attackReason = siegeReason(b, active, siegeEngine, 'attack') ?? (siegeOffer?.activities.some(a => a.legal) ? null : 'No targets in range.')}
+        <button class="popup-row" disabled={siegeBusy || !!attackReason} title={attackReason ?? 'Choose an attack and target'} onclick={() => operateSiege('attack')}>
+          <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (siegeEngine.kind === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
+        </button>
+        {#if siegeEngine.hauling}
+          <button class="popup-row" disabled={siegeBusy} onclick={() => operateSiege('release')}>
+            <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {active.speed} ft per Move</span>
+          </button>
+        {:else if engineSpeed(siegeEngine) !== 0}
+          {@const reason = siegeReason(b, active, siegeEngine, 'haul')}
+          <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Attach the engine, then move your unit'} onclick={() => operateSiege('haul')}>
+            <span class="popup-verb">Haul siege engine <ActionCost n={1} /></span><span class="muted">{reason ?? 'Attach the engine, then move your unit'}</span>
+          </button>
+        {/if}
+      </BoardPopup>
+    {/if}
     {#if activityPick && pickerOffer && active}
-      <BoardPopup cell={notation(active.square)} close={cancelAction} appearance={pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
-        {@render pickerHead(pickerOffer.label, pickerOffer.type === 'cast' ? 'cast' : 'rally', pickerOffer.spell)}
-        {@render activityRows(pickerOffer.activities, pickerActivity?.index ?? null, choosePickerActivity, pickerOffer.type === 'cast' ? 'cast' : 'rally')}
+      <BoardPopup cell={notation(active.square)} close={cancelAction} appearance={pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
+        {@render pickerHead(pickerOffer.label, pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally', pickerOffer.spell)}
+        {@render activityRows(pickerOffer.activities, pickerActivity?.index ?? null, choosePickerActivity, pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally')}
         {#if pickerActivity}
           {#if canFocus(pickerOffer.type, pickerOffer.spell)}
             <CommitmentPicker base={pickerActivity.cost ?? pickerActivity.index} available={actionsLeft} bind:value={focus} effect={pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
@@ -1401,6 +1559,13 @@
               {:else}{rowDetail(row)}{/if}
             </span>
           </button>
+          {#if i === pending.index && row.kind === 'flee'}
+            <p class="muted activity-detail popup-escapes">
+              Leave through {row.cell}. Morale: d20 {row.modifier >= 0 ? '+' : '−'}{Math.abs(row.modifier)} against DC {row.dc}.
+              The unit escapes either way. Success sends it to camp without morale loss; failure routes it and removes it from the end-of-day survivors.
+              {#if active && isRouted(active)}This unit is already routed and stays routed after leaving.{/if}
+            </p>
+          {/if}
           {#if i === pending.index && row.kind === 'maneuver' && act?.maneuver && active}
             {@const w = act.maneuver}
             <div class="popup-escapes">
@@ -1466,7 +1631,7 @@
             <CommitmentPicker base={chargeCost(row, chargeActivity)} available={actionsLeft} bind:value={focus} effect={charging ? 'on the attack, in addition to the charge bonus' : 'on the attack'} />
           {/if}
         {/each}
-        {@render popupFoot(commit, picked?.kind === 'charge' || (picked?.kind === 'advance' && picked.plan.kind === 'charge') ? 'Confirm charge' : picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
+        {@render popupFoot(commit, picked?.kind === 'flee' ? 'Confirm flee' : picked?.kind === 'charge' || (picked?.kind === 'advance' && picked.plan.kind === 'charge') ? 'Confirm charge' : picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
       </BoardPopup>
     {/if}
     {#if aim && aimGroup && active && !pending}
@@ -1514,7 +1679,7 @@
         {#if shootCeiling(b, active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(b, active)}</td></tr>{/if}
         <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
         <tr><td>Disorder</td><td class="stat">{active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
-        <tr><td>Move</td><td class="stat">{active.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
+        <tr><td>Move</td><td class="stat">{act.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
         {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
         {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
       </tbody></table>
@@ -1600,6 +1765,10 @@
 </AppShell>
 
 <style>
+  .siege-heading { display: flex; align-items: center; gap: .6rem; padding: .4rem 1.5rem .4rem .3rem; }
+  .siege-heading img { width: 64px; height: 64px; object-fit: contain; }
+  .siege-selector { display: flex; flex-wrap: wrap; gap: .3rem; }
+
   .turn { padding: .05rem .45rem; border: 1px solid var(--rule); border-radius: 999px; font-size: .8rem; color: var(--muted); }
   .turn.mine { border-color: var(--accent); color: var(--ink); }
 

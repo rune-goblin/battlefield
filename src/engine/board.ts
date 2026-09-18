@@ -9,7 +9,7 @@ export const HEX_TERRAINS: HexTerrain[] = ['plains', 'forest', 'hills', 'mountai
 export type Feature = 'none' | 'river' | 'lakeside';
 export const FEATURES: Feature[] = ['none', 'river', 'lakeside'];
 
-export type SquareTerrain = 'open' | 'forest' | 'swamp' | 'shallows' | 'water' | 'settlement' | 'bridge';
+export type SquareTerrain = 'open' | 'forest' | 'rough' | 'swamp' | 'shallows' | 'water' | 'settlement' | 'bridge';
 
 export interface Construction { kind: 'fort'; tier: number; }
 
@@ -48,22 +48,41 @@ export function barrierBetween(board: Board, a: Square, b: Square): Barrier {
   return null;
 }
 
+type Layout = 'spine' | 'knolls' | 'flank' | 'massif' | 'pass' | 'dunes';
+
+interface Relief {
+  /** Share of the board raised to level 1 or above. */
+  raised: [number, number];
+  /** Share of the raised ground lifted to level 2. */
+  crowns: [number, number];
+  /** A crown may stand beside flat ground, which makes the edge a cliff. */
+  cliffs: boolean;
+  layouts: Layout[];
+}
+
 interface Density {
   forestPatches: [number, number];
   swampPatches: [number, number];
   waterPatches: [number, number];
-  ridge: 'none' | 'low' | 'high';
+  roughPatches: [number, number];
   patchSize: [number, number];
+  /** Patches may touch and grow into one mass; otherwise open ground rings each one. */
+  merge: boolean;
+  relief: Relief | null;
 }
 
-// Small copses leave open approaches between rough patches.
 const DENSITY: Record<HexTerrain, Density> = {
-  plains: { forestPatches: [0, 2], swampPatches: [0, 1], waterPatches: [0, 1], ridge: 'none', patchSize: [1, 3] },
-  forest: { forestPatches: [9, 12], swampPatches: [0, 2], waterPatches: [0, 1], ridge: 'none', patchSize: [2, 4] },
-  hills: { forestPatches: [1, 3], swampPatches: [0, 1], waterPatches: [0, 1], ridge: 'low', patchSize: [1, 3] },
-  mountains: { forestPatches: [3, 5], swampPatches: [0, 0], waterPatches: [0, 1], ridge: 'high', patchSize: [2, 4] },
-  swamp: { forestPatches: [1, 3], swampPatches: [7, 9], waterPatches: [1, 3], ridge: 'none', patchSize: [2, 4] },
-  desert: { forestPatches: [0, 0], swampPatches: [0, 0], waterPatches: [0, 1], ridge: 'low', patchSize: [1, 2] },
+  plains: { forestPatches: [0, 3], swampPatches: [0, 1], waterPatches: [0, 1], roughPatches: [0, 2], patchSize: [1, 3], merge: false,
+    relief: { raised: [0, 0.07], crowns: [0, 0], cliffs: false, layouts: ['knolls'] } },
+  forest: { forestPatches: [8, 11], swampPatches: [0, 2], waterPatches: [0, 1], roughPatches: [0, 1], patchSize: [2, 7], merge: true,
+    relief: { raised: [0, 0.14], crowns: [0, 0], cliffs: false, layouts: ['knolls', 'spine'] } },
+  hills: { forestPatches: [2, 4], swampPatches: [0, 1], waterPatches: [0, 1], roughPatches: [3, 5], patchSize: [2, 4], merge: true,
+    relief: { raised: [0.26, 0.4], crowns: [0, 0.2], cliffs: false, layouts: ['spine', 'knolls', 'flank', 'massif', 'pass'] } },
+  mountains: { forestPatches: [2, 4], swampPatches: [0, 0], waterPatches: [0, 1], roughPatches: [4, 6], patchSize: [2, 4], merge: true,
+    relief: { raised: [0.32, 0.46], crowns: [0.25, 0.4], cliffs: true, layouts: ['spine', 'flank', 'massif', 'pass'] } },
+  swamp: { forestPatches: [2, 4], swampPatches: [7, 10], waterPatches: [2, 4], roughPatches: [0, 0], patchSize: [2, 6], merge: true, relief: null },
+  desert: { forestPatches: [0, 0], swampPatches: [0, 0], waterPatches: [0, 1], roughPatches: [5, 7], patchSize: [1, 3], merge: false,
+    relief: { raised: [0.16, 0.28], crowns: [0, 0], cliffs: false, layouts: ['dunes', 'dunes', 'knolls'] } },
 };
 
 export const DEPLOY_DEPTH = 3;
@@ -90,11 +109,11 @@ function emptyBoard(spec: BoardSpec): Board {
   return { spec, grid: spec.grid ?? 'hex', squares, walls: {} };
 }
 
-function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: number, allowed: (sq: Square) => boolean): void {
+function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: number, merge: boolean, allowed: (sq: Square) => boolean): void {
   const grid = gridOf(board);
   const patchKeys = new Set<string>();
   const eligible = (sq: Square) => at(board, sq).terrain === 'open' && allowed(sq)
-    && grid.neighbours(sq).every(n => patchKeys.has(notation(n)) || !['forest', 'swamp'].includes(at(board, n).terrain));
+    && (merge || grid.neighbours(sq).every(n => patchKeys.has(notation(n)) || !['forest', 'swamp', 'rough'].includes(at(board, n).terrain)));
   const candidates = grid.cells().filter(eligible);
   if (!candidates.length) return;
   const patch: Square[] = [pick(rnd, candidates)];
@@ -110,26 +129,75 @@ function growPatch(board: Board, rnd: Random, terrain: SquareTerrain, size: numb
   }
 }
 
-function layRidge(board: Board, rnd: Random, high: boolean): void {
+const span = (rnd: Random, lo: number, hi: number): number => lo + rnd() * (hi - lo);
+const bell = (d: number, width: number): number => Math.exp(-((d / width) ** 2));
+
+// Each layout scores a cell at x (flank to flank) and y (attacker edge to defender edge), both
+// in -1..1. The highest-scoring cells become the high ground.
+function layoutScore(rnd: Random, layout: Layout): (x: number, y: number) => number {
+  const phase = span(rnd, 0, Math.PI * 2);
+  const knoll = () => ({ cx: span(rnd, -0.8, 0.8), cy: span(rnd, -0.55, 0.55), r: span(rnd, 0.16, 0.32) });
+  switch (layout) {
+    case 'spine': {
+      const y0 = span(rnd, -0.35, 0.35), slope = span(rnd, -0.5, 0.5), width = span(rnd, 0.2, 0.32), saddles = span(rnd, 3, 6);
+      return (x, y) => bell(y - y0 - slope * x, width) * (0.65 + 0.35 * Math.cos(x * saddles + phase));
+    }
+    case 'flank': {
+      const side = rnd() < 0.5 ? -1 : 1, reach = span(rnd, 0.6, 0.95);
+      return (x, y) => bell(x - side, reach) * (0.7 + 0.3 * Math.cos(y * 5 + phase));
+    }
+    case 'massif': {
+      const big = { cx: span(rnd, -0.3, 0.3), cy: span(rnd, -0.25, 0.25), r: span(rnd, 0.45, 0.6) }, spur = knoll();
+      return (x, y) => Math.max(bell(Math.hypot(x - big.cx, y - big.cy), big.r), 0.8 * bell(Math.hypot(x - spur.cx, y - spur.cy), spur.r));
+    }
+    case 'pass': {
+      const gap = span(rnd, -0.4, 0.4), width = span(rnd, 0.22, 0.38), y0 = span(rnd, -0.3, 0.3);
+      return (x, y) => (1 - bell(x - gap, width)) * bell(y - y0, 0.6);
+    }
+    case 'dunes': {
+      const slope = span(rnd, -0.6, 0.6), wavelength = span(rnd, 0.5, 0.85);
+      return (x, y) => Math.cos((y + slope * x) * Math.PI * 2 / wavelength + phase);
+    }
+    case 'knolls': {
+      const knolls = Array.from({ length: between(rnd, [3, 5]) }, knoll);
+      return (x, y) => Math.max(...knolls.map(k => bell(Math.hypot(x - k.cx, y - k.cy), k.r)));
+    }
+  }
+}
+
+// High ground keeps off each side's two home ranks, so nobody deploys behind a hill.
+function layRelief(board: Board, rnd: Random, relief: Relief): void {
   const SIZE = board.squares.length;
   const grid = gridOf(board);
-  const length = between(rnd, [5, 8]);
-  const rank = between(rnd, [2, SIZE - 3]);
-  const west = grid.cells().filter(c => c.rank === rank).map(c => c.file).sort((a, b) => a - b);
-  let sq: Square = { file: west[0] + between(rnd, [0, 1]), rank };
-  const ridge: Square[] = [];
-  while (ridge.length < length && grid.inBounds(sq)) {
-    if (at(board, sq).elevation === 0) ridge.push(sq);
-    at(board, sq).elevation = 1;
-    const drift = rnd();
-    const step: Square = drift < 0.6 ? { file: sq.file + 1, rank: sq.rank }
-      : { file: sq.file, rank: Math.min(SIZE - 3, Math.max(2, sq.rank + (drift < 0.8 ? 1 : -1))) };
-    sq = step.file === sq.file && step.rank === sq.rank ? { file: sq.file + 1, rank: sq.rank } : step;
+  const half = (SIZE - 1) / 2;
+  const score = layoutScore(rnd, pick(rnd, relief.layouts));
+  const stagger = board.grid === 'hex' ? 0.5 : 0;
+  const ranked = grid.cells()
+    .filter(sq => sq.rank >= 2 && sq.rank <= SIZE - 3)
+    .map(sq => ({ sq, score: score((sq.file + (sq.rank % 2) * stagger - half) / half, (sq.rank - half) / half) + rnd() * 0.25 }))
+    .sort((a, b) => b.score - a.score);
+  const raised = ranked.slice(0, Math.round(span(rnd, ...relief.raised) * grid.cells().length));
+  for (const { sq } of raised) at(board, sq).elevation = 1;
+  const crowns = raised.slice(0, Math.round(span(rnd, ...relief.crowns) * raised.length));
+  for (const { sq } of crowns) {
+    if (relief.cliffs || grid.neighbours(sq).every(n => at(board, n).elevation >= 1)) at(board, sq).elevation = 2;
   }
-  if (high && ridge.length >= 3) {
-    const peaks = between(rnd, [1, 2]);
-    for (let i = 0; i < peaks; i++) at(board, pick(rnd, ridge.slice(1, -1))).elevation = 2;
+}
+
+function groundConnected(board: Board): boolean {
+  const SIZE = board.squares.length;
+  const grid = gridOf(board);
+  const frontier = grid.cells().filter(sq => sq.rank === 0 && at(board, sq).terrain !== 'water');
+  const seen = new Set(frontier.map(notation));
+  for (let i = 0; i < frontier.length; i++) {
+    if (frontier[i].rank === SIZE - 1) return true;
+    for (const n of grid.neighbours(frontier[i])) {
+      if (seen.has(notation(n)) || at(board, n).terrain === 'water' || barrierBetween(board, frontier[i], n)?.kind === 'cliff') continue;
+      seen.add(notation(n));
+      frontier.push(n);
+    }
   }
+  return false;
 }
 
 // A river crosses the attacker's path on the neutral band between the deployment zones. On
@@ -225,16 +293,25 @@ export function generateBoard(spec: BoardSpec): Board {
   const d = DENSITY[spec.base];
   const feature = spec.feature ?? 'none';
 
-  if (d.ridge !== 'none') layRidge(board, rnd, d.ridge === 'high');
+  if (d.relief) layRelief(board, rnd, d.relief);
   if (feature === 'river') layRiver(board, rnd);
   if (feature === 'lakeside') layLake(board, rnd);
   if (spec.construction) layFort(board, rnd, spec.construction.tier);
+  const middle = (sq: Square) => sq.rank >= DEPLOY_DEPTH && sq.rank < board.squares.length - DEPLOY_DEPTH;
+  const flat = (sq: Square) => at(board, sq).elevation === 0;
+  const high = (sq: Square) => at(board, sq).elevation > 0;
+  const size = () => between(rnd, d.patchSize);
+  // Woods favour the valleys and scree the slopes. Wet ground lies low: a climb into swamp
+  // costs more than an activation holds.
+  for (let i = between(rnd, d.forestPatches); i > 0; i--) growPatch(board, rnd, 'forest', size(), d.merge, d.relief && rnd() < 0.7 ? flat : () => true);
+  for (let i = between(rnd, d.swampPatches); i > 0; i--) growPatch(board, rnd, 'swamp', size(), d.merge, flat);
+  for (let i = between(rnd, d.waterPatches); i > 0; i--) growPatch(board, rnd, 'water', between(rnd, [1, 2]), true, sq => middle(sq) && flat(sq));
+  for (let i = between(rnd, d.roughPatches); i > 0; i--) growPatch(board, rnd, 'rough', size(), d.merge, d.relief && rnd() < 0.6 ? high : () => true);
 
-  const notDeploy = (sq: Square) => sq.rank >= DEPLOY_DEPTH && sq.rank < board.squares.length - DEPLOY_DEPTH;
-  const anywhere = () => true;
-  for (let i = between(rnd, d.forestPatches); i > 0; i--) growPatch(board, rnd, 'forest', between(rnd, d.patchSize), anywhere);
-  for (let i = between(rnd, d.swampPatches); i > 0; i--) growPatch(board, rnd, 'swamp', between(rnd, d.patchSize), anywhere);
-  for (let i = between(rnd, d.waterPatches); i > 0; i--) growPatch(board, rnd, 'water', between(rnd, [1, 2]), notDeploy);
+  // Cliffs may channel the advance and never seal it; a river's crossings stay the GM's call.
+  if (feature !== 'river' && !groundConnected(board)) {
+    for (const sq of gridOf(board).cells()) if (at(board, sq).elevation === 2) at(board, sq).elevation = 1;
+  }
 
   return board;
 }
@@ -245,7 +322,7 @@ export function count(board: Board, terrain: SquareTerrain): number {
 
 export function render(board: Board): string {
   const SIZE = board.squares.length;
-  const glyph: Record<SquareTerrain, string> = { open: '.', forest: 'T', swamp: '~', shallows: '=', water: 'W', settlement: '#', bridge: 'B' };
+  const glyph: Record<SquareTerrain, string> = { open: '.', forest: 'T', rough: ':', swamp: '~', shallows: '=', water: 'W', settlement: '#', bridge: 'B' };
   const grid = gridOf(board);
   const rows: string[] = [];
   // Odd rows of an odd-r hex board sit half a cell to the right; the shared edge between two

@@ -17,3 +17,4 @@ export * from './connectivity.js';
 export * from './force.js';
 
 export * from './sight.js';
+export * from './terrain.js';

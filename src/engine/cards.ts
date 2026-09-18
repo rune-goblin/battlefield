@@ -149,6 +149,10 @@ export const speedOf = (card: UnitCard): number => squaresPerAction(card) * CELL
 export type EngineKind = 'artillery' | 'ram';
 
 export interface SiegeEngineCard {
+  /** Feet per movement action; null means portable at the crew's speed, zero means fixed. */
+  speed?: number | null;
+  loadCost?: number;
+  loadSteps?: number;
   name: string;
   level: number;
   kind: EngineKind;

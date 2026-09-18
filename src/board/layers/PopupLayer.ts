@@ -1,0 +1,240 @@
+import * as PIXI from 'pixi.js';
+import type { Grid, Point } from '../../engine/index.js';
+import { assetUrl } from '../asset-base.js';
+
+export type PopupTone = 'good' | 'bad' | 'warn';
+const BARS = ['wounds', 'morale'] as const;
+const ICONS = [...BARS, 'frightened', 'stunned', 'rooted', 'pinned', 'suppressed', 'exposed', 'persistent', 'routed'] as const;
+/** A file in `art/condition-icons/`. A bar's icon follows its number; any other leads its word. */
+export type PopupIcon = typeof ICONS[number];
+const isBar = (icon: PopupIcon | undefined): boolean => BARS.some((bar) => bar === icon);
+
+export interface PopupPart { text: string; tone: PopupTone; icon?: PopupIcon; /** Drawn larger: the one word that settles the whole action. */ loud?: boolean }
+
+export interface BoardPopup {
+  /** The piece the word rides; it follows a piece that is still walking. */
+  token: string;
+  /** Where the word stands when the board no longer holds that piece. */
+  cell: string;
+  /** Shown side by side: one word, or every bar a blow moved. */
+  parts: PopupPart[];
+}
+
+export interface PopupLayerOptions {
+  positionOf(token: string): Point | null;
+  /** Words wait for the pieces to stop, so a charge reads its result where it ends. */
+  moving(): boolean;
+}
+
+const FONT = 'Carter One';
+const FILL: Record<PopupTone, [string, string]> = {
+  good: ['#1ac300', '#3cff00'],
+  bad: ['#c30000', '#ff0000'],
+  warn: ['#f47a00', '#ffff00'],
+};
+
+// The text is drawn once at this size and scaled to the screen size wanted.
+const DRAWN_PX = 64;
+const SCREEN_PX = { min: 22, max: 44, perCell: 0.5 };
+const LEAD_MS = 250;
+// Words overlap in time: each outlives the arrival of the next two. A long run, a Blast across
+// a line and every save it forces, closes up so the board is not held for ten seconds.
+const STAGGER_MS = 1000;
+const CROWDED_STAGGER_MS = 500;
+const CROWDED = 4;
+const LIFE_MS = 3500;
+const POP_MS = 250;
+// What a blow cost arrives under the word that caused it: smaller, and slower to swell.
+const EFFECT_POP_MS = 400;
+const EFFECT_SCALE = 0.85;
+const LOUD_SCALE = 1.25;
+// A word that grows from a point, fully opaque, reads as a flash: it swells from this size and fades in.
+const POP_FROM = 0.6;
+const FADE_IN_MS = 120;
+const FADE_MS = 500;
+const FADE_TO = 0.6;
+// Eased out, so a word has cleared its own height by the time the next arrives beneath it.
+const RISE_CELLS = 0.75;
+// The rise keeps the pace it had when a word lived this long; the word then holds still to be read.
+const RISE_MS = 2000;
+const LIFT_MS = 80;
+
+let fontLoad: Promise<void> | null = null;
+
+function loadFont(): void {
+  if (typeof FontFace === 'undefined') return;
+  fontLoad ??= new FontFace(FONT, `url(${assetUrl('fonts/carter-one/carter-one.woff2')})`).load().then((face) => {
+    document.fonts.add(face);
+    // PIXI caches metrics per font string, and any measured before the face arrived are the fallback's.
+    PIXI.TextMetrics.clearMetrics();
+  }, () => { fontLoad = null; });
+}
+
+function styleFor(tone: PopupTone): PIXI.TextStyle {
+  return new PIXI.TextStyle({
+    fontFamily: `"${FONT}", Signika, sans-serif`,
+    fontSize: DRAWN_PX,
+    fill: FILL[tone],
+    fillGradientType: PIXI.TEXT_GRADIENT.LINEAR_VERTICAL,
+    fillGradientStops: [0.25, 0.85],
+    stroke: '#000000',
+    strokeThickness: 8,
+    lineJoin: 'round',
+    dropShadow: true,
+    dropShadowColor: '#000000',
+    dropShadowAlpha: 0.45,
+    dropShadowBlur: 6,
+    dropShadowDistance: 3,
+    padding: 16,
+  });
+}
+
+const ICON_PX = DRAWN_PX * 0.8;
+const ICON_GAP = DRAWN_PX * 0.12;
+
+const icons = new Map<PopupIcon, PIXI.Texture>();
+let iconLoad: Promise<void> | null = null;
+
+// One fetch for the lifetime of the page. A popup that lands mid-load shows its words alone.
+function loadIcons(): void {
+  iconLoad ??= Promise.all(ICONS.map(async (name) => {
+    icons.set(name, await PIXI.Assets.load<PIXI.Texture>(assetUrl(`art/condition-icons/${name}.webp`)));
+  })).then(() => undefined, () => { iconLoad = null; });
+}
+
+// Stands on the baseline: the text box ends below it by its descent and its outline.
+function iconFor(icon: PopupIcon, x: number): PIXI.Sprite | null {
+  const texture = icons.get(icon);
+  if (!texture) return null;
+  const sprite = new PIXI.Sprite(texture);
+  sprite.anchor.set(0, 1);
+  sprite.scale.set(ICON_PX / Math.max(texture.width, texture.height));
+  sprite.position.set(x, -DRAWN_PX * 0.26);
+  return sprite;
+}
+
+const PART_GAP = DRAWN_PX * 0.45;
+
+function build(popup: BoardPopup): PIXI.Container {
+  const body = new PIXI.Container();
+  let x = 0;
+  for (const part of popup.parts) {
+    if (x) x += PART_GAP;
+    const leads = part.icon && !isBar(part.icon) ? iconFor(part.icon, x) : null;
+    if (leads) { body.addChild(leads); x += leads.width + ICON_GAP; }
+    const text = new PIXI.Text(part.text, styleFor(part.tone));
+    text.resolution = 2;
+    text.anchor.set(0, 1);
+    text.x = x;
+    body.addChild(text);
+    x += text.width;
+    const follows = isBar(part.icon) ? iconFor(part.icon!, x + ICON_GAP) : null;
+    if (follows) { body.addChild(follows); x += ICON_GAP + follows.width; }
+  }
+  body.pivot.x = x / 2;
+  return body;
+}
+
+const isEffect = (popup: BoardPopup): boolean => popup.parts.every((part) => isBar(part.icon));
+
+interface Live {
+  popup: BoardPopup;
+  text: PIXI.Container | null;
+  /** Negative while the word waits its turn. */
+  elapsed: number;
+  scale: number;
+  /** World units climbed to clear the words that arrived later over the same piece. */
+  lift: number;
+  lifted: number;
+}
+
+const easeOutBack = (t: number): number => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
+const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
+
+/** The word a roll came to, popped over the piece it landed on, then lifted and faded. The words
+ * of a commit take turns in the order they happened, whichever pieces they land on. */
+export class PopupLayer {
+  private readonly container: PIXI.Container;
+  private readonly viewport: PIXI.Container;
+  private readonly ticker: PIXI.Ticker;
+  private readonly opts: PopupLayerOptions;
+  private grid: Grid | null = null;
+  private size = 0;
+  private live: Live[] = [];
+
+  private readonly tick = (): void => {
+    if (!this.live.length) return;
+    const dt = this.ticker.deltaMS;
+    const held = this.opts.moving();
+    for (const entry of [...this.live]) {
+      if (!entry.text && held) continue;
+      entry.elapsed += dt;
+      if (entry.elapsed < 0) continue;
+      if (entry.elapsed >= LIFE_MS) { this.remove(entry); continue; }
+      this.draw(entry);
+    }
+  };
+
+  constructor(container: PIXI.Container, viewport: PIXI.Container, ticker: PIXI.Ticker, opts: PopupLayerOptions) {
+    this.container = container;
+    this.viewport = viewport;
+    this.ticker = ticker;
+    this.opts = opts;
+    this.ticker.add(this.tick);
+    loadFont();
+    loadIcons();
+  }
+
+  setGeometry(grid: Grid | null, size: number): void {
+    this.grid = grid;
+    this.size = size;
+    if (!grid || !size) this.clear();
+  }
+
+  show(popup: BoardPopup): void {
+    if (!this.grid || !this.size) return;
+    const waiting = this.live.filter((entry) => !entry.text);
+    const latest = Math.min(...this.live.map((entry) => entry.elapsed));
+    const stagger = waiting.length >= CROWDED ? CROWDED_STAGGER_MS : STAGGER_MS;
+    this.live.push({ popup, text: null, elapsed: Math.min(-LEAD_MS, latest - stagger), scale: 1, lift: 0, lifted: 0 });
+  }
+
+  private draw(entry: Live): void {
+    if (!entry.text) {
+      entry.text = build(entry.popup);
+      const zoom = this.viewport.scale.x || 1;
+      const screenPx = Math.min(SCREEN_PX.max, Math.max(SCREEN_PX.min, this.size * zoom * SCREEN_PX.perCell));
+      const emphasis = isEffect(entry.popup) ? EFFECT_SCALE : entry.popup.parts.some((part) => part.loud) ? LOUD_SCALE : 1;
+      entry.scale = emphasis * screenPx / (DRAWN_PX * zoom);
+      this.container.addChild(entry.text);
+      const height = entry.text.height * entry.scale;
+      for (const older of this.live) {
+        if (older !== entry && older.text && older.popup.token === entry.popup.token) older.lift += height;
+      }
+    }
+    const t = entry.elapsed;
+    entry.lifted += (entry.lift - entry.lifted) * Math.min(1, this.ticker.deltaMS / LIFT_MS);
+    const at = this.opts.positionOf(entry.popup.token) ?? this.grid!.center(this.grid!.parse(entry.popup.cell), this.size);
+    const rise = this.size * RISE_CELLS * easeOutCubic(Math.min(1, t / RISE_MS)) + entry.lifted;
+    const fade = Math.max(0, (t - (LIFE_MS - FADE_MS)) / FADE_MS);
+    const pop = isEffect(entry.popup) ? EFFECT_POP_MS : POP_MS;
+    entry.text.position.set(at.x, at.y - this.size * 0.55 - rise);
+    const swell = t < pop ? POP_FROM + (1 - POP_FROM) * easeOutBack(t / pop) : 1 - (1 - FADE_TO) * fade ** 2;
+    entry.text.scale.set(entry.scale * swell);
+    entry.text.alpha = fade ? 1 - fade : Math.min(1, t / FADE_IN_MS);
+  }
+
+  private remove(entry: Live): void {
+    entry.text?.destroy({ children: true });
+    this.live.splice(this.live.indexOf(entry), 1);
+  }
+
+  private clear(): void {
+    for (const entry of [...this.live]) this.remove(entry);
+  }
+
+  destroy(): void {
+    this.ticker.remove(this.tick);
+    this.clear();
+  }
+}

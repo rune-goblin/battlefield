@@ -1,21 +1,14 @@
 import { at, barrierBetween, gridOf, notation, type Board, type Square, type SquareTerrain } from './board.js';
+import { TERRAIN } from './terrain.js';
 
 /** One board cell is ten feet, so every cost below reads as a PF2e distance. */
 export const CELL_FEET = 10;
 
-/** What entering a square costs: a square's worth of ground, two on difficult terrain and
- * three on very difficult. A troop moves a square an action, so it pays those in whole
- * actions; a Pace unit covers two squares' worth, so difficult ground costs it one. */
-export const TERRAIN_FEET: Record<SquareTerrain, number> = {
-  open: CELL_FEET,
-  // A settlement is a road, so it is never worse than open ground.
-  settlement: CELL_FEET,
-  bridge: CELL_FEET,
-  forest: 2 * CELL_FEET,
-  shallows: 2 * CELL_FEET,
-  swamp: 3 * CELL_FEET,
-  water: Infinity,
-};
+/** What entering a square costs in feet, off section 10's terrain table. A troop moves a square
+ * an action, so it pays a forest in two whole actions; a Pace unit pays it in one. */
+export const TERRAIN_FEET = Object.fromEntries(
+  Object.entries(TERRAIN).map(([terrain, effect]) => [terrain, effect.enter * CELL_FEET]),
+) as Record<SquareTerrain, number>;
 
 /** Each level of elevation gained. Two levels apart is a cliff, and `barrierBetween` blocks it. */
 export const CLIMB_FEET = CELL_FEET;
@@ -27,8 +20,8 @@ export interface MoveOpts {
   flying?: boolean;
   /** Sure footing: every hex costs one and a climb nothing. Water and blocked edges still stop it. */
   surefooted?: boolean;
-  /** Rough ground and climbs are impassable rather than dear, which answers the charge's own
-   * question: is there any route in that touched neither? */
+  /** A charge's run: hexes the terrain table bars to a charge, and climbs, are impassable. Sure
+   * footing opens them. */
   evenGround?: boolean;
   /** Cells somebody else is standing on. */
   occupied?: ReadonlySet<string>;
@@ -57,7 +50,7 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
   const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
   // Even ground is a question about the ground, not about the price, so it is asked ahead of
   // flight: a flier pays 1 a hex over forest and has still crossed forest.
-  if (opts.evenGround && ((Number.isFinite(ground) && ground > CELL_FEET) || climb > 0)) return Infinity;
+  if (opts.evenGround && !opts.surefooted && (!TERRAIN[at(board, to).terrain].charge || climb > 0)) return Infinity;
   if (opts.flying) return CELL_FEET;
   if (barrierBetween(board, from, to) !== null) return Infinity;
   // Water is the one ground Sure footing cannot flatten: it blocks where forest merely costs.

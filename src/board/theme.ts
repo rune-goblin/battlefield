@@ -60,6 +60,7 @@ const LIGHT: BoardTheme = {
   terrain: {
     open: 0xefe7d8,
     forest: 0xb9cfa0,
+    rough: 0xd6c4a0,
     swamp: 0xb8ad78,
     shallows: 0xb4d4e0,
     water: 0x6f9fc4,
@@ -101,6 +102,7 @@ const DARK: BoardTheme = {
   terrain: {
     open: 0x2a2520,
     forest: 0x3a5030,
+    rough: 0x4a3f2c,
     swamp: 0x4d4728,
     shallows: 0x37535f,
     water: 0x2f5476,

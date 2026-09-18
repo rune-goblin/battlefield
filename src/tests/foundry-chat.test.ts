@@ -3,7 +3,7 @@ import { checkCardsOf, publishCommit, type ChatPoster } from '../adapters/foundr
 import type { BattleEvent } from '../runtime/events.js';
 
 function checkEvent(id: string, roll: number, text: string): BattleEvent {
-  return { id, type: 'checkResolved', unit: 'u0', check: { roll, modifier: 4, total: roll + 4, dc: 15, degree: 'success' }, text };
+  return { id, type: 'checkResolved', unit: 'u0', check: { roll, modifier: 4, total: roll + 4, dc: 15, degree: 'success' }, text, lands: { unit: 'u0', reads: 'check' } };
 }
 
 describe('checkCardsOf', () => {

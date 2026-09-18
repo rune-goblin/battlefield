@@ -81,9 +81,9 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
     ['Aegis', 'An enemy that would attack the ally first rolls Will against your spell DC, or wastes the activity.'],
   ],
   movement: [
-    ['Sure footing', 'Every hex costs the ally 1 on its next activation, and a charge through rough ground lands its +2.'],
-    ['Fly', 'On its next activation the ally flies: 1 a hex, across water, cliffs and walls.'],
-    ['Translocate', 'The ally is placed now in any empty hex within its Speed, whatever lies between.'],
+    ['Burst of speed', 'Grant 1 extra hex of movement for the ally’s next activation, with no roll; on yourself, use it this activation. Terrain costs still apply. The bonus does not stack.'],
+    ['Sure footing', 'Every hex costs the ally 1 on its next activation, and its charge may cross any ground it can enter.'],
+    ['Translocate', 'Place the ally now in an empty hex up to 4 hexes from its current position, whatever lies between.'],
   ],
 };
 

@@ -1,5 +1,5 @@
 import {
-  canDeploy, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isStanding, notation, parse, seededRandom,
+  canDeploy, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isSurvivor, notation, parse, seededRandom,
   type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
@@ -90,7 +90,7 @@ export function deploymentProblem(
   field: BattleState, side: Side, positions: Record<string, string> | undefined, complete = false,
 ): string | null {
   if (!positions) return `the ${side} has not chosen a deployment`;
-  const survivors = field.units.filter((u) => u.side === side && isStanding(u));
+  const survivors = field.units.filter((u) => u.side === side && isSurvivor(u));
   const taken = new Set<string>();
   for (const [unitId, cell] of Object.entries(positions)) {
     const u = survivors.find((s) => s.id === unitId);

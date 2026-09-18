@@ -519,7 +519,7 @@ describe('Movement', () => {
       board,
     });
     expect(moves(s, 'u1').get('c4')).toMatchObject({ feet: 30, actions: 3 });
-    const cast = act(s, { type: 'cast', spell: 'movement', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng([10]));
+    const cast = act(s, { type: 'cast', spell: 'movement', activity: 2, target: 'u1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(cast, 'u1').sureFooting).toBe(true);
     expect(moves(cast, 'u1').get('c4')).toMatchObject({ feet: 10, actions: 1 });
   });
@@ -658,26 +658,24 @@ describe('movement points', () => {
     expect(unit(s, 'u2').wounds).toBeGreaterThanOrEqual(1);
   });
 
-  it('lands its +2 over open ground and loses it through forest', () => {
+  it('lands its +2 over open ground and refuses a run through forest', () => {
     const strikeMod = (s: BattleState) => s.log.find((e) => e.check)!.check!.modifier;
     const open = battle([]).state;
     place(open, 'u2', 'c4');
     expect(strikeMod(act(open, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(13);
 
-    // One Speed of infantry cannot pay 20 ft for a forest hex at all, so the ground that costs
-    // the +2 rather than the run is read off a troop that can afford it.
+    // One Speed of infantry cannot pay 20 ft for a forest hex at all, so the refusal is read
+    // off a troop that could afford the run.
     const board = openBoard();
     board.squares[2][2].terrain = 'forest';
     const wooded = battle([], board).state;
     place(wooded, 'u0', 'a1');
     place(wooded, 'u1', 'c2');
     place(wooded, 'u2', 'c4');
-    const rider = unit(wooded, 'u1');
-    expect(strikeMod(act(wooded, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]))))
-      .toBe(rider.stats.strike!);
+    expect(() => act(wooded, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]))).toThrow();
   });
 
-  it('lands on the hex a clean route reaches rather than the cheapest one, and keeps the +2', () => {
+  it('lands on the hex an open route reaches when the cheapest way in is forest', () => {
     const board = openBoard();
     // c3 is the cheapest way into c4 and the only rough one; b4 is 10 ft further and open.
     board.squares[2][2].terrain = 'forest';
@@ -898,6 +896,31 @@ describe('activities carry effects', () => {
     expect(struck(guarded(2), 13)).toBe(0);
   });
 
+  it('corners a target with water behind it for 1 disorder; an occupied hex merely blocks', () => {
+    const wet = engaged();
+    wet.board.squares[3][2].terrain = 'water';
+    const before = unit(wet, 'u2').disorder;
+    // The Press save passes on a 20, so the cornering is the only disorder.
+    const s = act(wet, { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 20, 20]));
+    expect(notation(unit(s, 'u2').square)).toBe('c3');
+    expect(notation(unit(s, 'u0').square)).toBe('c2');
+    expect(unit(s, 'u2').disorder).toBe(before + 1);
+    expect(said(s, 'is cornered')).toBe(true);
+
+    const crowded = engaged();
+    place(crowded, 'u3', 'c4');
+    const held = act(crowded, { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 20, 20]));
+    expect(unit(held, 'u2').disorder).toBe(before);
+    expect(said(held, 'nowhere to give ground')).toBe(true);
+  });
+
+  it('allows Brace alone on wet ground', () => {
+    const state = engaged();
+    state.board.squares[1][2].terrain = 'shallows';
+    const guard = availableActions(state, 'u0').find((o) => o.type === 'guard')!;
+    expect(guard.activities.map((o) => o.legal)).toEqual([true, false, false]);
+  });
+
   it('Take cover holds against an Overrun: the shove fails and the attacker stays put', () => {
     const state = engaged();
     unit(state, 'u0').stats.defence = strikeModifier(state, unit(state, 'u2'), unit(state, 'u0')) + 5;
@@ -1040,13 +1063,14 @@ describe('a Fight is one roll', () => {
     expect(defenceOf(miss, unit(miss, 'u0'), null, false)).toBe(unit(miss, 'u0').stats.defence - 2);
   });
 
-  it('swamp lowers Defence and flanking costs the target −2 Defence', () => {
+  it('swamp lowers Defence and Strike, and flanking costs the target −2 Defence', () => {
     const board = openBoard();
     board.squares[2][2].elevation = 1;
     board.squares[1][2].terrain = 'swamp';
     const { state } = battle([], board);
     place(state, 'u2', 'c3');
-    expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(unit(state, 'u0').stats.strike!);
+    // Swamp and the climb are both circumstance penalties, so the worse one alone applies.
+    expect(strikeModifier(state, unit(state, 'u0'), unit(state, 'u2'))).toBe(unit(state, 'u0').stats.strike! - 1);
     expect(defenceOf(state, unit(state, 'u0'), null, false)).toBe(unit(state, 'u0').stats.defence - 1);
     place(state, 'u1', 'd3');
     expect(isOutflanked(state, unit(state, 'u2'))).toBe(true);

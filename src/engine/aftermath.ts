@@ -1,5 +1,5 @@
 import { gridOf, notation, parse } from './board.js';
-import { canDeploy, crewOf, isStanding, unit } from './battle.js';
+import { canDeploy, crewOf, isStanding, isSurvivor, unit } from './battle.js';
 import { check } from './check.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
@@ -99,7 +99,7 @@ export function recoverAtNight(input: BattleState, side: Side, choices: Recovery
   for (const choice of choices) {
     const u = unit(input, choice.unit);
     if (u.side !== side) throw new Error(`${u.name} does not recover for the ${side}`);
-    if (!isStanding(u)) throw new Error('only standing units can recover overnight');
+    if (!isSurvivor(u)) throw new Error('only standing units or survivors in camp can recover overnight');
     if (seen.has(u.id)) throw new Error('a unit may attempt recovery only once per night');
     if (choice.activity !== 'rally' && choice.activity !== 'treat') throw new Error('unknown recovery activity');
     if ((choice.activity === 'rally' ? u.disorder : u.wounds) <= 0) throw new Error('the unit has nothing to recover');
@@ -153,6 +153,7 @@ function clearCombatEffects(u: Unit) {
   u.stoneskin = false;
   u.aegis = null;
   u.selfBuffs = [];
+  u.movementBonus = 0;
   u.sureFooting = false;
   u.flies = false;
 }
@@ -172,7 +173,7 @@ export function suggestDeployment(state: BattleState): Record<string, string> {
   const positions: Record<string, string> = {};
   const occupied = new Set<string>();
   // Place units with the fewest legal cells first so ambushers leave room for the line.
-  const survivors = state.units.filter(isStanding).sort((a, b) => deploymentCells(state, a).length - deploymentCells(state, b).length);
+  const survivors = state.units.filter(isSurvivor).sort((a, b) => deploymentCells(state, a).length - deploymentCells(state, b).length);
   for (const u of survivors) {
     const cell = deploymentCells(state, u).find((n) => !occupied.has(n));
     if (cell) { positions[u.id] = cell; occupied.add(cell); }
@@ -187,7 +188,7 @@ export function nextDayBattlefield(input: BattleState): BattleState {
   if (!state.nextBoard) return state;
   state.board = clone(state.nextBoard);
   state.engines = [];
-  for (const u of state.units) u.engines = u.engines.filter((e) => isStanding(u) && e.status === 'crewed');
+  for (const u of state.units) u.engines = u.engines.filter((e) => isSurvivor(u) && e.status === 'crewed');
   return state;
 }
 
@@ -197,15 +198,16 @@ export function startNextDay(input: BattleState, positions: Record<string, strin
   if (input.nextBoard) {
     state.previousBattlefields = [...(state.previousBattlefields ?? []), {
       day: input.day, board: clone(input.board),
-      engines: clone([...input.engines, ...input.units.flatMap((u) => u.engines.filter((e) => !isStanding(u) || e.status !== 'crewed'))]),
+      engines: clone([...input.engines, ...input.units.flatMap((u) => u.engines.filter((e) => !isSurvivor(u) || e.status !== 'crewed'))]),
     }];
   }
   const taken = new Set<string>();
-  for (const u of state.units.filter(isStanding)) {
+  for (const u of state.units.filter(isSurvivor)) {
     const cell = positions[u.id];
     if (!cell || !deploymentCells(state, u).includes(cell)) throw new Error(`${u.name} needs a legal deployment cell`);
     if (taken.has(cell)) throw new Error(`${cell} is already occupied`);
     taken.add(cell);
+    u.status = 'active';
     u.square = parse(cell);
     for (const e of u.engines) if (e.status === 'crewed') { e.square = clone(u.square); e.fired = false; }
   }

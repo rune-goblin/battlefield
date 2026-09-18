@@ -69,6 +69,7 @@
       disorder: 0,
       engine: u.engines[0]?.name ?? null,
       prop: null,
+      statuses: [],
       pick: null,
       ring: selected?.kind === 'unit' && selected.id === u.id ? 'selected' as const : null,
     }] : []),

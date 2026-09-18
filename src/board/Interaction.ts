@@ -1,7 +1,7 @@
 import type * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../engine/index.js';
 import { BRUSH_TERRAINS, eraseForm, isEdgeBrush, type Brush } from './brush.js';
-import { edgeCandidates, hitTest, nearestEdge, type Hit, type TokenPlacementProvider } from './hit.js';
+import { boundaryCellAt, edgeCandidates, hitTest, nearestEdge, type Hit, type TokenPlacementProvider } from './hit.js';
 
 export interface Rect { x: number; y: number; width: number; height: number }
 
@@ -13,10 +13,10 @@ export type BoardEvent =
   | { type: 'edge'; edge: string }
   | { type: 'token'; id: string }
   | { type: 'paint'; cells: string[]; edges: string[]; brush: Brush }
-  | { type: 'drop'; id: string; cell: string }
+  | { type: 'drop'; id: string; cell: string; exit?: boolean }
   /** Fires on every pointer move while a token drag is live; `cell` is null off-grid or on
    * release/cancel, which the drag-preview consumer reads as "clear". */
-  | { type: 'drag'; id: string; cell: string | null };
+  | { type: 'drag'; id: string; cell: string | null; exit?: boolean };
 
 export type BoardEventType = BoardEvent['type'];
 export type BoardEventOf<T extends BoardEventType> = Extract<BoardEvent, { type: T }>;
@@ -343,8 +343,10 @@ export class Interaction {
       const local = this.o.toLocal(screen);
       this.o.onDrag(this.gesture.token, local);
       const geometry = this.o.geometry();
-      const cell = geometry ? geometry.grid.fromPoint(local, geometry.size) : null;
-      this.o.emit({ type: 'drag', id: this.gesture.token, cell: cell ? geometry!.grid.key(cell) : null });
+      const inside = geometry ? geometry.grid.fromPoint(local, geometry.size) : null;
+      const edge = !inside && geometry && this.mode === 'battle' ? boundaryCellAt(local, geometry.grid, geometry.size) : null;
+      const cell = inside ?? edge;
+      this.o.emit({ type: 'drag', id: this.gesture.token, cell: cell ? geometry!.grid.key(cell) : null, exit: !!edge });
     }
     this.updateHover(screen);
   };
@@ -370,8 +372,11 @@ export class Interaction {
 
     if (gesture.kind === 'drag') {
       const geometry = this.o.geometry();
-      const cell = geometry?.grid.fromPoint(this.o.toLocal(screen), geometry.size);
-      if (geometry && cell) this.o.emit({ type: 'drop', id: gesture.token, cell: geometry.grid.key(cell) });
+      const local = this.o.toLocal(screen);
+      const inside = geometry?.grid.fromPoint(local, geometry.size);
+      const edge = !inside && geometry && this.mode === 'battle' ? boundaryCellAt(local, geometry.grid, geometry.size) : null;
+      const cell = inside ?? edge;
+      if (geometry && cell) this.o.emit({ type: 'drop', id: gesture.token, cell: geometry.grid.key(cell), exit: !!edge });
       this.o.onDrag(gesture.token, null);
       this.o.emit({ type: 'drag', id: gesture.token, cell: null });
       return;

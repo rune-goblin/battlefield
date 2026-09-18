@@ -1,9 +1,9 @@
 import {
-  act, deselect, endActivation, isRouted, meleePlans, movePath, notation, select,
+  act, deselect, endActivation, isRouted, meleePlans, movePath, notation, select, ROUTED_AT,
   type BattleState, type Unit,
 } from '../engine/index.js';
 import type { TacticalAction } from '../runtime/commands.js';
-import type { BattleEventBody } from '../runtime/events.js';
+import type { BattleEventBody, Condition } from '../runtime/events.js';
 import type { DicePort } from '../runtime/ports.js';
 import type { BattleSession } from '../runtime/session.js';
 
@@ -80,20 +80,39 @@ function logEvents(before: BattleState, after: BattleState): BattleEventBody[] {
     } else if (tag?.kind === 'spell') {
       events.push({ type: 'spellResolved', unit: tag.caster, tree: tag.tree, activity: tag.activity, targets: tag.targets, check: entry.check ?? null });
     } else if (entry.check) {
-      events.push({ type: 'checkResolved', unit: entry.unit ?? null, check: entry.check, text: entry.text });
+      const lands = entry.lands ?? (entry.unit ? { unit: entry.unit, reads: 'check' as const } : null);
+      events.push({ type: 'checkResolved', unit: entry.unit ?? null, check: entry.check, text: entry.text, lands });
     }
   }
   return events;
 }
 
-function stateEvents(before: BattleState, after: BattleState): BattleEventBody[] {
+// Each reads the value that holds the condition, so a second shooter's pin on a piece already
+// pinned is news as well.
+const CONDITIONS: [Condition, (u: Unit) => unknown][] = [
+  ['frightened', (u) => u.frightened],
+  ['stunned', (u) => u.stunned],
+  ['rooted', (u) => u.rooted > 0],
+  ['suppressed', (u) => u.suppressedBy],
+  ['pinned', (u) => u.pinnedBy],
+  ['exposed', (u) => u.exposed],
+  ['persistent', (u) => u.persistent !== null],
+];
+
+function stateEvents(before: BattleState, after: BattleState, action?: TacticalAction): BattleEventBody[] {
   const events: BattleEventBody[] = [];
   for (const u of after.units) {
     const was = before.units.find((p) => p.id === u.id);
     if (!was) continue;
     if (u.wounds !== was.wounds) events.push({ type: 'woundsChanged', unit: u.id, from: was.wounds, to: u.wounds });
     if (u.disorder !== was.disorder) events.push({ type: 'disorderChanged', unit: u.id, from: was.disorder, to: u.disorder });
-    if (isRouted(u) && !isRouted(was)) events.push({ type: 'unitRouted', unit: u.id });
+    for (const [condition, read] of CONDITIONS) {
+      // A Guard roots the unit that chose it, which is a price paid and no news to anyone.
+      if (condition === 'rooted' && u.id === action?.unit) continue;
+      if (u.status === 'active' && read(u) && read(u) !== read(was)) events.push({ type: 'conditionGained', unit: u.id, condition });
+    }
+    if ((isRouted(u) || u.status === 'left' && u.disorder >= ROUTED_AT)
+      && was.disorder < ROUTED_AT) events.push({ type: 'unitRouted', unit: u.id });
   }
   return events;
 }
@@ -124,7 +143,7 @@ export function createActionResolutionService({ dice }: { dice: DicePort }): Act
       return [
         ...movementEvents(before, after, action),
         ...logEvents(before, after),
-        ...stateEvents(before, after),
+        ...stateEvents(before, after, action),
         ...endEvents(before, after),
       ];
     },

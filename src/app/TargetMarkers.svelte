@@ -8,11 +8,12 @@
     screenOf: (cell: string) => Point | null;
     cellRadius?: (cell: string) => number | null;
     resolved?: boolean;
+    opacity?: number;
     selected: string | null;
     hover: (id: string | null) => void;
     choose: (id: string) => void;
   }
-  let { targets, screenOf, cellRadius, resolved = false, selected, hover, choose }: Props = $props();
+  let { targets, screenOf, cellRadius, resolved = false, opacity = 1, selected, hover, choose }: Props = $props();
   let markers = $state<(TargetMarker & Point & { size: number })[]>([]);
 
   // The midpoint names a Line's pair; the centroid names a Burst's shared corner.
@@ -49,6 +50,7 @@
     class:compact={marker.geometry === 'edge' || marker.geometry === 'corner'}
     class:shoot={marker.icon === 'shoot'}
     tabindex={resolved ? -1 : 0}
+    style:opacity
     style:width="{marker.size}px"
     style:height="{marker.size}px"
     style:left="{marker.x}px"

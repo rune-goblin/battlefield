@@ -3,8 +3,11 @@ import type { Grid, Point } from '../../engine/index.js';
 import type { TokenPlacement } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
 import { SHADOW_GROUP } from '../piece-shadow.js';
-import { Token, type TokenModel } from '../Token.js';
+import { actionIconUrl, type ActionIcon } from '../art.js';
+import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel, type UnitTokenModel } from '../Token.js';
 import type { TokenReaction } from '../vfx/Effect.js';
+
+const DRAG_PROP_RATIO = 0.95;
 
 /**
  * Token sprites, diffed by id against the previous `setTokens` call — modelled on
@@ -25,6 +28,10 @@ export class TokenLayer {
   private readonly cache = new Map<string, Token>();
   private draggingId: string | null = null;
   private ghost: PIXI.Sprite | null = null;
+  // A drag's verdict on the piece under it, drawn over the whole cell and above the carried
+  // token, which would otherwise cover the target's own prop.
+  private readonly dragProp = new PIXI.Sprite();
+  private dragPropIcon: ActionIcon | null = null;
 
   // Wave 5 needs every token ticked regardless of drag state: a move tween or a free-strike
   // flash can be running on some other token while one is being dragged.
@@ -43,6 +50,10 @@ export class TokenLayer {
     this.shadows.filterArea = screen;
     this.shadows.filters = [this.shadowBlur, new PIXI.AlphaFilter(SHADOW_GROUP.alpha)];
     this.container.addChild(this.shadows);
+    this.dragProp.anchor.set(0.5);
+    this.dragProp.zIndex = 2000;
+    this.dragProp.visible = false;
+    this.container.addChild(this.dragProp);
     this.ticker = ticker;
     this.theme = theme;
     this.ticker.add(this.tick);
@@ -67,8 +78,26 @@ export class TokenLayer {
    * is found before an engine left on the same ground. */
   placements(): TokenPlacement[] {
     return this.models
-      .map((m) => ({ id: m.id, cell: m.cell }))
+      .map((m): TokenPlacement => {
+        const token = this.cache.get(m.id);
+        const offset = this.size * TOKEN_FOOTPRINT_RATIO / 2 * .72;
+        return { id: m.id, cell: m.cell,
+          badge: m.kind === 'unit' && m.engineId && token ? {
+            id: m.engineId, x: token.x - offset * token.scale.x, y: token.y - offset * token.scale.y, size: this.size * .3 * Math.max(token.scale.x, token.scale.y),
+          } : undefined };
+      })
       .filter((p) => this.cache.has(p.id));
+  }
+
+  /** Where the piece is drawn this frame, mid-walk included. Null once the board has taken it off. */
+  positionOf(id: string): Point | null {
+    const token = this.cache.get(id);
+    return token ? { x: token.x, y: token.y } : null;
+  }
+
+  moving(): boolean {
+    for (const token of this.cache.values()) if (token.moving) return true;
+    return false;
   }
 
   /** `Interaction`'s board-internal token drag: `point` in board-local coordinates while
@@ -80,7 +109,7 @@ export class TokenLayer {
       this.clearGhost();
     }
     this.draggingId = live;
-    if (!live) return;
+    if (!live) { this.layoutDragProp(); return; }
     const token = this.cache.get(live);
     if (!token) return;
     if (token.isDragging) token.dragTo(point!);
@@ -135,8 +164,36 @@ export class TokenLayer {
         this.container.addChild(token);
         this.shadows.addChild(token.shadow);
       }
-      token.draw(model, this.grid!, this.size, this.theme);
+      token.draw(this.dragPropOn(model) ? { ...model, prop: null } : model, this.grid!, this.size, this.theme);
     }
+    this.layoutDragProp();
+  }
+
+  private dragPropOn(model: TokenModel): model is UnitTokenModel {
+    return model.kind !== 'engine' && this.draggingId !== null && model.id !== this.draggingId && (model.prop === 'attack' || model.prop === 'no');
+  }
+
+  private layoutDragProp(): void {
+    const model = this.models.find((m) => this.dragPropOn(m));
+    const token = model && this.cache.get(model.id);
+    if (!model || !token) {
+      this.dragProp.visible = false;
+      this.dragPropIcon = null;
+      return;
+    }
+    this.dragProp.position.set(token.x, token.y);
+    const icon = model.prop!;
+    if (icon === this.dragPropIcon) { this.dragProp.visible = true; return; }
+    this.dragPropIcon = icon;
+    this.dragProp.visible = false;
+    PIXI.Assets.load<PIXI.Texture>(actionIconUrl(icon))
+      .then((texture) => {
+        if (this.dragPropIcon !== icon) return;
+        this.dragProp.texture = texture;
+        this.dragProp.scale.set((this.size * DRAG_PROP_RATIO) / Math.max(texture.width, texture.height, 1));
+        this.dragProp.visible = true;
+      })
+      .catch(() => {});
   }
 
   /** Unhooks the ticker and drops every cached token before the generic `LayerManager`
