@@ -46,7 +46,7 @@ describe('wounds record survival without reducing performance', () => {
     u.engines.push({name:'Flame Bellows',kind:'artillery',launch:14,reach:'short',fired:false,emplaced:false,status:'crewed',square:u.square,side:u.side});
     const modifier = (wounds: number) => {
       u.wounds = wounds;
-      return act(select(b, u.id), {type,activity:1,target:wall}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;
+      return act(select(b, u.id), {type,unit:u.id,activity:1,target:wall}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;
     };
     expect(modifier(3)).toBe(modifier(0));
   });
@@ -60,8 +60,8 @@ describe('routes respect enemy control', () => {
     const offer = maneuverOffer(b, u.id)!;
     expect(offer.activities[0].targets.map(t => t.id)).not.toContain('d2');
     expect(offer.activities[1].targets.map(t => t.id)).toContain('d2');
-    expect(() => act(select(b, u.id), {type:'maneuver',activity:1,to:'d2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
-    const moved = act(select(b, u.id), {type:'maneuver',activity:2,to:'d2'},scriptedRng([10]));
+    expect(() => act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'d2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
+    const moved = act(select(b, u.id), {type:'maneuver',unit:u.id,activity:2,to:'d2'},scriptedRng([10]));
     expect(notation(moved.units[0].square)).toBe('d2');
     expect(moved.units[0].actions).toBe(1);
     at(b.board, parse('d2')).terrain = 'swamp';
@@ -76,8 +76,8 @@ describe('routes respect enemy control', () => {
     for (const key of ['c1', 'd1', 'd2', 'e2', 'f2', 'g1', 'e1']) at(b.board, parse(key)).terrain = 'open';
     expect(movePath(b, u, 'd1').map(p => p.cell)).toEqual(['c1', 'd1']);
     expect(moveReach(b, u).has('g1')).toBe(false);
-    expect(() => act(select(b, u.id), {type: 'move', to: 'g1'}, scriptedRng([10]))).toThrow(/cannot reach/);
-    const entered = act(select(b, u.id), {type: 'move', to: 'd1'}, scriptedRng([10]));
+    expect(() => act(select(b, u.id), {type: 'move', unit: u.id, to: 'g1'}, scriptedRng([10]))).toThrow(/cannot reach/);
+    const entered = act(select(b, u.id), {type: 'move', unit: u.id, to: 'd1'}, scriptedRng([10]));
     expect(engagedEnemies(entered, entered.units[0]).map(e => e.id)).toEqual([enemy.id]);
     expect(moveReach(entered, entered.units[0]).size).toBe(0);
   });
@@ -111,8 +111,8 @@ describe('routes respect enemy control', () => {
     for (const key of ['c2', 'd2', 'e2', 'f2', 'g2', 'c3', 'f3']) at(b.board, parse(key)).terrain = 'open';
     const targets = maneuverTargets(b, u, u.speed).map(notation);
     expect(targets).toContain('f2'); expect(targets).not.toContain('g2');
-    expect(() => act(select(b, u.id), {type:'maneuver',activity:1,to:'g2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
-    const escaped = act(select(b, u.id), {type:'maneuver',activity:1,to:'f2'},scriptedRng([20]));
+    expect(() => act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'g2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
+    const escaped = act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'f2'},scriptedRng([20]));
     expect(notation(escaped.units[0].square)).toBe('f2');
     expect(escaped.log.some(entry => entry.check && entry.text.includes('breaks off'))).toBe(true);
     expect(engagedEnemies(escaped, escaped.units[0]).map(e => e.id)).toEqual([blocker.id]);

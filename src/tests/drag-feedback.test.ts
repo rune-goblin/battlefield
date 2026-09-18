@@ -21,12 +21,12 @@ describe('drag refusal feedback', () => {
     u.actions = 1;
     expect(dragBlockReason(b, u, 'e7')).toContain('exceeds that budget');
     u.actions = 3;
-    const moved = act(select(b, u.id), { type: 'move', to: 'e5' }, scriptedRng([10]));
+    const moved = act(select(b, u.id), { type: 'move', unit: u.id, to: 'e5' }, scriptedRng([10]));
     const mover = moved.units[0];
     expect(mover.actions).toBe(1);
     expect(dragBlockReason(moved, mover, 'e7')).toBeNull();
     expect(activation(moved, mover.id)!.charges.some(c => c.unit === b.units[1].id)).toBe(true);
-    expect(() => act(moved, { type: 'charge', target: b.units[1].id }, scriptedRng([10, 10]))).not.toThrow();
+    expect(() => act(moved, { type: 'charge', unit: mover.id, target: b.units[1].id }, scriptedRng([10, 10]))).not.toThrow();
   });
 
   it('allows a one-action fight in contact and explains a spent attack separately from actions', () => {

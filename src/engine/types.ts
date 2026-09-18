@@ -109,8 +109,8 @@ export interface Unit {
   flies: boolean;
 }
 
-/** Which unit acts. Defaults to `activeUnit(state)`. */
-interface Acts { unit?: string }
+/** Which unit acts. */
+interface Acts { unit: string }
 
 export interface ActivityAction extends Acts {
   type: Verb;

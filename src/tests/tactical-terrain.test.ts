@@ -84,7 +84,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
   it.each([['e6',-2],['f6',0],['g6',-2]] as const)('resolves medium shots at %s with a %i range modifier', (cell, penalty)=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.stats.reach='medium';foe.square=parse(cell);
-    const result=act(b,{type:'shoot',activity:1,target:foe.id},scriptedRng([10]));
+    const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
     const check=result.log.find(e=>e.text.includes('fires at'))!.check!;
     expect(check.modifier).toBe(u.stats.volley!+penalty);
   });
@@ -94,7 +94,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     for (const cell of ['e6','i6']) {
       foe.square=parse(cell);
       expect(targets(b,'shoot')).toEqual([]);
-      expect(()=>act(b,{type:'shoot',activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow(/no target/);
+      expect(()=>act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow(/no target/);
     }
   });
   it('applies the same minimum range and flex penalty to wall bombardment',()=>{
@@ -104,13 +104,13 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     expect(targets(b,'shoot')).not.toContain(wall);
     u.engines[0].reach='long';
     expect(targets(b,'shoot')).toContain(wall);
-    const result=act(b,{type:'shoot',activity:1,target:wall},scriptedRng([10]));
+    const result=act(b,{type:'shoot',unit:u.id,activity:1,target:wall},scriptedRng([10]));
     expect(result.log.find(e=>e.text.includes('bombards')&&e.check)!.check!.modifier).toBe(9);
   });
   it.each([['f6',-2],['g6',0],['h6',0],['i6',0],['j6',-2]] as const)('resolves extreme shots at %s with modifier %i', (cell, penalty)=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.square=parse('b6');u.stats.reach='extreme';foe.square=parse(cell);
-    const result=act(b,{type:'shoot',activity:1,target:foe.id},scriptedRng([10]));
+    const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
     expect(result.log.find(e=>e.text.includes('fires at'))!.check!.modifier).toBe(u.stats.volley!+penalty);
   });
   it('allows a short weapon across an adjacent wall at −2, but rejects a medium weapon',()=>{
@@ -132,7 +132,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     expect(hasSight(b.board,foe.square,u.square)).toBe(false);
     expect(targets(b,'shoot')).toEqual([]);
     for(const index of [1,2,3])expect(targets(b,'cast',index)).toEqual([]);
-    expect(()=>act(b,{type:'cast',spell:'blast',activity:1,target:foe.id},scriptedRng([20]))).toThrow(/no target/);
+    expect(()=>act(b,{type:'cast',unit:u.id,spell:'blast',activity:1,target:foe.id},scriptedRng([20]))).toThrow(/no target/);
     foe.square=parse('e6');u.stats.reach='medium';
     expect(targets(b,'shoot')).toContain(foe.id);expect(targets(b,'cast')).toContain(foe.id);
     expect(defenceOf(b,foe,u,true)).toBe(foe.stats.defence+1);
@@ -149,7 +149,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     expect(defenceOf(b,foe,u,false)).toBe(foe.stats.defence);
     at(b.board,u.square).elevation=1;
     expect(shootModifier(b,u,foe)).toBe(u.stats.volley!+1);
-    const result=act(b,{type:'cast',spell:'blast',activity:1,target:foe.id},scriptedRng([10]));
+    const result=act(b,{type:'cast',unit:u.id,spell:'blast',activity:1,target:foe.id},scriptedRng([10]));
     const check=result.log.find(e=>e.text.includes('Missile catches'))!.check!;
     expect(check.dc).toBe(foe.stats.defence+1);expect(check.modifier).toBe(u.stats.spellAttack!+1);
     foe.guard={defence:2,cap:false,holds:false};
@@ -171,7 +171,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     at(b.board,u.square).elevation=2;
     expect(targets(b,'shoot')).toContain(foe.id);
     at(b.board,parse('f6')).terrain='forest';
-    const result=act(b,{type:'shoot',activity:1,target:foe.id},scriptedRng([10]));
+    const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
     const check=result.log.find(e=>e.text.includes('fires at'))!.check!;
     expect(check.modifier).toBe(11);expect(check.dc).toBe(foe.stats.defence+1);
     at(b.board,parse('f6')).elevation=2;

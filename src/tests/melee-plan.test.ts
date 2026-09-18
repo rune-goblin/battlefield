@@ -25,9 +25,9 @@ describe('complete melee routes', () => {
   it.each(['fight', 'charge'] as const)('resolves move + %s exactly like the separate legal actions', kind => {
     const b = battle(); const [u, target] = b.units;
     const plan = meleePlans(b, u, target.id).find(p => p.kind === kind)!;
-    const combined = act(b, { type: 'advance', target: target.id, via: plan.via!, finish: kind }, scriptedRng([15, 15]));
-    const moved = act(b, { type: 'move', to: plan.via! }, scriptedRng([]));
-    const separate = act(moved, { type: kind, target: target.id, activity: 1 }, scriptedRng([15, 15]));
+    const combined = act(b, { type: 'advance', unit: u.id, target: target.id, via: plan.via!, finish: kind }, scriptedRng([15, 15]));
+    const moved = act(b, { type: 'move', unit: u.id, to: plan.via! }, scriptedRng([]));
+    const separate = act(moved, { type: kind, unit: u.id, target: target.id, activity: 1 }, scriptedRng([15, 15]));
     expect(combined).toEqual(separate);
     expect(notation(b.units[0].square)).toBe('e2');
   });
@@ -36,7 +36,7 @@ describe('complete melee routes', () => {
     const b = battle(); const [u, target] = b.units;
     const plan = meleePlans(b, u, target.id).find(p => p.kind === 'fight')!;
     const before = JSON.stringify(b);
-    expect(() => act(b, { type: 'advance', target: target.id, via: plan.via!, finish: 'fight', activity: 2 }, { d20() { throw new Error('dice drawn'); } }))
+    expect(() => act(b, { type: 'advance', unit: u.id, target: target.id, via: plan.via!, finish: 'fight', activity: 2 }, { d20() { throw new Error('dice drawn'); } }))
       .toThrow('exceed the available actions');
     expect(JSON.stringify(b)).toBe(before);
   });
@@ -59,7 +59,7 @@ describe('complete melee routes', () => {
     b.begun = true; u.actions = 1; u.feet = 20; target.square = parse('e6');
     const plan = meleePlans(b, u, target.id).find(p => p.kind === 'charge')!;
     expect(plan.moveActions).toBe(0);
-    expect(() => act(b, { type: 'advance', target: target.id, via: plan.via!, finish: 'charge' }, scriptedRng([15, 15]))).not.toThrow();
+    expect(() => act(b, { type: 'advance', unit: u.id, target: target.id, via: plan.via!, finish: 'charge' }, scriptedRng([15, 15]))).not.toThrow();
     u.feet = 0;
     at(b.board, parse('e3')).terrain = 'swamp';
     expect(meleePlans(b, u, target.id)).toEqual([]);

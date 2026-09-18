@@ -34,7 +34,7 @@ function battle(rolls: number[], board = openBoard()) {
 const place = (state: BattleState, id: string, sq: string) => { unit(state, id).square = parse(sq); };
 // Emplacement status follows position, and nothing but an action recomputes it — a test that
 // moves a unit by hand has to run one to see the consequence.
-const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', activity: 1 }, scriptedRng([10])), scriptedRng([10]));
+const refresh = (state: BattleState) => endActivation(act(state, { type: 'guard', activity: 1, unit: activeUnit(state)!.id }, scriptedRng([10])), scriptedRng([10]));
 /** Burn every unit's activation so `endRound` runs, which is where an engine changes hands. */
 const runRound = (state: BattleState) => {
   let s = state;

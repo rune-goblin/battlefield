@@ -625,13 +625,13 @@
     pending = null;
     armed = null;
     const row = p?.rows[p.index];
-    if (!p || !row) return;
+    if (!p || !row || !active) return;
     // The piece walks the route the drag traced, not the straight line to where it ends.
-    if (active) boardRef?.setRoute(active.id, row.path);
+    boardRef?.setRoute(active.id, row.path);
     try {
-      if (row.kind === 'advance') takeAction({ type: 'advance', target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus });
-      else if (row.kind === 'charge') takeAction({ type: 'charge', target: row.enemy, activity: p.activity ?? undefined, focus });
-      else if (row.kind === 'move') takeAction({ type: 'move', to: row.cell });
+      if (row.kind === 'advance') takeAction({ type: 'advance', unit: active.id, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus });
+      else if (row.kind === 'charge') takeAction({ type: 'charge', unit: active.id, target: row.enemy, activity: p.activity ?? undefined, focus });
+      else if (row.kind === 'move') takeAction({ type: 'move', unit: active.id, to: row.cell });
       else if (act?.maneuver) performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
       meleeTarget = null; meleeSelected = null;
     } catch (error) {
@@ -943,8 +943,9 @@
   }
 
   function performManeuver(activity: ActivityIndex, to?: string) {
+    if (!active) return;
     const before = game.battle!.log.length;
-    takeAction({ type: 'maneuver', activity, to });
+    takeAction({ type: 'maneuver', unit: active.id, activity, to });
     for (const e of game.battle!.log.slice(before)) if (e.unit && FREE_STRIKE_RE.test(e.text)) flash(e.unit);
   }
 

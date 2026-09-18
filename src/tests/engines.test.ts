@@ -41,7 +41,7 @@ describe('siege engines', () => {
     expect(shoot.activities.map((r) => r.cost)).toEqual([1, 2, 3]);
     expect(shoot.activities[2].targets.map((t) => t.id)).toEqual(['u1']);
     expect(shoot.activities[0].targets.map((t) => t.id)).toEqual(['u1']);
-    const s1 = act(s0, { type: 'shoot', activity: 3, target: 'u1' }, scriptedRng([10]));
+    const s1 = act(s0, { type: 'shoot', unit: 'u0', activity: 3, target: 'u1' }, scriptedRng([10]));
     expect(unit(s1, 'u1').wounds).toBe(1);
     expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(engine('Catapult').launch);
     expect(unit(s1, 'u0').engines[0].fired).toBe(true);
@@ -61,7 +61,7 @@ describe('siege engines', () => {
     unit(s0, 'u0').square = parse('c6');
     const key = edgeKey(parse('c6'), parse('c7'));
     expect(offer(s0, 'fight').activities[0].targets.map((t) => t.id)).toContain(key);
-    const s1 = act(s0, { type: 'fight', activity: 1, target: key }, scriptedRng([10]));
+    const s1 = act(s0, { type: 'fight', unit: 'u0', activity: 1, target: key }, scriptedRng([10]));
     expect(s1.log.find((e) => e.check)!.check!.modifier).toBe(unit(s0, 'u0').stats.strike! + 2);
     expect(s1.board.walls[key].remaining).toBe(2);
   });
@@ -70,7 +70,7 @@ describe('siege engines', () => {
     const s0 = battle(['Catapult'], 1);
     const key = edgeKey(parse('c6'), parse('c7'));
     expect(offer(s0, 'shoot').activities[2].targets.map((t) => t.id)).toContain(key);
-    const s1 = act(s0, { type: 'shoot', activity: 3, target: key }, scriptedRng([20]));
+    const s1 = act(s0, { type: 'shoot', unit: 'u0', activity: 3, target: key }, scriptedRng([20]));
     expect(s1.board.walls[key].remaining).toBe(0);
   });
 

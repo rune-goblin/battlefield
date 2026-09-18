@@ -1857,12 +1857,12 @@ function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction)
   const plan = meleePlans(state, u, action.target).find(p => p.kind === action.finish && p.via === action.via);
   if (!plan || !plan.via) throw new Error('This move-and-attack route is no longer available. Choose the target again.');
   const activity = action.activity ?? 1;
-  const attack: ChargeAction | ActivityAction = { type: action.finish, target: action.target, activity, focus: action.focus };
+  const attack: ChargeAction | ActivityAction = { type: action.finish, unit: u.id, target: action.target, activity, focus: action.focus };
   const focus = validateFocus(attack);
   if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
     throw new Error('The move and chosen attack exceed the available actions.');
   }
-  const movement = doStride(state, u, { type: 'move', to: plan.via });
+  const movement = doStride(state, u, { type: 'move', unit: u.id, to: plan.via });
   // Reserve the movement cost before validating the melee. The caller subtracts the total
   // once and ends the activation once; an exception discards this entire cloned state.
   u.actions -= movement;
@@ -1874,8 +1874,7 @@ function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction)
 export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const state = clone(input);
   if (state.phase !== 'battle') throw new Error('battle is over');
-  const u = action.unit ? unit(state, action.unit) : activeUnit(state);
-  if (!u) throw new Error('no unit can act');
+  const u = unit(state, action.unit);
   if (u.side !== state.pending || state.activated.includes(u.id) || u.status !== 'active') {
     throw new Error(`${u.name} cannot activate now`);
   }
