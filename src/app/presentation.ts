@@ -2,6 +2,9 @@ import { notation, type BattleState, type Tree, type Verb } from '../engine/inde
 import type { TargetArrow, TargetIcon } from '../board/index.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
+import { unitOf } from './battle-lookup.js';
+import type { NotificationService } from './notifications.js';
+import { noticesFor, type NoticeViewer } from './session-notices.js';
 import type { TargetMarker } from './targeting.js';
 
 /** What one commit shows on the board: the roads walked, the pieces that struck free, the
@@ -21,8 +24,6 @@ export interface PresentationSink {
   /** The afterglow of a resolved action: marks where it landed and arrows to each. */
   resolved(markers: TargetMarker[], arrows: TargetArrow[]): void;
 }
-
-const unitOf = (battle: BattleState, id: string) => battle.units.find((u) => u.id === id) ?? null;
 
 function cellOf(battle: BattleState, id: string): string | null {
   const u = unitOf(battle, id);
@@ -112,14 +113,22 @@ export interface Presentation {
   observe(session: BattleSession): void;
   /** The board view takes the play while it is on screen. */
   connect(sink: PresentationSink): () => void;
+  /** The notification host takes the session notices while the app is mounted. */
+  connectNotices(notifications: NotificationService, viewer: NoticeViewer): () => void;
 }
 
 export function createPresentation(seed: BattleSession): Presentation {
   let last: BattleSession = seed;
   let sink: PresentationSink | null = null;
+  let notices: { service: NotificationService; viewer: NoticeViewer } | null = null;
   return {
     observe(session) {
       const play = commitPlay(last, session);
+      if (notices) {
+        const { show, dismiss } = noticesFor(last, session, notices.viewer);
+        for (const message of show) notices.service.show(message);
+        for (const id of dismiss) notices.service.dismiss(id);
+      }
       last = session;
       if (!play || !sink) return;
       for (const route of play.routes) sink.route(route.unit, route.cells);
@@ -130,6 +139,11 @@ export function createPresentation(seed: BattleSession): Presentation {
     connect(next) {
       sink = next;
       return () => { if (sink === next) sink = null; };
+    },
+    connectNotices(service, viewer) {
+      const entry = { service, viewer };
+      notices = entry;
+      return () => { if (notices === entry) notices = null; };
     },
   };
 }

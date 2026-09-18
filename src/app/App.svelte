@@ -6,13 +6,14 @@
   import Place from './Place.svelte';
   import Battle from './Battle.svelte';
   import VfxGallery from './VfxGallery.svelte';
-  import { game } from './game.svelte.js';
+  import { game, gmUserId, presentation, viewerId } from './game.svelte.js';
   import { nav, STAGE_SIDE } from './navigation.svelte.js';
   import { provideNotifications } from './notification-context.js';
   import Notifications from './Notifications.svelte';
   import { setAppRoot } from './app-root.js';
 
-  provideNotifications();
+  const notifications = provideNotifications();
+  presentation.connectNotices(notifications, { userId: viewerId, get isGm() { return gmUserId() === viewerId; } });
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be
   // tuned and screenshotted without playing a battle up to a cast.

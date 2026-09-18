@@ -195,17 +195,22 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     return { ...next, turn: holder, control };
   }
 
-  function commit(next: BattleSession, commandId: string, events: BattleEventBody[], faces: number[]): BattleSession {
+  function commit(
+    next: BattleSession, commandId: string, events: BattleEventBody[], faces: number[], userId: string,
+  ): BattleSession {
     return {
       ...next,
       revision: next.revision + 1,
-      lastCommit: { commandId, events: stampEvents(commandId, events), dice: faces },
+      lastCommit: { commandId, events: stampEvents(commandId, events), dice: faces, userId },
       recentCommandIds: [...next.recentCommandIds, commandId].slice(-RECENT_COMMAND_IDS),
     };
   }
 
   /** Resolve, save, then publish. `record` runs once the write is durable. */
-  async function persist(commandId: string, { edit, record = () => {}, describe = () => [], seat = true }: Persistence): Promise<CommandResult> {
+  async function persist(
+    commandId: string, userId: string,
+    { edit, record = () => {}, describe = () => [], seat = true }: Persistence,
+  ): Promise<CommandResult> {
     const previous = session;
     let next: BattleSession;
     // Faces a rejected edit drew belong to no commit; drop them before this one rolls.
@@ -215,7 +220,7 @@ export function createExecutor({ repository, archive, dice, presence, session: i
       // old one was waiting on: one record never carries an answer to a question that is gone.
       const edited = clearObsolete(edit(previous));
       const events = describe(previous, edited);
-      next = commit(seat ? seatTurn(previous, edited) : edited, commandId, events, dice.take());
+      next = commit(seat ? seatTurn(previous, edited) : edited, commandId, events, dice.take(), userId);
     } catch (error) {
       return reject(commandId, 'engine', failure(error));
     }
@@ -253,10 +258,10 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     }
     const refusal = refuseCommand(session, command, userId, presence);
     if (refusal) return Promise.resolve(reject(commandId, 'permission', refusal));
-    if (command.type === 'session.undo') return rewind(commandId);
-    if (command.type === 'session.load') return loadSession(commandId, command.slot);
+    if (command.type === 'session.undo') return rewind(commandId, userId);
+    if (command.type === 'session.load') return loadSession(commandId, command.slot, userId);
 
-    return persist(commandId, {
+    return persist(commandId, userId, {
       edit: (current) => {
         const next = applyCommand(current, command, services, presence, userId);
         // A board or a force that changed after an army called itself ready needs that word
@@ -278,10 +283,10 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     });
   }
 
-  function rewind(commandId: string): Promise<CommandResult> {
+  function rewind(commandId: string, userId: string): Promise<CommandResult> {
     const previous = history.at(-1);
     if (!previous) return Promise.resolve(reject(commandId, 'stage', 'nothing to undo'));
-    return persist(commandId, {
+    return persist(commandId, userId, {
       edit: (current) => ({
         ...current,
         ...(previous.kind === 'battle' ? { battle: previous.battle } : { setup: previous.setup }),
@@ -296,14 +301,14 @@ export function createExecutor({ repository, archive, dice, presence, session: i
   /** Replace the record with a saved one. `migrateSession` runs inside the edit so a foreign
    * or corrupt slot rejects as an ordinary `engine` failure, through the same commit path
    * every other command takes — the authority still persists before it acknowledges. */
-  async function loadSession(commandId: string, slot: string): Promise<CommandResult> {
+  async function loadSession(commandId: string, slot: string, userId: string): Promise<CommandResult> {
     let raw: unknown;
     try {
       raw = await archive.load(slot);
     } catch (error) {
       return reject(commandId, 'storage', failure(error));
     }
-    return persist(commandId, {
+    return persist(commandId, userId, {
       edit: (current) => {
         const migrated = migrateSession(raw);
         if (!migrated) throw new Error(`${slot} is not a battlefield save`);

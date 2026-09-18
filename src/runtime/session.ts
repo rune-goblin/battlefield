@@ -28,8 +28,9 @@ export interface BattleSetupDraft {
 }
 
 /** What the last commit did and what it drew. `dice` holds the faces of the transition in
- * order, so a chat card is rebuilt from the same numbers the rules read. */
-export interface CommitRecord { commandId: string; events: BattleEvent[]; dice: number[] }
+ * order, so a chat card is rebuilt from the same numbers the rules read. `userId` is who sent
+ * it, so a viewer's own commit can be told apart from another user's for the activity notice. */
+export interface CommitRecord { commandId: string; events: BattleEvent[]; dice: number[]; userId: string }
 
 export interface BattleSession {
   schemaVersion: number;
@@ -181,7 +182,8 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && (s.turn === null || typeof s.turn === 'string')
     && (s.lastCommit === null
       || (!!s.lastCommit && typeof s.lastCommit.commandId === 'string'
-        && Array.isArray(s.lastCommit.events) && Array.isArray(s.lastCommit.dice)))
+        && Array.isArray(s.lastCommit.events) && Array.isArray(s.lastCommit.dice)
+        && typeof s.lastCommit.userId === 'string'))
     && Array.isArray(s.recentCommandIds);
 }
 
@@ -246,6 +248,9 @@ export function reviveSession(value: unknown): BattleSession | null {
   if (s.lastCommit) {
     s.lastCommit.events ??= [];
     s.lastCommit.dice ??= [];
+    // A commit written before Wave 3.6 named no sender; treat it as nobody's, so it reads as
+    // another user's for the activity notice rather than silently matching every viewer.
+    s.lastCommit.userId ??= '';
   }
   s.recentCommandIds ??= [];
   return isBattleSession(s) ? s : null;

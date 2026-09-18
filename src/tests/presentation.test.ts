@@ -18,7 +18,7 @@ const battleState = (): BattleState => createBattle({
 
 const base = freshSession();
 const record = (revision: number, battle: BattleState, events: BattleEvent[] = []): BattleSession =>
-  ({ ...base, stage: 'battle', battle, revision, lastCommit: { commandId: 'cmd-0', events, dice: [] } });
+  ({ ...base, stage: 'battle', battle, revision, lastCommit: { commandId: 'cmd-0', events, dice: [], userId: 'gm' } });
 
 const walked: BattleEvent[] = [
   { id: 'cmd-0:0', type: 'unitMoved', unit: 'u0', from: 'c2', to: 'c4', route: ['c2', 'c3', 'c4'] },
