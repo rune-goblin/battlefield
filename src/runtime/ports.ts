@@ -1,5 +1,5 @@
 import type { CommandEnvelope, CommandResult } from './commands.js';
-import type { BattleSession } from './session.js';
+import type { BattleSession, LifecycleStage } from './session.js';
 
 /** The one durable copy of the record. `load` always resolves: an unreadable or foreign save
  * yields a fresh session. `save` rejects when the write fails, so the executor can hold the
@@ -29,6 +29,27 @@ export interface BattleArchive {
   remove(slot: string): Promise<void>;
   export(slot: string): Promise<string>;
   import(data: string): Promise<ArchiveEntry>;
+}
+
+/** A battle standing on campaign ground, without the record itself. */
+export interface SiteEntry {
+  site: string;
+  battleId: string;
+  savedAt: number;
+  stage: LifecycleStage;
+  day: number | null;
+  round: number | null;
+}
+
+/** The battles a campaign has placed and the table has left, one to a site. The active battle
+ * lives in the `SessionRepository`; `session.moveTo` parks it here as it opens another, so a
+ * table holds many battles and plays one. `load` hands back whatever schema the record was
+ * parked in, as `BattleArchive.load` does. */
+export interface BattleSites {
+  list(): Promise<SiteEntry[]>;
+  park(session: BattleSession): Promise<void>;
+  load(site: string): Promise<unknown | null>;
+  remove(site: string): Promise<void>;
 }
 
 /** The authority's dice. The shape is the engine's `Rng`, so a service hands it straight to a

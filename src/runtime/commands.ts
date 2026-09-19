@@ -1,5 +1,5 @@
 import type { Action, BoardSpec, DayOrder, RecoveryChoice, Side, SquareTerrain, UnitCard } from '../engine/index.js';
-import type { BattleRequest } from './campaign.js';
+import type { BattleRequest, SiteOpening } from './campaign.js';
 import type { ControlAssignment } from './control.js';
 import type { WritebackVia } from './session.js';
 
@@ -80,7 +80,11 @@ export type BattleCommand =
   /** Replace the record with a battle a campaign asked for. The battle ID rides along, so the
    * caller records it whatever the authority answers and a resent command installs the same
    * battle rather than a second one. */
-  | { type: 'session.install'; battleId: string; request: BattleRequest };
+  | { type: 'session.install'; battleId: string; request: BattleRequest }
+  /** Open the battle standing at a site, parking the one the table holds at its own. A site
+   * with no battle opens on `opening` under `battleId`. One command, so no client ever sees
+   * the table between battles. */
+  | { type: 'session.moveTo'; site: string; battleId: string; opening: SiteOpening };
 
 export type CommandType = BattleCommand['type'];
 
@@ -130,6 +134,7 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'session.undo': 'any',
   'session.load': 'any',
   'session.install': 'any',
+  'session.moveTo': 'any',
 };
 
 export interface CommandEnvelope {

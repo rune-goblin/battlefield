@@ -79,8 +79,9 @@ export function createBattleManager(): BattleManager {
     // so the next one cannot resume into another battle's operation.
     returnToSetup: (session) => ({ ...session, ...cleared(), stage: 'setup', battle: null, writeback: null }),
 
+    // The example force is no campaign's battle, so it leaves the site it was reset on.
     reset: (session) => ({
-      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(), battle: null, writeback: null,
+      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(), battle: null, writeback: null, site: null,
     }),
 
     startNextDay: (session) => {

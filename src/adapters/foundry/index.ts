@@ -21,6 +21,7 @@ import { registerTroopSources } from '../../app/troop-library.svelte.js';
 import { announceThroughHost, createTurnAnnouncer } from './turnNotice.js';
 import { createFoundryArchive } from './worldArchive.js';
 import { createTableCall, domReopenChip } from './tableCall.js';
+import { createFoundrySites } from './worldSites.js';
 import { createFoundrySessionRepository } from './worldSessionRepository.js';
 import { gameSettingStorage, registerFoundrySettings, SESSION_SETTING, TABLE_CALL_SETTING } from './worldSettings.js';
 import './foundry.css';
@@ -46,10 +47,13 @@ BattlefieldApp.table = tableCall;
 
 Hooks.once('init', () => {
   blockPageZoom();
+  const sites = createFoundrySites();
   const module = game.modules.get(MODULE_ID);
   if (module) {
     module.api = createModuleApi({
       submit: () => { const client = host; return client ? (command) => client.submit(command) : null; },
+      session: () => sessionWatcher.session,
+      sites,
       open: () => BattlefieldApp.open(),
       close: () => BattlefieldApp.close(),
       callTable: async () => { await BattlefieldApp.open(); await tableCall.call(); },
@@ -67,6 +71,7 @@ Hooks.once('init', () => {
     channel,
     repository: createFoundrySessionRepository(),
     archive,
+    sites,
     records: (listener) => sessionWatcher.subscribe(listener),
     dice: foundryDice(),
     chat: foundryChatPoster(),

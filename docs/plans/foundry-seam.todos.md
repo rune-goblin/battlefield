@@ -25,6 +25,9 @@ A Playwright run against a real Foundry world with a GM client and one player cl
 - Start the battle. The player's window opens once and the round chip sits in
   `#ui-right-column-1`. The player shuts the window and the chip stays.
 - The GM presses End battle, answers the save prompt, and the player's window and chip go.
+- On the kingdom map, pick a hex with armies, then a second hex, then the first again. The
+  first battle comes back as it stood, the `sites` setting holds the other, and the player
+  client follows each switch without a reload.
 - Assert layout, since leaked host CSS was the largest bug: the wizard rail's step buttons hold
   a label and a hint without overlap, a reel card shows its art, and `getComputedStyle` of a
   button under `.battlefield-root` reports no fixed `height`.
@@ -65,6 +68,16 @@ generate the shim's export list from the board's imports.
   GM client or from before a reload prompts again.
 - The header-controls menu is built once per frame render, so Call and Dismiss both always
   show. Move both into the app's own top bar, beside End battle.
+
+## 5. Battle sites, from the 2026-09-20 multi-battle change
+
+- Battles show on the kingdom map during the pick alone, as hover text. A standing marker on
+  every battle hex needs a ReignMaker API (`setBattleMarkers(hexIds)` or an overlay); its
+  `existingHexes` option pre-selects hexes and cannot serve.
+- No UI removes a planned battle. `api.removeBattle(site)` exists for a macro; a list of
+  battles in the app's top bar could offer Open and Remove.
+- The `sites` setting holds every parked record in one string and has no cap.
+- Never run in a live Foundry world.
 
 ## Not verified live, from the 2026-09-20 changes
 

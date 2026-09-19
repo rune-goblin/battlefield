@@ -53,6 +53,7 @@ export const COMMAND_SCOPE: Record<CommandType, CommandScope> = {
   'session.undo': 'gm',
   'session.load': 'gm',
   'session.install': 'gm',
+  'session.moveTo': 'gm',
 };
 
 const pieceSide = (session: BattleSession, piece: PieceRef): Side | null => (piece.kind === 'unit'

@@ -5,6 +5,7 @@ import { MODULE_ID } from './module-id.js';
 export const SESSION_SETTING = 'session';
 export const ARCHIVE_SETTING = 'archive';
 export const TABLE_CALL_SETTING = 'tableCall';
+export const SITES_SETTING = 'sites';
 
 /** One world setting, read and written as a JSON string. Naming the shape keeps the
  * repository and the archive testable against a fake, the way the browser adapters test
@@ -36,6 +37,9 @@ export function registerFoundrySettings(
   });
   game.settings.register(MODULE_ID, ARCHIVE_SETTING, {
     scope: 'world', config: false, type: String, default: '[]',
+  });
+  game.settings.register(MODULE_ID, SITES_SETTING, {
+    scope: 'world', config: false, type: String, default: '{}',
   });
   game.settings.register(MODULE_ID, TABLE_CALL_SETTING, {
     scope: 'world', config: false, type: String, default: '',

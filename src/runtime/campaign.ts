@@ -49,6 +49,10 @@ export interface BattleRequest {
   gmSide?: GmSide;
 }
 
+/** What opens a site no battle stands on yet: the armies found there, or the bare ground for
+ * the GM to fill in the builder. */
+export type SiteOpening = { request: BattleRequest } | { board: BoardSpec };
+
 export type CreateBattleRefusal = RejectionReason | 'invalid';
 
 export type CreateBattleResult =
@@ -202,6 +206,23 @@ export function sessionFromRequest(request: BattleRequest, battleId = newBattleI
   };
 }
 
+/** A site's first record. A request arrives as `sessionFromRequest` builds it; bare ground
+ * arrives as an empty draft on a board drawn from the spec. */
+export function sessionAtSite(site: string, opening: SiteOpening, battleId = newBattleId()): BattleSession {
+  if (!named(site)) throw new Error('the site has no name');
+  if (!opening || typeof opening !== 'object') throw new Error('the site has nothing to open on');
+  if ('request' in opening) return { ...sessionFromRequest(opening.request, battleId), site };
+  const problems = boardProblems(opening.board);
+  if (problems.length) throw new Error(problems.join('; '));
+  const spec = structuredClone(opening.board);
+  return {
+    ...freshSession(battleId),
+    site,
+    control: freshControl('defender'),
+    setup: { spec, board: generateBoard(spec), units: [], emplacements: [] },
+  };
+}
+
 /** Bindings follow their units: one removed from the draft, or a draft thrown away, takes its
  * binding with it, so nothing is written back for a unit that never fought. */
 export function pruneSources(session: BattleSession): BattleSession {
@@ -228,5 +249,22 @@ export async function createBattleThrough(
   const result = await submit({ type: 'session.install', battleId, request });
   return result.ok
     ? { ok: true, battleId, revision: result.revision }
+    : { ok: false, reason: result.reason, message: result.message, problems: [] };
+}
+
+export type MoveToSiteResult =
+  | { ok: true; revision: number }
+  | Extract<CreateBattleResult, { ok: false }>;
+
+/** Open the battle at a site, parking the one the table holds. The opening is used only when
+ * no battle stands there yet. */
+export async function moveToSiteThrough(
+  submit: (command: BattleCommand) => Promise<CommandResult>, site: string, opening: SiteOpening,
+): Promise<MoveToSiteResult> {
+  const problems = 'request' in opening ? battleRequestProblems(opening.request) : boardProblems(opening.board);
+  if (problems.length) return { ok: false, reason: 'invalid', message: problems.join('; '), problems };
+  const result = await submit({ type: 'session.moveTo', site, battleId: newBattleId(), opening });
+  return result.ok
+    ? { ok: true, revision: result.revision }
     : { ok: false, reason: result.reason, message: result.message, problems: [] };
 }

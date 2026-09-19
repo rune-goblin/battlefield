@@ -1,7 +1,7 @@
 import { newCommandId, type BattleCommand, type CommandResult, type RejectionReason } from '../../runtime/commands.js';
 import { reseatAssignment } from '../../runtime/control.js';
 import { createRuntime, type Runtime } from '../../runtime/createRuntime.js';
-import type { BattleArchive, DicePort, SessionRepository } from '../../runtime/ports.js';
+import type { BattleArchive, BattleSites, DicePort, SessionRepository } from '../../runtime/ports.js';
 import type { BattleSession } from '../../runtime/session.js';
 import type { ActorWritebackPort, CampaignOutcomePort } from '../../services/OutcomeApplicationService.js';
 import { foundryCampaignPort, foundryTroopWriteback } from './campaign.js';
@@ -27,6 +27,7 @@ export interface BattlefieldHostOptions {
   channel: SocketChannel;
   repository: SessionRepository;
   archive: BattleArchive;
+  sites?: BattleSites;
   records: RecordFeed;
   dice?: DicePort;
   /** Where a resolved check's chat card goes. Defaults to the real `ChatMessage.create`
@@ -79,7 +80,7 @@ const closedGate = (): Gate => {
  * handoff, which is what pauses commands while the new primary loads the committed record.
  */
 export function createBattlefieldHost({
-  users, channel, repository, archive, records, dice, chat = foundryChatPoster(),
+  users, channel, repository, archive, sites, records, dice, chat = foundryChatPoster(),
   campaign = foundryCampaignPort(), actors = foundryTroopWriteback(), onAuthority,
 }: BattlefieldHostOptions): BattlefieldHost {
   let runtime: Runtime | null = null;
@@ -123,6 +124,7 @@ export function createBattlefieldHost({
     const rt = createRuntime({
       repository: primaryGmRepository(repository, users),
       archive,
+      sites,
       session,
       dice,
       policy: { userId: users.currentUserId(), presence },

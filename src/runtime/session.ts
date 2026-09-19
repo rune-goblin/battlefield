@@ -103,6 +103,9 @@ export interface BattleSession {
   schemaVersion: number;
   rulesVersion: string;
   battleId: string;
+  /** The campaign's name for the ground this battle stands on — a kingdom-map hex under
+   * ReignMaker. Null for a battle no campaign placed. */
+  site: string | null;
   revision: number;
   stage: LifecycleStage;
   setup: BattleSetupDraft;
@@ -164,6 +167,7 @@ export function freshSession(battleId = newBattleId()): BattleSession {
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
     battleId,
+    site: null,
     revision: 0,
     stage: 'setup',
     setup: defaultSetup(),
@@ -268,6 +272,7 @@ export function isBattleSession(value: unknown): value is BattleSession {
     && s.schemaVersion === SCHEMA_VERSION
     && typeof s.rulesVersion === 'string'
     && typeof s.battleId === 'string' && s.battleId.length > 0
+    && (s.site === null || typeof s.site === 'string')
     && Number.isInteger(s.revision) && s.revision >= 0
     && LIFECYCLE_STAGES.includes(s.stage)
     && isSetupDraft(s.setup) && Array.isArray(s.setup.emplacements)
@@ -290,6 +295,7 @@ function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleI
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
     battleId,
+    site: null,
     revision: 0,
     stage: battle ? 'battle' : 'setup',
     setup: repairSetup(setup),
@@ -346,6 +352,8 @@ export function reviveSession(value: unknown): BattleSession | null {
   // proto: no schema bump for the writeback Wave 5.5 added. A record written before it applied
   // no outcome, and a null record says so. The migration's shape is reserved.
   if (!isWritebackRecord(s.writeback)) s.writeback = null;
+  // proto: no schema bump for the site. A record written before it stood on no campaign ground.
+  if (typeof s.site !== 'string') s.site = null;
   s.turn ??= null;
   s.lastCommit ??= null;
   // A commit written before Wave 3.1 recorded neither events nor dice; an empty list is what

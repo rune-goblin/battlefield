@@ -12,12 +12,13 @@ import type { BattleCommand, CommandEnvelope, CommandResult } from './commands.j
 import { recordDice } from './dice.js';
 import { createExecutor, type HistorySnapshot } from './executeCommand.js';
 import { hotSeatPolicy, type SeatPolicy } from './policy.js';
-import type { BattleArchive, DicePort, SessionRepository, TableUser } from './ports.js';
+import type { BattleArchive, BattleSites, DicePort, SessionRepository, TableUser } from './ports.js';
 import type { BattleSession } from './session.js';
 
 export interface RuntimeOptions {
   repository: SessionRepository;
   archive: BattleArchive;
+  sites?: BattleSites;
   /** The record the host already holds. The store is seeded before its first render, so the
    * runtime is built around a session rather than loading one. */
   session: BattleSession;
@@ -56,13 +57,14 @@ export interface Runtime {
 
 /** The one place that wires the services, the ports, and the executor together. */
 export function createRuntime({
-  repository, archive, session, dice = randomRng, policy = hotSeatPolicy(), campaign = null, actors = null,
+  repository, archive, sites, session, dice = randomRng, policy = hotSeatPolicy(), campaign = null, actors = null,
 }: RuntimeOptions): Runtime {
   // Every service rolls through the recorder, so a commit holds the faces its own rules read.
   const recorder = recordDice(dice);
   const executor = createExecutor({
     repository,
     archive,
+    sites,
     session,
     dice: recorder,
     presence: policy.presence,

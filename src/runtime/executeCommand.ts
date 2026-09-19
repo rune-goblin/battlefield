@@ -5,14 +5,15 @@ import type { BattleContinuationService } from '../services/BattleContinuationSe
 import type { BattleManager } from '../services/BattleManager.js';
 import type { MapPreparationService } from '../services/MapPreparationService.js';
 import { abandonWriteback, beginWriteback, markWritebackTarget } from '../services/OutcomeApplicationService.js';
-import { pruneSources, sessionFromRequest, type BattleRequest } from './campaign.js';
+import { pruneSources, sessionAtSite, sessionFromRequest, type BattleRequest } from './campaign.js';
 import { COMMAND_STAGE, newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import { openTurn, seatUsers } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
 import { clearObsolete, dropInteraction } from './interactions.js';
 import { assignSeats, reassignTurn, refuseCommand } from './policy.js';
-import type { BattleArchive, PresencePort, SessionRepository } from './ports.js';
+import { memorySites } from './memorySites.js';
+import type { BattleArchive, BattleSites, PresencePort, SessionRepository } from './ports.js';
 import { migrateSession, writebackRunning, type BattleSession, type BattleSetupDraft } from './session.js';
 import type { Side } from '../engine/index.js';
 
@@ -25,7 +26,7 @@ const RECENT_COMMAND_IDS = 20;
  * boundary undo cannot cross, as the prototype's store held them. Selection is not an
  * activation, and a generated or reworded board was never undoable — only a paint stroke was.
  * `session.undo` is absent: it consumes the history rather than adding to it. */
-const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'session.install'>, 'push' | 'keep' | 'clear'> = {
+const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'session.install' | 'session.moveTo'>, 'push' | 'keep' | 'clear'> = {
   'activation.select': 'keep',
   'activation.deselect': 'keep',
   'action.resolve': 'push',
@@ -76,7 +77,7 @@ export interface Services {
 }
 
 /** What a finalized record still answers: leaving the battle, or replacing it outright. */
-const AFTER_FINAL: CommandType[] = ['battle.returnToSetup', 'session.load', 'session.install'];
+const AFTER_FINAL: CommandType[] = ['battle.returnToSetup', 'session.load', 'session.install', 'session.moveTo'];
 
 /** What a record answers while the campaign writeback is under way. Undo and loading are shut
  * out: part of the result already sits in the campaign, and rewinding the battle behind it
@@ -84,7 +85,7 @@ const AFTER_FINAL: CommandType[] = ['battle.returnToSetup', 'session.load', 'ses
 const DURING_WRITEBACK: CommandType[] = ['outcome.markTarget', 'outcome.abandon'];
 
 function applyCommand(
-  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' | 'session.install' }>,
+  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' | 'session.install' | 'session.moveTo' }>,
   { actions, map, army, continuation, manager }: Services, presence: PresencePort, userId: string,
 ): BattleSession {
   switch (command.type) {
@@ -131,6 +132,8 @@ function applyCommand(
 export interface ExecutorOptions extends Services {
   repository: SessionRepository;
   archive: BattleArchive;
+  /** Absent on a host with no campaign map; the battles then live for the page's life. */
+  sites?: BattleSites;
   session: BattleSession;
   /** The same dice the services roll, wrapped so each transition's faces reach its commit. */
   dice: DiceRecorder;
@@ -186,7 +189,7 @@ const failure = (error: unknown): string => (error instanceof Error ? error.mess
  * until the record is durable: validate, resolve, bump the revision, save, then publish.
  * A rejection returns a result and leaves the session and the undo history as they were.
  */
-export function createExecutor({ repository, archive, dice, presence, session: initial, ...services }: ExecutorOptions): Executor {
+export function createExecutor({ repository, archive, sites = memorySites(), dice, presence, session: initial, ...services }: ExecutorOptions): Executor {
   let session = initial;
   let history: HistorySnapshot[] = [];
   const listeners = new Set<(session: BattleSession) => void>();
@@ -285,6 +288,7 @@ export function createExecutor({ repository, archive, dice, presence, session: i
     if (command.type === 'session.undo') return rewind(commandId, userId);
     if (command.type === 'session.load') return loadSession(commandId, command.slot, userId);
     if (command.type === 'session.install') return install(commandId, command.battleId, command.request, userId);
+    if (command.type === 'session.moveTo') return moveTo(commandId, command, userId);
 
     return persist(commandId, userId, {
       edit: (current) => {
@@ -363,6 +367,39 @@ export function createExecutor({ repository, archive, dice, presence, session: i
         const built = sessionFromRequest(request, battleId);
         // The imported seating knows no users; the table's own seats it, as a load does.
         return { ...built, revision: current.revision, control: seatUsers(built.control, presence) };
+      },
+      record: () => { history = []; },
+    });
+  }
+
+  /** Park the battle the table holds and open the one at `site`. The park lands before the
+   * session write, so a failure between the two leaves a spare copy and loses nothing. */
+  async function moveTo(
+    commandId: string, { site, battleId, opening }: Extract<BattleCommand, { type: 'session.moveTo' }>, userId: string,
+  ): Promise<CommandResult> {
+    if (session.site === site) return reject(commandId, 'stage', 'that battle is already open');
+    const resolved = session.stage === 'finalized';
+    if (session.site === null && session.battle && !resolved) {
+      return reject(commandId, 'stage', 'a battle on no site is under way; save or end it first');
+    }
+    let raw: unknown;
+    try {
+      // A resolved battle leaves the map; any other is kept for the GM to come back to.
+      if (session.site !== null) await (resolved ? sites.remove(session.site) : sites.park(session));
+      raw = await sites.load(site);
+    } catch (error) {
+      return reject(commandId, 'storage', failure(error));
+    }
+    return persist(commandId, userId, {
+      edit: (current) => {
+        const parked = raw === null ? null : migrateSession(raw);
+        if (raw !== null && !parked) throw new Error(`the battle parked at ${site} cannot be read`);
+        const opened = parked ?? sessionAtSite(site, opening, battleId);
+        return {
+          // The same table comes back to it, so the answers it was waiting on still stand.
+          ...opened, site, revision: current.revision, recentCommandIds: [],
+          control: seatUsers(opened.control, presence), turn: null,
+        };
       },
       record: () => { history = []; },
     });

@@ -7,6 +7,7 @@ import {
 } from '../runtime/campaign.js';
 import type { BattleCommand, CommandEnvelope, CommandResult } from '../runtime/commands.js';
 import { createRuntime } from '../runtime/createRuntime.js';
+import { memorySites } from '../runtime/memorySites.js';
 import type { PresencePort } from '../runtime/ports.js';
 import { freshSession, reviveSession, type BattleSession } from '../runtime/session.js';
 import { fakeArchive, openBoard } from './helpers.js';
@@ -261,6 +262,7 @@ describe('the campaign seam', () => {
     let opened = 0;
     const api = createModuleApi({
       submit: () => (command) => runtime.submit(command),
+      session: () => runtime.session, sites: memorySites(),
       open: async () => { opened += 1; },
       close: async () => {}, callTable: async () => {}, dismissTable: async () => {},
     });
@@ -274,7 +276,7 @@ describe('the campaign seam', () => {
   });
 
   it('refuses createBattle before the host is built', async () => {
-    const api = createModuleApi({ submit: () => null, open: async () => {}, close: async () => {}, callTable: async () => {}, dismissTable: async () => {} });
+    const api = createModuleApi({ submit: () => null, session: () => freshSession(), sites: memorySites(), open: async () => {}, close: async () => {}, callTable: async () => {}, dismissTable: async () => {} });
 
     expect(await api.createBattle(request())).toMatchObject({ ok: false, reason: 'battle' });
   });

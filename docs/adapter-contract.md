@@ -80,8 +80,8 @@ Wall state carries remaining boxes, an optional interior cell, and optional gate
 
 ## Foundry table and ReignMaker hex pick
 
-`game.modules.get('battlefield').api` offers `open`, `close`, `createBattle`, `callTable`, and
-`dismissTable`. `callTable` sets the `tableCall` world setting: every client opens its window
+`game.modules.get('battlefield').api` offers `open`, `close`, `createBattle`, `callTable`,
+`dismissTable`, `battles`, `openBattleAt`, and `removeBattle`. `callTable` sets the `tableCall` world setting: every client opens its window
 once, and a client whose window is shut keeps a floating Battlefield chip until `dismissTable`.
 The GM reaches the same two calls from the window's header menu. The setting stands outside the
 session record, so a reset or a loaded save leaves the players where they are.
@@ -92,10 +92,27 @@ The hex pick reads three functions ReignMaker adds to its own module API, plus t
 | ReignMaker API | Use |
 |---|---|
 | `registerMapToolbarButton(button)` | The GM-only Battle button on the kingdom map's toolbar. |
-| `selectHexes({ colorType: 'battle', count: 1 })` | The pick itself; answers with `["i.j"]` or null. |
+| `selectHexes({ colorType: 'battle', count: 1, getHexInfo })` | The pick itself; answers with `["i.j"]` or null. `getHexInfo` names the battle standing in a hovered hex. |
 | `getBattleSite(hexId)` | Terrain, holder, fortification tier, and every army in the hex with its banner. |
 
 `src/adapters/reignmaker/battleSite.ts` turns the site into a `BattleRequest`. The holder of the
 hex defends; on ground nobody holds the player kingdom attacks. Each unit carries its banner as
 `faction`, a label no rule reads, and the wizard opens at the Sides step for the GM to correct
 the guess with `army.swapSides` and `army.setSide`.
+
+### Many battles, one open
+
+A session carries `site`, the kingdom-map hex it stands on, or null for a battle no campaign
+placed. The table plays one session; every other sited battle waits in the `sites` world
+setting, one record to a hex (`BattleSites`, `src/adapters/foundry/worldSites.ts`).
+
+Picking a hex submits `session.moveTo { site, battleId, opening }`. In one commit the executor
+parks the open battle at its own site, then opens the record parked at the picked hex. A hex
+with no record opens on `opening`: the armies `getBattleSite` found, or the bare ground as an
+empty draft when no army stands there. Picking the hex already open raises the window and
+sends nothing.
+
+- A finalized battle is removed from the map when the table leaves it.
+- A battle under way on no site refuses the move; the GM saves or ends it first.
+- A parked battle keeps its interactions and loses its undo history.
+- `battle.reset` clears `site`. `removeBattle(site)` deletes a parked battle, for a macro.
