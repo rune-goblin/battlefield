@@ -8,6 +8,18 @@ of them. The four items below are in the order to do them.
 
 A Playwright run against a real Foundry world with a GM client and one player client.
 
+- First, port the pieces of `rune-goblin/runegoblin-foundrytemplate` that Battlefield lacks.
+  Battlefield began as a browser app and was never built from the template. Keep this repo's
+  layout (`engine/`, `board/`, `runtime/`, `services/`, `adapters/`) and its browser build.
+  - The e2e harness: `playwright.config.ts`, `src/tests/e2e/` with the `foundry-clients.ts`
+    fixture and `global-setup.ts`, `scripts/setup-test-env.ts`, `scripts/start-test-env.sh`.
+  - `scripts/setup.ts` (the symlink for live editing) and `scripts/deploy.ts` (a link-free
+    copy), in place of the hand-made symlink from `Data/modules/battlefield` to `dist-foundry`.
+  - `.github/workflows/release.yml`, in place of the zip, upload and manifest edits done by
+    hand for v0.1.0. Each release attaches `battlefield.zip` and `module.json` and bumps
+    `version` and the tag inside `download`.
+  - The `.claude/skills/foundry-pf2e` skill and its references.
+
 - Open the window from the scene control. Walk the wizard: Battlefield, Paint, Siege engines,
   Sides, both army steps, Review.
 - Start the battle. The player's window opens once and the round chip sits in
