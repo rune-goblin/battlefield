@@ -3,7 +3,7 @@ import type { Grid, Point } from '../../engine/index.js';
 import type { TokenPlacement } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
 import { SHADOW_GROUP } from '../piece-shadow.js';
-import { actionIconUrl, type ActionIcon } from '../art.js';
+import { actionIconUrl, type ActionIcon, type StatusIcon } from '../art.js';
 import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel, type UnitTokenModel } from '../Token.js';
 import type { TokenReaction } from '../vfx/Effect.js';
 
@@ -26,10 +26,11 @@ export class TokenLayer {
   private size = 0;
   private models: readonly TokenModel[] = [];
   private readonly cache = new Map<string, Token>();
+  // Pieces the list has dropped that stand until their death is announced — see `FallenLayer`.
+  private readonly held = new Set<string>();
   private draggingId: string | null = null;
   private ghost: PIXI.Sprite | null = null;
-  // A drag's verdict on the piece under it, drawn over the whole cell and above the carried
-  // token, which would otherwise cover the target's own prop.
+  // A drag's verdict on the piece under it, drawn over the whole cell and above the carried token.
   private readonly dragProp = new PIXI.Sprite();
   private dragPropIcon: ActionIcon | null = null;
 
@@ -95,6 +96,22 @@ export class TokenLayer {
     return token ? { x: token.x, y: token.y } : null;
   }
 
+  expectStatuses(id: string, icons: readonly StatusIcon[]): void {
+    this.cache.get(id)?.expectStatuses(icons);
+  }
+
+  announceStatuses(id: string, icons: readonly StatusIcon[]): boolean {
+    return this.cache.get(id)?.announceStatuses(icons) ?? false;
+  }
+
+  hold(id: string): void {
+    this.held.add(id);
+  }
+
+  release(id: string): void {
+    if (this.held.delete(id)) this.renderAll();
+  }
+
   moving(): boolean {
     for (const token of this.cache.values()) if (token.moving) return true;
     return false;
@@ -148,8 +165,9 @@ export class TokenLayer {
   private renderAll(): void {
     const placeable = this.grid && this.size;
     const wanted = placeable ? new Map(this.models.map((m) => [m.id, m])) : new Map<string, TokenModel>();
+    if (!placeable) this.held.clear();
     for (const [id, token] of this.cache) {
-      if (wanted.has(id)) continue;
+      if (wanted.has(id) || this.held.has(id)) continue;
       this.container.removeChild(token);
       this.shadows.removeChild(token.shadow);
       token.destroy();
@@ -164,13 +182,13 @@ export class TokenLayer {
         this.container.addChild(token);
         this.shadows.addChild(token.shadow);
       }
-      token.draw(this.dragPropOn(model) ? { ...model, prop: null } : model, this.grid!, this.size, this.theme);
+      token.draw(model, this.grid!, this.size, this.theme);
     }
     this.layoutDragProp();
   }
 
   private dragPropOn(model: TokenModel): model is UnitTokenModel {
-    return model.kind !== 'engine' && this.draggingId !== null && model.id !== this.draggingId && (model.prop === 'attack' || model.prop === 'no');
+    return model.kind !== 'engine' && this.draggingId !== null && model.id !== this.draggingId && model.verdict !== null;
   }
 
   private layoutDragProp(): void {
@@ -182,7 +200,7 @@ export class TokenLayer {
       return;
     }
     this.dragProp.position.set(token.x, token.y);
-    const icon = model.prop!;
+    const icon = model.verdict!;
     if (icon === this.dragPropIcon) { this.dragProp.visible = true; return; }
     this.dragPropIcon = icon;
     this.dragProp.visible = false;

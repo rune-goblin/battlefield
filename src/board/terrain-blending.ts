@@ -1,4 +1,4 @@
-import type { Cell, Grid, Point } from '../engine/grid.js';
+import type { Cell, Grid } from '../engine/grid.js';
 import { terrainRegions } from './terrain-regions.js';
 
 export interface EdgeBlending {
@@ -9,6 +9,8 @@ export interface EdgeBlending {
 }
 export const DEFAULT_EDGE_BLENDING: EdgeBlending = { mode: 'natural', width: 0.15, irregularity: 0.2, patchSize: 0.25 };
 export const MASK_PITCH = 64;
+/** Hex pitches. Half the widest blend is 0.25, and the warp samples the field where it lands. */
+const DISTANCE_CAP = 1;
 export interface BlendField {
   width: number;
   height: number;
@@ -30,24 +32,29 @@ export function createBlendField(grid: Grid, groups: Cell[][], pitch = MASK_PITC
   const distances = groups.map((cells, group) => {
     const loops = terrainRegions(grid, cells, 1).flatMap(region => [region.outline, ...region.holes]);
     const edges = loops.flatMap(loop => loop.map((a, i) => ({ a, b: loop[(i + 1) % loop.length] })));
-    const field = new Float32Array(width * height);
-    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
-      const p = { x: (x + 0.5) / pitch, y: (y + 0.5) / pitch };
-      let distance = Infinity;
-      for (const { a, b } of edges) distance = Math.min(distance, segmentDistanceSquared(p, a, b));
-      const index = y * width + x;
-      field[index] = Math.sqrt(distance) * (owners[index] === group ? 1 : -1);
+    // Every reader clamps a claim well inside DISTANCE_CAP, so each edge writes only the texels
+    // near it. Testing every texel against every edge froze the page for seconds on each mount.
+    const squared = new Float32Array(width * height).fill(DISTANCE_CAP * DISTANCE_CAP);
+    for (const { a, b } of edges) {
+      const x0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - DISTANCE_CAP) * pitch));
+      const x1 = Math.min(width - 1, Math.ceil((Math.max(a.x, b.x) + DISTANCE_CAP) * pitch));
+      const y0 = Math.max(0, Math.floor((Math.min(a.y, b.y) - DISTANCE_CAP) * pitch));
+      const y1 = Math.min(height - 1, Math.ceil((Math.max(a.y, b.y) + DISTANCE_CAP) * pitch));
+      const dx = b.x - a.x, dy = b.y - a.y, inverse = 1 / (dx * dx + dy * dy);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const px = (x + 0.5) / pitch - a.x, py = (y + 0.5) / pitch - a.y;
+        const t = Math.max(0, Math.min(1, (px * dx + py * dy) * inverse));
+        const d = (px - t * dx) ** 2 + (py - t * dy) ** 2;
+        if (d < squared[y * width + x]) squared[y * width + x] = d;
+      }
     }
+    const field = new Float32Array(width * height);
+    for (let i = 0; i < field.length; i++) field[i] = Math.sqrt(squared[i]) * (owners[i] === group ? 1 : -1);
     return field;
   });
   return { width, height, pitch, owners, distances };
 }
 
-function segmentDistanceSquared(p: Point, a: Point, b: Point): number {
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
-  return (p.x - a.x - t * dx) ** 2 + (p.y - a.y - t * dy) ** 2;
-}
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const hash = (x: number, y: number) => {
   let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263);

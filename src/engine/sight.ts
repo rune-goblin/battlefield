@@ -1,4 +1,4 @@
-import { at, gridOf, notation, sameCell, type Board, type Cell, type Grid } from './board.js';
+import { at, gridOf, notation, parse, sameCell, fortification, wallBlocks, type Board, type Cell, type Grid } from './board.js';
 import { blocksSight, FOREST_BLOCKS_AT, TERRAIN } from './terrain.js';
 
 // Cache geometry only: painting and battle mutations must read current terrain each time.
@@ -46,3 +46,19 @@ export function hasSight(board: Board, from: Cell, to: Cell): boolean {
 
 export const coverBetween = (board: Board, from: Cell, to: Cell): number =>
   TERRAIN[at(board, to).terrain].cover || sightCells(board, from, to).some(cell => TERRAIN[at(board, cell).terrain].cover) ? 1 : 0;
+
+/** A wall shelters its interior hex only against fire from outside that segment. */
+export function wallCoverBetween(board: Board, from: Cell, to: Cell): number {
+  const g = gridOf(board), source = g.center(from, 1), target = g.center(to, 1);
+  let cover = 0;
+  for (const [key, wall] of Object.entries(board.walls)) {
+    if (!wallBlocks(wall) || !key.split('|').includes(notation(to))) continue;
+    const inside = wall.inside ?? key.split('|').sort((a, b) => parse(b).rank - parse(a).rank)[0];
+    if (inside !== notation(to)) continue;
+    const outside = g.center(parse(key.split('|').find(id => id !== inside)!), 1);
+    const dx = outside.x - target.x, dy = outside.y - target.y;
+    if ((source.x - (outside.x + target.x) / 2) * dx + (source.y - (outside.y + target.y) / 2) * dy > 0)
+      cover = Math.max(cover, fortification(wall.tier).cover);
+  }
+  return cover;
+}

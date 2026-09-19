@@ -1,14 +1,13 @@
 import * as PIXI from 'pixi.js';
 import { engineArt, troopArt } from '../engine/art.js';
-import type { Role, Tree } from '../engine/index.js';
+import type { Role, Status, Tree } from '../engine/index.js';
 import bannerTemplate from './faction-banner.svg?raw';
 import { assetUrl } from './asset-base.js';
 
 // src/engine/art.ts stays free of Vite types (tsconfig.engine.json carries none) so it
 // type-checks as pure engine code; it returns paths without a leading slash. The asset-base
 // prefix a non-root deploy needs lives here instead — src/board/ is covered by the main
-// tsconfig, which does include vite/client. See docs/plans/pixi-board.todos.md, "Wave 4
-// notes — art pipeline".
+// tsconfig, which does include vite/client.
 
 export function troopArtUrl(name: string, role: Role): string {
   return assetUrl(troopArt(name, role));
@@ -51,13 +50,8 @@ export function bannerTexture(colour: number): PIXI.Texture {
  * action at all, and marks the cell a drag may not take. */
 export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'maneuver';
 
-/** What a piece is under until it lapses, in the order the column stacks it: the stance it chose,
- * what enemies did to it, then what its own side cast on it. Each names a file in
- * `art/condition-icons/`. */
-export type StatusIcon =
-  | 'guard'
-  | 'pinned' | 'rooted' | 'suppressed' | 'stunned' | 'frightened' | 'exposed' | 'persistent'
-  | 'aegis' | 'warded' | 'stoneskin' | 'sure-strike' | 'wrath' | 'hasted' | 'sure-footing' | 'burst-of-speed' | 'inspired';
+/** The engine's list of statuses is the list of icons: each names a file in `art/condition-icons/`. */
+export type StatusIcon = Status;
 
 export const statusIconUrl = (icon: StatusIcon): string => assetUrl(`art/condition-icons/${icon}.webp`);
 

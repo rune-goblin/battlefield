@@ -190,6 +190,17 @@ describe('another battlefield day', () => {
     expect(() => startNextDay(night, { ...positions, u1: 'b3' })).toThrow(/occupied/);
   });
 
+  it('clears siege fields overnight while preserving gate state and wall damage', () => {
+    const state = dusk();
+    state.board.siegeFields = [{ cells: ['c4'], kind: 'web', expires: 7 }];
+    state.board.walls['c4|c5'] = { tier: 3, boxes: 4, remaining: 2, inside: 'c5', gate: { open: true } };
+    const night = holdAfterRecovery(bothRecover(state, []));
+    const next = startNextDay(night, suggestDeployment(night));
+    expect(next.board.siegeFields).toBeUndefined();
+    expect(next.board.walls).toEqual(state.board.walls);
+    expect(state.board.siegeFields).toHaveLength(1);
+  });
+
   it('uses the configured eight-round day instead of the six-round default', () => {
     let state = createBattle({ board: openBoard(), roundsPerDay: 8, units: [
       { card: { name: 'A', level: 1, role: 'infantry' }, side: 'attacker', square: 'c2' },

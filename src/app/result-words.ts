@@ -1,6 +1,5 @@
 import type { PopupIcon, PopupPart } from '../board/index.js';
-import type { CheckLanding, Degree } from '../engine/index.js';
-import type { Condition } from '../runtime/events.js';
+import type { CheckLanding, Degree, Status } from '../engine/index.js';
 
 export type ResultWord = PopupPart;
 
@@ -21,18 +20,27 @@ const CHECK: Record<Degree, ResultWord> = {
 };
 
 export const ROUTED: ResultWord = { text: 'Routed', tone: 'warn', icon: 'routed' };
+export const DESTROYED: ResultWord = { text: 'Destroyed', tone: 'bad', icon: 'dead' };
 const REPULSED: ResultWord = { text: 'Repulsed', tone: 'warn' };
 /** Red and loud: the cast came to nothing, which is the caster's failure. */
 const BLOCKED: ResultWord = { text: 'Blocked', tone: 'bad' };
 export const RESISTED: ResultWord = { text: 'Resisted', tone: 'bad', loud: true };
 
-const CONDITION_TEXT: Record<Condition, string> = {
-  frightened: 'Frightened', stunned: 'Stunned', rooted: 'Held', suppressed: 'Suppressed',
-  pinned: 'Pinned', exposed: 'Exposed', persistent: 'Marked',
+/** A cast that took hold reads as its own name, green for the caster whose spell it is. */
+export const tookHold = (label: string): ResultWord => ({ text: label, tone: 'good' });
+
+// Orange for what an enemy did to the piece, green for its own stance and its side's casts.
+const STATUS_WORD: Record<Status, [string, ResultWord['tone']]> = {
+  guard: ['Guard', 'good'],
+  pinned: ['Pinned', 'warn'], rooted: ['Held', 'warn'], suppressed: ['Suppressed', 'warn'], stunned: ['Stunned', 'warn'],
+  frightened: ['Frightened', 'warn'], exposed: ['Exposed', 'warn'], persistent: ['Marked', 'warn'],
+  aegis: ['Aegis', 'good'], warded: ['Warded', 'good'], stoneskin: ['Stoneskin', 'good'],
+  'sure-strike': ['Sure strike', 'good'], wrath: ['Wrath', 'good'], hasted: ['Hasted', 'good'],
+  'sure-footing': ['Sure footing', 'good'], 'burst-of-speed': ['Burst of speed', 'good'], inspired: ['Inspired', 'good'],
 };
 
-export const conditionWord = (condition: Condition): ResultWord =>
-  ({ text: CONDITION_TEXT[condition], tone: 'warn', icon: condition });
+export const conditionWord = (status: Status): ResultWord =>
+  ({ text: STATUS_WORD[status][0], tone: STATUS_WORD[status][1], icon: status });
 
 /** Null where the result needs no word: the miss already spoke for a repulse the attacker held,
  * the disorder a failed brace costs is shown as the effect it is, and an attack that passes an

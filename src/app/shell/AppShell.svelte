@@ -14,6 +14,9 @@
     bottom?: Snippet;
     left?: Snippet;
     right?: Snippet;
+    /** A fixed strip outside the left dock, which stays when the dock collapses: the setup
+     * wizard's steps. */
+    rail?: Snippet;
     leftTitle?: string;
     rightTitle?: string;
     leftWidth?: number;
@@ -24,7 +27,7 @@
     modal?: Snippet;
   }
   let {
-    map, pin, top, bottom, left, right,
+    map, pin, top, bottom, left, right, rail,
     leftTitle = 'Panel', rightTitle = 'Panel', leftWidth = 25, rightWidth = 24,
     float, modal,
   }: Props = $props();
@@ -71,6 +74,7 @@
     {#if top}<header class="bar top" bind:clientHeight={topH}>{@render top()}</header>{:else}<div></div>{/if}
     <div class="mid">
       <div class="slot" bind:clientWidth={leftW}>
+        {#if rail}{@render rail()}{/if}
         {#if left}<Dock side="left" title={leftTitle} width={leftWidth}>{@render left()}</Dock>{/if}
       </div>
       <!-- The docks run floor to ceiling; a bottom bar belongs to the map between them, not

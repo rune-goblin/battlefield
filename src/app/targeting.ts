@@ -113,7 +113,9 @@ export class TargetingService {
   private describe(target: ActivityTarget): TargetChoice {
     const cells = cellsForTarget(this.state, target);
     const placement = this.offer.spell === 'movement' && this.activity.index === 3;
-    const geometry: TargetGeometry = target.kind === 'wall' ? 'edge'
+    const siegeArea = this.activity.activity.startsWith('siege-') && target.kind === 'cell' && cells.length > 1;
+    const corner = siegeArea && gridOf(this.state.board).corners(gridOf(this.state.board).parse(cells[0])).some(cs => cs.map(notation).sort().join('+') === cells.slice().sort().join('+'));
+    const geometry: TargetGeometry = siegeArea ? (corner ? 'corner' : 'hex') : target.kind === 'wall' ? 'edge'
       : this.offer.spell === 'blast' && this.activity.index === 3 ? 'corner'
         : this.offer.spell === 'blast' && this.activity.index === 2 ? 'edge'
           : cells.length > 1 && !placement ? 'group' : 'hex';

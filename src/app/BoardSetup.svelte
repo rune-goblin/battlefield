@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { FORTIFICATIONS } from '../engine/board.js';
   import { FEATURES, HEX_TERRAINS, type Feature, type GridKind, type HexTerrain } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
-  import StageNav from './StageNav.svelte';
+  import WizardRail from './WizardRail.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { editSpec, game, generate, rerollSeed, setRoundsPerDay } from './game.svelte.js';
   import { goToStage } from './navigation.svelte.js';
@@ -37,9 +38,10 @@
   {#snippet top()}
     <TopBar>
       {#snippet status()}<span class="muted">Rank 1 is the attacker's edge, rank {game.setup.board?.squares.length ?? 11} the defender's.</span>{/snippet}
-      {#snippet tools()}<StageNav />{/snippet}
     </TopBar>
   {/snippet}
+
+  {#snippet rail()}<WizardRail />{/snippet}
 
   {#snippet map()}
     <PixiBoard bind:this={boardRef} board={game.setup.board} fill
@@ -72,7 +74,7 @@
       <label>Construction
         <select value={fortTier} onchange={(e) => setConstruction(Number(e.currentTarget.value))}>
           <option value={-1}>none</option>
-          {#each [0, 1, 2, 3] as t (t)}<option value={t}>fort · tier {t}</option>{/each}
+          {#each [0, 1, 2, 3, 4] as t (t)}<option value={t}>{FORTIFICATIONS[t].name} · tier {t}</option>{/each}
         </select>
       </label>
       <label>Seed <input type="number" value={spec.seed} onchange={(e) => void run(editSpec({ seed: Number(e.currentTarget.value) }))}></label>

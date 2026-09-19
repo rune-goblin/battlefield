@@ -20,8 +20,7 @@ const TEXTURE_TILE = 32;
 // its own thinner setting — broken water over the pale bed, against open water's full cover.
 // Boulders and mounds hang off elevation rather than terrain: this board has no mountain or
 // hill terrain type, and height is what that art is drawing.
-// proto: rough ground takes the badlands quadrant; the desert quadrant has no terrain yet —
-// see docs/plans/pixi-board.todos.md.
+// proto: rough ground takes the badlands quadrant; the desert quadrant has no terrain yet.
 interface Scenery { kind: ScatterKind; style?: ScatterStyle }
 const SCATTER_TERRAIN: Partial<Record<SquareTerrain, Scenery>> = {
   open: { kind: 'plains' },

@@ -1,0 +1,139 @@
+<script lang="ts">
+  import { FORTIFICATIONS, SIDES, type Side } from '../engine/index.js';
+  import type { TokenModel } from '../board/index.js';
+  import PixiBoard from './PixiBoard.svelte';
+  import { gameMap } from './map-style.svelte.js';
+  import { AppShell, MapControls, TopBar } from './shell/index.js';
+  import WizardRail from './WizardRail.svelte';
+  import ConnectionWarning from './ConnectionWarning.svelte';
+  import { declaredReady, game, sideReady, tableUsers } from './game.svelte.js';
+  import { goToStage, type SetupStage } from './navigation.svelte.js';
+
+  const board = $derived(game.setup.board!);
+  const spec = $derived(game.setup.spec);
+
+  const SIDE_STEP: Record<Side, SetupStage> = { attacker: 'attackers', defender: 'defenders' };
+  const SIDE_TITLE: Record<Side, string> = { attacker: 'Attacking army', defender: 'Defending army' };
+
+  const armies = $derived(SIDES.map((side) => {
+    const units = game.setup.units.filter((u) => u.side === side);
+    const engines = game.setup.emplacements.filter((e) => e.side === side);
+    const unplaced = [...units, ...engines].filter((p) => p.square === null).length;
+    return {
+      side, units, engines, unplaced,
+      levels: units.reduce((sum, u) => sum + u.card.level, 0),
+      problem: !units.length ? 'This army has no units.' : unplaced ? `${unplaced} still off the board.` : null,
+    };
+  }));
+
+  const userName = (id: string) => tableUsers().find((u) => u.id === id)?.name ?? id;
+  const seats = (side: Side) => game.control.seats[side].map(userName).join(', ') || 'the GM';
+
+  const field = $derived([
+    ['Ground', spec.base],
+    ['Grid', `${spec.grid ?? 'hex'} · ${(spec.size ?? 11) === 11 ? 'large' : 'original'}`],
+    ['Feature', spec.feature ?? 'none'],
+    ['Construction', spec.construction ? `${FORTIFICATIONS[spec.construction.tier].name} · tier ${spec.construction.tier}` : 'none'],
+    ['Day length', `${game.setup.roundsPerDay ?? 6} rounds`],
+    ['Seed', String(spec.seed)],
+  ]);
+
+  const tokens = $derived<TokenModel[]>([
+    ...game.setup.units.flatMap((u) => u.square ? [{
+      kind: 'unit' as const, id: u.id, side: u.side, name: u.card.name, role: u.card.role, level: u.card.level,
+      cell: u.square, wounds: 0, disorder: 0, engine: u.engines[0]?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
+    }] : []),
+    ...game.setup.emplacements.flatMap((e) => e.square ? [{
+      kind: 'engine' as const, id: e.id, side: e.side, name: e.name, cell: e.square, ring: null,
+    }] : []),
+  ]);
+
+  let boardRef = $state<PixiBoard>();
+</script>
+
+<AppShell leftTitle="Review and begin" leftWidth={30}>
+  {#snippet top()}
+    <TopBar>
+      {#snippet status()}
+        {#if SIDES.every((side) => sideReady(side))}
+          Both armies stand on the field. Begin the battle when the table is ready.
+        {:else}
+          An army is still forming up. Finish its step before the battle begins.
+        {/if}
+      {/snippet}
+    </TopBar>
+  {/snippet}
+
+  {#snippet rail()}<WizardRail />{/snippet}
+
+  {#snippet map()}
+    <PixiBoard bind:this={boardRef} {board} {tokens} fill
+      terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
+  {/snippet}
+
+  {#snippet float()}<MapControls board={boardRef} />{/snippet}
+
+  {#snippet left()}
+    <section class="card">
+      <header><h3>Battlefield</h3><button class="edit" onclick={() => goToStage('board')}>Edit</button></header>
+      <dl>
+        {#each field as [term, value] (term)}<div><dt>{term}</dt><dd>{value}</dd></div>{/each}
+      </dl>
+      <ConnectionWarning {board} edit={() => goToStage('paint')} />
+    </section>
+
+    {#each armies as army (army.side)}
+      <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+        <header>
+          <h3>{SIDE_TITLE[army.side]}</h3>
+          <button class="edit" onclick={() => goToStage(SIDE_STEP[army.side])}>Edit</button>
+        </header>
+        <p class="line">
+          {army.units.length} {army.units.length === 1 ? 'unit' : 'units'} · {army.levels} levels · played by {seats(army.side)}
+          {#if declaredReady(army.side)} · <span class="ready">ready</span>{/if}
+        </p>
+        {#if army.problem}<p class="problem">{army.problem}</p>{/if}
+        <ul>
+          {#each army.units as u (u.id)}
+            <li>
+              <span class="name">{u.card.name}</span>
+              <span class="meta">L{u.card.level} {u.card.role}{u.engines.length ? ` · ⚙ ${u.engines.map((e) => e.name).join(', ')}` : ''}</span>
+              <span class="cell" class:off={!u.square}>{u.square ?? 'off board'}</span>
+            </li>
+          {/each}
+          {#each army.engines as e (e.id)}
+            <li>
+              <span class="name">⚙ {e.name}</span>
+              <span class="meta">emplacement <button class="link" onclick={() => goToStage('siege')}>edit</button></span>
+              <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/each}
+  {/snippet}
+</AppShell>
+
+<style>
+  section header { display: flex; align-items: baseline; gap: .5rem; }
+  section h3 { flex: 1; margin: 0; }
+  .army { border-left: 4px solid var(--side); }
+  .army h3 { color: var(--side); }
+  .edit { padding: .1rem .6rem; font-size: .8rem; }
+
+  dl { margin: .5rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .8rem; }
+  dt { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  dd { margin: 0; font-size: .92rem; }
+
+  .line { margin: .3rem 0 0; font-size: .85rem; color: var(--muted); }
+  .ready { color: var(--good); font-weight: 600; }
+  .problem { margin: .4rem 0 0; font-size: .85rem; color: var(--bad); font-weight: 600; }
+
+  ul { list-style: none; margin: .5rem 0 0; padding: 0; }
+  li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: baseline; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: .9rem; }
+  .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { font-size: .75rem; color: var(--muted); white-space: nowrap; }
+  .cell { min-width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; }
+  .cell.off { color: var(--bad); font-style: italic; font-size: .78rem; }
+  .link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; font-size: inherit; }
+</style>

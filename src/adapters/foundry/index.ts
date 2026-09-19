@@ -11,6 +11,8 @@ import { createModuleApi } from './moduleApi.js';
 import { createSessionWatcher } from './sessionWatcher.js';
 import { foundrySocketChannel } from './socket.js';
 import { foundryTableUsers } from './table.js';
+import { foundryTroopSources } from './troopLibrary.js';
+import { registerTroopSources } from '../../app/troop-library.svelte.js';
 import { announceThroughHost, createTurnAnnouncer } from './turnNotice.js';
 import { createFoundryArchive } from './worldArchive.js';
 import { createFoundrySessionRepository } from './worldSessionRepository.js';
@@ -59,6 +61,7 @@ Hooks.once('init', () => {
 });
 
 Hooks.once('ready', () => {
+  registerTroopSources(foundryTroopSources());
   sessionWatcher.handleChange(game.settings.get(MODULE_ID, SESSION_SETTING));
   void host?.refresh();
 });

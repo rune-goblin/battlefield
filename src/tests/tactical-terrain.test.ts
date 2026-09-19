@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, at, availableActions, canDeploy, createBattle, defenceOf, deployRanks,
   coverBetween, generateBoard, gridFor, gridOf, hasSight, homeRank, notation, parse,
-  shootModifier, sightCells, strikeModifier, unit, type GridKind, type UnitCard,
+  siegeAttackOffer, shootModifier, sightCells, strikeModifier, unit, type GridKind, type UnitCard,
 } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
@@ -76,7 +76,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.stats.reach='medium';foe.square=parse(cell);
     const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
-    const check=result.log.find(e=>e.text.includes('fires at'))!.check!;
+    const check=result.log.find(e=>e.text.includes('Fire against'))!.check!;
     expect(check.modifier).toBe(u.stats.volley!+penalty);
   });
   it('extends a shot one hex a level downhill, and leaves the near end where it was',()=>{
@@ -100,21 +100,20 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     at(b.board,u.square).terrain='shallows';
     expect(strikeModifier(b,u,foe)).toBe(u.stats.strike!-1);
   });
-  it('applies the same minimum range and flex penalty to wall bombardment',()=>{
+  it('uses explicit siege reach for wall bombardment',()=>{
     const b=battlefield(kind),u=unit(b,'u0');
     const wall='e6|f6';b.board.walls[wall]={tier:1,boxes:2,remaining:2};
     u.engines.push({id:'eq-artillery',name:'Artillery',kind:'artillery',reach:'extreme',launch:11,side:'attacker',square:u.square,fired:false,status:'crewed',emplaced:false});
     expect(targets(b,'shoot')).not.toContain(wall);
-    u.engines[0].reach='long';
-    expect(targets(b,'shoot')).toContain(wall);
-    const result=act(b,{type:'shoot',unit:u.id,activity:1,target:wall},scriptedRng([10]));
-    expect(result.log.find(e=>e.text.includes('bombards')&&e.check)!.check!.modifier).toBe(9);
+    expect(siegeAttackOffer(b,u,u.engines[0])!.activities[1].targets.map(t=>t.id)).toContain(wall);
+    const result=act(b,{type:'siege',engine:'eq-artillery',operation:'attack',unit:u.id,activity:2,target:wall},scriptedRng([10]));
+    expect(result.log.find(e=>e.check)!.check!.modifier).toBe(11);
   });
   it.each([['f6',-2],['g6',0],['h6',0],['i6',0],['j6',-2]] as const)('resolves extreme shots at %s with modifier %i', (cell, penalty)=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.square=parse('b6');u.stats.reach='extreme';foe.square=parse(cell);
     const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
-    expect(result.log.find(e=>e.text.includes('fires at'))!.check!.modifier).toBe(u.stats.volley!+penalty);
+    expect(result.log.find(e=>e.text.includes('Fire against'))!.check!.modifier).toBe(u.stats.volley!+penalty);
   });
   it('allows a short weapon across an adjacent wall at −2, but rejects a medium weapon',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
@@ -168,7 +167,7 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     at(b.board,u.square).elevation=1;
     expect(shootModifier(b,u,foe)).toBe(u.stats.volley!+1);
     const result=act(b,{type:'cast',unit:u.id,spell:'blast',activity:1,target:foe.id},scriptedRng([10]));
-    const check=result.log.find(e=>e.text.includes('Missile catches'))!.check!;
+    const check=result.log.find(e=>e.text.includes('Missile against'))!.check!;
     expect(check.dc).toBe(foe.stats.defence+1);expect(check.modifier).toBe(u.stats.spellAttack!+1);
     foe.guard={defence:2,cap:false,holds:false};
     expect(defenceOf(b,foe,u,true)).toBe(foe.stats.defence+2);
@@ -182,18 +181,20 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     u.guard={defence:2,cap:false,holds:false};
     expect(defenceOf(b,u,foe,false)).toBe(u.stats.defence+2);
   });
-  it('measures an emplaced weapon from its hex, including sight and cover',()=>{
+  it('requires occupation to fire an emplacement and respects sight and cover',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.stats.volley=null;u.stats.reach=null;foe.square=parse('h6');
-    b.engines.push({id:'eq-test-engine',name:'Test engine',kind:'artillery',reach:'long',launch:11,side:'attacker',square:parse('d6'),fired:false,status:'crewed',emplaced:true});
-    at(b.board,u.square).elevation=2;
-    expect(targets(b,'shoot')).toContain(foe.id);
+    const e = {id:'eq-test-engine',name:'Test engine',kind:'artillery' as const,reach:'long' as const,launch:11,side:'attacker' as const,square:parse('d6'),fired:false,status:'crewed' as const,emplaced:true};
+    b.engines.push(e);
+    expect(siegeAttackOffer(b,u,e)).toBeNull();
+    u.square=parse('d6');
+    expect(siegeAttackOffer(b,u,e)!.activities[0].targets.map(t=>t.id)).toContain(foe.id);
     at(b.board,parse('f6')).terrain='forest';
-    const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
-    const check=result.log.find(e=>e.text.includes('fires at'))!.check!;
+    const result=act(b,{type:'siege',engine:e.id,operation:'attack',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
+    const check=result.log.find(e=>e.check)!.check!;
     expect(check.modifier).toBe(11);expect(check.dc).toBe(foe.stats.defence+1);
     at(b.board,parse('f6')).elevation=2;
-    expect(targets(b,'shoot')).toEqual([]);
+    expect(siegeAttackOffer(b,u,e)!.activities[0].targets).toEqual([]);
   });
   it('keeps sight reciprocal for every pair, with endpoints excluded',()=>{
     const b=battlefield(kind);const g=gridOf(b.board);

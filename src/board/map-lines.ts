@@ -28,7 +28,7 @@ export function elevationFillAlpha(level: number): number {
   return level === 0 ? 0 : Math.min(0.6, 0.1 * Math.abs(level));
 }
 
-/** The in-cell elevation numeral, styled like LabelLayer's coordinate labels — `fill` over a
+/** The in-cell elevation numeral: `fill` over a
  * `halo` stroke, so the digit holds up against any ground under it — rather than MapTextUtils'
  * drop-shadow presets, which assume a light-on-dark banner. Both maps draw the same mark, each
  * out of its own two colours: the theme's ink on its paper, or the pencil on the page. */

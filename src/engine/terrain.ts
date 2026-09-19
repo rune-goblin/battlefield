@@ -37,6 +37,9 @@ export const TERRAIN_NOTE: Record<SquareTerrain, string> = {
   swamp: 'swamp −1 Defence and Strike, Brace only',
 };
 
+/** Ground the generator lays at level 0 or below. The paint brush puts it at any level. */
+export const liesLow = (terrain: SquareTerrain): boolean => terrain === 'water' || terrain === 'swamp' || terrain === 'shallows';
+
 /** Forest hexes along one line that close it. A settlement screens and never blocks. */
 export const FOREST_BLOCKS_AT = 2;
 

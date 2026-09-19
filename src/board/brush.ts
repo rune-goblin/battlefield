@@ -10,17 +10,19 @@ export type Brush =
   | { kind: 'terrain'; terrain: SquareTerrain }
   | { kind: 'elevation'; level: number }
   | { kind: 'wall'; tier: number }
+  | { kind: 'gate'; flip: boolean }
   | { kind: 'wall-clear' }
   | { kind: 'erase' };
 
 export const isEdgeBrush = (brush: Brush | null): boolean =>
-  brush?.kind === 'wall' || brush?.kind === 'wall-clear';
+  brush?.kind === 'gate' || brush?.kind === 'wall' || brush?.kind === 'wall-clear';
 
 /** Right-drag erases with the same brush: open ground, elevation 0, or no wall. */
 export function eraseForm(brush: Brush): Brush {
   switch (brush.kind) {
     case 'terrain': return { kind: 'terrain', terrain: 'open' };
     case 'elevation': return { kind: 'elevation', level: 0 };
+    case 'gate':
     case 'wall':
     case 'wall-clear': return { kind: 'wall-clear' };
     case 'erase': return brush;
@@ -31,6 +33,7 @@ export function brushColour(brush: Brush, theme: BoardTheme): number {
   switch (brush.kind) {
     case 'terrain': return theme.terrain[brush.terrain];
     case 'elevation': return brush.level ? theme.ink : theme.band;
+    case 'gate':
     case 'wall': return theme.rule;
     case 'wall-clear':
     case 'erase': return theme.accent;

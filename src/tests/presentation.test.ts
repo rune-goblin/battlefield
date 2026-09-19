@@ -129,23 +129,23 @@ describe('event presentation', () => {
     ]);
   });
 
-  it('reads a cast the target saved against as what it left, and as Resisted when it left nothing', () => {
+  it("reads a save against a cast as Resisted, and a failed save as the spell's name and what it left", () => {
     const battle = battleState();
     const cast = (degree: 'critical-success' | 'success' | 'failure'): BattleEvent =>
       ({ id: 'cmd-0:0', type: 'spellResolved', unit: 'u0', tree: 'controlling', activity: 3, targets: ['u1'],
         check: { roll: 10, modifier: 6, total: 16, dc: 17, degree } });
     const popupsFor = (events: BattleEvent[]) =>
-      commitPlay(record(1, battle), record(2, battle, events))!.popups.map((p) => p.parts.map((part) => part.text));
+      commitPlay(record(1, battle), record(2, battle, events))!.popups.map((p) => p.parts.map((part) => `${part.text}:${part.tone}`));
 
-    expect(popupsFor([cast('critical-success')])).toEqual([['Resisted']]);
+    expect(popupsFor([cast('critical-success')])).toEqual([['Resisted:bad']]);
     expect(popupsFor([cast('success'), { id: 'cmd-0:1', type: 'conditionGained', unit: 'u1', condition: 'frightened' }]))
-      .toEqual([['Frightened']]);
+      .toEqual([['Resisted:bad'], ['Frightened:warn']]);
     expect(popupsFor([
       cast('failure'),
       { id: 'cmd-0:1', type: 'disorderChanged', unit: 'u1', from: 0, to: 1 },
       { id: 'cmd-0:2', type: 'conditionGained', unit: 'u1', condition: 'stunned' },
       { id: 'cmd-0:3', type: 'conditionGained', unit: 'u1', condition: 'rooted' },
-    ])).toEqual([['−1'], ['Stunned', 'Held']]);
+    ])).toEqual([['Hold:good'], ['−1:bad'], ['Stunned:warn', 'Held:warn']]);
   });
 
   it('reads a pinning shot as its result, its cost, and the conditions together', () => {

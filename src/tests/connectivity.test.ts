@@ -4,7 +4,7 @@ import { terrainGroup } from '../board/terrain-textures.js';
 import { openBoard } from './helpers.js';
 
 describe('river connectivity and bridges', () => {
-  it.each([88, 152])('detects the disconnected generated river at seed %i', seed => {
+  it.each([23, 48])('detects the disconnected generated river at seed %i', seed => {
     expect(hasGroundConnection(generateBoard({base:'plains',feature:'river',size:9,seed}))).toBe(false);
   });
 

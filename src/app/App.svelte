@@ -4,6 +4,7 @@
   import BoardSetup from './BoardSetup.svelte';
   import Paint from './Paint.svelte';
   import Place from './Place.svelte';
+  import Summary from './Summary.svelte';
   import Battle from './Battle.svelte';
   import VfxGallery from './VfxGallery.svelte';
   import { game, gmUserId, presentation, viewerId } from './game.svelte.js';
@@ -38,7 +39,11 @@
   {:else if nav.stage === 'battle' && game.battle}
     <Battle />
   {:else if STAGE_SIDE[nav.stage] && game.setup.board}
-    <Place side={STAGE_SIDE[nav.stage]!} />
+    <Place side={STAGE_SIDE[nav.stage]!} pieces="units" />
+  {:else if nav.stage === 'siege' && game.setup.board}
+    <Place pieces="engines" />
+  {:else if nav.stage === 'summary' && game.setup.board}
+    <Summary />
   {:else if nav.stage === 'paint' && game.setup.board}
     <Paint />
   {:else}

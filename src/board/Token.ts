@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
-import { ART_ANCHOR_Y, actionIconUrl, bannerTexture, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
+import { ART_ANCHOR_Y, bannerTexture, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
 import type { BoardTheme } from './theme.js';
 import { statusBars, STATUS_TRACK, STATUS_OUTLINE, type StatusBar } from './status-bars.js';
@@ -17,6 +17,8 @@ export type TokenRing = 'active' | 'selected' | 'flash';
  * gone. Both end the moment the activation locks. */
 export type TokenPick = 'ready' | 'spent';
 
+export type DragVerdict = Extract<ActionIcon, 'attack' | 'no'>;
+
 export interface UnitTokenModel {
   kind: 'unit';
   id: string;
@@ -30,8 +32,9 @@ export interface UnitTokenModel {
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
   engineId?: string;
-  /** The action prop riding on the piece: what is being aimed at it right now. */
-  prop: ActionIcon | null;
+  /** A drag's verdict on this piece, which the layer draws over its whole hex: the swords where
+   * releasing attacks it, the cross where nothing can. The piece itself carries no aim icon. */
+  verdict: DragVerdict | null;
   /** Everything the piece is under, top of the column last. A status that joins the list
    * announces itself over the piece before it takes its place. */
   statuses: readonly StatusIcon[];
@@ -66,17 +69,16 @@ const RING_GAP = 0.01;
 const GLOW_SWELL = 0.06;
 /** The flag's height, as a fraction of cell size. */
 const FLAG_RATIO = 0.32;
-/** The action prop's box, as a fraction of cell size. The shot's bullseye is the exception in
- * both size and place: it rides the middle of the cell at better than half a hex, because it
- * is what the arc's head is aimed at rather than a badge hung off the piece. */
-const PROP_RATIO = 0.3;
-const SHOT_PROP_RATIO = 0.9;
+/** A status icon's box, as a fraction of cell size. */
+const STATUS_RATIO = 0.3;
 /** A status joining the column: large over the piece, growing as it fades in, held, then down
  * into its slot. Several joining at once take turns, each starting as the last begins to settle. */
-const STATUS_INTRO = { ratio: 0.85, from: 0.6, fadeMs: 300, holdMs: 500, settleMs: 400 };
-/** The column climbs the piece's right side from the prop's corner and stops short of the flag.
- * Icons shrink, then overlap, as it fills. */
-const STATUS_COLUMN = { x: 0.88, bottom: 0.62, top: -0.3, minRatio: 0.2, pitch: 0.9 };
+export const STATUS_INTRO = { ratio: 0.85, from: 0.6, fadeMs: 300, holdMs: 500, settleMs: 400 };
+// A status the popup queue never came for shows itself after this long.
+const STATUS_WAIT_MS = 20000;
+/** The column hangs under the flag on the piece's right, since an engine's chip takes the left.
+ * It fills downward, and a full column starts another to its right. */
+const STATUS_COLUMN = { rows: 3, pitch: 0.9, gap: 0.02 };
 // The cloth's mass sits above the middle of the square template — it tapers to a point at the
 // bottom — so the level rides a little high of the sprite's own centre.
 const FLAG_TEXT_Y = -0.07;
@@ -185,11 +187,11 @@ export class Token extends PIXI.Container {
   private chipPath: string | null = null;
   private chipGeneration = 0;
 
-  private propSprite: PIXI.Sprite | null = null;
-  private propIcon: ActionIcon | null = null;
-  private propGeneration = 0;
   private readonly statusColumn = Object.assign(new PIXI.Container(), { sortableChildren: true });
-  private statuses: { icon: StatusIcon; sprite: PIXI.Sprite | null; intro: number | null }[] = [];
+  /** `intro` is when the status starts to show: null once seated, Infinity while it waits for
+   * its announcement. */
+  private statuses: { icon: StatusIcon; sprite: PIXI.Sprite | null; intro: number | null; joined: number }[] = [];
+  private readonly awaited = new Set<StatusIcon>();
   /** False until the first draw: a piece that mounts already guarding has nothing to announce. */
   private settled = false;
 
@@ -258,14 +260,12 @@ export class Token extends PIXI.Container {
       this.drawDecor(model, size, theme);
       this.drawBadge(model.level, size, theme);
       this.updateEngineChip(model.engine, size);
-      this.updateProp(model.prop, size);
       this.updateStatuses(model.statuses, size);
     } else {
       this.decor.clear();
       this.badge?.destroy();
       this.badge = null;
       this.updateEngineChip(null, size);
-      this.updateProp(null, size);
       this.updateStatuses([], size);
     }
 
@@ -280,7 +280,6 @@ export class Token extends PIXI.Container {
     if (this.flag) this.addChild(this.flag);
     if (this.badge) this.addChild(this.badge);
     this.addChild(this.statusColumn);
-    if (this.propSprite) this.addChild(this.propSprite);
     this.addChild(this.routArrow);
     if (model.ring === 'flash') this.addChild(this.ring);
     else this.addChildAt(this.ring, 0);
@@ -660,57 +659,18 @@ export class Token extends PIXI.Container {
     this.engineChip.position.set(-r * 0.72, -r * 0.72);
   }
 
-  /** Bottom right, clear of the flag, the engine chip and the pip rows — except the shot's
-   * bullseye, which the arc's head has to be able to point at. */
-  private updateProp(icon: ActionIcon | null, size: number): void {
-    if (!icon) {
-      if (this.propSprite) this.propSprite.visible = false;
-      this.propIcon = null;
-      return;
-    }
-    if (icon !== this.propIcon) {
-      this.propIcon = icon;
-      const generation = ++this.propGeneration;
-      PIXI.Assets.load<PIXI.Texture>(actionIconUrl(icon))
-        .then((texture) => {
-          if (this.destroyed || generation !== this.propGeneration) return;
-          if (!this.propSprite) {
-            this.propSprite = new PIXI.Sprite(texture);
-            this.propSprite.anchor.set(0.5);
-            this.addChild(this.propSprite);
-          } else {
-            this.propSprite.texture = texture;
-          }
-          this.layoutProp(size);
-        })
-        .catch(() => {});
-    }
-    if (this.propSprite) {
-      this.propSprite.visible = true;
-      this.layoutProp(size);
-    }
-  }
-
-  private layoutProp(size: number): void {
-    if (!this.propSprite) return;
-    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
-    const { width, height } = this.propSprite.texture;
-    const shot = this.propIcon === 'shoot';
-    this.propSprite.scale.set((size * (shot ? SHOT_PROP_RATIO : PROP_RATIO)) / Math.max(width, height, 1));
-    if (shot) this.propSprite.position.set(0, 0);
-    else this.propSprite.position.set(r * 0.88, r * 0.62);
-  }
-
   private updateStatuses(wanted: readonly StatusIcon[], size: number): void {
     for (const gone of this.statuses.filter((held) => !wanted.includes(held.icon))) gone.sprite?.destroy();
     const kept = this.statuses.filter((held) => wanted.includes(held.icon));
     const { fadeMs, holdMs } = STATUS_INTRO;
-    let turn = Math.max(performance.now(), ...kept.map((held) => (held.intro ?? -Infinity) + fadeMs + holdMs));
+    const now = performance.now();
+    let turn = Math.max(now, ...kept.map((held) => (held.intro === Infinity ? -Infinity : held.intro ?? -Infinity) + fadeMs + holdMs));
     this.statuses = wanted.map((icon) => {
       const held = kept.find((k) => k.icon === icon);
       if (held) return held;
-      const entry = { icon, sprite: null as PIXI.Sprite | null, intro: this.settled ? turn : null };
-      if (this.settled) turn += fadeMs + holdMs;
+      const waits = this.settled && this.awaited.has(icon);
+      const entry = { icon, sprite: null as PIXI.Sprite | null, intro: waits ? Infinity : this.settled ? turn : null, joined: now };
+      if (this.settled && !waits) turn += fadeMs + holdMs;
       PIXI.Assets.load<PIXI.Texture>(statusIconUrl(icon))
         .then((texture) => {
           if (this.destroyed || !this.statuses.includes(entry)) return;
@@ -725,17 +685,43 @@ export class Token extends PIXI.Container {
     this.layoutStatuses(size);
   }
 
+  /** The popup queue will announce these, so they stay hidden until it does. */
+  expectStatuses(icons: readonly StatusIcon[]): void {
+    for (const icon of icons) {
+      this.awaited.add(icon);
+      const held = this.statuses.find((h) => h.icon === icon);
+      if (held && held.intro !== null) held.intro = Infinity;
+    }
+  }
+
+  /** Plays each status's arrival now, one after another. False when the piece holds none of them. */
+  announceStatuses(icons: readonly StatusIcon[]): boolean {
+    const { fadeMs, holdMs } = STATUS_INTRO;
+    let turn = performance.now();
+    let any = false;
+    for (const icon of icons) {
+      this.awaited.delete(icon);
+      const held = this.statuses.find((h) => h.icon === icon);
+      if (!held) continue;
+      held.intro = turn;
+      turn += fadeMs + holdMs;
+      any = true;
+    }
+    return any;
+  }
+
   private layoutStatuses(size: number): void {
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
-    const { x, bottom, top, minRatio, pitch } = STATUS_COLUMN;
-    const gaps = Math.max(1, this.statuses.length - 1);
-    const span = r * (bottom - top);
-    const ratio = Math.max(minRatio, Math.min(PROP_RATIO, span / (gaps * pitch * size)));
-    const step = Math.min(ratio * size * pitch, span / gaps);
+    const { rows, pitch, gap } = STATUS_COLUMN;
+    const ratio = STATUS_RATIO;
+    const step = size * ratio * pitch;
+    const flagX = r * 0.88;
+    const top = -r * 0.88 + size * (FLAG_RATIO / 2 + gap + ratio / 2);
     const now = performance.now();
     const { ratio: large, from, fadeMs, holdMs, settleMs } = STATUS_INTRO;
     this.statuses.forEach((held, slot) => {
       if (!held.sprite) return;
+      if (held.intro === Infinity && now - held.joined > STATUS_WAIT_MS) held.intro = now;
       const unit = size / Math.max(held.sprite.texture.width, held.sprite.texture.height, 1);
       const t = held.intro === null ? Infinity : now - held.intro;
       if (t >= fadeMs + holdMs + settleMs) held.intro = null;
@@ -743,7 +729,7 @@ export class Token extends PIXI.Container {
       const settle = held.intro === null ? 1 : easeInOut(Math.max(0, t - fadeMs - holdMs) / settleMs);
       held.sprite.alpha = fade;
       held.sprite.scale.set(unit * (large * (from + (1 - from) * (1 - (1 - fade) ** 3)) * (1 - settle) + ratio * settle));
-      held.sprite.position.set(r * x * settle, (r * bottom - slot * step) * settle);
+      held.sprite.position.set((flagX + Math.floor(slot / rows) * step) * settle, (top + (slot % rows) * step) * settle);
       // The one arriving rides over the ones already seated.
       held.sprite.zIndex = held.intro === null ? slot : 100 + slot;
     });

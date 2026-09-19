@@ -1,6 +1,6 @@
 import { gridOf, notation, parse } from './board.js';
 import { canDeploy, crewOf, isStanding, isSurvivor, unit } from './battle.js';
-import { check } from './check.js';
+import { check, rollLine } from './check.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
 import { ACTIONS_PER_ACTIVATION, SIDES, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
@@ -127,7 +127,7 @@ export function recoverAtNight(input: BattleState, side: Side, choices: Recovery
     u[field] -= recovered;
     results.push({ ...choice, check: result, penalty, recovered });
     state.log.push({ round: state.round, unit: u.id, check: result,
-      text: `${u.name} ${choice.activity === 'rally' ? 'rallies' : 'treats wounded'}: ${result.roll} + ${modifier} = ${result.total} vs DC ${result.dc}, ${result.degree.replaceAll('-', ' ')}. Restores ${recovered} ${choice.activity === 'rally' ? 'morale' : 'health'}.` });
+      text: `${rollLine(u.name, choice.activity === 'rally' ? 'night Rally check' : 'check to treat its wounded', result)} Restores ${recovered} ${choice.activity === 'rally' ? 'morale' : 'health'}.` });
   }
   return state;
 }
@@ -219,6 +219,7 @@ export function startNextDay(input: BattleState, positions: Record<string, strin
   const changedMap = !!state.nextBoard;
   state.nextBoard = null;
   state.round = 1;
+  delete state.board.siegeFields;
   state.phase = 'battle';
   state.winner = null;
   state.endedBy = null;

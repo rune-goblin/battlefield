@@ -28,7 +28,7 @@ export type LayerId = typeof LAYER_ORDER[number] | string;
 /**
  * The board's stack, bottom to top. Three bands, and every layer belongs to one of them:
  * the ground and everything painted on it, then the pieces standing on that ground, then
- * everything thrown over the pieces — spell effects, labels and the reference lines.
+ * everything thrown over the pieces — spell effects and the reference lines.
  *
  * A layer's z-index is its place in this list, so the order is stated here and nowhere else.
  * Adding a layer means putting its name in the band it belongs to.
@@ -37,6 +37,7 @@ export const LAYER_ORDER = [
   // The ground.
   'terrain',        // cell fills, elevation, procedural textures
   'ink',            // the illustrated map, in place of the textured surfaces
+  'fallen',         // where a unit died, lying on the surface and under every wash and line
   'overlay',        // hover, selection, highlight sets, paint preview
   'effectsGround',  // pools and scorch marks, which lie on the ground the pieces stand on
   'grid',           // the reference hex outline
@@ -47,8 +48,8 @@ export const LAYER_ORDER = [
   'shot',           // the aimed shot's arc
   'cast',           // the aimed cast's line and motes
   'effects',        // flames, frames and sparks
-  'labels',         // coordinate labels
   'mapLines',       // terrain-area outlines and elevation rings
+  'fallenIntro',    // a death as it is announced, large over the piece before it drops to `fallen`
   'popups',         // the word a roll came to, floated over the piece it landed on
 ] as const;
 

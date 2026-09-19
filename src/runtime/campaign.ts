@@ -72,7 +72,7 @@ function boardProblems(spec: unknown): string[] {
   if (s.grid !== undefined && s.grid !== 'square' && s.grid !== 'hex') out.push(`${String(s.grid)} is not a grid`);
   const construction = s.construction;
   if (construction !== undefined && construction !== null
-    && !(construction.kind === 'fort' && counted(construction.tier))) out.push('a construction is a fort at a tier');
+    && !(construction.kind === 'fort' && counted(construction.tier) && construction.tier <= 4)) out.push('a construction is a fort at tier 0–4');
   return out;
 }
 

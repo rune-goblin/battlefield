@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, parse, scriptedRng, unit, type Rng, type UnitCard } from '../engine/index.js';
+import { createBattle, parse, scriptedRng, statusesOf, unit, type Rng, type UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { createActionResolutionService } from '../services/ActionResolutionService.js';
@@ -93,13 +93,15 @@ describe('execution events', () => {
     ]);
   });
 
-  it('yields no condition for the root a unit takes on itself', async () => {
+  it('yields the stance a unit takes as a status gained, like any other', async () => {
     const runtime = runtimeOn(battleSession(), scriptedRng([10]));
 
-    const result = await runtime.submit({ type: 'action.resolve', action: { type: 'guard', activity: 3, unit: 'u0' } });
+    const result = await runtime.submit({ type: 'action.resolve', action: { type: 'guard', activity: 1, unit: 'u0' } });
 
     expect(result.ok).toBe(true);
-    expect(runtime.session.lastCommit!.events.filter((e) => e.type === 'conditionGained')).toEqual([]);
+    expect(runtime.session.lastCommit!.events.filter((e) => e.type === 'conditionGained')).toMatchObject([
+      { unit: 'u0', condition: 'guard' },
+    ]);
   });
 
   it('yields the condition a critical miss leaves on the attacker', async () => {
@@ -122,12 +124,23 @@ describe('execution events', () => {
     Object.assign(unit(again.battle!, 'u1'), { pinnedBy: 'u9' });
 
     expect(service.events(before, pinned).filter((e) => e.type === 'conditionGained')).toEqual([
-      { type: 'conditionGained', unit: 'u1', condition: 'suppressed' },
       { type: 'conditionGained', unit: 'u1', condition: 'pinned' },
+      { type: 'conditionGained', unit: 'u1', condition: 'suppressed' },
     ]);
     expect(service.events(pinned, again).filter((e) => e.type === 'conditionGained')).toEqual([
       { type: 'conditionGained', unit: 'u1', condition: 'pinned' },
     ]);
+  });
+
+  it('yields a buff as a status gained, in the order the board stacks them', () => {
+    const service = createActionResolutionService({ dice: scriptedRng([]) });
+    const before = battleSession();
+    const buffed = structuredClone(before);
+    Object.assign(unit(buffed.battle!, 'u0'), { inspired: true, aegis: { dc: 20 }, frightened: true });
+
+    expect(service.events(before, buffed).filter((e) => e.type === 'conditionGained').map((e) => e.condition))
+      .toEqual(['frightened', 'aegis', 'inspired']);
+    expect(statusesOf(unit(buffed.battle!, 'u0'))).toEqual(['frightened', 'aegis', 'inspired']);
   });
 
   it('yields the route a move walked', async () => {

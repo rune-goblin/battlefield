@@ -1,7 +1,4 @@
-import type { ActivityIndex, BattleState, CheckLanding, CheckResult, Side, Tree } from '../engine/index.js';
-
-/** What an enemy's act leaves on a piece until it next acts. */
-export type Condition = 'frightened' | 'stunned' | 'rooted' | 'pinned' | 'suppressed' | 'exposed' | 'persistent';
+import type { ActivityIndex, BattleState, CheckLanding, CheckResult, Side, Status, Tree } from '../engine/index.js';
 
 // proto: the list of event types is reserved for review.
 /** What one commit did, in the order it happened. `ActionResolutionService` derives these by
@@ -16,7 +13,8 @@ export type BattleEventBody =
   | { type: 'freeStrikeResolved'; unit: string; target: string; check: CheckResult | null; text: string }
   | { type: 'woundsChanged'; unit: string; from: number; to: number }
   | { type: 'disorderChanged'; unit: string; from: number; to: number }
-  | { type: 'conditionGained'; unit: string; condition: Condition }
+  /** Every status a piece takes on, a stance and a buff as much as what an enemy did to it. */
+  | { type: 'conditionGained'; unit: string; condition: Status }
   | { type: 'unitRouted'; unit: string }
   | { type: 'spellResolved'; unit: string; tree: Tree; activity: ActivityIndex; targets: string[]; check: CheckResult | null }
   | { type: 'activationEnded'; unit: string }

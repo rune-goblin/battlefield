@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { at, gridOf, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
+import { at, gridOf, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { mix, shade } from './color.js';
 
@@ -255,13 +255,39 @@ function wallGraphics(a: Point, b: Point, size: number, wall: Wall, key: string,
   const breached = wall.remaining <= 0;
   const rnd = seededRandom(seedOf(key));
   const shapes = breached ? breach(len, size, rnd) : battlement(len, span, shift, size, wall, rnd);
+  if (wall.gate && !breached) {
+    shapes.spine = null;
+    shapes.blocks = shapes.blocks.filter(block => Math.abs(block.cx - shift) > span * 0.23);
+  }
   drawWall(bar, shapes, colours, size, breached);
+  if (wall.gate && !breached) {
+    const gap = span * 0.24;
+    bar.lineStyle({ width: spineWidth(size) * 2, color: colours.stone });
+    bar.moveTo(-len / 2, 0).lineTo(shift - gap, 0);
+    bar.moveTo(shift + gap, 0).lineTo(len / 2, 0);
+    bar.lineStyle({ width: spineWidth(size) * 2.4, color: wall.gate.open ? 0x6e9c67 : 0xb48b4c });
+    bar.moveTo(shift - gap, 0).lineTo(wall.gate.open ? shift - gap : shift, wall.gate.open ? -gap : 0);
+    bar.moveTo(shift + gap, 0).lineTo(wall.gate.open ? shift + gap : shift, wall.gate.open ? -gap : 0);
+    bar.lineStyle(0);
+  }
 
   const shadow = new PIXI.Graphics();
   shadow.position.set(mid.x, mid.y);
   shadow.rotation = rotation;
   drawSilhouette(shadow, shapes, colours.shadow, SHADOW.spread * size);
   return { bar, shadow };
+}
+
+/** Points through the gate to its interior hex, the side a unit operates it from. */
+function gateArrow(g: PIXI.Graphics, mid: Point, interior: Point, size: number): void {
+  const reach = Math.hypot(interior.x - mid.x, interior.y - mid.y) || 1;
+  const n = { x: (interior.x - mid.x) / reach, y: (interior.y - mid.y) / reach };
+  const along = (d: number, side = 0): [number, number] => [mid.x + n.x * d - n.y * side, mid.y + n.y * d + n.x * side];
+  const head = reach * 0.16;
+  g.lineStyle({ width: spineWidth(size) * 1.6, color: 0xb48b4c });
+  g.moveTo(...along(-reach * 0.3)).lineTo(...along(reach * 0.3));
+  g.lineStyle(0);
+  g.beginFill(0xb48b4c).drawPolygon([...along(reach * 0.3 + head), ...along(reach * 0.3, head * 0.7), ...along(reach * 0.3, -head * 0.7)]).endFill();
 }
 
 /** A row of solid trapezoid teeth biting from the edge into `lowerCenter`'s side — a rock
@@ -322,6 +348,18 @@ export class EdgeLayer {
     shadows.alpha = colours.shadowAlpha;
     shadows.filters = [wallBlur(size * SHADOW.blur)];
     this.container.addChild(g, shadows);
+    for (const field of board.siegeFields ?? []) for (const cell of field.cells) {
+      const sq = parse(cell);
+      if (!grid.inBounds(sq)) continue;
+      const c = grid.center(sq, size);
+      g.lineStyle(1, field.kind === 'web' ? 0xc5d7dd : 0x946d3c, 0.8);
+      g.beginFill(field.kind === 'web' ? 0xc5d7dd : 0x946d3c, 0.13).drawPolygon(grid.vertices(sq, size).flatMap(p => [p.x, p.y])).endFill();
+      for (const vertex of grid.vertices(sq, size)) g.moveTo(c.x, c.y).lineTo(vertex.x, vertex.y);
+      const label = new PIXI.Text(`${field.kind === 'web' ? 'WEB' : 'DEBRIS'} · R${field.expires}`, { fontFamily: 'sans-serif', fontSize: Math.max(9, size * 0.10), fill: theme.ink });
+      label.anchor.set(0.5); label.position.set(c.x, c.y + size * 0.3);
+      this.container.addChild(label);
+    }
+    g.lineStyle(0);
 
     const seen = new Set<string>();
     const bars: { key: string; wall: Wall; p: Point; q: Point }[] = [];
@@ -366,6 +404,11 @@ export class EdgeLayer {
       bar.name = `Wall_${entry.key}`;
       shadows.addChild(shadow);
       this.container.addChild(bar);
+      if (entry.wall.gate && entry.wall.remaining > 0 && entry.wall.inside) {
+        const c = grid.center(parse(entry.wall.inside), size);
+        const midpoint = { x: (entry.p.x + entry.q.x) / 2, y: (entry.p.y + entry.q.y) / 2 };
+        gateArrow(g, midpoint, c, size);
+      }
     });
 
     // One tower per vertex rather than one per wall reaching it: two walls at a corner used to

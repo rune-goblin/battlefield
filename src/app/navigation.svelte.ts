@@ -1,12 +1,24 @@
-import type { Side } from '../engine/index.js';
+import { SIDES, type Side } from '../engine/index.js';
 import type { CommandResult } from '../runtime/commands.js';
-import { declaredReady, endBattle, game, loadBattle, resetSetup, sideReady, startBattle } from './game.svelte.js';
+import { declaredReady, declareReady, endBattle, game, loadBattle, resetSetup, sideReady, startBattle } from './game.svelte.js';
+import { viewer } from './viewer.svelte.js';
 
 /** Which panel is open. The record keeps the lifecycle stage; which setup tab a client looks
  * at is local to that client and never reaches the executor. */
-export type Stage = 'board' | 'paint' | 'attackers' | 'defenders' | 'battle';
+export type Stage = 'board' | 'paint' | 'siege' | 'attackers' | 'defenders' | 'summary' | 'battle';
+export type SetupStage = Exclude<Stage, 'battle'>;
 
-const STAGES: Stage[] = ['board', 'paint', 'attackers', 'defenders', 'battle'];
+/** The wizard's steps, in order. The rail, the router, and Next/Back all read this one table. */
+export const STEPS: { id: SetupStage; label: string; hint: string }[] = [
+  { id: 'board', label: 'Battlefield', hint: 'Ground, size, and walls' },
+  { id: 'paint', label: 'Paint the map', hint: 'Terrain, heights, and gates' },
+  { id: 'siege', label: 'Siege engines', hint: 'Emplaced engines for both armies' },
+  { id: 'attackers', label: 'Attacking army', hint: 'Choose and deploy' },
+  { id: 'defenders', label: 'Defending army', hint: 'Choose and deploy' },
+  { id: 'summary', label: 'Review and begin', hint: 'Check both armies and the field' },
+];
+
+const STAGES: Stage[] = [...STEPS.map((s) => s.id), 'battle'];
 
 /** The side each deployment stage edits. */
 export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker', defenders: 'defender' };
@@ -16,7 +28,8 @@ export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker',
 function openingStage(): Stage {
   if (game.battle) return 'battle';
   if (!game.setup.board) return 'board';
-  return sideReady('attacker') ? 'defenders' : 'attackers';
+  if (!sideReady('attacker')) return 'attackers';
+  return sideReady('defender') ? 'summary' : 'defenders';
 }
 
 export const nav = $state({ stage: openingStage() });
@@ -31,10 +44,8 @@ export function back() {
   if (i > 0) nav.stage = STAGES[i - 1];
 }
 
-/** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach — the rail's
- * step buttons use this so switching between board/paint/attackers/defenders during setup
- * doesn't cost a walk back through every stage in between. `battle` isn't a valid target:
- * it's reached only through `beginBattle`, once both sides are ready. */
+/** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach. `battle`
+ * isn't a valid target: it's reached only through `beginBattle`. */
 export function goToStage(stage: Stage) {
   if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
   nav.stage = stage;
@@ -43,6 +54,13 @@ export function goToStage(stage: Stage) {
 /** Each of the three below moves the tab once the authority has accepted the transition, so a
  * refused command leaves the player looking at the stage they are still on. */
 export async function beginBattle(): Promise<CommandResult> {
+  // The summary step is the one confirmation: beginning from it gives both armies' word. A
+  // seated player has already given theirs from the same step.
+  for (const side of SIDES) {
+    if (declaredReady(side)) continue;
+    const declared = await declareReady(side, true);
+    if (!declared.ok) return declared;
+  }
   const result = await startBattle();
   if (result.ok) nav.stage = 'battle';
   return result;
@@ -50,7 +68,7 @@ export async function beginBattle(): Promise<CommandResult> {
 
 export async function leaveBattle(): Promise<CommandResult> {
   const result = await endBattle();
-  if (result.ok) nav.stage = 'attackers';
+  if (result.ok) nav.stage = 'board';
   return result;
 }
 
@@ -75,12 +93,36 @@ export interface ForwardStep {
   go: () => Promise<CommandResult> | null;
 }
 
+/** Whether a step's own work is finished, for the rail's tick. */
+export function stepDone(id: SetupStage): boolean {
+  if (!game.setup.board) return false;
+  if (id === 'siege') return game.setup.emplacements.every((e) => e.square !== null);
+  if (id === 'attackers') return sideReady('attacker');
+  if (id === 'defenders') return sideReady('defender');
+  if (id === 'summary') return SIDES.every((side) => declaredReady(side));
+  return true;
+}
+
 /** What the rail's forward button does and says on the current stage. */
 export function forward(): ForwardStep {
   const page = () => { next(); return null; };
-  if (nav.stage === 'board') return { label: 'Next: paint', enabled: !!game.setup.board, go: page };
-  if (nav.stage === 'paint') return { label: 'Next: the attacking force', enabled: !!game.setup.board, go: page };
-  if (nav.stage === 'attackers') return { label: 'Next: the defending force', enabled: sideReady('attacker'), go: page };
-  // Both armies call themselves ready on their own panel; the battle begins on their word.
-  return { label: 'Begin the battle', enabled: declaredReady('attacker') && declaredReady('defender'), go: beginBattle };
+  const i = STEPS.findIndex((s) => s.id === nav.stage);
+  if (nav.stage !== 'summary') {
+    const enabled = nav.stage === 'attackers' ? sideReady('attacker')
+      : nav.stage === 'defenders' ? sideReady('defender') : !!game.setup.board;
+    return { label: 'Next', enabled, go: page };
+  }
+  const deployed = SIDES.every((side) => sideReady(side));
+  if (viewer.isGm) return { label: 'Begin', enabled: deployed, go: beginBattle };
+  // proto: a seated player's Begin gives their own army's word; the GM's starts the battle.
+  const mine = SIDES.filter((side) => viewer.seatedOn(side));
+  return {
+    label: mine.every((side) => declaredReady(side)) ? 'Ready — waiting for the GM' : 'My army is ready',
+    enabled: deployed && mine.some((side) => !declaredReady(side)),
+    go: async () => {
+      let result!: CommandResult;
+      for (const side of mine) if (!declaredReady(side)) result = await declareReady(side, true);
+      return result;
+    },
+  };
 }

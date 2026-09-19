@@ -19,6 +19,7 @@ Built by `createBoardView(canvas, container, opts)` in `src/board/index.ts`:
 interface BoardView {
   setBoard(board: Board | null): void;
   setTokens(tokens: TokenModel[]): void;
+  setFallen(fallen: FallenModel[]): void;                         // ground marks where units died; takes no pointer
   setHighlight(cells: string[], style: HighlightStyle): void;   // 'deploy' | 'move' | 'attack'
   setSelected(sel: { cell: string; side: Side } | null): void;   // a cell, not a token id — see below
   setMode(mode: BoardMode): void;                                 // 'view' | 'paint' | 'place' | 'battle'
@@ -106,7 +107,6 @@ src/board/layers/MapLineLayer.ts   terrain-area and elevation rings, above every
 src/board/layers/GridLayer.ts      the reference hex outline, one weight for every hex
 src/board/layers/OverlayLayer.ts   hover, selection, highlight washes, paint preview
 src/board/layers/TokenLayer.ts     Token sprites, sprite-cache diff, per-tick animation
-src/board/layers/LabelLayer.ts     a–h / 1–8, MapTextUtils lifted, zoom-invariant scale
 src/board/layers/ShotLayer.ts      the aimed shot's arc
 src/board/layers/CastLayer.ts      the aimed cast's line and glow motes
 src/board/layers/EffectLayer.ts    spell resolutions: plays a vfx recipe on a cell, ground + air containers

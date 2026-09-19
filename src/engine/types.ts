@@ -77,8 +77,6 @@ export interface Unit {
   /** Movement banked by Move actions already taken and not yet spent, in feet. */
   feet: number;
   engines: EngineState[];
-  /** Attack-profile selection during siege validation and resolution. */
-  operatingEngine?: string;
   square: Square;
   wounds: number;
   disorder: number;
@@ -168,7 +166,9 @@ export interface SiegeAction extends Acts {
   focus?: number;
 }
 
-export type Action = SiegeAction | ActivityAction | MoveAction | ManeuverAction | ChargeAction | AdvanceAction | FleeAction;
+export interface GateAction extends Acts { type: 'gate'; edge: string; open: boolean; }
+
+export type Action = GateAction | SiegeAction | ActivityAction | MoveAction | ManeuverAction | ChargeAction | AdvanceAction | FleeAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -201,7 +201,7 @@ export interface ActionOffer {
   spell: Tree | null;
   label: string;
   detail: string;
-  activities: [ActivityOption, ActivityOption, ActivityOption];
+  activities: ActivityOption[];
 }
 
 /** One enemy holding the unit: what the Break off roll is read against for it, and what it
@@ -222,7 +222,7 @@ export interface Holder {
  * Fighting retreat. A maneuver moves one hex to reposition or withdraw, and only a
  * critical Break off carries further. */
 export interface ManeuverOffer {
-  activities: [ActivityOption, ActivityOption, ActivityOption];
+  activities: ActivityOption[];
   /** The unit's Reflex, less disorder: what Break off rolls. */
   modifier: number;
   /** The highest attack DC among the holders, which Break off rolls against. */

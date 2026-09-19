@@ -28,7 +28,7 @@ const ZOOM_STEP = 0.0015;
 // A mouse wheel notch arrives as one delta this big or larger; a trackpad two-finger drag
 // arrives as a stream of small ones. The wheel zooms, the trackpad pans.
 const WHEEL_NOTCH = 40;
-const WALL_TIERS = 4;
+const WALL_TIERS = 5;
 // A wall stroke prefers edges it is travelling along: |cos| ≥ this against the drag vector.
 // 0.45 admits a hex's 60° edges, which a zigzag row boundary needs, and rejects the square
 // grid's perpendicular edge at a cell corner.
@@ -73,8 +73,6 @@ export interface InteractionOptions {
   onBrush(brush: Brush | null): void;
   /** Escape: the stage drops its selection. */
   onClear(): void;
-  /** Pan or zoom happened; zoom-invariant text needs rescaling. */
-  onViewport(): void;
   /** A board-internal token drag: `point` (board-local) while live, `null` on drop/cancel. */
   onDrag(id: string, point: Point | null): void;
 }
@@ -541,9 +539,8 @@ export class Interaction {
   }
 
   // Pan and zoom move the board under a stationary pointer, so the hover is stale until it
-  // is recomputed; the labels need their inverse scale refreshed for the same reason.
+  // is recomputed.
   private viewportChanged(): void {
-    this.o.onViewport();
     if (this.pointerInside) this.updateHover(this.lastScreen);
   }
 

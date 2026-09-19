@@ -2,11 +2,12 @@
   import { onMount, untrack } from 'svelte';
   import type { TerrainAppearance } from '../board/terrain-textures.js';
   import {
-    createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardPopup, type BoardView, type Brush,
+    createBoardView, HIGHLIGHT_STYLES, type BoardEventOf, type BoardMode, type BoardPopup, type BoardView, type Brush, type FallenModel,
     type TargetArrow, type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
   } from '../board/index.js';
   import type { Board, Side, Tree } from '../engine/index.js';
   import { statusBars } from '../board/status-bars.js';
+  import HexInfo from './HexInfo.svelte';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
@@ -16,6 +17,8 @@
     /** The illustrated map, in place of the textured surfaces — see `BoardView.setInkMap`. */
     inkMap?: InkMapAppearance | null;
     tokens?: TokenModel[];
+    /** The units that died on this board — see `BoardView.setFallen`. */
+    fallen?: FallenModel[];
     mode?: BoardMode;
     brush?: Brush | null;
     /** One cell set per style; a style missing from the list is cleared. */
@@ -54,7 +57,7 @@
     ontrayhover?: (cell: string | null) => void;
   }
   let {
-    board, terrainAppearance = null, inkMap = null, tokens = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
+    board, terrainAppearance = null, inkMap = null, tokens = [], fallen = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop, ontrayhover,
   }: Props = $props();
 
@@ -112,6 +115,7 @@
     untrack(() => target?.setInkMap(appearance));
   });
   $effect(() => { view?.setTokens(tokens); });
+  $effect(() => { view?.setFallen(fallen); });
   $effect(() => { view?.setMode(mode); });
   $effect(() => { view?.setBrush(brush); });
   // One `setHighlight` call per known style, in a single effect: two independent effects
@@ -148,6 +152,7 @@
     ondragleave={ontrayhover && (() => ontrayhover(null))}
     ondrop={ontraydrop && ((e) => { e.preventDefault(); ontraydrop(view?.cellAt(e.clientX, e.clientY) ?? null, e.dataTransfer); })}
   ></canvas>
+  <HexInfo {board} cell={hoveredCell} {tokens} {fallen} />
 </div>
 
 <style>

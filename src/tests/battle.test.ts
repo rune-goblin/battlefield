@@ -253,7 +253,7 @@ describe('Cast', () => {
     const cast = act(s, { type: 'cast', activity: 2, spell: 'blast', target: 'd3+d4', unit: 'u0' }, scriptedRng([10]));
     expect(unit(cast, 'u2').wounds).toBe(1);
     expect(unit(cast, 'u3').wounds).toBe(2);
-    expect(cast.log.filter((e) => e.text.startsWith('Line catches'))).toHaveLength(2);
+    expect(cast.log.filter((e) => e.text.includes('Line against'))).toHaveLength(2);
   });
 
   it("reads the worse of the shape's two dice against a ward in the Line's second hex", () => {
@@ -304,8 +304,8 @@ describe('Cast', () => {
     // Level-6 divine spell attack +11. Roll 15 totals 26: against level 2's DC 16 that clears
     // dc + 10, a critical success; against level 15's DC 34 it falls short, a plain failure.
     const cast = act(s, { type: 'cast', activity: 2, spell: 'healing', target: 'u1+u2', unit: 'u0' }, scriptedRng([15]));
-    expect(cast.log.find((e) => e.text.startsWith('Heal reaches Levy'))!.check!.degree).toBe('critical-success');
-    expect(cast.log.find((e) => e.text.startsWith('Heal reaches Champion'))!.check!.degree).toBe('failure');
+    expect(cast.log.find((e) => e.text.includes('Heal check for Levy'))!.check!.degree).toBe('critical-success');
+    expect(cast.log.find((e) => e.text.includes('Heal check for Champion'))!.check!.degree).toBe('failure');
   });
 });
 
@@ -380,7 +380,7 @@ describe('Offense', () => {
     const landed = endActivation(passed, scriptedRng([1]), 'u2');
     expect(unit(landed, 'u2').wounds).toBe(2);
     expect(unit(landed, 'u2').persistent).toBeNull();
-    expect(said(landed, 'braces against the persistent wound')).toBe(true);
+    expect(said(landed, 'Fortitude save against the persistent wound')).toBe(true);
   });
 
   const casterAnd = (caster: UnitCard) => createBattle({
@@ -540,7 +540,7 @@ describe('Movement', () => {
     expect(unit(cast, 'u1').square).toEqual(parse('b3'));
     expect(unit(cast, 'u1').wounds).toBe(0);
     expect(unit(cast, 'u1').actions).toBe(ACTIONS_PER_ACTIVATION);
-    expect(said(cast, 'strikes the')).toBe(false);
+    expect(said(cast, 'Free strike against')).toBe(false);
   });
 });
 
@@ -712,7 +712,7 @@ describe('movement points', () => {
     const { state } = battle([], board);
     place(state, 'u2', 'c4');
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 10]));
-    const save = s.log.find((e) => e.text.includes('braces against the wound'))!.check!;
+    const save = s.log.find((e) => e.text.includes('Fortitude save against the wound'))!.check!;
     expect(save.modifier).toBe(unit(s, 'u2').stats.fortitude - 2);
   });
 
@@ -797,7 +797,7 @@ describe('one attack an activation, and actions buy acts', () => {
     expect(unit(press, 'u0').actions).toBe(1);
 
     const overrun = act(engaged(), { type: 'fight', activity: 3, target: 'u2', unit: 'u0' }, scriptedRng([10, 5]));
-    expect(overrun.log.some((e) => e.text.includes('overruns'))).toBe(true);
+    expect(overrun.log.some((e) => e.text.includes('Overrun against'))).toBe(true);
     expect(overrun.activated).toContain('u0');
   });
 
@@ -1170,8 +1170,8 @@ describe('maneuver', () => {
   it('reads the one roll for every holder, so a grip it cleared lands no free strike', () => {
     // 5 + 14 = 19: a failure against the Trolls' DC 23, a success against the Kobolds' 17.
     const s = breakOff(held({ u2: 'c3', u3: 'b2' }), [5, 20, 20]);
-    expect(said(s, 'Trolls strikes the maneuvering')).toBe(true);
-    expect(said(s, 'Kobolds strikes the maneuvering')).toBe(false);
+    expect(said(s, "Trolls' Free strike against")).toBe(true);
+    expect(said(s, "Kobolds' Free strike against")).toBe(false);
     expect(wounds(s)).toBe(1);
     expect(where(s)).toBe('c1');
   });
@@ -1409,11 +1409,11 @@ describe('an emplaced engine', () => {
     board: openBoard(),
   });
 
-  it('is crewed by whichever friendly stands beside it, and lets that unit fire it', () => {
+  it('reserves an adjacent emplacement without replacing the troop shooting profile', () => {
     const state = emplaced();
     expect(state.engines[0].status).toBe('crewed');
     expect(crewOf(state, state.engines[0])!.id).toBe('u1');
-    expect(shootModifier(state, unit(state, 'u1'), unit(state, 'u0'))).toBe(catapult.launch);
+    expect(shootModifier(state, unit(state, 'u1'), unit(state, 'u0'))).not.toBe(catapult.launch);
   });
 
   it('holds its square when the crew walks off, and goes abandoned', () => {

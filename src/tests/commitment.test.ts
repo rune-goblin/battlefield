@@ -21,19 +21,19 @@ const checkFor = (s: ReturnType<typeof setup>, text: string) => s.log.find(e => 
 describe('action commitment', () => {
   it('buys attack accuracy, spends the full cost, and retains one attack per activation', () => {
     const s = act(setup(true), { unit: 'u0', type: 'fight', activity: 1, target: 'u2', focus: 1 }, scriptedRng([11, 20]));
-    expect(checkFor(s, 'strikes').modifier).toBe(13);
+    expect(checkFor(s, 'Strike against').modifier).toBe(13);
     expect(unit(s, 'u2').wounds).toBe(1);
     expect(unit(s, 'u0').actions).toBe(1);
     expect(() => act(s, { unit: 'u0', type: 'fight', activity: 1, target: 'u2' }, scriptedRng([20]))).toThrow(/already attacked/);
     const full = act(setup(true), { unit: 'u0', type: 'fight', activity: 1, target: 'u2', focus: 2 }, scriptedRng([10, 20]));
-    expect(checkFor(full, 'strikes').modifier).toBe(15);
+    expect(checkFor(full, 'Strike against').modifier).toBe(15);
     expect(full.activated).toContain('u0');
   });
 
   it('supports a focused tier-two shot without changing its suppression effect', () => {
     const state = setup(); unit(state, 'u2').square = parse('c5');
     const s = act(state, { unit: 'u0', type: 'shoot', activity: 2, target: 'u2', focus: 1 }, scriptedRng([11, 20]));
-    expect(checkFor(s, 'suppresses').modifier).toBe(13);
+    expect(checkFor(s, 'Suppress against').modifier).toBe(13);
     expect(unit(s, 'u2').suppressedBy).toBe('u0');
     expect(s.activated).toContain('u0');
   });
@@ -41,7 +41,7 @@ describe('action commitment', () => {
   it('stacks commitment with the charge bonus and retains exposure', () => {
     const state = setup(); unit(state, 'u2').square = parse('c4');
     const s = act(state, { unit: 'u0', type: 'charge', target: 'u2', focus: 2 }, scriptedRng([10, 20]));
-    expect(checkFor(s, 'strikes').modifier).toBe(17);
+    expect(checkFor(s, 'Strike against').modifier).toBe(17);
     expect(unit(s, 'u0').exposed).toBe(true);
     expect(s.activated).toContain('u0');
   });
@@ -59,14 +59,14 @@ describe('action commitment', () => {
   it('lets a hasted unit concentrate tier three but caps the extra bonus at +4', () => {
     const state = setup(true); unit(state, 'u0').haste = 2;
     const s = act(state, { unit: 'u0', type: 'fight', activity: 3, target: 'u2', focus: 1 }, scriptedRng([11, 20, 20]));
-    expect(checkFor(s, 'overruns').modifier).toBe(13);
+    expect(checkFor(s, 'Overrun against').modifier).toBe(13);
     expect(s.activated).toContain('u0');
   });
 
   it('allows concentrated Missile above the tradition activity cap', () => {
     const state = setup(); unit(state, 'u2').square = parse('c5');
     const s = act(state, { unit: 'u0', type: 'cast', spell: 'blast', activity: 1, target: 'u2', focus: 2 }, scriptedRng([10, 20]));
-    expect(checkFor(s, 'Missile catches').modifier).toBe(15);
+    expect(checkFor(s, 'Missile against').modifier).toBe(15);
     expect(unit(s, 'u2').wounds).toBe(1);
     expect(unit(s, 'u0').castTrees).toContain('blast');
   });
@@ -76,7 +76,7 @@ describe('action commitment', () => {
     unit(state, 'u2').square = parse('c5'); unit(state, 'u3').square = parse('c6');
     const target = availableActions(state, 'u0').find(o => o.spell === 'blast')!.activities[1].targets.find(t => t.id.split('+').sort().join('+') === 'c5+c6')!;
     const s = act(state, { unit: 'u0', type: 'cast', spell: 'blast', activity: 2, target: target.id, focus: 1 }, scriptedRng([11, 20, 20]));
-    const checks = s.log.filter(e => e.text.includes('Line catches')).map(e => e.check!);
+    const checks = s.log.filter(e => e.text.includes('Line against')).map(e => e.check!);
     expect(checks.map(c => [c.roll, c.modifier])).toEqual([[11, 13], [11, 13]]);
     expect([unit(s, 'u2').wounds, unit(s, 'u3').wounds]).toEqual([1, 1]);
   });
@@ -89,13 +89,13 @@ describe('action commitment', () => {
     const rallied = act(state, { unit: 'u0', type: 'rally', activity: 1, focus: 2 }, scriptedRng([8]));
     expect(unit(rallied, 'u0').disorder).toBe(0);
     expect(unit(rallied, 'u1').disorder).toBe(1);
-    expect(checkFor(rallied, 'steadies').modifier).toBe(16);
+    expect(checkFor(rallied, 'Will check to').modifier).toBe(16);
   });
 
   it('boosts Controlling DC and retains the chosen activity effect', () => {
     const state = setup(); unit(state, 'u2').square = parse('c5');
     const s = act(state, { unit: 'u0', type: 'cast', spell: 'controlling', activity: 2, target: 'u2', focus: 1 }, scriptedRng([9]));
-    expect(checkFor(s, 'resists').dc).toBe(23);
+    expect(checkFor(s, 'Will save against').dc).toBe(23);
     expect(unit(s, 'u2').disorder).toBe(1);
     expect(unit(s, 'u2').stunned).toBe(true);
     expect(unit(s, 'u2').rooted).toBe(0);

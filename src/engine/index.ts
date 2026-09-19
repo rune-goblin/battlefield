@@ -5,6 +5,7 @@ export * from './check.js';
 export * from './ladders.js';
 export * from './magic.js';
 export * from './types.js';
+export * from './status.js';
 export * from './battle.js';
 export * from './aftermath.js';
 export * from './roster.js';

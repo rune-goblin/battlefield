@@ -59,7 +59,11 @@ declare const Hooks: {
 };
 
 declare const game: {
-  modules: { get(id: string): { api?: unknown } | undefined };
+  modules: { get(id: string): { api?: unknown; active?: boolean } | undefined };
+  actors: {
+    contents: FoundryActor[];
+    get(id: string): FoundryActor | undefined;
+  };
   settings: {
     register(namespace: string, key: string, data: FoundryWorldSettingConfig): void;
     get(namespace: string, key: string): string;
@@ -80,6 +84,15 @@ declare const game: {
     on(channel: string, handler: (message: unknown) => void): void;
   } | null;
 };
+
+/** The slice of an actor document the troop picker reads; the PF2e adapter reads the rest. */
+interface FoundryActor {
+  id: string;
+  name: string;
+  type: string;
+  folder: { name: string } | null;
+  getFlag(scope: string, key: string): unknown;
+}
 
 interface FoundryUser {
   id: string;

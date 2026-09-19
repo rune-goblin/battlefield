@@ -7,8 +7,10 @@ const LEVEL_DC = [14, 15, 16, 18, 19, 20, 22, 23, 24, 26, 27, 28, 30, 31, 32, 34
 const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((f) => {
   const d = JSON.parse(readFileSync(join(dir.pathname, f), 'utf8'));
   const text = d.text ?? '';
-  const launch = /Launch[^]*?$/.exec(text)?.[0] ?? '';
-  const ram = /\bRam\b/.test(text) && !/Launch/.test(text);
+  const launch = /(?:Launch|Fire)[^]*?$/.exec(text)?.[0] ?? '';
+  const ram = (/\bRam\b/.test(text) && !/Launch/.test(text)) || d.name === 'Wolf Fang';
+  const rawLoad = ({ Single: 1, Two: 2, Three: 3 }[/\bLoad (Single|Two|Three) Actions?/.exec(text)?.[1]] ?? 1) * Number(/\bLoad[^]*?(\d+) times?/.exec(text)?.[1] ?? 1);
+  const noLoad = ram || d.name === 'Bolt Emitter';
   const dc = Number(/DC (\d+) (?:basic )?(?:Reflex|Fortitude|Will)/.exec(launch)?.[1] ?? NaN);
   const rangeFt = Number(/range increment (\d+) feet/.exec(text)?.[1] ?? NaN);
   const level = d.level ?? 1;
@@ -24,9 +26,9 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
     // Thirty sheet feet become one 10-foot battlefield hex, as for troops.
     // Engines retain half-hex pacing so slower equipment costs two Moves per hex.
     // Portable equipment travels at its crew's pace; mounted equipment needs a listed speed.
-    speed: /portable/.test(d.usage ?? '') ? null : /tracks/.test(d.speed ?? '') ? 0 : Math.ceil(Number(/^(\d+)/.exec(d.speed ?? '')?.[1] ?? 0) / 15) * 5,
-    loadCost: ram ? 0 : ({ Single: 1, Two: 2, Three: 3 }[/\bLoad (Single|Two|Three) Actions?/.exec(text)?.[1]] ?? 1),
-    loadSteps: ram ? 0 : Number(/\bLoad[^]*?(\d+) times?/.exec(text)?.[1] ?? 1),
+    speed: d.name === 'Wolf Fang' ? 5 : /portable/.test(d.usage ?? '') ? null : /tracks/.test(d.speed ?? '') ? 0 : Math.ceil(Number(/^(\d+)/.exec(d.speed ?? '')?.[1] ?? 0) / 15) * 5,
+    loadCost: noLoad ? 0 : rawLoad <= 4 ? 1 : rawLoad <= 8 ? 2 : 3,
+    loadSteps: noLoad ? 0 : 1,
 
     source: d.source?.book ?? '',
   };

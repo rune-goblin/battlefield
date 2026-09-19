@@ -13,6 +13,7 @@ export type PaintBrush =
   | { kind: 'terrain'; terrain: SquareTerrain }
   | { kind: 'elevation'; level: number }
   | { kind: 'wall'; tier: number }
+  | { kind: 'gate'; flip: boolean }
   | { kind: 'wall-clear' }
   | { kind: 'erase' };
 

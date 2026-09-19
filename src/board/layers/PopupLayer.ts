@@ -1,13 +1,17 @@
 import * as PIXI from 'pixi.js';
-import type { Grid, Point } from '../../engine/index.js';
+import { STATUSES, type Grid, type Point } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
+import type { StatusIcon } from '../art.js';
+import { STATUS_INTRO } from '../Token.js';
 
 export type PopupTone = 'good' | 'bad' | 'warn';
 const BARS = ['wounds', 'morale'] as const;
-const ICONS = [...BARS, 'frightened', 'stunned', 'rooted', 'pinned', 'suppressed', 'exposed', 'persistent', 'routed'] as const;
+const ICONS = [...BARS, 'routed', 'dead', ...STATUSES] as const;
 /** A file in `art/condition-icons/`. A bar's icon follows its number; any other leads its word. */
 export type PopupIcon = typeof ICONS[number];
 const isBar = (icon: PopupIcon | undefined): boolean => BARS.some((bar) => bar === icon);
+// A part that names a status is played by the token's own slot, and the word becomes its caption.
+const conditionOf = (part: PopupPart): StatusIcon | null => STATUSES.find((status) => status === part.icon) ?? null;
 
 export interface PopupPart { text: string; tone: PopupTone; icon?: PopupIcon; /** Drawn larger: the one word that settles the whole action. */ loud?: boolean }
 
@@ -24,6 +28,14 @@ export interface PopupLayerOptions {
   positionOf(token: string): Point | null;
   /** Words wait for the pieces to stop, so a charge reads its result where it ends. */
   moving(): boolean;
+  /** A condition is shown by the token's own icon, large over the piece and then down into its
+   * slot. The token holds the icon back until `announce`, which is false when the piece has
+   * no such icon to play. */
+  expect(token: string, icons: StatusIcon[]): void;
+  announce(token: string, icons: StatusIcon[]): boolean;
+  /** A death is played the same way by the mark it leaves on the ground. */
+  expectFallen(token: string): void;
+  announceFallen(token: string): boolean;
 }
 
 const FONT = 'Carter One';
@@ -115,12 +127,12 @@ function iconFor(icon: PopupIcon, x: number): PIXI.Sprite | null {
 
 const PART_GAP = DRAWN_PX * 0.45;
 
-function build(popup: BoardPopup): PIXI.Container {
+function build(popup: BoardPopup, bare = false): PIXI.Container {
   const body = new PIXI.Container();
   let x = 0;
   for (const part of popup.parts) {
     if (x) x += PART_GAP;
-    const leads = part.icon && !isBar(part.icon) ? iconFor(part.icon, x) : null;
+    const leads = !bare && part.icon && !isBar(part.icon) ? iconFor(part.icon, x) : null;
     if (leads) { body.addChild(leads); x += leads.width + ICON_GAP; }
     const text = new PIXI.Text(part.text, styleFor(part.tone));
     text.resolution = 2;
@@ -136,6 +148,12 @@ function build(popup: BoardPopup): PIXI.Container {
 }
 
 const isEffect = (popup: BoardPopup): boolean => popup.parts.every((part) => isBar(part.icon));
+const conditionsOf = (popup: BoardPopup): StatusIcon[] | null => {
+  const icons = popup.parts.map(conditionOf);
+  return icons.every((icon): icon is StatusIcon => icon !== null) ? icons : null;
+};
+const isDeath = (popup: BoardPopup): boolean => popup.parts.length === 1 && popup.parts[0].icon === 'dead';
+const CAPTION_SCALE = 0.7;
 
 interface Live {
   popup: BoardPopup;
@@ -146,6 +164,9 @@ interface Live {
   /** World units climbed to clear the words that arrived later over the same piece. */
   lift: number;
   lifted: number;
+  /** Set when the token plays the icon: the word stands under the piece for this long and
+   * fades as the last icon settles. */
+  caption: number | null;
 }
 
 const easeOutBack = (t: number): number => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
@@ -170,7 +191,7 @@ export class PopupLayer {
       if (!entry.text && held) continue;
       entry.elapsed += dt;
       if (entry.elapsed < 0) continue;
-      if (entry.elapsed >= LIFE_MS) { this.remove(entry); continue; }
+      if (entry.elapsed >= (entry.caption ?? LIFE_MS)) { this.remove(entry); continue; }
       this.draw(entry);
     }
   };
@@ -196,25 +217,43 @@ export class PopupLayer {
     const waiting = this.live.filter((entry) => !entry.text);
     const latest = Math.min(...this.live.map((entry) => entry.elapsed));
     const stagger = waiting.length >= CROWDED ? CROWDED_STAGGER_MS : STAGGER_MS;
-    this.live.push({ popup, text: null, elapsed: Math.min(-LEAD_MS, latest - stagger), scale: 1, lift: 0, lifted: 0 });
+    this.live.push({ popup, text: null, elapsed: Math.min(-LEAD_MS, latest - stagger), scale: 1, lift: 0, lifted: 0, caption: null });
+    const conditions = conditionsOf(popup);
+    if (conditions) this.opts.expect(popup.token, conditions);
+    if (isDeath(popup)) this.opts.expectFallen(popup.token);
   }
 
   private draw(entry: Live): void {
     if (!entry.text) {
-      entry.text = build(entry.popup);
+      const conditions = conditionsOf(entry.popup);
+      if (conditions && this.opts.announce(entry.popup.token, conditions)) {
+        const { fadeMs, holdMs, settleMs } = STATUS_INTRO;
+        entry.caption = conditions.length * (fadeMs + holdMs) + settleMs;
+      }
+      if (isDeath(entry.popup) && this.opts.announceFallen(entry.popup.token)) {
+        entry.caption = STATUS_INTRO.fadeMs + STATUS_INTRO.holdMs + STATUS_INTRO.settleMs;
+      }
+      entry.text = build(entry.popup, entry.caption !== null);
       const zoom = this.viewport.scale.x || 1;
       const screenPx = Math.min(SCREEN_PX.max, Math.max(SCREEN_PX.min, this.size * zoom * SCREEN_PX.perCell));
-      const emphasis = isEffect(entry.popup) ? EFFECT_SCALE : entry.popup.parts.some((part) => part.loud) ? LOUD_SCALE : 1;
+      const emphasis = entry.caption !== null ? CAPTION_SCALE : isEffect(entry.popup) ? EFFECT_SCALE : entry.popup.parts.some((part) => part.loud) ? LOUD_SCALE : 1;
       entry.scale = emphasis * screenPx / (DRAWN_PX * zoom);
       this.container.addChild(entry.text);
       const height = entry.text.height * entry.scale;
-      for (const older of this.live) {
+      if (entry.caption === null) for (const older of this.live) {
         if (older !== entry && older.text && older.popup.token === entry.popup.token) older.lift += height;
       }
     }
     const t = entry.elapsed;
     entry.lifted += (entry.lift - entry.lifted) * Math.min(1, this.ticker.deltaMS / LIFT_MS);
     const at = this.opts.positionOf(entry.popup.token) ?? this.grid!.center(this.grid!.parse(entry.popup.cell), this.size);
+    if (entry.caption !== null) {
+      const { fadeMs, settleMs } = STATUS_INTRO;
+      entry.text.position.set(at.x, at.y + this.size * 0.5 + entry.text.height * entry.scale);
+      entry.text.scale.set(entry.scale);
+      entry.text.alpha = Math.min(1, t / fadeMs, Math.max(0, (entry.caption - t) / settleMs));
+      return;
+    }
     const rise = this.size * RISE_CELLS * easeOutCubic(Math.min(1, t / RISE_MS)) + entry.lifted;
     const fade = Math.max(0, (t - (LIFE_MS - FADE_MS)) / FADE_MS);
     const pop = isEffect(entry.popup) ? EFFECT_POP_MS : POP_MS;

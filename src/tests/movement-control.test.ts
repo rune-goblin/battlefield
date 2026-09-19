@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, at, chargePath, chargeTargets, createBattle, defenceOf, edgeKey, engagedEnemies,
   escapeModifier, fortitudeModifier, gridOf, maneuverOffer, maneuverTargets, movePath, moveReach,
-  notation, parse, reachOf, select, shootModifier, strikeModifier, willModifier,
+  notation, parse, reachOf, select, shootModifier, stepFeet, strikeModifier, TERRAIN_FEET, willModifier,
   type UnitCard,
 } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
@@ -39,21 +39,21 @@ describe('wounds record survival without reducing performance', () => {
     expect(strikeModifier(b, u, enemy)).toBe(fresh - 2);
   });
 
-  it.each(['fight', 'shoot'] as const)('preserves the %s modifier against a wall when wounded', type => {
+  it.each(['fight', 'siege'] as const)('preserves the %s modifier against a wall when wounded', type => {
     const b = state('square'); const u = b.units[0];
     const wall = edgeKey(u.square, parse('c3'));
     b.board.walls[wall] = {tier: 1, boxes: 2, remaining: 2};
-    u.engines.push({id:'eq-bellows',name:'Flame Bellows',kind:'artillery',launch:14,reach:'short',fired:false,emplaced:false,status:'crewed',square:u.square,side:u.side});
+    u.engines.push({id:'eq-bellows',name:'Ballista',kind:'artillery',launch:14,reach:'short',fired:false,emplaced:false,status:'crewed',square:u.square,side:u.side});
     const modifier = (wounds: number) => {
       u.wounds = wounds;
-      return act(select(b, u.id), {type,unit:u.id,activity:1,target:wall}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;
+      return act(select(b, u.id), type === 'siege' ? {type,unit:u.id,activity:2,target:wall,engine:'eq-bellows',operation:'attack'} : {type,unit:u.id,activity:1,target:wall}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;
     };
     expect(modifier(3)).toBe(modifier(0));
   });
 });
 
 describe('routes respect enemy control', () => {
-  it('prices a Maneuver step against terrain and rejects unaffordable climbs', () => {
+  it('prices a Maneuver step at the worst of its terrain and its climb', () => {
     const b = state('square'); const [u, holder] = b.units;
     holder.square = parse('c3');
     at(b.board, parse('d2')).terrain = 'forest';
@@ -66,7 +66,8 @@ describe('routes respect enemy control', () => {
     expect(moved.units[0].actions).toBe(1);
     at(b.board, parse('d2')).terrain = 'swamp';
     at(b.board, parse('d2')).elevation = 1;
-    expect(maneuverOffer(b, u.id)!.targets.map(t => t.id)).not.toContain('d2');
+    expect(stepFeet(b.board, parse('c2'), parse('d2'))).toBe(TERRAIN_FEET.swamp);
+    expect(maneuverOffer(b, u.id)!.targets.map(t => t.id)).toContain('d2');
   });
 
   it('ends at first contact and rejects a long drag through a controlled corridor', () => {
@@ -114,7 +115,7 @@ describe('routes respect enemy control', () => {
     expect(() => act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'g2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
     const escaped = act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'f2'},scriptedRng([20]));
     expect(notation(escaped.units[0].square)).toBe('f2');
-    expect(escaped.log.some(entry => entry.check && entry.text.includes('breaks off'))).toBe(true);
+    expect(escaped.log.some(entry => entry.check && entry.text.includes('check to break off'))).toBe(true);
     expect(engagedEnemies(escaped, escaped.units[0]).map(e => e.id)).toEqual([blocker.id]);
     expect(moveReach(escaped, escaped.units[0]).size).toBe(0);
   });

@@ -1,11 +1,11 @@
-import { notation, type BattleState, type Tree, type Verb } from '../engine/index.js';
+import { castActivityOf, MAX_WOUNDS, notation, type BattleState, type Tree, type Verb } from '../engine/index.js';
 import type { PopupPart, TargetArrow, TargetIcon } from '../board/index.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
 import { unitOf } from './battle-lookup.js';
 import type { NotificationService } from './notifications.js';
 import { noticesFor, type NoticeViewer } from './session-notices.js';
-import { conditionWord, effectWord, RESISTED, ROUTED, wordFor, type ResultWord } from './result-words.js';
+import { conditionWord, DESTROYED, effectWord, RESISTED, ROUTED, tookHold, wordFor, type ResultWord } from './result-words.js';
 import type { TargetMarker } from './targeting.js';
 
 /** What floats over a piece at one moment: a word, or every bar a blow moved, side by side.
@@ -81,10 +81,13 @@ function marksOf(events: readonly BattleEvent[], battle: BattleState, actor: str
 function wordOf(event: BattleEvent): { unit: string; word: ResultWord | null } | null {
   if (event.type === 'checkResolved') return event.lands && { unit: event.lands.unit, word: wordFor(event.lands.reads, event.check.degree) };
   if (event.type === 'freeStrikeResolved') return event.check && { unit: event.target, word: wordFor('attack', event.check.degree) };
-  // A cast carries a check only where the target's own save announces it. The degree matters to
-  // nobody: a target that shrugs the whole cast off resisted it, and every other outcome shows
-  // as the condition or the disorder it left.
-  if (event.type === 'spellResolved') return event.check?.degree === 'critical-success' && event.targets.length ? { unit: event.targets[0], word: RESISTED } : null;
+  // A cast carries a check only where the target's own save announces it. A save is the caster's
+  // failure, so it reads Resisted in red even where a lesser effect still lands; a failed save
+  // reads as the spell's own name, and the conditions and disorder it leaves follow.
+  if (event.type === 'spellResolved' && event.check && event.targets.length) {
+    const saved = event.check.degree === 'success' || event.check.degree === 'critical-success';
+    return { unit: event.targets[0], word: saved ? RESISTED : tookHold(castActivityOf(event.tree, event.activity).label) };
+  }
   return null;
 }
 
@@ -121,6 +124,13 @@ function popupsOf(events: readonly BattleEvent[], battle: BattleState): ResultPo
     if (kind && last >= 0 && kinds.get(popups[last]) === kind) popups[last].parts.push(...effect.parts);
     else popups.splice(last < 0 ? popups.length : last + 1, 0, effect);
     if (kind) kinds.set(effect, kind);
+  }
+  // proto: no event names a death, so the wound that fills the track stands for it. It is the
+  // last word over the piece.
+  for (const event of events) {
+    if (event.type !== 'woundsChanged' || event.to < MAX_WOUNDS) continue;
+    const death = popupOf({ unit: event.unit, word: DESTROYED });
+    if (death) popups.splice(popups.map((p) => p.unit).lastIndexOf(event.unit) + 1, 0, death);
   }
   return popups;
 }

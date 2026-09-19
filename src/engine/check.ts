@@ -40,3 +40,23 @@ export function rollTwice(rng: Rng, modifier: number, dc: number, better: boolea
 }
 
 export const succeeded = (d: Degree) => d === 'success' || d === 'critical-success';
+
+const DEGREE_WORD: Record<Degree, string> = {
+  'critical-failure': 'critical failure', failure: 'failure', success: 'success', 'critical-success': 'critical success',
+};
+const ATTACK_WORD: Record<Degree, string> = {
+  'critical-failure': 'critical miss', failure: 'miss', success: 'hit', 'critical-success': 'critical hit',
+};
+
+export const possessive = (name: string): string => (name.endsWith('s') ? `${name}'` : `${name}'s`);
+
+/**
+ * Every roll is logged the same way: whose roll, what it is and against what, the sum, the
+ * outcome. "Troll Marauders' Will save against Line Infantry's repulse: 5 + 11 = 16 vs 22,
+ * failure." The roll is named as a noun, so the outcome is the only verdict in the line: a verb
+ * such as "resists" or "breaks off" reads as a result and then contradicts the one that follows.
+ * An attack ends in hit or miss, the words the board shows for it.
+ */
+export function rollLine(who: string, what: string, c: CheckResult, kind: 'attack' | 'check' = 'check'): string {
+  return `${possessive(who)} ${what}: ${c.roll} + ${c.modifier} = ${c.total} vs ${c.dc}, ${(kind === 'attack' ? ATTACK_WORD : DEGREE_WORD)[c.degree]}.`;
+}

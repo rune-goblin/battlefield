@@ -14,6 +14,7 @@ export const TERRAIN_FEET = Object.fromEntries(
 export const CLIMB_FEET = CELL_FEET;
 
 export interface MoveOpts {
+  climber?: boolean;
   /** Feet of movement to spend. */
   budget: number;
   /** A flier ignores terrain cost and every blocked edge. */
@@ -50,12 +51,16 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
   const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
   // Even ground is a question about the ground, not about the price, so it is asked ahead of
   // flight: a flier pays 1 a hex over forest and has still crossed forest.
-  if (opts.evenGround && !opts.surefooted && (!TERRAIN[at(board, to).terrain].charge || climb > 0)) return Infinity;
+  if (opts.evenGround && !opts.surefooted && (!TERRAIN[at(board, to).terrain].charge || climb > 0 || !!board.siegeFields?.some(f => f.cells.includes(notation(to))))) return Infinity;
   if (opts.flying) return CELL_FEET;
-  if (barrierBetween(board, from, to) !== null) return Infinity;
+  const barrier = barrierBetween(board, from, to);
+  const web = opts.climber && board.siegeFields?.some(f => f.kind === 'web' && f.cells.includes(notation(from)) && f.cells.includes(notation(to)));
+  if (barrier && !(barrier.kind === 'wall' && web)) return Infinity;
   // Water is the one ground Sure footing cannot flatten: it blocks where forest merely costs.
   if (opts.surefooted) return Number.isFinite(ground) ? CELL_FEET : Infinity;
-  return ground + climb * CLIMB_FEET;
+  const field = board.siegeFields?.some(f => f.cells.includes(notation(to)));
+  // Costs never add: the step pays the worst of its ground, a siege field, and its climb.
+  return Math.max(ground, field ? 2 * CELL_FEET : 0, climb ? CELL_FEET + climb * CLIMB_FEET : 0);
 }
 
 /**
@@ -64,7 +69,7 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
  */
 export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap {
   const g = gridOf(board);
-  const step: StepOpts = { flying: opts.flying, surefooted: opts.surefooted, evenGround: opts.evenGround };
+  const step: StepOpts = { climber: opts.climber, flying: opts.flying, surefooted: opts.surefooted, evenGround: opts.evenGround };
   const occupied = opts.occupied ?? new Set<string>();
   const startKey = notation(start);
   const reach: ReachMap = new Map([[startKey, { feet: 0, from: null }]]);

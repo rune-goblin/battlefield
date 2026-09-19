@@ -71,3 +71,9 @@ index, not the total cost. `ActivityOption.cost` remains the base price.
 The activity selector shows total cost and the bonus before confirmation. Target selection
 preserves commitment; changing the activity clears it. `TargetingService.resolve` supplies
 the base action, and the battle UI attaches commitment before calling `takeAction`.
+
+## Fortification tiers
+
+Pass ReignMaker's hex fortification tier through unchanged: 1 Earthworks, 2 Wooden Tower, 3 Stone Tower, 4 Fortress. These are the hex tiers from `src/data/fortificationTiers.ts`, rather than the settlement support-building progression. Tier 0 remains a legacy barricade. Battlefield derives wall durability, hardness, and cover from the tier and generates one closed gate with an explicit interior hex. The campaign adapter must avoid adding the same campaign bonus twice to troop statistics.
+
+Wall state carries remaining boxes, an optional interior cell, and optional gate open state. Save and handoff these fields with the board. Temporary siege fields also persist within a day and clear overnight. Structure-damaging siege abilities currently target walls and gates; future building targets should use the same structural damage calculation.

@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { COMBATANTS, deployRanks, ENGINES, derivation, gridOf, notation, OFFICIAL, paceReason, ROSTER, type Side, type UnitCard } from '../engine/index.js';
+  import { deployRanks, ENGINES, derivation, gridOf, notation, paceReason, type Side, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
   import { AppShell, MapControls, TopBar } from './shell/index.js';
-  import StageNav from './StageNav.svelte';
+  import WizardRail from './WizardRail.svelte';
+  import TroopPicker from './TroopPicker.svelte';
   import {
-    addEmplacement, addUnit, attachEquipment, autoPlacePiece, declaredReady, declareReady, detachEquipment,
+    addEmplacement, addUnit, attachEquipment, autoPlacePiece, detachEquipment,
     game, generateForce, placePiece, removeEmplacement, removeUnit, unplacePiece, type SetupEngine, type SetupUnit,
   } from './game.svelte.js';
   import { resetToExample } from './navigation.svelte.js';
@@ -14,18 +15,23 @@
   import type { PieceRef } from '../runtime/commands.js';
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
-  import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
-  import { viewer } from './viewer.svelte.js';
+  import { COMMAND_NOTICE } from './command-notices.js';
 
-  interface Props { side: Side }
-  let { side }: Props = $props();
+  interface Props {
+    /** The army step's side. The siege step covers both and switches between them itself. */
+    side?: Side;
+    pieces: 'units' | 'engines';
+  }
+  let { side: stepSide, pieces }: Props = $props();
+
+  let siegeSide = $state<Side>('attacker');
+  const side = $derived(stepSide ?? siegeSide);
+  const siege = $derived(pieces === 'engines');
 
   const notifications = useNotifications();
-  const run = commandReporter(notifications);
   onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
 
-  let rosterName = $state(COMBATANTS[0].name);
-  const library = [...COMBATANTS, ...OFFICIAL, ...ROSTER];
+  let picking = $state(false);
 
   /** What the sidebar has picked up: one of this side's units, or one of its emplacements. */
   let selected = $state<PieceRef | null>(null);
@@ -34,13 +40,16 @@
   // highlight during that drag.
   let dragging = $state<PieceRef | null>(null);
   let hoveredCell = $state<string | null>(null);
-  $effect(() => { void side; selected = null; dragging = null; hoveredCell = null; });
+  $effect(() => { void stepSide; void pieces; selected = null; dragging = null; hoveredCell = null; });
 
   const units = $derived(game.setup.units);
   const emplacements = $derived(game.setup.emplacements);
   const board = $derived(game.setup.board!);
-  const mine = $derived(units.filter((u) => u.side === side));
-  const myEngines = $derived(emplacements.filter((e) => e.side === side));
+  const myUnits = $derived(units.filter((u) => u.side === side));
+  // Each step lists its own kind of piece; the other kind still stands on the board.
+  const mine = $derived(siege ? [] : myUnits);
+  const myEngines = $derived(siege ? emplacements.filter((e) => e.side === side) : []);
+  const held = $derived(mine.reduce<Record<string, number>>((n, u) => ({ ...n, [u.card.name]: (n[u.card.name] ?? 0) + 1 }), {}));
 
   // A selected piece deploys on its own side's ranks; with nothing selected the wash shows
   // this stage's side, so the player always sees where its next unit may go.
@@ -68,7 +77,7 @@
       wounds: 0,
       disorder: 0,
       engine: u.engines[0]?.name ?? null,
-      prop: null,
+      verdict: null,
       statuses: [],
       pick: null,
       ring: selected?.kind === 'unit' && selected.id === u.id ? 'selected' as const : null,
@@ -128,9 +137,16 @@
   function onCell(e: BoardEventOf<'cell'>) { void placeOn(e.cell); }
   function onToken(e: BoardEventOf<'token'>) {
     const p = pickOf(e.id);
-    // Only this stage's own pieces answer: the other side's tokens are there to deploy
-    // against, not to move.
-    if (pieceAt(p)?.side === side) selected = p;
+    if (!mayMove(p)) return;
+    if (siege) siegeSide = pieceAt(p)!.side;
+    selected = p;
+  }
+
+  /** Only this step's own pieces answer: the rest are there to deploy against. The siege step
+   * works both armies' engines, so a click on the other side's engine switches to it. */
+  function mayMove(p: PieceRef): boolean {
+    if ((p.kind === 'engine') !== siege) return false;
+    return siege || pieceAt(p)?.side === side;
   }
 
   // A board-internal drag of an already-placed token. Validated against that piece's own
@@ -139,8 +155,7 @@
   // render snaps it back on its own.
   function onTokenDrop(e: BoardEventOf<'drop'>) {
     const p = pickOf(e.id);
-    const piece = pieceAt(p);
-    if (!piece || piece.side !== side) return;
+    if (!mayMove(p)) return;
     if (!cellsFor(game.setup, p).includes(e.cell)) return;
     void placePiece(p, e.cell);
   }
@@ -148,7 +163,8 @@
   function onTokenDrag(e: BoardEventOf<'drag'>) {
     if (e.cell === null) return;
     const p = pickOf(e.id);
-    if (pieceAt(p)?.side !== side) return;
+    if (!mayMove(p)) return;
+    if (siege) siegeSide = pieceAt(p)!.side;
     selected = p;
     hoveredCell = e.cell;
   }
@@ -180,14 +196,13 @@
   const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', reflex: 'Ref', perception: 'Per' };
 
   let engineName = $state(ENGINES.find((e) => e.name === 'Catapult')?.name ?? ENGINES[0].name);
-  // 'emplace' drops the engine on a square of its own; anything else is a unit index and the
-  // engine rides with that unit instead.
-  let engineHost = $state<string>('emplace');
   async function addEngine() {
-    if (engineHost !== 'emplace') return void attachEquipment(engineHost, engineName);
     const result = await addEmplacement(side, engineName);
     if (result.ok) selected = lastPick('engine');
   }
+
+  let attachHost = $state('');
+  const hostId = $derived(myUnits.some((u) => u.id === attachHost) ? attachHost : myUnits[0]?.id ?? '');
 
   async function generate() {
     const result = await generateForce(side);
@@ -201,11 +216,6 @@
   const engineCard = (name: string) => ENGINES.find((e) => e.name === name);
   const sideWord = $derived(side === 'attacker' ? 'attacking' : 'defending');
   const unplaced = $derived(mine.filter((u) => !u.square).length + myEngines.filter((e) => !e.square).length);
-  const other = $derived<Side>(side === 'attacker' ? 'defender' : 'attacker');
-  const otherWord = $derived(other === 'attacker' ? 'attacking' : 'defending');
-  // proto: the readiness wording is reserved for review with the rest of the player-facing text.
-  const ready = $derived(declaredReady(side));
-  const otherReady = $derived(declaredReady(other));
 </script>
 
 {#snippet grip(label: string)}
@@ -235,18 +245,27 @@
   <p class="line">{paceReason(card)}</p>
 {/snippet}
 
-<AppShell leftTitle="{sideWord} force" leftWidth={26}>
+{#snippet engineOptions()}
+  {#each ENGINES as e (e.name)}<option value={e.name}>{e.name} · L{e.level} {e.kind}{e.reach ? ' ' + e.reach : ''} +{e.launch}</option>{/each}
+{/snippet}
+
+<AppShell leftTitle={siege ? 'Siege engines' : `${sideWord} army`} leftWidth={26}>
   {#snippet top()}
     <TopBar>
       {#snippet status()}
         {#if unplaced}
           <strong>{unplaced}</strong> still to place — drag one onto a lit square, or press Place.
         {:else}
-          Every piece is placed. Drag a token — or its card — to move it.
+          {siege && !myEngines.length ? 'Siege engines are optional. Add one, or go on to the armies.' : 'Every piece is placed. Drag a token — or its card — to move it.'}
         {/if}
       {/snippet}
-      {#snippet tools()}<StageNav />{/snippet}
     </TopBar>
+  {/snippet}
+
+  {#snippet rail()}<WizardRail />{/snippet}
+
+  {#snippet modal()}
+    {#if picking}<TroopPicker {side} {held} add={(card) => void add(card)} close={() => (picking = false)} />{/if}
   {/snippet}
 
   {#snippet float()}
@@ -266,36 +285,41 @@
   {/snippet}
 
   {#snippet left()}
-    <div class="card">
-      <div class="row">
-        <select bind:value={rosterName}>
-          <optgroup label="Reignmaker troops">
-            {#each COMBATANTS as c (c.name)}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
-          </optgroup>
-          <optgroup label="Official Pathfinder troops">
-            {#each OFFICIAL as c (c.name)}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
-          </optgroup>
-          <optgroup label="Generic roster">
-            {#each ROSTER as c (c.name)}<option value={c.name}>{c.name} · L{c.level} {c.role}</option>{/each}
-          </optgroup>
-        </select>
-        <button onclick={() => add(library.find((c) => c.name === rosterName)!)}>Add</button>
-        <button onclick={generate}>Generate the {sideWord} force</button>
+    {#if siege}
+      <div class="sides" role="group" aria-label="Army">
+        {#each ['attacker', 'defender'] as const as sd (sd)}
+          <button class:on={side === sd} aria-pressed={side === sd} style:--side={sd === 'attacker' ? 'var(--att)' : 'var(--def)'}
+            onclick={() => { siegeSide = sd; selected = null; }}>{sd === 'attacker' ? 'Attackers' : 'Defenders'}</button>
+        {/each}
       </div>
-      <div class="row" style="margin-top:.5rem">
-        <select bind:value={engineName}>{#each ENGINES as e (e.name)}<option value={e.name}>{e.name} · L{e.level} {e.kind}{e.reach ? ' ' + e.reach : ''} +{e.launch}</option>{/each}</select>
-        <select bind:value={engineHost}>
-          <option value="emplace">on its own square</option>
-          {#each mine as u (u.id)}<option value={u.id}>with {u.card.name}</option>{/each}
-        </select>
-        <button onclick={addEngine}>Add engine</button>
+      <div class="card">
+        <div class="row">
+          <select bind:value={engineName}>{@render engineOptions()}</select>
+          <button onclick={addEngine}>Add engine</button>
+        </div>
+        <p class="muted">
+          An emplaced engine holds its square. Any unit of its army standing on or beside it works
+          it; leave it alone and the enemy takes it at the end of the round.
+        </p>
       </div>
-      <p class="muted">
-        An emplaced engine holds its square. Any unit of yours standing on or beside it works
-        it; leave it alone and the enemy takes it at the end of the round. One attached to a
-        unit rides along and is lost only with that unit.
-      </p>
-    </div>
+    {:else}
+      <div class="card">
+        <div class="row">
+          <button class="primary" onclick={() => (picking = true)}>Choose troops…</button>
+          <button onclick={generate}>Generate the {sideWord} army</button>
+        </div>
+        {#if myUnits.length}
+          <div class="row" style="margin-top:.5rem">
+            <select bind:value={engineName}>{@render engineOptions()}</select>
+            <select value={hostId} onchange={(e) => (attachHost = e.currentTarget.value)}>
+              {#each myUnits as u (u.id)}<option value={u.id}>with {u.card.name}</option>{/each}
+            </select>
+            <button onclick={() => void attachEquipment(hostId, engineName)}>Attach</button>
+          </div>
+          <p class="muted">An engine attached to a unit rides along and is lost only with that unit.</p>
+        {/if}
+      </div>
+    {/if}
 
     <h3 class={side === 'attacker' ? 'side-att' : 'side-def'}>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
     <div class="unitlist" style:--side={side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
@@ -346,7 +370,7 @@
           </div>
         </div>
       {:else}
-        <p class="muted">No units yet. Add one from the roster, or generate a force.</p>
+        {#if !siege}<p class="muted">No units yet. Choose troops, or generate an army.</p>{/if}
       {/each}
 
       {#each myEngines as e (e.id)}
@@ -400,15 +424,6 @@
           </div>
         </div>
       {/each}
-    </div>
-
-    <div class="readiness">
-      <button
-        class="primary" class:selected={ready}
-        disabled={!viewer.decidesFor(side) || (!ready && unplaced > 0)}
-        onclick={() => void run(declareReady(side, !ready))}
-      >{ready ? 'Ready — waiting for the other army' : `The ${sideWord} force is ready`}</button>
-      <small>{otherReady ? `The ${otherWord} force is ready.` : `The ${otherWord} force is still forming up.`}</small>
     </div>
 
     <div class="row">
@@ -499,9 +514,9 @@
   .where { color: var(--ink); }
   .piece:not(.down) .where { font-style: italic; color: var(--muted); }
 
-  .readiness { display: flex; flex-direction: column; gap: .3rem; margin-top: .6rem; }
-  .readiness button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
-  .readiness small { font-size: .75rem; color: var(--muted); }
+  .sides { display: flex; gap: .3rem; }
+  .sides button { flex: 1; border-color: var(--side); color: var(--side); }
+  .sides button.on { background: var(--side); color: var(--paper); font-weight: 600; }
 
   .kill { border: 0; background: none; color: var(--muted); padding: 0 .2rem; font-size: 1rem; line-height: 1; opacity: .5; }
   .kill:hover:not(:disabled) { color: var(--bad); opacity: 1; border-color: transparent; }

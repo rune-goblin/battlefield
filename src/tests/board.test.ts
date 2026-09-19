@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { at, barrierBetween, count, generateBoard, gridOf, NEUTRAL_RANKS, parse, SIZE, wallBudget, type Board } from '../engine/board.js';
 import { hasGroundConnection } from '../engine/connectivity.js';
+import { liesLow } from '../engine/terrain.js';
 
 const cells = (b: Board) => gridOf(b).cells();
 
@@ -30,6 +31,25 @@ describe('generateBoard', () => {
     expect(every(boards, b => cells(b).filter(sq => at(b, sq).elevation > 0).length >= 22)).toBe(true);
     expect(every(boards, b => cells(b).every(sq => at(b, sq).elevation === 0 || (sq.rank >= 2 && sq.rank <= SIZE - 3)))).toBe(true);
     expect(every(boards, b => cells(b).every(sq => gridOf(b).neighbours(sq).every(n => barrierBetween(b, sq, n)?.kind !== 'cliff')))).toBe(true);
+  });
+
+  it('lays swamp and shallows at level 0 or below, and water at level 0', () => {
+    for (const base of ['hills', 'mountains', 'swamp'] as const) for (const feature of ['none', 'river', 'lakeside'] as const) {
+      const boards = seeds.map(seed => generateBoard({ base, feature, seed }));
+      expect(every(boards, b => cells(b).every(sq => !liesLow(at(b, sq).terrain) || at(b, sq).elevation <= 0))).toBe(true);
+      expect(every(boards, b => cells(b).every(sq => at(b, sq).terrain !== 'water' || at(b, sq).elevation === 0))).toBe(true);
+    }
+  });
+
+  it('sinks hollows on a swamp board and keeps them clear of cliffs', () => {
+    const boards = seeds.map(seed => generateBoard({ base: 'swamp', seed }));
+    expect(every(boards, b => cells(b).filter(sq => at(b, sq).elevation < 0).length >= 5)).toBe(true);
+    expect(every(boards, b => cells(b).every(sq => gridOf(b).neighbours(sq).every(n => barrierBetween(b, sq, n)?.kind !== 'cliff')))).toBe(true);
+  });
+
+  it('rarely lays swamp and rough ground on one board', () => {
+    const boards = Array.from({ length: 200 }, (_, i) => generateBoard({ base: 'hills', seed: i + 1 }));
+    expect(boards.filter(b => count(b, 'swamp') && count(b, 'rough')).length).toBeLessThanOrEqual(20);
   });
 
   it('cliffs never seal one deployment zone from the other', () => {

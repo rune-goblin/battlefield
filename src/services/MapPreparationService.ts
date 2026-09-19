@@ -1,5 +1,5 @@
 import {
-  canDeploy, generateBoard, parse, type Board, type BoardSpec,
+  canDeploy, generateBoard, parse, makeWall, type Board, type BoardSpec,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
 import type { BattleSession } from '../runtime/session.js';
@@ -27,7 +27,15 @@ function paintCell(board: Board, key: string, brush: PaintBrush): void {
 }
 
 function paintEdge(board: Board, key: string, brush: PaintBrush): void {
-  if (brush.kind === 'wall') board.walls[key] = { tier: brush.tier, boxes: brush.tier + 1, remaining: brush.tier + 1 };
+  const ends = key.split('|').sort((a, b) => parse(b).rank - parse(a).rank || parse(b).file - parse(a).file);
+  if (brush.kind === 'wall') board.walls[key] = makeWall(brush.tier, ends[0]);
+  else if (brush.kind === 'gate') {
+    const w = board.walls[key];
+    if (!w) return;
+    const inside = w.inside ?? ends[0];
+    w.inside = brush.flip ? ends.find((id) => id !== inside) : inside;
+    w.gate = { open: false };
+  }
   else if (brush.kind === 'wall-clear' || brush.kind === 'erase') delete board.walls[key];
 }
 

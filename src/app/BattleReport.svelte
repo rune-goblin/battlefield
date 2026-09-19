@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FORTIFICATIONS } from '../engine/board.js';
   import { canContinueBattle, deploymentCells, FEATURES, hasRecovered, HEX_TERRAINS, isStanding, isSurvivor, MAX_WOUNDS, nextDayBattlefield,
     nightResolved, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
     type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
@@ -115,7 +116,7 @@
   const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
     kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
     cell: positions[u.id], wounds: u.wounds, disorder: u.disorder,
-    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, prop: null, statuses: [], pick: null, ring: null,
+    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
   }] : []) : []);
   function preview(u: Unit, activity: RecoveryActivity) {
     const save = activity === 'rally' ? u.stats.will : u.stats.fortitude;
@@ -168,7 +169,7 @@
             {#if newMap}
               <label>Terrain<select aria-label="Next battlefield terrain" value={field.board.spec.base} onchange={(e) => generateNext({ base: e.currentTarget.value as BoardSpec['base'] })}>{#each HEX_TERRAINS as terrain (terrain)}<option value={terrain}>{terrain}</option>{/each}</select></label>
               <label>Feature<select aria-label="Next battlefield feature" value={field.board.spec.feature ?? 'none'} onchange={(e) => generateNext({ feature: e.currentTarget.value as BoardSpec['feature'] })}>{#each FEATURES as feature (feature)}<option value={feature}>{feature}</option>{/each}</select></label>
-              <label>Fortification<select aria-label="Next battlefield fortification" value={field.board.spec.construction?.tier ?? -1} onchange={(e) => generateNext({ construction: Number(e.currentTarget.value) < 0 ? null : { kind: 'fort', tier: Number(e.currentTarget.value) } })}><option value={-1}>None</option>{#each [0, 1, 2, 3] as tier (tier)}<option value={tier}>Tier {tier}</option>{/each}</select></label>
+              <label>Fortification<select aria-label="Next battlefield fortification" value={field.board.spec.construction?.tier ?? -1} onchange={(e) => generateNext({ construction: Number(e.currentTarget.value) < 0 ? null : { kind: 'fort', tier: Number(e.currentTarget.value) } })}><option value={-1}>None</option>{#each [0, 1, 2, 3, 4] as tier (tier)}<option value={tier}>{FORTIFICATIONS[tier].name}</option>{/each}</select></label>
               <button onclick={() => generateNext({ seed: Math.floor(Math.random() * 1e9) })}>Generate another map</button>
               <p class="muted">Fixed emplacements and abandoned equipment stay on the old field. Crewed attached engines travel with their surviving units.</p>
             {:else}

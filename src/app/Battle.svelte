@@ -1,13 +1,15 @@
 <script lang="ts">
+  import UnitEffects from './UnitEffects.svelte';
+  import { statusEffectsOf } from './status-effects.js';
   import {
     ACTIONS_PER_ACTIVATION, activation, activeUnit, chargePath, dragBlockReason, meleePlans, engagedEnemies, isOutflanked, isRouted, levelDc, MAX_WOUNDS, ROUTED_AT, movePath, notation,
     at, isMountain, TERRAIN_NOTE, shootCeiling, shootRangeLabel, offersAt, reachOf, targetMatches, canFocus, TREE_TARGET, maneuverOutcome, parse,
     type ActionOffer, type ChargeOption, type ActivityIndex, type Verb, type PathStep, type ActivityOption,
     type ActivityTarget, type TargetOffer, type TargetRef, type Tree, type Unit, type MeleePlan, type FleePlan,
-    fleePlan, fleeBlockReason, siegeEngines, siegeReason, siegeAttackOffer, engineSpeed, engineLoadSteps, engineLoadCost, engineLoaded,
-    type EngineState, type SiegeAction,
+    gateReason, fortification, fleePlan, fleeBlockReason, siegeEngines, siegeReason, siegeAttackOffer, engineKind, engineSpeed, engineLoadSteps, engineLoadCost, engineLoaded,
+    type EngineState, type SiegeAction, statusesOf,
   } from '../engine/index.js';
-  import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type StatusIcon, type BoardEventOf, type EngineTokenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
+  import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl, type TargetArrow, type ActionIcon, type BoardEventOf, type EngineTokenModel, type FallenModel, type HighlightStyle, type TokenModel, type TokenPick, type UnitTokenModel } from '../board/index.js';
   import ActionCost from './ActionCost.svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import { withinApp } from './app-root.js';
@@ -55,6 +57,12 @@
   let meleeTarget = $state<string | null>(null);
   let meleeSelected = $state<'fight' | 'charge' | null>(null);
   const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
+  let gateOpen = $state(false);
+  const nearbyGates = $derived(active ? Object.entries(b.board.walls).filter(([key, w]) => w.gate && w.remaining > 0 && key.split('|').includes(notation(active.square))) : []);
+  async function operateGate(edge: string) {
+    if (!active || !requireTurn()) return;
+    await run(takeAction({ type: 'gate', unit: active.id, edge, open: !b.board.walls[edge].gate!.open }));
+  }
   let siegeOpen = $state(false);
   let siegeSelected = $state<string | null>(null);
   let siegeBusy = $state(false);
@@ -146,7 +154,7 @@
    * drag left on the board. None of it is the engine's, and none of it survives the activation
    * that opened it. */
   function dropLocalInteraction() {
-    siegeOpen = false; siegeSelected = null;
+    siegeOpen = false; siegeSelected = null; gateOpen = false;
     focus = 0; aim = null; drag = null; dragTarget = null; pending = null; armed = null; armedTree = null;
     castPick = null; radial = null; hoveredBand = null; moveOpen = true; blastOpen = false; blastLevel = null;
     blastTarget = null; blastHover = null; blastCell = null; activityPick = null; targetHover = null;
@@ -452,7 +460,7 @@
 
   /** Cancel the whole action so the next click on the acting unit opens its wheel. */
   function cancelAction() {
-    siegeOpen = false; siegeSelected = null;
+    siegeOpen = false; siegeSelected = null; gateOpen = false;
     focus = 0;
     aim = null; pending = null; radial = null; castPick = null;
     armed = null; armedTree = null;
@@ -501,6 +509,7 @@
       if (active) radial = { cell: notation(active.square) };
       return;
     }
+    if (gateOpen) { gateOpen = false; return; }
     if (siegeOpen) { siegeOpen = false; return; }
     radial = null;
   }
@@ -570,9 +579,11 @@
   let radial = $state<{ cell: string } | null>(null);
   const radialItems = $derived([
     ...props.map((p) => ({ key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal })),
+    ...(nearbyGates.length ? [{ key: 'gate', src: actionIconUrl('block'), label: 'Gate', legal: true }] : []),
     ...(siegeEquipment.length ? [{ key: 'siege', src: engineArtUrl(siegeEquipment[0].name) ?? actionIconUrl('shoot'), label: 'Siege engine', legal: true }] : []),
   ]);
   const pickProp = (key: string) => {
+    if (key === 'gate') { cancelAction(); gateOpen = true; radial = null; return; }
     if (key === 'siege') { void openSiege(); return; }
     const p = props.find((x) => x.key === key);
     if (p) takeProp(p);
@@ -1006,29 +1017,6 @@
     ...previewHighlights,
   ]);
 
-  /** The verb being aimed at a piece right now. */
-  function propOn(u: Unit): ActionIcon | null {
-    if (dragTarget?.id === u.id) return dragTarget.attack ? 'attack' : 'no';
-    if ((picked?.kind === 'charge' || picked?.kind === 'advance') && picked.enemy === u.id) {
-      return picked.kind === 'charge' || picked.plan.kind === 'charge' ? 'charge' : 'attack';
-    }
-    return null;
-  }
-
-  /** Everything a piece is under, which the board stacks beside it. State the board can show is
-   * state the panel need not. */
-  function statusesOn(u: Unit): StatusIcon[] {
-    const held: [unknown, StatusIcon][] = [
-      [u.guard, 'guard'],
-      [u.pinnedBy, 'pinned'], [u.rooted > 0, 'rooted'], [u.suppressedBy, 'suppressed'], [u.stunned, 'stunned'],
-      [u.frightened, 'frightened'], [u.exposed, 'exposed'], [u.persistent, 'persistent'],
-      [u.aegis, 'aegis'], [u.ward, 'warded'], [u.stoneskin, 'stoneskin'], [u.sureStrike, 'sure-strike'],
-      [u.wrath, 'wrath'], [u.haste > 0, 'hasted'], [u.sureFooting, 'sure-footing'],
-      [(u.movementBonus ?? 0) > 0, 'burst-of-speed'], [u.inspired, 'inspired'],
-    ];
-    return held.flatMap(([on, icon]) => (on ? [icon] : []));
-  }
-
   // The acting piece's own hex, in its side's colour: once a unit is picked, the board stops
   // offering the choice and marks the one that was made.
   const selectedHex = $derived(active ? { cell: notation(active.square), side: active.side } : null);
@@ -1059,14 +1047,17 @@
       disorder: u.disorder,
       engine: engineOn(u)?.name ?? null,
       engineId: engineOn(u)?.id,
-      prop: propOn(u),
-      statuses: statusesOn(u),
+      verdict: dragTarget?.id === u.id ? (dragTarget.attack ? 'attack' : 'no') : null,
+      statuses: statusesOf(u),
       pick: pickOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
     })),
     ...boardEngines.filter(e => !b.units.some(u => u.status === 'active' && notation(u.square) === notation(e.square)))
       .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
   ]);
+
+  const fallen = $derived(b.units.filter((u) => u.status === 'destroyed')
+    .map((u): FallenModel => ({ id: u.id, name: u.name, cell: notation(u.square) })));
 
   async function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
     if (!active || !requireTurn()) return;
@@ -1138,6 +1129,7 @@
   }
 
   function onCell(e: BoardEventOf<'cell'>) {
+    if (gateOpen) { gateOpen = false; return; }
     if (siegeOpen) { siegeOpen = false; return; }
     notifications.dismiss(DRAG_NOTICE);
     if (activityPick) { pickActivityCell(e.cell); return; }
@@ -1171,6 +1163,7 @@
   function onToken(e: BoardEventOf<'token'>) {
     notifications.dismiss(DRAG_NOTICE);
     if (!activityPick && boardEngines.some(engine => engine.id === e.id)) { void openSiege(e.id); return; }
+    if (gateOpen) { gateOpen = false; return; }
     if (siegeOpen) { siegeOpen = false; return; }
     if (activityPick) { const cell = cellOf(e.id); if (cell) pickActivityCell(cell); return; }
     if (blastOpen) { const cell = cellOf(e.id); if (cell) pickBlastCell(cell); return; }
@@ -1214,7 +1207,7 @@
       return;
     }
     const p = arming;
-    if (!p) { stepBack(); return; }
+    if (!p) { if (b.board.walls[e.edge]?.gate) { cancelAction(); gateOpen = true; } else stepBack(); return; }
     aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '), p.type);
   }
 
@@ -1349,6 +1342,7 @@
       army={() => b.units.filter((u) => u.side === (active?.side ?? b.pending) && u.status === 'active').map((u) => notation(u.square))}
       armyLabel="Frame the {active?.side ?? b.pending} force"
     />
+    {#if active}<UnitEffects unitName={active.name} effects={statusEffectsOf(active, b)} />{/if}
     {#if b.phase === 'battle'}
       <BattleAnnouncement kind="round" text={`Round ${b.round}`} cue={`${b.day}:${b.round}`} />
       <ArmyReel
@@ -1374,6 +1368,7 @@
       bind:this={boardRef}
       board={b.board}
       {tokens}
+      {fallen}
       mode="battle"
       fill
       terrainAppearance={gameMap.terrainAppearance}
@@ -1386,7 +1381,7 @@
       {shot}
       selected={selectedHex}
       draggable={blastOpen || activityPick || !myTurn ? null : active?.id ?? null}
-      pickableEdges={pickerService ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id) : arming?.edges ?? []}
+      pickableEdges={pickerService ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id) : arming?.edges ?? nearbyGates.map(([key]) => key)}
       onhover={(e) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; }}
       oncell={active ? onCell : undefined}
       ontoken={onToken}
@@ -1409,6 +1404,19 @@
     <TargetMarkers targets={resolvedMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
       cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={null} resolved
       hover={() => {}} choose={() => {}} />
+    {#if gateOpen && active}
+      <BoardPopup cell={notation(active.square)} close={() => { gateOpen = false; }} appearance="rally">
+        <strong>Gates</strong>
+        <p class="muted">Operate from the interior hex while free of enemy contact. Either army can use the mechanism.</p>
+        {#each nearbyGates as [key, wall] (key)}
+          {@const reason = gateReason(b, active, key)}
+          <button class="popup-row" disabled={!!reason} title={reason ?? 'Operate gate'} onclick={() => operateGate(key)}>
+            <span class="popup-verb">{wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
+            <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wall.inside}{reason ? ` · ${reason}` : ''}</span>
+          </button>
+        {/each}
+      </BoardPopup>
+    {/if}
     {#if siegeOpen && active && siegeEngine}
       <BoardPopup cell={notation(active.square)} close={cancelAction}>
         <div class="siege-heading">
@@ -1423,20 +1431,20 @@
           </div>
         {/if}
         <p class="popup-escapes" aria-live="polite">
-          {#if siegeEngine.kind === 'ram'}Ram · attacks adjacent walls
-          {:else}{engineLoaded(siegeEngine) ? 'Loaded' : `Loading ${siegeEngine.loaded ?? 0}/${engineLoadSteps(siegeEngine)}`} · {siegeEngine.fired ? 'Fired this round' : 'Ready to fire this round'}{/if}
+          {#if engineKind(siegeEngine) === 'ram'}Ram · attacks adjacent walls
+          {:else}{engineLoadSteps(siegeEngine) === 0 ? 'No reload needed' : engineLoaded(siegeEngine) ? 'Loaded' : 'Unloaded'} · {siegeEngine.fired ? 'Fired this round' : 'Ready to fire this round'}{/if}
           {#if engineSpeed(siegeEngine) !== 0} · {Math.min(active.speed, engineSpeed(siegeEngine) ?? active.speed)} ft per Move while hauling{/if}
         </p>
-        {#if siegeEngine.kind !== 'ram'}
+        {#if engineLoadSteps(siegeEngine) > 0}
           {@const reason = siegeReason(b, active, siegeEngine, 'load')}
-          <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Complete one loading step'} onclick={() => operateSiege('load')}>
+          <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Reload the engine'} onclick={() => operateSiege('load')}>
             <span class="popup-verb">Load <ActionCost n={engineLoadCost(siegeEngine)} /></span>
-            <span class="muted">{reason ?? `Complete one of ${engineLoadSteps(siegeEngine)} loading steps`}</span>
+            <span class="muted">{reason ?? 'Ready the next shot'}</span>
           </button>
         {/if}
         {@const attackReason = siegeReason(b, active, siegeEngine, 'attack') ?? (siegeOffer?.activities.some(a => a.legal) ? null : 'No targets in range.')}
         <button class="popup-row" disabled={siegeBusy || !!attackReason} title={attackReason ?? 'Choose an attack and target'} onclick={() => operateSiege('attack')}>
-          <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (siegeEngine.kind === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
+          <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (engineKind(siegeEngine) === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
         </button>
         {#if siegeEngine.hauling}
           <button class="popup-row" disabled={siegeBusy} onclick={() => operateSiege('release')}>
@@ -1670,10 +1678,18 @@
         <span class="muted">{active.actions} of {ACTIONS_PER_ACTIVATION} left</span>
       </div>
       <p class="cost-key">
-        Every activity costs the same for every unit: <ActionCost n={1} />, <ActionCost n={2} /> or
+        Activities show their action cost: <ActionCost n={1} />, <ActionCost n={2} /> or
         <ActionCost n={3} />. Commit extra actions for +2 each on supported activities. One attack an activation.
       </p>
 
+      {#if siegeEquipment.length || nearbyGates.length}
+        <div class="row" aria-label="Equipment and gates">
+          {#each siegeEquipment as engine (engine.id)}
+            <button onclick={() => openSiege(engine.id)}>Operate {engine.name}</button>
+          {/each}
+          {#if nearbyGates.length}<button onclick={() => { cancelAction(); gateOpen = true; }}>Gates</button>{/if}
+        </div>
+      {/if}
       <table class="stats"><tbody>
         <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
         {#if shootCeiling(b, active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(b, active)}</td></tr>{/if}

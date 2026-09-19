@@ -10,8 +10,8 @@ import { EffectLayer } from './layers/EffectLayer.js';
 import { DEFAULT_GRID_SETTINGS, GridLayer, type GridUpdate } from './layers/GridLayer.js';
 import { DEFAULT_MAP_LINES, MapLineLayer } from './layers/MapLineLayer.js';
 import { InkLayer, type InkMapAppearance } from './layers/InkLayer.js';
-import { LabelLayer } from './layers/LabelLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
+import { FallenLayer, type FallenModel } from './layers/FallenLayer.js';
 import { PopupLayer, type BoardPopup } from './layers/PopupLayer.js';
 import type { TargetArrow } from './target-point.js';
 import { ShotLayer } from './layers/ShotLayer.js';
@@ -34,9 +34,9 @@ export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Inte
 export type { TokenPlacement } from './hit.js';
 export type { EngineTokenModel, TokenModel, TokenPick, TokenRing, UnitTokenModel } from './Token.js';
 
-// Empty board left around the grid on every side, in cell pitches. It holds LabelLayer's
-// coordinate text, and it is what a pan grabs: without it the outermost cells sit against the
-// viewport edge with nothing beside them to drag from.
+// Empty board left around the grid on every side, in cell pitches. It is what a pan grabs:
+// without it the outermost cells sit against the viewport edge with nothing beside them to
+// drag from.
 const PAD_CELLS = 2;
 // Extra empty canvas below the grid, pan-clamp only (it does not shrink the fitted zoom the
 // way PAD_CELLS would). The board is full-bleed behind the army bar at the bottom of the
@@ -53,6 +53,9 @@ export interface BoardView {
    * textured surfaces. Set, it is what the board draws; null returns it to the textures. */
   setInkMap(appearance: InkMapAppearance | null): void;
   setTokens(tokens: TokenModel[]): void;
+  /** The units that died here, each marked on the ground of its cell. A death a popup names
+   * with the `dead` icon plays in over the piece, which stands until then. */
+  setFallen(fallen: FallenModel[]): void;
   setHighlight(cells: string[], style: HighlightStyle): void;
   /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
    * wash. Empty clears it. */
@@ -194,10 +197,17 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       onShake: (offset) => boardContainer.position.set(boardOrigin.x + offset.x, boardOrigin.y + offset.y),
     },
   );
-  const labelLayer = new LabelLayer(layers.createLayer('labels'), opts.parent);
+  const fallenLayer = new FallenLayer(layers.createLayer('fallen'), layers.createLayer('fallenIntro'), opts.ticker, {
+    hold: (id) => tokenLayer.hold(id),
+    release: (id) => tokenLayer.release(id),
+  });
   const popupLayer = new PopupLayer(layers.createLayer('popups'), opts.parent, opts.ticker, {
     positionOf: (id) => tokenLayer.positionOf(id),
     moving: () => tokenLayer.moving(),
+    expect: (id, icons) => tokenLayer.expectStatuses(id, icons),
+    announce: (id, icons) => tokenLayer.announceStatuses(id, icons),
+    expectFallen: (id) => fallenLayer.expect(id),
+    announceFallen: (id) => fallenLayer.announce(id),
   });
 
   let currentBoard: Board | null = null;
@@ -234,12 +244,12 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       gridLayer.setGeometry(null, 0);
       mapLineLayer.setGeometry(null, 0);
       edgeLayer.clear();
-      labelLayer.clear();
       overlayLayer.setGeometry(null, 0, opts.theme);
       shotLayer.setGeometry(null, 0, opts.theme);
       castLayer.setGeometry(null, 0, opts.theme);
       effectLayer.setGeometry(null, 0, opts.theme);
       popupLayer.setGeometry(null, 0);
+      fallenLayer.setGeometry(null, 0);
       tokenLayer.setGeometry(null, 0, opts.theme);
       return;
     }
@@ -259,13 +269,12 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     gridLayer.setGeometry(grid, size);
     mapLineLayer.setGeometry(currentBoard, size);
     edgeLayer.draw(currentBoard, size, opts.theme, inkMap ? { pencil: inkMap.settings.ink.colour, paper: inkMap.settings.paper } : null);
-    labelLayer.draw(grid, size, opts.theme);
-    labelLayer.rescale();
     overlayLayer.setGeometry(grid, size, opts.theme);
     shotLayer.setGeometry(grid, size, opts.theme);
     castLayer.setGeometry(grid, size, opts.theme);
     effectLayer.setGeometry(grid, size, opts.theme);
     popupLayer.setGeometry(grid, size);
+    fallenLayer.setGeometry(grid, size);
     tokenLayer.setGeometry(grid, size, opts.theme);
     interaction.clamp();
   }
@@ -348,7 +357,6 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     onPreview: (cells, edges, brush) => overlayLayer.setPaintPreview(cells, edges, brush ? brushColour(brush, opts.theme) : 0),
     onBrush: (brush) => opts.onBrush?.(brush),
     onClear: () => overlayLayer.setSelected(null),
-    onViewport: () => labelLayer.rescale(),
     onDrag: (id, point) => tokenLayer.setDrag(id, id === anchoredId ? null : point),
   });
 
@@ -392,6 +400,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     setTokens(tokens) {
       tokenLayer.setTokens(tokens);
+    },
+    setFallen(fallen) {
+      fallenLayer.setFallen(fallen);
     },
     setHighlight(cells, style) {
       overlayLayer.setHighlight(cells, style);
@@ -487,7 +498,6 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
         height / 2 - scale * (boardContainer.position.y + local.y),
       );
       interaction.clamp();
-      labelLayer.rescale();
     },
     zoomBy(factor, into) {
       const box = into ?? { x: 0, y: 0, ...opts.size() };
@@ -520,6 +530,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       interaction.destroy();
       terrainLayer.destroy();
       inkLayer.clear();
+      fallenLayer.destroy();
       tokenLayer.destroy();
       castLayer.destroy();
       effectLayer.destroy();
@@ -573,11 +584,12 @@ export { BoardApp } from './BoardApp.js';
 export { BoardContainer } from './BoardContainer.js';
 export { setAssetBase } from './asset-base.js';
 export { setVfxTimeScale } from './layers/EffectLayer.js';
+export type { FallenModel } from './layers/FallenLayer.js';
 export type { BoardPopup, PopupIcon, PopupPart, PopupTone } from './layers/PopupLayer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the asset-base prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
-export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
+export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';
