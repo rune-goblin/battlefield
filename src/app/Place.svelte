@@ -463,6 +463,8 @@
 </AppShell>
 
 <style>
+  /* The longest engine name is wider than the dock, and a select sizes to its longest option. */
+  .card .row select { flex: 1 1 10rem; min-width: 0; }
   .scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; background: rgba(0, 0, 0, .45); }
   .ask {
     width: min(26rem, 100%); padding: 1rem 1.1rem; background: var(--paper); border: 1px solid var(--rule);

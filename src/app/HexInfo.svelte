@@ -1,6 +1,7 @@
 <script lang="ts">
   import { at, gridOf, parse, type Board } from '../engine/index.js';
   import type { FallenModel, TokenModel } from '../board/index.js';
+  import { TERRAIN_LABELS, brokenCells, surfaceGroup } from '../board/terrain-textures.js';
 
   interface Props { board: Board | null; cell: string | null; tokens: TokenModel[]; fallen: FallenModel[] }
   let { board, cell, tokens, fallen }: Props = $props();
@@ -10,8 +11,11 @@
     const sq = parse(cell);
     if (!gridOf(board).inBounds(sq)) return null;
     const { terrain, elevation } = at(board, sq);
+    const grid = gridOf(board);
+    const ground = terrain === 'bridge' ? 'Bridge' : TERRAIN_LABELS[surfaceGroup(board, sq)];
+    const rough = brokenCells(board).some((c) => grid.key(c) === cell);
     return {
-      terrain,
+      terrain: rough ? `${ground}, rough` : ground,
       elevation: elevation > 0 ? `+${elevation}` : elevation < 0 ? `−${-elevation}` : '0',
       names: tokens.filter((t) => t.cell === cell).map((t) => t.name),
       fallen: fallen.filter((f) => f.cell === cell),
@@ -43,7 +47,7 @@
     pointer-events: none;
   }
   .cell { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .terrain { text-transform: capitalize; font-weight: 600; }
+  .terrain { font-weight: 600; }
   .unit { color: var(--accent); font-weight: 600; }
   .fallen { color: var(--muted); font-style: italic; }
 </style>

@@ -265,6 +265,8 @@ export class Token extends PIXI.Container {
     this.desaturated = wounds >= MAX_WOUNDS || routed;
     this.applyFilters();
     this.updateFlag(model.side, size, theme, routed);
+    // An engine standing alone is nobody's: the unit that works it is what shows a side.
+    if (this.flag) this.flag.visible = model.kind === 'unit';
 
     if (model.kind === 'unit') {
       this.drawDecor(model, size, theme);

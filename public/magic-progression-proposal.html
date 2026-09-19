@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic progression — Battlefield proposal</title>
+<style>
+:root{--ink:#211d18;--paper:#f8f4ec;--rule:#c7bba7;--accent:#7a2e1f;--muted:#6b5f52;--band:#eee5d5}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 Georgia,"Iowan Old Style",serif}main{max-width:66rem;margin:auto;padding:3rem 1.5rem 5rem}a{color:var(--accent);text-underline-offset:.18em}h1{font-size:clamp(2.3rem,6vw,3.5rem);line-height:1.1;margin:.6rem 0 1rem}h2{font-size:1.65rem;margin:2.7rem 0 .8rem;border-bottom:2px solid var(--rule);padding-bottom:.35rem}h3{font-size:1.25rem;color:var(--accent);margin:1.7rem 0 .4rem}p{margin:.7rem 0}.eyebrow,.meta{font:600 .78rem/1.5 system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase}.meta{color:var(--muted)}.lead{font-size:1.2rem;max-width:48rem}.key{background:var(--band);border-left:4px solid var(--accent);padding:.7rem 1.1rem;margin:1.4rem 0}.note{color:var(--muted);font-size:.95rem}nav{display:flex;flex-wrap:wrap;gap:.5rem 1.3rem;padding:1rem 0;border-block:1px solid var(--rule)}table{border-collapse:collapse;width:100%;font-size:.94rem;margin:.8rem 0 1.3rem}th,td{text-align:left;vertical-align:top;padding:.6rem .7rem;border-bottom:1px solid var(--rule)}th{background:var(--band)}caption{text-align:left;font-weight:bold;margin-bottom:.4rem}td:first-child{font-weight:600}.wrap{overflow-x:auto}.matrix{min-width:36rem}.spells{min-width:35rem}.spells th:nth-child(1){width:5%}.spells th:nth-child(2){width:19%}.spells th:nth-child(3){width:8%}.spells tr:last-child{background:var(--band)}.cost{white-space:nowrap}.traditions{display:grid;grid-template-columns:1fr 1fr;gap:0 2rem}.traditions table{font-size:.9rem}.traditions td:first-child{white-space:nowrap}li{margin:.45rem 0}code{font-size:.88em;overflow-wrap:anywhere}section{scroll-margin-top:1rem}footer{border-top:1px solid var(--rule);margin-top:3rem;padding-top:1rem}.tag{font:600 .7rem system-ui,sans-serif;border:1px solid var(--accent);padding:.15rem .3rem;color:var(--accent);display:inline-block;margin-top:.35rem}
+@media(max-width:48rem){.traditions{grid-template-columns:1fr}main{padding:1.5rem 1rem 3rem}body{font-size:16px}}
+@media(max-width:40rem){.spells{min-width:0}.spells thead{display:none}.spells tbody,.spells tr,.spells td{display:block}.spells tr{border:1px solid var(--rule);margin:.8rem 0;padding:.7rem}.spells td{border:0;padding:.15rem 0}.spells td:nth-child(1)::before{content:"Tier "}.spells td:nth-child(2){font-size:1.1rem;font-weight:700}.spells td:nth-child(3)::after{content:" actions"}.spells .tag{margin:0}.spells td:nth-child(4){padding-top:.4rem}}
+@media(prefers-color-scheme:dark){:root{--ink:#e8e1d5;--paper:#1d1a17;--rule:#514737;--accent:#e0987d;--muted:#b4a797;--band:#2c251d}}
+@media print{body{font-size:11pt;color:#111;background:white}main{max-width:none;padding:0}nav,.back{display:none}h2,h3{break-after:avoid}tr{break-inside:avoid}.wrap{overflow:visible}.spells,.matrix{min-width:0}.traditions{display:block}a{color:inherit}.key{border:1px solid #aaa}.spells tr:last-child,th{background:#eee}}
+</style>
+</head>
+<body><main>
+<p class="back"><a href="rules.html#magic">← Current magic rules</a></p>
+<p class="eyebrow">Battlefield · Rules proposal · 20 September 2026</p>
+<h1>Four tiers of magic</h1>
+<p class="lead">Caster level opens new battlefield capabilities at levels 6, 11, and 16. Tradition determines each caster’s strengths. Every spell fits within the three-action turn.</p>
+<div class="key"><strong>Draft for review and playtesting.</strong> This page proposes a replacement for the magic progression. The game currently uses the <a href="rules.html#magic">existing magic rules</a>. The new spells, level gates, and tradition ceilings on this page have no engine implementation.</div>
+<nav aria-label="Proposal contents"><a href="#progression">Progression</a><a href="#traditions">Traditions</a><a href="#casting">Casting</a><a href="#trees">Six spell trees</a><a href="#examples">Troop examples</a><a href="#review">Design review</a></nav>
+<section id="progression"><h2>1. Caster progression</h2>
+<p>A caster uses its troop level to determine its magic tier. Tier controls spell access; action cost controls the commitment of a particular cast. A caster keeps every earlier spell that its tradition permits.</p>
+<table><thead><tr><th>Troop level</th><th>Magic tier</th><th>Battlefield role</th></tr></thead><tbody>
+<tr><td>1–5</td><td>I · Apprentice</td><td>Single-target magic and basic support.</td></tr>
+<tr><td>6–10</td><td>II · Adept</td><td>Wider coverage, stronger protection, and action denial.</td></tr>
+<tr><td>11–15</td><td>III · Master</td><td>Area attacks, immobilization, haste, and teleportation within the tradition’s specialties.</td></tr>
+<tr><td>16–20</td><td>IV · Archmage</td><td>Flexible area effects, deep recovery, and support for several formations.</td></tr>
+</tbody></table>
+<p><strong>Shared campaign bands.</strong> These are ReignMaker’s existing army tiers. Its <code>armyTier(level)</code> uses the ceiling of level ÷ 5, bounded to 1–4, for tactic capacity; army upkeep follows the same bands. Recruitment has a separate cost based on level. Magic therefore gives an existing campaign milestone a battlefield expression.</p>
+<p class="note">Local source: ReignMaker <code>src/models/Army.ts</code>, <code>src/controllers/upkeep/upkeepHelpers.test.ts</code>, and <code>src/pipelines/actions/recruitArmy.ts</code>.</p>
+</section>
+<section id="traditions"><h2>2. The four traditions</h2>
+<p>Arcane, divine, occult, and primal are the four <strong>traditions</strong>. Blast, Healing, Controlling, Offense, Defense, and Movement are their six shared <strong>spell trees</strong>. Each number below is the highest tier a tradition can learn in that tree. A dash means the tradition has no access.</p>
+<div class="wrap"><table class="matrix"><caption>Tradition ceilings</caption><thead><tr><th>Spell tree</th><th>Arcane</th><th>Divine</th><th>Occult</th><th>Primal</th></tr></thead><tbody>
+<tr><td>Blast</td><td>IV</td><td>I</td><td>II</td><td>II</td></tr>
+<tr><td>Healing</td><td>—</td><td>IV</td><td>I</td><td>II</td></tr>
+<tr><td>Controlling</td><td>II</td><td>II</td><td>IV</td><td>I</td></tr>
+<tr><td>Offense</td><td>I</td><td>II</td><td>IV</td><td>I</td></tr>
+<tr><td>Defense</td><td>II</td><td>IV</td><td>I</td><td>II</td></tr>
+<tr><td>Movement</td><td>IV</td><td>—</td><td>I</td><td>IV</td></tr>
+</tbody></table></div>
+<p><strong>Access rule.</strong> A spell is available when its tier is at or below both the caster’s tier and its tradition’s ceiling. For example, a level-12 arcane caster has tier III magic, but its Controlling ceiling is II: it can use Stun and Dread.</p>
+<p>This draft extends each existing tier-III specialty to tier IV and preserves every other tradition ceiling. Primal retains broad early access and one final-tier specialty. The spell effects and the value of that breadth require playtesting; equal ceiling totals would not establish equal power.</p>
+<div class="traditions">
+<article><h3>Arcane</h3><p>Artillery and magical transport. Its final tier combines Storm’s flexible area with Gate’s paired transfer.</p><table><caption>Arcane unlocks at each tier</caption><thead><tr><th>Level</th><th>New spells</th></tr></thead><tbody>
+<tr><td>1–5</td><td>Missile, Dread, Sure strike, Ward, Burst of speed</td></tr>
+<tr><td>6–10</td><td>Line, Stun, Stoneskin, Sure footing</td></tr>
+<tr><td>11–15</td><td>Burst, Translocate</td></tr>
+<tr><td>16–20</td><td>Storm, Gate</td></tr>
+</tbody></table></article>
+<article><h3>Divine</h3><p>Recovery and protection. Its final tier offers deep recovery through Renewal and formation protection through Sanctuary.</p><table><caption>Divine unlocks at each tier</caption><thead><tr><th>Level</th><th>New spells</th></tr></thead><tbody>
+<tr><td>1–5</td><td>Missile, Soothe, Dread, Sure strike, Ward</td></tr>
+<tr><td>6–10</td><td>Heal, Stun, Wrath, Stoneskin</td></tr>
+<tr><td>11–15</td><td>Restore, Aegis</td></tr>
+<tr><td>16–20</td><td>Renewal, Sanctuary</td></tr>
+</tbody></table></article>
+<article><h3>Occult</h3><p>Morale and coordinated attacks. Its final tier threatens several enemies with Terror and prepares several allies with Battle chorus.</p><table><caption>Occult unlocks at each tier</caption><thead><tr><th>Level</th><th>New spells</th></tr></thead><tbody>
+<tr><td>1–5</td><td>Missile, Soothe, Dread, Sure strike, Ward, Burst of speed</td></tr>
+<tr><td>6–10</td><td>Line, Stun, Wrath</td></tr>
+<tr><td>11–15</td><td>Hold, Haste</td></tr>
+<tr><td>16–20</td><td>Terror, Battle chorus</td></tr>
+</tbody></table></article>
+<article><h3>Primal</h3><p>Terrain and movement, with broad support. Its final tier moves two units through Gate; Blast, Healing, and Defense retain their second-tier ceilings.</p><table><caption>Primal unlocks at each tier</caption><thead><tr><th>Level</th><th>New spells</th></tr></thead><tbody>
+<tr><td>1–5</td><td>Missile, Soothe, Dread, Sure strike, Ward, Burst of speed</td></tr>
+<tr><td>6–10</td><td>Line, Heal, Stoneskin, Sure footing</td></tr>
+<tr><td>11–15</td><td>Translocate</td></tr>
+<tr><td>16–20</td><td>Gate</td></tr>
+</tbody></table></article>
+</div></section>
+<section id="casting"><h2>3. Casting and commitment</h2>
+<ul>
+<li>Every unit takes three actions on its activation. Spell costs remain one, two, or three actions. Tier-IV spells cost three actions.</li>
+<li>Each caster may cast once from each tree per activation. Blast uses the same single attack allowance as Fight and Shoot. The draft uses action expenditure and positioning to limit casting; it adds no spell slots or mana.</li>
+<li>Blast and Healing may spend extra actions for +2 on their roll per action. Controlling gains +2 spell DC per extra action. Total commitment is at most three actions. Tier never changes that price or bonus.</li>
+<li>A level-5 apprentice may spend three actions on Missile at +4. A level-10 adept may spend three actions on Line at +2. Extra commitment improves the available spell’s roll; its target count and shape stay fixed.</li>
+<li>Each selected target must meet the tree’s range and ordinary line-of-sight rules. A caster may receive its own beneficial magic. A multi-target spell affects each recipient once. Choose all targets before rolling.</li>
+<li>Beneficial spells affect surviving units, including undead troops and units that have routed. Healing can clear the disorder that caused a rout. Destroyed units remain destroyed.</li>
+<li>Spell buffs use the current stacking rules. Recasting the same active effect grants no additional benefit. Different effects can coexist. Ward and Sure strike cancel on the same attack. Sanctuary counts as Stoneskin, and Battle chorus counts as Sure strike for these rules.</li>
+</ul>
+<p>Except for Haste and instantaneous transfers, a self-cast buff expires at the end of the caster’s current activation; a buff on another unit expires at the end of that unit’s next activation. Ward, Stoneskin, and Aegis instead protect a self-caster through the end of its next activation. Each recipient tracks its own expiry.</p>
+<p>Battlefield medicine continues to grant Soothe through Will. Demoralize continues to grant Dread through the troop’s level DC. Troop level alone grants these tactics no further spells.</p>
+</section>
+<section id="trees"><h2>4. The six spell trees</h2>
+<p>Each table lists access tier and action cost separately. The fourth row in each table introduces a new spell. Spell ranges retain their current battlefield meanings.</p>
+<section id="blast"><h3>Blast</h3><p class="meta">Long range · spends the activation’s attack</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Missile</td><td class="cost">1</td><td>Make a spell attack against one enemy’s Defence. A success deals 1 wound; a critical success deals 2. Resolve the ordinary Fortitude save against disorder.</td></tr>
+<tr><td>II</td><td>Line</td><td class="cost">2</td><td>Choose two adjacent hexes on a straight line from the caster. Make one spell attack and read it against each enemy in those hexes. Resolve wounds and Fortitude saves as Missile.</td></tr>
+<tr><td>III</td><td>Burst</td><td class="cost">3</td><td>Choose a corner and the three hexes that meet there. Make one spell attack and read it against each enemy in those hexes. Resolve each target as Missile.</td></tr>
+<tr><td>IV</td><td>Storm<br><span class="tag">New</span></td><td class="cost">3</td><td>Choose up to four hexes that form one connected area through shared edges. Make one spell attack and read it against each enemy in the area. Resolve each target as Missile. Every chosen hex must lie within long range and in the caster’s line of sight.</td></tr>
+</tbody></table></div>
+<p>Blast affects enemies in its chosen hexes. Each affected hex requires range and sight from the caster. Damage remains 1 wound on a hit or 2 on a critical; fourth-tier access expands coverage. Each target resolves its own Fortitude save and protective effects. Apply the current shared-roll handling of Ward and Sure strike. An Aegis save that fails still wastes the whole attack activity.</p>
+</section>
+<section id="healing"><h3>Healing</h3><p class="meta">Touch · yourself or an adjacent ally</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Soothe</td><td class="cost">1</td><td>Choose one surviving unit on your side: yourself or an adjacent ally. Roll spell attack against its level DC and apply the healing result below.</td></tr>
+<tr><td>II</td><td>Heal</td><td class="cost">2</td><td>Choose up to two distinct units, each yourself or an adjacent ally. Roll once and read the result against each recipient’s level DC. Apply the healing result once to each.</td></tr>
+<tr><td>III</td><td>Restore</td><td class="cost">3</td><td>Choose up to three distinct units, each yourself or an adjacent ally. Roll once and read the result against each recipient’s level DC. Apply the healing result once to each.</td></tr>
+<tr><td>IV</td><td>Renewal<br><span class="tag">New</span></td><td class="cost">3</td><td>Choose one recipient within touch range. Use the Renewal column in the healing table. This spell restores one battered unit more deeply; Restore reaches three units.</td></tr>
+</tbody></table></div>
+<div class="wrap"><table><caption>Healing results</caption><thead><tr><th>Roll against recipient’s level DC</th><th>Soothe, Heal, Restore</th><th>Renewal</th></tr></thead><tbody>
+<tr><td>Critical success</td><td>Clear 1 disorder and 1 wound; also clear one eligible condition or 1 extra wound.</td><td>Clear 3 disorder, 3 wounds, and up to two eligible conditions.</td></tr>
+<tr><td>Success</td><td>Clear 1 disorder and 1 wound.</td><td>Clear 2 disorder, 2 wounds, and one eligible condition.</td></tr>
+<tr><td>Failure</td><td>Clear 1 disorder.</td><td>Clear 1 disorder.</td></tr>
+<tr><td>Critical failure</td><td>No recovery.</td><td>No recovery.</td></tr>
+</tbody></table></div><p>Eligible conditions are exposed, suppressed, pinned, rooted, frightened, and persistent damage. The recipient’s controller chooses. Recovery stops at zero wounds and disorder. Stun and other effects retain their ordinary durations.</p>
+</section>
+<section id="controlling"><h3>Controlling</h3><p class="meta">Medium range · enemies save Will against spell DC</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Dread</td><td class="cost">1</td><td>Choose one enemy. On a failed Will save it takes 1 disorder. Apply the other degrees of success below.</td></tr>
+<tr><td>II</td><td>Stun</td><td class="cost">2</td><td>Choose one enemy. On a failed save it takes 1 disorder and loses one action on its next activation.</td></tr>
+<tr><td>III</td><td>Hold</td><td class="cost">3</td><td>Choose one enemy. On a failed save it takes 1 disorder, loses one action on its next activation, and becomes rooted for that activation. Rooted prevents Move, Charge, and Maneuver.</td></tr>
+<tr><td>IV</td><td>Terror<br><span class="tag">New</span></td><td class="cost">3</td><td>Choose up to three enemies whose hexes form one connected area within medium range and line of sight. Each target makes its own Will save and receives Dread’s result. Terror spreads disorder; Hold also denies movement and an action to one enemy.</td></tr>
+</tbody></table></div>
+<p>A critical success on the Will save prevents the effect. A success causes frightened until the end of the target’s next activation: −1 to rolls and Defence. A failure applies the spell’s effect. A critical failure applies that effect with 2 disorder in place of 1. Terror uses this sequence separately for each target. Repeated roots and action-loss effects follow the current non-stacking rules.</p>
+</section>
+<section id="offense"><h3>Offense</h3><p class="meta">Short range · yourself or an ally · automatic effects</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Sure strike</td><td class="cost">1</td><td>One recipient rolls its next attack twice and keeps the better result. The effect expires at the end of that recipient’s next activation.</td></tr>
+<tr><td>II</td><td>Wrath</td><td class="cost">2</td><td>The recipient’s next hit applies persistent damage: the target takes 1 wound at the end of its next activation, then makes the ordinary Fortitude save against disorder using the attacker’s level DC. The unused buff expires at the end of the recipient’s next activation.</td></tr>
+<tr><td>III</td><td>Haste</td><td class="cost">3</td><td>One recipient gains one extra action on each of its next two activations. A caster that hastes itself gains the first action immediately. The extra action obeys the ordinary limit of one attack and one cast per tree per activation.</td></tr>
+<tr><td>IV</td><td>Battle chorus<br><span class="tag">New</span></td><td class="cost">3</td><td>Choose up to three distinct recipients within short range. Each receives Sure strike. Each effect expires at the end of its recipient’s next activation. Haste concentrates action advantage on one unit; Battle chorus prepares several units to attack.</td></tr>
+</tbody></table></div>
+</section>
+<section id="defense"><h3>Defense</h3><p class="meta">Short range · yourself or an ally</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Ward</td><td class="cost">1</td><td>Until the end of the recipient’s next activation, the first attack against it rolls twice and keeps the worse result. Ward then ends.</td></tr>
+<tr><td>II</td><td>Stoneskin</td><td class="cost">2</td><td>Until the end of the recipient’s next activation, every hit against it deals at most 1 wound and causes no disorder from that wound.</td></tr>
+<tr><td>III</td><td>Aegis</td><td class="cost">3</td><td>Until the end of the recipient’s next activation, an enemy that would attack it first saves Will against the caster’s spell DC. A failure or critical failure wastes that attack activity and its actions; a success or critical success allows the attack.</td></tr>
+<tr><td>IV</td><td>Sanctuary<br><span class="tag">New</span></td><td class="cost">3</td><td>Choose up to two distinct recipients within short range. Each receives Stoneskin until the end of its own next activation. Aegis can prevent attacks on one unit; Sanctuary protects two units from critical wounds and wound disorder.</td></tr>
+</tbody></table></div>
+</section>
+<section id="movement"><h3>Movement</h3><p class="meta">Short range · yourself or an ally · automatic effects</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Burst of speed</td><td class="cost">1</td><td>One recipient gains 1 extra hex of movement budget for its next activation. Terrain costs apply. On a self-cast, use the bonus during this activation. The bonus applies once per activation.</td></tr>
+<tr><td>II</td><td>Sure footing</td><td class="cost">2</td><td>On the recipient’s next activation, every hex it can enter costs 1 movement and its charge may cross that terrain, including climbs. Walls, cliffs, and other barriers retain their ordinary restrictions. On a self-cast, the effect applies during this activation.</td></tr>
+<tr><td>III</td><td>Translocate</td><td class="cost">3</td><td>Place one recipient immediately in an empty legal destination up to four hexes from its current hex. Intervening terrain, walls, and enemy contact do not impede the transfer. Departure triggers no free strike.</td></tr>
+<tr><td>IV</td><td>Gate<br><span class="tag">New</span></td><td class="cost">3</td><td>Choose up to two distinct recipients within short range before resolving either transfer. Place each in a distinct empty legal destination up to three hexes from its own starting hex. Resolve both transfers simultaneously; a starting hex occupied by either recipient is unavailable as a destination. Use Translocate’s movement rules. Translocate carries one unit farther; Gate moves a pair.</td></tr>
+</tbody></table></div>
+<p>A legal transfer destination is an empty hex on the board that the recipient may occupy under its movement rules. Measure transfer distance between the recipient’s starting hex and destination. The landing hex may lie beyond the caster’s short range or sight; the recipient must begin within range and sight. A root prevents ordinary movement but permits these magical transfers, as in the current movement rules.</p>
+</section>
+</section>
+<section id="examples"><h2>5. Troop examples</h2>
+<table><thead><tr><th>Troop</th><th>Proposed access</th></tr></thead><tbody>
+<tr><td>Apprentice Magician Clique · level 5</td><td>With arcane tradition: Missile, Dread, Sure strike, Ward, and Burst of speed. It can concentrate on a spell, attack, protect an ally, or assist movement.</td></tr>
+<tr><td>Arcane caster · level 12</td><td>Adds Line, Stun, Stoneskin, Sure footing, Burst, and Translocate. Its level now changes its repertoire as well as its spell attack and DC.</td></tr>
+<tr><td>Lich Legion · level 18</td><td>With arcane tradition: all the preceding arcane spells, plus Storm and Gate. It can attack an irregular group of four enemy formations or transfer two allied formations.</td></tr>
+<tr><td>Divine caster · level 20</td><td>Reaches Renewal and Sanctuary. An arcane peer reaches Storm and Gate. Both command final-tier magic through their own tradition’s specialties.</td></tr>
+</tbody></table>
+<p class="note">The local roster lists the Apprentice Magician Clique at level 5 and the Lich Legion at level 18. These examples explicitly assume arcane tradition for both. The current troop importer detects casting and defaults an unset tradition to arcane; adoption also requires deliberate tradition assignment.</p>
+</section>
+<section id="review"><h2>6. Design review</h2>
+<p><strong>Four tiers fit the game.</strong> Three unlocks across twenty levels give the player a short progression to remember. The shared ReignMaker bands reinforce it. The catalogue grows from eighteen effects to twenty-four, and tradition ceilings keep an individual caster’s menu smaller. The main complexity comes from spell effects and targeting, rather than the fourth tier itself.</p>
+<p><strong>Earlier spells keep a purpose.</strong> Tiers I and II offer cheaper casts and concentration. Tier III offers single-target control, haste, attack prevention, and greater transfer distance. Tier IV expands coverage or deepens recovery. An archmage still chooses between spells according to the position on the board.</p>
+<p><strong>Pathfinder supplies the progression principle.</strong> Spell rank and action cost are separate in PF2e: <a href="https://2e.aonprd.com/Spells.aspx?ID=1554">Heal</a> offers three action commitments at rank 1, while <a href="https://2e.aonprd.com/Classes.aspx?ID=39">wizard progression</a> unlocks higher spell ranks with level. These four Battlefield tiers describe troop capability and adapt that principle to army scale.</p>
+<h3>Playtest priorities</h3>
+<ul>
+<li><strong>Threshold battles.</strong> Compare levels 5/6, 10/11, and 15/16. ReignMaker’s cost bands already step here; test whether simultaneous spell unlocks make those steps too strong.</li>
+<li><strong>Novice decisions.</strong> Check that apprentice turns offer useful combinations of magic, movement, and ordinary activities. Their traditions share many first-tier effects.</li>
+<li><strong>Formation effects.</strong> Storm’s fourth target, Terror’s three saves, and Gate’s paired transfer can change a short battle. Measure their practical opportunities and counterplay through spacing, pressure, and screening.</li>
+<li><strong>Recovery and protection.</strong> Renewal can reverse several wounds on one unit; Sanctuary can suppress wound disorder on two. Check whether either prolongs battles beyond the intended dusk pacing.</li>
+<li><strong>Tradition balance.</strong> Primal has one final-tier spell while the other traditions have two. Test whether its broad earlier repertoire remains valuable at levels 16–20.</li>
+</ul>
+</section>
+<footer><p><strong>Proposal scope:</strong> four level bands, the tradition ceilings above, and six new spells. Existing combat rules govern interactions unless this page states a replacement. Balance figures await playtesting.</p><p><a href="rules.html#magic">Return to current magic rules</a></p></footer>
+</main></body></html>
