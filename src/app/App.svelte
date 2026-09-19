@@ -13,11 +13,14 @@
   import { provideNotifications } from './notification-context.js';
   import Notifications from './Notifications.svelte';
   import { setAppRoot } from './app-root.js';
+  import { disposeSharedBoard } from './shared-board.js';
   import { connectAuthority } from './authority.svelte.js';
+  import { followArt } from './art-preload.js';
 
   const notifications = provideNotifications();
   presentation.connectNotices(notifications, { get userId() { return viewerId(); }, get isGm() { return gmUserId() === viewerId(); } });
   connectAuthority(notifications);
+  followArt();
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be
   // tuned and screenshotted without playing a battle up to a cast.
@@ -25,7 +28,7 @@
 
   function appRoot(el: HTMLElement) {
     setAppRoot(el);
-    return () => setAppRoot(null);
+    return () => { setAppRoot(null); disposeSharedBoard(); };
   }
 </script>
 

@@ -3,6 +3,7 @@ import { createBattle, scriptedRng, type Side, type UnitCard } from '../engine/i
 import type { CommandEnvelope } from '../runtime/commands.js';
 import { openTurn, reseatAssignment, type SideControl } from '../runtime/control.js';
 import { createRuntime } from '../runtime/createRuntime.js';
+import { refuseCommand } from '../runtime/policy.js';
 import type { BattleArchive, PresencePort } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
 import { fakeArchive, openBoard } from './helpers.js';
@@ -118,6 +119,32 @@ describe('world seating', () => {
       { id: GM, name: 'User gm', online: true },
       { id: 'A', name: 'User A', online: false },
     ]);
+  });
+});
+
+describe('an engine that belongs to neither army', () => {
+  const seated = controlOf('manual', { attacker: ['A'], defender: ['D'] });
+  const session: BattleSession = {
+    ...freshSession(),
+    control: seated,
+    setup: { ...freshSession().setup, emplacements: [{ id: 'eng-1', name: 'Catapult', side: 'attacker', square: null }] },
+  };
+  const presence = presenceOf([GM, 'A', 'D', 'watcher']);
+  const place = { type: 'army.place', piece: { kind: 'engine', id: 'eng-1' }, square: 'e5' } as const;
+
+  it('answers to a player seated on either side', () => {
+    expect(refuseCommand(session, place, 'A', presence)).toBeNull();
+    expect(refuseCommand(session, place, 'D', presence)).toBeNull();
+    expect(refuseCommand(session, { type: 'army.addEmplacement', side: 'attacker', engine: 'Catapult' }, 'D', presence)).toBeNull();
+  });
+
+  it('refuses a user who holds no seat', () => {
+    expect(refuseCommand(session, place, 'watcher', presence)).toMatch(/no seat/);
+  });
+
+  it('keeps hauling with the army whose unit holds the engine', () => {
+    const haul = { type: 'army.setHauling', emplacementId: 'eng-1', hauling: true } as const;
+    expect(refuseCommand(session, haul, 'D', presence)).toMatch(/attacker/);
   });
 });
 

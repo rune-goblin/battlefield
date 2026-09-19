@@ -59,6 +59,24 @@ const pieceSide = (session: BattleSession, piece: PieceRef): Side | null => (pie
   ? session.setup.units.find((u) => u.id === piece.id)?.side
   : session.setup.emplacements.find((e) => e.id === piece.id)?.side) ?? null;
 
+const SIDES: Side[] = ['attacker', 'defender'];
+
+/** An emplacement belongs to neither army until a unit stands on it, so either army's players
+ * may bring one and put it down. Hauling stays with the army whose unit holds the engine. */
+const placesEngine = (command: BattleCommand): boolean => {
+  switch (command.type) {
+    case 'army.addEmplacement':
+    case 'army.removeEmplacement':
+      return true;
+    case 'army.place':
+    case 'army.unplace':
+    case 'army.autoPlace':
+      return command.piece.kind === 'engine';
+    default:
+      return false;
+  }
+};
+
 /** The army a side-scoped command speaks for, from its payload or from the piece it names. */
 export function commandSide(session: BattleSession, command: BattleCommand): Side | null {
   switch (command.type) {
@@ -94,6 +112,9 @@ export function refuseCommand(
   const scope = COMMAND_SCOPE[command.type];
   if (scope === 'gm') return 'only the GM can do that';
   if (scope === 'tactical') return session.turn === userId ? null : 'it is not your turn';
+  if (placesEngine(command)) {
+    return SIDES.some((side) => seatedOn(session.control, side, userId)) ? null : 'you hold no seat in this battle';
+  }
   const side = commandSide(session, command);
   if (!side) return 'that piece belongs to no side';
   return seatedOn(session.control, side, userId) ? null : `you hold no seat on the ${side} side`;

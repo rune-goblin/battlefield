@@ -103,7 +103,6 @@
     border: 1px solid var(--rule);
     border-radius: 9px;
     background: color-mix(in srgb, var(--card) 92%, transparent);
-    backdrop-filter: blur(6px);
     box-shadow: 0 3px 12px rgba(0, 0, 0, .3);
     transition: right .18s ease, bottom .18s ease;
   }

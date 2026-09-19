@@ -217,8 +217,24 @@ export const startNextDay = () => submit({ type: 'continuation.startNextDay' });
 export const listSaves = (): Promise<ArchiveEntry[]> => runtime.archive.list();
 // Reads the record straight from the executor: `game.setup` is the panel's own copy, and a
 // battle in progress has no local shadow at all.
-export const saveBattle = (name: string): Promise<ArchiveEntry> => runtime.archive.save(name, runtime.session);
+export async function saveBattle(name: string): Promise<ArchiveEntry> {
+  const session = runtime.session;
+  const entry = await runtime.archive.save(name, session);
+  savedAt = `${session.battleId}:${session.revision}`;
+  savedTick += 1;
+  return entry;
+}
 export const loadBattle = (slot: string) => submit({ type: 'session.load', slot });
+
+// proto: a save made on another client, or before a reload, is unknown here, so the GM is asked
+// once more than they need to be.
+let savedAt = '';
+let savedTick = $state(0);
+/** Whether the battle under way has moved since this client last saved it. */
+export const battleUnsaved = (): boolean => {
+  void savedTick;
+  return game.battle !== null && savedAt !== `${runtime.session.battleId}:${runtime.session.revision}`;
+};
 export const removeSave = (slot: string): Promise<void> => runtime.archive.remove(slot);
 export const exportSave = (slot: string): Promise<string> => runtime.archive.export(slot);
 export const importSave = (data: string): Promise<ArchiveEntry> => runtime.archive.import(data);

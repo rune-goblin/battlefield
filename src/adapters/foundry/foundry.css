@@ -11,11 +11,22 @@
 
 .battlefield-mount { display: contents; }
 
+/* Foundry's element layer styles every bare `button`, heading, list, `select` and table, and it
+   sets properties the app never declares: a fixed button height, `display: flex`, `line-height:
+   1` on headings, list margins. Inside the app each element falls back to the browser's own
+   sheet, which is what the app was laid out against. The selector weighs nothing, so every
+   rule of the app's outranks it wherever it lands in the bundle. SVG is left alone: a `fill`
+   or `stroke` attribute weighs nothing either and sits earlier, so the revert would beat it. */
+:where(.battlefield-root) :where(:not(svg, svg *)) { all: revert; }
+
 .battlefield-chip {
-  position: fixed; left: 50%; bottom: 5.5rem; transform: translateX(-50%); z-index: 90;
-  width: auto; display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .8rem;
-  border: 1px solid var(--color-border-highlight, #c9a227); border-radius: 999px;
-  background: rgba(20, 18, 16, .92); color: #f0e6d2; font-size: .9rem; cursor: pointer;
+  pointer-events: auto; flex: none; align-self: flex-end; margin: .5rem;
+  width: 3rem; height: 3rem; min-height: 3rem; padding: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 2px solid var(--color-border-highlight, #c9a227);
+  background: rgba(20, 18, 16, .92); color: #f0e6d2; font-size: 1.3rem; cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
 }
+/* Outside Foundry's own column the chip has nothing to sit in. */
+body > .battlefield-chip { position: fixed; top: .5rem; right: .5rem; z-index: 90; }
 .battlefield-chip:hover { background: rgba(48, 40, 28, .96); }

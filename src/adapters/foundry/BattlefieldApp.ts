@@ -54,13 +54,15 @@ export class BattlefieldApp extends ApplicationV2 {
       minimizable: true,
       contentClasses: ['battlefield-content'],
       controls: [
+        // Foundry builds this menu once, when the frame first renders, so neither entry can
+        // depend on whether the table is called at the time.
         {
           action: 'callTable', icon: 'fa-solid fa-bullhorn', label: 'Call the players',
-          visible: () => game.user?.isGM === true && BattlefieldApp.table?.called === false,
+          visible: () => game.user?.isGM === true,
         },
         {
           action: 'dismissTable', icon: 'fa-solid fa-door-closed', label: 'Dismiss the players',
-          visible: () => game.user?.isGM === true && BattlefieldApp.table?.called === true,
+          visible: () => game.user?.isGM === true,
         },
       ],
     },

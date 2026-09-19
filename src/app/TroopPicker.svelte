@@ -1,7 +1,7 @@
 <script lang="ts">
   import { deriveStats, type Side, type UnitCard } from '../engine/index.js';
   import { troopArtUrl } from '../board/index.js';
-  import { allTroops, kingdomTroops, type TroopEntry } from './troop-library.svelte.js';
+  import { allTroops, campaignTroops, type TroopEntry } from './troop-library.svelte.js';
 
   interface Props {
     side: Side;
@@ -14,25 +14,32 @@
 
   // Read once per opening: a module enabled since the last one is found, and the rows hold
   // still while the player sorts them.
-  const kingdom = kingdomTroops();
+  let listId = $state('all');
+  const campaign = campaignTroops();
   let all = $state.raw<TroopEntry[] | null>(null);
   void allTroops().then((entries) => { all = entries; });
-  const lists = $derived([
-    { id: 'all', label: 'All armies', entries: all ?? [] },
-    ...(kingdom ? [{ id: 'kingdom', label: 'Kingdom armies', entries: kingdom }] : []),
-  ]);
 
-  type SortKey = 'name' | 'faction' | 'level' | 'role' | 'strike' | 'volley' | 'defence';
-  const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
-    { key: 'name', label: 'Troop' }, { key: 'faction', label: 'Faction' },
+  // A published card has a source and no faction; a campaign's army has a faction, and the
+  // campaign says which factions exist.
+  interface List { id: string; label: string; entries: TroopEntry[]; group: 'source' | 'faction'; groups: string[] }
+  const lists = $derived<List[]>([
+    { id: 'all', label: 'All armies', entries: all ?? [], group: 'source', groups: [...new Set((all ?? []).map((e) => e.source))].sort() },
+    ...(campaign ? [{ id: 'campaign', label: campaign.label, entries: campaign.entries, group: 'faction' as const, groups: campaign.factions }] : []),
+  ]);
+  const list = $derived(lists.find((l) => l.id === listId) ?? lists[0]);
+  const groupWord = $derived(list.group === 'source' ? 'source' : 'faction');
+  const groupOf = (entry: TroopEntry): string => (list.group === 'source' ? entry.source : entry.faction ?? '');
+
+  type SortKey = 'name' | 'group' | 'level' | 'role' | 'strike' | 'volley' | 'defence';
+  const columns = $derived<{ key: SortKey; label: string; numeric?: boolean }[]>([
+    { key: 'name', label: 'Troop' }, { key: 'group', label: groupWord },
     { key: 'level', label: 'Level', numeric: true }, { key: 'role', label: 'Role' },
     { key: 'strike', label: 'Strike', numeric: true }, { key: 'volley', label: 'Volley', numeric: true },
     { key: 'defence', label: 'Def', numeric: true },
-  ];
+  ]);
 
-  let listId = $state('all');
   let search = $state('');
-  let faction = $state('');
+  let group = $state('');
   let role = $state('');
   let ranged = $state(false);
   let sortKey = $state<SortKey>('level');
@@ -43,11 +50,11 @@
   let loaded = $state.raw<Record<string, UnitCard>>({});
   let failed = $state<Record<string, string>>({});
 
-  const rows = $derived((lists.find((l) => l.id === listId) ?? lists[0]).entries.map((entry) => {
+  const rows = $derived(list.entries.map((entry) => {
     const card = entry.card ?? loaded[entry.id] ?? null;
     const stats = card && deriveStats(card);
     return { entry, card, stats, sort: {
-      name: entry.name.toLowerCase(), faction: entry.faction.toLowerCase(), level: entry.level,
+      name: entry.name.toLowerCase(), group: groupOf(entry).toLowerCase(), level: entry.level,
       role: card?.role ?? '~', strike: stats?.strike ?? -Infinity, volley: stats?.volley ?? -Infinity, defence: stats?.defence ?? -Infinity,
     } satisfies Record<SortKey, string | number> };
   }));
@@ -61,15 +68,14 @@
       failed[entry.id] = error instanceof Error ? error.message : String(error);
     }
   }
-  const factions = $derived([...new Set(rows.map((r) => r.entry.faction))].sort());
-  $effect(() => { if (faction && !factions.includes(faction)) faction = ''; });
+  $effect(() => { if (group && !list.groups.includes(group)) group = ''; });
 
   const shown = $derived.by(() => {
     const q = search.trim().toLowerCase();
     const direction = ascending ? 1 : -1;
     return rows
-      .filter((r) => (!q || r.sort.name.includes(q) || r.sort.faction.includes(q))
-        && (!faction || r.entry.faction === faction)
+      .filter((r) => (!q || r.sort.name.includes(q) || r.sort.group.includes(q))
+        && (!group || groupOf(r.entry) === group)
         && (!role || r.card?.role === role)
         && (!ranged || (r.stats?.volley ?? null) !== null))
       .sort((a, b) => {
@@ -108,10 +114,10 @@
 
     <div class="filters">
       <!-- svelte-ignore a11y_autofocus -->
-      <input type="search" placeholder="Search by name or faction" bind:value={search} autofocus />
-      <select bind:value={faction} aria-label="Faction">
-        <option value="">Every faction</option>
-        {#each factions as f (f)}<option value={f}>{f}</option>{/each}
+      <input type="search" placeholder="Search by name or {groupWord}" bind:value={search} autofocus />
+      <select bind:value={group} aria-label={groupWord}>
+        <option value="">Every {groupWord}</option>
+        {#each list.groups as g (g)}<option value={g}>{g}</option>{/each}
       </select>
       <select bind:value={role} aria-label="Role">
         <option value="">Every role</option>
@@ -126,7 +132,7 @@
       <table>
         <thead>
           <tr>
-            {#each COLUMNS as c (c.key)}
+            {#each columns as c (c.key)}
               <th class:num={c.numeric} aria-sort={sortKey === c.key ? (ascending ? 'ascending' : 'descending') : 'none'}>
                 <button onclick={() => sortBy(c.key)}>{c.label}<span class="arrow">{sortKey === c.key ? (ascending ? '▲' : '▼') : ''}</span></button>
               </th>
@@ -143,10 +149,10 @@
                 <span>
                   <span class="name">{r.entry.name}</span>
                   {#if card?.tactics?.length || card?.caster}<span class="tags">{[...(card.tactics ?? []), ...(card.caster ? [`${card.tradition ?? ''} caster`.trim()] : [])].join(' · ')}</span>{/if}
-                  {#if failed[r.entry.id]}<span class="tags bad">Cannot be fielded: {failed[r.entry.id]}</span>{/if}
+                  {#if r.entry.problem ?? failed[r.entry.id]}<span class="tags bad">Cannot be fielded: {r.entry.problem ?? failed[r.entry.id]}</span>{/if}
                 </span>
               </td>
-              <td>{r.entry.faction}</td>
+              <td>{groupOf(r.entry)}</td>
               <td class="num">{r.entry.level}</td>
               <td>{card?.role ?? '—'}</td>
               <td class="num">{r.stats ? signed(r.stats.strike) : '—'}</td>
@@ -154,11 +160,11 @@
               <td class="num">{r.stats?.defence ?? '—'}</td>
               <td class="act">
                 {#if held[r.entry.name]}<span class="held" title="Already in this army">×{held[r.entry.name]}</span>{/if}
-                <button disabled={!!failed[r.entry.id]} onclick={() => void addEntry(r.entry)}>Add</button>
+                <button disabled={!!(r.entry.problem ?? failed[r.entry.id])} onclick={() => void addEntry(r.entry)}>Add</button>
               </td>
             </tr>
           {:else}
-            <tr><td colspan={COLUMNS.length + 1} class="empty muted">{listId === 'all' && all === null ? 'Reading the troop lists…' : 'No troop matches these filters.'}</td></tr>
+            <tr><td colspan={columns.length + 1} class="empty muted">{listId === 'all' && all === null ? 'Reading the troop lists…' : rows.length ? 'No troop matches these filters.' : 'The campaign holds no army yet.'}</td></tr>
           {/each}
         </tbody>
       </table>
@@ -174,21 +180,28 @@
     border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
   }
   header { display: flex; align-items: center; gap: 1rem; padding: .8rem 1rem .6rem; }
-  header h2 { flex: 1; margin: 0; border: 0; padding: 0; font-size: 1.15rem; }
+  header h2 { flex: 1; min-width: 0; margin: 0; border: 0; padding: 0; font-size: 1.15rem; line-height: 1.3; }
+  header button { flex: none; }
 
   .tabs { display: flex; gap: .2rem; padding: 0 1rem; border-bottom: 1px solid var(--rule); }
-  .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: .35rem .8rem; }
+  .tabs button {
+    display: inline-flex; align-items: baseline; gap: .35rem; height: auto; line-height: 1.4;
+    border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: .35rem .8rem;
+  }
   .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
   .count { font-size: .75rem; color: var(--muted); font-weight: 400; }
 
-  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .6rem 1rem; font-size: .9rem; }
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem; padding: .6rem 1rem; font-size: .9rem; line-height: 1.4; }
+  .filters input[type='search'], .filters select { width: auto; min-width: 0; height: 2.1rem; line-height: 1.4; padding: .3rem .5rem; }
   .filters input[type='search'] { flex: 1 1 14rem; }
-  .tally { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .filters select { flex: 0 1 13rem; text-transform: none; }
+  .filters label { flex: none; display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
+  .tally { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
 
   .scroll { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--rule); }
-  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table { width: 100%; margin: 0; border-collapse: collapse; font-size: .9rem; line-height: 1.35; }
   thead th { position: sticky; top: 0; z-index: 1; background: var(--band); text-align: left; padding: 0; border-bottom: 1px solid var(--rule); }
-  th button { width: 100%; border: 0; border-radius: 0; background: none; padding: .35rem .6rem; text-align: inherit; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  th button { display: block; width: 100%; height: auto; line-height: 1.4; border: 0; border-radius: 0; background: none; padding: .35rem .6rem; text-align: inherit; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
   th[aria-sort='ascending'] button, th[aria-sort='descending'] button { color: var(--ink); }
   .arrow { display: inline-block; width: 1em; font-size: .6rem; margin-left: .2rem; }
   td { padding: .3rem .6rem; border-bottom: 1px solid color-mix(in srgb, var(--rule) 50%, transparent); vertical-align: middle; }
@@ -201,7 +214,7 @@
   .name { display: block; font-weight: 600; line-height: 1.2; }
   .tags { display: block; font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .act { text-align: right; white-space: nowrap; }
-  .act button { padding: .15rem .7rem; font-size: .85rem; color: var(--side); border-color: var(--side); font-weight: 600; }
+  .act button { display: inline-block; height: auto; line-height: 1.4; padding: .15rem .7rem; font-size: .85rem; color: var(--side); border-color: var(--side); font-weight: 600; }
   .tags.bad { color: var(--bad); letter-spacing: 0; text-transform: none; }
   .held { margin-right: .5rem; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
   .empty { text-align: center; padding: 2rem; }

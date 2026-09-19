@@ -4,8 +4,12 @@ export interface TroopEntry {
   id: string;
   name: string;
   level: number;
-  /** The faction an army answers to, or the collection a published card came from. */
-  faction: string;
+  /** The book, adventure or collection the card was published in. */
+  source: string;
+  /** The banner a campaign army marches under. A published card has none. */
+  faction?: string;
+  /** Why the host could not read this troop. The row is listed and cannot be added. */
+  problem?: string;
   /** The host's own token art; the board's bundled art serves when it has none. */
   art?: string;
   /** Present when the card costs nothing to have. A compendium troop is listed off its index
@@ -20,18 +24,25 @@ export interface HostedTroops {
   coversOfficial: boolean;
 }
 
-/** What a host adds to the picker. `kingdom` answers null while ReignMaker is absent, and is
- * asked again each time the picker opens, so a module enabled mid-session is found. */
+/** The armies a campaign holds right now, and every banner it knows, its own first. */
+export interface CampaignTroops {
+  label: string;
+  entries: TroopEntry[];
+  factions: string[];
+}
+
+/** What a host adds to the picker. `campaign` answers null while no campaign module is active,
+ * and is asked again each time the picker opens, so a module enabled mid-session is found. */
 export interface TroopSources {
   world?: () => Promise<HostedTroops>;
-  kingdom?: () => TroopEntry[] | null;
+  campaign?: () => CampaignTroops | null;
 }
 
 let sources: TroopSources = {};
 export function registerTroopSources(next: TroopSources): void { sources = next; }
 
-const published = (cards: UnitCard[], faction: string): TroopEntry[] =>
-  cards.map((card) => ({ id: `${faction}:${card.name}`, name: card.name, level: card.level, card, faction }));
+const published = (cards: UnitCard[], source: string): TroopEntry[] =>
+  cards.map((card) => ({ id: `${source}:${card.name}`, name: card.name, level: card.level, card, source }));
 
 const PUBLISHED: TroopEntry[] = [
   ...published(COMBATANTS, 'ReignMaker'),
@@ -46,6 +57,6 @@ export async function allTroops(): Promise<TroopEntry[]> {
     return undefined;
   });
   if (!hosted) return PUBLISHED;
-  return [...hosted.entries, ...PUBLISHED.filter((e) => !(hosted.coversOfficial && e.faction === 'Pathfinder'))];
+  return [...hosted.entries, ...PUBLISHED.filter((e) => !(hosted.coversOfficial && e.source === 'Pathfinder'))];
 }
-export const kingdomTroops = (): TroopEntry[] | null => sources.kingdom?.() ?? null;
+export const campaignTroops = (): CampaignTroops | null => sources.campaign?.() ?? null;

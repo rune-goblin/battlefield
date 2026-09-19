@@ -42,7 +42,6 @@
     min-height: 0;
     width: var(--w);
     background: color-mix(in srgb, var(--paper) 88%, transparent);
-    backdrop-filter: blur(6px);
     box-shadow: 0 0 18px rgba(0, 0, 0, .28);
   }
   .dock.left { border-right: 1px solid var(--rule); }

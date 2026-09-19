@@ -12,7 +12,7 @@ let sheetLoad: Promise<void> | null = null;
 // One fetch for the lifetime of the page, shared by every board mount, kicked off at layer
 // construction so the frames are in before the first cast lands. A cast that arrives mid-load
 // plays its particles without the painted body.
-function loadSheets(): void {
+export function loadSheets(): void {
   sheetLoad ??= Promise.all(
     Object.values(SHEET).map(async (name) => {
       const sheet = await PIXI.Assets.load<PIXI.Spritesheet>(assetUrl(`art/spell-vfx-spritesheets/${name}.json`));

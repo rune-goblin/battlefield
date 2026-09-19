@@ -37,7 +37,7 @@
   {#snippet rail()}<WizardRail />{/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} board={game.setup.board} mode="paint" fill {brush} onpaint={apply} onbrush={(b) => (brush = b)}
+    <PixiBoard shared bind:this={boardRef} board={game.setup.board} mode="paint" fill {brush} onpaint={apply} onbrush={(b) => (brush = b)}
       terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 

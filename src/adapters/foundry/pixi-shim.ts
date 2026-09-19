@@ -9,7 +9,7 @@ if (!pixi) throw new Error('Battlefield needs Foundry\'s PIXI global, which is m
 export const {
   ALPHA_MODES, AlphaFilter, Application, Assets, BLEND_MODES, BaseTexture, BlurFilter,
   ColorMatrixFilter, Container, DEG_TO_RAD, DisplayObject, Filter, Graphics, LINE_JOIN,
-  MIPMAP_MODES, Matrix, ObservablePoint, ParticleContainer, Point, Rectangle, SCALE_MODES,
-  Sprite, SpriteMaskFilter, Spritesheet, Text, TextStyle, Texture, Ticker, TilingSprite,
-  WRAP_MODES, settings, utils,
+  MIPMAP_MODES, Matrix, ObservablePoint, ParticleContainer, Point, Rectangle, RenderTexture,
+  SCALE_MODES, Sprite, SpriteMaskFilter, Spritesheet, TEXT_GRADIENT, Text, TextMetrics,
+  TextStyle, Texture, Ticker, TilingSprite, WRAP_MODES, settings, utils,
 } = pixi;

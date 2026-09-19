@@ -40,7 +40,7 @@
   import BattleAnnouncement from './BattleAnnouncement.svelte';
   import MeleeChoices from './MeleeChoices.svelte';
   import { deselectUnit, endActivation, game, presentation, selectUnit, tableUsers, takeAction, undo } from './game.svelte.js';
-  import { leaveBattle } from './navigation.svelte.js';
+  import EndBattleDialog from './EndBattleDialog.svelte';
   import { createScope } from './scope.js';
   import { offTurnNote, turnNote, viewer } from './viewer.svelte.js';
 
@@ -1294,6 +1294,8 @@
   ].filter(Boolean).join(' · ');
 
   const spec = $derived(`${b.board.spec.base}${b.board.spec.feature && b.board.spec.feature !== 'none' ? ' · ' + b.board.spec.feature : ''}`);
+
+  let ending = $state(false);
 </script>
 
 {#snippet popupHead(label: string)}
@@ -1357,7 +1359,7 @@
       {/snippet}
       {#snippet tools()}
         <button onclick={() => void run(undo())} disabled={!viewer.isGm || !game.history.length} title="Undo the last action">Undo</button>
-        <button onclick={() => void run(leaveBattle())} disabled={!viewer.isGm}>New battle</button>
+        <button onclick={() => (ending = true)} disabled={!viewer.isGm} title="End this battle for the whole table">End battle</button>
       {/snippet}
     </TopBar>
   {/snippet}
@@ -1393,6 +1395,7 @@
   {#snippet map()}
     <div class="mapwrap" class:aiming={arming !== null || blastOpen || pickerActivity !== null}>
     <PixiBoard
+      shared
       bind:this={boardRef}
       board={b.board}
       {tokens}
@@ -1808,6 +1811,8 @@
     <BattleLog battle={b} />
   {/snippet}
 </AppShell>
+
+{#if ending}<EndBattleDialog close={() => (ending = false)} />{/if}
 
 <style>
   .siege-heading { display: flex; align-items: center; gap: .6rem; padding: .4rem 1.5rem .4rem .3rem; }

@@ -47,7 +47,7 @@ describe('army preparation', () => {
     ]);
   });
 
-  it('trades the two armies whole, emplacements included', async () => {
+  it('trades the two armies whole and leaves an emplacement where it stands', async () => {
     const session = setupSession();
     session.setup.units.push({ id: 'unit-2', card: scouts, side: 'defender', square: 'c9', engines: [] });
     session.setup.emplacements.push({ id: 'eq-1', name: ENGINES[0].name, side: 'defender', square: 'd9' });
@@ -57,7 +57,7 @@ describe('army preparation', () => {
 
     const { units, emplacements } = runtime.session.setup;
     expect(units.map((u) => [u.id, u.side, u.square])).toEqual([['unit-1', 'defender', null], ['unit-2', 'attacker', null]]);
-    expect(emplacements.map((e) => [e.id, e.side, e.square])).toEqual([['eq-1', 'attacker', null]]);
+    expect(emplacements.map((e) => [e.id, e.side, e.square])).toEqual([['eq-1', 'attacker', 'd9']]);
   });
 
   it('refuses a side change from anyone but the GM', async () => {
@@ -85,21 +85,45 @@ describe('army preparation', () => {
     expect(runtime.session.setup.emplacements[0].name).toBe('Catapult');
   });
 
-  it('lets a unit deploy on its own army\'s engine and on no other piece', async () => {
+  it('lets either army\'s unit deploy on any engine and on no other piece', async () => {
     const session = setupSession();
     session.setup.emplacements.push(
       { id: 'eng-1', name: 'Catapult', side: 'attacker', square: 'd1' },
-      { id: 'eng-2', name: 'Catapult', side: 'defender', square: 'd9' },
+      { id: 'eng-2', name: 'Catapult', side: 'attacker', square: 'd9' },
     );
     session.setup.units.push({ id: 'unit-2', card: infantry, side: 'defender', square: null, engines: [] });
 
     expect(cellsFor(session.setup, { kind: 'unit', id: 'unit-1' })).toContain('d1');
+    expect(cellsFor(session.setup, { kind: 'unit', id: 'unit-2' })).toContain('d9');
     expect(cellsFor(session.setup, { kind: 'engine', id: 'eng-1' })).toContain('c1');
     expect(cellsFor(session.setup, { kind: 'engine', id: 'eng-2' })).not.toContain('d1');
-    session.setup.emplacements[1].side = 'attacker';
-    session.setup.emplacements[1].square = 'e1';
-    expect(cellsFor(session.setup, { kind: 'engine', id: 'eng-2' })).not.toContain('d1');
-    expect(autoCell(session.setup, { kind: 'unit', id: 'unit-1' })).not.toBe('e1');
+    expect(autoCell(session.setup, { kind: 'unit', id: 'unit-1' })).not.toBe('d1');
+  });
+
+  it('opens every dry square of the board to an engine', async () => {
+    const session = setupSession();
+    session.setup.emplacements.push({ id: 'eng-1', name: 'Catapult', side: 'attacker', square: null });
+    const runtime = runtimeOn(session);
+
+    const cells = cellsFor(session.setup, { kind: 'engine', id: 'eng-1' });
+    expect(cells).toEqual(expect.arrayContaining(['c1', 'e5', 'e9']));
+    expect(cells).not.toContain('a1');
+
+    const placed = await runtime.submit({ type: 'army.place', piece: { kind: 'engine', id: 'eng-1' }, square: 'e9' });
+    expect(placed.ok).toBe(true);
+    const water = await runtime.submit({ type: 'army.place', piece: { kind: 'engine', id: 'eng-1' }, square: 'a1' });
+    expect(water.ok).toBe(false);
+  });
+
+  it('gives an engine to the army whose unit is placed on it', async () => {
+    const session = setupSession();
+    session.setup.emplacements.push({ id: 'eng-1', name: 'Catapult', side: 'attacker', square: 'd9' });
+    session.setup.units.push({ id: 'unit-2', card: infantry, side: 'defender', square: null, engines: [] });
+    const runtime = runtimeOn(session);
+
+    await runtime.submit({ type: 'army.place', piece: { kind: 'unit', id: 'unit-2' }, square: 'd9' });
+
+    expect(runtime.session.setup.emplacements[0].side).toBe('defender');
   });
 
   it('hauls an engine only while a unit of its army stands on it', async () => {
@@ -149,11 +173,21 @@ describe('army preparation', () => {
     expect(a.engines.map((e) => [e.id, e.hauling])).toEqual([['hauled', true]]);
     expect(b.engines).toEqual([]);
     expect(battle.engines.map((e) => [e.id, e.status])).toEqual([['worked', 'crewed']]);
-    expect(() => createBattle({
-      board,
+  });
+
+  it('starts the battle with each engine held by the unit deployed on or beside it', () => {
+    const ram = ENGINES.find((e) => !isFixedEngine(e))!;
+    const battle = createBattle({
+      board: openBoard('square', 9),
       units: [{ id: 'a', card: infantry, side: 'attacker', square: 'c1' }, { id: 'd', card: infantry, side: 'defender', square: 'c9' }],
-      engines: [{ card: ram, side: 'attacker', square: 'c9' }],
-    })).toThrow();
+      engines: [
+        { id: 'under', card: ram, side: 'attacker', square: 'c9' },
+        { id: 'beside', card: ram, side: 'attacker', square: 'd9' },
+        { id: 'alone', card: ram, side: 'attacker', square: 'e5' },
+      ],
+    });
+
+    expect(battle.engines.map((e) => [e.id, e.side])).toEqual([['under', 'defender'], ['beside', 'defender'], ['alone', 'attacker']]);
   });
 
   it('refuses a square no piece can deploy on and leaves the record alone', async () => {
@@ -195,18 +229,17 @@ describe('army preparation', () => {
     expect(autoCell(setup, { kind: 'unit', id: 'unit-2' })).toBe('e1');
   });
 
-  it('reports a side ready once every piece it owns stands on a square', async () => {
+  it('reports a side ready once every unit stands on a square, whatever its engines do', async () => {
     const runtime = runtimeOn();
 
     expect(sideReady(runtime.session.setup, 'attacker')).toBe(true);
     expect(sideReady(runtime.session.setup, 'defender')).toBe(false);
 
     await runtime.submit({ type: 'army.addEmplacement', side: 'attacker', engine: 'Catapult' });
-    expect(sideReady(runtime.session.setup, 'attacker')).toBe(false);
-
-    const id = runtime.session.setup.emplacements[0].id;
-    await runtime.submit({ type: 'army.autoPlace', piece: { kind: 'engine', id } });
     expect(sideReady(runtime.session.setup, 'attacker')).toBe(true);
+
+    await runtime.submit({ type: 'army.unplace', piece: { kind: 'unit', id: 'unit-1' } });
+    expect(sideReady(runtime.session.setup, 'attacker')).toBe(false);
   });
 
   it('generates one side and leaves the other where it stands', async () => {

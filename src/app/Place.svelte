@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { deployRanks, ENGINES, derivation, gridOf, notation, paceReason, type Side, type UnitCard } from '../engine/index.js';
+  import { canEmplace, deployRanks, ENGINES, derivation, gridOf, notation, paceReason, type Side, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
@@ -18,14 +18,15 @@
   import { COMMAND_NOTICE } from './command-notices.js';
 
   interface Props {
-    /** The army step's side. The siege step covers both and switches between them itself. */
+    /** The army step's side. The siege step has none: an engine belongs to whoever stands on it. */
     side?: Side;
     pieces: 'units' | 'engines';
   }
   let { side: stepSide, pieces }: Props = $props();
 
-  let siegeSide = $state<Side>('attacker');
-  const side = $derived(stepSide ?? siegeSide);
+  // proto: the draft still stores a side on every engine, and the siege step files new ones
+  // under the attacker until a unit claims them.
+  const side = $derived(stepSide ?? 'attacker');
   const siege = $derived(pieces === 'engines');
 
   const notifications = useNotifications();
@@ -33,7 +34,7 @@
 
   let picking = $state(false);
 
-  /** What the sidebar has picked up: one of this side's units, or one of its emplacements. */
+  /** What the sidebar has picked up: one of this side's units, or an emplacement. */
   let selected = $state<PieceRef | null>(null);
   // Set on a tray item's dragstart, read back from DataTransfer on drop — dragstart is the
   // only point a native drag gives Svelte a hook, so it also drives the live deploy-wash
@@ -48,7 +49,7 @@
   const myUnits = $derived(units.filter((u) => u.side === side));
   // Each step lists its own kind of piece; the other kind still stands on the board.
   const mine = $derived(siege ? [] : myUnits);
-  const myEngines = $derived(siege ? emplacements.filter((e) => e.side === side) : []);
+  const myEngines = $derived(siege ? emplacements : []);
   const held = $derived(mine.reduce<Record<string, number>>((n, u) => ({ ...n, [u.card.name]: (n[u.card.name] ?? 0) + 1 }), {}));
 
   // A selected piece deploys on its own side's ranks; with nothing selected the wash shows
@@ -59,7 +60,8 @@
   // The wash describes the whole deployment zone. Occupancy and terrain only decide whether
   // the current placement is legal, so placing a piece leaves the zone intact beneath it.
   const deploymentRanks = $derived(new Set(deployRanks(side, pickedAmbush, board.squares.length)));
-  const highlightCells = $derived(gridOf(board).cells().filter(cell => deploymentRanks.has(cell.rank)).map(notation));
+  const highlightCells = $derived(gridOf(board).cells()
+    .filter((cell) => (siege ? canEmplace(board, cell) : deploymentRanks.has(cell.rank))).map(notation));
   const legalCells = $derived(new Set(deployableCells(game.setup, side, pickedAmbush, selected, siege ? 'engine' : 'unit')));
   const invalidCell = $derived(selected && hoveredCell && !legalCells.has(hoveredCell) ? hoveredCell : null);
 
@@ -110,9 +112,9 @@
   /** The emplacement a unit was just put on, while the player decides whether it hauls it. */
   let haulAsk = $state<string | null>(null);
   const haulEngine = $derived(emplacements.find((e) => e.id === haulAsk) ?? null);
-  const haulUnit = $derived(haulEngine ? units.find((u) => u.side === haulEngine.side && u.square === haulEngine.square) ?? null : null);
+  const haulUnit = $derived(haulEngine ? units.find((u) => u.square === haulEngine.square) ?? null : null);
 
-  /** A unit put on its own army's engine works it; one that can move asks about hauling. */
+  /** A unit put on an engine works it; one that can move asks about hauling. */
   async function put(p: PieceRef, cell: string) {
     const result = await placePiece(p, cell);
     if (!result.ok || p.kind !== 'unit') return result;
@@ -161,12 +163,10 @@
   function onToken(e: BoardEventOf<'token'>) {
     const p = pickOf(e.id);
     if (!mayMove(p)) return;
-    if (siege) siegeSide = pieceAt(p)!.side;
     selected = p;
   }
 
-  /** Only this step's own pieces answer: the rest are there to deploy against. The siege step
-   * works both armies' engines, so a click on the other side's engine switches to it. */
+  /** Only this step's own pieces answer: the rest are there to deploy against. */
   function mayMove(p: PieceRef): boolean {
     if ((p.kind === 'engine') !== siege) return false;
     return siege || pieceAt(p)?.side === side;
@@ -187,7 +187,6 @@
     if (e.cell === null) return;
     const p = pickOf(e.id);
     if (!mayMove(p)) return;
-    if (siege) siegeSide = pieceAt(p)!.side;
     selected = p;
     hoveredCell = e.cell;
   }
@@ -212,7 +211,7 @@
     const raw = data?.getData('text/plain');
     const p = raw ? pickOf(raw) : dragging;
     dragging = null;
-    if (cell === null || !p || pieceAt(p)?.side !== side || !cellsFor(game.setup, p).includes(cell)) return;
+    if (cell === null || !p || !mayMove(p) || !cellsFor(game.setup, p).includes(cell)) return;
     void put(p, cell);
   }
 
@@ -304,12 +303,12 @@
     <MapControls
       board={boardRef}
       army={() => [...mine.map((u) => u.square), ...myEngines.map((e) => e.square)].filter((sq) => sq !== null)}
-      armyLabel="Frame the {sideWord} force"
+      armyLabel={siege ? 'Frame the engines' : `Frame the ${sideWord} force`}
     />
   {/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} {board} {tokens} mode="place" fill
+    <PixiBoard shared bind:this={boardRef} {board} {tokens} mode="place" fill
       highlights={[{ style: 'deploy', cells: highlightCells }, { style: 'invalid', cells: invalidCell ? [invalidCell] : [] }]}
       onhover={(e) => { hoveredCell = e.cell; }} ondrag={onTokenDrag} ontrayhover={(cell) => { hoveredCell = cell; }}
       oncell={onCell} ontoken={onToken} ondrop={onTokenDrop} ontraydrop={onTrayDrop}
@@ -318,20 +317,15 @@
 
   {#snippet left()}
     {#if siege}
-      <div class="sides" role="group" aria-label="Army">
-        {#each ['attacker', 'defender'] as const as sd (sd)}
-          <button class:on={side === sd} aria-pressed={side === sd} style:--side={sd === 'attacker' ? 'var(--att)' : 'var(--def)'}
-            onclick={() => { siegeSide = sd; selected = null; }}>{sd === 'attacker' ? 'Attackers' : 'Defenders'}</button>
-        {/each}
-      </div>
       <div class="card">
         <div class="row">
           <select bind:value={engineName}>{@render engineOptions()}</select>
           <button onclick={addEngine}>Add engine</button>
         </div>
         <p class="muted">
-          An emplaced engine holds its square. Any unit of its army standing on or beside it works
-          it; leave it alone and the enemy takes it at the end of the round.
+          An emplaced engine stands on any dry hex and belongs to neither army. The unit deployed
+          on or beside it claims it and works it; after that, an engine left with only the enemy
+          beside it changes hands at the end of the round.
         </p>
       </div>
     {:else}
@@ -340,12 +334,16 @@
           <button class="primary" onclick={() => (picking = true)}>Choose troops…</button>
           <button onclick={generate}>Generate the {sideWord} army</button>
         </div>
-        <p class="muted">Put a unit on one of its army's engines to work it; an engine that can move may be hauled.</p>
+        <p class="muted">Put a unit on an engine to claim and work it; an engine that can move may be hauled.</p>
       </div>
     {/if}
 
-    <h3 class={side === 'attacker' ? 'side-att' : 'side-def'}>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
-    <div class="unitlist" style:--side={side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+    {#if siege}
+      <h3>Engines</h3>
+    {:else}
+      <h3 class={side === 'attacker' ? 'side-att' : 'side-def'}>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
+    {/if}
+    <div class="unitlist" style:--side={siege ? 'var(--muted)' : side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
       {#each mine as u (u.id)}
         {@const p = { kind: 'unit' as const, id: u.id }}
         {@const under = engineUnder(game.setup, u)}
@@ -552,9 +550,6 @@
   .where { color: var(--ink); }
   .piece:not(.down) .where { font-style: italic; color: var(--muted); }
 
-  .sides { display: flex; gap: .3rem; }
-  .sides button { flex: 1; border-color: var(--side); color: var(--side); }
-  .sides button.on { background: var(--side); color: var(--paper); font-weight: 600; }
 
   .kill { border: 0; background: none; color: var(--muted); padding: 0 .2rem; font-size: 1rem; line-height: 1; opacity: .5; }
   .kill:hover:not(:disabled) { color: var(--bad); opacity: 1; border-color: transparent; }

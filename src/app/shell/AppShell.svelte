@@ -105,7 +105,7 @@
   .modal { z-index: 4; pointer-events: none; }
   .modal > :global(*) { pointer-events: auto; }
 
-  .bar { pointer-events: auto; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(6px); }
+  .bar { pointer-events: auto; background: color-mix(in srgb, var(--paper) 88%, transparent); }
   .bar.top { border-bottom: 1px solid var(--rule); }
   .bar.bottom { border-top: 1px solid var(--rule); }
 

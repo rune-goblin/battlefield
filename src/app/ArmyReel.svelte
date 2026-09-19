@@ -94,14 +94,14 @@
   }
   .empty {
     pointer-events: auto; margin: 0; padding: .3rem .7rem; border-radius: 999px;
-    background: color-mix(in srgb, var(--side) 22%, var(--glass)); backdrop-filter: blur(6px);
+    background: color-mix(in srgb, var(--side) 22%, var(--glass));
   }
 
   .unit-card {
     pointer-events: auto;
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .15rem;
     width: 4.4rem; padding: .25rem;
-    background: color-mix(in srgb, var(--side) 30%, var(--glass)); backdrop-filter: blur(6px);
+    background: color-mix(in srgb, var(--side) 30%, var(--glass));
     border: 1px solid color-mix(in srgb, var(--side) 60%, var(--rule));
     border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
     font: inherit; font-size: .68rem; color: var(--ink); text-align: center; cursor: pointer;

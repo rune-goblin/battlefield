@@ -555,8 +555,18 @@ export interface CreateBoardViewOptions {
   onBrush?: (brush: Brush | null) => void;
 }
 
-export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElement, opts: CreateBoardViewOptions = {}): BoardView {
+/** A board view that owns its canvas and renderer, and can move between host elements. */
+export interface HostedBoardView extends BoardView {
+  /** Size to `container` from now on, send brush changes to `onBrush`, and start rendering. */
+  attach(container: HTMLElement, onBrush?: (brush: Brush | null) => void): void;
+  /** Stop rendering and stop following the container. The GL context and every uploaded
+   * texture stay, which is what a later `attach` saves. */
+  detach(): void;
+}
+
+export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElement, opts: CreateBoardViewOptions = {}): HostedBoardView {
   const boardApp = new BoardApp({ canvas, container, theme: opts.theme });
+  let onBrush = opts.onBrush;
   const view = mountBoardView({
     parent: boardApp.viewport,
     canvas,
@@ -564,7 +574,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     renderer: boardApp.app.renderer,
     size: () => boardApp.app.screen,
     theme: boardApp.theme,
-    onBrush: opts.onBrush,
+    onBrush: (brush) => onBrush?.(brush),
   });
 
   // Pixi's own resizeTo only reacts to window resize (see ResizePlugin); a container that
@@ -580,6 +590,20 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
     resize() {
       boardApp.resize();
       view.resize();
+    },
+    attach(next, brushListener) {
+      onBrush = brushListener;
+      resizeObserver.disconnect();
+      boardApp.app.resizeTo = next;
+      resizeObserver.observe(next);
+      boardApp.app.start();
+      boardApp.resize();
+      view.resize();
+    },
+    detach() {
+      onBrush = undefined;
+      resizeObserver.disconnect();
+      boardApp.app.stop();
     },
     destroy() {
       resizeObserver.disconnect();

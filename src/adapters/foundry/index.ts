@@ -1,5 +1,6 @@
 import './install-asset-base.js';
 import { blockPageZoom } from '../../app/app-root.js';
+import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { bindClient, presenceChanged } from '../../app/game.svelte.js';
 import { freshSession } from '../../runtime/session.js';
@@ -35,6 +36,7 @@ export let host: BattlefieldHost | null = null;
 const tableCall = createTableCall({
   storage: gameSettingStorage(TABLE_CALL_SETTING),
   isGm: () => game.user?.isGM === true,
+  battleRunning: () => sessionWatcher.session.battle !== null,
   windowOpen: () => BattlefieldApp.current !== null,
   openWindow: () => BattlefieldApp.open(),
   closeWindow: () => BattlefieldApp.close(),
@@ -72,6 +74,7 @@ Hooks.once('init', () => {
   });
   bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive }));
   channel.on((message) => host?.handleMessage(message));
+  sessionWatcher.subscribe(() => tableCall.handleSession());
   sessionWatcher.subscribe(createTurnAnnouncer({
     viewer: () => ({ userId: users.currentUserId(), isGm: users.primaryGmId() === users.currentUserId() }),
     visible: () => BattlefieldApp.visible,
@@ -84,7 +87,10 @@ Hooks.once('ready', () => {
   registerBattleSitePicker(() => (game.modules.get(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
   registerTroopSources(foundryTroopSources());
   sessionWatcher.handleChange(game.settings.get(MODULE_ID, SESSION_SETTING));
-  tableCall.sync();
+  // Before any window opens, so a player's first board finds its art already decoded.
+  followArt();
+  // A world with no saved session delivers no record, and this seeds the same first reading.
+  tableCall.handleSession();
   void host?.refresh();
 });
 

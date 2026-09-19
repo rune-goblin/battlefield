@@ -51,7 +51,7 @@
   {#snippet rail()}<WizardRail />{/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} {board} tokens={[]} fill
+    <PixiBoard shared bind:this={boardRef} {board} tokens={[]} fill
       terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 

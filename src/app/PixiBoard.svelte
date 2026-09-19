@@ -8,6 +8,7 @@
   import type { Board, Side, Tree } from '../engine/index.js';
   import { statusBars } from '../board/status-bars.js';
   import HexInfo from './HexInfo.svelte';
+  import { returnSharedBoard, takeSharedBoard } from './shared-board.js';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
@@ -43,6 +44,9 @@
     fill?: boolean;
     /** The board answers nothing while something else is the menu — see `BoardView.setFrozen`. */
     frozen?: boolean;
+    /** A stage's main board: it takes the app's one canvas and renderer rather than making
+     * its own. At most one such board is mounted at a time. */
+    shared?: boolean;
     onhover?: (event: BoardEventOf<'hover'>) => void;
     oncell?: (event: BoardEventOf<'cell'>) => void;
     onedge?: (event: BoardEventOf<'edge'>) => void;
@@ -57,12 +61,11 @@
     ontrayhover?: (cell: string | null) => void;
   }
   let {
-    board, terrainAppearance = null, inkMap = null, tokens = [], fallen = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
+    board, terrainAppearance = null, inkMap = null, tokens = [], fallen = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false, shared = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop, ontrayhover,
   }: Props = $props();
 
   let container: HTMLDivElement;
-  let canvas: HTMLCanvasElement;
   let view: BoardView | undefined = $state();
   let hoveredCell = $state<string | null>(null);
   const hoverTitle = $derived.by(() => {
@@ -85,22 +88,51 @@
   export function setGrid(settings: GridUpdate) { view?.setGrid(settings); }
   export function setBorders(visible: boolean) { view?.setBorders(visible); }
 
+  function ownBoard() {
+    const canvas = document.createElement('canvas');
+    container.prepend(canvas);
+    return { canvas, view: createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) }) };
+  }
+
+  let canvas: HTMLCanvasElement | undefined = $state();
+
   onMount(() => {
-    view = createBoardView(canvas, container, { onBrush: (b) => onbrush?.(b) });
+    const taken = shared ? takeSharedBoard(container, (b) => onbrush?.(b)) : null;
+    const held = taken ?? ownBoard();
+    const target = held.view;
+    canvas = held.canvas;
+    view = target;
+    // Interaction listens on the canvas, so it has to take focus for the brush keys; the same
+    // element is the tray's drop target, since it already has an interactive role.
+    held.canvas.tabIndex = 0;
+    held.canvas.setAttribute('aria-label', 'Battle board');
+    const cellUnder = (e: DragEvent) => target.cellAt(e.clientX, e.clientY) ?? null;
+    const over = (e: DragEvent) => { if (!ontraydrop) return; e.preventDefault(); ontrayhover?.(cellUnder(e)); };
+    const leave = () => ontrayhover?.(null);
+    const drop = (e: DragEvent) => { if (!ontraydrop) return; e.preventDefault(); ontraydrop(cellUnder(e), e.dataTransfer); };
+    held.canvas.addEventListener('dragover', over);
+    held.canvas.addEventListener('dragleave', leave);
+    held.canvas.addEventListener('drop', drop);
     const off = [
-      view.on('hover', (e) => { hoveredCell = e.cell; onhover?.(e); }),
-      view.on('cell', (e) => oncell?.(e)),
-      view.on('edge', (e) => onedge?.(e)),
-      view.on('token', (e) => ontoken?.(e)),
-      view.on('paint', (e) => onpaint?.(e)),
-      view.on('drop', (e) => ondrop?.(e)),
-      view.on('drag', (e) => ondrag?.(e)),
+      target.on('hover', (e) => { hoveredCell = e.cell; onhover?.(e); }),
+      target.on('cell', (e) => oncell?.(e)),
+      target.on('edge', (e) => onedge?.(e)),
+      target.on('token', (e) => ontoken?.(e)),
+      target.on('paint', (e) => onpaint?.(e)),
+      target.on('drop', (e) => ondrop?.(e)),
+      target.on('drag', (e) => ondrag?.(e)),
     ];
     return () => {
       for (const unsubscribe of off) unsubscribe();
-      view?.destroy();
+      held.canvas.removeEventListener('dragover', over);
+      held.canvas.removeEventListener('dragleave', leave);
+      held.canvas.removeEventListener('drop', drop);
+      if (taken) returnSharedBoard();
+      else target.destroy();
     };
   });
+
+  $effect(() => { if (canvas) canvas.title = hoverTitle ?? ''; });
 
   $effect(() => { view?.setBoard(board); });
   $effect(() => {
@@ -142,23 +174,13 @@
 </script>
 
 <div class="pixiboard" class:fill bind:this={container}>
-  <!-- Interaction listens on this element, so it has to take focus for the brush keys; the
-       same element is the tray's drop target, since it already has an interactive role. -->
-  <canvas
-    bind:this={canvas}
-    tabindex="0"
-    aria-label="Battle board"
-    title={hoverTitle}
-    ondragover={ontraydrop && ((e) => { e.preventDefault(); ontrayhover?.(view?.cellAt(e.clientX, e.clientY) ?? null); })}
-    ondragleave={ontrayhover && (() => ontrayhover(null))}
-    ondrop={ontraydrop && ((e) => { e.preventDefault(); ontraydrop(view?.cellAt(e.clientX, e.clientY) ?? null, e.dataTransfer); })}
-  ></canvas>
   <HexInfo {board} cell={hoveredCell} {tokens} {fallen} />
 </div>
 
 <style>
   .pixiboard { width: 100%; max-width: 40rem; aspect-ratio: 1; margin: 0.75rem 0; }
   .pixiboard.fill { width: 100%; height: 100%; max-width: none; aspect-ratio: auto; margin: 0; }
-  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-  canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* The canvas is made in script, and a shared one outlives this component. */
+  .pixiboard :global(canvas) { display: block; width: 100%; height: 100%; touch-action: none; }
+  .pixiboard :global(canvas:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>

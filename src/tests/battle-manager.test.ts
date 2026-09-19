@@ -58,9 +58,19 @@ describe('the battle manager', () => {
     expect(runtime.session.revision).toBe(3);
   });
 
-  it('refuses to start while a side has a piece off the board', async () => {
+  it('leaves an engine that stands on no square out of the battle', async () => {
     const setup = draft();
     setup.emplacements[0].square = null;
+    const runtime = runtimeOn(setup);
+    await bothReady(runtime);
+
+    expect(await runtime.submit({ type: 'battle.start' })).toMatchObject({ ok: true });
+    expect(runtime.session.battle!.engines).toEqual([]);
+  });
+
+  it('refuses to start while a side has a unit off the board', async () => {
+    const setup = draft();
+    setup.units[0].square = null;
     const runtime = runtimeOn(setup);
 
     const declared = await runtime.submit({ type: 'army.declareReady', side: 'attacker', ready: true });

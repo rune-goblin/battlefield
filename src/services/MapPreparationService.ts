@@ -1,5 +1,5 @@
 import {
-  canDeploy, generateBoard, parse, makeWall, type Board, type BoardSpec,
+  canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
 import type { BattleSession } from '../runtime/session.js';
@@ -59,7 +59,7 @@ function clearUndeployable(board: Board, setup: BattleSetupDraft): BattleSetupDr
     board,
     units: setup.units.map((u) => (u.square && !canDeploy(board, u.side, u.card.tactics?.includes('ambush') ?? false, parse(u.square))
       ? { ...u, square: null } : u)),
-    emplacements: setup.emplacements.map((e) => (e.square && !canDeploy(board, e.side, false, parse(e.square))
+    emplacements: setup.emplacements.map((e) => (e.square && !canEmplace(board, parse(e.square))
       ? { ...e, square: null } : e)),
   };
 }

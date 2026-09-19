@@ -1,5 +1,5 @@
 import {
-  canDeploy, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, parse, seededRandom,
+  canDeploy, canEmplace, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, parse, seededRandom,
   type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
@@ -40,22 +40,16 @@ export function pieceOf(setup: BattleSetupDraft, ref: PieceRef): SetupUnit | Set
     : setup.emplacements.find((e) => e.id === ref.id);
 }
 
-// A unit and its own army's engine may share a square; no other two pieces do.
-function occupied(setup: BattleSetupDraft, side: Side, kind: PieceRef['kind'], exclude: PieceRef | null): Set<string> {
-  const out = new Set<string>();
-  for (const u of setup.units) {
-    if (u.square && u.id !== exclude?.id && (kind === 'unit' || u.side !== side)) out.add(u.square);
-  }
-  for (const e of setup.emplacements) {
-    if (e.square && e.id !== exclude?.id && (kind === 'engine' || e.side !== side)) out.add(e.square);
-  }
-  return out;
+// A unit and an engine may share a square, whichever army the unit is; no other two pieces do.
+function occupied(setup: BattleSetupDraft, kind: PieceRef['kind'], exclude: PieceRef | null): Set<string> {
+  const pieces: { id: string; square: string | null }[] = kind === 'unit' ? setup.units : setup.emplacements;
+  return new Set(pieces.flatMap((p) => (p.square && p.id !== exclude?.id ? [p.square] : [])));
 }
 
 /** The emplacement a unit stands on, which it works and may haul. */
 export function engineUnder(setup: BattleSetupDraft, unit: SetupUnit): SetupEngine | undefined {
   return unit.square === null ? undefined
-    : setup.emplacements.find((e) => e.side === unit.side && e.square === unit.square);
+    : setup.emplacements.find((e) => e.square === unit.square);
 }
 
 export const canHaul = (engine: SetupEngine): boolean => {
@@ -71,16 +65,18 @@ export function deployableCells(
 ): string[] {
   const board = setup.board;
   if (!board) return [];
-  const taken = occupied(setup, side, kind, exclude);
+  const taken = occupied(setup, kind, exclude);
   const out: string[] = [];
   for (const sq of gridOf(board).cells()) {
     const n = notation(sq);
-    if (canDeploy(board, side, ambush, sq) && !taken.has(n)) out.push(n);
+    const open = kind === 'engine' ? canEmplace(board, sq) : canDeploy(board, side, ambush, sq);
+    if (open && !taken.has(n)) out.push(n);
   }
   return out;
 }
 
-/** Where one piece may stand, on its own side's ranks and under its own ambush rule. */
+/** Where one piece may stand: a unit on its own side's ranks and under its own ambush rule, an
+ * engine on any dry square. */
 export function cellsFor(setup: BattleSetupDraft, ref: PieceRef): string[] {
   const piece = pieceOf(setup, ref);
   if (!piece) return [];
@@ -141,18 +137,23 @@ export function clearWaterPlacements(board: Board, setup: BattleSetupDraft): Bat
   });
 }
 
-/** One side is ready when it has a unit and everything it owns stands on a square. */
+/** One side is ready when it has a unit and every unit stands on a square. An engine belongs to
+ * neither army until a unit claims it, and one left off the board stays out of the battle. */
 export function sideReady(setup: BattleSetupDraft, side: Side): boolean {
   const us = setup.units.filter((u) => u.side === side);
-  return us.length > 0 && us.every((u) => u.square !== null)
-    && setup.emplacements.filter((e) => e.side === side).every((e) => e.square !== null);
+  return us.length > 0 && us.every((u) => u.square !== null);
 }
 
-/** Hauling lasts only while a unit of the engine's army stands on it. */
+/** The unit standing on an engine claims it for its army, and hauling lasts only while one does. */
 function settleHauling(setup: BattleSetupDraft): BattleSetupDraft {
-  const crewed = (e: SetupEngine) => e.square !== null && setup.units.some((u) => u.side === e.side && u.square === e.square);
-  if (setup.emplacements.every((e) => !e.hauled || crewed(e))) return setup;
-  return { ...setup, emplacements: setup.emplacements.map((e) => (e.hauled && !crewed(e) ? { ...e, hauled: false } : e)) };
+  const crew = (e: SetupEngine) => (e.square === null ? undefined : setup.units.find((u) => u.square === e.square));
+  const settled = (e: SetupEngine): SetupEngine => {
+    const unit = crew(e);
+    if (!unit) return e.hauled ? { ...e, hauled: false } : e;
+    return unit.side === e.side ? e : { ...e, side: unit.side };
+  };
+  const emplacements = setup.emplacements.map(settled);
+  return emplacements.every((e, i) => e === setup.emplacements[i]) ? setup : { ...setup, emplacements };
 }
 
 const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession =>
@@ -208,7 +209,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
     swapSides: (session) => withSetup(session, {
       ...session.setup,
       units: session.setup.units.map((u) => ({ ...u, side: otherSide(u.side), square: null })),
-      emplacements: session.setup.emplacements.map((e) => ({ ...e, side: otherSide(e.side), square: null, hauled: false })),
+      emplacements: session.setup.emplacements.map((e) => ({ ...e, side: otherSide(e.side), hauled: false })),
     }),
 
     addEmplacement: (session, side, engine) => withSetup(session, {
@@ -232,7 +233,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
       const engine = setup.emplacements.find((e) => e.id === emplacementId);
       if (!engine) throw new Error(`${emplacementId} is not an emplacement in this force`);
       if (hauling && !canHaul(engine)) throw new Error(`${engine.name} is fixed in place`);
-      if (hauling && !setup.units.some((u) => u.side === engine.side && u.square !== null && u.square === engine.square)) {
+      if (hauling && !setup.units.some((u) => u.square !== null && u.square === engine.square)) {
         throw new Error(`no unit stands on ${engine.name} to haul it`);
       }
       return withSetup(session, {

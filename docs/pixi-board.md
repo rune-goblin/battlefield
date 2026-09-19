@@ -141,6 +141,13 @@ to the canvas. That bundle is the wrong seam for a host that already owns its ow
 the first, which defeats the point of "the container makes no assumptions about owning the
 stage."
 
+The view `createBoardView` returns also has `attach(container, onBrush?)` and `detach()`. The
+app keeps one such view for every stage's main board (`src/app/shared-board.ts`): a stage that
+mounts moves the canvas into its own element and calls `attach`, and calls `detach` on the way
+out, which stops the ticker and keeps the GL context and its uploaded textures. A `PixiBoard`
+without the `shared` prop (the battle report's previews, the labs) still builds and destroys
+its own.
+
 `mountBoardView(opts)` is the lower seam `createBoardView` is built on, and the one a host
 calls directly:
 

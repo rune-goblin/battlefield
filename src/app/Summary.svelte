@@ -18,14 +18,17 @@
 
   const armies = $derived(SIDES.map((side) => {
     const units = game.setup.units.filter((u) => u.side === side);
-    const engines = game.setup.emplacements.filter((e) => e.side === side);
-    const unplaced = [...units, ...engines].filter((p) => p.square === null).length;
+    const engines = game.setup.emplacements.filter((e) => e.square !== null && units.some((u) => u.square === e.square));
+    const unplaced = units.filter((u) => u.square === null).length;
     return {
       side, units, engines, unplaced,
       levels: units.reduce((sum, u) => sum + u.card.level, 0),
       problem: !units.length ? 'This army has no units.' : unplaced ? `${unplaced} still off the board.` : null,
     };
   }));
+
+  // An engine no unit stands on belongs to neither army yet.
+  const freeEngines = $derived(game.setup.emplacements.filter((e) => !armies.some((a) => a.engines.includes(e))));
 
   const userName = (id: string) => tableUsers().find((u) => u.id === id)?.name ?? id;
   const seats = (side: Side) => game.control.seats[side].map(userName).join(', ') || 'the GM';
@@ -68,7 +71,7 @@
   {#snippet rail()}<WizardRail />{/snippet}
 
   {#snippet map()}
-    <PixiBoard bind:this={boardRef} {board} {tokens} fill
+    <PixiBoard shared bind:this={boardRef} {board} {tokens} fill
       terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
   {/snippet}
 
@@ -112,6 +115,25 @@
         </ul>
       </section>
     {/each}
+
+    {#if freeEngines.length}
+      <section class="card">
+        <header>
+          <h3>Unclaimed engines</h3>
+          <button class="edit" onclick={() => goToStage('siege')}>Edit</button>
+        </header>
+        <p class="line">The unit deployed beside one claims it; one left off the board stays out of the battle.</p>
+        <ul>
+          {#each freeEngines as e (e.id)}
+            <li>
+              <span class="name">⚙ {e.name}</span>
+              <span class="meta">emplacement</span>
+              <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   {/snippet}
 </AppShell>
 

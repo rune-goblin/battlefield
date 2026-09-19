@@ -15,6 +15,12 @@ import { BROKEN_OVERLAY, brokenCells, GROUP_TERRAIN, surfaceGroup, TEXTURE_CHOIC
 import { drawElevationMarks, elevationLabelStyle } from '../map-lines.js';
 
 const TEXTURE_TILE = 32;
+// The ground is masks, a bevel, a drop shadow, colour grades and a blur over a few hundred
+// trees, and none of it moves between redraws. Left in the display list it is a dozen
+// full-board filter passes on every frame, so it is rendered once into a texture and shown as
+// one sprite. `zoom` is how far past the fitted size the bake stays sharp.
+// proto: past `zoom` the ground softens; the pieces and lines over it stay vector-sharp.
+const BAKE = { zoom: 2, maxPx: 4096 };
 
 // Which terrain reads as which quadrant of the scatter sheets. Shallows takes the water art at
 // its own thinner setting — broken water over the pale bed, against open water's full cover.
@@ -76,7 +82,11 @@ const scatterForElevation = (level: number): Scenery | null =>
  * handed as a mask.
  */
 export class TerrainLayer {
-  private readonly container: PIXI.Container;
+  private readonly layer: PIXI.Container;
+  // Built off the display list: only the bake renders it.
+  private readonly container = new PIXI.Container();
+  private readonly baked = new PIXI.Sprite(PIXI.Texture.EMPTY);
+  private bakeTarget: PIXI.RenderTexture | null = null;
   private readonly textureCache = new Map<SquareTerrain, PIXI.Texture>();
   private atlas: TerrainAtlas | null = null;
   private appearance: TerrainAppearance | null = null;
@@ -115,7 +125,10 @@ export class TerrainLayer {
   }
 
   constructor(container: PIXI.Container) {
-    this.container = container;
+    this.layer = container;
+    this.baked.name = 'Terrain_baked';
+    this.baked.visible = false;
+    this.layer.addChild(this.baked);
   }
 
   /** The scatter sheet, once it has loaded. Until then — and if it fails to load at all —
@@ -126,6 +139,39 @@ export class TerrainLayer {
 
   draw(renderer: PIXI.IRenderer, board: Board, size: number, theme: BoardTheme): void {
     this.clear();
+    this.build(renderer, board, size, theme);
+    this.bake(renderer, gridOf(board).bounds(size), size);
+  }
+
+  private bake(renderer: PIXI.IRenderer, bounds: { width: number; height: number }, size: number): void {
+    // Trees and the drop shadow overhang the outline of the board.
+    const pad = Math.ceil(size);
+    const width = Math.ceil(bounds.width + 2 * pad);
+    const height = Math.ceil(bounds.height + 2 * pad);
+    const resolution = Math.max(1, Math.min(renderer.resolution * BAKE.zoom, BAKE.maxPx / Math.max(width, height)));
+    let target = this.bakeTarget;
+    if (!target || target.width !== width || target.height !== height || target.resolution !== resolution) {
+      target?.destroy(true);
+      target = PIXI.RenderTexture.create({ width, height, resolution, mipmap: PIXI.MIPMAP_MODES.ON });
+      this.bakeTarget = target;
+    }
+    // A filter renders at its own resolution, which defaults to 1: at the bake's scale that
+    // would blur every raised level.
+    const sharpen = (object: PIXI.DisplayObject): void => {
+      for (const filter of object.filters ?? []) filter.resolution = resolution;
+      if (object instanceof PIXI.Container) for (const child of object.children) sharpen(child);
+    };
+    sharpen(this.container);
+    this.container.position.set(pad, pad);
+    renderer.render(this.container, { renderTexture: target, clear: true });
+    // The passes above borrowed board-sized textures at the bake's resolution.
+    (renderer as PIXI.Renderer).filter?.texturePool.clear(true);
+    this.baked.texture = target;
+    this.baked.position.set(-pad, -pad);
+    this.baked.visible = true;
+  }
+
+  private build(renderer: PIXI.IRenderer, board: Board, size: number, theme: BoardTheme): void {
     const grid = gridOf(board);
     if (this.appearance) {
       this.drawTextures(grid, board, size, theme, this.appearance);
@@ -425,6 +471,7 @@ export class TerrainLayer {
   }
 
   clear(): void {
+    this.baked.visible = false;
     const children = this.container.removeChildren();
     // Null masks before destroying: a texture TilingSprite's mask is its terrain's fill
     // Graphics, which sits earlier in this same list — destroy order must not leave a mask
@@ -444,6 +491,10 @@ export class TerrainLayer {
     for (const filter of this.grades.values()) filter.destroy();
     this.grades.clear();
     this.clear();
+    this.container.destroy();
+    this.baked.texture = PIXI.Texture.EMPTY;
+    this.bakeTarget?.destroy(true);
+    this.bakeTarget = null;
     this.blendMasks.destroy();
     for (const texture of this.textureCache.values()) texture.destroy(true);
     this.textureCache.clear();

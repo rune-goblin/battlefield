@@ -32,10 +32,11 @@ export interface AttachedEngine { card: SiegeEngineCard; id?: string; }
 
 export interface Deployment { id?: string; card: UnitCard; side: Side; square: string; engines?: AttachedEngine[]; }
 
-/** An engine deployed on a square of its own rather than attached to a unit. */
+/** An engine deployed on a square of its own rather than attached to a unit. `side` holds only
+ * until a unit deploys on or beside the engine, which claims it. */
 export interface Emplacement {
   id?: string; card: SiegeEngineCard; side: Side; square: string;
-  /** The friendly unit deployed on this square starts the battle hauling it. */
+  /** The unit deployed on this square starts the battle hauling it. */
   hauled?: boolean;
 }
 
@@ -58,6 +59,11 @@ const dist = (state: BattleState, a: Square, b: Square) => grid(state).distance(
 
 export function canDeploy(board: Board, side: Side, ambush: boolean, sq: Square): boolean {
   return gridOf(board).inBounds(sq) && deployRanks(side, ambush, board.squares.length).includes(sq.rank) && at(board, sq).terrain !== 'water';
+}
+
+/** An emplacement stands on any dry square of the board, whichever army's ranks it lies in. */
+export function canEmplace(board: Board, sq: Square): boolean {
+  return gridOf(board).inBounds(sq) && at(board, sq).terrain !== 'water';
 }
 
 // The rng is unused now that there is no initiative roll; callers still pass one.
@@ -94,12 +100,15 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
   const emplaced: EngineState[] = [];
   (setup.engines ?? []).forEach((e, index) => {
     const sq = parse(e.square);
-    if (!canDeploy(setup.board, e.side, false, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
-    // A unit may deploy on its own army's engine; nothing else shares a square.
-    const crew = units.find((u) => sameSquare(u.square, sq));
-    if (engineSquares.has(e.square) || (crew && crew.side !== e.side)) throw new Error(`${e.square} is already occupied`);
+    if (!canEmplace(setup.board, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
+    if (engineSquares.has(e.square)) throw new Error(`${e.square} is already occupied`);
     engineSquares.add(e.square);
-    const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), e.side, sq, true);
+    const crew = units.find((u) => sameSquare(u.square, sq));
+    const beside = gridOf(setup.board).neighbours(sq);
+    // proto: an engine nobody claims keeps the side the draft stored, so that army works it on
+    // arrival while the other takes it at the end of a round. A neutral state would even them.
+    const claimant = crew ?? units.find((u) => beside.some((n) => sameSquare(n, u.square)));
+    const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), claimant?.side ?? e.side, sq, true);
     if (e.hauled && crew && !isFixedEngine(e.card) && !crew.engines.some((x) => x.hauling)) {
       engine.emplaced = false;
       engine.hauling = true;

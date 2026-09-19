@@ -93,6 +93,7 @@ interface FoundryActor {
   name: string;
   type: string;
   folder: { name: string } | null;
+  prototypeToken?: { texture?: { src?: string | null } };
   getFlag(scope: string, key: string): unknown;
 }
 
