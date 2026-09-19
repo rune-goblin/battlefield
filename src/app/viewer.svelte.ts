@@ -1,7 +1,7 @@
 import type { Side } from '../engine/index.js';
 import { seatedOn } from '../runtime/control.js';
 import { authority } from './authority.svelte.js';
-import { game, gmUserId, viewerId } from './game.svelte.js';
+import { game, gmUserId, tableUsers, viewerId } from './game.svelte.js';
 
 /**
  * This client's part in the record: the seats its user holds, whether the open activation is
@@ -18,6 +18,12 @@ export const viewer = {
 
   /** Whose activation is open, as every client shows it. */
   get holder(): string | null { return game.turn; },
+
+  /** The holder as the table knows them. A host's user ID is an opaque string, so the ID stands
+   * in only for a user the roster no longer lists. */
+  get holderName(): string | null {
+    return game.turn === null ? null : tableUsers().find((u) => u.id === game.turn)?.name ?? game.turn;
+  },
 
   get isHolder(): boolean { return game.turn !== null && game.turn === viewerId; },
 
@@ -36,9 +42,9 @@ export const viewer = {
 // text. Wave 3.6 takes the same lines into the notices.
 export const turnNote = (): string => {
   if (game.turn === null) return 'No turn is open';
-  return viewer.isHolder ? 'Your turn' : `${game.turn} is playing`;
+  return viewer.isHolder ? 'Your turn' : `${viewer.holderName} is playing`;
 };
 
 export const offTurnNote = (): string => (game.turn === null
   ? 'No turn is open yet.'
-  : `This activation belongs to ${game.turn}.`);
+  : `This activation belongs to ${viewer.holderName}.`);

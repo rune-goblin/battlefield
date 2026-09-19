@@ -185,8 +185,8 @@ export interface Presentation {
 
 interface NoticeHost { service: NotificationService; viewer: NoticeViewer }
 
-function deliver(host: NoticeHost, previous: BattleSession | null, next: BattleSession): void {
-  const { show, dismiss } = noticesFor(previous, next, host.viewer);
+function deliver(host: NoticeHost, next: BattleSession): void {
+  const { show, dismiss } = noticesFor(next, host.viewer);
   for (const message of show) host.service.show(message);
   for (const id of dismiss) host.service.dismiss(id);
 }
@@ -198,7 +198,7 @@ export function createPresentation(seed: BattleSession): Presentation {
   return {
     observe(session) {
       const play = commitPlay(last, session);
-      if (notices) deliver(notices, last, session);
+      if (notices) deliver(notices, session);
       last = session;
       if (!play || !sink) return;
       for (const route of play.routes) sink.route(route.unit, route.cells);
@@ -217,7 +217,7 @@ export function createPresentation(seed: BattleSession): Presentation {
       // The record the client joined on was adopted before any host existed, and the runtime
       // never replays it. Reading it as a first record raises the turn and decision notices a
       // reload or a join has to show, and the null `previous` keeps the activity backlog out.
-      deliver(entry, null, last);
+      deliver(entry, last);
       return () => { if (notices === entry) notices = null; };
     },
   };

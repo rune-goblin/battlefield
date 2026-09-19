@@ -23,7 +23,7 @@ export interface BoardSpec {
 }
 
 export interface SquareState { terrain: SquareTerrain; elevation: number; }
-export interface Wall { tier: number; boxes: number; remaining: number; inside?: string; gate?: { open: boolean }; }
+export interface Wall { tier: number; boxes: number; remaining: number; inside?: string; gate?: { open: boolean; flipped?: boolean }; }
 export interface SiegeField { cells: string[]; kind: 'rough' | 'web'; expires: number; }
 export const FORTIFICATIONS = [
   { name: 'Barricade', boxes: 1, hardness: 0, cover: 1 },

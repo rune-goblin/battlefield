@@ -1,5 +1,5 @@
 import {
-  canDeploy, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isSurvivor, notation, parse, seededRandom,
+  canDeploy, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, parse, seededRandom,
   type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
@@ -19,8 +19,7 @@ export interface ArmyPreparationService {
   removeUnit(session: BattleSession, unitId: string): BattleSession;
   addEmplacement(session: BattleSession, side: Side, engine: string): BattleSession;
   removeEmplacement(session: BattleSession, emplacementId: string): BattleSession;
-  attachEquipment(session: BattleSession, unitId: string, engine: string): BattleSession;
-  detachEquipment(session: BattleSession, unitId: string, equipmentId: string): BattleSession;
+  setHauling(session: BattleSession, emplacementId: string, hauling: boolean): BattleSession;
   place(session: BattleSession, piece: PieceRef, square: string): BattleSession;
   unplace(session: BattleSession, piece: PieceRef): BattleSession;
   autoPlace(session: BattleSession, piece: PieceRef): BattleSession;
@@ -37,22 +36,38 @@ export function pieceOf(setup: BattleSetupDraft, ref: PieceRef): SetupUnit | Set
     : setup.emplacements.find((e) => e.id === ref.id);
 }
 
-// Two pieces never share a square at deployment, whichever side owns them.
-function occupied(setup: BattleSetupDraft, exclude: PieceRef | null): Set<string> {
+// A unit and its own army's engine may share a square; no other two pieces do.
+function occupied(setup: BattleSetupDraft, side: Side, kind: PieceRef['kind'], exclude: PieceRef | null): Set<string> {
   const out = new Set<string>();
-  for (const u of setup.units) if (u.square && !(exclude?.kind === 'unit' && exclude.id === u.id)) out.add(u.square);
-  for (const e of setup.emplacements) if (e.square && !(exclude?.kind === 'engine' && exclude.id === e.id)) out.add(e.square);
+  for (const u of setup.units) {
+    if (u.square && u.id !== exclude?.id && (kind === 'unit' || u.side !== side)) out.add(u.square);
+  }
+  for (const e of setup.emplacements) {
+    if (e.square && e.id !== exclude?.id && (kind === 'engine' || e.side !== side)) out.add(e.square);
+  }
   return out;
 }
+
+/** The emplacement a unit stands on, which it works and may haul. */
+export function engineUnder(setup: BattleSetupDraft, unit: SetupUnit): SetupEngine | undefined {
+  return unit.square === null ? undefined
+    : setup.emplacements.find((e) => e.side === unit.side && e.square === unit.square);
+}
+
+export const canHaul = (engine: SetupEngine): boolean => {
+  const card = ENGINES.find((e) => e.name === engine.name);
+  return !!card && !isFixedEngine(card);
+};
 
 /** The open deploy squares for one side. Excluding a piece lets its own square count as a
  * destination, which moving a placed token needs. */
 export function deployableCells(
   setup: BattleSetupDraft, side: Side, ambush: boolean, exclude: PieceRef | null = null,
+  kind: PieceRef['kind'] = exclude?.kind ?? 'unit',
 ): string[] {
   const board = setup.board;
   if (!board) return [];
-  const taken = occupied(setup, exclude);
+  const taken = occupied(setup, side, kind, exclude);
   const out: string[] = [];
   for (const sq of gridOf(board).cells()) {
     const n = notation(sq);
@@ -73,7 +88,9 @@ export function autoCell(setup: BattleSetupDraft, ref: PieceRef): string | null 
   const piece = pieceOf(setup, ref);
   const board = setup.board;
   if (!piece || !board) return null;
-  const open = cellsFor(setup, ref).map(parse);
+  // The Place button never stacks a unit on an engine; that is the player's own choice.
+  const held = new Set([...setup.units, ...setup.emplacements].map((p) => p.square));
+  const open = cellsFor(setup, ref).filter((n) => !held.has(n)).map(parse);
   if (!open.length) return null;
   const size = board.squares.length;
   const home = (c: Square) => (piece.side === 'attacker' ? c.rank : size - 1 - c.rank);
@@ -112,12 +129,12 @@ export function clearWaterPlacements(board: Board, setup: BattleSetupDraft): Bat
     const sq = parse(square);
     return board.squares[sq.rank][sq.file].terrain === 'water';
   };
-  return {
+  return settleHauling({
     ...setup,
     board,
     units: setup.units.map((u) => (onWater(u.square) ? { ...u, square: null } : u)),
     emplacements: setup.emplacements.map((e) => (onWater(e.square) ? { ...e, square: null } : e)),
-  };
+  });
 }
 
 /** One side is ready when it has a unit and everything it owns stands on a square. */
@@ -127,7 +144,15 @@ export function sideReady(setup: BattleSetupDraft, side: Side): boolean {
     && setup.emplacements.filter((e) => e.side === side).every((e) => e.square !== null);
 }
 
-const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession => ({ ...session, setup });
+/** Hauling lasts only while a unit of the engine's army stands on it. */
+function settleHauling(setup: BattleSetupDraft): BattleSetupDraft {
+  const crewed = (e: SetupEngine) => e.square !== null && setup.units.some((u) => u.side === e.side && u.square === e.square);
+  if (setup.emplacements.every((e) => !e.hauled || crewed(e))) return setup;
+  return { ...setup, emplacements: setup.emplacements.map((e) => (e.hauled && !crewed(e) ? { ...e, hauled: false } : e)) };
+}
+
+const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession =>
+  ({ ...session, setup: settleHauling(setup) });
 
 function engineCard(name: string) {
   const card = ENGINES.find((e) => e.name === name);
@@ -139,14 +164,6 @@ function unitOf(setup: BattleSetupDraft, unitId: string): SetupUnit {
   const unit = setup.units.find((u) => u.id === unitId);
   if (!unit) throw new Error(`${unitId} is not a unit in this force`);
   return unit;
-}
-
-function withUnit(session: BattleSession, unitId: string, edit: (u: SetupUnit) => SetupUnit): BattleSession {
-  const unit = unitOf(session.setup, unitId);
-  return withSetup(session, {
-    ...session.setup,
-    units: session.setup.units.map((u) => (u === unit ? edit(u) : u)),
-  });
 }
 
 function standing(session: BattleSession, ref: PieceRef, square: string | null): BattleSession {
@@ -190,15 +207,17 @@ export function createArmyPreparationService(): ArmyPreparationService {
       });
     },
 
-    attachEquipment: (session, unitId, engine) => withUnit(session, unitId, (u) => ({
-      ...u, engines: [...u.engines, { id: newEquipmentId(), name: engineCard(engine).name }],
-    })),
-
-    detachEquipment: (session, unitId, equipmentId) => {
-      if (!unitOf(session.setup, unitId).engines.some((e) => e.id === equipmentId)) {
-        throw new Error(`${equipmentId} rides with no unit`);
+    setHauling: (session, emplacementId, hauling) => {
+      const setup = session.setup;
+      const engine = setup.emplacements.find((e) => e.id === emplacementId);
+      if (!engine) throw new Error(`${emplacementId} is not an emplacement in this force`);
+      if (hauling && !canHaul(engine)) throw new Error(`${engine.name} is fixed in place`);
+      if (hauling && !setup.units.some((u) => u.side === engine.side && u.square !== null && u.square === engine.square)) {
+        throw new Error(`no unit stands on ${engine.name} to haul it`);
       }
-      return withUnit(session, unitId, (u) => ({ ...u, engines: u.engines.filter((e) => e.id !== equipmentId) }));
+      return withSetup(session, {
+        ...setup, emplacements: setup.emplacements.map((e) => (e === engine ? { ...e, hauled: hauling } : e)),
+      });
     },
 
     place: (session, piece, square) => {
@@ -225,12 +244,9 @@ export function createArmyPreparationService(): ArmyPreparationService {
         ...setup,
         units: [
           ...setup.units.filter((u) => u.side !== side),
-          ...force.map(({ card, engine }) => ({
-            id: newUnitId(),
-            card: structuredClone(card),
-            side,
-            square: null,
-            engines: engine ? [{ id: newEquipmentId(), name: engine.name }] : [],
+          // Engines deploy in the siege step, so a generated force brings units alone.
+          ...force.map(({ card }) => ({
+            id: newUnitId(), card: structuredClone(card), side, square: null, engines: [],
           })),
         ],
       });

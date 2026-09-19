@@ -11,7 +11,7 @@ import { MASK_PITCH } from '../terrain-blending.js';
 import { terrainRegions } from '../terrain-regions.js';
 import { reliefFilters } from './ElevationShadow.js';
 import { areaTrees, forestTrees, type ForestTree } from '../forest-placement.js';
-import { GROUP_TERRAIN, terrainGroup, TEXTURE_CHOICES, type TerrainAppearance, type TerrainGroup, type TreeTint } from '../terrain-textures.js';
+import { BROKEN_OVERLAY, brokenCells, GROUP_TERRAIN, surfaceGroup, TEXTURE_CHOICES, type TerrainAppearance, type TerrainGroup, type TreeTint } from '../terrain-textures.js';
 import { drawElevationMarks, elevationLabelStyle } from '../map-lines.js';
 
 const TEXTURE_TILE = 32;
@@ -81,6 +81,7 @@ export class TerrainLayer {
   private atlas: TerrainAtlas | null = null;
   private appearance: TerrainAppearance | null = null;
   private readonly artTextures = new Map<string, PIXI.Texture>();
+  private brokenTexture: PIXI.Texture | null = null;
   private loadVersion = 0;
   private readonly blendMasks = new TerrainBlendMasks();
   // One colour-grade filter per terrain group, kept across redraws: a new ColorMatrixFilter
@@ -91,7 +92,7 @@ export class TerrainLayer {
     this.appearance = appearance;
     const version = ++this.loadVersion;
     if (!appearance) return;
-    await Promise.all(Object.entries(appearance.settings.terrains).map(async ([group, setting]) => {
+    await Promise.all([this.loadBroken(version), ...Object.entries(appearance.settings.terrains).map(async ([group, setting]) => {
       const choice = TEXTURE_CHOICES[group as TerrainGroup].find(t => t.id === setting.texture);
       if (!choice || this.artTextures.has(choice.id)) return;
       try {
@@ -100,7 +101,17 @@ export class TerrainLayer {
       } catch (error) {
         console.warn(`Terrain texture unavailable: ${choice.name}`, error);
       }
-    }));
+    })]);
+  }
+
+  private async loadBroken(version: number): Promise<void> {
+    if (this.brokenTexture) return;
+    try {
+      const texture = await PIXI.Assets.load<PIXI.Texture>(BROKEN_OVERLAY.url);
+      if (version === this.loadVersion) this.brokenTexture = texture;
+    } catch (error) {
+      console.warn('Broken-ground overlay unavailable', error);
+    }
   }
 
   constructor(container: PIXI.Container) {
@@ -173,7 +184,7 @@ export class TerrainLayer {
     // surfaces sharing one texture.
     const byKey = new Map<string, { group: TerrainGroup; level: number; cells: Square[] }>();
     for (const cell of grid.cells()) {
-      const group = appearance.groups?.[grid.key(cell)] ?? terrainGroup(board, cell);
+      const group = appearance.groups?.[grid.key(cell)] ?? surfaceGroup(board, cell);
       const level = at(board, cell).elevation;
       const entry = byKey.get(`${group}:${level}`) ?? { group, level, cells: [] };
       entry.cells.push(cell);
@@ -254,6 +265,18 @@ export class TerrainLayer {
       relieved.filters = relief;
       surfaces.addChild(relieved);
     });
+    // The lab's exhibit groups carry no rough ground, and the overlay has no group to show under.
+    const broken = appearance.groups ? [] : brokenCells(board);
+    if (this.brokenTexture && broken.length) {
+      const overlay = new PIXI.TilingSprite(this.brokenTexture, bounds.width, bounds.height);
+      overlay.name = 'Terrain_broken';
+      overlay.tileScale.set(size * BROKEN_OVERLAY.scale / this.brokenTexture.width);
+      // proto: a hard hex clip; the overlay is thin enough that its edge does not read as a seam.
+      const clip = shape(broken, 0xffffff);
+      this.container.addChild(clip);
+      overlay.mask = clip;
+      this.container.addChild(overlay);
+    }
     const labels = appearance.elevationMarks === false ? null : this.drawElevation(grid, board, size, theme);
     this.drawForest(grid, size, entries.filter(entry => entry.group === 'forest').flatMap(entry => entry.cells), appearance);
     if (labels) this.container.addChild(labels);
@@ -417,6 +440,7 @@ export class TerrainLayer {
   destroy(): void {
     this.loadVersion++;
     this.artTextures.clear();
+    this.brokenTexture = null;
     for (const filter of this.grades.values()) filter.destroy();
     this.grades.clear();
     this.clear();

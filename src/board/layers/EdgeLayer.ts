@@ -278,10 +278,10 @@ function wallGraphics(a: Point, b: Point, size: number, wall: Wall, key: string,
   return { bar, shadow };
 }
 
-/** Points through the gate to its interior hex, the side a unit operates it from. */
+/** Points out through the gate, away from the interior hex a unit operates it from. */
 function gateArrow(g: PIXI.Graphics, mid: Point, interior: Point, size: number): void {
   const reach = Math.hypot(interior.x - mid.x, interior.y - mid.y) || 1;
-  const n = { x: (interior.x - mid.x) / reach, y: (interior.y - mid.y) / reach };
+  const n = { x: (mid.x - interior.x) / reach, y: (mid.y - interior.y) / reach };
   const along = (d: number, side = 0): [number, number] => [mid.x + n.x * d - n.y * side, mid.y + n.y * d + n.x * side];
   const head = reach * 0.16;
   g.lineStyle({ width: spineWidth(size) * 1.6, color: 0xb48b4c });

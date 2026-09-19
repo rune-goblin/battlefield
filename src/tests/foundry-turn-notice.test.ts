@@ -25,7 +25,7 @@ describe('the turn notice outside the app window', () => {
     announce(recordAt(1, HOLDER));
     announce(recordAt(2, HOLDER));
 
-    expect(said).toEqual(['Your turn — Pick any available unit.']);
+    expect(said).toEqual(['Your turn']);
   });
 
   it('says nothing while the window is on screen', () => {
@@ -54,6 +54,6 @@ describe('the turn notice outside the app window', () => {
     window.visible = false;
     announce(recordAt(2, HOLDER));
 
-    expect(said).toEqual(['Your turn — Pick any available unit.']);
+    expect(said).toEqual(['Your turn']);
   });
 });

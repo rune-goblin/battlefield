@@ -2,7 +2,7 @@
   import type { Side } from '../engine/index.js';
   import type { ControlAssignment, GmSide } from '../runtime/control.js';
   import { commandReporter } from './command-notices.js';
-  import { assignSeating, game, tableUsers } from './game.svelte.js';
+  import { assignSeating, game, reassignTurn, tableUsers } from './game.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { viewer } from './viewer.svelte.js';
 
@@ -24,6 +24,10 @@
     both: 'The GM plays both armies',
   };
   const byHand = $derived(viewer.isGm && control.mode === 'manual');
+
+  const pending = $derived(game.battle?.phase === 'battle' ? game.battle.pending : null);
+  const handsTo = (side: Side, userId: string): boolean =>
+    viewer.isGm && side === pending && userId !== game.turn && !away(userId);
 
   const seatsNow = (): Record<Side, string[]> =>
     ({ attacker: [...control.seats.attacker], defender: [...control.seats.defender] });
@@ -94,7 +98,11 @@
           <ol>
             {#each control.seats[side] as userId, i (userId)}
               <li>
-                <span class="who" class:away={away(userId)}>{named(userId)}{away(userId) ? ' · away' : ''}</span>
+                {#if handsTo(side, userId)}
+                  <button class="who pass" onclick={() => void run(reassignTurn(userId))} title="Hand the turn to {named(userId)}">{named(userId)}</button>
+                {:else}
+                  <span class="who" class:away={away(userId)} class:holder={userId === game.turn}>{named(userId)}{away(userId) ? ' · away' : ''}{userId === game.turn ? ' · playing' : ''}</span>
+                {/if}
                 {#if byHand}
                   <span class="order">
                     <button disabled={i === 0} onclick={() => void shift(side, i, -1)} aria-label="Act earlier">↑</button>
@@ -119,6 +127,9 @@
         </div>
       {/each}
       <p class="muted">Each army's activations pass down its list in turn. A seat whose player is away is skipped.</p>
+      {#if viewer.isGm && pending}
+        <p class="muted">Click a name in the army now playing to hand that player the turn.</p>
+      {/if}
 
       {#if viewer.isGm && control.mode === 'auto'}
         <button class="hand" onclick={() => void send({ mode: 'manual' })}>Seat players by hand</button>
@@ -144,7 +155,9 @@
   ol { list-style: none; margin: 0 0 .3rem; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
   li { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
   .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .who.away { color: var(--muted); }
+  .who.away { color: var(--muted); opacity: .55; font-style: italic; }
+  .who.holder { font-weight: 600; color: var(--accent); }
+  .who.pass { padding: 0 .35rem; text-align: left; }
   .order { display: flex; gap: .15rem; flex: none; }
   .order button { padding: 0 .35rem; font-size: .78rem; }
   .add { display: flex; gap: .3rem; }

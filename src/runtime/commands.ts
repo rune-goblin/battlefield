@@ -13,7 +13,7 @@ export type PaintBrush =
   | { kind: 'terrain'; terrain: SquareTerrain }
   | { kind: 'elevation'; level: number }
   | { kind: 'wall'; tier: number }
-  | { kind: 'gate'; flip: boolean }
+  | { kind: 'gate' }
   | { kind: 'wall-clear' }
   | { kind: 'erase' };
 
@@ -36,8 +36,8 @@ export type BattleCommand =
   | { type: 'army.removeUnit'; unitId: string }
   | { type: 'army.addEmplacement'; side: Side; engine: string }
   | { type: 'army.removeEmplacement'; emplacementId: string }
-  | { type: 'army.attachEquipment'; unitId: string; engine: string }
-  | { type: 'army.detachEquipment'; unitId: string; equipmentId: string }
+  /** The unit standing on the emplacement starts the battle hauling it, or only works it. */
+  | { type: 'army.setHauling'; emplacementId: string; hauling: boolean }
   | { type: 'army.place'; piece: PieceRef; square: string }
   | { type: 'army.unplace'; piece: PieceRef }
   | { type: 'army.autoPlace'; piece: PieceRef }
@@ -100,8 +100,7 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'army.removeUnit': 'setup',
   'army.addEmplacement': 'setup',
   'army.removeEmplacement': 'setup',
-  'army.attachEquipment': 'setup',
-  'army.detachEquipment': 'setup',
+  'army.setHauling': 'setup',
   'army.place': 'setup',
   'army.unplace': 'setup',
   'army.autoPlace': 'setup',

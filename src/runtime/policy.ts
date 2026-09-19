@@ -26,8 +26,7 @@ export const COMMAND_SCOPE: Record<CommandType, CommandScope> = {
   'army.removeUnit': 'side',
   'army.addEmplacement': 'side',
   'army.removeEmplacement': 'side',
-  'army.attachEquipment': 'side',
-  'army.detachEquipment': 'side',
+  'army.setHauling': 'side',
   'army.place': 'side',
   'army.unplace': 'side',
   'army.autoPlace': 'side',
@@ -75,10 +74,9 @@ export function commandSide(session: BattleSession, command: BattleCommand): Sid
     case 'army.autoPlace':
       return pieceSide(session, command.piece);
     case 'army.removeUnit':
-    case 'army.attachEquipment':
-    case 'army.detachEquipment':
       return pieceSide(session, { kind: 'unit', id: command.unitId });
     case 'army.removeEmplacement':
+    case 'army.setHauling':
       return pieceSide(session, { kind: 'engine', id: command.emplacementId });
     default:
       return null;

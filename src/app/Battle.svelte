@@ -39,7 +39,7 @@
   import ArmyReel from './ArmyReel.svelte';
   import BattleAnnouncement from './BattleAnnouncement.svelte';
   import MeleeChoices from './MeleeChoices.svelte';
-  import { deselectUnit, endActivation, game, presentation, selectUnit, takeAction, undo } from './game.svelte.js';
+  import { deselectUnit, endActivation, game, presentation, selectUnit, tableUsers, takeAction, undo } from './game.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
   import { createScope } from './scope.js';
   import { offTurnNote, turnNote, viewer } from './viewer.svelte.js';
@@ -220,7 +220,12 @@
     const charge = act?.charges.find((c) => c.unit === meleeTarget);
     return charge ? chargeRow(charge) : null;
   });
-  const preview = $derived(drag ?? picked ?? meleeRoute);
+  let meleeHover = $state<'fight' | 'charge' | null>(null);
+  const meleeHoverRoute = $derived.by<Preview | null>(() => {
+    const plan = meleeTarget && meleeHover ? meleeOptions.get(meleeTarget)?.find(p => p.kind === meleeHover) : null;
+    return plan && (plan.via || plan.kind === 'charge') ? advanceRow(plan) : null;
+  });
+  const preview = $derived(drag ?? meleeHoverRoute ?? picked ?? meleeRoute);
   // Touching a board object opens the other popup: every activity that can act on *that*, which
   // is `offersAt`'s whole job. Grouped by verb, because the props are what the eye lands on —
   // a tile row across the top, then the chosen verb's three activities beneath it.
@@ -967,6 +972,27 @@
     : arrowContext && heldArrows?.context === arrowContext ? heldArrows.arrows
       : arrowContext ? [] : resolvedArrows);
   const aimCells = $derived(aim ? targetingPreview?.cells ?? [] : []);
+  // The round and the side are announced as the board finishes showing the commit that changed
+  // them: the walk, the cast, the words and the statuses play out, and the announcement comes in
+  // over the last word's fade. The first look comes a beat after the record, which is when the
+  // board has taken up what it has to show.
+  const ANNOUNCE_OVERLAP_MS = 500;
+  let announced = $state<{ day: number; round: number; activated: number; pending: Unit['side']; player: string | null } | null>(null);
+  /** Who plays the activation being announced. Nothing at a table of one, where the name is no news. */
+  function playerNow(): string | null {
+    if (tableUsers().length < 2 || !game.turn) return null;
+    return viewer.isHolder ? 'Your turn' : viewer.holderName;
+  }
+  $effect(() => {
+    const next = { day: b.day, round: b.round, activated: b.activated.length, pending: b.pending, player: playerNow() };
+    const timer = setInterval(() => {
+      if ((boardRef?.remainingMs() ?? 0) > ANNOUNCE_OVERLAP_MS) return;
+      announced = next;
+      clearInterval(timer);
+    }, 100);
+    return () => clearInterval(timer);
+  });
+
   let resolvedMarkers = $state<TargetMarker[]>([]);
   let resolutionTimer: ReturnType<typeof setTimeout> | null = null;
   view.register({ label: 'resolution timer', dispose: () => { if (resolutionTimer) clearTimeout(resolutionTimer); } });
@@ -1344,7 +1370,7 @@
     />
     {#if active}<UnitEffects unitName={active.name} effects={statusEffectsOf(active, b)} />{/if}
     {#if b.phase === 'battle'}
-      <BattleAnnouncement kind="round" text={`Round ${b.round}`} cue={`${b.day}:${b.round}`} />
+      {#if announced}<BattleAnnouncement kind="round" text={`Round ${announced.round}`} cue={`${announced.day}:${announced.round}`} />{/if}
       <ArmyReel
         units={roster}
         activated={b.activated}
@@ -1355,8 +1381,10 @@
         hover={(id) => { hoveredCard = id; }}
       >
         {#snippet below()}
-          <BattleAnnouncement kind="side" text={b.pending === 'attacker' ? 'Attackers' : 'Defenders'}
-            side={b.pending} afterRound={b.activated.length === 0} cue={`${b.day}:${b.round}:${b.activated.length}:${b.pending}`} />
+          {#if announced}
+            <BattleAnnouncement kind="side" text={announced.pending === 'attacker' ? 'Attackers' : 'Defenders'}
+              side={announced.pending} afterRound={announced.activated === 0} detail={announced.player} cue={`${announced.day}:${announced.round}:${announced.activated}:${announced.pending}`} />
+          {/if}
         {/snippet}
       </ArmyReel>
     {/if}
@@ -1395,7 +1423,8 @@
   {#snippet pin()}
     {#if meleeTarget && cellOf(meleeTarget)}
       <MeleeChoices cell={cellOf(meleeTarget)!} plans={meleeOptions.get(meleeTarget) ?? []} selected={meleeSelected}
-        screenOf={(cell) => boardRef?.screenOf(cell) ?? null} radiusOf={(cell) => boardRef?.cellRadius(cell) ?? null} choose={chooseMelee} />
+        screenOf={(cell) => boardRef?.screenOf(cell) ?? null} radiusOf={(cell) => boardRef?.cellRadius(cell) ?? null} choose={chooseMelee}
+        hover={(kind) => { meleeHover = kind; }} />
     {/if}
     <TargetMarkers targets={targetMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
       opacity={targetingService?.placement ? 0.75 : 1}

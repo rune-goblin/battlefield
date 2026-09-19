@@ -39,8 +39,7 @@ const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'se
   'army.removeUnit': 'keep',
   'army.addEmplacement': 'keep',
   'army.removeEmplacement': 'keep',
-  'army.attachEquipment': 'keep',
-  'army.detachEquipment': 'keep',
+  'army.setHauling': 'keep',
   'army.place': 'keep',
   'army.unplace': 'keep',
   'army.autoPlace': 'keep',
@@ -102,8 +101,7 @@ function applyCommand(
     case 'army.removeUnit': return army.removeUnit(session, command.unitId);
     case 'army.addEmplacement': return army.addEmplacement(session, command.side, command.engine);
     case 'army.removeEmplacement': return army.removeEmplacement(session, command.emplacementId);
-    case 'army.attachEquipment': return army.attachEquipment(session, command.unitId, command.engine);
-    case 'army.detachEquipment': return army.detachEquipment(session, command.unitId, command.equipmentId);
+    case 'army.setHauling': return army.setHauling(session, command.emplacementId, command.hauling);
     case 'army.place': return army.place(session, command.piece, command.square);
     case 'army.unplace': return army.unplace(session, command.piece);
     case 'army.autoPlace': return army.autoPlace(session, command.piece);

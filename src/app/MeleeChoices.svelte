@@ -3,11 +3,12 @@
   import { actionIconUrl } from '../board/index.js';
   import { ui } from './shell/layout.svelte.js';
 
-  let { cell, plans, selected, screenOf, radiusOf, choose }: {
+  let { cell, plans, selected, screenOf, radiusOf, choose, hover }: {
     cell: string; plans: MeleePlan[]; selected: 'fight' | 'charge' | null;
     screenOf: (cell: string) => Point | null;
     radiusOf: (cell: string) => number | null;
     choose: (kind: 'fight' | 'charge') => void;
+    hover: (kind: 'fight' | 'charge' | null) => void;
   } = $props();
   let anchor = $state<Point | null>(null);
   $effect(() => {
@@ -26,6 +27,8 @@
     follow();
     return () => cancelAnimationFrame(frame);
   });
+  // The buttons unmount under the pointer when the choice closes, and no leave event fires.
+  $effect(() => () => hover(null));
 </script>
 
 {#if anchor}
@@ -34,6 +37,8 @@
       {@const label = plan.kind === 'fight' ? 'Attack' : 'Charge'}
       <button class:selected={selected === plan.kind} aria-pressed={selected === plan.kind}
         title={`${label}. Choose to review and confirm.`}
+        onpointerenter={() => hover(plan.kind)} onpointerleave={() => hover(null)}
+        onfocus={() => hover(plan.kind)} onblur={() => hover(null)}
         onclick={() => choose(plan.kind)}>
         <img src={actionIconUrl(plan.kind === 'fight' ? 'attack' : 'charge')} alt="" draggable="false" />
         <strong>{label}</strong>

@@ -1,6 +1,7 @@
 import './install-asset-base.js';
 import { blockPageZoom } from '../../app/app-root.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
+import { presenceChanged } from '../../app/game.svelte.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
 import { foundryChatPoster } from './chat.js';
@@ -69,7 +70,7 @@ Hooks.once('ready', () => {
 // `activeGM` moves when a GM connects or drops, and every client hears it: the new primary
 // loads the committed session, and the rest start sending their commands to it. The same event
 // changes who is online, which is what the seating is rebuilt from.
-Hooks.on('userConnected', () => { void host?.refresh(); });
+Hooks.on('userConnected', () => { presenceChanged(); void host?.refresh(); });
 
 // A user added to the world, renamed, or removed is a new roster for the seating to fit.
 Hooks.on('createUser', () => { void host?.reseat(); });

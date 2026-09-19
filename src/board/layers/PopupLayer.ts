@@ -65,11 +65,13 @@ const POP_FROM = 0.6;
 const FADE_IN_MS = 120;
 const FADE_MS = 500;
 const FADE_TO = 0.6;
-// Eased out, so a word has cleared its own height by the time the next arrives beneath it.
-const RISE_CELLS = 0.75;
-// The rise keeps the pace it had when a word lived this long; the word then holds still to be read.
-const RISE_MS = 2000;
+// The first word over a piece climbs this far and every later one settles as a line beneath it.
+const RISE_CELLS = 0.35;
+// Eased out and short, so a word is near its line before the next pops under it, crowded or not.
+const RISE_MS = 1200;
 const LIFT_MS = 80;
+// The text box carries its descent and outline, so lines close up by this much.
+const LINE = 0.5;
 
 let fontLoad: Promise<void> | null = null;
 
@@ -161,7 +163,7 @@ interface Live {
   /** Negative while the word waits its turn. */
   elapsed: number;
   scale: number;
-  /** World units climbed to clear the words that arrived later over the same piece. */
+  /** World units above the base where the word settles: its line in the stack over the piece. */
   lift: number;
   lifted: number;
   /** Set when the token plays the icon: the word stands under the piece for this long and
@@ -212,6 +214,11 @@ export class PopupLayer {
     if (!grid || !size) this.clear();
   }
 
+  /** How long until the last word is gone, counting the ones still waiting their turn. */
+  remainingMs(): number {
+    return Math.max(0, ...this.live.map((entry) => (entry.caption ?? LIFE_MS) - entry.elapsed));
+  }
+
   show(popup: BoardPopup): void {
     if (!this.grid || !this.size) return;
     const waiting = this.live.filter((entry) => !entry.text);
@@ -239,9 +246,12 @@ export class PopupLayer {
       const emphasis = entry.caption !== null ? CAPTION_SCALE : isEffect(entry.popup) ? EFFECT_SCALE : entry.popup.parts.some((part) => part.loud) ? LOUD_SCALE : 1;
       entry.scale = emphasis * screenPx / (DRAWN_PX * zoom);
       this.container.addChild(entry.text);
-      const height = entry.text.height * entry.scale;
-      if (entry.caption === null) for (const older of this.live) {
-        if (older !== entry && older.text && older.popup.token === entry.popup.token) older.lift += height;
+      if (entry.caption === null) {
+        const stack = this.live.filter((older) => older !== entry && older.text && older.caption === null && older.popup.token === entry.popup.token);
+        const line = stack.length ? Math.min(...stack.map((older) => older.lift)) - entry.text.height * entry.scale * LINE : this.size * RISE_CELLS;
+        // A stack too deep for the gap climbs as a whole, so no line drops onto the piece.
+        if (line < 0) for (const older of stack) older.lift -= line;
+        entry.lift = entry.lifted = Math.max(0, line);
       }
     }
     const t = entry.elapsed;
@@ -254,10 +264,10 @@ export class PopupLayer {
       entry.text.alpha = Math.min(1, t / fadeMs, Math.max(0, (entry.caption - t) / settleMs));
       return;
     }
-    const rise = this.size * RISE_CELLS * easeOutCubic(Math.min(1, t / RISE_MS)) + entry.lifted;
+    const rise = entry.lifted * easeOutCubic(Math.min(1, t / RISE_MS));
     const fade = Math.max(0, (t - (LIFE_MS - FADE_MS)) / FADE_MS);
     const pop = isEffect(entry.popup) ? EFFECT_POP_MS : POP_MS;
-    entry.text.position.set(at.x, at.y - this.size * 0.55 - rise);
+    entry.text.position.set(at.x, at.y - this.size * 0.3 - rise);
     const swell = t < pop ? POP_FROM + (1 - POP_FROM) * easeOutBack(t / pop) : 1 - (1 - FADE_TO) * fade ** 2;
     entry.text.scale.set(entry.scale * swell);
     entry.text.alpha = fade ? 1 - fade : Math.min(1, t / FADE_IN_MS);

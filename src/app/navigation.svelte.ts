@@ -32,23 +32,34 @@ function openingStage(): Stage {
   return sideReady('defender') ? 'summary' : 'defenders';
 }
 
-export const nav = $state({ stage: openingStage() });
+/** Steps the GM has been through in this pass of the wizard; a resumed session counts the
+ * steps before its opening stage. */
+const stepsThrough = (stage: Stage): Stage[] => STAGES.slice(0, STAGES.indexOf(stage) + 1);
+
+const opening = openingStage();
+export const nav = $state({ stage: opening, visited: stepsThrough(opening) });
+
+function enter(stage: Stage, restart = false) {
+  nav.stage = stage;
+  if (restart) nav.visited = stepsThrough(stage);
+  else if (!nav.visited.includes(stage)) nav.visited.push(stage);
+}
 
 export function next() {
   const i = STAGES.indexOf(nav.stage);
-  if (i < STAGES.length - 2) nav.stage = STAGES[i + 1];
+  if (i < STAGES.length - 2) enter(STAGES[i + 1]);
 }
 
 export function back() {
   const i = STAGES.indexOf(nav.stage);
-  if (i > 0) nav.stage = STAGES[i - 1];
+  if (i > 0) enter(STAGES[i - 1]);
 }
 
 /** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach. `battle`
  * isn't a valid target: it's reached only through `beginBattle`. */
 export function goToStage(stage: Stage) {
   if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
-  nav.stage = stage;
+  enter(stage);
 }
 
 /** Each of the three below moves the tab once the authority has accepted the transition, so a
@@ -62,19 +73,19 @@ export async function beginBattle(): Promise<CommandResult> {
     if (!declared.ok) return declared;
   }
   const result = await startBattle();
-  if (result.ok) nav.stage = 'battle';
+  if (result.ok) enter('battle');
   return result;
 }
 
 export async function leaveBattle(): Promise<CommandResult> {
   const result = await endBattle();
-  if (result.ok) nav.stage = 'board';
+  if (result.ok) enter('board', true);
   return result;
 }
 
 export async function resetToExample(): Promise<CommandResult> {
   const result = await resetSetup();
-  if (result.ok) nav.stage = 'board';
+  if (result.ok) enter('board', true);
   return result;
 }
 
@@ -82,7 +93,7 @@ export async function resetToExample(): Promise<CommandResult> {
  * resolves, so `openingStage` reads the record it landed on rather than the one it replaced. */
 export async function loadSave(slot: string): Promise<CommandResult> {
   const result = await loadBattle(slot);
-  if (result.ok) nav.stage = openingStage();
+  if (result.ok) enter(openingStage(), true);
   return result;
 }
 
@@ -95,7 +106,7 @@ export interface ForwardStep {
 
 /** Whether a step's own work is finished, for the rail's tick. */
 export function stepDone(id: SetupStage): boolean {
-  if (!game.setup.board) return false;
+  if (!game.setup.board || !nav.visited.includes(id)) return false;
   if (id === 'siege') return game.setup.emplacements.every((e) => e.square !== null);
   if (id === 'attackers') return sideReady('attacker');
   if (id === 'defenders') return sideReady('defender');

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createNotificationService, type Notification } from '../app/notifications.js';
 import { createPresentation } from '../app/presentation.js';
-import { ACTIVITY_NOTICE, DECISION_NOTICE, noticesFor, TURN_NOTICE } from '../app/session-notices.js';
+import { DECISION_NOTICE, noticesFor } from '../app/session-notices.js';
 import { createBattle, type BattleState, type UnitCard } from '../engine/index.js';
 import type { SideControl } from '../runtime/control.js';
 import type { BattleEvent } from '../runtime/events.js';
@@ -31,36 +31,6 @@ const base: BattleSession = { ...freshSession(), control, stage: 'battle', battl
 const moved: BattleEvent[] = [{ id: 'cmd-1:0', type: 'unitMoved', unit: 'u0', from: 'c2', to: 'c3', route: ['c2', 'c3'] }];
 
 describe('session notices', () => {
-  it('reads "Your turn" for the holder and the holder\'s name for everyone else', () => {
-    const next: BattleSession = { ...base, turn: 'alice' };
-
-    const holder = noticesFor(null, next, { userId: 'alice', isGm: false });
-    const other = noticesFor(null, next, { userId: 'bob', isGm: false });
-
-    expect(holder.show.find((n) => n.id === TURN_NOTICE)?.title).toBe('Your turn');
-    expect(other.show.find((n) => n.id === TURN_NOTICE)?.message).toContain('alice');
-  });
-
-  it("raises no activity notice for a viewer's own commit", () => {
-    const previous: BattleSession = { ...base, revision: 1 };
-    const next: BattleSession = { ...base, revision: 2, lastCommit: { commandId: 'cmd-1', events: moved, dice: [], userId: 'alice' } };
-
-    const own = noticesFor(previous, next, { userId: 'alice', isGm: false });
-    const other = noticesFor(previous, next, { userId: 'bob', isGm: false });
-
-    expect(own.show.find((n) => n.id === ACTIVITY_NOTICE)).toBeUndefined();
-    expect(other.show.find((n) => n.id === ACTIVITY_NOTICE)).toBeDefined();
-  });
-
-  it('raises no activity notice across a revision jump', () => {
-    const previous: BattleSession = { ...base, revision: 1 };
-    const next: BattleSession = { ...base, revision: 4, lastCommit: { commandId: 'cmd-1', events: moved, dice: [], userId: 'bob' } };
-
-    const notices = noticesFor(previous, next, { userId: 'alice', isGm: false });
-
-    expect(notices.show.find((n) => n.id === ACTIVITY_NOTICE)).toBeUndefined();
-  });
-
   it('dismisses the decision notice once its interaction closes', () => {
     const opening: InteractionRecord = {
       id: 'int-1', kind: 'army.readiness', initiator: 'bob', participants: ['attacker', 'defender'],
@@ -69,46 +39,11 @@ describe('session notices', () => {
     const withOpen: BattleSession = { ...base, stage: 'setup', battle: null, interactions: [opening] };
     const withClosed: BattleSession = { ...withOpen, interactions: [{ ...opening, status: 'closed' }] };
 
-    const opened = noticesFor(null, withOpen, { userId: 'alice', isGm: false });
-    const closed = noticesFor(withOpen, withClosed, { userId: 'alice', isGm: false });
+    const opened = noticesFor(withOpen, { userId: 'alice', isGm: false });
+    const closed = noticesFor(withClosed, { userId: 'alice', isGm: false });
 
     expect(opened.show.find((n) => n.id === DECISION_NOTICE)).toBeDefined();
     expect(closed.show.find((n) => n.id === DECISION_NOTICE)).toBeUndefined();
     expect(closed.dismiss).toContain(DECISION_NOTICE);
-  });
-});
-
-describe('session notices through the presentation module', () => {
-  const seeded = (session: BattleSession, userId: string) => {
-    const presentation = createPresentation(session);
-    const notifications = createNotificationService();
-    let shown: readonly Notification[] = [];
-    notifications.subscribe((messages) => { shown = messages; });
-    presentation.connectNotices(notifications, { userId, isGm: false });
-    return { presentation, shown: () => shown };
-  };
-
-  it('shows a joining client the open turn and no activity backlog', () => {
-    const joined: BattleSession = {
-      ...base, revision: 7, turn: 'alice',
-      lastCommit: { commandId: 'cmd-7', events: moved, dice: [], userId: 'alice' },
-    };
-
-    const { shown } = seeded(joined, 'bob');
-
-    expect(shown().find((n) => n.id === TURN_NOTICE)?.message).toContain('alice');
-    expect(shown().find((n) => n.id === ACTIVITY_NOTICE)).toBeUndefined();
-  });
-
-  it('summarizes the commits that arrive after the seed', () => {
-    const joined: BattleSession = { ...base, revision: 7, turn: 'alice' };
-    const { presentation, shown } = seeded(joined, 'bob');
-
-    presentation.observe({
-      ...joined, revision: 8,
-      lastCommit: { commandId: 'cmd-8', events: moved, dice: [], userId: 'alice' },
-    });
-
-    expect(shown().find((n) => n.id === ACTIVITY_NOTICE)).toBeDefined();
   });
 });

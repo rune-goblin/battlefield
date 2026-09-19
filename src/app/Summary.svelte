@@ -7,6 +7,7 @@
   import WizardRail from './WizardRail.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { declaredReady, game, sideReady, tableUsers } from './game.svelte.js';
+  import { engineUnder } from '../services/ArmyPreparationService.js';
   import { goToStage, type SetupStage } from './navigation.svelte.js';
 
   const board = $derived(game.setup.board!);
@@ -41,9 +42,9 @@
   const tokens = $derived<TokenModel[]>([
     ...game.setup.units.flatMap((u) => u.square ? [{
       kind: 'unit' as const, id: u.id, side: u.side, name: u.card.name, role: u.card.role, level: u.card.level,
-      cell: u.square, wounds: 0, disorder: 0, engine: u.engines[0]?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
+      cell: u.square, wounds: 0, disorder: 0, engine: (engineUnder(game.setup, u) ?? u.engines[0])?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
     }] : []),
-    ...game.setup.emplacements.flatMap((e) => e.square ? [{
+    ...game.setup.emplacements.flatMap((e) => e.square && !game.setup.units.some((u) => u.square === e.square) ? [{
       kind: 'engine' as const, id: e.id, side: e.side, name: e.name, cell: e.square, ring: null,
     }] : []),
   ]);
@@ -104,7 +105,7 @@
           {#each army.engines as e (e.id)}
             <li>
               <span class="name">⚙ {e.name}</span>
-              <span class="meta">emplacement <button class="link" onclick={() => goToStage('siege')}>edit</button></span>
+              <span class="meta">emplacement{e.hauled ? ' · hauled' : ''} <button class="link" onclick={() => goToStage('siege')}>edit</button></span>
               <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
             </li>
           {/each}

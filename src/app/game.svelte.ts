@@ -69,8 +69,13 @@ runtime.subscribe((session) => {
 export const viewerId = runtime.userId;
 export const gmUserId = () => runtime.gmUserId();
 
+// A user who connects or drops changes no seat, so no record arrives to say so.
+let presenceTick = $state(0);
+/** The host calls this when someone connects or drops. */
+export const presenceChanged = (): void => { presenceTick += 1; };
+
 /** Everyone the host would seat, for the GM's seating controls. */
-export const tableUsers = (): TableUser[] => runtime.tableUsers();
+export const tableUsers = (): TableUser[] => { void presenceTick; return runtime.tableUsers(); };
 
 const submit = (command: BattleCommand) => runtime.submit(command);
 
@@ -94,8 +99,7 @@ export const addUnit = (side: Side, card: UnitCard) =>
 export const removeUnit = (unitId: string) => submit({ type: 'army.removeUnit', unitId });
 export const addEmplacement = (side: Side, engine: string) => submit({ type: 'army.addEmplacement', side, engine });
 export const removeEmplacement = (emplacementId: string) => submit({ type: 'army.removeEmplacement', emplacementId });
-export const attachEquipment = (unitId: string, engine: string) => submit({ type: 'army.attachEquipment', unitId, engine });
-export const detachEquipment = (unitId: string, equipmentId: string) => submit({ type: 'army.detachEquipment', unitId, equipmentId });
+export const setHauling = (emplacementId: string, hauling: boolean) => submit({ type: 'army.setHauling', emplacementId, hauling });
 export const placePiece = (piece: PieceRef, square: string) => submit({ type: 'army.place', piece: plain(piece), square });
 export const unplacePiece = (piece: PieceRef) => submit({ type: 'army.unplace', piece: plain(piece) });
 export const autoPlacePiece = (piece: PieceRef) => submit({ type: 'army.autoPlace', piece: plain(piece) });
@@ -111,6 +115,9 @@ export const declareReady = (side: Side, ready: boolean) =>
 
 export const declaredReady = (side: Side): boolean =>
   submissionOf(game.interactions, 'army.readiness', side) === true;
+
+/** The GM hands the open turn to another seat on the pending side. */
+export const reassignTurn = (userId: string) => submit({ type: 'turn.reassign', userId });
 
 /** Who plays which army. The GM sends it; the authority fits it to the users it can see. */
 export const assignSeating = (control: ControlAssignment) => submit({

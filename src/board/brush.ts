@@ -10,7 +10,7 @@ export type Brush =
   | { kind: 'terrain'; terrain: SquareTerrain }
   | { kind: 'elevation'; level: number }
   | { kind: 'wall'; tier: number }
-  | { kind: 'gate'; flip: boolean }
+  | { kind: 'gate' }
   | { kind: 'wall-clear' }
   | { kind: 'erase' };
 

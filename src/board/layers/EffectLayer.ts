@@ -93,6 +93,10 @@ export class EffectLayer {
     if (!grid || !size) this.clear();
   }
 
+  remainingMs(): number {
+    return Math.max(0, ...this.active.map((a) => a.effect.duration - a.elapsed));
+  }
+
   /** Plays `tree`'s composition on `cell`; a blast with a `from` cell flies in from it. */
   burst(cell: string, tree: Tree, from: string | null = null): void {
     if (!this.grid || !this.size) return;

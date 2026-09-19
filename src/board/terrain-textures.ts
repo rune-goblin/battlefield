@@ -158,13 +158,32 @@ export const GROUP_TERRAIN: Record<TerrainGroup, SquareTerrain> = {
   forest: 'forest', swamp: 'swamp', water: 'water', shallows: 'shallows', settlement: 'settlement',
 };
 
+const groundGroup = (elevation: number): TerrainGroup => elevation >= 2 ? 'mountain' : elevation === 1 ? 'hills' : 'plains';
+
 export function terrainGroup(board: Board, cell: Cell): TerrainGroup {
   const state = at(board, cell);
   if (state.terrain === 'bridge') return 'water';
-  // proto: rough ground borrows the desert textures until it has a library of its own.
+  // Rough ground stays a group of its own for the area lines; `surfaceGroup` is what it is painted as.
   if (state.terrain === 'rough') return 'desert';
   if (state.terrain !== 'open') return state.terrain;
-  return state.elevation >= 2 ? 'mountain' : state.elevation === 1 ? 'hills' : 'plains';
+  return groundGroup(state.elevation);
+}
+
+/** The material a cell is painted in. Rough ground has none of its own: it is the ground at its
+ * height with `BROKEN_OVERLAY` laid over it. */
+export function surfaceGroup(board: Board, cell: Cell): TerrainGroup {
+  const state = at(board, cell);
+  return state.terrain === 'rough' ? groundGroup(state.elevation) : terrainGroup(board, cell);
+}
+
+// proto: the overlay's scale is fixed here until the lab has a dial for it.
+export const BROKEN_OVERLAY = { url: assetUrl('art/terrain/textures/broken.webp'), scale: 2 };
+
+/** Rough ground, and the debris a siege engine leaves, which lies over whatever it landed on. */
+export function brokenCells(board: Board): Cell[] {
+  const grid = gridOf(board);
+  const debris = new Set((board.siegeFields ?? []).filter(field => field.kind === 'rough').flatMap(field => field.cells));
+  return grid.cells().filter(cell => at(board, cell).terrain === 'rough' || debris.has(grid.key(cell)));
 }
 
 // Hills and mountain are terrain groups in the lab and elevation on the board, so the sample

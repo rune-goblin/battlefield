@@ -157,12 +157,14 @@ describe('fortifications and gates', () => {
       expect(gates).toHaveLength(1); expect(gates[0][0].split('|')).toContain(gates[0][1].inside);
     }
   });
-  it('paints a gate onto a wall, keeps its tier and interior, and flips on request', () => {
+  it('cycles a painted gate through its interior, the reverse, and plain wall', () => {
     const b = openBoard(); b.walls['c4|c5'] = makeWall(4, 'c5');
-    const gate = (flip: boolean) => applyStroke(b, { cells: [], edges: ['c4|c5', 'd4|d5'], brush: { kind: 'gate', flip } });
-    expect(gate(false).walls['c4|c5']).toMatchObject({ tier: 4, inside: 'c5', gate: { open: false } });
-    expect(gate(true).walls['c4|c5']).toMatchObject({ tier: 4, inside: 'c4', gate: { open: false } });
-    expect(gate(false).walls['d4|d5']).toBeUndefined();
+    const click = (board: typeof b) => applyStroke(board, { cells: [], edges: ['c4|c5', 'd4|d5'], brush: { kind: 'gate' } });
+    const once = click(b), twice = click(once), thrice = click(twice);
+    expect(once.walls['c4|c5']).toMatchObject({ tier: 4, inside: 'c5', gate: { open: false } });
+    expect(twice.walls['c4|c5']).toMatchObject({ tier: 4, inside: 'c4', gate: { open: false } });
+    expect(thrice.walls['c4|c5']).toEqual(makeWall(4, 'c5'));
+    expect(once.walls['d4|d5']).toBeUndefined();
     expect(b.walls['c4|c5'].gate).toBeUndefined();
   });
   it('paints swamp at any height', () => {

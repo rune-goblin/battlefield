@@ -33,8 +33,12 @@ function paintEdge(board: Board, key: string, brush: PaintBrush): void {
     const w = board.walls[key];
     if (!w) return;
     const inside = w.inside ?? ends[0];
-    w.inside = brush.flip ? ends.find((id) => id !== inside) : inside;
-    w.gate = { open: false };
+    const reversed = ends.find((id) => id !== inside);
+    // Each stroke steps the edge through gate, reversed gate, plain wall; the second reversal
+    // hands the wall back the interior it started with.
+    if (!w.gate) { w.inside = inside; w.gate = { open: false }; }
+    else if (!w.gate.flipped) { w.inside = reversed; w.gate = { open: false, flipped: true }; }
+    else { w.inside = reversed; delete w.gate; }
   }
   else if (brush.kind === 'wall-clear' || brush.kind === 'erase') delete board.walls[key];
 }

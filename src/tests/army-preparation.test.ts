@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, type UnitCard } from '../engine/index.js';
+import { createBattle, ENGINES, isFixedEngine, type UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
@@ -50,15 +50,75 @@ describe('army preparation', () => {
     expect(runtime.session.setup.emplacements[0].name).toBe('Catapult');
   });
 
-  it('attaches and detaches an engine on a unit', async () => {
-    const runtime = runtimeOn();
+  it('lets a unit deploy on its own army\'s engine and on no other piece', async () => {
+    const session = setupSession();
+    session.setup.emplacements.push(
+      { id: 'eng-1', name: 'Catapult', side: 'attacker', square: 'd1' },
+      { id: 'eng-2', name: 'Catapult', side: 'defender', square: 'd9' },
+    );
+    session.setup.units.push({ id: 'unit-2', card: infantry, side: 'defender', square: null, engines: [] });
 
-    await runtime.submit({ type: 'army.attachEquipment', unitId: 'unit-1', engine: 'Ballista' });
-    const [engine] = runtime.session.setup.units[0].engines;
-    expect(engine.name).toBe('Ballista');
+    expect(cellsFor(session.setup, { kind: 'unit', id: 'unit-1' })).toContain('d1');
+    expect(cellsFor(session.setup, { kind: 'engine', id: 'eng-1' })).toContain('c1');
+    expect(cellsFor(session.setup, { kind: 'engine', id: 'eng-2' })).not.toContain('d1');
+    session.setup.emplacements[1].side = 'attacker';
+    session.setup.emplacements[1].square = 'e1';
+    expect(cellsFor(session.setup, { kind: 'engine', id: 'eng-2' })).not.toContain('d1');
+    expect(autoCell(session.setup, { kind: 'unit', id: 'unit-1' })).not.toBe('e1');
+  });
 
-    await runtime.submit({ type: 'army.detachEquipment', unitId: 'unit-1', equipmentId: engine.id });
-    expect(runtime.session.setup.units[0].engines).toEqual([]);
+  it('hauls an engine only while a unit of its army stands on it', async () => {
+    const session = setupSession();
+    session.setup.emplacements.push({ id: 'eng-1', name: 'Battering Ram', side: 'attacker', square: 'd1' });
+    const runtime = runtimeOn(session);
+    const piece = { kind: 'unit' as const, id: 'unit-1' };
+
+    const early = await runtime.submit({ type: 'army.setHauling', emplacementId: 'eng-1', hauling: true });
+    expect(early.ok).toBe(false);
+
+    await runtime.submit({ type: 'army.place', piece, square: 'd1' });
+    await runtime.submit({ type: 'army.setHauling', emplacementId: 'eng-1', hauling: true });
+    expect(runtime.session.setup.emplacements[0].hauled).toBe(true);
+
+    await runtime.submit({ type: 'army.place', piece, square: 'c1' });
+    expect(runtime.session.setup.emplacements[0].hauled).toBe(false);
+  });
+
+  it('refuses to haul a fixed engine', async () => {
+    const session = setupSession();
+    const fixed = ENGINES.find((e) => isFixedEngine(e))!;
+    session.setup.emplacements.push({ id: 'eng-1', name: fixed.name, side: 'attacker', square: 'c1' });
+    const runtime = runtimeOn(session);
+
+    const result = await runtime.submit({ type: 'army.setHauling', emplacementId: 'eng-1', hauling: true });
+    expect(result.ok).toBe(false);
+  });
+
+  it('starts the battle with the unit hauling the engine it deployed on', () => {
+    const ram = ENGINES.find((e) => !isFixedEngine(e))!;
+    const board = openBoard('square', 9);
+    const battle = createBattle({
+      board,
+      units: [
+        { id: 'a', card: infantry, side: 'attacker', square: 'c1' },
+        { id: 'b', card: infantry, side: 'attacker', square: 'e1' },
+        { id: 'd', card: infantry, side: 'defender', square: 'c9' },
+      ],
+      engines: [
+        { id: 'hauled', card: ram, side: 'attacker', square: 'c1', hauled: true },
+        { id: 'worked', card: ram, side: 'attacker', square: 'e1' },
+      ],
+    });
+
+    const [a, b] = battle.units;
+    expect(a.engines.map((e) => [e.id, e.hauling])).toEqual([['hauled', true]]);
+    expect(b.engines).toEqual([]);
+    expect(battle.engines.map((e) => [e.id, e.status])).toEqual([['worked', 'crewed']]);
+    expect(() => createBattle({
+      board,
+      units: [{ id: 'a', card: infantry, side: 'attacker', square: 'c1' }, { id: 'd', card: infantry, side: 'defender', square: 'c9' }],
+      engines: [{ card: ram, side: 'attacker', square: 'c9' }],
+    })).toThrow();
   });
 
   it('refuses a square no piece can deploy on and leaves the record alone', async () => {

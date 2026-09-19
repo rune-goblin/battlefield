@@ -1,4 +1,3 @@
-import { noticesFor, TURN_NOTICE } from '../../app/session-notices.js';
 import type { BattleSession } from '../../runtime/session.js';
 
 export interface TurnAnnouncerOptions {
@@ -25,10 +24,8 @@ export function createTurnAnnouncer(
     if (visible()) return;
     const who = viewer();
     if (next.turn !== who.userId) return;
-    // proto: the turn wording is the app's own, reserved for review with the rest of the
-    // player-facing text; here the title and the message travel as one line.
-    const notice = noticesFor(seen, next, who).show.find((n) => n.id === TURN_NOTICE);
-    if (notice) notify(`${notice.title} — ${notice.message}`);
+    // proto: wording reserved for review with the rest of the player-facing text.
+    if (seen?.turn !== next.turn) notify('Your turn');
   };
 }
 

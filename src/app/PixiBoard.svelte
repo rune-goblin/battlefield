@@ -79,6 +79,7 @@
   /** Plays a one-shot spell animation on `cell` — see `BoardView.burst`. */
   export function burst(cell: string, tree: Tree, from?: string | null) { view?.burst(cell, tree, from); }
   export function popup(popup: BoardPopup) { view?.popup(popup); }
+  export function remainingMs() { return view?.remainingMs() ?? 0; }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
   export function setGrid(settings: GridUpdate) { view?.setGrid(settings); }

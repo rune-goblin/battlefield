@@ -79,6 +79,11 @@ export interface BoardView {
   /** Floats a word over a piece: the result of a roll, or a condition it just took. Words take
    * turns in the order given, and all of them wait for the pieces to stop moving. */
   popup(popup: BoardPopup): void;
+  /** How long the board still needs to show what the last commit did: a cast playing, words
+   * waiting or showing, a status settling into its slot. Infinity while pieces walk, since the
+   * words wait for them. Whatever announces the next turn times itself against this, and may
+   * come in over the tail. */
+  remainingMs(): number;
   /** The route the token's next move walks, its own cell first — the same cells the drag
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
@@ -429,6 +434,10 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     popup(popup) {
       popupLayer.show(popup);
+    },
+    remainingMs() {
+      if (tokenLayer.moving()) return Infinity;
+      return Math.max(tokenLayer.settlingMs(), effectLayer.remainingMs(), popupLayer.remainingMs());
     },
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);

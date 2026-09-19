@@ -112,6 +112,10 @@ export class TokenLayer {
     if (this.held.delete(id)) this.renderAll();
   }
 
+  settlingMs(): number {
+    return Math.max(0, ...[...this.cache.values()].map((token) => token.settlingMs));
+  }
+
   moving(): boolean {
     for (const token of this.cache.values()) if (token.moving) return true;
     return false;

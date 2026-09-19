@@ -33,7 +33,11 @@ export interface AttachedEngine { card: SiegeEngineCard; id?: string; }
 export interface Deployment { id?: string; card: UnitCard; side: Side; square: string; engines?: AttachedEngine[]; }
 
 /** An engine deployed on a square of its own rather than attached to a unit. */
-export interface Emplacement { id?: string; card: SiegeEngineCard; side: Side; square: string; }
+export interface Emplacement {
+  id?: string; card: SiegeEngineCard; side: Side; square: string;
+  /** The friendly unit deployed on this square starts the battle hauling it. */
+  hauled?: boolean;
+}
 
 /** A deployment that carries no ID keeps the positional identity every battle used before
  * setup minted stable ones, so a save written then still names the same units. */
@@ -86,12 +90,21 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       movementBonus: 0, sureFooting: false, flies: false,
     };
   });
-  const emplaced = (setup.engines ?? []).map((e, index) => {
+  const engineSquares = new Set<string>();
+  const emplaced: EngineState[] = [];
+  (setup.engines ?? []).forEach((e, index) => {
     const sq = parse(e.square);
     if (!canDeploy(setup.board, e.side, false, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
-    if (taken.has(e.square)) throw new Error(`${e.square} is already occupied`);
-    taken.add(e.square);
-    return engineState(e.card, e.id ?? positionalEmplacedId(index), e.side, sq, true);
+    // A unit may deploy on its own army's engine; nothing else shares a square.
+    const crew = units.find((u) => sameSquare(u.square, sq));
+    if (engineSquares.has(e.square) || (crew && crew.side !== e.side)) throw new Error(`${e.square} is already occupied`);
+    engineSquares.add(e.square);
+    const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), e.side, sq, true);
+    if (e.hauled && crew && !isFixedEngine(e.card) && !crew.engines.some((x) => x.hauling)) {
+      engine.emplaced = false;
+      engine.hauling = true;
+      crew.engines.push(engine);
+    } else emplaced.push(engine);
   });
   const state: BattleState = {
     day: 1, roundsPerDay, night: null,
@@ -308,6 +321,8 @@ const engineCard = (e: EngineState) => ENGINES.find(card => card.name === e.name
 export const engineKind = (e: EngineState) => engineCard(e)?.kind ?? e.kind;
 export const engineSpeed = (e: EngineState): number | null =>
   e.name === 'Wolf Fang' ? 5 : e.speed !== undefined ? e.speed : engineCard(e)?.speed !== undefined ? engineCard(e)!.speed! : (engineKind(e) === 'ram' ? null : 0);
+export const isFixedEngine = (card: SiegeEngineCard): boolean =>
+  engineSpeed({ name: card.name, kind: card.kind, speed: card.speed } as EngineState) === 0;
 export const engineLoadSteps = (e: EngineState): number => engineCard(e)?.loadSteps ?? e.loadSteps ?? 1;
 export const engineLoadCost = (e: EngineState): number => engineCard(e)?.loadCost ?? e.loadCost ?? 1;
 export const engineLoaded = (e: EngineState): boolean => engineLoadSteps(e) === 0 || (e.loaded ?? e.loadSteps ?? engineLoadSteps(e)) >= (e.loadSteps ?? engineLoadSteps(e));

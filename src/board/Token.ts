@@ -217,6 +217,16 @@ export class Token extends PIXI.Container {
   private tween: Tween | null = null;
 
   get moving(): boolean { return this.tween !== null; }
+
+  /** How long until every status has settled into its slot. One still waiting for the popup
+   * queue does not count: the queue answers for it. */
+  get settlingMs(): number {
+    const { fadeMs, holdMs, settleMs } = STATUS_INTRO;
+    const now = performance.now();
+    return Math.max(0, ...this.statuses
+      .filter((held) => held.intro !== null && held.intro !== Infinity)
+      .map((held) => held.intro! + fadeMs + holdMs + settleMs - now));
+  }
   private route: string[] | null = null;
 
   constructor(id: string) {

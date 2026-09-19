@@ -7,11 +7,11 @@
   import WizardRail from './WizardRail.svelte';
   import TroopPicker from './TroopPicker.svelte';
   import {
-    addEmplacement, addUnit, attachEquipment, autoPlacePiece, detachEquipment,
-    game, generateForce, placePiece, removeEmplacement, removeUnit, unplacePiece, type SetupEngine, type SetupUnit,
+    addEmplacement, addUnit, autoPlacePiece,
+    game, generateForce, placePiece, removeEmplacement, removeUnit, setHauling, unplacePiece, type SetupEngine, type SetupUnit,
   } from './game.svelte.js';
   import { resetToExample } from './navigation.svelte.js';
-  import { autoCell, cellsFor, deployableCells, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
+  import { autoCell, canHaul, cellsFor, deployableCells, engineUnder, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
   import type { PieceRef } from '../runtime/commands.js';
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
@@ -40,7 +40,7 @@
   // highlight during that drag.
   let dragging = $state<PieceRef | null>(null);
   let hoveredCell = $state<string | null>(null);
-  $effect(() => { void stepSide; void pieces; selected = null; dragging = null; hoveredCell = null; });
+  $effect(() => { void stepSide; void pieces; selected = null; dragging = null; hoveredCell = null; haulAsk = null; });
 
   const units = $derived(game.setup.units);
   const emplacements = $derived(game.setup.emplacements);
@@ -60,11 +60,13 @@
   // the current placement is legal, so placing a piece leaves the zone intact beneath it.
   const deploymentRanks = $derived(new Set(deployRanks(side, pickedAmbush, board.squares.length)));
   const highlightCells = $derived(gridOf(board).cells().filter(cell => deploymentRanks.has(cell.rank)).map(notation));
-  const legalCells = $derived(new Set(deployableCells(game.setup, side, pickedAmbush, selected)));
+  const legalCells = $derived(new Set(deployableCells(game.setup, side, pickedAmbush, selected, siege ? 'engine' : 'unit')));
   const invalidCell = $derived(selected && hoveredCell && !legalCells.has(hoveredCell) ? hoveredCell : null);
 
   let boardRef = $state<PixiBoard>();
 
+  // An engine under a unit shows as that unit's badge.
+  const crewedSquares = $derived(new Set(units.map((u) => u.square)));
   const tokens = $derived.by<TokenModel[]>(() => [
     ...units.flatMap((u) => u.square ? [{
       kind: 'unit' as const,
@@ -76,13 +78,13 @@
       cell: u.square,
       wounds: 0,
       disorder: 0,
-      engine: u.engines[0]?.name ?? null,
+      engine: (engineUnder(game.setup, u) ?? u.engines[0])?.name ?? null,
       verdict: null,
       statuses: [],
       pick: null,
       ring: selected?.kind === 'unit' && selected.id === u.id ? 'selected' as const : null,
     }] : []),
-    ...emplacements.flatMap((e) => e.square ? [{
+    ...emplacements.flatMap((e) => e.square && !crewedSquares.has(e.square) ? [{
       kind: 'engine' as const,
       id: e.id,
       side: e.side,
@@ -105,10 +107,31 @@
 
   const pieceAt = (p: PieceRef): SetupUnit | SetupEngine | undefined => pieceOf(game.setup, p);
 
+  /** The emplacement a unit was just put on, while the player decides whether it hauls it. */
+  let haulAsk = $state<string | null>(null);
+  const haulEngine = $derived(emplacements.find((e) => e.id === haulAsk) ?? null);
+  const haulUnit = $derived(haulEngine ? units.find((u) => u.side === haulEngine.side && u.square === haulEngine.square) ?? null : null);
+
+  /** A unit put on its own army's engine works it; one that can move asks about hauling. */
+  async function put(p: PieceRef, cell: string) {
+    const result = await placePiece(p, cell);
+    if (!result.ok || p.kind !== 'unit') return result;
+    const unit = pieceAt(p) as SetupUnit | undefined;
+    const under = unit && engineUnder(game.setup, unit);
+    if (under && canHaul(under)) haulAsk = under.id;
+    return result;
+  }
+
+  async function answerHaul(hauling: boolean) {
+    const id = haulAsk;
+    haulAsk = null;
+    if (id && hauling) await setHauling(id, true);
+  }
+
   /** Put the selected piece down, then jump to this side's next unplaced piece. */
   async function placeOn(n: string) {
     if (!selected || !legalCells.has(n)) return;
-    const result = await placePiece(selected, n);
+    const result = await put(selected, n);
     if (result.ok) selected = nextUnplaced();
   }
 
@@ -157,7 +180,7 @@
     const p = pickOf(e.id);
     if (!mayMove(p)) return;
     if (!cellsFor(game.setup, p).includes(e.cell)) return;
-    void placePiece(p, e.cell);
+    void put(p, e.cell);
   }
 
   function onTokenDrag(e: BoardEventOf<'drag'>) {
@@ -190,7 +213,7 @@
     const p = raw ? pickOf(raw) : dragging;
     dragging = null;
     if (cell === null || !p || pieceAt(p)?.side !== side || !cellsFor(game.setup, p).includes(cell)) return;
-    void placePiece(p, cell);
+    void put(p, cell);
   }
 
   const STAT_LABEL: Record<string, string> = { strike: 'Strike', volley: 'Volley', defence: 'Def', will: 'Will', reflex: 'Ref', perception: 'Per' };
@@ -200,9 +223,6 @@
     const result = await addEmplacement(side, engineName);
     if (result.ok) selected = lastPick('engine');
   }
-
-  let attachHost = $state('');
-  const hostId = $derived(myUnits.some((u) => u.id === attachHost) ? attachHost : myUnits[0]?.id ?? '');
 
   async function generate() {
     const result = await generateForce(side);
@@ -266,6 +286,18 @@
 
   {#snippet modal()}
     {#if picking}<TroopPicker {side} {held} add={(card) => void add(card)} close={() => (picking = false)} />{/if}
+    {#if haulEngine && haulUnit}
+      <div class="scrim" role="presentation">
+        <div class="ask" role="dialog" aria-modal="true" aria-label="Haul the engine" style:--side={haulUnit.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+          <h2>{haulUnit.card.name} stands on the {haulEngine.name}</h2>
+          <p>The unit works the engine from this square. Hauling takes the engine along when the unit moves, at the slower of the two speeds.</p>
+          <div class="row">
+            <button class="primary" onclick={() => void answerHaul(true)}>Haul it</button>
+            <button onclick={() => void answerHaul(false)}>Work it in place</button>
+          </div>
+        </div>
+      </div>
+    {/if}
   {/snippet}
 
   {#snippet float()}
@@ -308,16 +340,7 @@
           <button class="primary" onclick={() => (picking = true)}>Choose troops…</button>
           <button onclick={generate}>Generate the {sideWord} army</button>
         </div>
-        {#if myUnits.length}
-          <div class="row" style="margin-top:.5rem">
-            <select bind:value={engineName}>{@render engineOptions()}</select>
-            <select value={hostId} onchange={(e) => (attachHost = e.currentTarget.value)}>
-              {#each myUnits as u (u.id)}<option value={u.id}>with {u.card.name}</option>{/each}
-            </select>
-            <button onclick={() => void attachEquipment(hostId, engineName)}>Attach</button>
-          </div>
-          <p class="muted">An engine attached to a unit rides along and is lost only with that unit.</p>
-        {/if}
+        <p class="muted">Put a unit on one of its army's engines to work it; an engine that can move may be hauled.</p>
       </div>
     {/if}
 
@@ -325,6 +348,7 @@
     <div class="unitlist" style:--side={side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
       {#each mine as u (u.id)}
         {@const p = { kind: 'unit' as const, id: u.id }}
+        {@const under = engineUnder(game.setup, u)}
         <div
           class="piece"
           class:sel={selected?.kind === 'unit' && selected.id === u.id}
@@ -365,8 +389,16 @@
             {@render sheetLines(u.card)}
             <p class="line where">{u.square ? `Standing on ${u.square}` : `Off the board · deploys on ${deployNote(u)}`}</p>
             {#each u.engines as e (e.id)}
-              <p class="line">⚙ {e.name} rides along <button class="kill inline" onclick={(ev) => { ev.stopPropagation(); detachEquipment(u.id, e.id); }} title="Leave the engine behind" aria-label="Detach {e.name}">×</button></p>
+              <p class="line">⚙ {e.name} rides along</p>
             {/each}
+            {#if under}
+              <p class="line">
+                ⚙ {under.hauled ? 'Hauls' : 'Works'} the {under.name}
+                {#if canHaul(under)}
+                  <button class="inline" onclick={(ev) => { ev.stopPropagation(); void setHauling(under.id, !under.hauled); }}>{under.hauled ? 'Work it in place' : 'Haul it'}</button>
+                {/if}
+              </p>
+            {/if}
           </div>
         </div>
       {:else}
@@ -420,7 +452,7 @@
           </div>
 
           <div class="details">
-            <p class="line where">{e.square ? `Emplaced on ${e.square}` : 'Off the board · holds the square it stands on'}</p>
+            <p class="line where">{e.square ? `Emplaced on ${e.square}${e.hauled ? ' · hauled by the unit on it' : ''}` : 'Off the board · holds the square it stands on'}</p>
           </div>
         </div>
       {/each}
@@ -433,6 +465,12 @@
 </AppShell>
 
 <style>
+  .scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; background: rgba(0, 0, 0, .45); }
+  .ask {
+    width: min(26rem, 100%); padding: 1rem 1.1rem; background: var(--paper); border: 1px solid var(--rule);
+    border-top: 4px solid var(--side); border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+  }
+  .ask h2 { margin: 0 0 .4rem; border: 0; padding: 0; font-size: 1.05rem; }
 
   /* The card. A piece off the board is a card still in hand: dashed edge, hatched paper. Put
      it down and the card goes solid, with its square stamped under the portrait. */
@@ -520,5 +558,5 @@
 
   .kill { border: 0; background: none; color: var(--muted); padding: 0 .2rem; font-size: 1rem; line-height: 1; opacity: .5; }
   .kill:hover:not(:disabled) { color: var(--bad); opacity: 1; border-color: transparent; }
-  .kill.inline { font-size: .8rem; }
+  .line .inline { font-size: .75rem; padding: .05rem .4rem; margin-left: .3rem; }
 </style>
