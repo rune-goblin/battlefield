@@ -17,6 +17,10 @@ import {
 export interface ArmyPreparationService {
   addUnit(session: BattleSession, side: Side, card: UnitCard): BattleSession;
   removeUnit(session: BattleSession, unitId: string): BattleSession;
+  /** Both keep every piece's identity and lift it off the board: a deployment zone belongs to
+   * a side. */
+  setSide(session: BattleSession, unitId: string, side: Side): BattleSession;
+  swapSides(session: BattleSession): BattleSession;
   addEmplacement(session: BattleSession, side: Side, engine: string): BattleSession;
   removeEmplacement(session: BattleSession, emplacementId: string): BattleSession;
   setHauling(session: BattleSession, emplacementId: string, hauling: boolean): BattleSession;
@@ -154,6 +158,8 @@ function settleHauling(setup: BattleSetupDraft): BattleSetupDraft {
 const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession =>
   ({ ...session, setup: settleHauling(setup) });
 
+const otherSide = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
+
 function engineCard(name: string) {
   const card = ENGINES.find((e) => e.name === name);
   if (!card) throw new Error(`${name} is not an engine`);
@@ -190,6 +196,20 @@ export function createArmyPreparationService(): ArmyPreparationService {
       unitOf(session.setup, unitId);
       return withSetup(session, { ...session.setup, units: session.setup.units.filter((u) => u.id !== unitId) });
     },
+
+    setSide: (session, unitId, side) => {
+      if (unitOf(session.setup, unitId).side === side) return session;
+      return withSetup(session, {
+        ...session.setup,
+        units: session.setup.units.map((u) => (u.id === unitId ? { ...u, side, square: null } : u)),
+      });
+    },
+
+    swapSides: (session) => withSetup(session, {
+      ...session.setup,
+      units: session.setup.units.map((u) => ({ ...u, side: otherSide(u.side), square: null })),
+      emplacements: session.setup.emplacements.map((e) => ({ ...e, side: otherSide(e.side), square: null, hauled: false })),
+    }),
 
     addEmplacement: (session, side, engine) => withSetup(session, {
       ...session.setup,

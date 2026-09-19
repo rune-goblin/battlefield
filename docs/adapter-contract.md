@@ -77,3 +77,25 @@ the base action, and the battle UI attaches commitment before calling `takeActio
 Pass ReignMaker's hex fortification tier through unchanged: 1 Earthworks, 2 Wooden Tower, 3 Stone Tower, 4 Fortress. These are the hex tiers from `src/data/fortificationTiers.ts`, rather than the settlement support-building progression. Tier 0 remains a legacy barricade. Battlefield derives wall durability, hardness, and cover from the tier and generates one closed gate with an explicit interior hex. The campaign adapter must avoid adding the same campaign bonus twice to troop statistics.
 
 Wall state carries remaining boxes, an optional interior cell, and optional gate open state. Save and handoff these fields with the board. Temporary siege fields also persist within a day and clear overnight. Structure-damaging siege abilities currently target walls and gates; future building targets should use the same structural damage calculation.
+
+## Foundry table and ReignMaker hex pick
+
+`game.modules.get('battlefield').api` offers `open`, `close`, `createBattle`, `callTable`, and
+`dismissTable`. `callTable` sets the `tableCall` world setting: every client opens its window
+once, and a client whose window is shut keeps a floating Battlefield chip until `dismissTable`.
+The GM reaches the same two calls from the window's header menu. The setting stands outside the
+session record, so a reset or a loaded save leaves the players where they are.
+
+The hex pick reads three functions ReignMaker adds to its own module API, plus the
+`pf2e-reignmaker.apiReady` hook it fires once that API is complete:
+
+| ReignMaker API | Use |
+|---|---|
+| `registerMapToolbarButton(button)` | The GM-only Battle button on the kingdom map's toolbar. |
+| `selectHexes({ colorType: 'battle', count: 1 })` | The pick itself; answers with `["i.j"]` or null. |
+| `getBattleSite(hexId)` | Terrain, holder, fortification tier, and every army in the hex with its banner. |
+
+`src/adapters/reignmaker/battleSite.ts` turns the site into a `BattleRequest`. The holder of the
+hex defends; on ground nobody holds the player kingdom attacks. Each unit carries its banner as
+`faction`, a label no rule reads, and the wizard opens at the Sides step for the GM to correct
+the guess with `army.swapSides` and `army.setSide`.

@@ -4,6 +4,7 @@
   import BoardSetup from './BoardSetup.svelte';
   import Paint from './Paint.svelte';
   import Place from './Place.svelte';
+  import Sides from './Sides.svelte';
   import Summary from './Summary.svelte';
   import Battle from './Battle.svelte';
   import VfxGallery from './VfxGallery.svelte';
@@ -15,7 +16,7 @@
   import { connectAuthority } from './authority.svelte.js';
 
   const notifications = provideNotifications();
-  presentation.connectNotices(notifications, { userId: viewerId, get isGm() { return gmUserId() === viewerId; } });
+  presentation.connectNotices(notifications, { get userId() { return viewerId(); }, get isGm() { return gmUserId() === viewerId(); } });
   connectAuthority(notifications);
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be
@@ -42,6 +43,8 @@
     <Place side={STAGE_SIDE[nav.stage]!} pieces="units" />
   {:else if nav.stage === 'siege' && game.setup.board}
     <Place pieces="engines" />
+  {:else if nav.stage === 'sides' && game.setup.board}
+    <Sides />
   {:else if nav.stage === 'summary' && game.setup.board}
     <Summary />
   {:else if nav.stage === 'paint' && game.setup.board}

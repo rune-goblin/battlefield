@@ -14,6 +14,8 @@ import {
 export interface BattleRequestUnit {
   card: UnitCard;
   side: Side;
+  /** The campaign's name for whoever leads this unit, shown to the GM confirming the sides. */
+  faction?: string;
   /** Engines riding with this unit, by the name they carry in `ENGINES`. */
   equipment?: string[];
   /** Absent for a unit with no campaign record behind it. */
@@ -125,6 +127,7 @@ function unitProblems(entry: unknown, index: number): string[] {
   if (!u || typeof u !== 'object') return [`${at} is not a unit`];
   const out = [...cardProblems(u.card, at), ...sourceProblems(u.source, at)];
   if (!SIDES.includes(u.side)) out.push(`${at} is on no side`);
+  if (u.faction !== undefined && !named(u.faction)) out.push(`${at} has a malformed faction name`);
   const equipment = u.equipment ?? [];
   if (!Array.isArray(equipment)) out.push(`${at} has a malformed equipment list`);
   else for (const name of equipment) {
@@ -174,6 +177,7 @@ export function sessionFromRequest(request: BattleRequest, battleId = newBattleI
       side: entry.side,
       square: null,
       engines: (entry.equipment ?? []).map((name) => ({ id: newEquipmentId(), name })),
+      ...(entry.faction === undefined ? {} : { faction: entry.faction }),
     });
     if (entry.source) sources.push({ unitId: id, ...structuredClone(entry.source) });
   }

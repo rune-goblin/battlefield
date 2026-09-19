@@ -37,6 +37,8 @@ const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'se
   'setup.paint': 'push',
   'army.addUnit': 'keep',
   'army.removeUnit': 'keep',
+  'army.setSide': 'keep',
+  'army.swapSides': 'keep',
   'army.addEmplacement': 'keep',
   'army.removeEmplacement': 'keep',
   'army.setHauling': 'keep',
@@ -99,6 +101,8 @@ function applyCommand(
     case 'setup.paint': return manager.paint(session, command.stroke);
     case 'army.addUnit': return army.addUnit(session, command.side, command.card);
     case 'army.removeUnit': return army.removeUnit(session, command.unitId);
+    case 'army.setSide': return army.setSide(session, command.unitId, command.side);
+    case 'army.swapSides': return army.swapSides(session);
     case 'army.addEmplacement': return army.addEmplacement(session, command.side, command.engine);
     case 'army.removeEmplacement': return army.removeEmplacement(session, command.emplacementId);
     case 'army.setHauling': return army.setHauling(session, command.emplacementId, command.hauling);

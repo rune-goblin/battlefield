@@ -16,7 +16,12 @@ const LIFECYCLE_STAGES: LifecycleStage[] = ['setup', 'deployment', 'battle', 'af
 
 /** An engine riding with a unit, named by the library card it came from. */
 export interface SetupEquipment { id: string; name: string }
-export interface SetupUnit { id: string; card: UnitCard; side: Side; square: string | null; engines: SetupEquipment[] }
+export interface SetupUnit {
+  id: string; card: UnitCard; side: Side; square: string | null; engines: SetupEquipment[];
+  /** Whose banner an imported unit marched under, as the campaign names it. A label for the GM
+   * sorting armies into sides; no rule reads it. */
+  faction?: string;
+}
 /** An engine deployed on a square of its own. `engines` on a SetupUnit is the attached kind,
  * which only a campaign import fills. `hauled` holds while a friendly unit shares the square. */
 export interface SetupEngine { id: string; name: string; side: Side; square: string | null; hauled?: boolean }

@@ -2,6 +2,7 @@ import type { BoardSpec, DayOrder, RecoveryChoice, Side, UnitCard } from '../eng
 import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
+import type { StoreClient } from './client.js';
 import { createPresentation } from './presentation.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
@@ -9,14 +10,26 @@ import type { HistorySnapshot } from '../runtime/executeCommand.js';
 import { submissionOf } from '../runtime/interactions.js';
 import type { ControlAssignment } from '../runtime/control.js';
 import type { ArchiveEntry, TableUser } from '../runtime/ports.js';
-import type { BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
+import type { BattleSession, BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 
 export type Setup = BattleSetupDraft;
 export type { SetupEngine, SetupUnit };
 export type { ArchiveEntry };
 
-const archive = createLocalArchive();
-const runtime = createRuntime({ repository: createLocalRepository(), archive, session: loadSessionSync() });
+const localArchive = createLocalArchive();
+// proto: the browser's runtime is built on every host, and a Foundry client replaces it through
+// `bindClient` before its window opens.
+const local = createRuntime({ repository: createLocalRepository(), archive: localArchive, session: loadSessionSync() });
+let runtime = $state.raw<StoreClient>({
+  get session() { return local.session; },
+  get history() { return local.history; },
+  userId: local.userId,
+  gmUserId: () => local.gmUserId(),
+  tableUsers: () => local.tableUsers(),
+  submit: (command) => local.submit(command),
+  subscribe: (listener) => local.subscribe(listener),
+  archive: localArchive,
+});
 
 /** What every view reads. The committed record lands here and nothing else writes it; a view
  * that wants a change submits a command and waits for the record that comes back. */
@@ -25,6 +38,7 @@ export const game = $state({
   // own record. Every command's result lands here through `adoptSetup`.
   setup: structuredClone(runtime.session.setup),
   battle: runtime.session.battle,
+  battleId: runtime.session.battleId,
   history: [] as HistorySnapshot[],
   /** The shared decisions this stage is waiting on. A panel reads its side's submission here
    * rather than holding one of its own. */
@@ -54,19 +68,40 @@ function adoptSetup(committed: BattleSetupDraft): void {
  * board before the tokens are. */
 export const presentation = createPresentation(runtime.session);
 
-runtime.subscribe((session) => {
-  presentation.observe(session);
+const recordListeners = new Set<() => void>();
+/** Called after the store adopts a record, whoever's command made it. */
+export const onRecord = (listener: () => void): void => { recordListeners.add(listener); };
+
+function adopt(session: BattleSession): void {
   game.battle = session.battle;
+  game.battleId = session.battleId;
   game.history = [...runtime.history];
   game.interactions = session.interactions;
   game.turn = session.turn;
   game.control = session.control;
   adoptSetup(session.setup);
+  for (const listener of [...recordListeners]) listener();
+}
+
+const follow = (client: StoreClient) => client.subscribe((session) => {
+  presentation.observe(session);
+  adopt(session);
 });
+let unfollow = follow(runtime);
+
+/** Hand the store to another client. The host adapter calls this once, before its window
+ * mounts; the record the new client holds replaces the local one outright. */
+export function bindClient(client: StoreClient): void {
+  unfollow();
+  runtime = client;
+  presentation.reset(client.session);
+  adopt(client.session);
+  unfollow = follow(client);
+}
 
 /** Who this client plays as, and who answers for the table. The panels read their own part in
  * the record from these. */
-export const viewerId = runtime.userId;
+export const viewerId = (): string => runtime.userId;
 export const gmUserId = () => runtime.gmUserId();
 
 // A user who connects or drops changes no seat, so no record arrives to say so.
@@ -96,6 +131,8 @@ const plain = (piece: PieceRef): PieceRef => ({ kind: piece.kind, id: piece.id }
 
 export const addUnit = (side: Side, card: UnitCard) =>
   submit({ type: 'army.addUnit', side, card: $state.snapshot(card) as UnitCard });
+export const setUnitSide = (unitId: string, side: Side) => submit({ type: 'army.setSide', unitId, side });
+export const swapSides = () => submit({ type: 'army.swapSides' });
 export const removeUnit = (unitId: string) => submit({ type: 'army.removeUnit', unitId });
 export const addEmplacement = (side: Side, engine: string) => submit({ type: 'army.addEmplacement', side, engine });
 export const removeEmplacement = (emplacementId: string) => submit({ type: 'army.removeEmplacement', emplacementId });
@@ -177,14 +214,14 @@ export const declareDeployment = (side: Side, positions: Record<string, string>)
 
 export const startNextDay = () => submit({ type: 'continuation.startNextDay' });
 
-export const listSaves = (): Promise<ArchiveEntry[]> => archive.list();
+export const listSaves = (): Promise<ArchiveEntry[]> => runtime.archive.list();
 // Reads the record straight from the executor: `game.setup` is the panel's own copy, and a
 // battle in progress has no local shadow at all.
-export const saveBattle = (name: string): Promise<ArchiveEntry> => archive.save(name, runtime.session);
+export const saveBattle = (name: string): Promise<ArchiveEntry> => runtime.archive.save(name, runtime.session);
 export const loadBattle = (slot: string) => submit({ type: 'session.load', slot });
-export const removeSave = (slot: string): Promise<void> => archive.remove(slot);
-export const exportSave = (slot: string): Promise<string> => archive.export(slot);
-export const importSave = (data: string): Promise<ArchiveEntry> => archive.import(data);
+export const removeSave = (slot: string): Promise<void> => runtime.archive.remove(slot);
+export const exportSave = (slot: string): Promise<string> => runtime.archive.export(slot);
+export const importSave = (data: string): Promise<ArchiveEntry> => runtime.archive.import(data);
 
 // Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
 if (import.meta.hot) import.meta.hot.accept(() => import.meta.hot!.invalidate());

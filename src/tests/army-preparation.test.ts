@@ -36,6 +36,41 @@ function runtimeOn(session = setupSession()) {
 }
 
 describe('army preparation', () => {
+  it('moves one unit to the other army, keeping its ID and lifting it off the board', async () => {
+    const runtime = runtimeOn();
+
+    const result = await runtime.submit({ type: 'army.setSide', unitId: 'unit-1', side: 'defender' });
+
+    expect(result.ok).toBe(true);
+    expect(runtime.session.setup.units).toEqual([
+      expect.objectContaining({ id: 'unit-1', side: 'defender', square: null }),
+    ]);
+  });
+
+  it('trades the two armies whole, emplacements included', async () => {
+    const session = setupSession();
+    session.setup.units.push({ id: 'unit-2', card: scouts, side: 'defender', square: 'c9', engines: [] });
+    session.setup.emplacements.push({ id: 'eq-1', name: ENGINES[0].name, side: 'defender', square: 'd9' });
+    const runtime = runtimeOn(session);
+
+    await runtime.submit({ type: 'army.swapSides' });
+
+    const { units, emplacements } = runtime.session.setup;
+    expect(units.map((u) => [u.id, u.side, u.square])).toEqual([['unit-1', 'defender', null], ['unit-2', 'attacker', null]]);
+    expect(emplacements.map((e) => [e.id, e.side, e.square])).toEqual([['eq-1', 'attacker', null]]);
+  });
+
+  it('refuses a side change from anyone but the GM', async () => {
+    const runtime = runtimeOn();
+
+    const result = await runtime.execute({
+      battleId: runtime.session.battleId, commandId: 'cmd-side', expectedRevision: runtime.session.revision,
+      userId: 'a-player', command: { type: 'army.swapSides' },
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: 'permission' });
+  });
+
   it('adds and removes pieces without disturbing the IDs beside them', async () => {
     const runtime = runtimeOn();
 

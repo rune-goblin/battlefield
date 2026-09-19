@@ -262,7 +262,7 @@ describe('the campaign seam', () => {
     const api = createModuleApi({
       submit: () => (command) => runtime.submit(command),
       open: async () => { opened += 1; },
-      close: async () => {},
+      close: async () => {}, callTable: async () => {}, dismissTable: async () => {},
     });
 
     await api.open();
@@ -274,7 +274,7 @@ describe('the campaign seam', () => {
   });
 
   it('refuses createBattle before the host is built', async () => {
-    const api = createModuleApi({ submit: () => null, open: async () => {}, close: async () => {} });
+    const api = createModuleApi({ submit: () => null, open: async () => {}, close: async () => {}, callTable: async () => {}, dismissTable: async () => {} });
 
     expect(await api.createBattle(request())).toMatchObject({ ok: false, reason: 'battle' });
   });

@@ -4,6 +4,7 @@ import { MODULE_ID } from './module-id.js';
  * archive are the module's own data, not a player-facing preference. */
 export const SESSION_SETTING = 'session';
 export const ARCHIVE_SETTING = 'archive';
+export const TABLE_CALL_SETTING = 'tableCall';
 
 /** One world setting, read and written as a JSON string. Naming the shape keeps the
  * repository and the archive testable against a fake, the way the browser adapters test
@@ -26,12 +27,18 @@ export function gameSettingStorage(key: string): WorldSettingStorage {
  * updated document, the writer included, which is what lets `reconcile` be the one path every
  * client — authority or not — adopts a delivered record through.
  */
-export function registerFoundrySettings(onSessionChange: (raw: string) => void): void {
+export function registerFoundrySettings(
+  onSessionChange: (raw: string) => void, onTableCall: (raw: string) => void,
+): void {
   game.settings.register(MODULE_ID, SESSION_SETTING, {
     scope: 'world', config: false, type: String, default: '',
     onChange: (value) => onSessionChange(value),
   });
   game.settings.register(MODULE_ID, ARCHIVE_SETTING, {
     scope: 'world', config: false, type: String, default: '[]',
+  });
+  game.settings.register(MODULE_ID, TABLE_CALL_SETTING, {
+    scope: 'world', config: false, type: String, default: '',
+    onChange: (value) => onTableCall(value),
   });
 }

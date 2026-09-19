@@ -4,8 +4,17 @@ import { MODULE_ID } from './module-id.js';
 
 const ApplicationV2 = foundry.applications.api.ApplicationV2;
 
+/** What the window's header offers the GM, and who hears that the window opened or shut. */
+export interface WindowTable {
+  readonly called: boolean;
+  call(): Promise<void>;
+  dismiss(): Promise<void>;
+  sync(): void;
+}
+
 export class BattlefieldApp extends ApplicationV2 {
   static #instance: BattlefieldApp | null = null;
+  static table: WindowTable | null = null;
 
   static get current(): BattlefieldApp | null {
     return BattlefieldApp.#instance?.rendered ? BattlefieldApp.#instance : null;
@@ -27,6 +36,7 @@ export class BattlefieldApp extends ApplicationV2 {
     const app = new BattlefieldApp();
     BattlefieldApp.#instance = app;
     await app.render({ force: true, focus: true });
+    BattlefieldApp.table?.sync();
     return app;
   }
 
@@ -43,6 +53,20 @@ export class BattlefieldApp extends ApplicationV2 {
       resizable: true,
       minimizable: true,
       contentClasses: ['battlefield-content'],
+      controls: [
+        {
+          action: 'callTable', icon: 'fa-solid fa-bullhorn', label: 'Call the players',
+          visible: () => game.user?.isGM === true && BattlefieldApp.table?.called === false,
+        },
+        {
+          action: 'dismissTable', icon: 'fa-solid fa-door-closed', label: 'Dismiss the players',
+          visible: () => game.user?.isGM === true && BattlefieldApp.table?.called === true,
+        },
+      ],
+    },
+    actions: {
+      callTable: () => { void BattlefieldApp.table?.call(); },
+      dismissTable: () => { void BattlefieldApp.table?.dismiss(); },
     },
     position: { width: 1280, height: 800 },
   };
@@ -71,5 +95,9 @@ export class BattlefieldApp extends ApplicationV2 {
     this.#svelte = null;
     this.#root = null;
     if (BattlefieldApp.#instance === this) BattlefieldApp.#instance = null;
+  }
+
+  _onClose(): void {
+    BattlefieldApp.table?.sync();
   }
 }

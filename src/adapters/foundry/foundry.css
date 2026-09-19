@@ -10,3 +10,12 @@
 }
 
 .battlefield-mount { display: contents; }
+
+.battlefield-chip {
+  position: fixed; left: 50%; bottom: 5.5rem; transform: translateX(-50%); z-index: 90;
+  width: auto; display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .8rem;
+  border: 1px solid var(--color-border-highlight, #c9a227); border-radius: 999px;
+  background: rgba(20, 18, 16, .92); color: #f0e6d2; font-size: .9rem; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+}
+.battlefield-chip:hover { background: rgba(48, 40, 28, .96); }

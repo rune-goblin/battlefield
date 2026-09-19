@@ -6,6 +6,10 @@ export interface BattlefieldModuleApi {
   /** Raise the battle window, or bring the open one forward. */
   open(): Promise<void>;
   close(): Promise<void>;
+  /** The GM opens the battle window on every player's client, for a macro to call. Each
+   * player keeps a floating panel to reopen it until `dismissTable`. */
+  callTable(): Promise<void>;
+  dismissTable(): Promise<void>;
   /**
    * Start a battle from a campaign's own data: unit cards, sides, source bindings, equipment,
    * and a board spec. Answers with the battle ID the campaign record stores, so the outcome can
@@ -19,12 +23,16 @@ export interface ModuleApiOptions {
   submit: () => ((command: BattleCommand) => Promise<CommandResult>) | null;
   open: () => Promise<unknown>;
   close: () => Promise<unknown>;
+  callTable: () => Promise<void>;
+  dismissTable: () => Promise<void>;
 }
 
-export function createModuleApi({ submit, open, close }: ModuleApiOptions): BattlefieldModuleApi {
+export function createModuleApi({ submit, open, close, callTable, dismissTable }: ModuleApiOptions): BattlefieldModuleApi {
   return {
     open: async () => { await open(); },
     close: async () => { await close(); },
+    callTable,
+    dismissTable,
 
     createBattle(request) {
       const send = submit();

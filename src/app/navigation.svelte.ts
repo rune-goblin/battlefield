@@ -1,11 +1,11 @@
 import { SIDES, type Side } from '../engine/index.js';
 import type { CommandResult } from '../runtime/commands.js';
-import { declaredReady, declareReady, endBattle, game, loadBattle, resetSetup, sideReady, startBattle } from './game.svelte.js';
+import { declaredReady, declareReady, endBattle, game, loadBattle, onRecord, resetSetup, sideReady, startBattle } from './game.svelte.js';
 import { viewer } from './viewer.svelte.js';
 
 /** Which panel is open. The record keeps the lifecycle stage; which setup tab a client looks
  * at is local to that client and never reaches the executor. */
-export type Stage = 'board' | 'paint' | 'siege' | 'attackers' | 'defenders' | 'summary' | 'battle';
+export type Stage = 'board' | 'paint' | 'siege' | 'sides' | 'attackers' | 'defenders' | 'summary' | 'battle';
 export type SetupStage = Exclude<Stage, 'battle'>;
 
 /** The wizard's steps, in order. The rail, the router, and Next/Back all read this one table. */
@@ -13,6 +13,9 @@ export const STEPS: { id: SetupStage; label: string; hint: string }[] = [
   { id: 'board', label: 'Battlefield', hint: 'Ground, size, and walls' },
   { id: 'paint', label: 'Paint the map', hint: 'Terrain, heights, and gates' },
   { id: 'siege', label: 'Siege engines', hint: 'Emplaced engines for both armies' },
+  // proto: shown for every battle. A hand-built one has little to confirm; reserved for review
+  // once imported battles are in play.
+  { id: 'sides', label: 'Sides', hint: 'Confirm who attacks and who defends' },
   { id: 'attackers', label: 'Attacking army', hint: 'Choose and deploy' },
   { id: 'defenders', label: 'Defending army', hint: 'Choose and deploy' },
   { id: 'summary', label: 'Review and begin', hint: 'Check both armies and the field' },
@@ -44,6 +47,21 @@ function enter(stage: Stage, restart = false) {
   if (restart) nav.visited = stepsThrough(stage);
   else if (!nav.visited.includes(stage)) nav.visited.push(stage);
 }
+
+/** An imported battle arrives with its armies sorted by a guess, which the GM confirms first. */
+const awaitsSides = (): boolean => !!game.setup.board
+  && game.setup.units.some((u) => u.faction !== undefined) && game.setup.units.every((u) => u.square === null);
+
+// Another client's command, or another module's, can replace the battle or start and end it,
+// and no local call moves this tab then.
+let followed = game.battleId;
+onRecord(() => {
+  const replaced = game.battleId !== followed;
+  followed = game.battleId;
+  if (game.battle) { if (nav.stage !== 'battle') enter('battle'); }
+  else if (replaced) enter(awaitsSides() ? 'sides' : openingStage(), true);
+  else if (nav.stage === 'battle') enter(openingStage(), true);
+});
 
 export function next() {
   const i = STAGES.indexOf(nav.stage);

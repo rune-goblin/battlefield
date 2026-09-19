@@ -24,6 +24,8 @@ export const COMMAND_SCOPE: Record<CommandType, CommandScope> = {
   'setup.paint': 'gm',
   'army.addUnit': 'side',
   'army.removeUnit': 'side',
+  'army.setSide': 'gm',
+  'army.swapSides': 'gm',
   'army.addEmplacement': 'side',
   'army.removeEmplacement': 'side',
   'army.setHauling': 'side',

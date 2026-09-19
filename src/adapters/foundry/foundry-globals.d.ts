@@ -45,7 +45,7 @@ interface FoundryRoll {
 /** The host's own toast rail, outside the app's window. The module raises one of these: the
  * turn notice for a player whose window is away. */
 declare const ui: {
-  notifications: { info(message: string): void };
+  notifications: { info(message: string): void; warn(message: string): void };
 };
 
 declare const Hooks: {
@@ -54,6 +54,8 @@ declare const Hooks: {
   /** Fired on every client when a user connects or disconnects, which is when `activeGM` can
    * move from one client to another. */
   on(hook: 'userConnected', handler: () => void): number;
+  /** ReignMaker's own: fired once its module API is complete, late in its async `ready`. */
+  on(hook: 'pf2e-reignmaker.apiReady', handler: (api: unknown) => void): number;
   /** The world's roster changing, which is what `auto` seating is built from. */
   on(hook: 'createUser' | 'updateUser' | 'deleteUser', handler: () => void): number;
 };

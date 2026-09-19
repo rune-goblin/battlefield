@@ -177,6 +177,8 @@ export function commitPlay(previous: BattleSession | null, next: BattleSession):
 export interface Presentation {
   /** Called with every adopted record, committed or delivered. */
   observe(session: BattleSession): void;
+  /** Start over from a record that does not follow the last one: another client's. */
+  reset(session: BattleSession): void;
   /** The board view takes the play while it is on screen. */
   connect(sink: PresentationSink): () => void;
   /** The notification host takes the session notices while the app is mounted. */
@@ -206,6 +208,10 @@ export function createPresentation(seed: BattleSession): Presentation {
       for (const burst of play.bursts) sink.burst(burst.cell, burst.tree, burst.from);
       if (play.markers.length || play.arrows.length) sink.resolved(play.markers, play.arrows);
       for (const popup of play.popups) sink.popup(popup);
+    },
+    reset(session) {
+      last = session;
+      if (notices) deliver(notices, session);
     },
     connect(next) {
       sink = next;

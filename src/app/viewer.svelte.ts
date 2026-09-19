@@ -10,11 +10,11 @@ import { game, gmUserId, tableUsers, viewerId } from './game.svelte.js';
  * again when the command arrives.
  */
 export const viewer = {
-  userId: viewerId,
+  get userId(): string { return viewerId(); },
 
   /** The GM may issue any command for either side, which is how a player who drops
    * mid-activation is played out. */
-  get isGm(): boolean { return gmUserId() === viewerId; },
+  get isGm(): boolean { return gmUserId() === viewerId(); },
 
   /** Whose activation is open, as every client shows it. */
   get holder(): string | null { return game.turn; },
@@ -25,13 +25,13 @@ export const viewer = {
     return game.turn === null ? null : tableUsers().find((u) => u.id === game.turn)?.name ?? game.turn;
   },
 
-  get isHolder(): boolean { return game.turn !== null && game.turn === viewerId; },
+  get isHolder(): boolean { return game.turn !== null && game.turn === viewerId(); },
 
   /** Whether this client's tactical controls are live. With no primary GM at the table there
    * is nobody to execute a command, so every client reads and none of them acts. */
   get mayAct(): boolean { return authority.mayCommand && (viewer.isHolder || viewer.isGm); },
 
-  seatedOn: (side: Side): boolean => seatedOn(game.control, side, viewerId),
+  seatedOn: (side: Side): boolean => seatedOn(game.control, side, viewerId()),
 
   /** A decision one army makes: readiness, recovery, surrender, next-day deployment. Any user
    * seated on that side may answer, and the last word before the side confirms stands. */

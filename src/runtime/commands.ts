@@ -34,6 +34,9 @@ export type BattleCommand =
   | { type: 'setup.paint'; stroke: PaintStroke }
   | { type: 'army.addUnit'; side: Side; card: UnitCard }
   | { type: 'army.removeUnit'; unitId: string }
+  /** The GM moves one unit to the other army, or trades the two armies whole. */
+  | { type: 'army.setSide'; unitId: string; side: Side }
+  | { type: 'army.swapSides' }
   | { type: 'army.addEmplacement'; side: Side; engine: string }
   | { type: 'army.removeEmplacement'; emplacementId: string }
   /** The unit standing on the emplacement starts the battle hauling it, or only works it. */
@@ -98,6 +101,8 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'setup.paint': 'setup',
   'army.addUnit': 'setup',
   'army.removeUnit': 'setup',
+  'army.setSide': 'setup',
+  'army.swapSides': 'setup',
   'army.addEmplacement': 'setup',
   'army.removeEmplacement': 'setup',
   'army.setHauling': 'setup',
