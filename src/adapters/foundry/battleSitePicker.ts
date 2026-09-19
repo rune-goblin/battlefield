@@ -32,12 +32,18 @@ async function pickBattle(reignmaker: ReignMakerMapApi, battlefield: Battlefield
   if (typeof hexId !== 'string') return;
   const site = reignmaker.getBattleSite(hexId);
   if (!site.armies.length) {
-    ui.notifications.warn(`No army stands in hex ${hexId}.`);
+    // proto: the builder opens on whatever draft the table holds; the hex's ground is not
+    // carried over, since a battle request with no units is refused. Reserved for review.
+    ui.notifications.info(`No army stands in hex ${hexId}. Choose the armies in the builder.`);
+    await battlefield.open();
     return;
   }
   const { request, skipped } = requestFromSite(site, readArmy, Math.floor(Math.random() * 1e9));
   if (skipped.length) ui.notifications.warn(`No troop actor could be read for ${skipped.join(', ')}.`);
-  if (!request.units.length) return;
+  if (!request.units.length) {
+    await battlefield.open();
+    return;
+  }
   const result = await battlefield.createBattle(request);
   if (!result.ok) {
     ui.notifications.warn(`The battle could not be set up: ${result.message}`);
