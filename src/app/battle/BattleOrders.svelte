@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { ACTIONS_PER_ACTIVATION, engagedEnemies, isRouted, levelDc, ROUTED_AT, notation, shootCeiling, shootRangeLabel, reachOf } from '../../engine/index.js';
+  import { ACTIONS_PER_ACTIVATION, engagedEnemies, gateReason, isRouted, levelDc, ROUTED_AT, notation, shootCeiling, shootRangeLabel, reachOf } from '../../engine/index.js';
   import { actionIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
+  import GateStatus from '../GateStatus.svelte';
   import { turnNote } from '../viewer.svelte.js';
   import type { BattleController } from './battle-controller.svelte.js';
 
   let { c }: { c: BattleController } = $props();
+  const interiorGates = $derived(c.nearbyGates.filter(([, wall]) => c.active && wall.inside === notation(c.active.square)));
 </script>
 
 {#if c.active && c.act}
@@ -22,12 +24,21 @@
     <ActionCost n={3} />. Commit extra actions for +2 each on supported activities. One attack an activation.
   </p>
 
-  {#if c.siegeEquipment.length || c.nearbyGates.length}
-    <div class="row" aria-label="Equipment and gates">
+  {#if c.siegeEquipment.length || interiorGates.length}
+    <div class="equipment-controls" aria-label="Equipment and gates">
       {#each c.siegeEquipment as engine (engine.id)}
         <button onclick={() => c.openSiege(engine.id)}>Operate {engine.name}</button>
       {/each}
-      {#if c.nearbyGates.length}<button onclick={() => { c.cancelAction(); c.gateOpen = true; }}>Gates</button>{/if}
+      {#each interiorGates as [key, wall] (key)}
+        {@const reason = gateReason(c.b, c.active, key)}
+        <button class="gate-control" disabled={!c.myTurn || c.gateBusy || !!reason}
+          title={reason ?? `Gate ${key.replace('|', ' / ')} is ${wall.gate!.open ? 'open' : 'closed'}. Costs one action.`}
+          onclick={() => { c.cancelAction(); void c.operateGate(key); }}>
+          <GateStatus open={wall.gate!.open} />
+          <span>{wall.gate!.open ? 'Close' : 'Open'} gate{#if interiorGates.length > 1}<small>{key.replace('|', ' / ')}</small>{/if}</span>
+          <ActionCost n={1} />
+        </button>
+      {/each}
     </div>
   {/if}
   <table class="stats"><tbody>
@@ -115,6 +126,10 @@
 {/if}
 
 <style>
+  .equipment-controls { display: flex; flex-direction: column; gap: .35rem; margin: .3rem 0 .6rem; }
+  .gate-control { display: flex; align-items: center; gap: .6rem; text-align: left; }
+  .gate-control > span { flex: 1; }
+  .gate-control small { display: block; color: var(--muted); }
   .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
   .orders-head { display: flex; align-items: baseline; gap: .5rem; }
   .orders-head h3 { margin: 0; }

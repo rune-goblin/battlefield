@@ -107,10 +107,14 @@ export function createBattleController(deps: BattleDeps) {
   const offers = $derived(act?.offers ?? []);
   const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
   let gateOpen = $state(false);
+  let gateBusy = $state(false);
   const nearbyGates = $derived(active ? Object.entries(b.board.walls).filter(([key, w]) => w.gate && w.remaining > 0 && key.split('|').includes(notation(active.square))) : []);
   async function operateGate(edge: string) {
-    if (!active || !requireTurn()) return;
-    await run(deps.takeAction({ type: 'gate', unit: active.id, edge, open: !b.board.walls[edge].gate!.open }));
+    if (!active || gateBusy || !requireTurn()) return;
+    gateBusy = true;
+    try {
+      await run(deps.takeAction({ type: 'gate', unit: active.id, edge, open: !b.board.walls[edge].gate!.open }));
+    } finally { gateBusy = false; }
   }
   let siegeOpen = $state(false);
   let siegeSelected = $state<string | null>(null);
@@ -496,6 +500,7 @@ export function createBattleController(deps: BattleDeps) {
     get meleeSelected() { return dragging.meleeSelected; },
     get roster() { return roster; },
     get gateOpen() { return gateOpen; },
+    get gateBusy() { return gateBusy; },
     set gateOpen(next) { gateOpen = next; },
     get nearbyGates() { return nearbyGates; },
     get operateGate() { return operateGate; },

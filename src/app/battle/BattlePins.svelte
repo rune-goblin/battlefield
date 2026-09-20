@@ -75,7 +75,7 @@
     <p class="muted">Operate from the interior hex while free of enemy contact. Either army can use the mechanism.</p>
     {#each c.nearbyGates as [key, wall] (key)}
       {@const reason = gateReason(c.b, c.active, key)}
-      <button class="popup-row" disabled={!!reason} title={reason ?? 'Operate gate'} onclick={() => c.operateGate(key)}>
+      <button class="popup-row" disabled={!c.myTurn || c.gateBusy || !!reason} title={reason ?? 'Operate gate'} onclick={() => c.operateGate(key)}>
         <span class="popup-verb">{wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
         <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wall.inside}{reason ? ` · ${reason}` : ''}</span>
       </button>
