@@ -380,7 +380,7 @@ describe('Offense', () => {
     const landed = endActivation(passed, scriptedRng([1]), 'u2');
     expect(unit(landed, 'u2').wounds).toBe(2);
     expect(unit(landed, 'u2').persistent).toBeNull();
-    expect(said(landed, 'Fortitude save against the persistent wound')).toBe(true);
+    expect(said(landed, 'Fortitude save against Morale loss from persistent damage')).toBe(true);
   });
 
   const casterAnd = (caster: UnitCard) => createBattle({
@@ -483,8 +483,8 @@ describe('Defense', () => {
     target.persistent = { dc: 22 };
     const s = burn(burn(state, 'u0'), 'u2');
     expect(unit(s, 'u2').wounds).toBe(1);
-    expect(said(s, 'persistent wound')).toBe(false);
-    expect(said(s, 'stoneskin costs it no disorder')).toBe(true);
+    expect(said(s, 'Fortitude save against Morale loss from persistent damage')).toBe(false);
+    expect(said(s, 'stoneskin prevents Morale loss')).toBe(true);
     expect(unit(s, 'u2').disorder).toBe(0);
     expect(unit(s, 'u2').stoneskin).toBe(false);
   });
@@ -712,7 +712,7 @@ describe('movement points', () => {
     const { state } = battle([], board);
     place(state, 'u2', 'c4');
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 10]));
-    const save = s.log.find((e) => e.text.includes('Fortitude save against the wound'))!.check!;
+    const save = s.log.find((e) => e.text.includes('Fortitude save against Morale loss'))!.check!;
     expect(save.modifier).toBe(unit(s, 'u2').stats.fortitude - 2);
   });
 

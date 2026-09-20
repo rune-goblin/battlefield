@@ -1,6 +1,6 @@
 # Battlefield
 
-A fast abstract battle game for armies. A hexagon of sixty-one hexes, three actions, four wounds. Play it hot-seat in a browser, or on paper with a d20.
+A fast abstract battle game for armies. A hexagon of sixty-one hexes, three actions, four Health, three Morale. Play it hot-seat in a browser, or on paper with a d20.
 
 - **Play:** `npm install && npm run dev`
 - **Rules:** [`public/rules.html`](public/rules.html), served at `/rules.html` in the app — the single source of truth, design notes and sources included
@@ -28,7 +28,7 @@ until its folder contains art.
 
 ## The game in one paragraph
 
-Each army is a unit on a hexagon of sixty-one hexes. The sides alternate, and an activation is three actions with one attack. Activities cost one, two or three actions; extra commitment buys +2 per action, up to +4, on attacks and recovery rolls or a Controlling spell's DC. Players trade accuracy against special effects, spell coverage, movement and defence. Press forces the target to roll its wound save twice and keep the worse. Four wounds destroy a unit; three disorder empty its morale bar and rout it. At one or two disorder it retains its ordinary activities, with −1 to rolls and Defence per point. Rally and Healing restore order. The battle ends when one side has nothing standing. Dusk falls after six rounds (or eight in setup): review the report, resolve overnight Rally and Treat Wounded together, then choose whether to withdraw or hold. If both sides hold, choose the same battlefield or a new map and redeploy the survivors for another day. Each extra recovery participant gives every check on its side −2, in addition to current morale loss. Campaign Demoralized and battlefield disorder share one track.
+Each army is a unit on a hexagon of sixty-one hexes. The sides alternate, and an activation is three actions with one attack. Activities cost one, two or three actions; extra commitment buys +2 per action, up to +4, on attacks and recovery rolls or a Controlling spell's DC. Players trade accuracy against special effects, spell coverage, movement and defence. Press forces the target to roll its Fortitude save against Morale loss twice and keep the worse. Every unit starts with 4 Health and 3 Morale. Damage reduces Health; 0 Health destroys the unit. At 0 Morale it routs. Each missing point of Morale imposes −1 to rolls and Defence. A unit with at least 1 Morale retains its ordinary activities. Rally restores Morale; Healing restores Health and Morale. The battle ends when one side has nothing standing. Dusk falls after six rounds (or eight in setup): review the report, resolve overnight Rally and Treat Wounded together, then choose whether to withdraw or hold. If both sides hold, choose the same battlefield or a new map and redeploy the survivors for another day. Each extra recovery participant gives every check on its side −2, in addition to current morale loss. Campaign Demoralized equals missing Morale.
 
 ## Layout
 

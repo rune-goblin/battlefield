@@ -120,7 +120,7 @@
   }] : []) : []);
   function preview(u: Unit, activity: RecoveryActivity) {
     const save = activity === 'rally' ? u.stats.will : u.stats.fortitude;
-    return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
+    return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} missing Morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
   }
   $effect(() => { if (resolved) positions = suggestDeployment(field); });
   function go(next: Step) { step = next; notifications.dismiss(COMMAND_NOTICE); content?.scrollTo({ top: 0 }); }
@@ -238,7 +238,7 @@
             <PixiBoard board={field.board} tokens={previewTokens} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
           </div>
         {:else}
-          <p class="intro">{continuing ? (stage === 'orders' ? 'Recovery is complete. Choose an end-of-day decision for each army.' : 'Review the survivors, then recover before choosing your next move.') : b.endedBy === 'surrender' ? 'The opponent accepted the surrender. Agree campaign terms together; surviving troops keep their wounds and morale.' : b.endedBy === 'withdrawal' ? 'Withdrawal is complete. Surviving troops keep their wounds and morale.' : 'The battle is over. Review the final army report.'}</p>
+          <p class="intro">{continuing ? (stage === 'orders' ? 'Recovery is complete. Choose an end-of-day decision for each army.' : 'Review the survivors, then recover before choosing your next move.') : b.endedBy === 'surrender' ? 'The opponent accepted the surrender. Agree campaign terms together; surviving troops keep their Health and Morale.' : b.endedBy === 'withdrawal' ? 'Withdrawal is complete. Surviving troops keep their Health and Morale.' : 'The battle is over. Review the final army report.'}</p>
         {/if}
         <div class="armies">
           {#each SIDES as side (side)}

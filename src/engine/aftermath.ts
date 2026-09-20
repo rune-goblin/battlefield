@@ -71,7 +71,7 @@ export function answerSurrender(input: BattleState, responder: Side, accept: boo
     state.endedBy = 'surrender';
     state.winner = responder;
     state.nextBoard = null;
-    state.log.push({ round: state.round, text: `The ${responder} accepts the ${proposer}'s surrender. The players agree the terms; surviving units retain their wounds and morale.` });
+    state.log.push({ round: state.round, text: `The ${responder} accepts the ${proposer}'s surrender. The players agree the terms; surviving units retain their Health and Morale.` });
   } else {
     delete state.dayOrders!.choices[proposer];
     state.dayOrders!.confirmed = false;

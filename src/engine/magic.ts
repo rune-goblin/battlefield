@@ -56,28 +56,28 @@ export interface CastActivity { id: string; label: string; verb: string; detail:
 
 const ACTIVITIES: Record<Tree, [string, string][]> = {
   blast: [
-    ['Missile', "A spell attack against one enemy's Defence: a hit is 1 wound, a critical 2, then the Fortitude save, as any hit."],
+    ['Missile', "A spell attack against one enemy's Defence: a hit deals 1 damage, a critical 2, then the Fortitude save, as any hit."],
     ['Line', 'Two hexes on one straight line out from your own. The one roll is read against the enemy in each.'],
     ['Burst', 'A corner within range and the three hexes that meet at it. The one roll is read against the enemy in each.'],
   ],
   healing: [
-    ['Soothe', 'One unit, yourself or an adjacent ally: a success clears 1 disorder and 1 wound.'],
+    ['Soothe', 'One unit, yourself or an adjacent ally: a success restores 1 Health and 1 Morale.'],
     ['Heal', 'Two units, each yourself or an adjacent ally.'],
     ['Restore', 'Three units, each yourself or an adjacent ally.'],
   ],
   controlling: [
-    ['Dread', 'The target rolls Will against your spell DC; a failure costs it 1 disorder, a success frightens it.'],
+    ['Dread', 'The target rolls Will against your spell DC; a failure costs it 1 Morale, a success frightens it.'],
     ['Stun', 'Dread, and one action fewer on its next activation.'],
     ['Hold', 'Stun, and it is rooted on its next activation: no Move, Charge or Maneuver.'],
   ],
   offense: [
     ['Sure strike', 'The ally rolls its next attack twice and takes the better.'],
-    ['Wrath', "The ally's next hit leaves persistent damage: 1 more wound at the end of the target's next activation."],
+    ['Wrath', "The ally's next hit leaves persistent damage: 1 damage at the end of the target's next activation."],
     ['Haste', "An additional action on each of the target's next two activations; on yourself, the first comes at once."],
   ],
   defense: [
     ['Ward', 'The next attack against the ally, until it has next acted, is rolled twice and the attacker takes the worse.'],
-    ['Stoneskin', 'Every hit against the ally, until it has next acted, is capped at one wound and costs it no disorder.'],
+    ['Stoneskin', 'Every hit against the ally, until it has next acted, is capped at 1 damage and costs it no Morale.'],
     ['Aegis', 'An enemy that would attack the ally first rolls Will against your spell DC, or wastes the activity.'],
   ],
   movement: [

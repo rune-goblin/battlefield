@@ -48,7 +48,7 @@
 <p class="sub">Rules for resolving a battle between armies in a single sitting.</p>
 
 <div class="key">
-<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of ninety-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit spends those actions on <strong>battlefield activities</strong>. Shoot, Fight, Guard and Rally each offer three, priced at one, two and three actions; Cast offers six trees of three (section 11); moving offers its own (section 7). Every activity costs the same for every unit, and nothing is rolled for it. Spare actions buy another activity. An attack is one roll: a hit deals one wound, a critical two, and four wounds destroy a unit. A wound costs the target disorder unless its Fortitude saves. A Fight that misses costs the attacker disorder unless its Will saves. Every unit has three morale pips. The third disorder point fills the track and routs the unit. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
+<p><strong>In one paragraph.</strong> Each army is a unit on a hexagon of ninety-one hexes. The sides alternate: one unit activates and takes three actions, then the other side answers. A unit spends those actions on <strong>battlefield activities</strong>. Shoot, Fight, Guard and Rally each offer three, priced at one, two and three actions; Cast offers six trees of three (section 11); moving offers its own (section 7). Every activity costs the same for every unit, and nothing is rolled for it. Spare actions buy another activity. An attack is one roll: a hit deals 1 damage, a critical 2. Every unit starts with <strong>4 Health and 3 Morale</strong>. Damage reduces Health; at 0 Health the unit is destroyed. Taking damage costs 1 Morale unless its Fortitude saves. A Fight that misses costs the attacker 1 Morale unless its Will saves. At 0 Morale the unit routs. The battle ends when one side has nothing standing, or at dusk after six rounds.</p>
 </div>
 
 <nav class="toc">
@@ -59,8 +59,8 @@
 <a href="#round">5. The round</a><br>
 <a href="#activities">6. Battlefield activities</a><br>
 <a href="#move">7. Moving and breaking away</a><br>
-<a href="#wounds">8. Wounds</a><br>
-<a href="#disorder">9. Disorder and rout</a><br>
+<a href="#health">8. Health</a><br>
+<a href="#morale">9. Morale and rout</a><br>
 <a href="#ground">10. Ground, height and walls</a><br>
 <a href="#magic">11. Magic</a><br>
 <a href="#siege">12. Siege engines</a><br>
@@ -85,14 +85,14 @@
 <tr><td>Defence</td><td>Armour Class, including any fortification bonus already on the sheet</td><td>24</td></tr>
 <tr><td>Will</td><td>Will save. Non-magical reaches, every Rally, and resisting Controlling.</td><td>+13</td></tr>
 <tr><td>Reflex</td><td>Reflex save. Breaking contact, and nothing else.</td><td>+14</td></tr>
-<tr><td>Fortitude</td><td>Fortitude save. Rolled against a wound from a shot, a Blast or a free strike, to resist the disorder it would otherwise cost (section 8).</td><td>+15</td></tr>
+<tr><td>Fortitude</td><td>Fortitude save. Rolled against damage from a shot, a Blast or a free strike, to resist the Morale it would otherwise cost (section 8).</td><td>+15</td></tr>
 <tr><td>Speed</td><td>Off the sheet's Speed in feet: one Move action buys <code>&lceil;Speed &divide; 30&rceil;</code> hexes, minimum one. The hex has no fixed size of its own &mdash; only this conversion matters.</td><td>20 ft &rarr; 1 hex an action</td></tr>
 <tr><td>Level</td><td>The DC of its own reaches, and the DC its enemies rally against</td><td>6 &rarr; DC 22</td></tr>
-<tr><td>Wounds</td><td>0 to 4, from current hit points (section 8)</td><td>0</td></tr>
-<tr><td>Disorder</td><td>From the army's demoralized value (section 9)</td><td>0</td></tr>
+<tr><td>Health</td><td>0 to 4, from current hit points (section 8)</td><td>4</td></tr>
+<tr><td>Morale</td><td>3 minus the army’s Demoralized value, minimum 0 (section 9)</td><td>3</td></tr>
 </table></div>
 <p>Level DCs are the standard table: level 1 is DC 15, 3 is 18, 6 is 22, 8 is 24, 12 is 30.</p>
-<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level, where Armour Class spreads 3.2. Breaking contact therefore reads off Reflex. Perception is displayed, but no rule reads it: there is no initiative roll (section 5). Fortitude reads for one thing, the save against the disorder a wound would cost (section 8).</p>
+<p>Reflex is the stat that tells troops apart: it spreads 5.6 points within a level, where Armour Class spreads 3.2. Breaking contact therefore reads off Reflex. Perception is displayed, but no rule reads it: there is no initiative roll (section 5). Fortitude reads for one thing, the save against the Morale loss damage would cause (section 8).</p>
 <p>A card with no sheet takes the level tables for its type. Infantry: high AC, moderate attack, high Will, moderate Reflex, moderate Fortitude, one hex an action. Cavalry: high AC, high attack, moderate Will, high Reflex, moderate Fortitude, two hexes an action.</p>
 
 <h3>Three actions</h3>
@@ -104,7 +104,7 @@
 </div>
 
 <h3>Morale</h3>
-<p>Every unit has <strong>three morale pips</strong>. Each point of disorder fills one pip, and the third point causes rout. Will affects resistance to repulse and hostile morale magic, and the chance to Rally. Fortitude resists disorder from wounds. Capacity is the same for every unit; saving throws provide the distinction between troops.</p>
+<p>Every unit has <strong>3 Morale</strong>. Each missing point imposes &minus;1 to rolls and Defence. At 0 Morale the unit routs. Will affects resistance to repulse and hostile Morale magic, and the chance to Rally. Fortitude resists Morale loss from damage. Capacity is the same for every unit; saving throws provide the distinction between troops.</p>
 
 <h2 id="board">3. The battlefield</h2>
 <p>The battlefield is a hexagon of ninety-one hexes, in rows of 6, 7, 8, 9, 10, 11, 10, 9, 8, 7 and 6. Files run a to k and ranks 1 to 11, from the attacker's edge to the defender's; f6 is the centre. The maximum distance is ten hexes. Setup also offers the original 61-hex board, and saved smaller battles retain their dimensions. Name a hex by file and rank: c3, e7. Every unit stands on one hex, and a hex holds at most one unit.</p>
@@ -233,9 +233,9 @@
 <h3>Stage 2: paint</h3>
 <p>The GM adjusts the board by hand: set any hex's terrain, set its height from &minus;2 to 2, put a wall on any edge, or clear a hex. The generator keeps swamp at level 0 or below; the brush puts swamp at any height, for the upland bog the adventure calls for. This is where a hazard from the adventure goes — the bridge, the burning barn, the ravine.</p>
 <h3>Stages 3 and 4: the two forces</h3>
-<p>Place the siege engines first, then build each side from the troop library, the force generator or a custom card and put every unit on a hex. An engine stands on any dry hex of the board and belongs to neither army. The unit deployed on an engine claims it and works it from there; if the engine can move, the player chooses whether the unit starts the battle hauling it. An engine with no unit on it goes to the army with a unit deployed beside it. No other two pieces share a hex. The attacker's units deploy anywhere on ranks 1 to 3, the defender's anywhere on ranks 9 to 11, never on water. A unit with an ambush tactic may deploy one rank further in. Both sides need at least one unit, and every unit needs a hex. An engine left off the board stays out of the battle. Note each unit's wounds and disorder from its sheet.</p>
+<p>Place the siege engines first, then build each side from the troop library, the force generator or a custom card and put every unit on a hex. An engine stands on any dry hex of the board and belongs to neither army. The unit deployed on an engine claims it and works it from there; if the engine can move, the player chooses whether the unit starts the battle hauling it. An engine with no unit on it goes to the army with a unit deployed beside it. No other two pieces share a hex. The attacker's units deploy anywhere on ranks 1 to 3, the defender's anywhere on ranks 9 to 11, never on water. A unit with an ambush tactic may deploy one rank further in. Both sides need at least one unit, and every unit needs a hex. An engine left off the board stays out of the battle. Note each unit's Health and Morale from its sheet.</p>
 <p>Five ranks lie between the deployment zones. Against a stationary opponent on rank 9, a Speed-1 unit on rank 3 can attack in its second activation over open ground. Both armies advancing meet sooner. The depth of your deployment is your first decision.</p>
-<p><strong>Every player commands a unit.</strong> When the players' side brings fewer armies than players, split armies before deployment: one army becomes two or more units of the same card, each with its own hex, wounds and disorder. Each half is a full unit, a separate target for outflanking and a separate candidate for routing; a player who commands one may lose it. After the battle the halves rejoin: wounds take the average rounded up, disorder the higher. The GM may also hand an allied faction's unit to a player for the battle.</p>
+<p><strong>Every player commands a unit.</strong> When the players’ side brings fewer armies than players, split armies before deployment: one army becomes two or more units of the same card, each with its own hex, Health and Morale. Each half is a full unit, a separate target for outflanking and a separate candidate for routing. After the battle the halves rejoin: Health takes the average rounded down, and Morale takes the lowest value. The GM may also hand an allied faction’s unit to a player for the battle.</p>
 <p><strong>The opposing force.</strong> The GM picks the enemy from the library or lets the generator build one. The generator reads the other side and answers it: the same number of units give or take one, every unit within three levels of the other side's average, and the total level within a tenth of the other side's. The generator builds units alone; siege engines are placed by hand. Add to the generated force or take from it.</p>
 <h3>Stage 5: begin</h3>
 <p>The attacker's side activates first. There is no initiative roll.</p>
@@ -358,12 +358,12 @@
 <tr><td>Rally</td><td>Steady ◆ &middot; Rally ◆◆ &middot; Inspire ◆◆◆</td><td>Section 9</td></tr>
 <tr><td>Cast</td><td>Six trees, three activities each</td><td>Section 11</td></tr>
 </table></div>
-<p>Where a unit stands filters its menu, which is therefore never long. In contact it is offered Fight and Guard; in the open, Shoot and Guard. A unit at one or two disorder retains its ordinary activities. A routed unit may only Move or Maneuver. Rally is otherwise always offered. A caster adds a row for each tree its tradition grants, and a troop with battlefield medicine or demoralize adds one row for the tree its tactic grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
+<p>Where a unit stands filters its menu, which is therefore never long. In contact it is offered Fight and Guard; in the open, Shoot and Guard. A unit at 1 or 2 Morale retains its ordinary activities. A routed unit may only Move or Maneuver. Rally is otherwise always offered. A caster adds a row for each tree its tradition grants, and a troop with battlefield medicine or demoralize adds one row for the tree its tactic grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
 
 <h3 id="price">The price</h3>
 <p>Every activity has the same base price for every unit: the one, two or three actions its diamonds show. Choose the activity, its targets and any extra commitment before resolving it.</p>
 <h3>Commitment</h3>
-<p>Fight, Charge, Shoot, Rally, Blast and Healing allow <strong>one extra action for +2, or two for +4</strong> on the activity's roll. Controlling allows the same bonus to its spell DC instead. The bonus applies to this activity alone, including every target of its shared roll. It adds no wounds or targets by itself and does not improve a repulse save, a wound save or an Aegis check.</p>
+<p>Fight, Charge, Shoot, Rally, Blast and Healing allow <strong>one extra action for +2, or two for +4</strong> on the activity's roll. Controlling allows the same bonus to its spell DC instead. The bonus applies to this activity alone, including every target of its shared roll. It adds no damage or targets by itself and does not improve a repulse save, a Morale save or an Aegis check.</p>
 <p>Commitment stacks with existing bonuses, including inspiration and a charge's +2. Spend only actions you have, up to two extra even under Haste. Guard, Maneuver, Move and the Offense, Defense and Movement buffs retain their own prices and effects. Tradition limits the activity available, not extra commitment; battlefield medicine and demoralize can concentrate their one-action activity too.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>1 action total</th><th>2 actions total</th><th>3 actions total</th></tr>
@@ -385,7 +385,7 @@
 <p>A flier pays 1 a hex whatever the ground and crosses walls and cliffs. Flight buys no extra distance: how far a unit goes is still its Speed.</p>
 <h3>Flee the battlefield</h3>
 <p>A unit may leave through any outer map edge in its own deployment zone, including the side edges and an ambusher’s extra deployment rank. Drag the unit to a boundary hex or just beyond its outer edge, choose <strong>Flee</strong>, and confirm the route and total cost. Pay the ordinary movement cost to reach that hex, then <strong>one action</strong> to flee. Rooted or pinned units must clear the restriction first. A unit in contact must Maneuver to reach the edge; one already on the edge may flee directly.</p>
-<p>Roll the unit’s <strong>Will with its current modifiers against its Rally DC</strong>, measured from the exit hex. The unit leaves the field on every result, and the exit provokes no free strike. Success or critical success sends it to camp with its current morale and wounds unchanged. It takes no further turn that day, remains a survivor in the report, and may recover and redeploy for another day. Failure or critical failure fills its morale track: it escapes routed, abandons attached equipment, and cannot recover or return the next day. A unit already routed stays routed when it leaves. Units in camp do not hold the field; if the remaining force gives up the field, the opponent wins.</p>
+<p>Roll the unit’s <strong>Will with its current modifiers against its Rally DC</strong>, measured from the exit hex. The unit leaves the field on every result, and the exit provokes no free strike. Success or critical success sends it to camp with its current Morale and Health unchanged. It takes no further turn that day, remains a survivor in the report, and may recover and redeploy for another day. Failure or critical failure reduces its Morale to 0: it escapes routed, abandons attached equipment, and cannot recover or return the next day. A unit already routed stays routed when it leaves. Units in camp do not hold the field; if the remaining force gives up the field, the opponent wins.</p>
 
 <h3>Charge</h3>
 <p>Every unit may charge. A charge is a Fight with a run folded into it: one Speed of movement at the ordinary terrain prices, ending in contact. It costs what the Fight costs, so every unit can buy the whole ladder. The Fight is at +2, and the charger is <strong>exposed</strong> until it next acts: &minus;2 Defence, the same condition a critically failed Strike hands out. The charge spends the activation's attack. A unit already in contact fights instead of charging.</p>
@@ -396,7 +396,7 @@
 <tr><td>Charge and Overrun</td><td>◆◆◆</td><td>Charge, then Overrun: on a hit, the target rolls its Fortitude save twice and keeps the worse, and it drives them one hex straight back; you take their ground.</td></tr>
 </table></div>
 <ul>
-<li><strong>Ground.</strong> A charge runs over open ground alone: its path may not enter forest, rough ground, settlement, swamp or shallows, and may not climb. A unit that must cross such ground moves into contact and Fights instead. A charge that starts from a hex higher than the target's puts the target's save against disorder at &minus;2, wherever it ends. The path is any the movement allows. A flier's charge reads the ground like any other charge: flight prices the hex and leaves it rough. Sure footing (section 11) makes it open ground, and the charge may cross it.</li>
+<li><strong>Ground.</strong> A charge runs over open ground alone: its path may not enter forest, rough ground, settlement, swamp or shallows, and may not climb. A unit that must cross such ground moves into contact and Fights instead. A charge that starts from a hex higher than the target's puts the target's save against Morale loss at &minus;2, wherever it ends. The path is any the movement allows. A flier's charge reads the ground like any other charge: flight prices the hex and leaves it rough. Sure footing (section 11) makes it open ground, and the charge may cross it.</li>
 <li><strong>Reach.</strong> The run covers one Speed, so infantry charges from distance 2 and a paced troop from distance 3.</li>
 <li><strong>Cavalry charge</strong>, the tactic, is the impact: the target rolls its Fortitude save twice and keeps the worse, so a Strike lands as a Press and a Press as an Overrun, at the price paid.</li>
 <li><strong>The first unit you engage.</strong> You must charge the first unit you engage: a route that would bring the charger into contact with any enemy but its target is closed to it, so the run turns aside from every hex another enemy holds. An enemy across a wall or a cliff holds none of them, since neither edge holds engagement (section 10). Where more than one hex touching the target is in reach, the charge comes in on the nearest &mdash; the run costs the same one action however far it carries.</li>
@@ -411,53 +411,53 @@
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Break off</td><td>◆</td><td>One Maneuver check against the highest holder, below. On a success, move one hex to reposition or withdraw; on a critical, you may instead move up to your Speed.</td></tr>
-<tr><td>Disengage</td><td>◆◆</td><td>Move one hex to reposition or withdraw without a check or free strike. Instead each holder rolls d20 + Reflex, less disorder, against your level DC. On a failure it is rooted on its next activation, no Move, Charge or Maneuver, and it does not follow.</td></tr>
-<tr><td>Fighting retreat</td><td>◆◆◆</td><td>Disengage, and a holder that fails its roll takes 1 disorder as well, drawn out of its line.</td></tr>
+<tr><td>Disengage</td><td>◆◆</td><td>Move one hex to reposition or withdraw without a check or free strike. Instead each holder rolls d20 + Reflex, minus missing Morale, against your level DC. On a failure it is rooted on its next activation, no Move, Charge or Maneuver, and it does not follow.</td></tr>
+<tr><td>Fighting retreat</td><td>◆◆◆</td><td>Disengage, and a holder that fails its roll loses 1 Morale as well, drawn out of its line.</td></tr>
 </table></div>
-<p>The <strong>Maneuver check</strong> is one roll, however many enemies hold you: d20 + Reflex, less disorder, against the highest attack DC among them, a holder's Strike plus 10 or a pinning shooter's Volley plus 10 (section 8). The one roll is read for every holder. An enemy with no melee attack holds nobody.</p>
+<p>The <strong>Maneuver check</strong> is one roll, however many enemies hold you: d20 + Reflex, minus missing Morale, against the highest attack DC among them, a holder's Strike plus 10 or a pinning shooter's Volley plus 10 (section 8). The one roll is read for every holder. An enemy with no melee attack holds nobody.</p>
 <table>
 <tr><th>Maneuver check</th><th>Result</th></tr>
 <tr><td>Critical success</td><td>Reposition or withdraw, with movement up to your Speed. Every pursuer that gives no retreat is thrown off outright.</td></tr>
 <tr><td>Success</td><td>Reposition or withdraw by one hex</td></tr>
-<tr><td>Failure</td><td>Every holder whose own DC the roll missed lands a free strike: one wound at most, never a critical. If you survive, reposition or withdraw by one hex</td></tr>
-<tr><td>Critical failure</td><td>The free strikes, 1 disorder, and their grip holds — you stay where you stand</td></tr>
+<tr><td>Failure</td><td>Every holder whose own DC the roll missed lands a free strike: 1 damage at most, never a critical. If you survive, reposition or withdraw by one hex</td></tr>
+<tr><td>Critical failure</td><td>The free strikes, lose 1 Morale, and their grip holds — you stay where you stand</td></tr>
 </table>
 <p>A Maneuver that changes your hex ends a pin, including when you reposition in melee. Occupied hexes, water, walls and cliffs obey the usual movement restrictions. You can choose a destination beyond one hex when Break off could reach it on a critical success; another result moves you to the legal adjacent hex nearest that destination. A troop that gives <em>no retreat</em> follows only if the move breaks its contact: one free Move of its own Speed to re-establish contact, dealing no damage. A critical success prevents pursuit. Against Disengage or Fighting retreat it follows only if it passes its roll. A pinning shooter lands no free strike, and above Break off it rolls like any holder.</p>
 
 
-<h2 id="wounds">8. Wounds</h2>
-<figure><svg viewBox="0 0 720 120" role="img" aria-label="Wound track from fresh to destroyed">
+<span id="wounds"></span><h2 id="health">8. Health</h2>
+<figure><svg viewBox="0 0 720 120" role="img" aria-label="Health track from full Health to destroyed">
 <g transform="translate(20,20)">
-<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">0&ndash;1 wounds</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
-<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 wounds</text><text class="sm" x="240" y="62" text-anchor="middle">fights normally</text><text class="sm" x="240" y="78" text-anchor="middle">two health left</text>
-<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">3 wounds</text><text class="sm" x="420" y="62" text-anchor="middle">fights normally;</text><text class="sm" x="420" y="78" text-anchor="middle">one hit from gone</text>
-<rect x="540" y="0" width="120" height="40" rx="4" fill="var(--accent)"/><text class="lbl" x="600" y="25" text-anchor="middle" style="fill:var(--paper)">4 Destroyed</text><text class="sm" x="600" y="62" text-anchor="middle">removed</text>
+<rect class="step" x="0" y="0" width="120" height="40" rx="4"/><text class="lbl" x="60" y="25" text-anchor="middle">4&ndash;3 Health</text><text class="sm" x="60" y="62" text-anchor="middle">fights normally</text>
+<rect class="step" x="180" y="0" width="120" height="40" rx="4"/><text class="lbl" x="240" y="25" text-anchor="middle">2 Health</text><text class="sm" x="240" y="62" text-anchor="middle">fights normally</text><text class="sm" x="240" y="78" text-anchor="middle">two Health left</text>
+<rect class="step" x="360" y="0" width="120" height="40" rx="4"/><text class="lbl" x="420" y="25" text-anchor="middle">1 Health</text><text class="sm" x="420" y="62" text-anchor="middle">fights normally;</text><text class="sm" x="420" y="78" text-anchor="middle">one hit from gone</text>
+<rect x="540" y="0" width="120" height="40" rx="4" fill="var(--accent)"/><text class="lbl" x="600" y="25" text-anchor="middle" style="fill:var(--paper)">0 Destroyed</text><text class="sm" x="600" y="62" text-anchor="middle">removed</text>
 <path d="M120,20 L180,20 M300,20 L360,20 M480,20 L540,20" stroke="var(--rule)" stroke-width="2" marker-end="url(#arrow)"/>
 </g>
 <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--accent)"/></marker></defs>
-</svg><figcaption>A hit adds one wound, a critical two. Nothing is rolled for damage.</figcaption></figure>
-<p>Wounds measure survival. One, two or three wounds leave attacks, saves, Defence, movement and range unchanged. The fourth wound destroys the unit. Taking a wound still triggers the separate morale save; disorder applies its own penalties.</p>
-<p>Damage is never rolled. A hit deals one wound, a critical hit two, and each unit holds four. The level difference between attacker and target does the work damage dice do elsewhere. A level-6 troop striking a level-2 troop hits on about 7 and criticals from 17; the level-2 troop hits only from 17 and cannot critical without help.</p>
-<p>A unit that enters battle already hurt starts with wounds: 0 above three-quarters of its hit points, 1 above half, 2 above a quarter, 3 with any left. After the battle they are written back the same way.</p>
+</svg><figcaption>A hit removes 1 Health, a critical 2. Nothing is rolled for damage.</figcaption></figure>
+<p>Health measures survival. A unit at 1, 2 or 3 Health retains its ordinary attacks, saves, Defence, movement and range. At 0 Health it is destroyed. Taking damage still triggers a Fortitude save against Morale loss; each missing point of Morale imposes its own penalty.</p>
+<p>Damage is never rolled. A hit deals 1 damage, a critical hit 2. Each point of damage removes 1 Health. Every unit has a maximum of 4 Health. The level difference between attacker and target does the work damage dice do elsewhere. A level-6 troop striking a level-2 troop hits on about 7 and criticals from 17; the level-2 troop hits only from 17 and cannot critical without help.</p>
+<p>A unit that enters battle already hurt starts with reduced Health: 4 above three-quarters of its hit points, 3 above half, 2 above a quarter, 1 with any hit points left, and 0 with none. After the battle, Health 4/3/2/1/0 becomes full/three-quarters/half/one-quarter/zero hit points, rounding fractions down.</p>
 
 <h3>The attack</h3>
-<p>Every attack is one roll in one direction. A Fight is d20 + Strike against the target's Defence; a shot is d20 + Volley the same way; a Blast is the caster's spell attack. Critical success deals 2 wounds, success 1, failure nothing. Nobody strikes back: the target answers in its own activation.</p>
+<p>Every attack is one roll in one direction. A Fight is d20 + Strike against the target's Defence; a shot is d20 + Volley the same way; a Blast is the caster's spell attack. Critical success deals 2 damage, success 1, failure nothing. Nobody strikes back: the target answers in its own activation.</p>
 <div class="wrap"><table>
 <tr><th>Attack result</th><th>The target</th><th>The attacker, in a Fight</th></tr>
-<tr><td>Critical success</td><td>2 wounds, then a Fortitude save or 1 disorder</td><td>nothing</td></tr>
-<tr><td>Success</td><td>1 wound, then the same save</td><td>nothing</td></tr>
-<tr><td>Failure</td><td>nothing</td><td><strong>Repulsed</strong>: a Will save or 1 disorder</td></tr>
+<tr><td>Critical success</td><td>2 damage, then a Fortitude save or lose 1 Morale</td><td>nothing</td></tr>
+<tr><td>Success</td><td>1 damage, then the same save</td><td>nothing</td></tr>
+<tr><td>Failure</td><td>nothing</td><td><strong>Repulsed</strong>: a Will save or lose 1 Morale</td></tr>
 <tr><td>Critical failure</td><td>nothing</td><td>Repulsed as above, and <strong>exposed</strong>: &minus;2 Defence until it next activates</td></tr>
 </table></div>
-<p>Both saves are d20 + the save, less disorder, against the other unit's level DC. Fortitude answers the wound, Will the repulse. A missed shot or Blast repulses nobody, because the shooter stands out of contact. A free strike on a failed maneuver is a hit capped at one wound, with the Fortitude save as usual.</p>
+<p>Both saves are d20 + the save, minus missing Morale, against the other unit's level DC. Fortitude answers the damage, Will the repulse. A missed shot or Blast repulses nobody, because the shooter stands out of contact. A free strike on a failed maneuver is a hit capped at 1 damage, with the Fortitude save as usual.</p>
 <p>Fight is Strike, Press or Overrun, and each is the same roll with more riding on a hit.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Strike</td><td>◆</td><td>One roll against their Defence, read off the table above.</td></tr>
-<tr><td>Press</td><td>◆◆</td><td>Strike, and on a hit, the target rolls its Fortitude save twice and keeps the worse. A failure causes 1 disorder; a success causes none. This also applies when the target has two disorder. A Press that misses is an ordinary repulse, so there is always a risk to engaging.</td></tr>
-<tr><td>Overrun</td><td>◆◆◆</td><td>Press, and a hit drives the target one hex directly away from you; you step into the hex it left, so contact holds. An occupied hex or the board's edge on that one hex blocks the shove, and the target holds its hex without extra disorder. Water, a wall or a cliff on that hex corners the target: it holds its hex and takes 1 disorder (section 10). The attack otherwise causes at most 1 disorder, through the Press save. A target the attack destroys simply yields its hex.</td></tr>
+<tr><td>Press</td><td>◆◆</td><td>Strike, and on a hit, the target rolls its Fortitude save twice and keeps the worse. A failure costs 1 Morale; a success preserves Morale. This also applies when the target has 1 Morale. A Press that misses is an ordinary repulse, so there is always a risk to engaging.</td></tr>
+<tr><td>Overrun</td><td>◆◆◆</td><td>Press, and a hit drives the target one hex directly away from you; you step into the hex it left, so contact holds. An occupied hex or the board's edge on that one hex blocks the shove, and the target holds its hex without extra Morale loss. Water, a wall or a cliff on that hex corners the target: it holds its hex and loses 1 Morale (section 10). The attack otherwise costs the target at most 1 Morale, through the Press save. A target the attack destroys simply yields its hex.</td></tr>
 </table></div>
-<p>A unit under Take cover holds its ground against an Overrun. Stoneskin (section 11) costs its unit no disorder, so a Press against it lands the wound alone.</p>
+<p>A unit under Take cover holds its ground against an Overrun. Stoneskin (section 11) prevents its unit from losing Morale, so a Press against it lands the damage alone.</p>
 
 <h3>Shooting</h3>
 <table>
@@ -475,7 +475,7 @@
 <tr><td>Suppress</td><td>◆◆</td><td>Fire, and hit or miss the target is <strong>suppressed</strong>: &minus;2 to everything it rolls and to its Defence until the start of your next activation.</td></tr>
 <tr><td>Pin</td><td>◆◆◆</td><td>Suppress, and the target is <strong>pinned</strong>: until your next activation you count as one of its holders, at your attack DC, Volley + 10. To leave its hex it must Maneuver as if in contact; a Maneuver that changes hex ends the pin, and a failure lands no free strike from you, since nobody is in contact.</td></tr>
 </table></div>
-<p>Suppress bites hit or miss, because volume fire works by volume. Suppressed is a temporary disorder of two points that lifts on its own, and it stacks with disorder proper. A pinned unit is held (section 7) and cannot charge.</p>
+<p>Suppress bites hit or miss, because volume fire works by volume. Suppressed imposes a temporary &minus;2 to rolls and Defence until the shooter’s next activation. It stacks with the penalty for missing Morale and leaves the Morale track unchanged. A pinned unit is held (section 7) and cannot charge.</p>
 
 
 <h3>Guard</h3>
@@ -483,10 +483,10 @@
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Brace</td><td>◆</td><td>Shields up: +2 Defence until you next act.</td></tr>
-<tr><td>Dig in</td><td>◆◆</td><td>Brace, and standard cover: every hit against you lands as an ordinary hit, a critical capped at one wound.</td></tr>
+<tr><td>Dig in</td><td>◆◆</td><td>Brace, and standard cover: every hit against you lands as an ordinary hit, a critical capped at 1 damage.</td></tr>
 <tr><td>Take cover</td><td>◆◆◆</td><td>Dig in, and greater cover: +4 Defence in place of the +2, and you hold your ground: an Overrun cannot drive you back. You may not move again this activation.</td></tr>
 </table></div>
-<p>The cap touches the wound alone, so a Press against a dug-in unit still forces two Fortitude rolls, keeping the worse. Against a unit under Take cover an Overrun lands as a Press: the shove fails, the attacker stays where it is, and the target takes no disorder for holding. No Guard activity reaches a neighbour on its own. A unit with the <em>defend allies</em> tactic gives every adjacent ally what Brace buys whenever it Guards, whatever it paid.</p>
+<p>The cap touches the damage alone, so a Press against a dug-in unit still forces two Fortitude rolls, keeping the worse. Against a unit under Take cover an Overrun lands as a Press: the shove fails, the attacker stays where it is, and the target loses no Morale for holding. No Guard activity reaches a neighbour on its own. A unit with the <em>defend allies</em> tactic gives every adjacent ally what Brace buys whenever it Guards, whatever it paid.</p>
 
 <h3>Defence</h3>
 <p>Every attack rolls against the target's Defence, and Defence is built the same way each time.</p>
@@ -494,65 +494,65 @@
 <tr><th>Term</th><th>Value</th></tr>
 <tr><td>Base</td><td>The unit's Defence, off the sheet</td></tr>
 <tr><td>Circumstance</td><td>The best one of: +2 from its own Guard, +4 under Take cover, +2 from an adjacent unit's Guard when that unit defends allies, +1 for mountain ground, or +1 for forest or settlement cover against shooting and Blast. These never stack.</td></tr>
-<tr><td>Disorder</td><td>&minus;1 for each point</td></tr>
+<tr><td>Missing Morale</td><td>&minus;1 for each point below 3 Morale</td></tr>
 <tr><td>Outflanked</td><td>&minus;2 while engaged with two or more enemies</td></tr>
 <tr><td>Exposed</td><td>&minus;2 after a critically failed Strike or a charge, until the unit acts again</td></tr>
 </table>
-<p>A unit that has dug in caps every hit it takes at one wound, so a critical against it lands as an ordinary one.</p>
+<p>A unit that has dug in caps every hit it takes at 1 damage, so a critical against it lands as an ordinary one.</p>
 
-<h2 id="disorder">9. Disorder and rout</h2>
-<p>Morale is one number: <strong>disorder</strong>, from 0 to 3 for every unit. Each point is &minus;1 to everything the unit rolls and &minus;1 to its Defence. At one or two disorder, the unit retains its ordinary activities, subject to the usual restrictions for contact, range and available actions.</p>
-<p>At <strong>three disorder</strong> the unit is <strong>routed</strong>: it may only Move or Maneuver, and it leaves the field when it reaches its own edge. Any maneuver it makes runs for that edge. Disorder caps at three. A routed unit relies on an ally's Rally, Inspire or Healing to recover. Clearing one point returns it to two disorder and restores its ordinary activities.</p>
-<h3>Health and morale bars</h3>
-<p>Two bars beneath each unit show its remaining capacity. Both have the same length: the thicker upper bar shows <strong>health out of four</strong>, and the thinner lower bar shows <strong>morale out of three</strong>. Fine separators mark each point. Full green bars mean healthy and steady. Damage and disorder shrink the bars from right to left, leaving a subdued grey track. Empty health means dead; empty morale means routed.</p>
-<p>The rules still count wounds and disorder upward. Health is four minus wounds; morale is three minus disorder. Hover over a unit or its army card for both values, such as &ldquo;Health 2/4 &mdash; 2 wounds&rdquo; and &ldquo;Morale 1/3 &mdash; 2 disorder&rdquo;. Recovery refills the bars. A routed miniature loses its colour; each bar keeps its own severity colour. A destroyed unit leaves the board: a skull shows over it with the word &ldquo;Destroyed&rdquo;, then settles onto the ground of its hex, small, grey and faint. The mark stays for the battle, blocks nothing, and cannot be selected. Hover over the hex to read &ldquo;<em>unit name</em> deceased&rdquo;.</p>
+<span id="disorder"></span><h2 id="morale">9. Morale and rout</h2>
+<p><strong>Morale runs from 3 to 0.</strong> Each missing point imposes &minus;1 to every roll and to Defence. Missing Morale is 3 minus current Morale. At 3 Morale there is no penalty; at 2 Morale the penalty is &minus;1; at 1 Morale it is &minus;2. A unit with at least 1 Morale retains its ordinary activities, subject to contact, range and available actions.</p>
+<p>At <strong>0 Morale</strong> the unit is <strong>routed</strong>: it may only Move or Maneuver, and it leaves the field when it reaches its own edge. Any maneuver it makes runs for that edge. Its rolls and Defence take &minus;3. Morale stays between 0 and 3. A routed unit relies on an ally’s Rally, Inspire or Healing to recover. Restoring 1 Morale ends the rout and restores its ordinary activities.</p>
+<h3>Health and Morale bars</h3>
+<p>Two bars beneath each unit show its remaining capacity. Both have the same length: the thicker upper bar shows <strong>Health out of 4</strong>, and the thinner lower bar shows <strong>Morale out of 3</strong>. Fine separators mark each point. Full green bars mean healthy and steady. Losses shrink the bars from right to left, leaving a subdued grey track. At 0 Health the unit is destroyed; at 0 Morale it routs.</p>
+<p>Hover over a unit or its army card to read its remaining values, such as &ldquo;Health 2/4&rdquo; and &ldquo;Morale 1/3&rdquo;. Recovery refills the bars up to their maximums. A routed miniature loses its colour; each bar keeps its own severity colour. A destroyed unit leaves the board: a skull shows over it with the word &ldquo;Destroyed&rdquo;, then settles onto the ground of its hex, small, grey and faint. The mark stays for the battle, blocks nothing, and cannot be selected. Hover over the hex to read &ldquo;<em>unit name</em> deceased&rdquo;.</p>
 <div class="wrap"><table>
 <caption>Health bar</caption>
-<tr><th>Wounds</th><th>Health remaining</th><th>Display</th></tr>
-<tr><td>0</td><td>4/4</td><td>Full green bar</td></tr>
-<tr><td>1</td><td>3/4</td><td>Three quarters yellow</td></tr>
-<tr><td>2</td><td>2/4</td><td>Half orange</td></tr>
-<tr><td>3</td><td>1/4</td><td>One quarter red</td></tr>
-<tr><td>4</td><td>0/4</td><td>Empty grey track &mdash; dead</td></tr>
+<tr><th>Health</th><th>Display</th></tr>
+<tr><td>4/4</td><td>Full green bar</td></tr>
+<tr><td>3/4</td><td>Three quarters yellow</td></tr>
+<tr><td>2/4</td><td>Half orange</td></tr>
+<tr><td>1/4</td><td>One quarter red</td></tr>
+<tr><td>0/4</td><td>Empty grey track &mdash; destroyed</td></tr>
 </table></div>
-<p>The flag turns grey and a <strong>retreat arrow</strong> appears when the morale bar empties. The arrow points toward the unit's home edge &mdash; down toward rank 1 for an attacker, up toward rank 11 for a defender (rank 9 on the original board). It indicates rout and the direction of retreat; movement still happens during the unit's activation. Clearing one disorder refills the first third in red, restores the miniature and side flag colours, and removes the arrow.</p>
+<p>The flag turns grey and a <strong>retreat arrow</strong> appears when the Morale bar empties. The arrow points toward the unit's home edge &mdash; down toward rank 1 for an attacker, up toward rank 11 for a defender (rank 9 on the original board). It indicates rout and the direction of retreat; movement still happens during the unit's activation. Restoring 1 Morale refills the first third in red, restores the miniature and side flag colours, and removes the arrow.</p>
 <div class="wrap"><table>
 <caption>Morale for every unit, including Troll Marauders</caption>
-<tr><th>Disorder</th><th>Morale remaining</th><th>Effect</th><th>Available activities</th></tr>
-<tr><td>0/3</td><td>3/3 &mdash; full green bar</td><td>Normal</td><td>Ordinary activities</td></tr>
-<tr><td>1/3</td><td>2/3 &mdash; two thirds orange</td><td>&minus;1 to rolls and Defence</td><td>Ordinary activities</td></tr>
-<tr><td>2/3</td><td>1/3 &mdash; one third red</td><td>&minus;2 to rolls and Defence</td><td>Ordinary activities</td></tr>
-<tr><td>3/3</td><td>0/3 &mdash; empty grey track; grey flag and retreat arrow</td><td><strong>Routed</strong>; &minus;3 to rolls and Defence</td><td>Move or Maneuver; the unit leaves the field at its own edge</td></tr>
+<tr><th>Morale</th><th>Effect</th><th>Available activities</th></tr>
+<tr><td>3/3 &mdash; full green bar</td><td>Normal</td><td>Ordinary activities</td></tr>
+<tr><td>2/3 &mdash; two thirds orange</td><td>&minus;1 to rolls and Defence</td><td>Ordinary activities</td></tr>
+<tr><td>1/3 &mdash; one third red</td><td>&minus;2 to rolls and Defence</td><td>Ordinary activities</td></tr>
+<tr><td>0/3 &mdash; empty grey track; grey flag and retreat arrow</td><td><strong>Routed</strong>; &minus;3 to rolls and Defence</td><td>Move or Maneuver; the unit leaves the field at its own edge</td></tr>
 </table></div>
 <div class="wrap"><table>
-<tr><th>Disorder comes from</th><th>Points</th></tr>
-<tr><td>A wound taken, on a failed Fortitude save against the attacker's level DC</td><td>1</td></tr>
+<tr><th>Cause of Morale loss</th><th>Morale lost</th></tr>
+<tr><td>Taking damage, on a failed Fortitude save against the attacker's level DC</td><td>1</td></tr>
 <tr><td>A hit from a Press, on a failed Fortitude save; roll twice and keep the worse</td><td>1</td></tr>
 <tr><td>A Fight that misses, on a failed Will save against the target's level DC</td><td>1</td></tr>
 <tr><td>A critically failed Rally</td><td>1</td></tr>
-<tr><td>A critically failed Disengage</td><td>1, and you do not get away</td></tr>
+<tr><td>A critically failed Break off</td><td>1, and you do not get away</td></tr>
 <tr><td>Holding a unit that Fighting retreats, on a failed roll</td><td>1</td></tr>
 <tr><td>A Controlling cast, on a failed Will save</td><td>1, or 2 on a critical failure</td></tr>
 </table></div>
 <h3>Rally</h3>
-<p><strong>Every unit below three disorder may Rally</strong>, in contact or in the open. A routed unit can recover through an ally's Rally, Inspire or Healing. At two disorder it regains its ordinary activities, including its own Rally.</p>
-<p>Rally and a Healing cast (section 11) clear disorder during combat. Overnight Rally also clears disorder (section 13). Roll d20 + Will, less disorder, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon's eye is harder than rallying beside a levy.</p>
-<p>The roll says how much clears, and the activity says who else it reaches. One roll is read for every unit reached. On a success a unit with disorder clears 1, and a unit with none is <strong>inspired</strong>: +2 to its next roll.</p>
+<p><strong>Every unit with at least 1 Morale may Rally</strong>, in contact or in the open. A routed unit can recover through an ally’s Rally, Inspire or Healing. At 1 Morale it regains its ordinary activities, including its own Rally.</p>
+<p>Rally and a Healing cast (section 11) restore Morale during combat. Overnight Rally also restores Morale (section 13). Roll d20 + Will, minus missing Morale, against the <strong>rout DC</strong>: the level DC of the highest-level enemy within short range, or, when no enemy is that close, of the highest-level enemy on the field. Rallying under a dragon’s eye is harder than rallying beside a levy.</p>
+<p>The roll says how much Morale returns, and the activity says who else it reaches. Read one roll against the DC for each unit. On a success, a unit below full Morale restores 1 Morale; a unit already at full Morale becomes <strong>inspired</strong>: +2 to its next roll.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Steady</td><td>◆</td><td>Roll. On a success you clear 1 of your own disorder, or if you have none, you are inspired.</td></tr>
-<tr><td>Rally</td><td>◆◆</td><td>Steady, and the same result for one adjacent ally you name: it clears 1, or if it has none, it is inspired. With no ally adjacent there is nobody to name, and Rally is not offered.</td></tr>
+<tr><td>Steady</td><td>◆</td><td>Roll. On a success you restore 1 Morale, or become inspired if your Morale was already full.</td></tr>
+<tr><td>Rally</td><td>◆◆</td><td>Steady, and the same result for one adjacent ally you name: it restores 1 Morale, or becomes inspired if its Morale was already full. With no ally adjacent there is nobody to name, and Rally is not offered.</td></tr>
 <tr><td>Inspire</td><td>◆◆◆</td><td>Rally, and the same result for every friendly unit within 2.</td></tr>
 </table></div>
 <table>
 <tr><th>Rally</th><th>Each unit reached</th></tr>
-<tr><td>Critical success</td><td>Clears 2, and if none is left, it is inspired</td></tr>
-<tr><td>Success</td><td>Clears 1, or if it has none, it is inspired</td></tr>
+<tr><td>Critical success</td><td>Restores 2 Morale; if Morale reaches 3, the unit becomes inspired</td></tr>
+<tr><td>Success</td><td>Restores 1 Morale, or inspires the unit if its Morale was already full</td></tr>
 <tr><td>Failure</td><td>Nothing</td></tr>
-<tr><td>Critical failure</td><td>Nothing, and the rallying unit takes 1 more</td></tr>
+<tr><td>Critical failure</td><td>No recovery; the rallying unit loses 1 Morale</td></tr>
 </table>
 <p><strong>Concentrated Rally.</strong> Extra commitment improves the shared Rally roll. Three actions buy Steady at +4 for yourself, Rally at +2 for yourself and one adjacent ally, or Inspire at the normal modifier for every friendly unit within 2. You may still choose several separate Steady attempts instead.</p>
-<p><strong>Inspired</strong> is +2 to the first roll the unit makes, of any kind: an attack, a save against disorder, a Maneuver check. It is a status bonus, so it does not stack with another status bonus on the same roll. It lapses when that roll is made or when the unit has acted, whichever comes first, and a second Rally on an inspired unit adds nothing. A unit carrying disorder cannot be inspired, so Rally steadies a disordered line and lifts a steady one. A unit with nothing to clear therefore still has use for the activity.</p>
+<p><strong>Inspired</strong> is +2 to the first roll the unit makes, of any kind: an attack, a save against Morale loss, or a Maneuver check. It is a status bonus, so it does not stack with another status bonus on the same roll. It lapses when that roll is made or when the unit has acted, whichever comes first, and a second Rally on an inspired unit adds nothing. A unit must have full Morale to become inspired. Rally therefore restores Morale to a wavering line and encourages a steady one.</p>
 
 <h2 id="ground">10. Ground, height and walls</h2>
 <p>Three layers shape the field. Terrain fills a hex and changes what checks cost; height decides who has the advantage; barriers sit on edges and decide where units may go. Forest hides, swamp slows, water blocks, height commands, walls bar the way.</p>
@@ -570,7 +570,7 @@
 <tr><td>Water</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>Shots cross it</td><td>&mdash;</td><td>&mdash;</td></tr>
 </table></div>
 <p>The Charge column says whether a charge's path may enter the hex (section 7); a climb bars it as well. A settlement is a road through the walls: its houses give the unit in it cover and screen shots beyond it, and its streets stop a charge. A bridge is a ground crossing over water with no cover of its own; elevation, occupied hexes and barriers still apply. Rough ground is scree, broken rock or ploughed field: it slows a march and stops a charge, and it costs a unit standing on it nothing. Shallows are a ford or a marsh edge. Nobody digs in on wet ground: in shallows or swamp, Guard buys Brace alone.</p>
-<p>Terrain grants circumstance modifiers. Use the highest circumstance bonus and the worst circumstance penalty on each statistic. Mountain defence, forest cover and Guard bonuses never add together. Swamp does not add another Defence penalty to exposed or outflanked, and a unit attacking uphill from a ford takes &minus;1 once. Disorder and other conditions retain their separate effects.</p>
+<p>Terrain grants circumstance modifiers. Use the highest circumstance bonus and the worst circumstance penalty on each statistic. Mountain defence, forest cover and Guard bonuses never add together. Swamp does not add another Defence penalty to exposed or outflanked, and a unit attacking uphill from a ford takes &minus;1 once. The penalty for missing Morale and other conditions retain their separate effects.</p>
 <h3>Sight and screening</h3>
 <p>Trace a straight line between hex centres. An intervening hex blocks shooting and spells when it stands at least as high as the higher of the two units and higher than the lower. So a hill hides the ground behind it from a unit on the flat, a unit on the hill sees both sides, and a mountain blocks every line across it from lower ground: you may target the mountain hex or shoot out of it, and a second mountain blocks the line to the ground beyond. Two units on one height see each other across a hex of that height. Forest along the line grants +1 Defence to the target against shooting and Blast, even when the attacker is higher, and two forest hexes along the line block it. The attacker's own forest hex does not screen its outgoing attacks. Forest does not improve Will saves against Controlling.</p>
 <p>A line along a shared edge reads both hexes; touching a corner alone does not screen it. Every hex in a Blast Line or Burst must have sight from the caster. Flight changes movement, not sight. Walls retain their movement and garrison rules; they do not screen intervening shots.</p>
@@ -582,11 +582,11 @@
 <tr><td>Attacking uphill</td><td>&minus;1 circumstance to melee, shooting and Blast attack rolls</td></tr>
 <tr><td>Shooting downhill</td><td>+1 hex to the preferred maximum and to the ceiling for each level the shooter stands above the target. Blast and Controlling keep their fixed ceilings.</td></tr>
 <tr><td>Standing at height 2 or higher</td><td>+1 circumstance Defence against attacks. This mountain hex also blocks sight through it.</td></tr>
-<tr><td>Charging from above</td><td>The target's save against disorder is at &minus;2 (section 7)</td></tr>
+<tr><td>Charging from above</td><td>The target's save against Morale loss is at &minus;2 (section 7)</td></tr>
 <tr><td>Climbing</td><td>A step up a level costs 2, or the terrain's cost where that is worse, and no charge climbs</td></tr>
 <tr><td>Intervening hex</td><td>Blocks sight when it stands at least as high as the higher unit and higher than the lower</td></tr>
 <tr><td>Cliff</td><td>An edge with a difference of 2: nobody crosses it, and nobody is engaged across it</td></tr>
-<tr><td>Cornered</td><td>An Overrun against a unit with water, a cliff or a wall at its back lands as a Press and 1 disorder</td></tr>
+<tr><td>Cornered</td><td>An Overrun against a unit with water, a cliff or a wall at its back lands as a Press and a loss of 1 Morale</td></tr>
 </table></div>
 <h3>Fortifications, walls and gates</h3>
 <p>An intact wall blocks ground movement and contact across its edge. Flying units cross it. Shots cross walls; a wall protects its interior hex against fire from the exterior with the cover below. Cover uses the highest circumstance bonus alongside Guard and terrain. A defender on the interior hex of an intact, closed wall is <strong>garrisoned</strong> and shoots at +1.</p>
@@ -598,7 +598,7 @@
 <tr><td>4</td><td>Fortress</td><td>5</td><td>2</td><td>+2</td></tr>
 </table></div>
 <p>Legacy tier 0 remains a barricade with 1 box, hardness 0 and +1 cover. A fort generates settlement hexes at the defender's edge, front and flank walls, and one closed gate. The GM can paint further segments and gates. Campaign bonuses already present on troop sheets remain part of those statistics.</p>
-<p>An attacker may Fight an adjacent segment. Either army may use an engine's wall attack against any intact segment in range. Roll against <strong>10 + tier + the highest active defender's level</strong>. Ordinary Fight deals 1 structural damage on a hit or 2 on a critical. Each siege activity lists its own damage and penetration. Subtract <strong>max(0, hardness − penetration)</strong> from damage, to a minimum of zero. A segment with zero boxes becomes a permanent breach. Hardness affects walls and gates; it does not reduce wounds to units. Walls receive repairs through campaign maintenance.</p>
+<p>An attacker may Fight an adjacent segment. Either army may use an engine's wall attack against any intact segment in range. Roll against <strong>10 + tier + the highest active defender's level</strong>. Ordinary Fight deals 1 structural damage on a hit or 2 on a critical. Each siege activity lists its own damage and penetration. Subtract <strong>max(0, hardness − penetration)</strong> from damage, to a minimum of zero. A segment with zero boxes becomes a permanent breach. Hardness affects walls and gates; it does not reduce damage to units. Walls receive repairs through campaign maintenance.</p>
 <p><strong>Open gate</strong> and <strong>Close gate</strong> each cost one action. A standing unit must occupy the gate's interior hex and be free of enemy contact. Either army can operate it. The gold arrow points out through the gate, away from its interior hex. Open gates allow movement and contact across the edge and grant no wall cover. Terrain, cliffs and occupied hexes still govern movement. Closing a gate restores its barrier and cover. A breached gate stays open permanently. Use the Gate action on the unit's wheel or click the adjacent gate. The GM paints a gate onto an existing wall segment; it takes the segment's interior. A second click on the gate reverses it and a third removes it.</p>
 <p>Source abilities that damage structures use these wall and gate targets. Buildings and city maps remain future work; their eventual structural targets will share the same damage and hardness rules.</p>
 
@@ -630,12 +630,12 @@
 <h4 style="margin:1.25rem 0 .35rem">Blast &middot; long range &middot; the activation's attack</h4>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Missile</td><td>◆</td><td>A spell attack against one target's Defence: a hit is 1 wound, a critical 2, then the Fortitude save or 1 disorder, as any hit.</td></tr>
-<tr><td>Line</td><td>◆◆</td><td>Two adjacent hexes on one straight line out from the caster's hex, the caster's choice. The one roll is read against the enemy in each: a hit 1 wound, a critical 2, then the save, as any hit.</td></tr>
-<tr><td>Burst</td><td>◆◆◆</td><td>A corner of the grid within range, the caster's choice, and the three hexes that meet at it. The one roll is read against the enemy in each: a hit 1 wound, a critical 2, then the save, as any hit.</td></tr>
+<tr><td>Missile</td><td>◆</td><td>A spell attack against one target's Defence: a hit is 1 damage, a critical 2, then the Fortitude save or lose 1 Morale, as any hit.</td></tr>
+<tr><td>Line</td><td>◆◆</td><td>Two adjacent hexes on one straight line out from the caster's hex, the caster's choice. The one roll is read against the enemy in each: a hit 1 damage, a critical 2, then the save, as any hit.</td></tr>
+<tr><td>Burst</td><td>◆◆◆</td><td>A corner of the grid within range, the caster's choice, and the three hexes that meet at it. The one roll is read against the enemy in each: a hit 1 damage, a critical 2, then the save, as any hit.</td></tr>
 </table></div>
 <table>
-<tr><th>Cast, every hex filled</th><th>Expected wounds at parity</th><th>Beside</th></tr>
+<tr><th>Cast, every hex filled</th><th>Expected damage at parity</th><th>Beside</th></tr>
 <tr><td>Missile ◆</td><td>0.40</td><td>A Strike or a Fire</td></tr>
 <tr><td>Line ◆◆</td><td>0.80</td><td>&mdash;</td></tr>
 <tr><td>Burst ◆◆◆</td><td>1.20</td><td>Overrun, 0.40 and a shove</td></tr>
@@ -644,12 +644,12 @@
 <p><strong>Concentration.</strong> Three actions buy Missile at +4 against one enemy, Line at +2 against two adjacent hexes in its existing shape, or Burst at the normal modifier against three hexes at a corner. Each enemy receives one resolution. Range and shape stay the same.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Healing &middot; touch: yourself or an adjacent ally &middot; the caster's spell attack against the unit's own level DC</h4>
-<p>The roll says how much clears; the activity says how many units it reaches, as Rally's does. One roll, d20 + spell attack, less disorder, read against the level DC of each unit healed. The level difference does the work: a level-6 caster on a level-2 levy needs a 5, on its peer an 11, on a level-15 unit a natural 20.</p>
+<p>The roll says how much Health and Morale return; the activity says how many units it reaches, as Rally's does. One roll, d20 + spell attack, minus missing Morale, read against the level DC of each unit healed. The level difference does the work: a level-6 caster on a level-2 levy needs a 5, on its peer an 11, on a level-15 unit a natural 20.</p>
 <table>
 <tr><th>Healing roll</th><th>The unit</th></tr>
-<tr><td>Critical success</td><td>Clears 1 disorder and 1 wound, and one more thing: a condition on it ends (exposed, suppressed, pinned, rooted, frightened or persistent damage), or it clears 1 more wound</td></tr>
-<tr><td>Success</td><td>Clears 1 disorder and 1 wound</td></tr>
-<tr><td>Failure</td><td>Clears 1 disorder</td></tr>
+<tr><td>Critical success</td><td>Restores 1 Health and 1 Morale, and one more thing: a condition on it ends (exposed, suppressed, pinned, rooted, frightened or persistent damage), or it restores 1 more Health</td></tr>
+<tr><td>Success</td><td>Restores 1 Health and 1 Morale</td></tr>
+<tr><td>Failure</td><td>Restores 1 Morale</td></tr>
 <tr><td>Critical failure</td><td>Nothing</td></tr>
 </table>
 <table>
@@ -670,17 +670,17 @@
 <p><strong>Concentration.</strong> Three actions buy Soothe at +4 for one recipient, Heal at +2 for two, or Restore at the normal modifier for three. Roll once and read that roll against each recipient's level DC; each receives the result once.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Controlling &middot; medium range &middot; the target's Will save against your spell DC</h4>
-<p>One save gates every activity. <strong>Frightened</strong> is a light disorder that wears off: &minus;1 to everything the unit rolls and to its Defence until the end of its next activation. The chances are a level-6 caster's spell DC of 21 against a moderate level-6 Will of +14.</p>
+<p>One save gates every activity. <strong>Frightened</strong> imposes a temporary &minus;1 to rolls and Defence until the end of the target’s next activation. It stacks with the penalty for missing Morale and leaves the Morale track unchanged. The chances below use a level-6 caster’s spell DC of 21 against a moderate level-6 Will of +14.</p>
 <table>
 <tr><th>Will save</th><th>At parity</th><th>The target</th></tr>
 <tr><td>Critical success</td><td>20%</td><td>Nothing</td></tr>
 <tr><td>Success</td><td>50%</td><td>Frightened, whatever the activity</td></tr>
 <tr><td>Failure</td><td>25%</td><td>The activity's effect</td></tr>
-<tr><td>Critical failure</td><td>5%</td><td>The activity's effect, with 2 disorder in place of Dread's 1</td></tr>
+<tr><td>Critical failure</td><td>5%</td><td>The activity's effect, with 2 Morale lost in place of Dread’s 1</td></tr>
 </table>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Dread</td><td>◆</td><td>On a failed save the target takes 1 disorder.</td></tr>
+<tr><td>Dread</td><td>◆</td><td>On a failed save the target loses 1 Morale.</td></tr>
 <tr><td>Stun</td><td>◆◆</td><td>Dread, and it has one action fewer on its next activation.</td></tr>
 <tr><td>Hold</td><td>◆◆◆</td><td>Stun, and it is rooted on its next activation: no Move, Charge or Maneuver.</td></tr>
 </table></div>
@@ -691,24 +691,24 @@
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Sure strike</td><td>◆</td><td>The ally rolls its next attack twice and takes the better.</td></tr>
-<tr><td>Wrath</td><td>◆◆</td><td>The ally's next hit deals <strong>persistent damage</strong>: at the end of the target's next activation it takes 1 more wound, and rolls Fortitude against the attacker's level DC or takes 1 disorder, as any wound.</td></tr>
+<tr><td>Wrath</td><td>◆◆</td><td>The ally's next hit deals <strong>persistent damage</strong>: at the end of the target's next activation it takes 1 damage, and rolls Fortitude against the attacker's level DC or loses 1 Morale, as any damage.</td></tr>
 <tr><td>Haste</td><td>◆◆◆</td><td>The ally has an additional action on each of its next two activations. Cast on yourself, the first of the two comes at once, in the activation you cast in.</td></tr>
 </table></div>
 <p>A second Sure strike on a unit already rolling twice is nothing. A second Haste on a hasted unit is nothing. Persistent damage is a condition, never a damage type, so no unit is immune to it and a Healing critical ends it before it lands.</p>
 
 <h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range: yourself or an ally</h4>
-<p>Three separate effects, each at its own price, and the ally spends nothing. Guard sells Defence and the wound cap. Defense sells the attacker's roll, the disorder a wound costs, and the attacker's actions. Aegis is the one buff that rolls, on the enemy's Will at the enemy's own time, as Controlling does.</p>
+<p>Three separate effects, each at its own price, and the ally spends nothing. Guard sells Defence and the damage cap. Defense sells the attacker's roll, the Morale lost from damage, and the attacker's actions. Aegis is the one buff that rolls, on the enemy's Will at the enemy's own time, as Controlling does.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
 <tr><td>Ward</td><td>◆</td><td>Until the ally has next acted, the first attack against it is rolled twice and the attacker takes the worse.</td></tr>
-<tr><td>Stoneskin</td><td>◆◆</td><td>Until the ally has next acted, every hit against it is capped at one wound and costs it no disorder.</td></tr>
+<tr><td>Stoneskin</td><td>◆◆</td><td>Until the ally has next acted, every hit against it is capped at 1 damage and costs it no Morale.</td></tr>
 <tr><td>Aegis</td><td>◆◆◆</td><td>Until the ally has next acted, an enemy that would attack it first rolls Will against your spell DC. On a failure the activity is wasted, actions and all.</td></tr>
 </table></div>
 <table>
 <tr><th>Buff on one attack against the ally</th><th>At parity</th></tr>
-<tr><td>None</td><td>0.40 wounds; a Fight misses 65%</td></tr>
-<tr><td>Ward ◆</td><td>0.18 wounds; a Fight misses 79%</td></tr>
-<tr><td>Stoneskin ◆◆</td><td>No disorder save; a Press or a critical is a plain wound</td></tr>
+<tr><td>None</td><td>0.40 damage; a Fight misses 65%</td></tr>
+<tr><td>Ward ◆</td><td>0.18 damage; a Fight misses 79%</td></tr>
+<tr><td>Stoneskin ◆◆</td><td>No save against Morale loss; a Press or a critical is 1 damage</td></tr>
 <tr><td>Aegis ◆◆◆</td><td>35% of attacks wasted against spell DC 21; a level-15 caster's DC wastes most</td></tr>
 </table>
 <p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on a unit already under it is nothing.</p>
@@ -737,51 +737,51 @@
 <h2 id="siege">12. Siege engines</h2>
 <p>An engine deploys on any dry hex, and the unit deployed on or beside it claims it for its army. An engine no unit claims at deployment belongs to neither army. It does nothing and stays where it stands until it is claimed: at the end of a round it goes to the army that alone has a unit standing on or beside it, and it waits while both armies do. Once claimed it is worked like any other emplacement, and hauled if it is mobile. A unit deployed on it may begin the battle hauling it, and an engine travels with a unit only while that unit hauls it. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>
 <p>Stand in an engine’s hex to open its siege menu through the action wheel or floating badge. An engine fills an empty hex and becomes a badge when a unit occupies that hex. A friendly unit beside an engine reserves it; operating the engine requires occupation. Ordinary Shoot uses the troop's own weapon.</p>
-<p><strong>Attack</strong> offers activities from that engine's source actor. A catapult offers Bombard (one action, three hexes around a corner, 1/2 wounds), Crushing shot (two actions, one unit, 2/3 wounds) and Breach wall (two actions, 2/3 structural damage, penetration 1). Heavy artillery trades loading and attack actions for larger areas or heavier hits. Rams attack adjacent walls with their own launch bonus and penetration.</p>
-<p>Each engine attacks once per round, and operating it spends the unit's attack for that activation. Artillery cannot fire in enemy contact. Roll the engine's launch bonus, less crew disorder, plus the crew's roll modifiers and any extra commitment. Roll against each affected unit's Defence. An area attack hits allies as well as enemies; the preview lists them. Wound caps from Dig in and Stoneskin still apply. Wounds test Fortitude against the engine's level DC.</p>
+<p><strong>Attack</strong> offers activities from that engine's source actor. A catapult offers Bombard (one action, three hexes around a corner, 1/2 damage), Crushing shot (two actions, one unit, 2/3 damage) and Breach wall (two actions, 2/3 structural damage, penetration 1). Heavy artillery trades loading and attack actions for larger areas or heavier hits. Rams attack adjacent walls with their own launch bonus and penetration.</p>
+<p>Each engine attacks once per round, and operating it spends the unit's attack for that activation. Artillery cannot fire in enemy contact. Roll the engine's launch bonus, minus the crew’s missing Morale, plus the crew's roll modifiers and any extra commitment. Roll against each affected unit's Defence. An area attack hits allies as well as enemies; the preview lists them. Damage caps from Dig in and Stoneskin still apply. Damage triggers a Fortitude save against the engine's level DC.</p>
 <p>Siege Reach is a fixed ceiling: short 3 hexes, medium 5, long 7 and extreme 11. The whole selected area must fit the range and sight limit. High-angle activities ignore cover but still require sight. Trebuchets, mortars and other lobbers show their minimum range in the activity detail. Lines extend up to three hexes from the engine; fans cover three hexes; wide bursts cover a hex and its neighbours.</p>
 <p>Artillery starts loaded. <strong>Load</strong> readies the next shot in one activity. A source loading cycle of up to four actions becomes one action, five to eight becomes two, and larger cycles become three. Heavy engines may reload in one activation and fire in the next. Rams and the Bolt Emitter need no reload. Loading cannot happen in enemy contact. Full-rack and overcharged attacks pay their extra preparation in the attack's action cost.</p>
-<p>Special activities can leave persistent damage, hold movement through the target's next activation, remove an action from that activation, expose targets, push or pull a unit one clear hex, add disorder, or remove magical buffs. Forced movement respects barriers, occupied hexes, roots, Take cover and hauling. Marking powder causes exposure without wounds. Pheromones affect cavalry, aquatic shocks affect units in water or shallows, and ground quakes affect ground troops.</p>
+<p>Special activities can leave persistent damage, hold movement through the target's next activation, remove an action from that activation, expose targets, push or pull a unit one clear hex, reduce Morale, or remove magical buffs. Forced movement respects barriers, occupied hexes, roots, Take cover and hauling. Marking powder causes exposure without damage. Pheromones affect cavalry, aquatic shocks affect units in water or shallows, and ground quakes affect ground troops.</p>
 <p>Debris and web fields cost at least two hexes of movement to enter and stop charges through the end of the following round. Webs also let infantry without an engine in tow cross a wall between two webbed hexes. Fire clears webs in its affected area. A unit that takes a hit from webs loses movement through its next activation. Fields display their expiry round and clear overnight.</p>
 <p><strong>Haul siege engine</strong> costs one action. The engine travels with its unit, which moves at the slower of its own Speed and the engine’s Speed. Engine movement uses the same scale as troop movement: thirty sheet feet equal one battlefield hex. Round engine speed up to the nearest half hex; engines with sheet Speed 5–15 feet move half a hex per action, and those with Speed 20–30 feet move one hex. Portable engines use the crew’s Speed. Starting to haul clears banked movement, and a unit hauls one engine at a time. <strong>Release siege engine</strong> is free: it leaves the engine in the current hex and restores the unit’s normal movement rate. Moving without hauling leaves the engine behind. Mounted engines without a movement speed, and engines confined to tracks, remain fixed.</p>
 <p>A unit that is destroyed or routs abandons its engines where it stands. An emplacement left with only the enemy beside it changes hands at the end of the round — the engine is taken by standing on it, not by winning a fight over it — and an abandoned engine beside an enemy still standing at the end of the battle is captured.</p>
 
 <h2 id="end">13. Dusk and the next day</h2>
-<p>The battle ends at the end of a round when a side has no unit still standing. A unit is standing when it is neither destroyed nor routed nor gone from the field; a unit at two disorder still counts as standing. Otherwise, dusk ends the day at the daily round limit: six rounds by default, or eight in setup.</p>
+<p>The battle ends at the end of a round when a side has no unit still standing. A unit is standing when it is neither destroyed nor routed nor gone from the field; a unit at 1 Morale still counts as standing. Otherwise, dusk ends the day at the daily round limit: six rounds by default, or eight in setup.</p>
 <h3>The day's report</h3>
-<p>At dusk, resolve any pending persistent wound once before counting survivors. Both armies withdraw from contact and the hex stays contested. The report gives each army its own column with health, morale and unit outcomes. <strong>End battle</strong> returns to setup. <strong>Continue to recovery</strong> opens the recovery table before either army chooses its orders. After recovery, both armies choose whether to leave or remain. If both hold, <strong>Fight another day</strong> opens a battlefield choice, then deployment for the next day. Choose <strong>Same map</strong> to keep the current field or <strong>New map</strong> to generate and preview fresh terrain. The new map offers terrain, feature and fortification choices. Continuation requires both sides to have standing survivors.</p>
+<p>At dusk, resolve any pending persistent damage once before counting survivors. Both armies withdraw from contact and the hex stays contested. The report gives each army its own column with Health, Morale and unit outcomes. <strong>End battle</strong> returns to setup. <strong>Continue to recovery</strong> opens the recovery table before either army chooses its orders. After recovery, both armies choose whether to leave or remain. If both hold, <strong>Fight another day</strong> opens a battlefield choice, then deployment for the next day. Choose <strong>Same map</strong> to keep the current field or <strong>New map</strong> to generate and preview fresh terrain. The new map offers terrain, feature and fortification choices. Continuation requires both sides to have standing survivors.</p>
 <p>Destroyed units are permanently lost. Routed units leave this battle and take no part in overnight recovery or the next day's deployment. Keep their records for the campaign handoff. A unit that rallied before leaving the field and remains standing can continue.</p>
 <h3>Overnight recovery</h3>
 <p>Resolve recovery before choosing to withdraw or hold the field. The recovery step gives each army its own column. For each survivor choose <strong>None</strong>, <strong>⚑ Morale</strong> (Rally), or <strong>♥ Health</strong> (Treat Wounded); the column’s foot shows that army’s shared recovery modifier. <strong>Roll recovery</strong> commits that army’s choices and rolls its units one after another, each shown in turn. The two armies roll independently, in either order, and an army that has rolled cannot change its choices. Review all results before choosing orders.</p>
 <p>Each surviving unit may attempt <strong>one</strong> activity: Rally or Treat Wounded. Each side chooses any number of its survivors and declares them all before it rolls. The first participant adds no penalty; each extra participant imposes <strong>&minus;2 on every recovery check for that side</strong>. Count both activities together: one participant gives 0, two give &minus;2, three give &minus;4, and so on. The opposing side counts its participants separately.</p>
 <table>
 <tr><th>Activity</th><th>Check</th><th>Success</th><th>Critical success</th></tr>
-<tr><td>Rally</td><td>Will against the level DC of the highest-level enemy still standing for the next day</td><td>Remove 1 disorder</td><td>Remove 2 disorder</td></tr>
-<tr><td>Treat Wounded</td><td>Fortitude against the recovering unit's own level DC</td><td>Remove 1 wound</td><td>Remove 2 wounds</td></tr>
+<tr><td>Rally</td><td>Will against the level DC of the highest-level enemy still standing for the next day</td><td>Restore 1 Morale</td><td>Restore 2 Morale</td></tr>
+<tr><td>Treat Wounded</td><td>Fortitude against the recovering unit's own level DC</td><td>Restore 1 Health</td><td>Restore 2 Health</td></tr>
 </table>
-<p>Both failure and critical failure leave the unit unchanged. Recovery stops at full health or morale. Rally changes morale alone; Treat Wounded changes wounds alone. A unit with full morale cannot choose Rally, and an unwounded unit cannot choose Treat Wounded. Neither activity requires a leader or a character skill check.</p>
-<p>Use <strong>d20 + the unit's save &minus; its current disorder &minus; 2 &times; (its side's participants &minus; 1)</strong>. Campaign Demoralized and battlefield disorder are the same track, so their &minus;1 per point applies once. For example, a unit with Will +12 and two disorder rolls at +10 alone, +8 with one other participant, or +6 with two others. Resolve each declared check once; its result is final for that night.</p>
+<p>Both failure and critical failure leave the unit unchanged. Recovery stops at full Health or Morale. Rally changes Morale alone; Treat Wounded restores Health alone. A unit with full Morale cannot choose Rally, and a unit at full Health cannot choose Treat Wounded. Neither activity requires a leader or a character skill check.</p>
+<p>Use <strong>d20 + the unit’s save &minus; missing Morale &minus; 2 &times; (its side’s participants &minus; 1)</strong>. Missing Morale is 3 minus current Morale. The campaign’s Demoralized condition supplies that same penalty; apply it once. For example, a unit with Will +12 and 1 Morale rolls at +10 alone, +8 with one other participant, or +6 with two others. Resolve each declared check once; its result is final for that night.</p>
 <h3>End-of-day decisions</h3>
 <p>After overnight recovery at a contested dusk, each army chooses <strong>Propose surrender</strong>, <strong>Withdraw</strong>, or <strong>Hold the field</strong>. Confirm both decisions before choosing the next battlefield. Recovery results stand even if an army then withdraws.</p>
 <ul>
-<li><strong>Propose surrender.</strong> The opposing side accepts or rejects the proposal. Acceptance ends the battle with the accepting side victorious. The players agree the campaign terms; the game preserves surviving units, wounds and morale. Rejection returns the proposing side to its decision. A proposal alone never ends the battle.</li>
-<li><strong>Withdraw.</strong> Leave the field with surviving troops, preserving wounds and morale. At dusk this requires no check and causes no extra casualties. If the opponent holds, they win the field. If both withdraw, the field stays contested and this battle ends.</li>
+<li><strong>Propose surrender.</strong> The opposing side accepts or rejects the proposal. Acceptance ends the battle with the accepting side victorious. The players agree the campaign terms; the game preserves surviving units, Health and Morale. Rejection returns the proposing side to its decision. A proposal alone never ends the battle.</li>
+<li><strong>Withdraw.</strong> Leave the field with surviving troops, preserving Health and Morale. At dusk this requires no check and causes no extra casualties. If the opponent holds, they win the field. If both withdraw, the field stays contested and this battle ends.</li>
 <li><strong>Hold the field.</strong> Stay to contest the ground. If both sides hold, continue through the battlefield choice and deployment. If the enemy withdraws, hold the field as victor.</li>
 </ul>
 <p>Resolve any surrender proposal before confirming the other decisions. Recovery occurs once, before these decisions; changing an order grants no further recovery.</p>
 <h3>The next day's deployment</h3>
-<p>Keep wounds and disorder after recovery. Temporary combat conditions and spell effects expire overnight; actions and engine shots reset. On the same map, breached walls remain breached and emplacements keep their positions and ownership. On a new map, terrain and fortifications come from the new map settings. Fixed emplacements and abandoned equipment stay on the old field; the battle record retains that field and its equipment for the campaign handoff. Equipment losses remain. Surviving units redeploy in their normal home zones on the chosen board; attached engines still in their crews' possession move with them. Changing the map after recovery preserves the recovery results. The next day begins at round 1. The log retains the earlier days and recovery rolls.</p>
-<h3>Campaign morale and Routed armies</h3>
-<p><strong>Demoralized and disorder share one value.</strong> Import the campaign army's Demoralized value as starting disorder. Battle losses, combat rallies and overnight rallies change that same value. Export the final value directly, including improvements. Each point gives &minus;1 to checks and Defence; apply the penalty once.</p>
-<p>In the ReignMaker integration, an army that leaves the battle through rout retains the <strong>Routed</strong> campaign condition. <strong>Rally Troops</strong> costs one leader action and makes a leadership skill check at &minus;5. Success removes Routed and sets Demoralized to 2 (1/3 morale), preserving wounds. Failure leaves Routed in place. Every army still Routed at the <strong>end of the ReignMaker turn</strong> disbands. Disbanded and destroyed armies are permanent losses. This paid action replaces the proposed free post-battle retention check.</p>
-<p>Rally Troops and turn-end disbanding belong to ReignMaker; Battlefield provides the tactical outcome. A battlefield day does not itself advance the ReignMaker turn. Wounds become hit points on the same four thresholds (section 8). Split armies rejoin (section 4). A captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement. Fame, Unrest and other kingdom consequences remain campaign actions.</p>
+<p>Keep Health and Morale after recovery. Temporary combat conditions and spell effects expire overnight; actions and engine shots reset. On the same map, breached walls remain breached and emplacements keep their positions and ownership. On a new map, terrain and fortifications come from the new map settings. Fixed emplacements and abandoned equipment stay on the old field; the battle record retains that field and its equipment for the campaign handoff. Equipment losses remain. Surviving units redeploy in their normal home zones on the chosen board; attached engines still in their crews' possession move with them. Changing the map after recovery preserves the recovery results. The next day begins at round 1. The log retains the earlier days and recovery rolls.</p>
+<h3>Campaign Morale and Routed armies</h3>
+<p><strong>Campaign Demoralized maps to missing Morale.</strong> Starting Morale is 3 minus the campaign army’s Demoralized value, bounded between 0 and 3. Battle losses, combat rallies and overnight rallies change that same track. Export Demoralized as 3 minus final Morale, including improvements from recovery. Each missing point gives &minus;1 to checks and Defence; apply the penalty once.</p>
+<p>In the ReignMaker integration, an army that leaves the battle through rout retains the <strong>Routed</strong> campaign condition. <strong>Rally Troops</strong> costs one leader action and makes a leadership skill check at &minus;5. Success removes Routed and sets Demoralized to 2 (1/3 Morale), preserving Health. Failure leaves Routed in place. Every army still Routed at the <strong>end of the ReignMaker turn</strong> disbands. Disbanded and destroyed armies are permanent losses. This paid action replaces the proposed free post-battle retention check.</p>
+<p>Rally Troops and turn-end disbanding belong to ReignMaker; Battlefield provides the tactical outcome. A battlefield day does not itself advance the ReignMaker turn. Health becomes hit points on the same four thresholds (section 8). Split armies rejoin (section 4). A captured engine changes owner and an abandoned one is lost. The loser's surviving units fall back one hex toward their nearest friendly settlement. Fame, Unrest and other kingdom consequences remain campaign actions.</p>
 
 <h2 id="odds">14. Fighting against the odds</h2>
 <p>There are no points. Four things decide an uneven fight:</p>
 <ul>
-<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive. Level sets the DC of the saves made against you: a wound from a high-level troop is harder to shrug off, and a line it repulses is harder to steady.</li>
-<li><strong>Morale.</strong> Every troop routs at three disorder. Will determines how well it resists repulse and hostile morale magic and how readily it rallies. Fortitude determines how well it resists disorder from wounds. A troll has strong Fortitude and weak Will.</li>
-<li><strong>Numbers.</strong> Outflanking pays only when it reaches a second side of the enemy, and a ridge or a river decides where that second side is. Three lesser units grind down one greater one through disorder, not through wounds.</li>
+<li><strong>Level.</strong> Two levels of difference is noticeable; five is decisive. Level sets the DC of the saves made against you: damage from a high-level troop is harder to shrug off, and a line it repulses is harder to steady.</li>
+<li><strong>Morale.</strong> Every troop routs at 0 Morale. Will determines how well it resists repulse and hostile Morale magic and how readily it rallies. Fortitude determines how well it resists Morale loss from damage. A troll has strong Fortitude and weak Will.</li>
+<li><strong>Numbers.</strong> Outflanking pays only when it reaches a second side of the enemy, and a ridge or a river decides where that second side is. Three lesser units grind down one greater one by breaking its Morale.</li>
 <li><strong>Ground and time.</strong> Forest, high ground and walls favour the defender. The daily round limit rewards a decisive attacker.</li>
 </ul>
 <p>A side whose total levels are less than half the enemy's should hold ground or refuse battle.</p>
@@ -791,33 +791,33 @@
 <tr><th>Verb</th><th>Cost</th><th>Roll</th><th>Result</th></tr>
 <tr><td>Move</td><td>1 per Speed's worth</td><td>&mdash;</td><td>1 open, settlement or bridge, 2 forest, rough or shallows, 3 swamp; a step up a level costs 2, or the terrain's cost if worse. Movement banks across the activation. Not while engaged.</td></tr>
 <tr><td>Charge</td><td>1 &middot; 2 with Press &middot; 3 with Overrun</td><td>Strike + 2 vs Defence on arrival</td><td>One Speed of movement ending in contact, folded into the Fight at no cost of its own, by any route that engages nobody but the target: you charge the first unit you engage. Exposed until you next act. No charge through forest, rough ground, settlement, swamp or shallows, or uphill; from above, the target's save at &minus;2. Spends the activation's attack.</td></tr>
-<tr><td>Maneuver</td><td>1 Break off &middot; 2 Disengage &middot; 3 Fighting retreat</td><td>Break off: Reflex &minus; disorder vs the highest holder's attack DC. Above it, each holder's Reflex &minus; disorder vs your level DC</td><td>Break off: failure a free strike from each holder the roll missed, critical a free Move. Disengage: no check; a holder that fails is rooted. Fighting retreat: and it takes 1 disorder. Move one hex to reposition in contact or withdraw.</td></tr>
-<tr><td>Shoot</td><td>1 Fire &middot; 2 Suppress &middot; 3 Pin</td><td>Volley &minus; disorder vs Defence; &minus;2 one hex shorter or longer than Reach</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude &minus; disorder vs your level DC or takes 1 disorder. Suppress: &minus;2 to everything, hit or miss, until your next activation. Pin: you are a holder at Volley + 10.</td></tr>
+<tr><td>Maneuver</td><td>1 Break off &middot; 2 Disengage &middot; 3 Fighting retreat</td><td>Break off: Reflex &minus; missing Morale vs the highest holder's attack DC. Above it, each holder's Reflex &minus; missing Morale vs your level DC</td><td>Break off: failure a free strike from each holder the roll missed, critical a free Move. Disengage: no check; a holder that fails is rooted. Fighting retreat: and it loses 1 Morale. Move one hex to reposition in contact or withdraw.</td></tr>
+<tr><td>Shoot</td><td>1 Fire &middot; 2 Suppress &middot; 3 Pin</td><td>Volley &minus; missing Morale vs Defence; &minus;2 one hex shorter or longer than Reach</td><td>Crit 2 damage &middot; hit 1 &middot; the target rolls Fortitude &minus; missing Morale vs your level DC or loses 1 Morale. Suppress: &minus;2 to everything, hit or miss, until your next activation. Pin: you are a holder at Volley + 10.</td></tr>
 <tr><td>Commitment</td><td>1 or 2 extra</td><td>+2 per extra action, at most +4</td><td>Fight, Charge, Shoot, Rally, Blast and Healing: the activity roll. Controlling: its spell DC. Choose before resolution; spend only available actions.</td></tr>
-<tr><td>Fight</td><td>1 Strike &middot; 2 Press &middot; 3 Overrun</td><td>Strike vs Defence</td><td>Crit 2 wounds &middot; hit 1 &middot; the target rolls Fortitude or takes 1 disorder &middot; a miss sends you to a Will save vs the target's level DC or 1 disorder &middot; critical failure exposes you. Press: roll the Fortitude save twice and keep the worse; failure causes 1 disorder. Overrun: drives them back a hex and takes their ground; a blocked retreat adds no disorder.</td></tr>
-<tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at one wound. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
-<tr><td>Rally</td><td>1 Steady &middot; 2 Rally &middot; 3 Inspire</td><td>Will &minus; disorder vs the rout DC</td><td>Crit clears 2 &middot; success 1, or inspires if none &middot; failure nothing &middot; critical failure adds 1 to you. The activity says who else it reaches: you, one adjacent ally, everyone within 2.</td></tr>
-<tr><td>Cast</td><td>1, 2 or 3 for the activity; a tree once an activation</td><td>Blast: spell attack &minus; disorder vs Defence. Healing: spell attack &minus; disorder vs the unit's level DC. Controlling: the target's Will &minus; disorder vs your spell DC. Buffs roll nothing but Aegis: the attacker's Will vs your spell DC.</td><td>Tradition caps which trees and how high. Blast is the activation's attack.</td></tr>
+<tr><td>Fight</td><td>1 Strike &middot; 2 Press &middot; 3 Overrun</td><td>Strike vs Defence</td><td>Crit 2 damage &middot; hit 1 &middot; the target rolls Fortitude or loses 1 Morale &middot; a miss sends you to a Will save vs the target's level DC or lose 1 Morale &middot; critical failure exposes you. Press: roll the Fortitude save twice and keep the worse; failure costs 1 Morale. Overrun: drives them back a hex and takes their ground; a blocked retreat causes no Morale loss.</td></tr>
+<tr><td>Guard</td><td>1 Brace &middot; 2 Dig in &middot; 3 Take cover</td><td>&mdash;</td><td>+2 Defence until you next act. Dig in caps hits at 1 damage. Take cover: +4 in place of the +2, holds against Overrun, no further move.</td></tr>
+<tr><td>Rally</td><td>1 Steady &middot; 2 Rally &middot; 3 Inspire</td><td>Will &minus; missing Morale vs the rout DC</td><td>Crit restores 2 Morale and inspires at full Morale &middot; success restores 1 Morale, or inspires if already full &middot; failure nothing &middot; critical failure costs the rallying unit 1 Morale. The activity says who else it reaches: you, one adjacent ally, everyone within 2.</td></tr>
+<tr><td>Cast</td><td>1, 2 or 3 for the activity; a tree once an activation</td><td>Blast: spell attack &minus; missing Morale vs Defence. Healing: spell attack &minus; missing Morale vs the unit's level DC. Controlling: the target's Will &minus; missing Morale vs your spell DC. Buffs roll nothing but Aegis: the attacker's Will vs your spell DC.</td><td>Tradition caps which trees and how high. Blast is the activation's attack.</td></tr>
 <tr><td>Cast: Haste</td><td>3, Offense</td><td>&mdash;</td><td>The ally has an additional action on each of its next two activations. On yourself, the first comes at once.</td></tr>
 </table></div>
 <div class="wrap"><table class="ref">
 <tr><th>Modifier</th><th>Value</th></tr>
 <tr><td>Distance</td><td>1 engaged &middot; 2 short &middot; 3 medium &middot; 4 long &middot; 5–7 extreme &middot; 8 extended extreme at &minus;2 &middot; 9+ out of range. Weapons allow one hex outside either end of their preferred distances.</td></tr>
 <tr><td>One attack an activation</td><td>Fight, Shoot and Blast share the slot</td></tr>
-<tr><td>Disorder</td><td>&minus;1 a point on every roll and on Defence. At one or two, ordinary activities remain available. At three, routed &mdash; Move or Maneuver only, and the unit leaves by its own edge. An ally can clear disorder to restore its ordinary activities.</td></tr>
-<tr><td>Morale track</td><td>The thinner bar shows morale remaining: three minus disorder. It starts full and green, shrinks to two thirds orange and one third red, and empties at rout. A grey flag and retreat arrow mark rout; recovery refills the bar and restores the unit's colours.</td></tr>
+<tr><td>Morale</td><td>Starts at 3. Each missing point imposes &minus;1 to rolls and Defence. At 0, routed &mdash; Move or Maneuver only, leaving by its own edge. Restoring 1 Morale ends the rout.</td></tr>
+<tr><td>Morale track</td><td>The thinner bar shows Morale remaining, from 3 down to 0. It starts full and green, shrinks to two thirds orange and one third red, and empties at rout. A grey flag and retreat arrow mark rout; recovery refills the bar and restores the unit's colours.</td></tr>
 <tr><td>Outflanked</td><td>&minus;2 Defence while engaged with two or more enemies</td></tr>
 <tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike or a charge, until the unit acts again</td></tr>
-<tr><td>Wounds</td><td>No performance penalties at one, two or three wounds. The fourth destroys the unit. Disorder applies its separate penalties.</td></tr>
+<tr><td>Health</td><td>Starts at 4. Damage removes Health. At 0, destroyed. Health loss alone imposes no performance penalty; missing Morale imposes its own penalty.</td></tr>
 <tr><td>Inspired</td><td>+2 on the unit's next roll of any kind; a status bonus</td></tr>
 <tr><td>Suppressed</td><td>&minus;2 to everything the unit rolls and to its Defence until the shooter's next activation</td></tr>
 <tr><td>Pinned</td><td>Held by the shooter at Volley + 10; leaves its hex by Maneuver, which ends the pin when it changes hex; cannot charge</td></tr>
 <tr><td>Rooted</td><td>No Move, Charge or Maneuver on its next activation</td></tr>
 <tr><td>Frightened</td><td>&minus;1 to everything the unit rolls and to its Defence until the end of its next activation</td></tr>
 <tr><td>Sure strike</td><td>Its next attack rolls twice and keeps the better; spent by that attack, or at the end of its next activation</td></tr>
-<tr><td>Persistent damage</td><td>Set by a Wrath hit: 1 more wound at the end of its next activation, then Fortitude against the attacker's level DC or 1 disorder, as any wound</td></tr>
+<tr><td>Persistent damage</td><td>Set by a Wrath hit: 1 damage at the end of its next activation, then Fortitude against the attacker's level DC or lose 1 Morale, as any damage</td></tr>
 <tr><td>Ward</td><td>The next attack against it rolls twice and the attacker keeps the worse; spent by that attack, or once it has next acted</td></tr>
-<tr><td>Stoneskin</td><td>Every hit against it caps at one wound and costs it no disorder, until it has next acted</td></tr>
+<tr><td>Stoneskin</td><td>Every hit against it caps at 1 damage and costs it no Morale, until it has next acted</td></tr>
 <tr><td>Aegis</td><td>An attacker rolls Will against the caster's spell DC before it attacks; a failure wastes the attempt, actions and all. Ends once it has next acted</td></tr>
 <tr><td>Sure footing</td><td>Every hex costs it 1 on its next activation, and it may charge through forest, rough ground, settlement, swamp and shallows, and uphill</td></tr>
 <tr><td>Burst of speed</td><td>Grants 1 extra hex of movement without a roll for its next activation, or this activation on a self-cast. Ordinary terrain costs apply; the bonus does not stack and expires at activation end.</td></tr>
@@ -827,7 +827,7 @@
 <tr><td>Swamp</td><td>&minus;1 circumstance Defence and &minus;1 to Strike from it; Brace only</td></tr>
 <tr><td>Shallows</td><td>&minus;1 to Strike from it; Brace only</td></tr>
 <tr><td>Height</td><td>+1 circumstance attack downhill, &minus;1 uphill; +1 hex of shooting range a level downhill; mountain +1 Defence. A hex at least as high as the higher unit and higher than the lower blocks sight. A charge from above puts the target's save at &minus;2.</td></tr>
-<tr><td>Cornered</td><td>An Overrun against a unit with water, a cliff or a wall at its back lands as a Press and 1 disorder</td></tr>
+<tr><td>Cornered</td><td>An Overrun against a unit with water, a cliff or a wall at its back lands as a Press and a loss of 1 Morale</td></tr>
 <tr><td>Into a melee</td><td>&minus;4 shooting at a target engaged with one of your own</td></tr>
 <tr><td>Wall</td><td>Closed walls block ground movement and contact &middot; interior cover +1/+2 &middot; DC 10 + tier + highest active defender level &middot; subtract hardness after penetration &middot; gates open/close for 1 action from inside</td></tr>
 <tr><td>Cliff</td><td>Two levels on one edge: no crossing, nobody is engaged across it</td></tr>

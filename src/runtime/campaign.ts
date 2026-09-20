@@ -100,11 +100,11 @@ function cardProblems(card: unknown, at: string): string[] {
     out.push(`${at} casts from ${String(c.tradition)}, which is no tradition`);
   }
   if (c.wounds !== undefined && (!counted(c.wounds) || c.wounds > MAX_WOUNDS)) {
-    out.push(`${at} carries ${String(c.wounds)} wounds, outside 0 to ${MAX_WOUNDS}`);
+    out.push(`${at} has invalid starting Health (expected 0 to ${MAX_WOUNDS})`);
   }
   // Disorder above the rout mark is capped rather than refused: the campaign's Demoralized
   // track runs on its own and the engine takes the top of it.
-  if (c.disorder !== undefined && !counted(c.disorder)) out.push(`${at} carries ${String(c.disorder)} disorder`);
+  if (c.disorder !== undefined && !counted(c.disorder)) out.push(`${at} has invalid starting Morale`);
   return out;
 }
 

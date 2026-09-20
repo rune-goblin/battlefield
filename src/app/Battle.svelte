@@ -1717,7 +1717,7 @@
       <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
       {#if shootCeiling(b, active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(b, active)}</td></tr>{/if}
       <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
-      <tr><td>Disorder</td><td class="stat">{active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
+      <tr><td>Morale</td><td class="stat">{ROUTED_AT - active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
       <tr><td>Move</td><td class="stat">{act.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
       {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
       {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
@@ -1781,7 +1781,7 @@
 
     {#if isRouted(active)}
       <p class="muted">
-        Routed at {active.disorder}/{ROUTED_AT} — it may Move or maneuver, nothing else, and
+        Routed at {ROUTED_AT - active.disorder}/{ROUTED_AT} Morale — it may Move or maneuver, nothing else, and
         it leaves the field at its own edge. An ally's Rally, Inspire or Healing can bring it back.
       </p>
     {:else if !offers.length}

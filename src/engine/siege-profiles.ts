@@ -96,13 +96,13 @@ export const siegeModes = (name: string, kind: 'ram' | 'artillery'): SiegeMode[]
 export function siegeDetail(m: SiegeMode): string {
   const area = { single: 'One unit', burst: 'Three hexes at a corner', wide: 'One hex and its neighbours', line: 'Three hexes in a straight line', cone: 'Three hexes in a fan', wall: 'One wall or gate' }[m.shape];
   const effect: Record<SiegeEffect, string> = {
-    persistent: 'A hit leaves 1 persistent wound', snare: 'A hit holds movement through the target’s next activation',
+    persistent: 'A hit causes 1 persistent damage', snare: 'A hit holds movement through the target’s next activation',
     stun: 'A hit removes 1 action from the next activation', expose: 'A hit exposes the target (−2 Defence) until its next activation',
     push: 'A hit pushes 1 hex away', pull: 'A hit pulls 1 hex closer', nullify: 'A hit removes magical buffs',
     rough: 'Creates difficult ground through next round', web: 'Creates difficult ground and a climb route across walls through next round; hits hold movement',
-    sicken: 'A hit adds 1 disorder',
+    sicken: 'A hit costs the target 1 Morale',
   };
-  return [area, m.damage ? `${m.damage}/${Math.min(4, m.damage + 1)} ${m.shape === 'wall' ? 'structural damage' : 'wounds'} on hit/critical` : 'No wounds',
+  return [area, m.damage ? `${m.damage}/${Math.min(4, m.damage + 1)} ${m.shape === 'wall' ? 'structural damage' : 'damage'} on hit/critical` : 'No damage',
     m.penetration ? `bypass ${m.penetration} hardness` : '', m.effect ? effect[m.effect] : '',
     m.highAngle ? 'ignores cover' : '', m.minimum ? `minimum ${m.minimum} hexes` : '',
     m.waterOnly ? 'affects units in water or shallows' : '', m.groundOnly ? 'affects ground troops' : '', m.cavalryOnly ? 'affects cavalry' : '',

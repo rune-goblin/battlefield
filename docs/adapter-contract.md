@@ -1,5 +1,7 @@
 # Adapters
 
+Players see **Health** (4 minus `wounds`) and **Morale** (3 minus `disorder`). The stored fields continue to count losses so existing saves, events, and campaign imports remain compatible. Rules and UI report remaining capacity; internal contracts retain their field names.
+
 Battlefield is playable on its own. Integrations attach at two seams in `src/engine`, and nothing in the engine imports a DOM or a VTT (`tsconfig.engine.json` compiles it with `lib: ["ES2022"]` and no ambient types).
 
 This file is the code seam and nothing else. The rules are in `public/rules.html`, which is the only place they are written down; where a mapping below has a meaning, that document explains it and this one points at it.

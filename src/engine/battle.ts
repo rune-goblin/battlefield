@@ -147,7 +147,7 @@ export const unit = (state: BattleState, id: string): Unit => {
   return u;
 };
 
-/** A full morale track routes the unit; every lower value still counts as standing. */
+/** Zero Morale routes the unit; any remaining Morale still counts as standing. */
 export const isRouted = (u: Unit) => u.status === 'active' && u.disorder >= ROUTED_AT;
 export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < ROUTED_AT;
 
@@ -646,20 +646,20 @@ function clearAsShooter(state: BattleState, shooterId: string) {
 function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false, saveShift = 0, sourceLevel = attacker.level): number {
   const n = reduceWounds(target, raw);
   if (n < raw) log(state, target, target.stoneskin && !target.guard?.cap
-    ? `${target.name}'s stoneskin caps the critical at one wound.`
+    ? `${target.name}'s stoneskin caps the critical at 1 damage.`
     : `${target.name} has dug in: the critical lands as an ordinary hit.`);
   if (n <= 0) return 0;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
-  log(state, target, `${target.name} takes ${n} wound${n > 1 ? 's' : ''} from ${source} (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
+  log(state, target, `${target.name} takes ${n} damage from ${source} (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (attacker.wrath) {
     attacker.wrath = false;
     target.persistent = { dc: levelDc(attacker.level) };
-    log(state, target, `${target.name} is marked by ${attacker.name}'s wrath: 1 more wound at the end of its next activation.`);
+    log(state, target, `${target.name} is marked by ${attacker.name}'s wrath: 1 damage at the end of its next activation.`);
   }
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return n; }
   if (target.stoneskin) {
-    log(state, target, `${target.name}'s stoneskin costs it no disorder.`);
+    log(state, target, `${target.name}'s stoneskin prevents Morale loss.`);
   } else {
     const modifier = fortitudeModifier(target) + saveShift;
     const dc = levelDc(sourceLevel);
@@ -669,8 +669,8 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
       target.inspired = false;
       log(state, target, `${target.name} resists Press: rolls ${twice!.rolls.join(' and ')}, keeps the worse.`);
     }
-    log(state, target, rollLine(target.name, 'Fortitude save against the wound', c), c, undefined, { unit: target.id, reads: 'brace' });
-    if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a wound taken');
+    log(state, target, rollLine(target.name, 'Fortitude save against Morale loss', c), c, undefined, { unit: target.id, reads: 'brace' });
+    if (!succeeded(c.degree)) addDisorder(state, target, 1, 'damage taken');
   }
   return n;
 }
@@ -688,18 +688,20 @@ function abandonEngines(state: BattleState, u: Unit) {
 function addDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (n === 0 || u.status !== 'active') return;
   const wasRouted = isRouted(u);
+  const previous = u.disorder;
   // Every point fits on the three-pip track.
   u.disorder = Math.max(0, Math.min(ROUTED_AT, u.disorder + n));
   const routed = !wasRouted && isRouted(u);
   const crossed = routed ? ' — routed' : '';
-  log(state, u, `${u.name} is disordered ${u.disorder}/${ROUTED_AT} (${n > 0 ? '+' : ''}${n}, ${why})${crossed}.`);
+  log(state, u, `${u.name} loses ${u.disorder - previous} Morale (Morale ${ROUTED_AT - u.disorder}/${ROUTED_AT}, ${why})${crossed}.`);
   if (routed) abandonEngines(state, u);
 }
 
 function clearDisorder(state: BattleState, u: Unit, n: number, why: string) {
   if (u.disorder === 0) return;
+  const previous = u.disorder;
   u.disorder = Math.max(0, u.disorder - n);
-  log(state, u, `${u.name} clears to disorder ${u.disorder}/${ROUTED_AT} (${why}).`);
+  log(state, u, `${u.name} restores ${previous - u.disorder} Morale (Morale ${ROUTED_AT - u.disorder}/${ROUTED_AT}, ${why}).`);
 }
 
 // Never set while disorder stands (`inspired`'s own invariant), so every call site already
@@ -806,7 +808,7 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
     return;
   }
   if (!away || !enterable(state, ground, away, { flying: target.flying })) {
-    log(state, target, `${target.name} has nowhere to give ground and holds its hex without extra disorder.`);
+    log(state, target, `${target.name} has nowhere to give ground and holds its hex without losing extra Morale.`);
     return;
   }
   moveTo(state, target, away);
@@ -1401,7 +1403,7 @@ function offerFor(state: BattleState, u: Unit, type: Verb, spell: Tree | null): 
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  // Only a full morale track restricts activities to Move and Maneuver.
+  // Only zero Morale restricts activities to Move and Maneuver.
   if (isRouted(u)) return [];
   const contact = engagedEnemies(state, u).length > 0;
   const types: Verb[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
@@ -1422,7 +1424,7 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
 const MANEUVER: { id: string; label: string; detail: string }[] = [
   {
     id: 'break-off', label: 'Break off',
-    detail: 'One Maneuver check against the highest holder. A success moves you one hex to reposition or withdraw; a critical adds a free Move of your Speed and throws off every pursuer. A failure still moves you, but each holder whose grip the roll missed strikes free, one wound at most; a critical failure adds 1 disorder and you stay.',
+    detail: 'One Maneuver check against the highest holder. A success moves you one hex to reposition or withdraw; a critical adds a free Move of your Speed and throws off every pursuer. A failure still moves you, but each holder whose grip the roll missed strikes free, 1 damage at most; a critical failure costs you 1 Morale and you stay.',
   },
   {
     id: 'disengage', label: 'Disengage',
@@ -1430,7 +1432,7 @@ const MANEUVER: { id: string; label: string; detail: string }[] = [
   },
   {
     id: 'fighting-retreat', label: 'Fighting retreat',
-    detail: 'Disengage, and a holder that fails its roll takes 1 disorder as well, drawn out of its line.',
+    detail: 'Disengage, and a holder that fails its roll loses 1 Morale as well, drawn out of its line.',
   },
 ];
 
@@ -1647,7 +1649,7 @@ function endCondition(state: BattleState, target: Unit): boolean {
   }
   if (target.persistent) {
     target.persistent = null;
-    log(state, target, `${target.name} is healed clear of the persistent wound.`);
+    log(state, target, `${target.name} recovers from persistent damage.`);
     return true;
   }
   return false;
@@ -1656,7 +1658,7 @@ function endCondition(state: BattleState, target: Unit): boolean {
 function healWound(state: BattleState, target: Unit) {
   if (target.wounds <= 0) return;
   target.wounds -= 1;
-  log(state, target, `${target.name} is healed: wounds ${target.wounds}/${MAX_WOUNDS}.`);
+  log(state, target, `${target.name} restores 1 Health (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS}).`);
 }
 
 /** One unit a Healing roll reaches, read against its own level DC. */
@@ -1775,7 +1777,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
         if (target.stoneskin) { log(state, target, `${target.name} already has stoneskin.`); break; }
         target.stoneskin = true;
         if (target.id === u.id) target.selfBuffs.push('stoneskin');
-        log(state, target, `${target.name} has stoneskin: every hit caps at one wound and costs no disorder.`);
+        log(state, target, `${target.name} has stoneskin: every hit caps at 1 damage and costs no Morale.`);
       } else {
         if (target.aegis) { log(state, target, `${target.name} is already under an aegis.`); break; }
         target.aegis = { dc: spellDcFor(u) };
@@ -1926,15 +1928,15 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
   const n = reduceWounds(target, 1);
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
-  log(state, target, `${target.name} takes 1 wound from persistent damage (${target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
+  log(state, target, `${target.name} takes ${n} persistent damage (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
   if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return; }
   if (target.stoneskin) {
-    log(state, target, `${target.name}'s stoneskin costs it no disorder.`);
+    log(state, target, `${target.name}'s stoneskin prevents Morale loss.`);
     return;
   }
   const c = roll(state, rng, target, fortitudeModifier(target), dc);
-  log(state, target, rollLine(target.name, 'Fortitude save against the persistent wound', c), c, undefined, { unit: target.id, reads: 'brace' });
-  if (!succeeded(c.degree)) addDisorder(state, target, 1, 'a persistent wound');
+  log(state, target, rollLine(target.name, 'Fortitude save against Morale loss from persistent damage', c), c, undefined, { unit: target.id, reads: 'brace' });
+  if (!succeeded(c.degree)) addDisorder(state, target, 1, 'persistent damage');
 }
 
 // What was laid on the unit's next activation is spent by this one and cleared at the end.

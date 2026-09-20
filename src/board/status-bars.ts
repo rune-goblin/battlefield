@@ -14,7 +14,7 @@ export interface StatusBar {
   label: string;
 }
 
-/** Rules count losses upward; both bars show the capacity that remains. */
+/** Stored losses remain compatible with saves; the interface shows Health and Morale remaining. */
 export function statusBars(wounds: number, disorder: number): { health: StatusBar; morale: StatusBar } {
   const damage = Math.max(0, Math.min(MAX_WOUNDS, wounds));
   const loss = Math.max(0, Math.min(ROUTED_AT, disorder));
@@ -24,12 +24,12 @@ export function statusBars(wounds: number, disorder: number): { health: StatusBa
     health: {
       remaining: health, max: MAX_WOUNDS,
       colour: health === 0 ? STATUS_TRACK : damage >= 3 ? RED : damage >= 2 ? ORANGE : damage >= 1 ? YELLOW : GREEN,
-      label: `Health ${health}/${MAX_WOUNDS} — ${damage} ${damage === 1 ? 'wound' : 'wounds'}${health === 0 ? ' — dead' : ''}`,
+      label: `Health ${health}/${MAX_WOUNDS}${health === 0 ? ' — destroyed' : ''}`,
     },
     morale: {
       remaining: morale, max: ROUTED_AT,
       colour: morale === 0 ? STATUS_TRACK : loss >= 2 ? RED : loss >= 1 ? ORANGE : GREEN,
-      label: `Morale ${morale}/${ROUTED_AT} — ${loss} disorder${morale === 0 ? ' — routed' : ''}`,
+      label: `Morale ${morale}/${ROUTED_AT}${morale === 0 ? ' — routed' : ''}`,
     },
   };
 }

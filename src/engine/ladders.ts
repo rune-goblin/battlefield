@@ -55,16 +55,16 @@ export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]
   ],
   fight: [
     { id: 'strike', verb: 'strikes', type: 'fight', index: 1, label: 'Strike', detail: 'One roll against their Defence. A miss can cost you heart.', fight: { press: false, drive: false } },
-    { id: 'press', verb: 'presses', type: 'fight', index: 2, label: 'Press', detail: 'On a hit, they roll Fortitude twice and keep the worse; failure causes 1 disorder.', fight: { press: true, drive: false } },
-    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Press, and a hit drives them back a hex. You take their ground. A blocked retreat causes no extra disorder.', fight: { press: true, drive: true } },
+    { id: 'press', verb: 'presses', type: 'fight', index: 2, label: 'Press', detail: 'On a hit, they roll Fortitude twice and keep the worse; failure costs them 1 Morale.', fight: { press: true, drive: false } },
+    { id: 'overrun', verb: 'overruns', type: 'fight', index: 3, label: 'Overrun', detail: 'Press, and a hit drives them back a hex. You take their ground. A blocked retreat causes no extra Morale loss.', fight: { press: true, drive: true } },
   ],
   guard: [
     { id: 'brace', verb: 'braces', type: 'guard', index: 1, label: 'Brace', detail: '+2 Defence until you next act.', guard: { defence: 2, cap: false, holds: false, rooted: false } },
-    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Brace, and every hit against you lands as an ordinary hit, a critical capped at one wound.', guard: { defence: 2, cap: true, holds: false, rooted: false } },
+    { id: 'dig-in', verb: 'digs in', type: 'guard', index: 2, label: 'Dig in', detail: 'Brace, and every hit against you lands as an ordinary hit, a critical capped at 1 damage.', guard: { defence: 2, cap: true, holds: false, rooted: false } },
     { id: 'take-cover', verb: 'takes cover', type: 'guard', index: 3, label: 'Take cover', detail: 'Dig in, and +4 Defence in place of the +2; an Overrun cannot drive you back. You may not move again this activation.', guard: { defence: 4, cap: true, holds: true, rooted: true } },
   ],
   rally: [
-    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Roll. A success clears 1 of your own disorder, or inspires you if you have none.', rally: { scope: 'self' } },
+    { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Roll. A success restores 1 Morale, or inspires you if your Morale is full.', rally: { scope: 'self' } },
     { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Steady, and the same result for one adjacent ally you name: it clears 1, or is inspired if it has none.', rally: { scope: 'adjacent' } },
     { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'Rally, and the same result for every friendly unit within 2.', rally: { scope: 'nearby' } },
   ],

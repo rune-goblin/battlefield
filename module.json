@@ -1,7 +1,7 @@
 {
   "id": "battlefield",
   "title": "Battlefield",
-  "description": "A fast abstract battle game for armies: sixty-one hexes, three actions, four wounds.",
+  "description": "A fast abstract battle game for armies: sixty-one hexes, three actions, four Health, three Morale.",
   "version": "0.1.0",
   "url": "https://github.com/rune-goblin/battlefield",
   "manifest": "https://github.com/rune-goblin/battlefield/releases/latest/download/module.json",
