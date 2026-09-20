@@ -2,6 +2,7 @@
   import { isRouted, levelDc, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadCost, engineLoaded } from '../../engine/index.js';
   import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
+  import HealingChoices from '../HealingChoices.svelte';
   import CommitmentPicker from '../CommitmentPicker.svelte';
   import BoardPopup from '../BoardPopup.svelte';
   import { stage } from '../stage-view.svelte.js';
@@ -37,7 +38,7 @@
   {#each options as opt (opt.activity)}
     <button class="popup-row activity-row" class:cast-row={treatment === 'cast'} class:rally-row={treatment === 'rally'} class:shoot-row={treatment === 'shoot'} class:on={opt.index === selected} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => chooseActivity(opt.index)}>
       <span class="popup-verb">
-        <span class="row-cost" class:over={(opt.cost ?? 0) > (c.active?.actions ?? 0)}><ActionCost n={opt.cost ?? opt.index} size="1.15em" /></span>
+        <span class="row-cost" class:over={(opt.cost ?? 0) > (c.active?.actions ?? 0)}><ActionCost n={opt.cost ?? Math.min(opt.index, 3)} size="1.15em" /></span>
         {opt.label}
         {#if !opt.legal && opt.reason}<span class="reason">{opt.reason}</span>{/if}
       </span>
@@ -127,18 +128,19 @@
     {@render pickerHead(c.pickerOffer.label, c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally', c.pickerOffer.spell)}
     {@render activityRows(c.pickerOffer.activities, c.pickerActivity?.index ?? null, c.choosePickerActivity, c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally')}
     {#if c.pickerActivity}
-      {#if canFocus(c.pickerOffer.type, c.pickerOffer.spell)}
-        <CommitmentPicker base={c.pickerActivity.cost ?? c.pickerActivity.index} available={c.actionsLeft} bind:value={c.focus} effect={c.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+      {#if canFocus(c.pickerOffer.type, c.pickerOffer.spell) && (c.pickerOffer.type !== 'cast' || (c.pickerActivity.cost ?? 3) < 3)}
+        <CommitmentPicker base={c.pickerActivity.cost ?? c.pickerActivity.index} available={c.pickerOffer.type === 'cast' ? Math.min(3, c.actionsLeft) : c.actionsLeft} bind:value={c.focus} effect={c.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
       <p class="popup-escapes" aria-live="polite">
         {#if !c.pickerActivity.needsTarget}Choose your commitment, then confirm.
-        {:else if c.pickerService?.placement}{c.activityPick.selected.length ? 'Choose a destination hex.' : 'Choose the unit to translocate.'}
-        {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index > 1}Choose {c.pickerActivity.index} units on the board. {c.activityPick.selected.length} selected.
+        {:else if c.pickerService?.placement}{c.activityPick.selected.length % 2 ? 'Choose a destination hex.' : c.activityPick.selected.length === 2 && c.pickerActivity.index === 4 ? 'Confirm one transfer, or choose a second unit and its destination.' : 'Choose a unit to transfer.'}
+        {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index === 4}Choose yourself or one adjacent ally.
+        {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index > 1}Choose up to {c.pickerActivity.index === 4 ? 1 : c.pickerActivity.index} units on the board. {c.activityPick.selected.length} selected.
         {:else}Choose a target icon on the board to {c.pickerActivity.label.toLowerCase()}.{/if}
       </p>
       {#if c.pickerActivity.needsTarget}
       <div class="activity-targets" aria-label="{c.pickerOffer.label} targets">
-        {#each c.pickerCandidates as target (target.id)}
+        {#each c.pickerCandidates.slice(0, 100) as target (target.id)}
           <button class="popup-row" class:on={c.activityPick.target === target.id} aria-pressed={c.activityPick.target === target.id} onpointerenter={() => c.hoverTargetMarker(target.id)} onpointerleave={() => c.hoverTargetMarker(null)}
             onfocus={() => c.hoverTargetMarker(target.id)} onblur={() => c.hoverTargetMarker(null)} onclick={() => c.choosePickerTarget(target.id)}>
             <span class="popup-verb">{target.label}</span>
@@ -147,6 +149,10 @@
         {/each}
       </div>
       {/if}
+      {#if c.pickerOffer.spell === 'healing' && c.activityPick.target}
+        <HealingChoices units={c.b.units.filter(u => c.activityPick?.target?.split('+').includes(u.id))} renewal={c.pickerActivity.index === 4} bind:choices={c.healingChoices} />
+      {/if}
+      {#if c.pickerCandidates.length > 100}<p class="muted">Choose units and destinations on the board to narrow the list.</p>{/if}
       {#if c.activityPick.selected.length}<button onclick={c.resetPickerTargets}>Reset targets</button>{/if}
     {:else}
       <p class="popup-escapes">Choose an activity.</p>
@@ -164,17 +170,18 @@
     <div class="blast-levels">
       {#each c.blastOffer.activities as opt (opt.index)}
         <button class="popup-row activity-row cast-row" class:on={c.blastLevel === opt.index} class:dim={!opt.legal} disabled={!opt.legal} aria-pressed={c.blastLevel === opt.index} onclick={() => c.chooseBlastLevel(opt.index)}>
-          <span class="popup-verb"><span class="row-cost"><ActionCost n={opt.index} /></span>{opt.label}</span>
+          <span class="popup-verb"><span class="row-cost"><ActionCost n={opt.cost ?? Math.min(opt.index, 3)} /></span>{opt.label}</span>
           <span class="muted">{opt.reason ?? opt.detail}</span>
         </button>
       {/each}
     </div>
     {#if c.blastActivity}
-      <CommitmentPicker base={c.blastActivity.cost ?? c.blastActivity.index} available={c.actionsLeft} bind:value={c.focus} effect="on the spell attack" />
+      {#if (c.blastActivity.cost ?? 3) < 3}<CommitmentPicker base={c.blastActivity.cost ?? c.blastActivity.index} available={Math.min(3, c.actionsLeft)} bind:value={c.focus} effect="on the spell attack" />{/if}
       <p class="popup-escapes" aria-live="polite">
         {#if c.blastLevel === 1}Choose an enemy hex.
         {:else if c.blastLevel === 2}Choose a Blast icon on an edge for the two hexes in a line.
-        {:else}Choose a Blast icon at a corner for the three hexes that meet there.{/if}
+        {:else if c.blastLevel === 3}Choose a Blast icon at a corner for the three hexes that meet there.
+        {:else}Choose a connected area of up to four hexes from the target list. Each option shows the enemies it affects.{/if}
       </p>
       <div class="blast-targets" aria-label="Blast targets">
         {#each c.blastCandidates as target (target.id)}
@@ -323,7 +330,7 @@
     {@render activityRows(c.aimActivities, c.aimed?.index ?? null, (index) => c.aimChoose(c.aimActivities.findIndex((opt) => opt.index === index)), c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally' ? c.aimGroup.offer.type : 'plain')}
     {#if c.aimed?.legal}
       {#if canFocus(c.aimGroup.offer.type, c.aimGroup.offer.spell) && c.aimGroup.offer.spell !== 'blast'}
-        <CommitmentPicker base={c.aimed.cost ?? c.aimed.index} available={c.actionsLeft} bind:value={c.focus} effect={c.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+        <CommitmentPicker base={c.aimed.cost ?? c.aimed.index} available={c.aimGroup.offer.type === 'cast' ? Math.min(3, c.actionsLeft) : c.actionsLeft} bind:value={c.focus} effect={c.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
       {@render popupFoot(c.takeAim, c.aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
     {/if}

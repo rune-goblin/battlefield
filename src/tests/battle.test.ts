@@ -237,13 +237,12 @@ describe('Cast', () => {
       units: [{ card: cleric, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
       board: openBoard(),
     });
-    // Divine's own row (section 11): blast 1, healing 3, controlling 2, offense 2, defense 2,
-    // movement 0 — no Movement row at all, and Blast stops at the one-action activity.
+    // Tier-II Divine: Blast and Controlling I; Healing, Offense, Defense II; no Movement.
     expect(availableActions(s, 'u0').filter((o) => o.type === 'cast').map((o) => o.spell))
       .toEqual(['blast', 'healing', 'controlling', 'offense', 'defense']);
-    expect(castOffer(s, 'blast').activities.map((r) => r.cost)).toEqual([1, null, null]);
-    expect(castOffer(s, 'blast').activities.map((r) => r.label)).toEqual(['Missile', 'Line', 'Burst']);
-    expect(castOffer(s, 'healing').activities.map((r) => r.cost)).toEqual([1, 2, 3]);
+    expect(castOffer(s, 'blast').activities.map((r) => r.cost)).toEqual([1, null, null, null]);
+    expect(castOffer(s, 'blast').activities.map((r) => r.label)).toEqual(['Missile', 'Line', 'Burst', 'Storm']);
+    expect(castOffer(s, 'healing').activities.map((r) => r.cost)).toEqual([1, 2, null, null]);
   });
 
   it('reads one Line roll against the Defence in each of its two hexes', () => {
@@ -279,6 +278,7 @@ describe('Cast', () => {
 
   it('draws a Burst on the three hexes that meet at one corner', () => {
     const s = blastField([20], ['d4']);
+    unit(s, 'u0').level = 11;
     const shapes = castOffer(s, 'blast').activities[2].targets.map((t) => t.id);
     // Six corners meet at the enemy's own hex, so six shapes cover it.
     expect(shapes).toContain('d4+e4+e5');
@@ -344,7 +344,7 @@ describe('Controlling', () => {
 });
 
 describe('Offense', () => {
-  const occultist: UnitCard = { name: 'Occultist', level: 6, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
+  const occultist: UnitCard = { name: 'Occultist', level: 11, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
   const druid: UnitCard = { name: 'Druid', level: 6, role: 'infantry', caster: true, tradition: 'primal', tactics: [] };
 
   it('Sure strike keeps the better of two rolls', () => {
@@ -433,7 +433,7 @@ describe('Offense', () => {
 });
 
 describe('Defense', () => {
-  const occultist: UnitCard = { name: 'Occultist', level: 6, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
+  const occultist: UnitCard = { name: 'Occultist', level: 11, role: 'infantry', caster: true, tradition: 'occult', tactics: [] };
 
   it('Ward and Sure strike on one attack cancel to one roll', () => {
     const s = createBattle({
@@ -505,7 +505,7 @@ describe('Defense', () => {
 
 describe('Movement', () => {
   const wizard: UnitCard = { name: 'Wizard', level: 6, role: 'infantry', caster: true, tradition: 'arcane', tactics: [] };
-  const druid: UnitCard = { name: 'Druid', level: 6, role: 'infantry', caster: true, tradition: 'primal', tactics: [] };
+  const druid: UnitCard = { name: 'Druid', level: 11, role: 'infantry', caster: true, tradition: 'primal', tactics: [] };
 
   it('a sure-footed troop enters swamp for one action, where it pays three', () => {
     const board = openBoard();
@@ -879,8 +879,8 @@ describe('activities carry effects', () => {
     unit(act(s, { type: 'fight', activity: 1, target: 'u0', unit: 'u2' }, scriptedRng([roll, 1])), 'u0').wounds;
 
   it('Brace and Dig in are +2 Defence; Take cover is +4', () => {
-    const defenceByActivity: Record<ActivityIndex, 2 | 4> = { 1: 2, 2: 2, 3: 4 };
-    for (const activity of [1, 2, 3] as ActivityIndex[]) {
+    const defenceByActivity: Record<1 | 2 | 3, 2 | 4> = { 1: 2, 2: 2, 3: 4 };
+    for (const activity of [1, 2, 3] as const) {
       const s = guarded(activity);
       expect(unit(s, 'u0').guard?.defence).toBe(defenceByActivity[activity]);
       expect(defenceOf(s, unit(s, 'u0'), null, false)).toBe(unit(s, 'u0').stats.defence + defenceByActivity[activity]);

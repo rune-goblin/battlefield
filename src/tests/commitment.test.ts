@@ -93,7 +93,7 @@ describe('action commitment', () => {
   });
 
   it('boosts Controlling DC and retains the chosen activity effect', () => {
-    const state = setup(); unit(state, 'u2').square = parse('c5');
+    const state = setup(); unit(state, 'u0').level = 11; unit(state, 'u2').square = parse('c5');
     const s = act(state, { unit: 'u0', type: 'cast', spell: 'controlling', activity: 2, target: 'u2', focus: 1 }, scriptedRng([9]));
     expect(checkFor(s, 'Will save against').dc).toBe(23);
     expect(unit(s, 'u2').disorder).toBe(1);

@@ -1,3 +1,4 @@
+import type { HealingChoice, HealingCondition } from './types.js';
 import { coverBetween, wallCoverBetween, hasSight, isMountain } from './sight.js';
 import { heightEdge, heightRange, TERRAIN } from './terrain.js';
 import {
@@ -12,7 +13,7 @@ import {
   type ActivityIndex, type Verb, type Activity,
 } from './ladders.js';
 import {
-  castActivityOf, TRADITION_CAP, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
+  castActivityOf, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from './magic.js';
 import type { Rng } from './rng.js';
 import { siegeModes, siegeDetail, type SiegeMode } from './siege-profiles.js';
@@ -1268,6 +1269,29 @@ function burstShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
   return out;
 }
 
+function stormShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
+  const g = grid(state);
+  const allowed = new Set(g.cells().filter(c => dist(state, u.square, c) <= ceiling && hasSight(state.board, u.square, c)).map(notation));
+  let frontier = state.units.filter(e => e.side !== u.side && e.status === 'active' && allowed.has(notation(e.square))).map(e => [e.square]);
+  const seen = new Set<string>();
+  const effects = new Map<string, Square[]>();
+  for (let size = 1; size <= 4; size++) {
+    const next: Square[][] = [];
+    for (const shape of frontier) {
+      const key = shapeId(shape);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const hit = enemiesIn(state, u, shape).map(e => e.id).sort().join('+');
+      if (!effects.has(hit)) effects.set(hit, shape);
+      if (size < 4) for (const cell of shape) for (const neighbour of g.neighbours(cell)) {
+        if (allowed.has(notation(neighbour)) && !shape.some(c => sameSquare(c, neighbour))) next.push([...shape, neighbour]);
+      }
+    }
+    frontier = next;
+  }
+  return [...effects.values()];
+}
+
 /** Missile names the enemy itself, as every other attack does; Line and Burst name a shape. */
 function blastTargets(state: BattleState, u: Unit, index: ActivityIndex, ceiling: number): ActivityTarget[] {
   if (index === 1) {
@@ -1275,7 +1299,7 @@ function blastTargets(state: BattleState, u: Unit, index: ActivityIndex, ceiling
       .filter((e) => e.side !== u.side && e.status === 'active' && dist(state, e.square, u.square) <= ceiling && hasSight(state.board, u.square, e.square))
       .map(unitTarget);
   }
-  const shapes = index === 2 ? lineShapes(state, u, ceiling) : burstShapes(state, u, ceiling);
+  const shapes = index === 2 ? lineShapes(state, u, ceiling) : index === 3 ? burstShapes(state, u, ceiling) : stormShapes(state, u, ceiling);
   return shapes
     .filter(shape => shape.every(cell => hasSight(state.board, u.square, cell)))
     .map((shape) => ({ shape, caught: enemiesIn(state, u, shape) }))
@@ -1294,12 +1318,29 @@ function combinations<T>(pool: T[], size: number): T[][] {
   return [...combinations(rest, size - 1).map((c) => [head, ...c]), ...combinations(rest, size)];
 }
 
+function groupsUpTo<T>(pool: T[], maximum: number): T[][] {
+  return Array.from({ length: Math.min(maximum, pool.length) }, (_, i) => combinations(pool, i + 1)).flat();
+}
+function groupTargets(groups: Unit[][]): ActivityTarget[] {
+  return groups.map(group => ({ kind: 'unit', id: group.map(t => t.id).sort().join('+'), label: group.map(t => t.name).join(', ') }));
+}
+function connected(state: BattleState, cells: Square[]): boolean {
+  const reached = new Set([0]);
+  for (let changed = true; changed;) {
+    changed = false;
+    cells.forEach((cell, i) => {
+      if (!reached.has(i) && [...reached].some(j => dist(state, cell, cells[j]) === 1)) { reached.add(i); changed = true; }
+    });
+  }
+  return reached.size === cells.length;
+}
+
 /** Every group Soothe, Heal or Restore may reach: the caster and its adjacent allies, `index`
  * at a time. Heaviest need first, so the cheapest legal row (`activityOption`'s own pick) lands on
  * the group that most wants it. */
 function healTargets(state: BattleState, u: Unit, index: ActivityIndex): ActivityTarget[] {
   const need = (t: Unit) => t.disorder + t.wounds;
-  return combinations(healPool(state, u), index)
+  return groupsUpTo(healPool(state, u).filter(t => hasSight(state.board, u.square, t.square)), index === 4 ? 1 : index)
     .sort((a, b) => b.reduce((n, t) => n + need(t), 0) - a.reduce((n, t) => n + need(t), 0))
     .map((group) => ({ kind: 'unit' as const, id: group.map((t) => t.id).sort().join('+'), label: group.map((t) => t.name).join(', ') }));
 }
@@ -1322,6 +1363,24 @@ function translocateTargets(state: BattleState, allies: Unit[]): ActivityTarget[
       const away = dist(state, a.square, sq);
       if (away < 1 || away > hexes || !standable(state, a, sq)) continue;
       out.push({ kind: 'cell', id: `${notation(a.square)}+${notation(sq)}`, label: `${a.name} to ${notation(sq)}` });
+    }
+  }
+  return out;
+}
+
+function gateTargets(state: BattleState, allies: Unit[]): ActivityTarget[] {
+  const cells = grid(state).cells();
+  const choices = allies.map(ally => ({ ally, destinations: cells.filter(cell => dist(state, ally.square, cell) <= 3 && standable(state, ally, cell)) }));
+  const out: ActivityTarget[] = [];
+  for (let i = 0; i < choices.length; i++) {
+    const first = choices[i];
+    for (const dest of first.destinations) {
+      const prefix = `${notation(first.ally.square)}+${notation(dest)}`;
+      const label = `${first.ally.name} to ${notation(dest)}`;
+      out.push({ kind: 'cell', id: prefix, label });
+      for (let j = i + 1; j < choices.length; j++) for (const other of choices[j].destinations) {
+        if (!sameSquare(dest, other)) out.push({ kind: 'cell', id: `${prefix}+${notation(choices[j].ally.square)}+${notation(other)}`, label: `${label}; ${choices[j].ally.name} to ${notation(other)}` });
+      }
     }
   }
   return out;
@@ -1355,6 +1414,11 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
       const pool = TREE_TARGET[tree] === 'enemy' ? enemies
         : state.units.filter((a) => a.side === u.side && a.status === 'active');
       const inReach = pool.filter((t) => dist(state, t.square, u.square) <= ceiling && hasSight(state.board, u.square, t.square));
+      if (tree === 'movement' && index === 4) return { needsTarget: true, targets: gateTargets(state, inReach) };
+      if (index === 4) {
+        const groups = groupsUpTo(inReach, tree === 'defense' ? 2 : 3);
+        return { needsTarget: true, targets: groupTargets(tree === 'controlling' ? groups.filter(group => connected(state, group.map(t => t.square))) : groups) };
+      }
       if (tree === 'movement' && index === 3) return { needsTarget: true, targets: translocateTargets(state, inReach) };
       return { needsTarget: true, targets: inReach.map(unitTarget) };
     }
@@ -1367,20 +1431,19 @@ const isAttack = (type: Verb, spell: Tree | null) =>
   type === 'fight' || type === 'shoot' || (type === 'cast' && spell === 'blast');
 
 /**
- * Cast's own price: an activity costs its own index, capped by how far the caster's tradition
- * may ever reach in that tree (0 meaning no access, section 11). A tactic-granted tree with no
- * tradition behind it stops at the one-action activity.
+ * Access depends on level and tradition. Spell tiers I–III cost their tier; IV costs three.
+ * A tactic-granted tree with no tradition stops at its first spell.
  */
 function castCostFor(u: Unit, tree: Tree, index: ActivityIndex): number | null {
-  const cap = u.tradition ? TRADITION_CAP[u.tradition][tree] : 1;
-  return index <= cap ? index : null;
+  const cap = u.tradition ? spellCeiling(u.tradition, u.level, tree) : 1;
+  return index <= cap ? spellCost(index) : null;
 }
 
 function activityOption(state: BattleState, u: Unit, type: Verb, index: ActivityIndex, spell: Tree | null, blocked: string | null): ActivityOption {
   const activity = type === 'cast' ? castActivityOf(spell!, index) : activityOf(type, index);
   const cost = type === 'cast' ? castCostFor(u, spell!, index) : index;
-  const { needsTarget, targets } = targetsFor(state, u, type, index, spell);
-  let reason: string | null = blocked ?? (cost === null ? "above your tradition's reach" : null);
+  const { needsTarget, targets } = cost === null ? { needsTarget: true, targets: [] } : targetsFor(state, u, type, index, spell);
+  let reason: string | null = blocked ?? (cost === null ? "above your level or tradition’s reach" : null);
   if (!reason && type === 'guard' && index > 1 && TERRAIN[square(state, u).terrain].braceOnly) reason = 'wet ground allows Brace alone';
   if (!reason && cost !== null && cost > u.actions) reason = `needs ${cost} actions`;
   if (!reason && needsTarget && !targets.length) reason = 'no target';
@@ -1390,7 +1453,7 @@ function activityOption(state: BattleState, u: Unit, type: Verb, index: Activity
 function offerFor(state: BattleState, u: Unit, type: Verb, spell: Tree | null): ActionOffer {
   const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
     : spell && u.castTrees.includes(spell) ? 'already cast this activation' : null;
-  const activities = [1, 2, 3].map((i) => activityOption(state, u, type, i as ActivityIndex, spell, blocked)) as [ActivityOption, ActivityOption, ActivityOption];
+  const activities = (type === 'cast' ? [1, 2, 3, 4] : [1, 2, 3]).map((i) => activityOption(state, u, type, i as ActivityIndex, spell, blocked));
   return {
     type, spell,
     label: spell ? TREE_LABEL[spell] : type[0].toUpperCase() + type.slice(1),
@@ -1415,7 +1478,7 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   const offers = types
     .filter((t) => (t === 'shoot' ? canShoot(state, u) : t === 'fight' ? u.stats.strike !== null : true))
     .map((t) => offerFor(state, u, t, null));
-  for (const t of u.trees) offers.push(offerFor(state, u, 'cast', t));
+  for (const t of u.tradition ? treesForTradition(u.tradition, u.level) : u.trees) offers.push(offerFor(state, u, 'cast', t));
   return offers;
 }
 
@@ -1620,34 +1683,34 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
 
 /** The critical's "one more thing": end the first condition present, pinned through persistent
  * damage — an order this wave fixes, since rules.html lists the six in prose, not by priority. */
-function endCondition(state: BattleState, target: Unit): boolean {
-  if (target.pinnedBy) {
+function endCondition(state: BattleState, target: Unit, choice?: HealingCondition): boolean {
+  if (target.pinnedBy && (!choice || choice === 'pinned')) {
     const pinner = state.units.find((e) => e.id === target.pinnedBy);
     target.pinnedBy = null;
     log(state, target, `${target.name} is healed clear of ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
     return true;
   }
-  if (target.rooted > 0) {
+  if (target.rooted > 0 && (!choice || choice === 'rooted')) {
     target.rooted = 0;
     log(state, target, `${target.name} is healed clear of root.`);
     return true;
   }
-  if (target.suppressedBy) {
+  if (target.suppressedBy && (!choice || choice === 'suppressed')) {
     target.suppressedBy = null;
     log(state, target, `${target.name} is healed clear of suppression.`);
     return true;
   }
-  if (target.exposed) {
+  if (target.exposed && (!choice || choice === 'exposed')) {
     target.exposed = false;
     log(state, target, `${target.name} is healed clear of exposure.`);
     return true;
   }
-  if (target.frightened) {
+  if (target.frightened && (!choice || choice === 'frightened')) {
     target.frightened = false;
     log(state, target, `${target.name} is healed clear of fright.`);
     return true;
   }
-  if (target.persistent) {
+  if (target.persistent && (!choice || choice === 'persistent')) {
     target.persistent = null;
     log(state, target, `${target.name} recovers from persistent damage.`);
     return true;
@@ -1662,13 +1725,24 @@ function healWound(state: BattleState, target: Unit) {
 }
 
 /** One unit a Healing roll reaches, read against its own level DC. */
-function healOne(state: BattleState, target: Unit, degree: Degree) {
+function healOne(state: BattleState, target: Unit, degree: Degree, choice?: HealingChoice) {
   if (degree === 'critical-failure') return;
   clearDisorder(state, target, 1, 'Healing');
   if (degree === 'failure') return;
   healWound(state, target);
   if (degree === 'success') return;
-  if (!endCondition(state, target)) healWound(state, target);
+  if (choice?.extraHealth || !endCondition(state, target, choice?.conditions[0])) healWound(state, target);
+}
+
+function renewOne(state: BattleState, target: Unit, degree: Degree, choice?: HealingChoice) {
+  const amount = { 'critical-success': 3, success: 2, failure: 1, 'critical-failure': 0 }[degree];
+  clearDisorder(state, target, Math.max(1, amount), 'Renewal');
+  for (let i = 0; i < amount; i++) healWound(state, target);
+  const clears = degree === 'critical-success' ? 2 : degree === 'success' ? 1 : 0;
+  for (let i = 0; i < clears; i++) {
+    if (choice && !choice.conditions[i]) break;
+    if (!endCondition(state, target, choice?.conditions[i])) break;
+  }
 }
 
 /** Translocate, the one buff that happens at cast time: the ally is set down whatever lies
@@ -1688,9 +1762,34 @@ function translocate(state: BattleState, u: Unit, label: string, index: Activity
 
 /**
  * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
- * and its own effect; `index` is the activity bought, which is also its price.
+ * and its own effect; `index` is the spell tier, independent of its action price.
  */
 function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: ActivityIndex, action: ActivityAction) {
+  if (index === 4 && tree !== 'blast' && tree !== 'healing') {
+    const label = castActivityOf(tree, index).label;
+    if (tree === 'movement') {
+      const parts = action.target!.split('+');
+      const transfers = Array.from({ length: parts.length / 2 }, (_, i) => ({ ally: unitAt(state, parse(parts[i * 2]))!, landing: parse(parts[i * 2 + 1]) }));
+      log(state, u, `${u.name} casts ${label}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: transfers.map(t => t.ally.id) });
+      for (const { ally, landing } of transfers) { moveTo(state, ally, landing); log(state, ally, `${ally.name} is set down on ${notation(landing)}.`); }
+      return;
+    }
+    const targets = action.target!.split('+').map(id => unit(state, id));
+    log(state, u, `${u.name} casts ${label} on ${targets.map(t => t.name).join(', ')}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: targets.map(t => t.id) });
+    for (const target of targets) {
+      if (tree === 'controlling') {
+        const c = roll(state, rng, target, willModifier(target), controllingDc(u));
+        log(state, target, rollLine(target.name, `Will save against ${label}`, c), c);
+        if (c.degree === 'success') target.frightened = true;
+        else if (c.degree !== 'critical-success') addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, label);
+      } else if (tree === 'offense') target.sureStrike = true;
+      else if (tree === 'defense') {
+        target.stoneskin = true;
+        if (target.id === u.id && !target.selfBuffs.includes('stoneskin')) target.selfBuffs.push('stoneskin');
+      }
+    }
+    return;
+  }
   switch (tree) {
     case 'blast':
       blast(state, rng, u, index, action);
@@ -1705,7 +1804,8 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       for (const target of targets) {
         const c = readCheck(cast.roll, modifier, levelDc(target.level));
         log(state, u, rollLine(u.name, `${activity.label} check for ${target.name}`, c), c, undefined, { unit: target.id, reads: 'check' });
-        healOne(state, target, c.degree);
+        if (index === 4) renewOne(state, target, c.degree, action.healingChoices?.[target.id]);
+        else healOne(state, target, c.degree, action.healingChoices?.[target.id]);
       }
       break;
     }
@@ -2012,9 +2112,19 @@ function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityActio
   if (opt.needsTarget && !opt.targets.some((t) => t.id === action.target)) {
     throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
   }
+  if (action.healingChoices) {
+    if (action.type !== 'cast' || action.spell !== 'healing') throw new Error('recovery choices require Healing');
+    const recipients = action.target!.split('+');
+    for (const [id, choice] of Object.entries(action.healingChoices)) {
+      if (!recipients.includes(id) || !Array.isArray(choice.conditions) || choice.conditions.length > 2
+        || new Set(choice.conditions).size !== choice.conditions.length
+        || choice.conditions.some(c => !['pinned', 'rooted', 'suppressed', 'exposed', 'frightened', 'persistent'].includes(c))
+        || (action.activity === 4 && choice.extraHealth)) throw new Error('invalid recovery choices');
+    }
+  }
   const focus = validateFocus(action);
   const price = opt.cost! + focus;
-  if (price > u.actions) throw new Error(`${opt.label} needs ${price} actions`);
+  if (price > u.actions || (action.type === 'cast' && price > 3)) throw new Error(`${opt.label} needs ${price} actions; commitment is at most three`);
   if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}${focus ? ` (+${focus * ACTION_BONUS} ${action.spell === 'controlling' ? 'spell DC' : 'on the roll'})` : ''}.`);
   if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.activity, action);
   else perform(state, rng, u, activityOf(offer.type, action.activity), action);

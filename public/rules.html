@@ -9,7 +9,7 @@
   @media (prefers-color-scheme: dark) { :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--paper); color:var(--ink); font:17px/1.55 Georgia,"Iowan Old Style","Palatino Linotype",serif; }
-  main { max-width:52rem; margin:0 auto; padding:3rem 1.5rem 5rem; }
+  main { max-width:66rem; margin:0 auto; padding:3rem 1.5rem 5rem; }
   h1 { font-size:2.6rem; line-height:1.1; margin:0 0 .25rem; letter-spacing:-.01em; }
   .sub { color:var(--muted); font-style:italic; margin:0 0 2.5rem; }
   h2 { font-size:1.6rem; margin:3rem 0 .75rem; padding-bottom:.25rem; border-bottom:2px solid var(--rule); }
@@ -39,6 +39,17 @@
   table.paths th:nth-child(4) { border-bottom:3px dotted var(--rule); }
   table.paths td:last-child { color:var(--muted); font-style:italic; }
   @media (max-width:40rem){ .toc{columns:1;} body{font-size:16px;} }
+
+  .matrix { min-width:49rem; table-layout:fixed; }
+  .matrix th:first-child { width:23%; }
+  .matrix th:last-child { width:7%; }
+  .matrix tbody th { background:transparent; }
+  .matrix .row-total { font-weight:bold; background:var(--band); }
+  .level-band,.meta { color:var(--muted); font-size:.85em; }
+  caption { text-align:left; font-weight:bold; margin-bottom:.4rem; }
+  .spells { min-width:38rem; }
+  .spells th:nth-child(2) { width:20%; }
+  .spells td:first-child { white-space:normal; }
 </style>
 </head>
 <body>
@@ -356,7 +367,7 @@
 <tr><td>Fight</td><td>Strike ◆ &middot; Press ◆◆ &middot; Overrun ◆◆◆</td><td>Section 8</td></tr>
 <tr><td>Guard</td><td>Brace ◆ &middot; Dig in ◆◆ &middot; Take cover ◆◆◆</td><td>Section 8</td></tr>
 <tr><td>Rally</td><td>Steady ◆ &middot; Rally ◆◆ &middot; Inspire ◆◆◆</td><td>Section 9</td></tr>
-<tr><td>Cast</td><td>Six trees, three activities each</td><td>Section 11</td></tr>
+<tr><td>Cast</td><td>Six trees, four spell tiers each</td><td>Section 11</td></tr>
 </table></div>
 <p>Where a unit stands filters its menu, which is therefore never long. In contact it is offered Fight and Guard; in the open, Shoot and Guard. A unit at 1 or 2 Morale retains its ordinary activities. A routed unit may only Move or Maneuver. Rally is otherwise always offered. A caster adds a row for each tree its tradition grants, and a troop with battlefield medicine or demoralize adds one row for the tree its tactic grants. An attacker beside a wall may Fight the wall even with nobody defending it.</p>
 
@@ -364,7 +375,7 @@
 <p>Every activity has the same base price for every unit: the one, two or three actions its diamonds show. Choose the activity, its targets and any extra commitment before resolving it.</p>
 <h3>Commitment</h3>
 <p>Fight, Charge, Shoot, Rally, Blast and Healing allow <strong>one extra action for +2, or two for +4</strong> on the activity's roll. Controlling allows the same bonus to its spell DC instead. The bonus applies to this activity alone, including every target of its shared roll. It adds no damage or targets by itself and does not improve a repulse save, a Morale save or an Aegis check.</p>
-<p>Commitment stacks with existing bonuses, including inspiration and a charge's +2. Spend only actions you have, up to two extra even under Haste. Guard, Maneuver, Move and the Offense, Defense and Movement buffs retain their own prices and effects. Tradition limits the activity available, not extra commitment; battlefield medicine and demoralize can concentrate their one-action activity too.</p>
+<p>Commitment stacks with existing bonuses, including inspiration and a charge's +2. Spend only actions you have, up to two extra even under Haste. A spell’s total commitment is at most three actions. Guard, Maneuver, Move and the Offense, Defense and Movement buffs retain their own prices and effects. Tradition limits the activity available, not extra commitment; battlefield medicine and demoralize can concentrate their one-action activity too.</p>
 <div class="wrap"><table>
 <tr><th>Activity</th><th>1 action total</th><th>2 actions total</th><th>3 actions total</th></tr>
 <tr><td>Strike or Fire</td><td>Normal attack</td><td>Attack +2</td><td>Attack +4</td></tr>
@@ -603,136 +614,112 @@
 <p>Source abilities that damage structures use these wall and gate targets. Buildings and city maps remain future work; their eventual structural targets will share the same damage and hardness rules.</p>
 
 <h2 id="magic">11. Magic</h2>
-<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>, and every caster belongs to one of magic's four traditions: <strong>arcane</strong>, <strong>divine</strong>, <strong>occult</strong>, <strong>primal</strong>. A tradition does not carry every kind of magic &mdash; see Tradition, below.</p>
+<p>A unit whose statblock names a spellcasting entry is a <strong>caster</strong>. Each caster belongs to the Arcane, Divine, Occult, or Primal tradition. Its troop level determines its caster tier; its tradition determines the spells it can cast.</p>
+<h3>Caster tiers</h3>
+<table><thead><tr><th>Troop level</th><th>Magic tier</th><th>Battlefield role</th></tr></thead><tbody>
+<tr><td>1–5</td><td>I · Apprentice</td><td>Single-target magic and basic support.</td></tr>
+<tr><td>6–10</td><td>II · Adept</td><td>Wider coverage, stronger protection, and action denial.</td></tr>
+<tr><td>11–15</td><td>III · Master</td><td>Area attacks, immobilization, haste, and teleportation within the tradition’s specialties.</td></tr>
+<tr><td>16–20</td><td>IV · Archmage</td><td>Flexible area effects, deep recovery, and support for several formations.</td></tr>
+</tbody></table>
+<h3>Tradition progression</h3>
+<p>Find your tradition and caster tier. Each entry shows the highest spell tier you can cast in that tree, including all lower tiers. A dash means no access. The Total column counts available spells.</p>
+<div class="tradition-ceilings">
+<div class="wrap"><table class="matrix" id="arcane-ceilings"><caption>Arcane</caption><thead><tr><th scope="col">Caster tier</th><th scope="col">Blast</th><th scope="col">Healing</th><th scope="col">Controlling</th><th scope="col">Offense</th><th scope="col">Defense</th><th scope="col">Movement</th><th scope="col">Total</th></tr></thead><tbody>
+<tr><th scope="row">I <span class="level-band">· levels 1–5</span></th><td>I</td><td>—</td><td>I</td><td>—</td><td>—</td><td>I</td><td class="row-total">3</td></tr>
+<tr><th scope="row">II <span class="level-band">· levels 6–10</span></th><td>II</td><td>—</td><td>II</td><td>I</td><td>I</td><td>II</td><td class="row-total">8</td></tr>
+<tr><th scope="row">III <span class="level-band">· levels 11–15</span></th><td>III</td><td>I</td><td>III</td><td>II</td><td>II</td><td>III</td><td class="row-total">14</td></tr>
+<tr><th scope="row">IV <span class="level-band">· levels 16–20</span></th><td>IV</td><td>I</td><td>III</td><td>II</td><td>II</td><td>IV</td><td class="row-total">16</td></tr>
+</tbody></table></div>
+<div class="wrap"><table class="matrix" id="divine-ceilings"><caption>Divine</caption><thead><tr><th scope="col">Caster tier</th><th scope="col">Blast</th><th scope="col">Healing</th><th scope="col">Controlling</th><th scope="col">Offense</th><th scope="col">Defense</th><th scope="col">Movement</th><th scope="col">Total</th></tr></thead><tbody>
+<tr><th scope="row">I <span class="level-band">· levels 1–5</span></th><td>—</td><td>I</td><td>—</td><td>I</td><td>I</td><td>—</td><td class="row-total">3</td></tr>
+<tr><th scope="row">II <span class="level-band">· levels 6–10</span></th><td>I</td><td>II</td><td>I</td><td>II</td><td>II</td><td>—</td><td class="row-total">8</td></tr>
+<tr><th scope="row">III <span class="level-band">· levels 11–15</span></th><td>II</td><td>III</td><td>II</td><td>III</td><td>III</td><td>I</td><td class="row-total">14</td></tr>
+<tr><th scope="row">IV <span class="level-band">· levels 16–20</span></th><td>II</td><td>IV</td><td>II</td><td>III</td><td>IV</td><td>I</td><td class="row-total">16</td></tr>
+</tbody></table></div>
+<div class="wrap"><table class="matrix" id="occult-ceilings"><caption>Occult</caption><thead><tr><th scope="col">Caster tier</th><th scope="col">Blast</th><th scope="col">Healing</th><th scope="col">Controlling</th><th scope="col">Offense</th><th scope="col">Defense</th><th scope="col">Movement</th><th scope="col">Total</th></tr></thead><tbody>
+<tr><th scope="row">I <span class="level-band">· levels 1–5</span></th><td>—</td><td>—</td><td>I</td><td>I</td><td>—</td><td>I</td><td class="row-total">3</td></tr>
+<tr><th scope="row">II <span class="level-band">· levels 6–10</span></th><td>I</td><td>I</td><td>II</td><td>II</td><td>—</td><td>II</td><td class="row-total">8</td></tr>
+<tr><th scope="row">III <span class="level-band">· levels 11–15</span></th><td>II</td><td>II</td><td>III</td><td>III</td><td>I</td><td>III</td><td class="row-total">14</td></tr>
+<tr><th scope="row">IV <span class="level-band">· levels 16–20</span></th><td>II</td><td>II</td><td>IV</td><td>IV</td><td>I</td><td>III</td><td class="row-total">16</td></tr>
+</tbody></table></div>
+<div class="wrap"><table class="matrix" id="primal-ceilings"><caption>Primal</caption><thead><tr><th scope="col">Caster tier</th><th scope="col">Blast</th><th scope="col">Healing</th><th scope="col">Controlling</th><th scope="col">Offense</th><th scope="col">Defense</th><th scope="col">Movement</th><th scope="col">Total</th></tr></thead><tbody>
+<tr><th scope="row">I <span class="level-band">· levels 1–5</span></th><td>I</td><td>I</td><td>—</td><td>—</td><td>—</td><td>I</td><td class="row-total">3</td></tr>
+<tr><th scope="row">II <span class="level-band">· levels 6–10</span></th><td>II</td><td>II</td><td>—</td><td>I</td><td>I</td><td>II</td><td class="row-total">8</td></tr>
+<tr><th scope="row">III <span class="level-band">· levels 11–15</span></th><td>III</td><td>III</td><td>I</td><td>II</td><td>II</td><td>III</td><td class="row-total">14</td></tr>
+<tr><th scope="row">IV <span class="level-band">· levels 16–20</span></th><td>IV</td><td>IV</td><td>I</td><td>II</td><td>II</td><td>III</td><td class="row-total">16</td></tr>
+</tbody></table></div>
+</div>
 
+<p>A caster uses its <strong>spell attack</strong> for Blast and Healing. Enemies save Will against its <strong>spell DC</strong> for Controlling and Aegis. Apply the ordinary penalties from missing Morale and conditions.</p>
 <h3>Casting</h3>
-<p>A caster carries two more numbers on its sheet, alongside Battle DC and Salvo DC: <strong>spell attack</strong>, what the caster rolls to attack with Blast and to heal, and <strong>spell DC</strong>, what a target must beat to resist Controlling. Neither is Will or the level-DC table doing double duty &mdash; they're the caster's own imported numbers, the same way Strike and Battle DC already are.</p>
-<p>A cast is priced like every other activity: one, two or three actions for the activity you choose from a tree, at the tree's own range. A tree is cast once an activation. A caster has the three actions every unit has, and a Blast spends the activation's one attack. A buff falls on the caster as readily as on an ally, and it lasts until the unit it fell on has next acted. So a caster's own ward stands through the enemy's turn, while its own sure strike, wrath, burst of speed or sure footing must be spent in the rest of the activation it cast in. Haste alone lasts two activations, and a caster hasting itself takes the first of the two actions at once. Translocate is instant.</p>
-<p>A cast is one roll. Blast is a spell attack against Defence, and its one roll is read against every hex its shape covers. Healing is a spell attack against the level DC of the unit healed, read against each unit reached. Controlling is the target's Will save against your spell DC. Offense and Movement have nothing to resist and roll nothing; Defense's Aegis is the enemy's Will save against your spell DC.</p>
+<ul>
+<li>Every unit takes three actions on its activation. Spell costs remain one, two, or three actions. Tier IV spells cost three actions.</li>
+<li>Each caster may cast once from each tree per activation. Blast uses the same single attack allowance as Fight and Shoot. Casting uses actions and positioning; it requires no spell slots or mana.</li>
+<li>Blast and Healing may spend extra actions for +2 on their roll per action. Controlling gains +2 spell DC per extra action. Total commitment is at most three actions. Tier never changes that price or bonus.</li>
+<li>A level-5 arcane apprentice may spend three actions on Missile at +4. A level-10 arcane adept may spend three actions on Line at +2. A level-11 arcane caster may spend three actions on its newly available Soothe at +4. Extra commitment improves the available spell’s roll; its target count and shape stay fixed.</li>
+<li>Each selected target must meet the tree’s range and ordinary line-of-sight rules. A caster may receive its own beneficial magic. A multi-target spell affects each recipient once. Choose all targets before rolling.</li>
+<li>Beneficial spells affect surviving units, including undead troops and units that have routed. Restoring at least 1 Morale ends a rout. Destroyed units remain destroyed.</li>
+<li>Spell buffs follow these stacking rules. Recasting the same active effect grants no additional benefit. Different effects can coexist. Ward and Sure strike cancel on the same attack. Sanctuary counts as Stoneskin, and Battle chorus counts as Sure strike for these rules.</li>
+</ul>
+<p>Except for Haste and instantaneous transfers, a self-cast buff expires at the end of the caster’s current activation; a buff on another unit expires at the end of that unit’s next activation. Ward, Stoneskin, Aegis, and Sanctuary instead protect a self-caster through the end of its next activation. Each recipient tracks its own expiry.</p>
+<p>Battlefield medicine continues to grant Soothe through Will. Demoralize continues to grant Dread through the troop’s level DC. Troop level alone grants these tactics no further spells.</p>
+<section id="trees"><h3>The six spell trees</h3>
+<p>Each table lists spell tier and action cost separately. Your tradition’s progression determines which spells you can cast. Each spell has its own effect; casting it applies the effect in its row.</p>
+<section id="blast"><h4>Blast</h4><p class="meta">Long range · spends the activation’s attack</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Missile</td><td class="cost">1</td><td>Make a spell attack against one enemy’s Defence. A success deals 1 damage; a critical success deals 2. Resolve the ordinary Fortitude save against Morale loss.</td></tr>
+<tr><td>II</td><td>Line</td><td class="cost">2</td><td>Choose two adjacent hexes on a straight line from the caster. Make one spell attack and read it against each enemy in those hexes. Resolve damage and Fortitude saves as Missile.</td></tr>
+<tr><td>III</td><td>Burst</td><td class="cost">3</td><td>Choose a corner and the three hexes that meet there. Make one spell attack and read it against each enemy in those hexes. Resolve each target as Missile.</td></tr>
+<tr><td>IV</td><td>Storm</td><td class="cost">3</td><td><p><strong>Attack enemies in up to four connected hexes.</strong> Choose the first hex, then add up to three more. Each new hex must share an edge with a hex you already chose. Every hex must be within long range and visible to the caster.</p><p>Roll one spell attack and compare that result with each enemy’s Defence. Each hit deals 1 damage; each critical hit deals 2. Each enemy that takes damage makes the usual Fortitude save against Morale loss.</p></td></tr>
+</tbody></table></div>
+<p>Blast affects enemies in its chosen hexes. Each affected hex requires range and sight from the caster. A hit deals 1 damage and a critical hit deals 2; tier-IV access expands coverage. Each target resolves its own Fortitude save and protective effects. If any target has Ward or the caster has Sure strike, roll a second die for the whole shape. Each target reads the pair against its own Defence: a target with Ward keeps the worse result, or the first die alone if the caster also has Sure strike; other targets keep the better result under Sure strike, and the first die otherwise. An Aegis save that fails still wastes the whole attack activity.</p>
+</section>
+<section id="healing"><h4>Healing</h4><p class="meta">Touch · yourself or an adjacent ally</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Soothe</td><td class="cost">1</td><td>Choose one surviving unit on your side: yourself or an adjacent ally. Roll spell attack against its level DC and apply the healing result below.</td></tr>
+<tr><td>II</td><td>Heal</td><td class="cost">2</td><td>Choose up to two distinct units, each yourself or an adjacent ally. Roll once and read the result against each recipient’s level DC. Apply the healing result once to each.</td></tr>
+<tr><td>III</td><td>Restore</td><td class="cost">3</td><td>Choose up to three distinct units, each yourself or an adjacent ally. Roll once and read the result against each recipient’s level DC. Apply the healing result once to each.</td></tr>
+<tr><td>IV</td><td>Renewal</td><td class="cost">3</td><td><p><strong>Restore one unit: yourself or an adjacent ally.</strong> Roll spell attack against that unit’s level DC.</p><ul><li><strong>Critical success:</strong> restore 3 Health and 3 Morale, and clear up to two eligible conditions.</li><li><strong>Success:</strong> restore 2 Health and 2 Morale, and clear one eligible condition.</li><li><strong>Failure:</strong> restore 1 Health and 1 Morale.</li><li><strong>Critical failure:</strong> restore 1 Morale.</li></ul><p>The unit’s controller chooses which conditions to clear: exposed, suppressed, pinned, rooted, frightened, or persistent damage. Recovery stops at 4 Health and 3 Morale.</p></td></tr>
+</tbody></table></div>
+<div class="wrap"><table><caption>Healing results</caption><thead><tr><th>Roll against recipient’s level DC</th><th>Soothe, Heal, Restore</th><th>Renewal</th></tr></thead><tbody>
+<tr><td>Critical success</td><td>Restore 1 Health and 1 Morale; also clear one eligible condition or restore 1 extra Health.</td><td>Restore 3 Health and 3 Morale, and clear up to two eligible conditions.</td></tr>
+<tr><td>Success</td><td>Restore 1 Health and 1 Morale.</td><td>Restore 2 Health and 2 Morale, and clear one eligible condition.</td></tr>
+<tr><td>Failure</td><td>Restore 1 Morale.</td><td>Restore 1 Health and 1 Morale.</td></tr>
+<tr><td>Critical failure</td><td>No recovery.</td><td>Restore 1 Morale.</td></tr>
+</tbody></table></div><p>Eligible conditions are exposed, suppressed, pinned, rooted, frightened, and persistent damage. The recipient’s controller chooses. Recovery stops at 4 Health and 3 Morale. Stun and other effects retain their ordinary durations.</p>
+</section>
+<section id="controlling"><h4>Controlling</h4><p class="meta">Medium range · enemies save Will against spell DC</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Dread</td><td class="cost">1</td><td>Choose one enemy. On a failed Will save it loses 1 Morale. Apply the other degrees of success below.</td></tr>
+<tr><td>II</td><td>Stun</td><td class="cost">2</td><td>Choose one enemy. On a failed save it loses 1 Morale and loses one action on its next activation.</td></tr>
+<tr><td>III</td><td>Hold</td><td class="cost">3</td><td>Choose one enemy. On a failed save it loses 1 Morale, loses one action on its next activation, and becomes rooted for that activation. Rooted prevents Move, Charge, and Maneuver.</td></tr>
+<tr><td>IV</td><td>Terror</td><td class="cost">3</td><td><p><strong>Frighten up to three enemies in a connected group.</strong> Choose one enemy, then add up to two more. Each additional enemy must share a hex edge with an enemy you already chose. Each target must be within medium range and visible to the caster.</p><p>Each target makes a separate Will save against your spell DC:</p><ul><li><strong>Critical success:</strong> no effect.</li><li><strong>Success:</strong> frightened until the end of its next activation (−1 to rolls and Defence).</li><li><strong>Failure:</strong> lose 1 Morale.</li><li><strong>Critical failure:</strong> lose 2 Morale.</li></ul></td></tr>
+</tbody></table></div>
+<p>A critical success on the Will save prevents the effect. A success causes frightened until the end of the target’s next activation: −1 to rolls and Defence. A failure applies the spell’s effect. A critical failure applies that effect with 2 Morale lost in place of 1. Terror uses this sequence separately for each target. Repeated casts of Stun or Hold keep the same one-action loss and root duration; they add no further action loss or duration.</p>
+</section>
+<section id="offense"><h4>Offense</h4><p class="meta">Short range · yourself or an ally · automatic effects</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Sure strike</td><td class="cost">1</td><td>One recipient rolls its next attack twice and keeps the better result. The effect expires at the end of that recipient’s next activation.</td></tr>
+<tr><td>II</td><td>Wrath</td><td class="cost">2</td><td>The recipient’s next hit applies persistent damage: the target takes 1 damage at the end of its next activation, then makes the ordinary Fortitude save against Morale loss using the attacker’s level DC. The unused buff expires at the end of the recipient’s next activation.</td></tr>
+<tr><td>III</td><td>Haste</td><td class="cost">3</td><td>One recipient gains one extra action on each of its next two activations. A caster that hastes itself gains the first action immediately. The extra action obeys the ordinary limit of one attack and one cast per tree per activation.</td></tr>
+<tr><td>IV</td><td>Battle chorus</td><td class="cost">3</td><td><p><strong>Give up to three friendly units a better chance to hit.</strong> Choose different units within short range and the caster’s line of sight. You may include the caster.</p><p>Each chosen unit rolls its next attack twice and keeps the better result, then spends its benefit. An unused benefit expires at the end of that unit’s next activation. For the caster, it expires at the end of the current activation.</p><p>This is Sure strike on each chosen unit; the two spells share the same stacking and Ward cancellation rules.</p></td></tr>
+</tbody></table></div>
+</section>
+<section id="defense"><h4>Defense</h4><p class="meta">Short range · yourself or an ally</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Ward</td><td class="cost">1</td><td>Until the end of the recipient’s next activation, the first attack against it rolls twice and keeps the worse result. Ward then ends.</td></tr>
+<tr><td>II</td><td>Stoneskin</td><td class="cost">2</td><td>Until the end of the recipient’s next activation, every hit against it deals at most 1 damage and causes no Morale loss from that damage.</td></tr>
+<tr><td>III</td><td>Aegis</td><td class="cost">3</td><td>Until the end of the recipient’s next activation, an enemy that would attack it first saves Will against the caster’s spell DC. A failure or critical failure wastes that attack activity and its actions; a success or critical success allows the attack.</td></tr>
+<tr><td>IV</td><td>Sanctuary</td><td class="cost">3</td><td><p><strong>Protect up to two friendly units from heavy damage and Morale loss from damage.</strong> Choose different units within short range and the caster’s line of sight. You may include the caster.</p><p>Every hit against a chosen unit deals at most 1 damage. That damage causes zero Morale loss. Each unit’s protection lasts until the end of its own next activation, including when the caster protects itself.</p><p>This is Stoneskin on each chosen unit; the two spells share the same stacking rules.</p></td></tr>
+</tbody></table></div>
+</section>
+<section id="movement"><h4>Movement</h4><p class="meta">Short range · yourself or an ally · automatic effects</p><div class="wrap"><table class="spells"><thead><tr><th>Tier</th><th>Spell</th><th>Actions</th><th>Effect</th></tr></thead><tbody>
+<tr><td>I</td><td>Burst of speed</td><td class="cost">1</td><td>One recipient gains 1 extra hex of movement budget for its next activation. Terrain costs apply. On a self-cast, use the bonus during this activation. The bonus applies once per activation.</td></tr>
+<tr><td>II</td><td>Sure footing</td><td class="cost">2</td><td>On the recipient’s next activation, every hex it can enter costs 1 movement and its charge may cross that terrain, including climbs. Walls, cliffs, and other barriers retain their ordinary restrictions. On a self-cast, the effect applies during this activation.</td></tr>
+<tr><td>III</td><td>Translocate</td><td class="cost">3</td><td>Place one recipient immediately in an empty legal destination up to four hexes from its current hex. Intervening terrain, walls, and enemy contact do not impede the transfer. Departure triggers no free strike.</td></tr>
+<tr><td>IV</td><td>Gate</td><td class="cost">3</td><td><p><strong>Instantly teleport up to two friendly units.</strong> Choose different units within short range and the caster’s line of sight. You may include the caster.</p><p>Choose a separate destination for each unit, up to three hexes from that unit’s starting hex. Both destinations must be empty before the spell and must be hexes those units can occupy. Each destination may lie beyond the caster’s range or sight.</p><p>Move both units at the same time. They pass over intervening terrain, walls, and units. They can leave enemy contact without triggering a free strike.</p></td></tr>
+</tbody></table></div>
+<p>A legal transfer destination is an empty hex on the board that the recipient may occupy under its movement rules. Measure transfer distance between the recipient’s starting hex and destination. The landing hex may lie beyond the caster’s short range or sight; the recipient must begin within range and sight. A root prevents ordinary movement but permits these magical transfers, under the movement rules.</p>
+</section>
+</section>
 
-<h3>Tradition</h3>
-<p>Each cell below is the highest activity a tradition may choose in that tree, 0 meaning no access at all. Extra commitment can raise the total cost above that number without granting a higher activity. Nothing reaches every tree, and nothing sits at 0 in more than two.</p>
-<div class="wrap"><table>
-<tr><th>Tree</th><th>Arcane</th><th>Divine</th><th>Occult</th><th>Primal</th></tr>
-<tr><td>Blast</td><td>3</td><td>1</td><td>2</td><td>2</td></tr>
-<tr><td>Healing</td><td>0</td><td>3</td><td>1</td><td>2</td></tr>
-<tr><td>Controlling</td><td>2</td><td>2</td><td>3</td><td>1</td></tr>
-<tr><td>Offense (buff)</td><td>1</td><td>2</td><td>3</td><td>1</td></tr>
-<tr><td>Defense (buff)</td><td>2</td><td>3</td><td>1</td><td>2</td></tr>
-<tr><td>Movement (buff)</td><td>3</td><td>0</td><td>1</td><td>3</td></tr>
-<tr><td><em>Total</em></td><td><em>11</em></td><td><em>11</em></td><td><em>11</em></td><td><em>11</em></td></tr>
-</table></div>
-<p>Every column sums to 11 &mdash; a budget check, not proof of equal power. A 3 in Blast and a 3 in Movement aren't worth the same at the table, so this only rules out one tradition being flatly starved next to the other three.</p>
-
-<h3>The six trees</h3>
-<p>Each activity buys its own kind of thing, as every activity on the board does. Each tree has one fixed range, and a cast is instant. The chances quoted are at parity: a level-6 caster against level-6 troops.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Blast &middot; long range &middot; the activation's attack</h4>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Missile</td><td>◆</td><td>A spell attack against one target's Defence: a hit is 1 damage, a critical 2, then the Fortitude save or lose 1 Morale, as any hit.</td></tr>
-<tr><td>Line</td><td>◆◆</td><td>Two adjacent hexes on one straight line out from the caster's hex, the caster's choice. The one roll is read against the enemy in each: a hit 1 damage, a critical 2, then the save, as any hit.</td></tr>
-<tr><td>Burst</td><td>◆◆◆</td><td>A corner of the grid within range, the caster's choice, and the three hexes that meet at it. The one roll is read against the enemy in each: a hit 1 damage, a critical 2, then the save, as any hit.</td></tr>
-</table></div>
-<table>
-<tr><th>Cast, every hex filled</th><th>Expected damage at parity</th><th>Beside</th></tr>
-<tr><td>Missile ◆</td><td>0.40</td><td>A Strike or a Fire</td></tr>
-<tr><td>Line ◆◆</td><td>0.80</td><td>&mdash;</td></tr>
-<tr><td>Burst ◆◆◆</td><td>1.20</td><td>Overrun, 0.40 and a shove</td></tr>
-</table>
-
-<p><strong>Concentration.</strong> Three actions buy Missile at +4 against one enemy, Line at +2 against two adjacent hexes in its existing shape, or Burst at the normal modifier against three hexes at a corner. Each enemy receives one resolution. Range and shape stay the same.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Healing &middot; touch: yourself or an adjacent ally &middot; the caster's spell attack against the unit's own level DC</h4>
-<p>The roll says how much Health and Morale return; the activity says how many units it reaches, as Rally's does. One roll, d20 + spell attack, minus missing Morale, read against the level DC of each unit healed. The level difference does the work: a level-6 caster on a level-2 levy needs a 5, on its peer an 11, on a level-15 unit a natural 20.</p>
-<table>
-<tr><th>Healing roll</th><th>The unit</th></tr>
-<tr><td>Critical success</td><td>Restores 1 Health and 1 Morale, and one more thing: a condition on it ends (exposed, suppressed, pinned, rooted, frightened or persistent damage), or it restores 1 more Health</td></tr>
-<tr><td>Success</td><td>Restores 1 Health and 1 Morale</td></tr>
-<tr><td>Failure</td><td>Restores 1 Morale</td></tr>
-<tr><td>Critical failure</td><td>Nothing</td></tr>
-</table>
-<table>
-<tr><th>Caster on unit</th><th>Needs</th><th>Success</th><th>Critical</th></tr>
-<tr><td>Level 6 on level 2</td><td>5</td><td>80%</td><td>30%</td></tr>
-<tr><td>Level 6 on level 6</td><td>11</td><td>50%</td><td>5%</td></tr>
-<tr><td>Level 15 on level 6</td><td>any</td><td>100%</td><td>60%</td></tr>
-<tr><td>Level 6 on level 15</td><td>23</td><td>5%, a natural 20</td><td>0%</td></tr>
-<tr><td>Level 1 on level 15</td><td>30</td><td>0%</td><td>0%</td></tr>
-</table>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Soothe</td><td>◆</td><td>One unit: yourself or an adjacent ally.</td></tr>
-<tr><td>Heal</td><td>◆◆</td><td>Two units, each yourself or an adjacent ally.</td></tr>
-<tr><td>Restore</td><td>◆◆◆</td><td>Three units, each yourself or an adjacent ally.</td></tr>
-</table></div>
-
-<p><strong>Concentration.</strong> Three actions buy Soothe at +4 for one recipient, Heal at +2 for two, or Restore at the normal modifier for three. Roll once and read that roll against each recipient's level DC; each receives the result once.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Controlling &middot; medium range &middot; the target's Will save against your spell DC</h4>
-<p>One save gates every activity. <strong>Frightened</strong> imposes a temporary &minus;1 to rolls and Defence until the end of the target’s next activation. It stacks with the penalty for missing Morale and leaves the Morale track unchanged. The chances below use a level-6 caster’s spell DC of 21 against a moderate level-6 Will of +14.</p>
-<table>
-<tr><th>Will save</th><th>At parity</th><th>The target</th></tr>
-<tr><td>Critical success</td><td>20%</td><td>Nothing</td></tr>
-<tr><td>Success</td><td>50%</td><td>Frightened, whatever the activity</td></tr>
-<tr><td>Failure</td><td>25%</td><td>The activity's effect</td></tr>
-<tr><td>Critical failure</td><td>5%</td><td>The activity's effect, with 2 Morale lost in place of Dread’s 1</td></tr>
-</table>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Dread</td><td>◆</td><td>On a failed save the target loses 1 Morale.</td></tr>
-<tr><td>Stun</td><td>◆◆</td><td>Dread, and it has one action fewer on its next activation.</td></tr>
-<tr><td>Hold</td><td>◆◆◆</td><td>Stun, and it is rooted on its next activation: no Move, Charge or Maneuver.</td></tr>
-</table></div>
-<p>Frightened is a condition, so a Healing critical can end it. Each extra action committed adds +2 to the spell DC for this cast, up to +4. Three actions can buy Dread at DC +4, Stun at DC +2, or Hold at its normal DC.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Offense &middot; short range: yourself or an ally</h4>
-<p>Each buff is its own effect at its own price, and includes nothing below it. The tradition's cap says which of the three a caster may buy.</p>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Sure strike</td><td>◆</td><td>The ally rolls its next attack twice and takes the better.</td></tr>
-<tr><td>Wrath</td><td>◆◆</td><td>The ally's next hit deals <strong>persistent damage</strong>: at the end of the target's next activation it takes 1 damage, and rolls Fortitude against the attacker's level DC or loses 1 Morale, as any damage.</td></tr>
-<tr><td>Haste</td><td>◆◆◆</td><td>The ally has an additional action on each of its next two activations. Cast on yourself, the first of the two comes at once, in the activation you cast in.</td></tr>
-</table></div>
-<p>A second Sure strike on a unit already rolling twice is nothing. A second Haste on a hasted unit is nothing. Persistent damage is a condition, never a damage type, so no unit is immune to it and a Healing critical ends it before it lands.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Defense &middot; short range: yourself or an ally</h4>
-<p>Three separate effects, each at its own price, and the ally spends nothing. Guard sells Defence and the damage cap. Defense sells the attacker's roll, the Morale lost from damage, and the attacker's actions. Aegis is the one buff that rolls, on the enemy's Will at the enemy's own time, as Controlling does.</p>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Ward</td><td>◆</td><td>Until the ally has next acted, the first attack against it is rolled twice and the attacker takes the worse.</td></tr>
-<tr><td>Stoneskin</td><td>◆◆</td><td>Until the ally has next acted, every hit against it is capped at 1 damage and costs it no Morale.</td></tr>
-<tr><td>Aegis</td><td>◆◆◆</td><td>Until the ally has next acted, an enemy that would attack it first rolls Will against your spell DC. On a failure the activity is wasted, actions and all.</td></tr>
-</table></div>
-<table>
-<tr><th>Buff on one attack against the ally</th><th>At parity</th></tr>
-<tr><td>None</td><td>0.40 damage; a Fight misses 65%</td></tr>
-<tr><td>Ward ◆</td><td>0.18 damage; a Fight misses 79%</td></tr>
-<tr><td>Stoneskin ◆◆</td><td>No save against Morale loss; a Press or a critical is 1 damage</td></tr>
-<tr><td>Aegis ◆◆◆</td><td>35% of attacks wasted against spell DC 21; a level-15 caster's DC wastes most</td></tr>
-</table>
-<p>Ward and Sure strike on the same attack cancel: one roll. A second Ward, Stoneskin or Aegis on a unit already under it is nothing.</p>
-<p>A Blast is one attack over several hexes. A ward on any unit caught, or a sure strike on the caster, throws a second die for the shape, and each unit reads that pair against its own Defence: a warded unit keeps the worse, or the first die alone when the caster also has a sure strike; the rest keep the better under a sure strike, the first die otherwise. An aegis on any unit in the shape gates the cast as a whole, and a failed save wastes the whole activity, actions and all.</p>
-
-<h4 style="margin:1.25rem 0 .35rem">Movement &middot; short range: yourself or an ally</h4>
-<p>Three separate effects, bought one at a time. Burst of speed grants extra movement, Sure footing eases terrain, and Translocate moves the ally at cast time.</p>
-<div class="wrap"><table>
-<tr><th>Activity</th><th>Cost</th><th>What it does</th></tr>
-<tr><td>Burst of speed</td><td>◆</td><td>Grant 1 extra hex of movement for the ally’s next activation, with no roll. On yourself, spend the bonus this activation. Apply ordinary terrain costs. The bonus applies once per activation and does not stack with further casts.</td></tr>
-<tr><td>Sure footing</td><td>◆◆</td><td>Every hex costs the ally 1 on its next activation: forest, rough ground, settlement, swamp, shallows and a climb are open ground to it, and a charge may cross them.</td></tr>
-<tr><td>Translocate</td><td>◆◆◆</td><td>Place the ally now in any empty hex up to 4 hexes from its current position, whatever lies between. This distance is independent of either troop’s Speed. Leaving contact costs it nothing and nothing strikes it. Choose the ally within short range of the caster; measure the four-hex travel distance from the ally.</td></tr>
-</table></div>
-<table>
-<tr><th>Ally, infantry at one hex an action</th><th>Without</th><th>With</th></tr>
-<tr><td>Enter forest</td><td>2 actions</td><td>1, Sure footing</td></tr>
-<tr><td>Enter swamp</td><td>3 actions</td><td>1, Sure footing</td></tr>
-<tr><td>Climb one level into forest</td><td>3 actions</td><td>1, Sure footing</td></tr>
-<tr><td>Cross a river, a cliff, or a fort wall</td><td>Never</td><td>Translocate, up to 4 hexes</td></tr>
-<tr><td>Leave contact</td><td>Break off ◆ with a check, or Disengage ◆◆</td><td>Translocate, no action of its own</td></tr>
-<tr><td>Four hexes of open ground</td><td>Four actions of its own</td><td>Translocate, none of its own</td></tr>
-</table>
-
-<p>Three trained tactics grant a fixed effect to a troop with no magic of its own. <strong>Battlefield medicine</strong> grants Soothe, rolled off the troop's own Will in place of spell attack. <strong>Defend allies</strong> grants the Guard share (section 8): no cast, no roll, just what Brace already buys shared with a neighbour. <strong>Demoralize</strong> grants Dread, read against the troop's own level DC in place of spell DC. Each is the one-action activity alone; a troop with no tradition has no cap to raise it past that.</p>
+<p><strong>Defend allies</strong> grants the Guard share described in section 8. It grants no spells.</p>
 
 <h2 id="siege">12. Siege engines</h2>
 <p>An engine deploys on any dry hex, and the unit deployed on or beside it claims it for its army. An engine no unit claims at deployment belongs to neither army. It does nothing and stays where it stands until it is claimed: at the end of a round it goes to the army that alone has a unit standing on or beside it, and it waits while both armies do. Once claimed it is worked like any other emplacement, and hauled if it is mobile. A unit deployed on it may begin the battle hauling it, and an engine travels with a unit only while that unit hauls it. An emplacement is worked by whichever friendly unit stands in or beside it, and it needs no crew of its own; leave it alone and it is abandoned where it stands.</p>

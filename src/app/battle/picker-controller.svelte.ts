@@ -1,4 +1,4 @@
-import { type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt } from '../../engine/index.js';
+import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
 import type { BattleState, EngineState, Unit } from '../../engine/index.js';
@@ -75,6 +75,7 @@ export function createPickerController(s: PickerShared) {
   // Cast and Rally show their activities before asking for a target.
   let activityPick = $state<{ key: string; index: ActivityIndex | null; selected: string[]; target?: string } | null>(null);
   let targetHover = $state<string | null>(null);
+  let healingChoices = $state<Record<string, HealingChoice>>({});
   const pickerOffer = $derived(activityPick?.key === 'siege' ? s.siegeOffer : s.offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
   const pickerActivity = $derived(pickerOffer?.activities.find((o) => o.index === activityPick?.index) ?? null);
   const pickerService = $derived(s.active && pickerOffer && pickerActivity ? new TargetingService(s.b, s.active, pickerOffer, pickerActivity) : null);
@@ -91,6 +92,7 @@ export function createPickerController(s: PickerShared) {
     aim = null; s.unpark(); s.clearRing();
     targetHover = null;
     activityPick = { key, index: null, selected: [] };
+    healingChoices = {};
   }
 
   function choosePickerActivity(index: ActivityIndex) {
@@ -100,13 +102,15 @@ export function createPickerController(s: PickerShared) {
     targetHover = null;
     s.focus = 0;
     activityPick = { ...activityPick, index, selected: [], target: undefined };
+    healingChoices = {};
   }
 
   function choosePickerTarget(id: string) {
     const offer = pickerOffer, option = pickerActivity;
     const target = pickerTargets.find((t) => t.id === id);
     if (!offer || !option?.legal || !target) return;
-    if (activityPick) activityPick = { ...activityPick, target: target.id };
+    if (activityPick) activityPick = { ...activityPick, selected: target.cells, target: target.id };
+    healingChoices = {};
     targetHover = null;
   }
 
@@ -122,8 +126,8 @@ export function createPickerController(s: PickerShared) {
     const pick = pickerService?.pickCell(cell, activityPick.selected);
     if (!pick) return;
     targetHover = null;
-    if (pick.target) choosePickerTarget(pick.target.id);
-    else activityPick = { ...activityPick, selected: pick.selected, target: undefined };
+    activityPick = { ...activityPick, selected: pick.selected, target: pick.target?.id };
+    healingChoices = {};
   }
 
   function openBlast(level: ActivityIndex | null = null) {
@@ -226,7 +230,7 @@ export function createPickerController(s: PickerShared) {
     const commitment = canFocus(offer.type, offer.spell) ? s.focus : 0;
     if (activityPick?.key === 'siege' && s.siegeEngine) {
       await s.run(s.takeAction({ type: 'siege', operation: 'attack', engine: s.siegeEngine.id, unit: s.active.id, activity: opt.index, target, focus: commitment }));
-    } else await s.run(s.takeAction({ ...resolution.action, focus: commitment }));
+    } else await s.run(s.takeAction({ ...resolution.action, focus: commitment, ...(offer.spell === 'healing' ? { healingChoices: structuredClone($state.snapshot(healingChoices)) } : {}) }));
   }
 
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
@@ -269,11 +273,11 @@ export function createPickerController(s: PickerShared) {
     s.disarm();
     const service = new TargetingService(s.b, s.active!, group.offer, row);
     const matches = service.forRef(a.target);
-    if (row.needsTarget && matches.length !== 1) {
+    if (row.needsTarget && (matches.length !== 1 || group.offer.spell === 'healing')) {
       const committed = s.focus;
       openActivityPicker(group.offer);
       s.focus = committed;
-      activityPick = { key: offerKey(group.offer), index: row.index, selected: service.pickCell(a.cell)?.selected ?? [] };
+      activityPick = { key: offerKey(group.offer), index: row.index, selected: service.pickCell(a.cell)?.selected ?? [], target: matches.length === 1 ? matches[0].id : undefined };
       return;
     }
     void performActivity(group.offer, row, matches[0]?.id);
@@ -329,6 +333,8 @@ export function createPickerController(s: PickerShared) {
   const showResolved = (markers: TargetMarker[], arrows: TargetArrow[]) => { resolvedMarkers = markers; resolvedArrows = arrows; };
 
   return {
+    get healingChoices() { return healingChoices; },
+    set healingChoices(value: Record<string, HealingChoice>) { healingChoices = value; },
     clear, closeAim, closePicker, stepBack, resetPickerTargets, chooseBlastTarget, showAllBlastTargets, showResolved, stepAimRow, stepAimVerb,
     get openActivityPicker() { return openActivityPicker; },
     get activityPick() { return activityPick; },

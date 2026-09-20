@@ -544,6 +544,8 @@ export function createBattleController(deps: BattleDeps) {
     get blastPreview() { return picker.blastPreview; },
     get blastSelection() { return picker.blastSelection; },
     get activityPick() { return picker.activityPick; },
+    get healingChoices() { return picker.healingChoices; },
+    set healingChoices(value) { picker.healingChoices = value; },
     get pickerOffer() { return picker.pickerOffer; },
     get pickerActivity() { return picker.pickerActivity; },
     get pickerService() { return picker.pickerService; },

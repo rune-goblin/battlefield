@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { actionsOf, casterOf, signalsOf } from './troop-signals.mjs';
+import { actionsOf, casterOf, traditionOf, signalsOf } from './troop-signals.mjs';
 
 const dir = new URL('../data/troops/', import.meta.url);
 const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
@@ -37,6 +37,7 @@ const cards = files.map((f) => {
     pace: fly || s.attributes.speed.value >= 30,
     fear: false,
     caster: casterOf(d, actions),
+    tradition: traditionOf(d),
     signals: signalsOf(actions),
     tactics: [],
     sheet: {
@@ -66,7 +67,7 @@ const cards = files.map((f) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, caster: ${c.caster}, signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, caster: ${c.caster}, ${c.tradition ? `tradition: '${c.tradition}', ` : ''}signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/combatants.ts', import.meta.url),

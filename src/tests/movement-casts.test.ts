@@ -6,7 +6,7 @@ import { CAST_ACTIVITIES } from '../engine/magic.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
-const caster: UnitCard = { name: 'Wizard', level: 6, role: 'infantry', caster: true, tradition: 'arcane', tactics: [], overrides: { spellAttack: 10 } };
+const caster: UnitCard = { name: 'Wizard', level: 11, role: 'infantry', caster: true, tradition: 'arcane', tactics: [], overrides: { spellAttack: 10 } };
 const ally: UnitCard = { name: 'Ally', level: 6, role: 'infantry', tactics: [] };
 const setup = () => createBattle({ board: openBoard(), units: [
   { card: caster, side: 'attacker', square: 'c2' },
@@ -21,7 +21,7 @@ const placements = (state: ReturnType<typeof setup>) => availableActions(state, 
 
 describe('Movement cast progression', () => {
   it('offers Burst of speed, Sure footing, and Translocate in order', () => {
-    expect(CAST_ACTIVITIES.movement.map(a => a.label)).toEqual(['Burst of speed', 'Sure footing', 'Translocate']);
+    expect(CAST_ACTIVITIES.movement.map(a => a.label)).toEqual(['Burst of speed', 'Sure footing', 'Translocate', 'Gate']);
   });
 
   it('grants one hex automatically and spends one caster action', () => {

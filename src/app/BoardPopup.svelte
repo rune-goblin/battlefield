@@ -62,6 +62,7 @@
     top: calc(var(--inset-top, 0px) + .6rem);
     right: calc(var(--inset-right, 0px) + .6rem);
     min-width: 14rem; max-width: 22rem;
+    max-height: calc(100% - var(--inset-top, 0px) - 1.2rem); overflow-y: auto;
     padding: .4rem; border-radius: 10px;
     background: var(--card); border: 1px solid var(--accent);
     box-shadow: 0 6px 18px rgba(0, 0, 0, .35);

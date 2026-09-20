@@ -45,39 +45,39 @@ export class TargetingService {
   readonly icon: TargetIcon;
   readonly style: 'attack' | 'deploy';
 
-  get placement(): boolean { return this.offer.spell === 'movement' && this.activity.index === 3; }
+  get placement(): boolean { return this.offer.spell === 'movement' && this.activity.index >= 3; }
 
-  candidates(selected: string[] = []): TargetChoice[] {
-    return this.choices.filter((target) => this.placement
-      ? !selected.length || target.cells[0] === selected[0]
-      : selected.every((cell) => target.cells.includes(cell)));
+  private placementCells(target: TargetChoice, selected: string[]): string[] {
+    const cells = target.cells;
+    return cells.length === 4 && selected[0] === cells[2] ? [...cells.slice(2), ...cells.slice(0, 2)] : cells;
   }
 
-  /** Unit groups pick one member at a time; placement picks its source before its destination. */
+  candidates(selected: string[] = []): TargetChoice[] {
+    return this.choices.filter(target => this.placement
+      ? selected.every((cell, i) => this.placementCells(target, selected)[i] === cell)
+      : selected.every(cell => target.cells.includes(cell)));
+  }
+
+  /** Groups select recipients; transfers select each source followed by its destination. */
   surface(selected: string[] = []): TargetMarker[] {
     const candidates = this.candidates(selected);
-    if (!this.placement && !candidates.some((target) => target.geometry === 'group')) return candidates;
-    const cells = [...new Set(candidates.flatMap((target) => this.placement
-      ? [target.cells[selected.length ? 1 : 0]] : target.cells))];
-    return [...new Set([...selected, ...cells])].map((cell) => ({
-      id: `hex:${cell}`, label: `${this.activity.label}: ${this.state.units.find((u) => u.status === 'active' && notation(u.square) === cell)?.name ?? cell}`,
+    if (!this.placement && !candidates.some(target => target.geometry === 'group')) return candidates;
+    const cells = [...new Set(candidates.flatMap(target => this.placement
+      ? selected.length === 0 && target.cells.length === 4 ? [target.cells[0], target.cells[2]]
+        : this.placementCells(target, selected).slice(selected.length, selected.length + 1)
+      : target.cells))];
+    return [...new Set([...selected, ...cells])].map(cell => ({
+      id: `hex:${cell}`, label: `${this.activity.label}: ${this.state.units.find(u => u.status === 'active' && notation(u.square) === cell)?.name ?? cell}`,
       cells: [cell], anchorCells: [cell], geometry: 'hex', icon: this.icon, selected: selected.includes(cell),
     }));
   }
 
   pickCell(cell: string, selected: string[] = []): { selected: string[]; target: TargetChoice | null } | null {
-    if (selected.includes(cell)) return { selected: selected.filter((value) => value !== cell), target: null };
-    const candidates = this.candidates(selected);
-    if (this.placement) {
-      if (!selected.length) return candidates.some((target) => target.cells[0] === cell) ? { selected: [cell], target: null } : null;
-      const target = candidates.find((target) => target.cells[1] === cell);
-      return target ? { selected: [...selected, cell], target } : null;
-    }
+    if (selected.includes(cell)) return { selected: this.placement ? selected.slice(0, selected.indexOf(cell)) : selected.filter(value => value !== cell), target: null };
     const next = [...selected, cell];
-    const matches = candidates.filter((target) => target.cells.includes(cell));
+    const matches = this.candidates(next);
     if (!matches.length) return null;
-    const target = matches.find((target) => target.cells.length === next.length) ?? null;
-    return { selected: next, target };
+    return { selected: next, target: matches.find(target => target.cells.length === next.length) ?? null };
   }
 
   markersFor(target: TargetChoice): TargetMarker[] {
@@ -86,6 +86,13 @@ export class TargetingService {
 
   /** Resolve both exact choices and intermediate surface picks into visible aiming arrows. */
   arrows(selected: string[] = [], targetId: string | null = null, cell: string | null = null): TargetArrow[] {
+    if (this.placement && this.activity.index === 4) {
+      const choice = this.candidates(selected).find(target => target.id === targetId);
+      const cells = choice ? this.placementCells(choice, selected) : [...selected];
+      const hovered = cell ?? (targetId?.startsWith('hex:') ? targetId.slice(4) : null);
+      if (!choice && hovered && !cells.includes(hovered) && this.surface(selected).some(marker => marker.cells.includes(hovered))) cells.push(hovered);
+      return cells.flatMap((to, i) => i % 2 === 1 ? [{ from: cells[i - 1], to, toCells: [to], tone: 'movement' as const }] : []);
+    }
     const surface = this.surface(selected);
     const choice = this.candidates(selected).find((target) => target.id === targetId);
     const marker = surface.find((target) => target.id === targetId)
@@ -112,7 +119,7 @@ export class TargetingService {
 
   private describe(target: ActivityTarget): TargetChoice {
     const cells = cellsForTarget(this.state, target);
-    const placement = this.offer.spell === 'movement' && this.activity.index === 3;
+    const placement = this.offer.spell === 'movement' && this.activity.index >= 3;
     const siegeArea = this.activity.activity.startsWith('siege-') && target.kind === 'cell' && cells.length > 1;
     const corner = siegeArea && gridOf(this.state.board).corners(gridOf(this.state.board).parse(cells[0])).some(cs => cs.map(notation).sort().join('+') === cells.slice().sort().join('+'));
     const geometry: TargetGeometry = siegeArea ? (corner ? 'corner' : 'hex') : target.kind === 'wall' ? 'edge'
@@ -121,7 +128,7 @@ export class TargetingService {
           : cells.length > 1 && !placement ? 'group' : 'hex';
     return {
       ...target, cells, geometry, icon: this.icon,
-      anchorCells: placement ? cells.slice(-1) : cells,
+      anchorCells: placement ? cells.filter((_, i) => i % 2 === 1) : cells,
       label: `${this.activity.label}: ${target.label}`,
     };
   }
@@ -165,7 +172,7 @@ export class TargetingService {
       cells = this.activity.index === 3 ? this.state.units.filter((u) => u.status === 'active' && u.side === this.actor.side && g.distance(u.square, this.actor.square) <= 2).map((u) => notation(u.square))
         : [...new Set([notation(this.actor.square), ...cells])];
     }
-    const placement = this.offer.spell === 'movement' && this.activity.index === 3;
+    const placement = this.offer.spell === 'movement' && this.activity.index >= 3;
     const effectCells = placement ? target.anchorCells : cells;
     return {
       action: { type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? target.id : undefined },

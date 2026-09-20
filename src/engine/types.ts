@@ -122,11 +122,16 @@ export interface Unit {
 /** Which unit acts. */
 interface Acts { unit: string }
 
+export type HealingCondition = 'pinned' | 'rooted' | 'suppressed' | 'exposed' | 'frightened' | 'persistent';
+export interface HealingChoice { conditions: HealingCondition[]; extraHealth?: boolean }
+
 export interface ActivityAction extends Acts {
   type: Verb;
   activity: ActivityIndex;
   target?: string;
   spell?: Tree;
+  /** Recipient recovery priorities, resolved according to the roll’s degree. */
+  healingChoices?: Record<string, HealingChoice>;
   /** Extra actions committed before resolution: each adds +2, at most two. */
   focus?: number;
 }
@@ -188,8 +193,7 @@ export interface ActivityOption {
   index: ActivityIndex;
   label: string;
   detail: string;
-  /** Actions this activity costs: its own index, the same for every unit. `null` when no number of
-   * actions reaches it — above a tradition's cap. */
+  /** Action cost, independent of spell tier. `null` when level or tradition prevents access. */
   cost: number | null;
   legal: boolean;
   reason: string | null;

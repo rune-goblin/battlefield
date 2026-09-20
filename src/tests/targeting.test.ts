@@ -8,7 +8,7 @@ import { openBoard } from './helpers.js';
 
 function fixture() {
   const state = createBattle({ board: openBoard('hex'), units: [
-    { card: { name: 'Caster', role: 'infantry', level: 6, tactics: [] }, side: 'attacker', square: 'c2' },
+    { card: { name: 'Caster', role: 'infantry', level: 16, tactics: [] }, side: 'attacker', square: 'c2' },
     { card: { name: 'Ally', role: 'infantry', level: 6, tactics: [] }, side: 'attacker', square: 'e2' },
     { card: { name: 'Enemy', role: 'infantry', level: 3, tactics: [] }, side: 'defender', square: 'c7' },
   ] });
@@ -88,9 +88,9 @@ describe('targeting service', () => {
     const targeting = service('cast', 3, 'healing');
     expect(targeting.surface().map((marker) => marker.anchorCells)).toEqual([['e3'], ['d3'], ['f3']]);
     const first = targeting.pickCell('e3')!;
-    expect(first.target).toBeNull();
+    expect(first.target?.id).toBe('u0');
     const second = targeting.pickCell('d3', first.selected)!;
-    expect(second.target).toBeNull();
+    expect(second.target?.id).toBe('u0+u1');
     expect(targeting.surface(second.selected).filter((marker) => marker.selected)).toHaveLength(2);
     const last = targeting.pickCell('f3', second.selected)!;
     const resolution = targeting.resolve(last.target!.id)!;
@@ -118,7 +118,7 @@ describe('targeting service', () => {
     for (const tree of Object.keys(traditions) as Tree[]) {
       actor.tradition = traditions[tree];
       actor.trees = [tree];
-      for (const index of [1, 2, 3] as const) {
+      for (const index of [1, 2, 3, 4] as const) {
         const targeting = service('cast', index, tree);
         expect(targeting.activity.legal, `${tree} ${index}`).toBe(true);
         expect(targeting.surface().length).toBeGreaterThan(0);

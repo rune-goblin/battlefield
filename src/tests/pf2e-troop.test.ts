@@ -39,6 +39,13 @@ function troopActor(extra: TroopItem[] = [], hitPoints = 96): TroopActor {
 }
 
 describe('pf2e troop card', () => {
+  it.each(['arcane', 'divine', 'occult', 'primal'] as const)('imports an explicit %s tradition', tradition => {
+    const card = cardFromActor(troopActor([{ type: 'spellcastingEntry', name: 'Spellcasting', system: { tradition: { value: tradition } } }]));
+    expect(card).toMatchObject({ caster: true, tradition });
+  });
+  it('reads a named spellcasting tradition when the structured field is absent', () => {
+    expect(cardFromActor(troopActor([{ type: 'spellcastingEntry', name: 'Primal Innate Spells' }])).tradition).toBe('primal');
+  });
   it('maps the sheet, the overrides and the signals off the statblock', () => {
     const card = cardFromActor(troopActor([{ name: 'Form Up', type: 'action' }]));
     expect(card).toMatchObject({

@@ -115,9 +115,8 @@ export function cardTraits(card: UnitCard) {
     pace: card.pace ?? p.pace,
     fear: card.fear ?? false,
     caster: card.caster ?? false,
-    // proto: no troop data states a tradition yet; the spellcasting-entry name is the real
-    // answer, once an importer reads it. Arcane is an
-    // arbitrary default for any caster that doesn't set one.
+    // proto: imports retain explicit spellcasting traditions; legacy or custom cards
+    // without one retain their arcane default.
     tradition: card.tradition ?? 'arcane',
     signals: card.signals ?? [],
     tactics: card.tactics ?? p.tactics,

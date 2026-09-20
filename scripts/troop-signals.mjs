@@ -48,3 +48,13 @@ export function rangeOf(text) {
 // Extreme is reserved for siege engines (see BANDS in types.ts) — a troop's own Salvo attack
 // never derives it, however far its range increment runs.
 export const bandOf = (ft) => (ft === null ? null : ft <= 60 ? 'short' : ft <= 120 ? 'medium' : 'long');
+
+export const traditionOf = (doc) => {
+  for (const item of doc.items.filter(item => item.type === 'spellcastingEntry')) {
+    const value = item.system?.tradition?.value;
+    if (['arcane', 'divine', 'occult', 'primal'].includes(value)) return value;
+    const name = /\b(arcane|divine|occult|primal)\b/i.exec(item.name ?? '')?.[1].toLowerCase();
+    if (name) return name;
+  }
+  return undefined;
+};

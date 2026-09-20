@@ -9,7 +9,7 @@ import type { InteractionKind, InteractionRecord } from './interactions.js';
 export const SCHEMA_VERSION = 1;
 // proto: the rules document carries no version of its own, so the record dates them. Reserved
 // for review with the rest of the migration shape.
-export const RULES_VERSION = '2026-09-18';
+export const RULES_VERSION = '2026-09-20';
 
 export type LifecycleStage = 'setup' | 'deployment' | 'battle' | 'aftermath' | 'finalized';
 const LIFECYCLE_STAGES: LifecycleStage[] = ['setup', 'deployment', 'battle', 'aftermath', 'finalized'];

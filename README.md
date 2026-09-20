@@ -4,7 +4,7 @@ A fast abstract battle game for armies. A hexagon of sixty-one hexes, three acti
 
 - **Play:** `npm install && npm run dev`
 - **Rules:** [`public/rules.html`](public/rules.html), served at `/rules.html` in the app — the single source of truth, design notes and sources included
-- **Magic proposal:** [`public/magic-progression-proposal.html`](public/magic-progression-proposal.html), served at `/magic-progression-proposal.html` — a draft with four caster tiers and six new spells for review and playtesting
+- **Magic:** [rules, section 11](public/rules.html#magic). [Design notes](public/magic-progression-proposal.html) retain the progression rationale and playtest priorities.
 - **Adapter contract:** [`docs/adapter-contract.md`](docs/adapter-contract.md) — the seam a troop sheet or a kingdom feeds a battle through, and reads the result back from
 - **The PIXI board:** [`docs/pixi-board.md`](docs/pixi-board.md) — the board library's API, its grid abstraction (square and hex), and how to mount it somewhere else (Foundry, Reignmaker)
 - **Architecture plan:** [`docs/service-architecture-plan.md`](docs/service-architecture-plan.md) — five services, a shared command path, a Foundry window host, and phased work toward the module; [audit evidence](docs/service-architecture-review.md)

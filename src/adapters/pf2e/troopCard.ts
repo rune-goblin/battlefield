@@ -1,4 +1,4 @@
-import { MAX_WOUNDS, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
+import { MAX_WOUNDS, type Tradition, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
 import type { ImportBaseline } from '../../runtime/session.js';
 
 /** The slice of a PF2e item this adapter reads. Structural, so a live embedded document, an
@@ -8,6 +8,7 @@ export interface TroopItem {
   type?: string;
   system?: {
     slug?: string | null;
+    tradition?: { value?: string | null } | null;
     description?: { value?: string | null } | null;
     badge?: { value?: number | null } | null;
     value?: { value?: number | null } | null;
@@ -51,6 +52,17 @@ const SIGNALS: [Signal, RegExp][] = [
   ['magic-ward', /status to all saves vs\.? magic/i],
   ['no-retreat', /no retreat/i],
 ];
+
+/** The first explicit spellcasting tradition supplies the troop’s single battlefield list. */
+function traditionOf(items: TroopItem[]): Tradition | undefined {
+  for (const item of items.filter(item => item.type === 'spellcastingEntry')) {
+    const value = item.system?.tradition?.value;
+    if (value && ['arcane', 'divine', 'occult', 'primal'].includes(value)) return value as Tradition;
+    const name = /\b(arcane|divine|occult|primal)\b/i.exec(item.name ?? '')?.[1].toLowerCase();
+    if (name) return name as Tradition;
+  }
+  return undefined;
+}
 
 const CASTING_ACTION = /troop spellcasting|constant spells/i;
 // No published troop names one; the trait pair below is how Fey Host's Wild Gaze reads as fear.
@@ -214,6 +226,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
     pace: sheet.fly || speed >= SPEED_PER_SQUARE,
     fear,
     caster,
+    ...(caster && traditionOf(items) ? { tradition: traditionOf(items) } : {}),
     signals,
     // proto: the contract keeps tactics a hand-authored list and the statblock states none, so
     // an import authors none, as scripts/import-troops.mjs does. This suppresses the role's

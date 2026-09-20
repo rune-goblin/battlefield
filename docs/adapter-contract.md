@@ -67,12 +67,35 @@ Target geometry and effects remain separate. A Burst anchors at a shared corner 
 `ActivityAction` and `ChargeAction` accept optional `focus`, an integer from 0 to 2.
 The total cost is the base activity price plus `focus`; each extra action adds +2.
 `canFocus(type, spell)` identifies activities that support commitment. The engine validates
-support, the integer bound and affordability before resolution. Tradition caps the activity
-index, not the total cost. `ActivityOption.cost` remains the base price.
+support, the integer bound and affordability before resolution. Spells also cap total
+commitment at three actions, including under Haste. `ActivityOption.cost` supplies the base price;
+spell tier IV has index 4 and costs three actions. Level and tradition govern spell access.
 
 The activity selector shows total cost and the bonus before confirmation. Target selection
 preserves commitment; changing the activity clears it. `TargetingService.resolve` supplies
 the base action, and the battle UI attaches commitment before calling `takeAction`.
+
+## Magic progression
+
+`casterTier(level)` and `spellCeiling(tradition, level, tree)` define access. Casting offers
+contain four spell tiers; use each option’s `cost` rather than its index for action diamonds.
+Ordinary verbs retain their three activities. Tactic-only casters retain their first spell.
+The engine recalculates tradition access when building offers, including for older saves.
+
+Troop imports read the first explicit spellcasting-entry tradition, then its name when the
+structured field is absent. Legacy cards without a tradition retain the Arcane fallback.
+Bundled roster generation follows the same rule.
+
+Multi-recipient spells use unit IDs joined by `+`. Storm uses connected cell IDs; its menu
+collapses areas that affect the same enemies. Gate uses ordered source/destination cell pairs,
+with a maximum of two pairs. Destinations must be distinct and empty before either transfer.
+`TargetingService` permits either Gate source to be selected first.
+
+Healing accepts optional `healingChoices`, keyed by recipient ID. Each choice lists condition
+priorities; ordinary Healing can instead request `extraHealth`. Renewal clears at most the first
+condition on success or the first two on critical success. The UI presents these choices before
+confirmation. Omitted choices retain the engine’s default condition order. All outcomes,
+including Renewal’s failure recovery, resolve in one command and support the existing undo flow.
 
 ## Fortification tiers
 

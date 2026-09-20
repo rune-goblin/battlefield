@@ -8,8 +8,8 @@ import { treesForTradition, type Tree } from './magic.js';
 export type Verb = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 export const VERB_TYPES: Verb[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
-/** Which of a verb's three activities: the index is also the price in actions. */
-export type ActivityIndex = 1 | 2 | 3;
+/** Ordinary activities use 1–3; spells also have a fourth tier at a three-action cost. */
+export type ActivityIndex = 1 | 2 | 3 | 4;
 
 export type ActivityId =
   | 'fire' | 'suppress' | 'pin'
@@ -86,7 +86,7 @@ export const TACTIC_TREE: Partial<Record<Tactic, Tree>> = {
  * non-caster's tactic grants. */
 export function treesFor(card: UnitCard): Tree[] {
   const { tactics, caster, tradition } = cardTraits(card);
-  if (caster) return treesForTradition(tradition);
+  if (caster) return treesForTradition(tradition, card.level);
   const out = new Set<Tree>();
   for (const t of tactics) { const tree = TACTIC_TREE[t]; if (tree) out.add(tree); }
   return [...out];

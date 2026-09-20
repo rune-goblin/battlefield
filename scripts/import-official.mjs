@@ -2,7 +2,7 @@
 // Usage: PF2E_SOURCE=/path/to/pf2e/packs/pf2e node scripts/import-official.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { actionsOf, bandOf, casterOf, rangeOf, signalsOf, strip } from './troop-signals.mjs';
+import { actionsOf, bandOf, casterOf, traditionOf, rangeOf, signalsOf, strip } from './troop-signals.mjs';
 
 const root = process.env.PF2E_SOURCE ?? join(import.meta.dirname, '../../pf2e-reignmaker/_pf2e-source/packs/pf2e');
 
@@ -70,6 +70,7 @@ const cards = SELECTION.map(([path, role]) => {
     pace: fly || s.attributes.speed.value >= 30,
     fear: d.items.some((it) => /frightful presence/i.test(it.name)),
     caster: casterOf(d, actions),
+    tradition: traditionOf(d),
     signals: signalsOf(actions),
     source: d.system.details.publication?.title ?? '',
     sheet: {
@@ -99,7 +100,7 @@ const cards = SELECTION.map(([path, role]) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, caster: ${c.caster}, signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: ${c.fear}, caster: ${c.caster}, ${c.tradition ? `tradition: '${c.tradition}', ` : ''}signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } }, // ${c.source}`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/official.ts', import.meta.url),
