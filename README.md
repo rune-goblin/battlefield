@@ -57,6 +57,58 @@ dev/two-clients  two app instances over the in-memory transport and one authorit
 
 `npm test` runs the engine specs. `npm run check` type-checks the app and compiles the engine with no DOM types to keep it portable.
 
+## Two deploys
+
+The same source ships twice, through separate builds that share nothing but the code.
+
+| | Command | Output | Host |
+| --- | --- | --- | --- |
+| Standalone demo | `npm run build` | `dist/` | any static host; Vercel is configured |
+| Foundry module | `npm run build:foundry` | `dist-foundry/` | Foundry, via `module.json` and the release workflow |
+
+`npm run build` writes a static site with no server behind it: the app at `/`, the rules at
+`/rules.html`, the design notes at `/magic-progression-proposal.html`, and the two-client
+harness at `/dev/two-clients/`. State lives in browser storage, so a visitor gets a private
+hot-seat game. `vercel.json` sets the build command, the output directory and cache headers
+for `/art/` and `/fonts/`, which are unhashed and served straight from `public/`.
+
+To publish: import `rune-goblin/battlefield` at [vercel.com/new](https://vercel.com/new) and
+accept the detected settings — `vercel.json` supplies them. Every push to `master` then
+redeploys, and a branch gets a preview URL. `npx vercel --prod` deploys from the working tree
+instead. Set the project's Node version to 22 if the build objects to `engines.node`.
+
+The build carries about 70 MB of art, most of it troop and terrain images, so a visitor who
+plays through a battle pulls tens of megabytes. The Pro plan's included transfer (1 TB a
+month) covers a playtest audience many times over, and the long `s-maxage` above keeps repeat
+visits on the edge cache.
+
+### The password gate
+
+`middleware.js` runs `scripts/access.mjs` at the edge in front of every page, so the site is
+private without Vercel's own Deployment Protection. It is the gate from `maltjoy-design`,
+ported: a wrong password gets a 401 and a half-second delay, a right one gets an HttpOnly
+cookie signed with HMAC-SHA256 over the expiry and a fingerprint of the password, good for
+fourteen days. Changing the password invalidates every cookie it signed. The password never
+reaches the browser and never enters the bundle.
+
+Two environment variables in the Vercel project, Production and Preview both:
+
+| | |
+| --- | --- |
+| `ACCESS_PASSWORD` | the shared password, 8 characters or more. Hand this out. |
+| `ACCESS_SECRET` | 32 characters or more of randomness, `openssl rand -base64 32`. Never shared; rotating it signs everyone out. |
+
+Neither may carry a `VITE_` prefix: that prefix is what puts a value in the client bundle, and
+the gate needs both to stay on the server. Missing or too short, the gate answers 503 to
+everything — it fails closed. `npm run dev` runs no middleware, so local play is ungated.
+
+`scripts/access.test.mjs` covers the failure-closed case, the blocked paths, cookie forgery, a
+rotated secret, expiry, password rotation, and open-redirect attempts; `npx vitest run` picks
+it up with the engine specs.
+
+The Foundry release path is untouched by any of this: a `vX.Y.Z` tag still builds and attaches
+`battlefield.zip` on its own.
+
 ## Lineage
 
 The numbers follow the [Pathfinder Second Edition](https://paizo.com/pathfinder) creature tables and the Kingmaker war rules, so a published troop is a fully specified unit card. The engine has no dependency on [Foundry VTT](https://foundryvtt.com) or on [Reignmaker](https://github.com/motionproto/pf2e-reignmaker), the kingdom-management module this game was designed for; both attach through the contract in `docs/adapter-contract.md`. Design influences: *Dragon Rampant* and *One Page Rules*.

@@ -41,5 +41,5 @@ export default defineConfig({
       },
     },
   },
-  test: { include: ['src/tests/**/*.test.ts'] },
+  test: { include: ['src/tests/**/*.test.ts', 'scripts/*.test.mjs'] },
 });
