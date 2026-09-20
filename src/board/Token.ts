@@ -46,7 +46,8 @@ export interface UnitTokenModel {
 export interface EngineTokenModel {
   kind: 'engine';
   id: string;
-  side: Side;
+  /** Null for an engine that is nobody's. */
+  side: Side | null;
   name: string;
   cell: string;
   ring: TokenRing | null;
@@ -264,7 +265,10 @@ export class Token extends PIXI.Container {
     this.size = size;
     this.desaturated = wounds >= MAX_WOUNDS || routed;
     this.applyFilters();
-    this.updateFlag(model.side, size, theme, routed);
+    // An engine's flag is hidden and it takes no ring or rout arrow, so one that is nobody's
+    // needs no colour of its own.
+    const side = model.side ?? 'attacker';
+    this.updateFlag(side, size, theme, routed);
     // An engine standing alone is nobody's: the unit that works it is what shows a side.
     if (this.flag) this.flag.visible = model.kind === 'unit';
 
@@ -282,8 +286,8 @@ export class Token extends PIXI.Container {
     }
 
     this.setPick(model.kind === 'unit' ? model.pick : null);
-    this.drawRoutArrow(routed, model.side, size, theme);
-    this.drawRing(model.ring, model.side, size, theme);
+    this.drawRoutArrow(routed, side, size, theme);
+    this.drawRing(model.ring, side, size, theme);
 
     // Re-append: the art and the engine chip are attached lazily as their textures resolve,
     // which would otherwise draw them over the flag and the arrow/ring. addChild on an

@@ -4,7 +4,7 @@ import {
   endActivation, engagedEnemies, holdersOf, isOutflanked, maneuverOutcome, maneuverTargets, isRouted, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
-import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
+import { edgeKey, gridOf, hexGrid, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
@@ -1432,6 +1432,38 @@ describe('an emplaced engine', () => {
     state = runRound(state);
     expect(state.engines[0].side).toBe('attacker');
     expect(crewOf(state, state.engines[0])!.id).toBe('u0');
+  });
+
+  const unclaimed = () => createBattle({
+    units: [
+      { card: infantry, side: 'attacker', square: 'c2' },
+      { card: kobolds, side: 'defender', square: 'c7' },
+    ],
+    engines: [{ card: catapult, side: 'defender', square: 'e5' }],
+    board: openBoard(),
+  });
+
+  it('is nobody\'s and does nothing while no unit has claimed it', () => {
+    const state = unclaimed();
+    expect(state.engines[0].side).toBeNull();
+    expect(crewOf(state, state.engines[0])).toBeNull();
+  });
+
+  it('goes to the army that alone stands by an unclaimed engine at the end of a round', () => {
+    let state = unclaimed();
+    place(state, 'u0', 'e5');
+    state = runRound(state);
+    expect(state.engines[0].side).toBe('attacker');
+    expect(crewOf(state, state.engines[0])!.id).toBe('u0');
+  });
+
+  it('leaves an unclaimed engine waiting while both armies stand by it', () => {
+    let state = unclaimed();
+    const beside = gridOf(state.board).neighbours(parse('e5')).map(notation);
+    place(state, 'u0', beside[0]);
+    place(state, 'u1', beside[3]);
+    state = runRound(state);
+    expect(state.engines[0].side).toBeNull();
   });
 
   it('stays put while a friendly is still beside it, however close the enemy', () => {

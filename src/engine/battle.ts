@@ -32,12 +32,23 @@ export interface AttachedEngine { card: SiegeEngineCard; id?: string; }
 
 export interface Deployment { id?: string; card: UnitCard; side: Side; square: string; engines?: AttachedEngine[]; }
 
-/** An engine deployed on a square of its own rather than attached to a unit. `side` holds only
- * until a unit deploys on or beside the engine, which claims it. */
+/** An engine deployed on a square of its own rather than attached to a unit. The unit deployed
+ * on or beside it claims it, and with none there it starts the battle as nobody's. `side` is
+ * the army that brought it, which the campaign outcome reads. */
 export interface Emplacement {
   id?: string; card: SiegeEngineCard; side: Side; square: string;
   /** The unit deployed on this square starts the battle hauling it. */
   hauled?: boolean;
+}
+
+/** Who claims an emplacement at deployment: the unit on its square, else the first beside it. */
+function emplacementClaimant(
+  board: Board, units: readonly { side: Side; square: Square }[], square: Square,
+): Side | null {
+  const beside = gridOf(board).neighbours(square);
+  const claimant = units.find((u) => sameSquare(u.square, square))
+    ?? units.find((u) => beside.some((n) => sameSquare(n, u.square)));
+  return claimant?.side ?? null;
 }
 
 /** A deployment that carries no ID keeps the positional identity every battle used before
@@ -104,11 +115,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     if (engineSquares.has(e.square)) throw new Error(`${e.square} is already occupied`);
     engineSquares.add(e.square);
     const crew = units.find((u) => sameSquare(u.square, sq));
-    const beside = gridOf(setup.board).neighbours(sq);
-    // proto: an engine nobody claims keeps the side the draft stored, so that army works it on
-    // arrival while the other takes it at the end of a round. A neutral state would even them.
-    const claimant = crew ?? units.find((u) => beside.some((n) => sameSquare(n, u.square)));
-    const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), claimant?.side ?? e.side, sq, true);
+    const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), emplacementClaimant(setup.board, units, sq), sq, true);
     if (e.hauled && crew && !isFixedEngine(e.card) && !crew.engines.some((x) => x.hauling)) {
       engine.emplaced = false;
       engine.hauling = true;
@@ -129,7 +136,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
   return state;
 }
 
-const engineState = (e: SiegeEngineCard, id: string, side: Side, square: Square, emplaced: boolean): EngineState =>
+const engineState = (e: SiegeEngineCard, id: string, side: Side | null, square: Square, emplaced: boolean): EngineState =>
   ({ id, name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced,
     speed: e.speed, loadCost: e.loadCost, loadSteps: e.loadSteps, loaded: e.loadSteps ?? ENGINES.find(card => card.name === e.name)?.loadSteps ?? 1, hauling: false });
 
@@ -2209,13 +2216,15 @@ function endRound(state: BattleState, rng: Rng) {
 /**
  * An emplacement left with only the enemy beside it changes hands at the end of the round.
  * A friendly still standing by holds it, however outnumbered — the engine is taken by
- * standing on it, not by winning a fight over it.
+ * standing on it, not by winning a fight over it. One that is nobody's goes to the army that
+ * alone stands by it, and waits while both do.
  */
 function seizeEmplacements(state: BattleState) {
   for (const e of state.engines) {
     if (crewOf(state, e)) continue;
-    const captor = state.units.find((c) => c.side !== e.side && isStanding(c) && dist(state, c.square, e.square) <= 1);
-    if (!captor) continue;
+    const near = state.units.filter((c) => c.side !== e.side && isStanding(c) && dist(state, c.square, e.square) <= 1);
+    const captor = near[0];
+    if (!captor || near.some((c) => c.side !== captor.side)) continue;
     e.side = captor.side;
     e.status = 'crewed';
     e.fired = true;

@@ -129,6 +129,8 @@ function unitOutcome(unit: Unit, session: BattleSession, loser: Side | null): Ou
 function originalOwners(session: BattleSession): Map<string, Side> {
   const owners = new Map<string, Side>();
   for (const u of session.setup.units) for (const e of u.engines) owners.set(e.id, u.side);
+  // The draft's side is the army that brought the piece. An engine nobody claimed is worked by
+  // neither army in the battle and is still that army's property in the campaign.
   for (const e of session.setup.emplacements) owners.set(e.id, e.side);
   return owners;
 }
@@ -138,7 +140,7 @@ function equipmentOutcome(engine: EngineState, day: number, owners: Map<string, 
   // An attached piece keeps its owner's side when it is captured; a seized emplacement instead
   // holds its captor's side already.
   const after = engine.status === 'abandoned' ? null
-    : engine.status === 'captured' ? other(engine.side)
+    : engine.status === 'captured' && engine.side ? other(engine.side)
       : engine.side;
   const disposition: EquipmentDisposition = after === null ? 'lost'
     : engine.status === 'captured' || (before !== null && after !== before) ? 'captured'

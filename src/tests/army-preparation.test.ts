@@ -187,7 +187,7 @@ describe('army preparation', () => {
       ],
     });
 
-    expect(battle.engines.map((e) => [e.id, e.side])).toEqual([['under', 'defender'], ['beside', 'defender'], ['alone', 'attacker']]);
+    expect(battle.engines.map((e) => [e.id, e.side])).toEqual([['under', 'defender'], ['beside', 'defender'], ['alone', null]]);
   });
 
   it('refuses a square no piece can deploy on and leaves the record alone', async () => {

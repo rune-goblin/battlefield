@@ -32,8 +32,9 @@ export interface EngineState {
   fired: boolean;
   status: 'crewed' | 'abandoned' | 'captured';
   square: Square;
-  /** Who works it now. An emplaced engine changes this when it is captured. */
-  side: Side;
+  /** Who works it now. An emplaced engine changes this when it is captured, and one no unit
+   * has claimed belongs to neither army: null, which no crew matches, so it does nothing. */
+  side: Side | null;
   /** Emplaced equipment stays on the ground until hauled. Equipment in a unit's array
    * travels with that unit only while hauling; otherwise movement leaves it on the ground. */
   emplaced: boolean;
