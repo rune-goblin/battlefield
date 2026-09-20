@@ -36,20 +36,21 @@ Still to write:
   `getFactions()`, so the spec exercises the kingdom-flag fallback until ReignMaker ships them.
 - A damage popup with an empty console. `PopupLayer` reads `TEXT_GRADIENT` and `TextMetrics`,
   and the gallery plays bursts alone. It needs an attack played through the canvas, or a
-  popup added to the `?vfx` gallery.
+  popup added to the `?vfx` gallery. `play.spec.ts` drags a move and spends Guard; a Strike
+  needs a fixture with an enemy in reach at the start.
 - A setup the spec builds for itself, so a fresh world clone needs no hand deployment.
 - The release workflow has never run. The next tag is its first test.
 
 ## 3. One shell, stages as views
 
-Done 2026-09-20, except the split: `App.svelte` mounts the one `AppShell` and the one
+Done 2026-09-20: `App.svelte` mounts the one `AppShell` and the one
 `PixiBoard`; a stage renders nothing and presents its snippets, board props and handlers through
 `src/app/stage-view.svelte.ts`. `shared-board.ts` and the `shared` prop are gone, and
-`clearEffects()` drops bursts and popups on a stage switch.
+`clearEffects()` drops bursts and popups on a stage switch. `Battle.svelte` is a view over
+`src/app/battle/battle-controller.svelte.ts`, which composes the drag, ring and picker
+controllers.
 
-- Split `src/app/Battle.svelte` into a controller and a view. The plan is
-  `docs/plans/battle-controller-split.md`; its first step is an e2e spec that plays a move and
-  an action.
+- `Place.svelte` carries deployment logic of the same kind and takes the same split.
 - The camera now carries over from one stage to the next, since the view is never re-attached.
   Decide at the table whether a stage should refit on entry.
 

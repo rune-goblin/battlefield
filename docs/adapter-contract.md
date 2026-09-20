@@ -83,7 +83,7 @@ Wall state carries remaining boxes, an optional interior cell, and optional gate
 ## Foundry table and ReignMaker hex pick
 
 `game.modules.get('battlefield').api` offers `open`, `close`, `createBattle`, `callTable`,
-`dismissTable`, `battles`, `openBattleAt`, and `removeBattle`. `callTable` sets the `tableCall` world setting: every client opens its window
+`dismissTable`, `battles`, `openBattleAt`, `removeBattle`, and `screenOf`. `screenOf(cell)` gives a cell's centre on the open board in viewport pixels, for a macro or the e2e specs to point at the map. `callTable` sets the `tableCall` world setting: every client opens its window
 once, and a client whose window is shut keeps a floating Battlefield chip until `dismissTable`.
 The GM reaches the same two calls from the window's header menu. The setting stands outside the
 session record, so a reset or a loaded save leaves the players where they are.

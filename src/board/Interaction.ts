@@ -120,7 +120,9 @@ export class Interaction {
     this.applyCursor();
   }
 
+  // A caller's effect reruns with the value unchanged, and a cancel here would end a live drag.
   setMode(mode: BoardMode): void {
+    if (mode === this.mode) return;
     this.mode = mode;
     this.cancel();
     this.applyCursor();
@@ -149,6 +151,7 @@ export class Interaction {
   }
 
   setBrush(brush: Brush | null): void {
+    if (brush === this.brush) return;
     this.brush = brush;
     if (brush?.kind === 'wall') this.wallTier = brush.tier;
     this.cancel();

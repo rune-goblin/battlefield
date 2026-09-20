@@ -29,6 +29,9 @@ export interface BattlefieldModuleApi {
   openBattleAt(site: string, opening: SiteOpening): Promise<MoveToSiteResult>;
   /** Take a parked battle off the map. The open battle stays; false says it was the one named. */
   removeBattle(site: string): Promise<boolean>;
+  /** A cell's centre on the open board, in viewport pixels, for a macro or a test that points
+   * at the map. Null while no board is mounted. */
+  screenOf(cell: string): { x: number; y: number } | null;
 }
 
 export interface ModuleApiOptions {
@@ -40,6 +43,7 @@ export interface ModuleApiOptions {
   close: () => Promise<unknown>;
   callTable: () => Promise<void>;
   dismissTable: () => Promise<void>;
+  screenOf?: (cell: string) => { x: number; y: number } | null;
 }
 
 const LOADING: Extract<CreateBattleResult, { ok: false }> = {
@@ -47,13 +51,14 @@ const LOADING: Extract<CreateBattleResult, { ok: false }> = {
 };
 
 export function createModuleApi(
-  { submit, session, sites, open, close, callTable, dismissTable }: ModuleApiOptions,
+  { submit, session, sites, open, close, callTable, dismissTable, screenOf }: ModuleApiOptions,
 ): BattlefieldModuleApi {
   return {
     open: async () => { await open(); },
     close: async () => { await close(); },
     callTable,
     dismissTable,
+    screenOf: (cell) => screenOf?.(cell) ?? null,
 
     createBattle(request) {
       const send = submit();

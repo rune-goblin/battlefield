@@ -1,28 +1,12 @@
 import type { Locator, Page } from '@playwright/test';
+import { endBattle, openFromSceneControl, windowOf } from './fixtures/battle-window';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 const STEPS = [
   'Battlefield', 'Paint the map', 'Siege engines', 'Sides', 'Attacking army', 'Defending army', 'Review and begin',
 ];
 
-const windowOf = (page: Page): Locator => page.locator(`#${MODULE_ID}`);
 const chipOf = (page: Page): Locator => page.locator('#ui-right-column-1 .battlefield-chip');
-
-async function openFromSceneControl(page: Page): Promise<Locator> {
-  const win = windowOf(page);
-  if (!(await win.isVisible())) {
-    await page.locator(`#scene-controls-tools button[data-tool="${MODULE_ID}"]`).click();
-  }
-  await expect(win.locator('.battlefield-root')).toBeVisible();
-  return win;
-}
-
-async function endBattle(gm: Locator): Promise<void> {
-  await gm.getByRole('button', { name: 'End battle', exact: true }).first().click();
-  const dialog = gm.getByRole('alertdialog');
-  await dialog.getByRole('button', { name: /^(End battle|End without saving)$/ }).click();
-  await expect(dialog).toBeHidden();
-}
 
 test.describe('A battle on two clients', () => {
   test('the GM walks the wizard, starts the battle and ends it', async ({ gmPage, playerPage }) => {

@@ -3,6 +3,7 @@ import { blockPageZoom } from '../../app/app-root.js';
 import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { bindClient, presenceChanged, tableChanged } from '../../app/game.svelte.js';
+import { stage } from '../../app/stage-view.svelte.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
 import { pickBattleSite, registerBattleSitePicker, reignMakerActive } from './battleSitePicker.js';
@@ -59,6 +60,11 @@ Hooks.once('init', () => {
       close: () => BattlefieldApp.close(),
       callTable: async () => { await BattlefieldApp.open(); await tableCall.call(); },
       dismissTable: () => tableCall.dismiss(),
+      screenOf: (cell) => {
+        const point = stage.board?.screenOf(cell);
+        const rect = document.querySelector(`#${MODULE_ID} canvas[aria-label="Battle board"]`)?.getBoundingClientRect();
+        return point && rect ? { x: rect.left + point.x, y: rect.top + point.y } : null;
+      },
     });
   }
   registerFoundrySettings((raw) => sessionWatcher.handleChange(raw), (raw) => { tableCall.handleChange(raw); tableChanged(); });
