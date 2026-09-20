@@ -1,6 +1,9 @@
 // Structural signals read off any PF2e troop statblock. Measured over the 162 published troops:
 // AC and attack DC are essentially f(level), so grades come from these recurring action names,
 // from Speed and from Will instead. See docs/plans/battle-mechanics.todos.md.
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
 const SIGNALS = {
   mounted: /mounted troop|first-class charge/i,
   'melee-drill': /clash of steel|wild swing|strike as one|trample|attack of opportunity|reactive strike/i,
@@ -58,3 +61,24 @@ export const traditionOf = (doc) => {
   }
   return undefined;
 };
+
+// Two adventures reprint a core-book troop under the same name; the core book's copy is kept.
+const coreFirst = (a, b) => b[0].startsWith('pathfinder-') - a[0].startsWith('pathfinder-') || a[0].localeCompare(b[0]);
+
+/** Every troop-trait NPC under a pf2e `packs/pf2e` checkout, as `[pack path, actor source]`. */
+export function officialTroops(root) {
+  const found = [];
+  const walk = (dir) => {
+    for (const f of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, f.name);
+      if (f.isDirectory()) walk(p);
+      else if (f.name.endsWith('.json')) {
+        const d = JSON.parse(readFileSync(p, 'utf8'));
+        if (d.type === 'npc' && d.system?.traits?.value?.includes('troop')) found.push([relative(root, p).replace(/\.json$/, ''), d]);
+      }
+    }
+  };
+  walk(root);
+  const names = new Set();
+  return found.sort(coreFirst).filter(([, d]) => !names.has(d.name) && names.add(d.name));
+}

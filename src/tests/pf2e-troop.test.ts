@@ -107,6 +107,17 @@ describe('pf2e troop card', () => {
     expect(() => cardFromActor(bare)).toThrow(/\[Battle\]/);
   });
 
+  it('reads the Battle and the Salvo off a published troop that labels neither', () => {
+    const action = (name: string, html: string): TroopItem => ({ name, type: 'action', system: { description: { value: html } } });
+    const published = { ...troopActor(), items: [
+      action('Clash of Steel', 'Each enemy in a @Template[type:emanation|distance:5] takes @Damage[2d8[slashing]] (@Check[reflex|dc:24|basic]).'),
+      action('Fire Crossbows!', 'A @Template[type:burst|distance:10] within 120 feet takes @Damage[2d8[piercing]] (@Check[reflex|dc:22|basic]).'),
+      action('Hurl Javelins', 'Each creature within 30 feet takes @Damage[1d6[piercing]] (@Check[reflex|dc:26|basic]).'),
+      action('War Cry', 'Each enemy in a @Template[type:cone|distance:60] attempts a @Check[will|dc:30] save.'),
+    ] };
+    expect(cardFromActor(published).sheet).toMatchObject({ battleDc: 24, salvoDc: 22, salvoFeet: 120 });
+  });
+
   it('baselines the hit points and Demoralized the writeback compares against', () => {
     expect(importBaselineOf(troopActor([demoralized(1)], 40)))
       .toEqual({ hitPoints: 40, maxHitPoints: 96, demoralized: 1 });

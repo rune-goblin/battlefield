@@ -95,6 +95,66 @@ const withinFeet = (html: string): number | null => {
 // derives it, however far its range increment runs.
 const bandOf = (feet: number): Reach => (feet <= 60 ? 'short' : feet <= 120 ? 'medium' : 'long');
 
+interface Attacks { battleDc: number; salvoDc: number | null; salvoFeet: number | null }
+
+/** Feet within which an attack still counts as the troop's own reach. */
+const BATTLE_REACH = 10;
+
+const SAVE_DC = /@Check\[(reflex|fortitude|will)\|dc:(\d+)/;
+// Both spellings occur in the source: @Template[cone|distance:30] and @Template[type:cone|distance:30].
+const TEMPLATE = /@Template\[(?:type:)?(\w+)\|distance:(\d+)/g;
+
+/**
+ * A published troop attacks through area actions that deal damage against a save. One that fills
+ * an emanation round the troop, or reaches ten feet at most, is its Battle. One thrown as a
+ * burst, breathed as a cone or loosed at a stated distance is a Salvo, and the longest is kept.
+ */
+function publishedAttacks(actions: TroopItem[]): Attacks | null {
+  const battle: { dc: number; reflex: boolean }[] = [];
+  let salvo: { dc: number | null; feet: number } | null = null;
+  for (const action of actions) {
+    const text = description(action).replace(/<[^>]+>/g, ' ');
+    // proto: a once-a-day area is a special ability, and no card carries one yet.
+    if (!text.includes('@Damage') || /once per (day|hour)/i.test(text)) continue;
+    const save = SAVE_DC.exec(text);
+    const dc = save ? Number(save[2]) : null;
+    const templates = [...text.matchAll(TEMPLATE)].map((m) => ({ kind: m[1], feet: Number(m[2]) }));
+    const thrown = templates.filter((t) => t.kind !== 'emanation').map((t) => t.feet);
+    // A burst's own distance is its splash; the stated distance is how far it is thrown.
+    const feet = thrown.length ? Math.max(withinFeet(text) ?? 0, ...thrown) : templates.length ? 0 : withinFeet(text) ?? 0;
+    if (feet > BATTLE_REACH) {
+      // A breath or volley that names no save of its own is resolved at the troop's Battle DC.
+      if (!salvo || feet > salvo.feet) salvo = { dc, feet };
+    } else if (dc !== null) battle.push({ dc, reflex: save![1] === 'reflex' });
+  }
+  // A Fortitude DC at close reach is usually a poison riding on the attack, so Reflex leads.
+  const close = battle.some((b) => b.reflex) ? battle.filter((b) => b.reflex) : battle;
+  // proto: a troop with no close attack fights hand to hand at its Salvo's DC.
+  const battleDc = close.length ? Math.min(...close.map((b) => b.dc)) : salvo?.dc ?? null;
+  if (battleDc === null) return null;
+  return { battleDc, salvoDc: salvo ? salvo.dc ?? battleDc : null, salvoFeet: salvo?.feet ?? null };
+}
+
+/** ReignMaker labels an army's two attacks `[Battle]` and `[Salvo]`; a published troop labels
+ * neither, and its attacks are read off its actions. */
+function attacksOf(items: TroopItem[]): { attacks: Attacks | null; problems: string[] } {
+  const battle = named(items, '[Battle]');
+  const salvo = named(items, '[Salvo]');
+  if (!battle && !salvo) {
+    const attacks = publishedAttacks(items.filter((it) => it.type === 'action'));
+    return { attacks, problems: attacks ? [] : ['the actor has no [Battle] action'] };
+  }
+  const problems: string[] = [];
+  const battleDc = battle ? checkDc(description(battle)) : null;
+  if (!battle) problems.push('the actor has no [Battle] action');
+  else if (battleDc === null) problems.push('the [Battle] action states no check DC');
+  const salvoDc = salvo ? checkDc(description(salvo)) : null;
+  const salvoFeet = salvo ? withinFeet(description(salvo)) : null;
+  if (salvo && salvoDc === null) problems.push('the [Salvo] action states no check DC');
+  if (salvo && salvoFeet === null) problems.push('the [Salvo] action states no distance');
+  return { attacks: problems.length ? null : { battleDc: battleDc!, salvoDc, salvoFeet }, problems };
+}
+
 /** PF2e leaves `system.slug` null on hand-authored items and falls back to the sluggified
  * name, so slug matching has to do the same or it misses every item nobody baked a slug into. */
 const slugOf = (item: TroopItem): string =>
@@ -156,16 +216,7 @@ export function troopActorProblems(actor: unknown): string[] {
   for (const save of ['fortitude', 'reflex', 'will'] as const) {
     if (!Number.isFinite(system.saves?.[save]?.value)) out.push(`the actor states no ${save} save`);
   }
-  const items = itemsOf(a);
-  const battle = named(items, '[Battle]');
-  if (!battle) out.push('the actor has no [Battle] action');
-  else if (checkDc(description(battle)) === null) out.push('the [Battle] action states no check DC');
-  const salvo = named(items, '[Salvo]');
-  if (salvo) {
-    if (checkDc(description(salvo)) === null) out.push('the [Salvo] action states no check DC');
-    if (withinFeet(description(salvo)) === null) out.push('the [Salvo] action states no distance');
-  }
-  return out;
+  return [...out, ...attacksOf(itemsOf(a)).problems];
 }
 
 /**
@@ -185,10 +236,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
   const actions = items.filter((it) => it.type === 'action');
   const actionNames = actions.map((it) => it.name ?? '');
 
-  const battleDc = checkDc(description(named(items, '[Battle]')))!;
-  const salvo = named(items, '[Salvo]');
-  const salvoDc = salvo ? checkDc(description(salvo)) : null;
-  const salvoFeet = salvo ? withinFeet(description(salvo)) : null;
+  const { battleDc, salvoDc, salvoFeet } = attacksOf(items).attacks!;
   const reach = salvoFeet === null ? null : bandOf(salvoFeet);
 
   const speed = attributes.speed!.value!;

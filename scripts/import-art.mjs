@@ -9,6 +9,7 @@
 //   FORCE=1  re-download files that already exist under public/art/
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { officialTroops as officialTroopDocs } from './troop-signals.mjs';
 
 const RAW = 'https://raw.githubusercontent.com/rune-goblin/pf2e-trooper/main';
 const PF2E_SOURCE = process.env.PF2E_SOURCE ?? join(import.meta.dirname, '../../pf2e-reignmaker/_pf2e-source/packs/pf2e');
@@ -22,7 +23,7 @@ mkdirSync(enginesOut, { recursive: true });
 
 const slugify = (s) => s.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// A small concurrency pool: 136 files over the sequential-fetch default would take minutes.
+// A small concurrency pool: a few hundred files fetched one at a time would take minutes.
 async function pool(items, size, worker) {
   const queue = [...items];
   await Promise.all(Array.from({ length: size }, async () => {
@@ -33,9 +34,10 @@ async function pool(items, size, worker) {
   }));
 }
 
-async function download(url, destPath) {
+async function download(url, destPath, optional = false) {
   if (!FORCE && existsSync(destPath) && readFileSync(destPath).length > 0) return 'cached';
   const res = await fetch(url);
+  if (res.status === 404 && optional) return 'missing';
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${url}`);
   const buf = Buffer.from(await res.arrayBuffer());
   writeFileSync(destPath, buf);
@@ -54,23 +56,14 @@ const customTroops = readdirSync(troopsDir).filter((f) => f.endsWith('.json')).s
   return { name: d.name, srcPath, destFile: srcPath.split('/').pop() };
 });
 
-// --- Official troops (scripts/import-official.mjs's SELECTION list) ----------------------
-// Read as source text rather than imported/executed: importing would run the whole regeneration
-// (and its PF2E_SOURCE requirement) as a side effect just to read one array literal.
-const officialSrc = readFileSync(new URL('./import-official.mjs', import.meta.url), 'utf8');
-const selectionBlock = officialSrc.match(/const SELECTION = \[([\s\S]*?)\n\];/)?.[1] ?? '';
-const officialPaths = [...selectionBlock.matchAll(/\['([^']+)',\s*'\w+'\]/g)].map((m) => m[1]);
-if (officialPaths.length === 0) throw new Error('could not parse SELECTION from import-official.mjs');
-
-const officialTroops = officialPaths.map((path) => {
+// --- Official troops (every troop-trait actor in the pf2e source) -------------------------
+if (!existsSync(PF2E_SOURCE)) throw new Error(`${PF2E_SOURCE}: not found (set PF2E_SOURCE to a pf2e system checkout with packs/pf2e)`);
+const customNames = new Set(customTroops.map((t) => t.name));
+// Art is keyed by card name, and six ReignMaker armies share a name with a published troop.
+const officialTroops = officialTroopDocs(PF2E_SOURCE).filter(([, d]) => !customNames.has(d.name)).map(([path, d]) => {
   const slug = path.split('/').pop();
-  const jsonPath = join(PF2E_SOURCE, `${path}.json`);
-  if (!existsSync(jsonPath)) {
-    throw new Error(`${jsonPath}: not found (set PF2E_SOURCE to a pf2e system checkout with packs/pf2e)`);
-  }
-  const d = JSON.parse(readFileSync(jsonPath, 'utf8'));
   const destFile = `${slug}_strategy.webp`;
-  return { name: d.name, srcPath: `assets/troops/official/${slug}/${destFile}`, destFile };
+  return { name: d.name, srcPath: `assets/troops/official/${slug}/${destFile}`, destFile, optional: true };
 });
 
 // --- Siege engines (src/engine/engines.ts) ------------------------------------------------
@@ -84,10 +77,14 @@ const engines = engineNames.map((name) => {
 
 const troopFetches = [...customTroops, ...officialTroops];
 let fetched = 0, cached = 0;
+// pf2e-trooper has no piece for a few adventure troops; those fall back to the role token.
+const missing = new Set();
 await pool(troopFetches, 8, async (t) => {
-  const result = await download(`${RAW}/${t.srcPath}`, join(troopsOut.pathname, t.destFile));
-  result === 'fetched' ? fetched++ : cached++;
+  const result = await download(`${RAW}/${t.srcPath}`, join(troopsOut.pathname, t.destFile), t.optional);
+  if (result === 'missing') missing.add(t.name);
+  else result === 'fetched' ? fetched++ : cached++;
 });
+if (missing.size) console.log(`no art for: ${[...missing].join(', ')}`);
 await pool(engines, 8, async (e) => {
   const result = await download(`${RAW}/${e.srcPath}`, join(enginesOut.pathname, e.destFile));
   result === 'fetched' ? fetched++ : cached++;
@@ -110,14 +107,14 @@ console.log('fallback art: 2 copied (army-infantry.webp, army-cavalry.webp)');
 
 // --- src/engine/art.ts ---------------------------------------------------------------------
 const entry = (name, destFile, dir) => `  ${JSON.stringify(name)}: ${JSON.stringify(`art/${dir}/${destFile}`)},`;
-const troopBody = [...customTroops, ...officialTroops].map((t) => entry(t.name, t.destFile, 'troops')).join('\n');
+const troopBody = [...customTroops, ...officialTroops].filter((t) => !missing.has(t.name)).map((t) => entry(t.name, t.destFile, 'troops')).join('\n');
 const engineBody = engines.map((e) => entry(e.name, e.destFile, 'engines')).join('\n');
 
 writeFileSync(new URL('../src/engine/art.ts', import.meta.url),
 `import type { Role } from './cards.js';
 
-// Generated by scripts/import-art.mjs from data/troops/*.json, scripts/import-official.mjs's
-// SELECTION list, and src/engine/engines.ts. Edit those, not this file.
+// Generated by scripts/import-art.mjs from data/troops/*.json, the pf2e source's troop actors,
+// and src/engine/engines.ts. Edit those, not this file.
 //
 // Paths are root-relative without a leading slash ("art/troops/...") so a consumer under a
 // non-root Vite base can prefix with import.meta.env.BASE_URL; this module stays free of Vite
