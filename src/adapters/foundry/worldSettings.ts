@@ -17,7 +17,7 @@ export interface WorldSettingStorage {
 
 export function gameSettingStorage(key: string): WorldSettingStorage {
   return {
-    get: () => game.settings.get(MODULE_ID, key),
+    get: () => game.settings.get(MODULE_ID, key) as string,
     set: async (value) => { await game.settings.set(MODULE_ID, key, value); },
   };
 }
@@ -32,17 +32,17 @@ export function registerFoundrySettings(
   onSessionChange: (raw: string) => void, onTableCall: (raw: string) => void,
 ): void {
   game.settings.register(MODULE_ID, SESSION_SETTING, {
-    scope: 'world', config: false, type: String, default: '',
-    onChange: (value) => onSessionChange(value),
+    name: 'Battle session', scope: 'world', config: false, type: String, default: '',
+    onChange: (value) => onSessionChange(value as string),
   });
   game.settings.register(MODULE_ID, ARCHIVE_SETTING, {
-    scope: 'world', config: false, type: String, default: '[]',
+    name: 'Saved battles', scope: 'world', config: false, type: String, default: '[]',
   });
   game.settings.register(MODULE_ID, SITES_SETTING, {
-    scope: 'world', config: false, type: String, default: '{}',
+    name: 'Battle sites', scope: 'world', config: false, type: String, default: '{}',
   });
   game.settings.register(MODULE_ID, TABLE_CALL_SETTING, {
-    scope: 'world', config: false, type: String, default: '',
-    onChange: (value) => onTableCall(value),
+    name: 'Table call', scope: 'world', config: false, type: String, default: '',
+    onChange: (value) => onTableCall(value as string),
   });
 }

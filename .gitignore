@@ -2,3 +2,13 @@ node_modules
 dist
 .DS_Store
 dist-foundry
+.dev-paths.json
+test/foundry-data/
+test-results/
+playwright-report/
+playwright/.cache/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+_pf2e-source
+_foundry-data
+_foundry-modules

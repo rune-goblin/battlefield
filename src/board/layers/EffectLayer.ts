@@ -126,7 +126,7 @@ export class EffectLayer {
     this.active.splice(this.active.indexOf(a), 1);
   }
 
-  private clear(): void {
+  clear(): void {
     for (const a of [...this.active]) this.remove(a);
     if (this.shaking) this.opts.onShake({ x: 0, y: 0 });
     this.shaking = false;

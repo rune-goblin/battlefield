@@ -2,7 +2,7 @@ import type { BoardSpec, DayOrder, RecoveryChoice, Side, UnitCard } from '../eng
 import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
 import { createRuntime } from '../runtime/createRuntime.js';
-import type { StoreClient } from './client.js';
+import type { StoreClient, TableSummons } from './client.js';
 import { createPresentation } from './presentation.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
@@ -108,6 +108,14 @@ export const gmUserId = () => runtime.gmUserId();
 let presenceTick = $state(0);
 /** The host calls this when someone connects or drops. */
 export const presenceChanged = (): void => { presenceTick += 1; };
+
+// The call is a world setting of its own, outside the record, so no record says it changed.
+let tableTick = $state(0);
+/** The host calls this when the GM's call to the table is made or dismissed. */
+export const tableChanged = (): void => { tableTick += 1; };
+export const tableSummons = (): TableSummons | null => runtime.table ?? null;
+/** Read through the tick: the summons is the same object before and after a call. */
+export const tableCalled = (): boolean => { void tableTick; return runtime.table?.called ?? false; };
 
 /** Everyone the host would seat, for the GM's seating controls. */
 export const tableUsers = (): TableUser[] => { void presenceTick; return runtime.tableUsers(); };

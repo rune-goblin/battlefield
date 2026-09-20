@@ -278,7 +278,7 @@ export class PopupLayer {
     this.live.splice(this.live.indexOf(entry), 1);
   }
 
-  private clear(): void {
+  clear(): void {
     for (const entry of [...this.live]) this.remove(entry);
   }
 

@@ -13,7 +13,9 @@
   import { provideNotifications } from './notification-context.js';
   import Notifications from './Notifications.svelte';
   import { setAppRoot } from './app-root.js';
-  import { disposeSharedBoard } from './shared-board.js';
+  import PixiBoard from './PixiBoard.svelte';
+  import { AppShell } from './shell/index.js';
+  import { stage } from './stage-view.svelte.js';
   import { connectAuthority } from './authority.svelte.js';
   import { followArt } from './art-preload.js';
 
@@ -26,15 +28,23 @@
   // tuned and screenshotted without playing a battle up to a cast.
   const vfxLab = new URLSearchParams(location.search).has('vfx');
 
+  const lab = $derived((import.meta.env.DEV && textureLab.open) || vfxLab);
+  const view = $derived(stage.view);
+
+  // The board outlives a stage, and a burst or popup from the last one would play on over
+  // the next.
+  $effect(() => { void nav.stage; stage.board?.clearEffects(); });
+
   function appRoot(el: HTMLElement) {
     setAppRoot(el);
-    return () => { setAppRoot(null); disposeSharedBoard(); };
+    return () => setAppRoot(null);
   }
 </script>
 
-<!-- Every stage mounts its own AppShell: the shell is the layout, the stage says what goes in
-     its layers. App itself only decides which stage is on. The root around them is what the
-     app's CSS hangs off and what tells a key press inside the app from one outside it. -->
+<!-- App owns the one AppShell and the one PixiBoard, so the GL context and every uploaded
+     texture outlive a stage switch. A stage renders nothing of its own: it presents its
+     panels, board props and handlers through `stage-view`. The root is what the app's CSS
+     hangs off and what tells a key press inside the app from one outside it. -->
 <div class="battlefield-root" {@attach appRoot}>
   {#if import.meta.env.DEV && textureLab.open}
     <TextureLab />
@@ -56,5 +66,25 @@
     <BoardSetup />
   {/if}
 
+  <!-- After the stages on purpose: effects run in template order, so a stage switch has
+       presented the next view before the shell and the board read it. Ahead of them, the
+       board would read the outgoing stage's getters against state that is already gone. -->
+  {#if !lab && view}
+    <AppShell
+      leftTitle={view.leftTitle} rightTitle={view.rightTitle} leftWidth={view.leftWidth} rightWidth={view.rightWidth}
+      top={view.top} bottom={view.bottom} left={view.left} right={view.right} rail={view.rail}
+      pin={view.pin} float={view.float} modal={view.modal}
+    >
+      {#snippet map()}
+        <div class="mapwrap" class:aiming={view.aiming}><PixiBoard bind:this={stage.board} fill {...view.board} /></div>
+      {/snippet}
+    </AppShell>
+  {/if}
+
   <Notifications />
 </div>
+
+<style>
+  .mapwrap { width: 100%; height: 100%; }
+  .mapwrap.aiming { cursor: crosshair; }
+</style>

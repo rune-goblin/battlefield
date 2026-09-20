@@ -84,6 +84,9 @@ export interface BoardView {
    * words wait for them. Whatever announces the next turn times itself against this, and may
    * come in over the tail. */
   remainingMs(): number;
+  /** Drops every burst and popup in flight. A stage switch calls it: the next stage's board
+   * is the same view, and an effect from the last one would play on over it. */
+  clearEffects(): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
    * traced. Without one a move cuts straight across the board to its destination. Spent by
    * that move, so it is set once per committed move, just before the new position arrives. */
@@ -434,6 +437,10 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     },
     popup(popup) {
       popupLayer.show(popup);
+    },
+    clearEffects() {
+      effectLayer.clear();
+      popupLayer.clear();
     },
     remainingMs() {
       if (tokenLayer.moving()) return Infinity;

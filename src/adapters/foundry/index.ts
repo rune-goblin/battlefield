@@ -2,7 +2,7 @@ import './install-asset-base.js';
 import { blockPageZoom } from '../../app/app-root.js';
 import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
-import { bindClient, presenceChanged } from '../../app/game.svelte.js';
+import { bindClient, presenceChanged, tableChanged } from '../../app/game.svelte.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
 import { pickBattleSite, registerBattleSitePicker, reignMakerActive } from './battleSitePicker.js';
@@ -26,6 +26,7 @@ import { createFoundrySessionRepository } from './worldSessionRepository.js';
 import { gameSettingStorage, registerFoundrySettings, SESSION_SETTING, TABLE_CALL_SETTING } from './worldSettings.js';
 import './foundry.css';
 import '../../app/app.css';
+import { hostModule } from './hostModule.js';
 
 // proto: seeded fresh; the setting's own value arrives at `ready`, where the host loads it.
 export const sessionWatcher = createSessionWatcher(freshSession());
@@ -48,7 +49,7 @@ BattlefieldApp.table = tableCall;
 Hooks.once('init', () => {
   blockPageZoom();
   const sites = createFoundrySites();
-  const module = game.modules.get(MODULE_ID);
+  const module = hostModule(MODULE_ID);
   if (module) {
     module.api = createModuleApi({
       submit: () => { const client = host; return client ? (command) => client.submit(command) : null; },
@@ -60,7 +61,7 @@ Hooks.once('init', () => {
       dismissTable: () => tableCall.dismiss(),
     });
   }
-  registerFoundrySettings((raw) => sessionWatcher.handleChange(raw), (raw) => tableCall.handleChange(raw));
+  registerFoundrySettings((raw) => sessionWatcher.handleChange(raw), (raw) => { tableCall.handleChange(raw); tableChanged(); });
   // Registered here, before `ready`, because Foundry replays the socket events it buffered
   // during startup. The host's readiness gate is what holds them until it can answer.
   const channel = foundrySocketChannel(MODULE_ID);
@@ -77,7 +78,7 @@ Hooks.once('init', () => {
     chat: foundryChatPoster(),
     onAuthority: reportAuthority,
   });
-  bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive }));
+  bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive, table: tableCall }));
   channel.on((message) => host?.handleMessage(message));
   sessionWatcher.subscribe(() => tableCall.handleSession());
   sessionWatcher.subscribe(createTurnAnnouncer({
@@ -89,7 +90,7 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', () => {
   // First, so nothing later in this hook can keep the button off ReignMaker's toolbar.
-  registerBattleSitePicker(() => (game.modules.get(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
+  registerBattleSitePicker(() => (hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
   registerTroopSources(foundryTroopSources());
   sessionWatcher.handleChange(game.settings.get(MODULE_ID, SESSION_SETTING));
   // Before any window opens, so a player's first board finds its art already decoded.
@@ -127,6 +128,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
     icon: 'fa-solid fa-swords',
     order: Object.keys(tools).length,
     button: true,
-    onChange: () => pickBattleSite((game.modules.get(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null),
+    onChange: () => pickBattleSite((hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null),
   };
 });

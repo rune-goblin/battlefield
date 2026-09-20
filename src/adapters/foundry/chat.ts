@@ -27,6 +27,13 @@ export interface ChatPoster {
  * `kingdomChatService`: a chat failure is caught and logged, never rethrown, since the battle
  * already committed.
  */
+// The typedefs' `ChatMessage.create` takes a `DeepPartial` of the whole message source, which
+// `tsc` gives up on ("excessively deep"), and types `rolls` as JSON where Foundry also takes
+// `Roll` instances. This is the slice the poster uses.
+interface ChatMessageCreator {
+  create(data: { content: string; rolls: Roll[]; flags: Record<string, Record<string, unknown>> }): Promise<unknown>;
+}
+
 export function foundryChatPoster(): ChatPoster {
   return {
     async post({ eventId, content, face }) {
@@ -38,7 +45,7 @@ export function foundryChatPoster(): ChatPoster {
         // that already is, so nothing evaluates this die; `Roll.fromTerms` reads `_evaluated`
         // off the term and totals it, which is what `ChatMessage` demands of a posted roll.
         const die = new foundry.dice.terms.Die({ faces: 20, results: [{ result: face, active: true }] });
-        await ChatMessage.create({
+        await (ChatMessage as unknown as ChatMessageCreator).create({
           content,
           rolls: [Roll.fromTerms([die])],
           flags: { [MODULE_ID]: { eventId } },

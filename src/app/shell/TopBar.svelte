@@ -4,6 +4,8 @@
   import SaveLoadPanel from '../SaveLoadPanel.svelte';
   import SeatingPanel from '../SeatingPanel.svelte';
   import { setDock, toggleDock, ui } from './layout.svelte.js';
+  import { tableCalled, tableSummons } from '../game.svelte.js';
+  import { viewer } from '../viewer.svelte.js';
 
   interface Props {
     /** Stage-specific readout, left of centre: round and turn in battle, the deploy note in
@@ -13,6 +15,9 @@
     tools?: Snippet;
   }
   let { status, tools }: Props = $props();
+
+  const table = $derived(viewer.isGm ? tableSummons() : null);
+  const called = $derived(tableCalled());
 </script>
 
 <div class="topbar">
@@ -44,6 +49,12 @@
         ></button>
       {/each}
     </div>
+    {#if table}
+      <button
+        title={called ? 'Shut the battle window on every player\'s client' : 'Open the battle window on every player\'s client'}
+        onclick={() => void (called ? table.dismiss() : table.call())}
+      >{called ? 'Dismiss players' : 'Call players'}</button>
+    {/if}
     <SeatingPanel />
     <SaveLoadPanel />
     <nav>

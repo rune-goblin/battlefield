@@ -27,3 +27,17 @@ We are exploring the board and its rules, not shipping. Until this section is re
   that wrote it, and none of it is authoritative about current rules; a `*.todos.md` file
   lists work still to do and questions still open for play, and an item leaves the list when it
   is done or answered.
+
+## Foundry dev
+
+- `npm run setup` links `Data/modules/battlefield` to `dist-foundry` and links three references
+  into the repo (gitignored): `_pf2e-source` (the pf2e system checkout, the reference for
+  `src/adapters/pf2e/`), `_foundry-data` and `_foundry-modules`. `npm run deploy` installs a
+  link-free copy.
+- `npm run dev:foundry` is Vite with HMR on :30002 in front of a running Foundry on :30000;
+  browse `localhost:30002/game`. `npm run watch:foundry` rebuilds `dist-foundry` on save.
+- `npm run test:e2e` runs Playwright against a headless Foundry with a GM client and a player
+  client. It needs the local licensed Foundry, so CI leaves it out. `src/tests/e2e/README.md`
+  has the account, and the `foundry-pf2e` skill covers Foundry APIs, the build and the harness.
+- A `vX.Y.Z` tag runs `.github/workflows/release.yml`, which stamps `module.json` and attaches
+  `battlefield.zip` and `module.json` to the release.

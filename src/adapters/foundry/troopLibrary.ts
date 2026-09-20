@@ -2,6 +2,7 @@ import type { HostedTroops, TroopEntry, TroopSources } from '../../app/troop-lib
 import { cardFromActor, troopActorProblems, type TroopActor } from '../pf2e/troopCard.js';
 import { campaignTroopsFrom, type KingdomArmy, type KingdomArmyReader, type KingdomFaction } from '../reignmaker/kingdomArmies.js';
 import { REIGNMAKER_MODULE_ID } from '../reignmaker/outcomePort.js';
+import { hostModule } from './hostModule.js';
 
 // proto: an installed ReignMaker that predates `getArmies` keeps the kingdom on the party actor
 // under these keys; see its `config/flagKeys.ts` and `types/ownership.ts`.
@@ -71,7 +72,7 @@ async function fromTrooper(list: ListTroops): Promise<HostedTroops> {
 // the outcome writeback does not reach its actor; the module API's `createBattle` still does.
 export const foundryTroopSources = (): TroopSources => ({
   world: async () => {
-    const api = game.modules.get(TROOPER_MODULE_ID)?.api as { listTroops?: unknown } | undefined;
+    const api = hostModule(TROOPER_MODULE_ID)?.api as { listTroops?: unknown } | undefined;
     if (typeof api?.listTroops === 'function') return fromTrooper(api.listTroops as ListTroops);
     return {
       coversOfficial: false,
@@ -82,7 +83,7 @@ export const foundryTroopSources = (): TroopSources => ({
   },
 
   campaign: () => {
-    const reignmaker = game.modules.get(REIGNMAKER_MODULE_ID);
+    const reignmaker = hostModule(REIGNMAKER_MODULE_ID);
     if (!reignmaker?.active) return null;
     const kingdom = armyApi(reignmaker.api) ?? storedKingdom();
     return campaignTroopsFrom(kingdom.getArmies(), kingdom.getFactions(), readArmy);

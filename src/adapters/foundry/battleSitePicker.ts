@@ -4,6 +4,7 @@ import type { SiteEntry } from '../../runtime/ports.js';
 import { requestFromSite, specFromSite, type ArmyReader, type BattleSite } from '../reignmaker/battleSite.js';
 import { REIGNMAKER_MODULE_ID } from '../reignmaker/outcomePort.js';
 import type { BattlefieldModuleApi } from './moduleApi.js';
+import { hostModule } from './hostModule.js';
 
 /** The part of ReignMaker's module API this reads; see its `src/index.ts`. */
 interface ReignMakerMapApi {
@@ -64,11 +65,11 @@ async function pickBattle(reignmaker: ReignMakerMapApi, battlefield: Battlefield
   await battlefield.open();
 }
 
-export const reignMakerActive = (): boolean => game.modules.get(REIGNMAKER_MODULE_ID)?.active === true;
+export const reignMakerActive = (): boolean => hostModule(REIGNMAKER_MODULE_ID)?.active === true;
 
 /** The pick from Battlefield's own scene control, which needs no ReignMaker toolbar on screen. */
 export function pickBattleSite(battlefield: BattlefieldModuleApi | null): void {
-  const reignmaker = mapApi(game.modules.get(REIGNMAKER_MODULE_ID)?.api);
+  const reignmaker = mapApi(hostModule(REIGNMAKER_MODULE_ID)?.api);
   if (!reignmaker) {
     ui.notifications.warn('This ReignMaker build has no battle-site API; update it and reload.');
     return;
@@ -102,6 +103,6 @@ export function registerBattleSitePicker(battlefield: () => BattlefieldModuleApi
     });
   };
   Hooks.on('pf2e-reignmaker.apiReady', register);
-  const module = game.modules.get(REIGNMAKER_MODULE_ID);
+  const module = hostModule(REIGNMAKER_MODULE_ID);
   if (module?.active) register(module.api);
 }

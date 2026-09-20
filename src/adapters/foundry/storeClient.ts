@@ -1,4 +1,4 @@
-import type { StoreClient } from '../../app/client.js';
+import type { StoreClient, TableSummons } from '../../app/client.js';
 import type { BattleArchive, PresencePort } from '../../runtime/ports.js';
 import type { BattlefieldHost } from './host.js';
 import type { SessionWatcher } from './sessionWatcher.js';
@@ -10,6 +10,7 @@ export interface FoundryStoreClientOptions {
   users: TableUsers;
   presence: PresencePort;
   archive: BattleArchive;
+  table: TableSummons;
 }
 
 /**
@@ -18,7 +19,7 @@ export interface FoundryStoreClientOptions {
  * on every client, the primary GM's included: the setting change is the one state channel.
  */
 export function foundryStoreClient(
-  { host, watcher, users, presence, archive }: FoundryStoreClientOptions,
+  { host, watcher, users, presence, archive, table }: FoundryStoreClientOptions,
 ): StoreClient {
   return {
     get session() { return watcher.session; },
@@ -32,5 +33,6 @@ export function foundryStoreClient(
     submit: (command) => host.submit(command),
     subscribe: (listener) => watcher.subscribe(listener),
     archive,
+    table,
   };
 }

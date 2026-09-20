@@ -1,9 +1,9 @@
 <script lang="ts">
   import { FORTIFICATIONS, SIDES, type Side } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
-  import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
-  import { AppShell, MapControls, TopBar } from './shell/index.js';
+  import { MapControls, TopBar } from './shell/index.js';
+  import { presentStage, stage } from './stage-view.svelte.js';
   import WizardRail from './WizardRail.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { declaredReady, game, sideReady, tableUsers } from './game.svelte.js';
@@ -52,90 +52,89 @@
     }] : []),
   ]);
 
-  let boardRef = $state<PixiBoard>();
+  presentStage({
+    leftTitle: 'Review and begin', leftWidth: 30,
+    get top() { return top; }, get rail() { return rail; }, get float() { return float; }, get left() { return left; },
+    get board() {
+      return { board, tokens, terrainAppearance: gameMap.terrainAppearance, inkMap: gameMap.inkMap };
+    },
+  });
 </script>
 
-<AppShell leftTitle="Review and begin" leftWidth={30}>
-  {#snippet top()}
-    <TopBar>
-      {#snippet status()}
-        {#if SIDES.every((side) => sideReady(side))}
-          Both armies stand on the field. Begin the battle when the table is ready.
-        {:else}
-          An army is still forming up. Finish its step before the battle begins.
-        {/if}
-      {/snippet}
-    </TopBar>
-  {/snippet}
+{#snippet top()}
+  <TopBar>
+    {#snippet status()}
+      {#if SIDES.every((side) => sideReady(side))}
+        Both armies stand on the field. Begin the battle when the table is ready.
+      {:else}
+        An army is still forming up. Finish its step before the battle begins.
+      {/if}
+    {/snippet}
+  </TopBar>
+{/snippet}
 
-  {#snippet rail()}<WizardRail />{/snippet}
+{#snippet rail()}<WizardRail />{/snippet}
 
-  {#snippet map()}
-    <PixiBoard shared bind:this={boardRef} {board} {tokens} fill
-      terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
-  {/snippet}
+{#snippet float()}<MapControls board={stage.board} />{/snippet}
 
-  {#snippet float()}<MapControls board={boardRef} />{/snippet}
+{#snippet left()}
+  <section class="card">
+    <header><h3>Battlefield</h3><button class="edit" onclick={() => goToStage('board')}>Edit</button></header>
+    <dl>
+      {#each field as [term, value] (term)}<div><dt>{term}</dt><dd>{value}</dd></div>{/each}
+    </dl>
+    <ConnectionWarning {board} edit={() => goToStage('paint')} />
+  </section>
 
-  {#snippet left()}
-    <section class="card">
-      <header><h3>Battlefield</h3><button class="edit" onclick={() => goToStage('board')}>Edit</button></header>
-      <dl>
-        {#each field as [term, value] (term)}<div><dt>{term}</dt><dd>{value}</dd></div>{/each}
-      </dl>
-      <ConnectionWarning {board} edit={() => goToStage('paint')} />
+  {#each armies as army (army.side)}
+    <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+      <header>
+        <h3>{SIDE_TITLE[army.side]}</h3>
+        <button class="edit" onclick={() => goToStage(SIDE_STEP[army.side])}>Edit</button>
+      </header>
+      <p class="line">
+        {army.units.length} {army.units.length === 1 ? 'unit' : 'units'} · {army.levels} levels · played by {seats(army.side)}
+        {#if declaredReady(army.side)} · <span class="ready">ready</span>{/if}
+      </p>
+      {#if army.problem}<p class="problem">{army.problem}</p>{/if}
+      <ul>
+        {#each army.units as u (u.id)}
+          <li>
+            <span class="name">{u.card.name}</span>
+            <span class="meta">L{u.card.level} {u.card.role}{u.engines.length ? ` · ⚙ ${u.engines.map((e) => e.name).join(', ')}` : ''}</span>
+            <span class="cell" class:off={!u.square}>{u.square ?? 'off board'}</span>
+          </li>
+        {/each}
+        {#each army.engines as e (e.id)}
+          <li>
+            <span class="name">⚙ {e.name}</span>
+            <span class="meta">emplacement{e.hauled ? ' · hauled' : ''} <button class="link" onclick={() => goToStage('siege')}>edit</button></span>
+            <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
+          </li>
+        {/each}
+      </ul>
     </section>
+  {/each}
 
-    {#each armies as army (army.side)}
-      <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
-        <header>
-          <h3>{SIDE_TITLE[army.side]}</h3>
-          <button class="edit" onclick={() => goToStage(SIDE_STEP[army.side])}>Edit</button>
-        </header>
-        <p class="line">
-          {army.units.length} {army.units.length === 1 ? 'unit' : 'units'} · {army.levels} levels · played by {seats(army.side)}
-          {#if declaredReady(army.side)} · <span class="ready">ready</span>{/if}
-        </p>
-        {#if army.problem}<p class="problem">{army.problem}</p>{/if}
-        <ul>
-          {#each army.units as u (u.id)}
-            <li>
-              <span class="name">{u.card.name}</span>
-              <span class="meta">L{u.card.level} {u.card.role}{u.engines.length ? ` · ⚙ ${u.engines.map((e) => e.name).join(', ')}` : ''}</span>
-              <span class="cell" class:off={!u.square}>{u.square ?? 'off board'}</span>
-            </li>
-          {/each}
-          {#each army.engines as e (e.id)}
-            <li>
-              <span class="name">⚙ {e.name}</span>
-              <span class="meta">emplacement{e.hauled ? ' · hauled' : ''} <button class="link" onclick={() => goToStage('siege')}>edit</button></span>
-              <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/each}
-
-    {#if freeEngines.length}
-      <section class="card">
-        <header>
-          <h3>Unclaimed engines</h3>
-          <button class="edit" onclick={() => goToStage('siege')}>Edit</button>
-        </header>
-        <p class="line">The unit deployed beside one claims it; one left off the board stays out of the battle.</p>
-        <ul>
-          {#each freeEngines as e (e.id)}
-            <li>
-              <span class="name">⚙ {e.name}</span>
-              <span class="meta">emplacement</span>
-              <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
-  {/snippet}
-</AppShell>
+  {#if freeEngines.length}
+    <section class="card">
+      <header>
+        <h3>Unclaimed engines</h3>
+        <button class="edit" onclick={() => goToStage('siege')}>Edit</button>
+      </header>
+      <p class="line">The unit deployed beside one claims it; one left off the board stays out of the battle.</p>
+      <ul>
+        {#each freeEngines as e (e.id)}
+          <li>
+            <span class="name">⚙ {e.name}</span>
+            <span class="meta">emplacement</span>
+            <span class="cell" class:off={!e.square}>{e.square ?? 'off board'}</span>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+{/snippet}
 
 <style>
   section header { display: flex; align-items: baseline; gap: .5rem; }

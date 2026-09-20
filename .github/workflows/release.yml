@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # `manifest` stays on releases/latest so an installed copy finds the next release;
+      # `download` names this tag so an old manifest still fetches its own zip.
+      - name: Stamp version and download into module.json
+        run: |
+          jq --arg v "${{ steps.version.outputs.version }}" \
+             --arg d "https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/battlefield.zip" \
+             '.version = $v | .download = $d' module.json > module.tmp.json
+          mv module.tmp.json module.json
+
+      - name: Install, check and build
+        run: |
+          node scripts/check-lockfile.ts
+          npm ci
+          npm run check
+          npm test
+          npm run build:foundry
+
+      # The build copies the stamped module.json into dist-foundry, and the zip holds that
+      # folder's contents at its root.
+      - name: Build release zip
+        run: |
+          cd dist-foundry
+          zip -r ../battlefield.zip . -x "*.DS_Store"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            battlefield.zip
+            module.json
+          generate_release_notes: true

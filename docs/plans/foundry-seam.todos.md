@@ -2,72 +2,64 @@
 
 Written 2026-09-20, after the first live Foundry test of v0.1.0. Every bug that test found sat
 at the boundary with Foundry, and `npx vitest run`, `npm run check` and both builds caught none
-of them. The four items below are in the order to do them.
+of them. The items below are in the order to do them. Item 2, the PIXI shim, was done on 2026-09-20:
+`vite.foundry.config.ts` generates the shim's export list from the installed `pixi.js` and fails
+the build on an import that resolves to nothing.
 
 ## 1. Live smoke test
 
 A Playwright run against a real Foundry world with a GM client and one player client.
 
-- First, port the pieces of `rune-goblin/runegoblin-foundrytemplate` that Battlefield lacks.
-  Battlefield began as a browser app and was never built from the template. Keep this repo's
-  layout (`engine/`, `board/`, `runtime/`, `services/`, `adapters/`) and its browser build.
-  - The e2e harness: `playwright.config.ts`, `src/tests/e2e/` with the `foundry-clients.ts`
-    fixture and `global-setup.ts`, `scripts/setup-test-env.ts`, `scripts/start-test-env.sh`.
-  - `scripts/setup.ts` (the symlink for live editing) and `scripts/deploy.ts` (a link-free
-    copy), in place of the hand-made symlink from `Data/modules/battlefield` to `dist-foundry`.
-  - `.github/workflows/release.yml`, in place of the zip, upload and manifest edits done by
-    hand for v0.1.0. Each release attaches `battlefield.zip` and `module.json` and bumps
-    `version` and the tag inside `download`.
-  - The `.claude/skills/foundry-pf2e` skill and its references.
+The harness is in place (ported from `rune-goblin/runegoblin-foundrytemplate`, 2026-09-20):
+`npm run test:e2e` boots a cloned `stolen-lands` on :30005 with a GM client and a player client.
+`src/tests/e2e/README.md` has the account. Three specs exist:
 
-- Open the window from the scene control. Walk the wizard: Battlefield, Paint, Siege engines,
-  Sides, both army steps, Review.
-- Start the battle. The player's window opens once and the round chip sits in
-  `#ui-right-column-1`. The player shuts the window and the chip stays.
-- The GM presses End battle, answers the save prompt, and the player's window and chip go.
+- `launch.spec.ts` — the scene control opens the window; the player client joins.
+- `battle.spec.ts` — the GM walks the seven wizard steps with the rail's label and hint checked
+  for overlap on each, begins the battle, the player's window opens once with reel art loaded,
+  the reopen chip shows in `#ui-right-column-1` while that window is shut and brings it back,
+  and End battle clears the player's window and chip. It relies on the deployed setup the world
+  clone already holds.
+- `vfx.spec.ts` — `/game?vfx` plays every spell burst and asserts an empty console.
+
+All four tests passed in one run on 2026-09-20 (4.2 minutes; the gallery spec takes two of them,
+a third Foundry canvas on software GL).
+
+Still to write:
+
+- The save prompt in End battle. The spec takes whichever of End battle and End without saving
+  the dialog offers.
 - On the kingdom map, pick a hex with armies, then a second hex, then the first again. The
   first battle comes back as it stood, the `sites` setting holds the other, and the player
-  client follows each switch without a reload.
-- Assert layout, since leaked host CSS was the largest bug: the wizard rail's step buttons hold
-  a label and a hint without overlap, a reel card shows its art, and `getComputedStyle` of a
-  button under `.battlefield-root` reports no fixed `height`.
-- Assert the console holds no error after a damage popup and a spell burst. The PIXI shim's
-  missing names failed there.
-- The ReignMaker checkout at `/Users/mark/Documents/repos/pf2e-reignmaker` has a
-  `playwright.config.ts` to copy from. Foundry 14.365 is installed locally and
-  `Data/modules/battlefield` symlinks to `dist-foundry`.
-
-## 2. The build fails on a missing shim name
-
-`src/adapters/foundry/pixi-shim.ts` lists its exports by hand. A name the board imports and the
-shim lacks compiles to `undefined` with a warning. `TEXT_GRADIENT` and `TextMetrics` were
-missing until 2026-09-20. Make `vite.foundry.config.ts` turn that warning into an error, or
-generate the shim's export list from the board's imports.
+  client follows each switch without a reload. The spec runs against the installed ReignMaker,
+  a built copy the harness clones with the other modules. It lacks `getArmies()` and
+  `getFactions()`, so the spec exercises the kingdom-flag fallback until ReignMaker ships them.
+- A damage popup with an empty console. `PopupLayer` reads `TEXT_GRADIENT` and `TextMetrics`,
+  and the gallery plays bursts alone. It needs an attack played through the canvas, or a
+  popup added to the `?vfx` gallery.
+- A setup the spec builds for itself, so a fresh world clone needs no hand deployment.
+- The release workflow has never run. The next tag is its first test.
 
 ## 3. One shell, stages as views
 
-- Every stage mounts its own `AppShell` and its own `PixiBoard`. The six main boards already
-  share one PIXI application through `src/app/shared-board.ts` (`attach`/`detach` on the view
-  `createBoardView` returns). The structure still says otherwise.
-- Hoist one `AppShell` and one `PixiBoard` into `App.svelte`. A stage becomes a view that
-  supplies panels, board props and event handlers. `shared-board.ts` and the `shared` prop then
-  go away.
-- Split `src/app/Battle.svelte` (1,937 lines) in the same pass.
-- A popup or spell burst in flight when the stage changes pauses with the ticker and resumes on
-  the next stage. Clear them on the switch.
+Done 2026-09-20, except the split: `App.svelte` mounts the one `AppShell` and the one
+`PixiBoard`; a stage renders nothing and presents its snippets, board props and handlers through
+`src/app/stage-view.svelte.ts`. `shared-board.ts` and the `shared` prop are gone, and
+`clearEffects()` drops bursts and popups on a stage switch.
+
+- Split `src/app/Battle.svelte` into a controller and a view. The plan is
+  `docs/plans/battle-controller-split.md`; its first step is an e2e spec that plays a move and
+  an action.
+- The camera now carries over from one stage to the next, since the view is never re-attached.
+  Decide at the table whether a stage should refit on entry.
 
 ## 4. `// proto:` items at the seam
 
 - `src/app/game.svelte.ts` builds the browser runtime and reads `localStorage` on every host,
   and a Foundry client replaces it through `bindClient`. The host should supply the first
   client.
-- An emplaced engine still stores a `side`; a new one files under `'attacker'` until a unit
-  claims it, so an engine nobody claims at deployment favours the attacker. A neutral owner
-  needs an engine change.
 - `battleUnsaved` knows only the saves this client made since it loaded. A save from another
   GM client or from before a reload prompts again.
-- The header-controls menu is built once per frame render, so Call and Dismiss both always
-  show. Move both into the app's own top bar, beside End battle.
 
 ## 5. Battle sites, from the 2026-09-20 multi-battle change
 

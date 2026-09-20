@@ -9,11 +9,21 @@
     "dev": "vite",
     "build": "vite build",
     "build:foundry": "vite build --config vite.foundry.config.ts",
-    "dev:foundry": "vite build --config vite.foundry.config.ts --watch",
+    "dev:foundry": "vite --config vite.foundry.config.ts",
+    "watch:foundry": "vite build --config vite.foundry.config.ts --watch",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit -p tsconfig.engine.json",
+    "check:e2e": "tsc --noEmit -p src/tests/e2e/tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "npm run build:foundry && playwright test",
+    "test:e2e:run": "playwright test",
+    "test:e2e:setup": "node scripts/setup-test-env.ts",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:foundry": "bash scripts/start-test-env.sh",
+    "setup": "node scripts/setup.ts",
+    "deploy": "node scripts/deploy.ts",
     "import:troops": "node scripts/import-troops.mjs",
     "import:official": "node scripts/import-official.mjs",
     "import:engines": "node scripts/import-engines.mjs",
@@ -23,8 +33,10 @@
     "bake:paper": "node scripts/bake-paper.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@types/node": "^22.12.0",
+    "foundry-pf2e": "github:7H3LaughingMan/foundry-pf2e#78aa843c39a59e06ede407a45ed1fd627169b5a3",
     "svelte": "^5.46.4",
     "svelte-check": "^4.1.4",
     "typescript": "^5.9.2",
@@ -35,5 +47,8 @@
     "@pixi/filter-bevel": "^5.1.1",
     "@pixi/filter-drop-shadow": "^5.2.0",
     "pixi.js": "^7.4.3"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }

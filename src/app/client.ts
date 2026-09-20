@@ -14,4 +14,13 @@ export interface StoreClient {
   submit(command: BattleCommand): Promise<CommandResult>;
   subscribe(listener: (session: BattleSession) => void): () => void;
   archive: BattleArchive;
+  /** The GM's call that brings every player's window up. A host with one table of clients
+   * supplies it; the browser has none. */
+  table?: TableSummons;
+}
+
+export interface TableSummons {
+  readonly called: boolean;
+  call(): Promise<void>;
+  dismiss(): Promise<void>;
 }

@@ -30,9 +30,9 @@
   import BoardPopup from './BoardPopup.svelte';
   import BattleLog from './BattleLog.svelte';
   import BattleReport from './BattleReport.svelte';
-  import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
-  import { AppShell, MapControls, TopBar } from './shell/index.js';
+  import { MapControls, TopBar } from './shell/index.js';
+  import { presentStage, stage } from './stage-view.svelte.js';
   import RadialMenu from './RadialMenu.svelte';
   import TargetMarkers from './TargetMarkers.svelte';
   import { cellsForTarget, targetingIcon, TargetingService, type TargetMarker } from './targeting.js';
@@ -113,7 +113,6 @@
     return false;
   }
 
-  let boardRef = $state<PixiBoard>();
 
   // Move's own row, hovered independently of the type row — Move is drag-driven and its bands
   // stay visible without a click (Mark: "it shows status based on interaction").
@@ -803,12 +802,12 @@
     if (!cell) { anchor = null; lastAnchor = null; return; }
     let frame = 0;
     const follow = () => {
-      const p = boardRef?.screenOf(cell);
+      const p = stage.board?.screenOf(cell);
       if (p && (!lastAnchor || Math.abs(p.x - lastAnchor.x) > 0.5 || Math.abs(p.y - lastAnchor.y) > 0.5)) {
         lastAnchor = { x: p.x, y: p.y };
         anchor = lastAnchor;
       }
-      const r = boardRef?.cellRadius(cell);
+      const r = stage.board?.cellRadius(cell);
       if (r && Math.abs(r - anchorR) > 0.5) anchorR = r;
       frame = requestAnimationFrame(follow);
     };
@@ -986,7 +985,7 @@
   $effect(() => {
     const next = { day: b.day, round: b.round, activated: b.activated.length, pending: b.pending, player: playerNow() };
     const timer = setInterval(() => {
-      if ((boardRef?.remainingMs() ?? 0) > ANNOUNCE_OVERLAP_MS) return;
+      if ((stage.board?.remainingMs() ?? 0) > ANNOUNCE_OVERLAP_MS) return;
       announced = next;
       clearInterval(timer);
     }, 100);
@@ -1000,10 +999,10 @@
   // The board plays the commit, not the command: every flash, burst, arrow and mark comes from
   // the events the record carries, so a client that issued nothing shows the same execution.
   onMount(() => presentation.connect({
-    route: (unit, cells) => boardRef?.setRoute(unit, cells),
+    route: (unit, cells) => stage.board?.setRoute(unit, cells),
     flash,
-    burst: (cell, tree, from) => boardRef?.burst(cell, tree, from),
-    popup: ({ unit, ...popup }) => boardRef?.popup({ token: unit, ...popup }),
+    burst: (cell, tree, from) => stage.board?.burst(cell, tree, from),
+    popup: ({ unit, ...popup }) => stage.board?.popup({ token: unit, ...popup }),
     resolved: (markers, arrows) => {
       resolvedMarkers = markers;
       resolvedArrows = arrows;
@@ -1263,7 +1262,7 @@
     if (u.status !== 'active' || u.side !== b.pending || b.activated.includes(u.id)) return;
     if (!requireTurn()) return;
     void run(selectUnit(u.id));
-    if (centre) boardRef?.centerOn(notation(u.square));
+    if (centre) stage.board?.centerOn(notation(u.square));
   }
 
   const status = (u: Unit) => [
@@ -1296,6 +1295,30 @@
   const spec = $derived(`${b.board.spec.base}${b.board.spec.feature && b.board.spec.feature !== 'none' ? ' · ' + b.board.spec.feature : ''}`);
 
   let ending = $state(false);
+
+  const pickableEdges = $derived(pickerService
+    ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id)
+    : arming?.edges ?? nearbyGates.map(([key]) => key));
+
+  presentStage({
+    leftTitle: 'Orders', leftWidth: 24, rightTitle: 'Battle log', rightWidth: 21,
+    get top() { return top; }, get float() { return float; }, get pin() { return pin; }, get left() { return left; }, get right() { return right; },
+    get modal() { return b.phase === 'ended' ? result : undefined; },
+    get aiming() { return arming !== null || blastOpen || pickerActivity !== null; },
+    get board() {
+      return {
+        board: b.board, tokens, fallen, mode: 'battle' as const,
+        terrainAppearance: gameMap.terrainAppearance, inkMap: gameMap.inkMap,
+        frozen: radial !== null || castPick !== null,
+        highlights, dragPath: previewPath, barred: blockedCell, anchored, shot, selected: selectedHex,
+        draggable: blastOpen || activityPick || !myTurn ? null : active?.id ?? null,
+        pickableEdges,
+        onhover: (e: BoardEventOf<'hover'>) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; },
+        oncell: active ? onCell : undefined, ontoken: onToken, onedge: active ? onEdge : undefined,
+        ondrag: active ? onBoardDrag : undefined, ondrop: active ? onBoardDrop : undefined,
+      };
+    },
+  });
 </script>
 
 {#snippet popupHead(label: string)}
@@ -1346,471 +1369,438 @@
 
 <svelte:window onkeydown={onKey} onpointerdown={onWindowPointerDown} onclick={onWindowClick} />
 
-<AppShell leftTitle="Orders" leftWidth={24} rightTitle="Battle log" rightWidth={21} modal={b.phase === 'ended' ? result : undefined}>
-  {#snippet top()}
-    <TopBar>
-      {#snippet status()}
-        <strong>Day {b.day} · Round {b.round} / {b.roundsPerDay}</strong>
-        <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span>
-        <span class="turn" class:mine={viewer.isHolder}>{turnNote()}</span>
-        {#if active}<span class="muted">· {active.name}{locked ? ' is committed' : ''}</span>
-        {:else}<span class="muted">· {myTurn ? 'choose an army' : 'watching'}</span>{/if}
-        <span class="muted">· {spec}</span>
+{#snippet top()}
+  <TopBar>
+    {#snippet status()}
+      <strong>Day {b.day} · Round {b.round} / {b.roundsPerDay}</strong>
+      <span class={b.pending === 'attacker' ? 'side-att' : 'side-def'}>{b.pending}</span>
+      <span class="turn" class:mine={viewer.isHolder}>{turnNote()}</span>
+      {#if active}<span class="muted">· {active.name}{locked ? ' is committed' : ''}</span>
+      {:else}<span class="muted">· {myTurn ? 'choose an army' : 'watching'}</span>{/if}
+      <span class="muted">· {spec}</span>
+    {/snippet}
+    {#snippet tools()}
+      <button onclick={() => void run(undo())} disabled={!viewer.isGm || !game.history.length} title="Undo the last action">Undo</button>
+      <button onclick={() => (ending = true)} disabled={!viewer.isGm} title="End this battle for the whole table">End battle</button>
+    {/snippet}
+  </TopBar>
+{/snippet}
+
+{#snippet float()}
+  <MapControls
+    board={stage.board}
+    army={() => b.units.filter((u) => u.side === (active?.side ?? b.pending) && u.status === 'active').map((u) => notation(u.square))}
+    armyLabel="Frame the {active?.side ?? b.pending} force"
+  />
+  {#if active}<UnitEffects unitName={active.name} effects={statusEffectsOf(active, b)} />{/if}
+  {#if b.phase === 'battle'}
+    {#if announced}<BattleAnnouncement kind="round" text={`Round ${announced.round}`} cue={`${announced.day}:${announced.round}`} />{/if}
+    <ArmyReel
+      units={roster}
+      activated={b.activated}
+      selected={active?.id ?? null}
+      {locked}
+      hovered={hoveredPiece}
+      pick={pickUnit}
+      hover={(id) => { hoveredCard = id; }}
+    >
+      {#snippet below()}
+        {#if announced}
+          <BattleAnnouncement kind="side" text={announced.pending === 'attacker' ? 'Attackers' : 'Defenders'}
+            side={announced.pending} afterRound={announced.activated === 0} detail={announced.player} cue={`${announced.day}:${announced.round}:${announced.activated}:${announced.pending}`} />
+        {/if}
       {/snippet}
-      {#snippet tools()}
-        <button onclick={() => void run(undo())} disabled={!viewer.isGm || !game.history.length} title="Undo the last action">Undo</button>
-        <button onclick={() => (ending = true)} disabled={!viewer.isGm} title="End this battle for the whole table">End battle</button>
-      {/snippet}
-    </TopBar>
-  {/snippet}
+    </ArmyReel>
+  {/if}
+{/snippet}
 
-  {#snippet float()}
-    <MapControls
-      board={boardRef}
-      army={() => b.units.filter((u) => u.side === (active?.side ?? b.pending) && u.status === 'active').map((u) => notation(u.square))}
-      armyLabel="Frame the {active?.side ?? b.pending} force"
-    />
-    {#if active}<UnitEffects unitName={active.name} effects={statusEffectsOf(active, b)} />{/if}
-    {#if b.phase === 'battle'}
-      {#if announced}<BattleAnnouncement kind="round" text={`Round ${announced.round}`} cue={`${announced.day}:${announced.round}`} />{/if}
-      <ArmyReel
-        units={roster}
-        activated={b.activated}
-        selected={active?.id ?? null}
-        {locked}
-        hovered={hoveredPiece}
-        pick={pickUnit}
-        hover={(id) => { hoveredCard = id; }}
-      >
-        {#snippet below()}
-          {#if announced}
-            <BattleAnnouncement kind="side" text={announced.pending === 'attacker' ? 'Attackers' : 'Defenders'}
-              side={announced.pending} afterRound={announced.activated === 0} detail={announced.player} cue={`${announced.day}:${announced.round}:${announced.activated}:${announced.pending}`} />
-          {/if}
-        {/snippet}
-      </ArmyReel>
-    {/if}
-  {/snippet}
-
-  {#snippet map()}
-    <div class="mapwrap" class:aiming={arming !== null || blastOpen || pickerActivity !== null}>
-    <PixiBoard
-      shared
-      bind:this={boardRef}
-      board={b.board}
-      {tokens}
-      {fallen}
-      mode="battle"
-      fill
-      terrainAppearance={gameMap.terrainAppearance}
-      inkMap={gameMap.inkMap}
-      frozen={radial !== null || castPick !== null}
-      {highlights}
-      dragPath={previewPath}
-      barred={blockedCell}
-      {anchored}
-      {shot}
-      selected={selectedHex}
-      draggable={blastOpen || activityPick || !myTurn ? null : active?.id ?? null}
-      pickableEdges={pickerService ? pickerService.choices.filter((target) => target.kind === 'wall').map((target) => target.id) : arming?.edges ?? nearbyGates.map(([key]) => key)}
-      onhover={(e) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; }}
-      oncell={active ? onCell : undefined}
-      ontoken={onToken}
-      onedge={active ? onEdge : undefined}
-      ondrag={active ? onBoardDrag : undefined}
-      ondrop={active ? onBoardDrop : undefined}
-    />
-    </div>
-  {/snippet}
-
-  {#snippet pin()}
-    {#if meleeTarget && cellOf(meleeTarget)}
-      <MeleeChoices cell={cellOf(meleeTarget)!} plans={meleeOptions.get(meleeTarget) ?? []} selected={meleeSelected}
-        screenOf={(cell) => boardRef?.screenOf(cell) ?? null} radiusOf={(cell) => boardRef?.cellRadius(cell) ?? null} choose={chooseMelee}
-        hover={(kind) => { meleeHover = kind; }} />
-    {/if}
-    <TargetMarkers targets={targetMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
-      opacity={targetingService?.placement ? 0.75 : 1}
-      cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={targetingChoice?.id ?? null}
-      hover={hoverTargetMarker} choose={chooseTargetMarker} />
-    <TargetMarkers targets={resolvedMarkers} screenOf={(cell) => boardRef?.screenOf(cell) ?? null}
-      cellRadius={(cell) => boardRef?.cellRadius(cell) ?? null} selected={null} resolved
-      hover={() => {}} choose={() => {}} />
-    {#if gateOpen && active}
-      <BoardPopup cell={notation(active.square)} close={() => { gateOpen = false; }} appearance="rally">
-        <strong>Gates</strong>
-        <p class="muted">Operate from the interior hex while free of enemy contact. Either army can use the mechanism.</p>
-        {#each nearbyGates as [key, wall] (key)}
-          {@const reason = gateReason(b, active, key)}
-          <button class="popup-row" disabled={!!reason} title={reason ?? 'Operate gate'} onclick={() => operateGate(key)}>
-            <span class="popup-verb">{wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
-            <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wall.inside}{reason ? ` · ${reason}` : ''}</span>
-          </button>
-        {/each}
-      </BoardPopup>
-    {/if}
-    {#if siegeOpen && active && siegeEngine}
-      <BoardPopup cell={notation(active.square)} close={cancelAction}>
-        <div class="siege-heading">
-          <img src={engineArtUrl(siegeEngine.name) ?? actionIconUrl('shoot')} alt="" />
-          <div><strong>{siegeEngine.name}</strong><div class="muted">{siegeEngine.hauling ? 'Hauling' : engineSpeed(siegeEngine) === 0 ? 'Fixed emplacement' : 'In this hex'}</div></div>
+{#snippet pin()}
+  {#if meleeTarget && cellOf(meleeTarget)}
+    <MeleeChoices cell={cellOf(meleeTarget)!} plans={meleeOptions.get(meleeTarget) ?? []} selected={meleeSelected}
+      screenOf={(cell) => stage.board?.screenOf(cell) ?? null} radiusOf={(cell) => stage.board?.cellRadius(cell) ?? null} choose={chooseMelee}
+      hover={(kind) => { meleeHover = kind; }} />
+  {/if}
+  <TargetMarkers targets={targetMarkers} screenOf={(cell) => stage.board?.screenOf(cell) ?? null}
+    opacity={targetingService?.placement ? 0.75 : 1}
+    cellRadius={(cell) => stage.board?.cellRadius(cell) ?? null} selected={targetingChoice?.id ?? null}
+    hover={hoverTargetMarker} choose={chooseTargetMarker} />
+  <TargetMarkers targets={resolvedMarkers} screenOf={(cell) => stage.board?.screenOf(cell) ?? null}
+    cellRadius={(cell) => stage.board?.cellRadius(cell) ?? null} selected={null} resolved
+    hover={() => {}} choose={() => {}} />
+  {#if gateOpen && active}
+    <BoardPopup cell={notation(active.square)} close={() => { gateOpen = false; }} appearance="rally">
+      <strong>Gates</strong>
+      <p class="muted">Operate from the interior hex while free of enemy contact. Either army can use the mechanism.</p>
+      {#each nearbyGates as [key, wall] (key)}
+        {@const reason = gateReason(b, active, key)}
+        <button class="popup-row" disabled={!!reason} title={reason ?? 'Operate gate'} onclick={() => operateGate(key)}>
+          <span class="popup-verb">{wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
+          <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wall.inside}{reason ? ` · ${reason}` : ''}</span>
+        </button>
+      {/each}
+    </BoardPopup>
+  {/if}
+  {#if siegeOpen && active && siegeEngine}
+    <BoardPopup cell={notation(active.square)} close={cancelAction}>
+      <div class="siege-heading">
+        <img src={engineArtUrl(siegeEngine.name) ?? actionIconUrl('shoot')} alt="" />
+        <div><strong>{siegeEngine.name}</strong><div class="muted">{siegeEngine.hauling ? 'Hauling' : engineSpeed(siegeEngine) === 0 ? 'Fixed emplacement' : 'In this hex'}</div></div>
+      </div>
+      {#if siegeEquipment.length > 1}
+        <div class="siege-selector" aria-label="Siege engines">
+          {#each siegeEquipment as engine (engine.id)}
+            <button class:on={engine.id === siegeEngine.id} onclick={() => { siegeSelected = engine.id; }}>{engine.name}</button>
+          {/each}
         </div>
-        {#if siegeEquipment.length > 1}
-          <div class="siege-selector" aria-label="Siege engines">
-            {#each siegeEquipment as engine (engine.id)}
-              <button class:on={engine.id === siegeEngine.id} onclick={() => { siegeSelected = engine.id; }}>{engine.name}</button>
-            {/each}
-          </div>
+      {/if}
+      <p class="popup-escapes" aria-live="polite">
+        {#if engineKind(siegeEngine) === 'ram'}Ram · attacks adjacent walls
+        {:else}{engineLoadSteps(siegeEngine) === 0 ? 'No reload needed' : engineLoaded(siegeEngine) ? 'Loaded' : 'Unloaded'} · {siegeEngine.fired ? 'Fired this round' : 'Ready to fire this round'}{/if}
+        {#if engineSpeed(siegeEngine) !== 0} · {Math.min(active.speed, engineSpeed(siegeEngine) ?? active.speed)} ft per Move while hauling{/if}
+      </p>
+      {#if engineLoadSteps(siegeEngine) > 0}
+        {@const reason = siegeReason(b, active, siegeEngine, 'load')}
+        <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Reload the engine'} onclick={() => operateSiege('load')}>
+          <span class="popup-verb">Load <ActionCost n={engineLoadCost(siegeEngine)} /></span>
+          <span class="muted">{reason ?? 'Ready the next shot'}</span>
+        </button>
+      {/if}
+      {@const attackReason = siegeReason(b, active, siegeEngine, 'attack') ?? (siegeOffer?.activities.some(a => a.legal) ? null : 'No targets in range.')}
+      <button class="popup-row" disabled={siegeBusy || !!attackReason} title={attackReason ?? 'Choose an attack and target'} onclick={() => operateSiege('attack')}>
+        <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (engineKind(siegeEngine) === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
+      </button>
+      {#if siegeEngine.hauling}
+        <button class="popup-row" disabled={siegeBusy} onclick={() => operateSiege('release')}>
+          <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {active.speed} ft per Move</span>
+        </button>
+      {:else if engineSpeed(siegeEngine) !== 0}
+        {@const reason = siegeReason(b, active, siegeEngine, 'haul')}
+        <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Attach the engine, then move your unit'} onclick={() => operateSiege('haul')}>
+          <span class="popup-verb">Haul siege engine <ActionCost n={1} /></span><span class="muted">{reason ?? 'Attach the engine, then move your unit'}</span>
+        </button>
+      {/if}
+    </BoardPopup>
+  {/if}
+  {#if activityPick && pickerOffer && active}
+    <BoardPopup cell={notation(active.square)} close={cancelAction} appearance={pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
+      {@render pickerHead(pickerOffer.label, pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally', pickerOffer.spell)}
+      {@render activityRows(pickerOffer.activities, pickerActivity?.index ?? null, choosePickerActivity, pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally')}
+      {#if pickerActivity}
+        {#if canFocus(pickerOffer.type, pickerOffer.spell)}
+          <CommitmentPicker base={pickerActivity.cost ?? pickerActivity.index} available={actionsLeft} bind:value={focus} effect={pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
         {/if}
         <p class="popup-escapes" aria-live="polite">
-          {#if engineKind(siegeEngine) === 'ram'}Ram · attacks adjacent walls
-          {:else}{engineLoadSteps(siegeEngine) === 0 ? 'No reload needed' : engineLoaded(siegeEngine) ? 'Loaded' : 'Unloaded'} · {siegeEngine.fired ? 'Fired this round' : 'Ready to fire this round'}{/if}
-          {#if engineSpeed(siegeEngine) !== 0} · {Math.min(active.speed, engineSpeed(siegeEngine) ?? active.speed)} ft per Move while hauling{/if}
+          {#if !pickerActivity.needsTarget}Choose your commitment, then confirm.
+          {:else if pickerService?.placement}{activityPick.selected.length ? 'Choose a destination hex.' : 'Choose the unit to translocate.'}
+          {:else if pickerOffer.spell === 'healing' && pickerActivity.index > 1}Choose {pickerActivity.index} units on the board. {activityPick.selected.length} selected.
+          {:else}Choose a target icon on the board to {pickerActivity.label.toLowerCase()}.{/if}
         </p>
-        {#if engineLoadSteps(siegeEngine) > 0}
-          {@const reason = siegeReason(b, active, siegeEngine, 'load')}
-          <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Reload the engine'} onclick={() => operateSiege('load')}>
-            <span class="popup-verb">Load <ActionCost n={engineLoadCost(siegeEngine)} /></span>
-            <span class="muted">{reason ?? 'Ready the next shot'}</span>
-          </button>
-        {/if}
-        {@const attackReason = siegeReason(b, active, siegeEngine, 'attack') ?? (siegeOffer?.activities.some(a => a.legal) ? null : 'No targets in range.')}
-        <button class="popup-row" disabled={siegeBusy || !!attackReason} title={attackReason ?? 'Choose an attack and target'} onclick={() => operateSiege('attack')}>
-          <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (engineKind(siegeEngine) === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
-        </button>
-        {#if siegeEngine.hauling}
-          <button class="popup-row" disabled={siegeBusy} onclick={() => operateSiege('release')}>
-            <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {active.speed} ft per Move</span>
-          </button>
-        {:else if engineSpeed(siegeEngine) !== 0}
-          {@const reason = siegeReason(b, active, siegeEngine, 'haul')}
-          <button class="popup-row" disabled={siegeBusy || !!reason} title={reason ?? 'Attach the engine, then move your unit'} onclick={() => operateSiege('haul')}>
-            <span class="popup-verb">Haul siege engine <ActionCost n={1} /></span><span class="muted">{reason ?? 'Attach the engine, then move your unit'}</span>
-          </button>
-        {/if}
-      </BoardPopup>
-    {/if}
-    {#if activityPick && pickerOffer && active}
-      <BoardPopup cell={notation(active.square)} close={cancelAction} appearance={pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
-        {@render pickerHead(pickerOffer.label, pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally', pickerOffer.spell)}
-        {@render activityRows(pickerOffer.activities, pickerActivity?.index ?? null, choosePickerActivity, pickerOffer.type === 'shoot' ? 'shoot' : pickerOffer.type === 'cast' ? 'cast' : 'rally')}
-        {#if pickerActivity}
-          {#if canFocus(pickerOffer.type, pickerOffer.spell)}
-            <CommitmentPicker base={pickerActivity.cost ?? pickerActivity.index} available={actionsLeft} bind:value={focus} effect={pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
-          {/if}
-          <p class="popup-escapes" aria-live="polite">
-            {#if !pickerActivity.needsTarget}Choose your commitment, then confirm.
-            {:else if pickerService?.placement}{activityPick.selected.length ? 'Choose a destination hex.' : 'Choose the unit to translocate.'}
-            {:else if pickerOffer.spell === 'healing' && pickerActivity.index > 1}Choose {pickerActivity.index} units on the board. {activityPick.selected.length} selected.
-            {:else}Choose a target icon on the board to {pickerActivity.label.toLowerCase()}.{/if}
-          </p>
-          {#if pickerActivity.needsTarget}
-          <div class="activity-targets" aria-label="{pickerOffer.label} targets">
-            {#each pickerCandidates as target (target.id)}
-              <button class="popup-row" class:on={activityPick.target === target.id} aria-pressed={activityPick.target === target.id} onpointerenter={() => hoverTargetMarker(target.id)} onpointerleave={() => hoverTargetMarker(null)}
-                onfocus={() => hoverTargetMarker(target.id)} onblur={() => hoverTargetMarker(null)} onclick={() => choosePickerTarget(target.id)}>
-                <span class="popup-verb">{target.label}</span>
-                <span class="muted">{targetCells(target).join(' + ')}</span>
-              </button>
-            {/each}
-          </div>
-          {/if}
-          {#if activityPick.selected.length}<button onclick={() => { if (activityPick) activityPick = { ...activityPick, selected: [], target: undefined }; targetHover = null; }}>Reset targets</button>{/if}
-        {:else}
-          <p class="popup-escapes">Choose an activity.</p>
-        {/if}
-        <div class="popup-foot">
-          {#if pickerActivity}<span class="muted">Spends {(pickerActivity.cost ?? 0) + focus} of {actionsLeft}</span>{/if}
-          <button onclick={cancelAction}>Cancel</button>
-          <button class="primary" disabled={!pickerActivity?.legal || (pickerActivity.needsTarget && !activityPick.target)} onclick={confirmPicker}>Confirm</button>
-        </div>
-      </BoardPopup>
-    {/if}
-    {#if blastOpen && blastOffer && active}
-      <BoardPopup cell={notation(active.square)} close={cancelAction} appearance="cast">
-        {@render pickerHead('Blast', 'cast', 'blast')}
-        <div class="blast-levels">
-          {#each blastOffer.activities as opt (opt.index)}
-            <button class="popup-row activity-row cast-row" class:on={blastLevel === opt.index} class:dim={!opt.legal} disabled={!opt.legal} aria-pressed={blastLevel === opt.index} onclick={() => chooseBlastLevel(opt.index)}>
-              <span class="popup-verb"><span class="row-cost"><ActionCost n={opt.index} /></span>{opt.label}</span>
-              <span class="muted">{opt.reason ?? opt.detail}</span>
+        {#if pickerActivity.needsTarget}
+        <div class="activity-targets" aria-label="{pickerOffer.label} targets">
+          {#each pickerCandidates as target (target.id)}
+            <button class="popup-row" class:on={activityPick.target === target.id} aria-pressed={activityPick.target === target.id} onpointerenter={() => hoverTargetMarker(target.id)} onpointerleave={() => hoverTargetMarker(null)}
+              onfocus={() => hoverTargetMarker(target.id)} onblur={() => hoverTargetMarker(null)} onclick={() => choosePickerTarget(target.id)}>
+              <span class="popup-verb">{target.label}</span>
+              <span class="muted">{targetCells(target).join(' + ')}</span>
             </button>
           {/each}
         </div>
-        {#if blastActivity}
-          <CommitmentPicker base={blastActivity.cost ?? blastActivity.index} available={actionsLeft} bind:value={focus} effect="on the spell attack" />
-          <p class="popup-escapes" aria-live="polite">
-            {#if blastLevel === 1}Choose an enemy hex.
-            {:else if blastLevel === 2}Choose a Blast icon on an edge for the two hexes in a line.
-            {:else}Choose a Blast icon at a corner for the three hexes that meet there.{/if}
-          </p>
-          <div class="blast-targets" aria-label="Blast targets">
-            {#each blastCandidates as target (target.id)}
-              <button class="popup-row" class:on={blastTarget === target.id} aria-pressed={blastTarget === target.id}
-                onpointerenter={() => hoverTargetMarker(target.id)} onpointerleave={() => hoverTargetMarker(null)}
-                onfocus={() => hoverTargetMarker(target.id)} onblur={() => hoverTargetMarker(null)}
-                onclick={() => { blastTarget = target.id; blastHover = null; }}>
-                <span class="popup-verb">{targetCells(target).join(' + ')}</span>
-                <span class="muted">{target.label}</span>
-              </button>
-            {/each}
-          </div>
-          {#if blastCell}<button onclick={() => { blastCell = null; }}>Show all targets</button>{/if}
-          {#if blastPreview}<p class="popup-escapes" aria-live="polite">Affected hexes: {targetCells(blastPreview).join(', ')}. Enemies: {blastPreview.label}.</p>{/if}
-          <div class="popup-foot">
-            <button onclick={cancelAction}>Cancel</button>
-            <button class="primary" disabled={!blastActivity.legal || !blastSelection} onclick={confirmBlast}>Cast {blastActivity.label} · {(blastActivity.cost ?? 0) + focus} action{(blastActivity.cost ?? 0) + focus === 1 ? '' : 's'}</button>
-          </div>
-        {:else}
-          <p class="popup-escapes">Choose a blast level, then designate its target.</p>
         {/if}
-      </BoardPopup>
-    {/if}
-    {#if radial && anchor && radialItems.length}
-      <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={radialItems} pick={pickProp} />
-    {/if}
-    {#if castPick && anchor && castRadialItems.length}
-      <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={castRadialItems} pick={pickCastTree} back={stepBack} />
-    {/if}
-    {#if drag && !blockedNotice}
-      <div class="drag-hud">
-        <strong>{rowLabel(drag)}</strong>
-        <span class="muted">{drag.cell} — {rowDetail(drag)}</span>
-      </div>
-    {:else if dragTarget?.attack && !blockedNotice}
-      <div class="drag-hud">
-        <strong>Attack {enemyName(dragTarget.id)}</strong>
-        <span class="muted">Release to choose a Fight activity · from 1 action</span>
-      </div>
-    {/if}
-    {#if pending}
-      <BoardPopup cell={pending.cell} close={cancelAction}>
-        {@render popupHead(pending.cell)}
-        {#each pending.rows as row, i (rowKey(row))}
-          <button class="popup-row" class:on={i === pending.index} onclick={() => choose(i)}>
-            <span class="popup-verb">
-              {#if row.kind === 'charge' || row.kind === 'advance'}<img class="row-prop" src={actionIconUrl(row.kind === 'charge' || row.plan.kind === 'charge' ? 'charge' : 'attack')} alt="" />{/if}
-              {rowLabel(row)}
-              <span class="row-cost"><ActionCost n={i === pending.index ? dropCost(row) : row.kind === 'maneuver' ? firstManeuverActivity(row.cell) : row.actions} /></span>
-            </span>
-            <span class="muted">
-              {#if i === pending.index && row.kind === 'advance'}{actionCost(row.plan.moveActions)} to move + {actions(chargeActivity + focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
-              {:else if i === pending.index && row.kind === 'charge'}{actions(dropCost(row))}, melee included
-              {:else}{rowDetail(row)}{/if}
-            </span>
-          </button>
-          {#if i === pending.index && row.kind === 'flee'}
-            <p class="muted activity-detail popup-escapes">
-              Leave through {row.cell}. Morale: d20 {row.modifier >= 0 ? '+' : '−'}{Math.abs(row.modifier)} against DC {row.dc}.
-              The unit escapes either way. Success sends it to camp without morale loss; failure routes it and removes it from the end-of-day survivors.
-              {#if active && isRouted(active)}This unit is already routed and stays routed after leaving.{/if}
-            </p>
-          {/if}
-          {#if i === pending.index && row.kind === 'maneuver' && act?.maneuver && active}
-            {@const w = act.maneuver}
-            <div class="popup-escapes">
-              {#each w.holders as h (h.unit)}
-                <p class="escape">
-                  <span class="escape-name">{h.name}</span>
-                  <span class="muted">DC {h.dc}{h.pinning ? ' · pinning at range, no free strike' : ''}</span>
-                  {#if h.follows}<span class="tag">gives no retreat — follows you</span>{/if}
-                </p>
-              {:else}
-                <p class="muted">Nothing holds you.{isRouted(active) ? ' Run for your own edge.' : ' Choose your position.'}</p>
-              {/each}
-              {#if w.holders.length}
-                <p class="muted activity-detail">
-                  Break off is one roll, d20+{w.modifier} against DC {w.dc}, the highest of them,
-                  read again for each. Above it they roll instead, against DC {levelDc(active.level)}.
-                </p>
-              {/if}
-            </div>
-            <div class="activity-chips">
-              {#each ACTIVITIES as g (g)}
-                {@const opt = w.activities[g - 1]}
-                {@const reaches = opt.targets.some(t => t.id === row.cell)}
-                <button
-                  class="activity-chip"
-                  class:on={maneuverActivity === g}
-                  disabled={!opt.legal || !reaches}
-                  title={opt.reason ?? (!reaches ? 'Terrain or distance needs a different Maneuver' : '')}
-                  onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
-                >
-                  {opt.label}
-                  <ActionCost n={opt.cost ?? g} />
-                </button>
-              {/each}
-            </div>
-            <p class="muted activity-detail popup-escapes">{w.activities[maneuverActivity - 1].detail}</p>
-          {/if}
-          {#if i === pending.index && (row.kind === 'charge' || row.kind === 'advance') && active}
-            {@const charging = row.kind === 'charge' || row.plan.kind === 'charge'}
-            <p class="muted activity-detail popup-escapes">
-              {#if row.kind === 'advance'}Move to {row.plan.via}, then {charging ? 'charge' : 'attack'} from there. {row.actions} actions total for the basic attack. {/if}
-              {#if charging}
-                {#if row.kind === 'advance'}{row.plan.bonus ? `+${row.plan.bonus} on the attack.` : 'Rough ground removes the charge bonus.'} {/if}
-                Charge leaves this unit exposed: −2 Defence until it next acts.
-              {:else}Attack uses the normal melee rules.{/if}
-            </p>
-            <div class="activity-chips">
-              {#each ACTIVITIES as g (g)}
-                {@const total = chargeCost(row, g)}
-                {@const can = total <= active.actions}
-                <button
-                  class="activity-chip"
-                  class:on={chargeActivity === g}
-                  disabled={!can}
-                  title={can ? '' : `needs ${total} actions`}
-                  onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
-                >
-                  {charging ? CHARGES[g - 1] : ['Strike', 'Press', 'Overrun'][g - 1]}
-                  <ActionCost n={total} />
-                </button>
-              {/each}
-            </div>
-            <CommitmentPicker base={chargeCost(row, chargeActivity)} available={actionsLeft} bind:value={focus} effect={charging ? 'on the attack, in addition to the charge bonus' : 'on the attack'} />
-          {/if}
-        {/each}
-        {@render popupFoot(commit, picked?.kind === 'flee' ? 'Confirm flee' : picked?.kind === 'charge' || (picked?.kind === 'advance' && picked.plan.kind === 'charge') ? 'Confirm charge' : picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
-      </BoardPopup>
-    {/if}
-    {#if aim && aimGroup && active && !pending}
-      <BoardPopup cell={aim.cell} close={cancelAction} appearance={aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'default'}>
-        {#if aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally'}
-          {@render pickerHead(aim.label, aimGroup.offer.type, aimGroup.offer.spell)}
-        {:else}{@render popupHead(aim.label)}{/if}
-        <div class="verb-row" class:solo={aim.groups.length === 1}>
-          {#each aim.groups as g, gi (offerKey(g.offer))}
-            {@const icon = targetingIcon(g.offer)}
-            <button class="verb-tile" class:on={gi === aim.group} onclick={() => aimVerb(gi)}>
-              {#if icon}<img src={targetIconUrl(icon)} alt="" />{/if}
-              <span>{g.offer.label}</span>
-            </button>
-            {/each}
-        </div>
-        {@render activityRows(aimActivities, aimed?.index ?? null, (index) => aimChoose(aimActivities.findIndex((opt) => opt.index === index)), aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'plain')}
-        {#if aimed?.legal}
-          {#if canFocus(aimGroup.offer.type, aimGroup.offer.spell) && aimGroup.offer.spell !== 'blast'}
-            <CommitmentPicker base={aimed.cost ?? aimed.index} available={actionsLeft} bind:value={focus} effect={aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
-          {/if}
-          {@render popupFoot(takeAim, aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
-        {/if}
-      </BoardPopup>
-    {/if}
-  {/snippet}
-
-  {#snippet left()}
-    {#if active && act}
-      <div class="orders-head">
-        <h3 class={active.side === 'attacker' ? 'side-att' : 'side-def'}>{active.name}</h3>
-        <span class="muted">{active.side} · {notation(active.square)}</span>
-      </div>
-      <div class="row action-pips">
-        {#if active.actions > 0}<ActionCost n={active.actions} size="1.3em" />{/if}
-        <span class="muted">{active.actions} of {ACTIONS_PER_ACTIVATION} left</span>
-      </div>
-      <p class="cost-key">
-        Activities show their action cost: <ActionCost n={1} />, <ActionCost n={2} /> or
-        <ActionCost n={3} />. Commit extra actions for +2 each on supported activities. One attack an activation.
-      </p>
-
-      {#if siegeEquipment.length || nearbyGates.length}
-        <div class="row" aria-label="Equipment and gates">
-          {#each siegeEquipment as engine (engine.id)}
-            <button onclick={() => openSiege(engine.id)}>Operate {engine.name}</button>
-          {/each}
-          {#if nearbyGates.length}<button onclick={() => { cancelAction(); gateOpen = true; }}>Gates</button>{/if}
-        </div>
+        {#if activityPick.selected.length}<button onclick={() => { if (activityPick) activityPick = { ...activityPick, selected: [], target: undefined }; targetHover = null; }}>Reset targets</button>{/if}
+      {:else}
+        <p class="popup-escapes">Choose an activity.</p>
       {/if}
-      <table class="stats"><tbody>
-        <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
-        {#if shootCeiling(b, active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(b, active)}</td></tr>{/if}
-        <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
-        <tr><td>Disorder</td><td class="stat">{active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
-        <tr><td>Move</td><td class="stat">{act.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
-        {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
-        {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
-      </tbody></table>
-
-      <!-- Move opens with the selection rather than staying pinned: its bands are the same
-           ones the board washes, and the rows track a live drag both ways. -->
-      <div class="move-card">
-        <button
-          class="move-head"
-          aria-expanded={moveOpen}
-          onclick={() => { moveOpen = !moveOpen; if (!moveOpen) hoveredBand = null; }}
-        >
-          <h3>Move</h3>
+      <div class="popup-foot">
+        {#if pickerActivity}<span class="muted">Spends {(pickerActivity.cost ?? 0) + focus} of {actionsLeft}</span>{/if}
+        <button onclick={cancelAction}>Cancel</button>
+        <button class="primary" disabled={!pickerActivity?.legal || (pickerActivity.needsTarget && !activityPick.target)} onclick={confirmPicker}>Confirm</button>
+      </div>
+    </BoardPopup>
+  {/if}
+  {#if blastOpen && blastOffer && active}
+    <BoardPopup cell={notation(active.square)} close={cancelAction} appearance="cast">
+      {@render pickerHead('Blast', 'cast', 'blast')}
+      <div class="blast-levels">
+        {#each blastOffer.activities as opt (opt.index)}
+          <button class="popup-row activity-row cast-row" class:on={blastLevel === opt.index} class:dim={!opt.legal} disabled={!opt.legal} aria-pressed={blastLevel === opt.index} onclick={() => chooseBlastLevel(opt.index)}>
+            <span class="popup-verb"><span class="row-cost"><ActionCost n={opt.index} /></span>{opt.label}</span>
+            <span class="muted">{opt.reason ?? opt.detail}</span>
+          </button>
+        {/each}
+      </div>
+      {#if blastActivity}
+        <CommitmentPicker base={blastActivity.cost ?? blastActivity.index} available={actionsLeft} bind:value={focus} effect="on the spell attack" />
+        <p class="popup-escapes" aria-live="polite">
+          {#if blastLevel === 1}Choose an enemy hex.
+          {:else if blastLevel === 2}Choose a Blast icon on an edge for the two hexes in a line.
+          {:else}Choose a Blast icon at a corner for the three hexes that meet there.{/if}
+        </p>
+        <div class="blast-targets" aria-label="Blast targets">
+          {#each blastCandidates as target (target.id)}
+            <button class="popup-row" class:on={blastTarget === target.id} aria-pressed={blastTarget === target.id}
+              onpointerenter={() => hoverTargetMarker(target.id)} onpointerleave={() => hoverTargetMarker(null)}
+              onfocus={() => hoverTargetMarker(target.id)} onblur={() => hoverTargetMarker(null)}
+              onclick={() => { blastTarget = target.id; blastHover = null; }}>
+              <span class="popup-verb">{targetCells(target).join(' + ')}</span>
+              <span class="muted">{target.label}</span>
+            </button>
+          {/each}
+        </div>
+        {#if blastCell}<button onclick={() => { blastCell = null; }}>Show all targets</button>{/if}
+        {#if blastPreview}<p class="popup-escapes" aria-live="polite">Affected hexes: {targetCells(blastPreview).join(', ')}. Enemies: {blastPreview.label}.</p>{/if}
+        <div class="popup-foot">
+          <button onclick={cancelAction}>Cancel</button>
+          <button class="primary" disabled={!blastActivity.legal || !blastSelection} onclick={confirmBlast}>Cast {blastActivity.label} · {(blastActivity.cost ?? 0) + focus} action{(blastActivity.cost ?? 0) + focus === 1 ? '' : 's'}</button>
+        </div>
+      {:else}
+        <p class="popup-escapes">Choose a blast level, then designate its target.</p>
+      {/if}
+    </BoardPopup>
+  {/if}
+  {#if radial && anchor && radialItems.length}
+    <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={radialItems} pick={pickProp} />
+  {/if}
+  {#if castPick && anchor && castRadialItems.length}
+    <RadialMenu x={anchor.x} y={anchor.y} hole={anchorR} items={castRadialItems} pick={pickCastTree} back={stepBack} />
+  {/if}
+  {#if drag && !blockedNotice}
+    <div class="drag-hud">
+      <strong>{rowLabel(drag)}</strong>
+      <span class="muted">{drag.cell} — {rowDetail(drag)}</span>
+    </div>
+  {:else if dragTarget?.attack && !blockedNotice}
+    <div class="drag-hud">
+      <strong>Attack {enemyName(dragTarget.id)}</strong>
+      <span class="muted">Release to choose a Fight activity · from 1 action</span>
+    </div>
+  {/if}
+  {#if pending}
+    <BoardPopup cell={pending.cell} close={cancelAction}>
+      {@render popupHead(pending.cell)}
+      {#each pending.rows as row, i (rowKey(row))}
+        <button class="popup-row" class:on={i === pending.index} onclick={() => choose(i)}>
+          <span class="popup-verb">
+            {#if row.kind === 'charge' || row.kind === 'advance'}<img class="row-prop" src={actionIconUrl(row.kind === 'charge' || row.plan.kind === 'charge' ? 'charge' : 'attack')} alt="" />{/if}
+            {rowLabel(row)}
+            <span class="row-cost"><ActionCost n={i === pending.index ? dropCost(row) : row.kind === 'maneuver' ? firstManeuverActivity(row.cell) : row.actions} /></span>
+          </span>
           <span class="muted">
-            {#if holders.length}
-              — held in contact
-            {:else if stuck}
-              — {stuck.tag}
-            {:else if moveOpen}
-              — drag the token, or read the bands
-            {:else}
-              — {moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable
-            {/if}
+            {#if i === pending.index && row.kind === 'advance'}{actionCost(row.plan.moveActions)} to move + {actions(chargeActivity + focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
+            {:else if i === pending.index && row.kind === 'charge'}{actions(dropCost(row))}, melee included
+            {:else}{rowDetail(row)}{/if}
           </span>
         </button>
-        {#if moveOpen}
-        {#if holders.length}
-          <p class="move-note">
-            <strong>{holders.map((e) => e.name).join(' and ')}</strong>
-            {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
-            contact — <strong>Maneuver</strong> is the only way off this square. Break off rolls
-            once against the highest of them; pay more and they roll instead.
-            {#if act.maneuver}
-              Drag to one of its {act.maneuver.targets.length} cell{act.maneuver.targets.length === 1 ? '' : 's'}.
+        {#if i === pending.index && row.kind === 'flee'}
+          <p class="muted activity-detail popup-escapes">
+            Leave through {row.cell}. Morale: d20 {row.modifier >= 0 ? '+' : '−'}{Math.abs(row.modifier)} against DC {row.dc}.
+            The unit escapes either way. Success sends it to camp without morale loss; failure routes it and removes it from the end-of-day survivors.
+            {#if active && isRouted(active)}This unit is already routed and stays routed after leaving.{/if}
+          </p>
+        {/if}
+        {#if i === pending.index && row.kind === 'maneuver' && act?.maneuver && active}
+          {@const w = act.maneuver}
+          <div class="popup-escapes">
+            {#each w.holders as h (h.unit)}
+              <p class="escape">
+                <span class="escape-name">{h.name}</span>
+                <span class="muted">DC {h.dc}{h.pinning ? ' · pinning at range, no free strike' : ''}</span>
+                {#if h.follows}<span class="tag">gives no retreat — follows you</span>{/if}
+              </p>
+            {:else}
+              <p class="muted">Nothing holds you.{isRouted(active) ? ' Run for your own edge.' : ' Choose your position.'}</p>
+            {/each}
+            {#if w.holders.length}
+              <p class="muted activity-detail">
+                Break off is one roll, d20+{w.modifier} against DC {w.dc}, the highest of them,
+                read again for each. Above it they roll instead, against DC {levelDc(active.level)}.
+              </p>
             {/if}
+          </div>
+          <div class="activity-chips">
+            {#each ACTIVITIES as g (g)}
+              {@const opt = w.activities[g - 1]}
+              {@const reaches = opt.targets.some(t => t.id === row.cell)}
+              <button
+                class="activity-chip"
+                class:on={maneuverActivity === g}
+                disabled={!opt.legal || !reaches}
+                title={opt.reason ?? (!reaches ? 'Terrain or distance needs a different Maneuver' : '')}
+                onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
+              >
+                {opt.label}
+                <ActionCost n={opt.cost ?? g} />
+              </button>
+            {/each}
+          </div>
+          <p class="muted activity-detail popup-escapes">{w.activities[maneuverActivity - 1].detail}</p>
+        {/if}
+        {#if i === pending.index && (row.kind === 'charge' || row.kind === 'advance') && active}
+          {@const charging = row.kind === 'charge' || row.plan.kind === 'charge'}
+          <p class="muted activity-detail popup-escapes">
+            {#if row.kind === 'advance'}Move to {row.plan.via}, then {charging ? 'charge' : 'attack'} from there. {row.actions} actions total for the basic attack. {/if}
+            {#if charging}
+              {#if row.kind === 'advance'}{row.plan.bonus ? `+${row.plan.bonus} on the attack.` : 'Rough ground removes the charge bonus.'} {/if}
+              Charge leaves this unit exposed: −2 Defence until it next acts.
+            {:else}Attack uses the normal melee rules.{/if}
           </p>
-        {:else if stuck}
-          <p class="move-note">
-            <img class="row-prop" src={actionIconUrl('no')} alt="" />
-            {stuck.why}
-          </p>
-        {:else}
-        <div class="move-rows">
-          {#each ([1, 2, 3] as const) as n (n)}
-            <div
-              class="move-row band-{n}"
-              class:current={dragBand === n}
-              role="group"
-              onmouseenter={() => { hoveredBand = n; }}
-              onmouseleave={() => { if (hoveredBand === n) hoveredBand = null; }}
-            >
-              <span class="move-row-label"><ActionCost n={n} size="1.1em" /></span>
-              <span class="muted">{moveBands[n].length} cell{moveBands[n].length === 1 ? '' : 's'} reachable</span>
-            </div>
+          <div class="activity-chips">
+            {#each ACTIVITIES as g (g)}
+              {@const total = chargeCost(row, g)}
+              {@const can = total <= active.actions}
+              <button
+                class="activity-chip"
+                class:on={chargeActivity === g}
+                disabled={!can}
+                title={can ? '' : `needs ${total} actions`}
+                onclick={() => { focus = 0; if (pending) pending = { ...pending, activity: g }; }}
+              >
+                {charging ? CHARGES[g - 1] : ['Strike', 'Press', 'Overrun'][g - 1]}
+                <ActionCost n={total} />
+              </button>
+            {/each}
+          </div>
+          <CommitmentPicker base={chargeCost(row, chargeActivity)} available={actionsLeft} bind:value={focus} effect={charging ? 'on the attack, in addition to the charge bonus' : 'on the attack'} />
+        {/if}
+      {/each}
+      {@render popupFoot(commit, picked?.kind === 'flee' ? 'Confirm flee' : picked?.kind === 'charge' || (picked?.kind === 'advance' && picked.plan.kind === 'charge') ? 'Confirm charge' : picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
+    </BoardPopup>
+  {/if}
+  {#if aim && aimGroup && active && !pending}
+    <BoardPopup cell={aim.cell} close={cancelAction} appearance={aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'default'}>
+      {#if aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally'}
+        {@render pickerHead(aim.label, aimGroup.offer.type, aimGroup.offer.spell)}
+      {:else}{@render popupHead(aim.label)}{/if}
+      <div class="verb-row" class:solo={aim.groups.length === 1}>
+        {#each aim.groups as g, gi (offerKey(g.offer))}
+          {@const icon = targetingIcon(g.offer)}
+          <button class="verb-tile" class:on={gi === aim.group} onclick={() => aimVerb(gi)}>
+            {#if icon}<img src={targetIconUrl(icon)} alt="" />{/if}
+            <span>{g.offer.label}</span>
+          </button>
           {/each}
-        </div>
-        {/if}
-        {/if}
       </div>
-
-      {#if isRouted(active)}
-        <p class="muted">
-          Routed at {active.disorder}/{ROUTED_AT} — it may Move or maneuver, nothing else, and
-          it leaves the field at its own edge. An ally's Rally, Inspire or Healing can bring it back.
-        </p>
-      {:else if !offers.length}
-        <p class="muted">Nothing else to do here — end the turn.</p>
-      {:else}
-        <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
+      {@render activityRows(aimActivities, aimed?.index ?? null, (index) => aimChoose(aimActivities.findIndex((opt) => opt.index === index)), aimGroup.offer.type === 'shoot' || aimGroup.offer.type === 'cast' || aimGroup.offer.type === 'rally' ? aimGroup.offer.type : 'plain')}
+      {#if aimed?.legal}
+        {#if canFocus(aimGroup.offer.type, aimGroup.offer.spell) && aimGroup.offer.spell !== 'blast'}
+          <CommitmentPicker base={aimed.cost ?? aimed.index} available={actionsLeft} bind:value={focus} effect={aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+        {/if}
+        {@render popupFoot(takeAim, aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
       {/if}
+    </BoardPopup>
+  {/if}
+{/snippet}
 
-      <button class="end-turn" disabled={!myTurn} onclick={() => void run(endActivation())}>End turn</button>
-    {:else if myTurn}
-      <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
-    {:else}
-      <p class="muted">{turnNote()}. The board shows every move as it is made.</p>
+{#snippet left()}
+  {#if active && act}
+    <div class="orders-head">
+      <h3 class={active.side === 'attacker' ? 'side-att' : 'side-def'}>{active.name}</h3>
+      <span class="muted">{active.side} · {notation(active.square)}</span>
+    </div>
+    <div class="row action-pips">
+      {#if active.actions > 0}<ActionCost n={active.actions} size="1.3em" />{/if}
+      <span class="muted">{active.actions} of {ACTIONS_PER_ACTIVATION} left</span>
+    </div>
+    <p class="cost-key">
+      Activities show their action cost: <ActionCost n={1} />, <ActionCost n={2} /> or
+      <ActionCost n={3} />. Commit extra actions for +2 each on supported activities. One attack an activation.
+    </p>
+
+    {#if siegeEquipment.length || nearbyGates.length}
+      <div class="row" aria-label="Equipment and gates">
+        {#each siegeEquipment as engine (engine.id)}
+          <button onclick={() => openSiege(engine.id)}>Operate {engine.name}</button>
+        {/each}
+        {#if nearbyGates.length}<button onclick={() => { cancelAction(); gateOpen = true; }}>Gates</button>{/if}
+      </div>
     {/if}
-  {/snippet}
+    <table class="stats"><tbody>
+      <tr><td>Strike</td><td class="stat">{active.stats.strike === null ? '—' : '+' + active.stats.strike}</td><td>Volley</td><td class="stat">{active.stats.volley === null ? '—' : `+${active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(b, active))]}`}</td></tr>
+      {#if shootCeiling(b, active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(b, active)}</td></tr>{/if}
+      <tr><td>Defence</td><td class="stat">{active.stats.defence}</td><td>Will</td><td class="stat">+{active.stats.will}</td></tr>
+      <tr><td>Disorder</td><td class="stat">{active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(active.level)}</td></tr>
+      <tr><td>Move</td><td class="stat">{act.speed} ft{act.feet ? ` (+${act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(b, active).length}</td></tr>
+      {#if active.tactics.length}<tr><td>Tactics</td><td colspan="3">{active.tactics.join(', ')}</td></tr>{/if}
+      {#if status(active)}<tr><td>Status</td><td colspan="3">{status(active)}</td></tr>{/if}
+    </tbody></table>
 
-  {#snippet right()}
-    <BattleLog battle={b} />
-  {/snippet}
-</AppShell>
+    <!-- Move opens with the selection rather than staying pinned: its bands are the same
+         ones the board washes, and the rows track a live drag both ways. -->
+    <div class="move-card">
+      <button
+        class="move-head"
+        aria-expanded={moveOpen}
+        onclick={() => { moveOpen = !moveOpen; if (!moveOpen) hoveredBand = null; }}
+      >
+        <h3>Move</h3>
+        <span class="muted">
+          {#if holders.length}
+            — held in contact
+          {:else if stuck}
+            — {stuck.tag}
+          {:else if moveOpen}
+            — drag the token, or read the bands
+          {:else}
+            — {moveBands[1].length + moveBands[2].length + moveBands[3].length} cells reachable
+          {/if}
+        </span>
+      </button>
+      {#if moveOpen}
+      {#if holders.length}
+        <p class="move-note">
+          <strong>{holders.map((e) => e.name).join(' and ')}</strong>
+          {holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
+          contact — <strong>Maneuver</strong> is the only way off this square. Break off rolls
+          once against the highest of them; pay more and they roll instead.
+          {#if act.maneuver}
+            Drag to one of its {act.maneuver.targets.length} cell{act.maneuver.targets.length === 1 ? '' : 's'}.
+          {/if}
+        </p>
+      {:else if stuck}
+        <p class="move-note">
+          <img class="row-prop" src={actionIconUrl('no')} alt="" />
+          {stuck.why}
+        </p>
+      {:else}
+      <div class="move-rows">
+        {#each ([1, 2, 3] as const) as n (n)}
+          <div
+            class="move-row band-{n}"
+            class:current={dragBand === n}
+            role="group"
+            onmouseenter={() => { hoveredBand = n; }}
+            onmouseleave={() => { if (hoveredBand === n) hoveredBand = null; }}
+          >
+            <span class="move-row-label"><ActionCost n={n} size="1.1em" /></span>
+            <span class="muted">{moveBands[n].length} cell{moveBands[n].length === 1 ? '' : 's'} reachable</span>
+          </div>
+        {/each}
+      </div>
+      {/if}
+      {/if}
+    </div>
+
+    {#if isRouted(active)}
+      <p class="muted">
+        Routed at {active.disorder}/{ROUTED_AT} — it may Move or maneuver, nothing else, and
+        it leaves the field at its own edge. An ally's Rally, Inspire or Healing can bring it back.
+      </p>
+    {:else if !offers.length}
+      <p class="muted">Nothing else to do here — end the turn.</p>
+    {:else}
+      <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
+    {/if}
+
+    <button class="end-turn" disabled={!myTurn} onclick={() => void run(endActivation())}>End turn</button>
+  {:else if myTurn}
+    <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
+  {:else}
+    <p class="muted">{turnNote()}. The board shows every move as it is made.</p>
+  {/if}
+{/snippet}
+
+{#snippet right()}
+  <BattleLog battle={b} />
+{/snippet}
 
 {#if ending}<EndBattleDialog close={() => (ending = false)} />{/if}
 
@@ -1822,8 +1812,6 @@
   .turn { padding: .05rem .45rem; border: 1px solid var(--rule); border-radius: 999px; font-size: .8rem; color: var(--muted); }
   .turn.mine { border-color: var(--accent); color: var(--ink); }
 
-  .mapwrap { width: 100%; height: 100%; }
-  .mapwrap.aiming { cursor: crosshair; }
   .blast-targets, .activity-targets { max-height: 10rem; overflow-y: auto; }
 
   .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }

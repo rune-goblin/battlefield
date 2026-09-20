@@ -7,9 +7,8 @@
     "strict": true,
     "noEmit": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node", "foundry-pf2e"]
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"]
 }

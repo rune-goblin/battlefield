@@ -1,8 +1,8 @@
 <script lang="ts">
   import { SIDES, type Side } from '../engine/index.js';
-  import PixiBoard from './PixiBoard.svelte';
   import { gameMap } from './map-style.svelte.js';
-  import { AppShell, MapControls, TopBar } from './shell/index.js';
+  import { MapControls, TopBar } from './shell/index.js';
+  import { presentStage, stage } from './stage-view.svelte.js';
   import WizardRail from './WizardRail.svelte';
   import { commandReporter } from './command-notices.js';
   import { game, setUnitSide, swapSides } from './game.svelte.js';
@@ -32,68 +32,67 @@
 
   const placed = $derived(game.setup.units.some((u) => u.square !== null) || game.setup.emplacements.some((e) => e.square !== null));
 
-  let boardRef = $state<PixiBoard>();
+  presentStage({
+    leftTitle: 'Sides', leftWidth: 30,
+    get top() { return top; }, get rail() { return rail; }, get float() { return float; }, get left() { return left; },
+    get board() {
+      return { board, terrainAppearance: gameMap.terrainAppearance, inkMap: gameMap.inkMap };
+    },
+  });
 </script>
 
-<AppShell leftTitle="Sides" leftWidth={30}>
-  {#snippet top()}
-    <TopBar>
-      {#snippet status()}
-        {#if viewer.isGm}
-          Confirm who attacks and who defends. A unit that changes army leaves the board.
-        {:else}
-          The GM is confirming who attacks and who defends.
-        {/if}
-      {/snippet}
-    </TopBar>
-  {/snippet}
+{#snippet top()}
+  <TopBar>
+    {#snippet status()}
+      {#if viewer.isGm}
+        Confirm who attacks and who defends. A unit that changes army leaves the board.
+      {:else}
+        The GM is confirming who attacks and who defends.
+      {/if}
+    {/snippet}
+  </TopBar>
+{/snippet}
 
-  {#snippet rail()}<WizardRail />{/snippet}
+{#snippet rail()}<WizardRail />{/snippet}
 
-  {#snippet map()}
-    <PixiBoard shared bind:this={boardRef} {board} tokens={[]} fill
-      terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
-  {/snippet}
+{#snippet float()}<MapControls board={stage.board} />{/snippet}
 
-  {#snippet float()}<MapControls board={boardRef} />{/snippet}
+{#snippet left()}
+  {#if viewer.isGm}
+    <section class="card swap">
+      <button onclick={() => void run(swapSides())}>⇄ Swap the two armies</button>
+      {#if placed}<p class="muted">Pieces already on the board return to the reserve.</p>{/if}
+    </section>
+  {/if}
 
-  {#snippet left()}
-    {#if viewer.isGm}
-      <section class="card swap">
-        <button onclick={() => void run(swapSides())}>⇄ Swap the two armies</button>
-        {#if placed}<p class="muted">Pieces already on the board return to the reserve.</p>{/if}
-      </section>
-    {/if}
-
-    {#each armies as army (army.side)}
-      <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
-        <header><h3>{SIDE_TITLE[army.side]}</h3></header>
-        <p class="line">
-          {army.count} {army.count === 1 ? 'unit' : 'units'} · {army.levels} levels{army.engines ? ` · ${army.engines} emplaced ${army.engines === 1 ? 'engine' : 'engines'}` : ''}
-        </p>
-        {#each army.groups as group (group.faction)}
-          <h4>{group.faction}</h4>
-          <ul>
-            {#each group.units as u (u.id)}
-              <li>
-                <span class="name">{u.card.name}</span>
-                <span class="meta">L{u.card.level} {u.card.role}</span>
-                {#if viewer.isGm}
-                  <button class="move" onclick={() => void run(setUnitSide(u.id, other(army.side)))}
-                    title="Move to the {SIDE_TITLE[other(army.side)].toLowerCase()}">
-                    {army.side === 'attacker' ? '↓' : '↑'}
-                  </button>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        {:else}
-          <p class="problem">This army has no units.</p>
-        {/each}
-      </section>
-    {/each}
-  {/snippet}
-</AppShell>
+  {#each armies as army (army.side)}
+    <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+      <header><h3>{SIDE_TITLE[army.side]}</h3></header>
+      <p class="line">
+        {army.count} {army.count === 1 ? 'unit' : 'units'} · {army.levels} levels{army.engines ? ` · ${army.engines} emplaced ${army.engines === 1 ? 'engine' : 'engines'}` : ''}
+      </p>
+      {#each army.groups as group (group.faction)}
+        <h4>{group.faction}</h4>
+        <ul>
+          {#each group.units as u (u.id)}
+            <li>
+              <span class="name">{u.card.name}</span>
+              <span class="meta">L{u.card.level} {u.card.role}</span>
+              {#if viewer.isGm}
+                <button class="move" onclick={() => void run(setUnitSide(u.id, other(army.side)))}
+                  title="Move to the {SIDE_TITLE[other(army.side)].toLowerCase()}">
+                  {army.side === 'attacker' ? '↓' : '↑'}
+                </button>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="problem">This army has no units.</p>
+      {/each}
+    </section>
+  {/each}
+{/snippet}
 
 <style>
   section header { display: flex; align-items: baseline; gap: .5rem; }

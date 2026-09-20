@@ -8,7 +8,6 @@
   import type { Board, Side, Tree } from '../engine/index.js';
   import { statusBars } from '../board/status-bars.js';
   import HexInfo from './HexInfo.svelte';
-  import { returnSharedBoard, takeSharedBoard } from './shared-board.js';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }
 
@@ -44,9 +43,6 @@
     fill?: boolean;
     /** The board answers nothing while something else is the menu — see `BoardView.setFrozen`. */
     frozen?: boolean;
-    /** A stage's main board: it takes the app's one canvas and renderer rather than making
-     * its own. At most one such board is mounted at a time. */
-    shared?: boolean;
     onhover?: (event: BoardEventOf<'hover'>) => void;
     oncell?: (event: BoardEventOf<'cell'>) => void;
     onedge?: (event: BoardEventOf<'edge'>) => void;
@@ -61,7 +57,7 @@
     ontrayhover?: (cell: string | null) => void;
   }
   let {
-    board, terrainAppearance = null, inkMap = null, tokens = [], fallen = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false, shared = false,
+    board, terrainAppearance = null, inkMap = null, tokens = [], fallen = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
     onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop, ontrayhover,
   }: Props = $props();
 
@@ -83,6 +79,7 @@
   export function burst(cell: string, tree: Tree, from?: string | null) { view?.burst(cell, tree, from); }
   export function popup(popup: BoardPopup) { view?.popup(popup); }
   export function remainingMs() { return view?.remainingMs() ?? 0; }
+  export function clearEffects() { view?.clearEffects(); }
   export function zoomBy(factor: number, into?: Rect) { view?.zoomBy(factor, into); }
   export function frame(cells: readonly string[] | null, into?: Rect) { view?.frame(cells, into); }
   export function setGrid(settings: GridUpdate) { view?.setGrid(settings); }
@@ -97,8 +94,7 @@
   let canvas: HTMLCanvasElement | undefined = $state();
 
   onMount(() => {
-    const taken = shared ? takeSharedBoard(container, (b) => onbrush?.(b)) : null;
-    const held = taken ?? ownBoard();
+    const held = ownBoard();
     const target = held.view;
     canvas = held.canvas;
     view = target;
@@ -127,8 +123,7 @@
       held.canvas.removeEventListener('dragover', over);
       held.canvas.removeEventListener('dragleave', leave);
       held.canvas.removeEventListener('drop', drop);
-      if (taken) returnSharedBoard();
-      else target.destroy();
+      target.destroy();
     };
   });
 
@@ -180,7 +175,7 @@
 <style>
   .pixiboard { width: 100%; max-width: 40rem; aspect-ratio: 1; margin: 0.75rem 0; }
   .pixiboard.fill { width: 100%; height: 100%; max-width: none; aspect-ratio: auto; margin: 0; }
-  /* The canvas is made in script, and a shared one outlives this component. */
+  /* The canvas is made in script, so the scoped selector cannot reach it. */
   .pixiboard :global(canvas) { display: block; width: 100%; height: 100%; touch-action: none; }
   .pixiboard :global(canvas:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>

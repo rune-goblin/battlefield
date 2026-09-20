@@ -141,12 +141,13 @@ to the canvas. That bundle is the wrong seam for a host that already owns its ow
 the first, which defeats the point of "the container makes no assumptions about owning the
 stage."
 
-The view `createBoardView` returns also has `attach(container, onBrush?)` and `detach()`. The
-app keeps one such view for every stage's main board (`src/app/shared-board.ts`): a stage that
-mounts moves the canvas into its own element and calls `attach`, and calls `detach` on the way
-out, which stops the ticker and keeps the GL context and its uploaded textures. A `PixiBoard`
-without the `shared` prop (the battle report's previews, the labs) still builds and destroys
-its own.
+The view `createBoardView` returns also has `attach(container, onBrush?)` and `detach()`, for a
+host that moves one canvas between elements: `detach` stops the ticker and keeps the GL context
+and its uploaded textures. The app has no use for them now. `App.svelte` mounts one `PixiBoard`
+for every stage's main board and the stages present their props to it
+(`src/app/stage-view.svelte.ts`); `clearEffects()` drops the bursts and popups in flight when
+the stage changes. Every other `PixiBoard` (the battle report's previews, the labs) builds and
+destroys its own view.
 
 `mountBoardView(opts)` is the lower seam `createBoardView` is built on, and the one a host
 calls directly:
