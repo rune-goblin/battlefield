@@ -74,7 +74,7 @@
   </div>
   <ConnectionWarning board={game.setup.board} />
   <p class="muted">Higher ground attacks at +1 and shoots a hex further a level; lower ground attacks at −1. A hex as high as the higher unit blocks the shot across it, and height 2 adds mountain defence. Forest and settlement grant +1 ranged cover; rough ground stops a charge; swamp gives −1 Defence and Strike.</p>
-  <p class="muted">A bridge replaces a water hex with a one-point crossing. Paint adjacent bridge or shallows hexes across a wider river until the banks connect.</p>
+  <p class="muted">A bridge replaces a water hex with a one-point crossing. Paint adjacent bridge or shallows hexes across a wider river until the banks connect. A bridge brush on a hex that already carries a bridge turns its deck to the next axis; the direction is decoration, and a unit crosses from any side.</p>
   <p class="muted">
     A gate goes on a wall you have already painted and keeps its tier. Its arrow points out through the gate, away from the interior hex where a unit opens and closes it for one action. Each click on the edge steps it on: gate, gate facing the other way, plain wall. A wall brush snaps to the nearest edge between two squares. Click the board first, then
     <kbd>1</kbd>–<kbd>7</kbd>, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>/<kbd>A</kbd>/<kbd>S</kbd>, <kbd>R</kbd> (repeat to cycle tier),

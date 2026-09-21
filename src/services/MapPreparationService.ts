@@ -1,5 +1,5 @@
 import {
-  canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
+  BRIDGE_AXES, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
 import type { BattleSession } from '../runtime/session.js';
@@ -16,13 +16,21 @@ function paintCell(board: Board, key: string, brush: PaintBrush): void {
   const sq = parse(key);
   const square = board.squares[sq.rank][sq.file];
   if (brush.kind === 'terrain') {
+    // A bridge brush on a cell that is already a bridge turns the deck rather than repainting
+    // it, the way a second gate stroke turns the gate.
+    if (brush.terrain === 'bridge' && square.terrain === 'bridge') {
+      square.bridgeTurns = ((square.bridgeTurns ?? 0) + 1) % BRIDGE_AXES[board.grid];
+      return;
+    }
     square.terrain = brush.terrain;
+    delete square.bridgeTurns;
     if (brush.terrain === 'water') square.elevation = 0;
   } else if (brush.kind === 'elevation') {
     square.elevation = brush.level;
   } else if (brush.kind === 'erase') {
     square.terrain = 'open';
     square.elevation = 0;
+    delete square.bridgeTurns;
   }
 }
 

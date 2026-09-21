@@ -58,4 +58,25 @@ describe('map preparation', () => {
     expect(runtime.session.setup.board!.squares[0][0].terrain).toBe('open');
     expect(runtime.session.setup.board!.squares[0][1].terrain).toBe('open');
   });
+
+  it('turns a bridge deck on each further bridge stroke, and forgets the turn when the cell changes', async () => {
+    const runtime = runtimeOn();
+    const bridge: PaintStroke = { cells: ['a1'], edges: [], brush: { kind: 'terrain', terrain: 'bridge' } };
+    const cell = () => runtime.session.setup.board!.squares[0][0];
+
+    await runtime.submit({ type: 'setup.paint', stroke: bridge });
+    expect(cell().terrain).toBe('bridge');
+    expect(cell().bridgeTurns).toBeUndefined();
+
+    await runtime.submit({ type: 'setup.paint', stroke: bridge });
+    expect(cell().bridgeTurns).toBe(1);
+
+    // Two axes through a square, so the second turn comes back round.
+    await runtime.submit({ type: 'setup.paint', stroke: bridge });
+    expect(cell().bridgeTurns).toBe(0);
+
+    await runtime.submit({ type: 'setup.paint', stroke: { ...bridge, brush: { kind: 'terrain', terrain: 'water' } } });
+    await runtime.submit({ type: 'setup.paint', stroke: bridge });
+    expect(cell().bridgeTurns).toBeUndefined();
+  });
 });

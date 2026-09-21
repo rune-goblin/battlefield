@@ -22,7 +22,12 @@ export interface BoardSpec {
   seed: number;
 }
 
-export interface SquareState { terrain: SquareTerrain; elevation: number; }
+export interface SquareState { terrain: SquareTerrain; elevation: number; bridgeTurns?: number; }
+
+/** Deck directions a bridge can take: three axes through a hex, two through a square. A
+ * `bridgeTurns` of 0 is the axis the board infers from the banks, and each turn steps on by
+ * one, so a stored turn reads the same however the water around it is later repainted. */
+export const BRIDGE_AXES: Record<GridKind, number> = { hex: 3, square: 2 };
 export interface Wall { tier: number; boxes: number; remaining: number; inside?: string; gate?: { open: boolean; flipped?: boolean }; }
 export interface SiegeField { cells: string[]; kind: 'rough' | 'web'; expires: number; }
 export const FORTIFICATIONS = [

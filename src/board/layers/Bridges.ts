@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { at, gridOf, type Board } from '../../engine/index.js';
+import { at, BRIDGE_AXES, gridOf, type Board } from '../../engine/index.js';
 
 /** Wooden decks over the water surface, shared by plain, textured and illustrated maps. */
 export function drawBridges(board: Board, size: number): PIXI.Container {
@@ -19,9 +19,10 @@ export function drawBridges(board: Board, size: number): PIXI.Container {
     const axis = neighbours.map(n => ({ angle: n.angle, score: n.score +
       (neighbours.find(m => Math.cos(m.angle - n.angle) < -.99)?.score ?? 0) + Math.abs(Math.sin(n.angle)) * .1 }))
       .sort((a, b) => b.score - a.score)[0]?.angle ?? Math.PI / 2;
+    const axes = BRIDGE_AXES[board.grid];
     const deck = new PIXI.Graphics();
     deck.position.set(centre.x, centre.y);
-    deck.rotation = axis - Math.PI / 2;
+    deck.rotation = axis - Math.PI / 2 + ((at(board, cell).bridgeTurns ?? 0) * Math.PI) / axes;
     deck.lineStyle(size * .018, 0x34271e).beginFill(0xb78a53)
       .drawRect(-size * .15, -size * .48, size * .3, size * .96).endFill();
     deck.lineStyle(size * .008, 0x60472f, .8);

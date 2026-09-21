@@ -12,3 +12,4 @@ playwright/.cache/
 _pf2e-source
 _foundry-data
 _foundry-modules
+.vercel
