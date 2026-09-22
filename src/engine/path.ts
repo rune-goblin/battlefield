@@ -1,4 +1,4 @@
-import { at, barrierBetween, gridOf, notation, type Board, type Square, type SquareTerrain } from './board.js';
+import { at, barrierBetween, gridOf, notation, parse, type Board, type Square, type SquareTerrain } from './board.js';
 import { TERRAIN } from './terrain.js';
 
 /** One board cell is ten feet, so every cost below reads as a PF2e distance. */
@@ -103,3 +103,37 @@ export function pathTo(reach: ReachMap, to: string): string[] {
 }
 
 export const feetTo = (reach: ReachMap, to: string): number => reach.get(to)?.feet ?? Infinity;
+
+/** A reach walked through waypoints first. `route` is the road to the last waypoint with the
+ * feet each cell cost from the start; `reach` is the final leg, its feet counted from there. */
+export interface Routed { route: { cell: string; feet: number }[]; reach: ReachMap }
+
+/**
+ * `reachable` that visits `via` in order, each leg the cheapest on what the legs before it left.
+ * Null when a waypoint is out of reach, or is a `stopAt` cell a later waypoint would walk out of.
+ * A last waypoint on a `stopAt` cell ends the route there.
+ */
+export function reachableVia(board: Board, start: Square, via: readonly string[], opts: MoveOpts): Routed | null {
+  let from = start;
+  const route = [{ cell: notation(start), feet: 0 }];
+  for (const [i, w] of via.entries()) {
+    const spent = route[route.length - 1].feet;
+    const leg = reachable(board, from, { ...opts, budget: opts.budget - spent });
+    if (w === notation(from) || !leg.has(w)) return null;
+    if (opts.stopAt?.has(w) && i < via.length - 1) return null;
+    route.push(...pathTo(leg, w).slice(1).map((cell) => ({ cell, feet: spent + leg.get(cell)!.feet })));
+    from = parse(w);
+  }
+  const last = route[route.length - 1];
+  const reach: ReachMap = via.length && opts.stopAt?.has(last.cell)
+    ? new Map([[last.cell, { feet: 0, from: null }]])
+    : reachable(board, from, { ...opts, budget: opts.budget - last.feet });
+  return { route, reach };
+}
+
+/** The whole road from the start through the waypoints to `to`, or empty when `to` is off the last leg. */
+export function routedPath(r: Routed, to: string): { cell: string; feet: number }[] {
+  if (!r.reach.has(to)) return [];
+  const spent = r.route[r.route.length - 1].feet;
+  return [...r.route, ...pathTo(r.reach, to).slice(1).map((cell) => ({ cell, feet: spent + r.reach.get(cell)!.feet }))];
+}

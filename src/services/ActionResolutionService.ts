@@ -1,5 +1,5 @@
 import {
-  act, deselect, endActivation, isRouted, meleePlans, movePath, notation, select, statusesGained, ROUTED_AT,
+  act, chargePath, deselect, endActivation, isRouted, meleePlans, movePath, notation, select, statusesGained, ROUTED_AT,
   type BattleState, type Unit,
 } from '../engine/index.js';
 import type { TacticalAction } from '../runtime/commands.js';
@@ -38,16 +38,25 @@ function routeOf(before: BattleState, u: Unit, to: string): string[] {
   return path.length ? path : [notation(u.square), to];
 }
 
-/** An advance is a move and a melee in one commit, so its legs come from the plan the action
- * named rather than from a route read back afterwards. */
+/** An advance is a move and a melee in one commit, and a waypoint bends a road off the cheapest,
+ * so their legs come from what the action named rather than from a route read back afterwards. */
+function namedLegs(before: BattleState, actor: Unit, action: TacticalAction): string[][] | null {
+  const via = action.type === 'move' || action.type === 'charge' || action.type === 'advance' ? action.waypoints ?? [] : [];
+  if (action.type === 'advance') {
+    const plan = meleePlans(before, actor, action.target, via).find((p) => p.kind === action.finish && p.via === action.via);
+    return plan ? [plan.movePath, plan.attackPath] : null;
+  }
+  if (!via.length) return null;
+  if (action.type === 'move') return [movePath(before, actor, action.to, via).map((step) => step.cell)];
+  if (action.type === 'charge') return [chargePath(before, actor, action.target, via)];
+  return null;
+}
+
 function actorLegs(before: BattleState, after: Unit, action: TacticalAction): string[][] | null {
-  if (action.type !== 'advance') return null;
   const actor = before.units.find((u) => u.id === action.unit);
-  if (!actor) return null;
-  const plan = meleePlans(before, actor, action.target)
-    .find((p) => p.kind === action.finish && p.via === action.via);
-  if (!plan) return null;
-  const legs = [plan.movePath, plan.attackPath].filter((leg) => leg.length > 1);
+  const named = actor ? namedLegs(before, actor, action) : null;
+  if (!actor || !named) return null;
+  const legs = named.filter((leg) => leg.length > 1);
   const standing = notation(after.square);
   const end = legs.at(-1)?.at(-1) ?? notation(actor.square);
   // An Overrun takes the ground it shoved the target off, which no leg of the plan covers.

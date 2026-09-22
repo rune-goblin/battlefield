@@ -98,30 +98,36 @@ export class TerrainLayer {
   // per stroke of a slider leaves the renderer holding uniform buffers it never frees.
   private readonly grades = new Map<TerrainGroup, PIXI.ColorMatrixFilter>();
 
-  async setAppearance(appearance: TerrainAppearance | null): Promise<void> {
+  /** True only when new textures arrive and the caller needs a second terrain bake. */
+  async setAppearance(appearance: TerrainAppearance | null): Promise<boolean> {
     this.appearance = appearance;
     const version = ++this.loadVersion;
-    if (!appearance) return;
-    await Promise.all([this.loadBroken(version), ...Object.entries(appearance.settings.terrains).map(async ([group, setting]) => {
+    if (!appearance) return false;
+    const loaded = await Promise.all([this.loadBroken(version), ...Object.entries(appearance.settings.terrains).map(async ([group, setting]) => {
       const choice = TEXTURE_CHOICES[group as TerrainGroup].find(t => t.id === setting.texture);
       if (!choice || this.artTextures.has(choice.id)) return;
       try {
         const texture = await PIXI.Assets.load<PIXI.Texture>(choice.url);
-        if (version === this.loadVersion) this.artTextures.set(choice.id, texture);
+        if (version === this.loadVersion) {
+          this.artTextures.set(choice.id, texture);
+          return true;
+        }
       } catch (error) {
         console.warn(`Terrain texture unavailable: ${choice.name}`, error);
       }
     })]);
+    return version === this.loadVersion && loaded.some(Boolean);
   }
 
-  private async loadBroken(version: number): Promise<void> {
-    if (this.brokenTexture) return;
+  private async loadBroken(version: number): Promise<boolean> {
+    if (this.brokenTexture) return false;
     try {
       const texture = await PIXI.Assets.load<PIXI.Texture>(BROKEN_OVERLAY.url);
-      if (version === this.loadVersion) this.brokenTexture = texture;
+      if (version === this.loadVersion) { this.brokenTexture = texture; return true; }
     } catch (error) {
       console.warn('Broken-ground overlay unavailable', error);
     }
+    return false;
   }
 
   constructor(container: PIXI.Container) {

@@ -14,6 +14,7 @@
   import { onDestroy, untrack } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
+  let { backdrop = true }: { backdrop?: boolean } = $props();
   const notifications = useNotifications();
   const attempt = commandReporter(notifications);
   onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
@@ -134,7 +135,7 @@
   }
 </script>
 
-<div class="report-scrim">
+<div class="report-scrim" class:over-art={!backdrop}>
   <section class="card report" aria-label="Battle report">
     <header>
       <p class="eyebrow">Day {b.day} complete · {b.round} rounds</p>
@@ -333,9 +334,10 @@
 
 <style>
   .report-scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 1.25rem; background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(3px); }
+  .report-scrim.over-art { background: transparent; backdrop-filter: none; }
   .report { display: flex; flex-direction: column; width: min(70rem, 100%); max-height: 100%; padding: 0; overflow: hidden; }
   header { padding: 1.4rem 1.6rem 0; }
-  .eyebrow { margin: 0 0 .35rem; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; }
+  .eyebrow { margin: 0 0 .35rem; color: var(--muted); font-size: .85rem; font-weight: 600; }
   h2 { margin: 0; padding: 0; border: 0; font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.2; }
   .steps { display: flex; gap: 1.6rem; list-style: none; padding: 1rem 0; margin: .6rem 0 0; border-bottom: 1px solid var(--rule); }
   .steps li { display: flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .85rem; }

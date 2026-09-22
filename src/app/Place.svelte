@@ -8,7 +8,7 @@
   import TroopPicker from './TroopPicker.svelte';
   import {
     addEmplacement, addUnit, autoPlacePiece,
-    game, generateForce, placePiece, removeEmplacement, removeUnit, setHauling, unplacePiece, type SetupEngine, type SetupUnit,
+    game, generateForce, placePiece, removeEmplacement, removeUnit, setEngineLoaded, setHauling, unplacePiece, type SetupEngine, type SetupUnit,
   } from './game.svelte.js';
   import { resetToExample } from './navigation.svelte.js';
   import { autoCell, canHaul, cellsFor, deployableCells, engineUnder, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
@@ -47,7 +47,8 @@
   const emplacements = $derived(game.setup.emplacements);
   const board = $derived(game.setup.board!);
   const myUnits = $derived(units.filter((u) => u.side === side));
-  // Each step lists its own kind of piece; the other kind still stands on the board.
+  // Siege preparation shows the equipment alone, including when revisiting a saved setup.
+  const visibleUnits = $derived(siege ? [] : units);
   const mine = $derived(siege ? [] : myUnits);
   const myEngines = $derived(siege ? emplacements : []);
   const held = $derived(mine.reduce<Record<string, number>>((n, u) => ({ ...n, [u.card.name]: (n[u.card.name] ?? 0) + 1 }), {}));
@@ -67,9 +68,9 @@
 
 
   // An engine under a unit shows as that unit's badge.
-  const crewedSquares = $derived(new Set(units.map((u) => u.square)));
+  const crewedSquares = $derived(new Set(visibleUnits.map((u) => u.square)));
   const tokens = $derived.by<TokenModel[]>(() => [
-    ...units.flatMap((u) => u.square ? [{
+    ...visibleUnits.flatMap((u) => u.square ? [{
       kind: 'unit' as const,
       id: u.id,
       side: u.side,
@@ -183,10 +184,12 @@
   }
 
   function onTokenDrag(e: BoardEventOf<'drag'>) {
-    if (e.cell === null) return;
+    if (e.cell === null) { hoveredCell = null; return; }
     const p = pickOf(e.id);
     if (!mayMove(p)) return;
-    selected = p;
+    // Pointer moves carry the same piece throughout a drag. Replacing this object would
+    // rebuild every token, including its text and graphics, on every pointer event.
+    if (selected?.id !== p.id || selected.kind !== p.kind) selected = p;
     hoveredCell = e.cell;
   }
 
@@ -334,9 +337,8 @@
         <button onclick={addEngine}>Add engine</button>
       </div>
       <p class="muted">
-        An emplaced engine stands on any dry hex and belongs to neither army. The unit deployed
-        on or beside it claims it and works it; after that, an engine left with only the enemy
-        beside it changes hands at the end of the round.
+        Occupy an engine’s hex to claim and operate it immediately. An empty engine hex
+        changes hands at round end if only the opposing army stands beside it.
       </p>
     </div>
   {:else}
@@ -360,7 +362,8 @@
       {@const under = engineUnder(game.setup, u)}
       <div
         class="piece"
-        class:sel={selected?.kind === 'unit' && selected.id === u.id}
+        data-selected={selected?.kind === 'unit' && selected.id === u.id}
+        aria-pressed={selected?.kind === 'unit' && selected.id === u.id}
         class:down={!!u.square}
         class:lift={dragging?.kind === 'unit' && dragging.id === u.id}
         role="button"
@@ -420,7 +423,8 @@
       {@const p = { kind: 'engine' as const, id: e.id }}
       <div
         class="piece engine"
-        class:sel={selected?.kind === 'engine' && selected.id === e.id}
+        data-selected={selected?.kind === 'engine' && selected.id === e.id}
+        aria-pressed={selected?.kind === 'engine' && selected.id === e.id}
         class:down={!!e.square}
         class:lift={dragging?.kind === 'engine' && dragging.id === e.id}
         role="button"
@@ -429,7 +433,7 @@
         ondragstart={(ev) => onTrayDragStart(p, ev)}
         ondragend={onTrayDragEnd}
         onclick={() => (selected = p)}
-        onkeydown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selected = p; } }}
+        onkeydown={(ev) => { if (ev.target === ev.currentTarget && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); selected = p; } }}
       >
         <div class="head">
           {@render grip(e.name)}
@@ -461,6 +465,13 @@
         </div>
 
         <div class="details">
+          {#if c && c.loadSteps !== 0}
+            <label title="Start the battle loaded">
+              <input type="checkbox" checked={e.loaded !== false} aria-label="{e.name} loaded"
+                onchange={(ev) => void setEngineLoaded(e.id, ev.currentTarget.checked)} />
+              Loaded
+            </label>
+          {/if}
           <p class="line where">{e.square ? `Emplaced on ${e.square}${e.hauled ? ' · hauled by the unit on it' : ''}` : 'Off the board · holds the square it stands on'}</p>
         </div>
       </div>
@@ -513,7 +524,6 @@
       linear-gradient(to right, color-mix(in srgb, var(--side) 16%, transparent), transparent 60%);
   }
   .piece:hover { border-color: var(--hi); }
-  .piece.sel { border-color: var(--hi); box-shadow: 0 0 0 2px var(--hi); }
   .piece.lift { opacity: .4; }
   .piece:active { cursor: grabbing; }
 
@@ -532,11 +542,11 @@
   }
   .piece:hover .grip { color: var(--hi); }
   .name { margin: 0; font-size: .95rem; font-weight: 600; line-height: 1.15; }
-  .meta { margin: .1rem 0 0; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .meta { margin: .1rem 0 0; font-size: .75rem; color: var(--muted); }
 
   .stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .4rem; margin: .5rem 0 0; }
   .statcell { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--side) 60%, transparent); padding-left: .35rem; }
-  .statcell dt { font-size: .55rem; letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+  .statcell dt { font-size: .72rem; font-weight: 600; color: var(--muted); }
   .statcell dd { margin: 0; font-size: .92rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .plate { grid-area: plate; display: flex; flex-direction: column; gap: .3rem; }

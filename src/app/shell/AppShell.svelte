@@ -98,11 +98,12 @@
   .layer { position: absolute; inset: 0; }
   .map { z-index: 0; }
   .pin { z-index: 1; pointer-events: none; }
+  .pin:has(:global(.board-popup), :global(.radial)) { z-index: 4; }
   .chrome { z-index: 2; display: grid; grid-template-rows: auto minmax(0, 1fr); pointer-events: none; }
   .float { z-index: 3; pointer-events: none; }
   /* A stage passes its modal snippet whether or not a dialog is open, so the empty layer must
      let the pointer through; an open dialog's own scrim takes it back. */
-  .modal { z-index: 4; pointer-events: none; }
+  .modal { z-index: 5; pointer-events: none; }
   .modal > :global(*) { pointer-events: auto; }
 
   .bar { pointer-events: auto; background: color-mix(in srgb, var(--paper) 88%, transparent); }

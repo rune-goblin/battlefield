@@ -27,10 +27,11 @@ const cannon = (): SiegeMode[] => [shot(), breach()];
 const catapult = (): SiegeMode[] => [burst(), shot(), breach()];
 const flame = (): SiegeMode[] => [{ ...line('Flame jet', 'persistent'), ignites: true }, { ...cone('Flame sweep', 'persistent'), ignites: true }];
 
-/** Every imported actor has an explicit translation. Shared modes preserve weapon families. */
+/** Damage uses a four-Health scale: light/control areas 1, focused or heavy areas 2,
+ * heavy single shots 3. Critical hits add 1. Support-only tools explicitly retain zero damage. */
 export const SIEGE_PROFILES: Record<string, SiegeMode[]> = {
   'Alchemical Springald': [burst('Alchemical barrage', 'persistent'), shot('Concentrated flasks')],
-  'Anesthetizing Jaws': [{ ...shot('Clamping jaws', 1), effect: 'snare' }, { ...shot('Anesthetic surge', 0), effect: 'stun' }],
+  'Anesthetizing Jaws': [{ ...shot('Clamping jaws'), effect: 'snare' }, { ...shot('Anesthetic surge'), effect: 'stun' }],
   'Aquatic Disintegrator': [{ ...burst('Underwater shock', 'stun', true), waterOnly: true }],
   'Arcane Ram': [breach(2, 2, 'Force ram')],
   'Ballista': cannon(),
@@ -47,7 +48,7 @@ export const SIEGE_PROFILES: Record<string, SiegeMode[]> = {
   'Clockwork Ballista': [shot('Clockwork bolt'), burst('Unfolding blades', 'rough')],
   'Corrupted Polyp': [{ ...lob('Corrupting bombard', true), effect: 'persistent' }, breach(2)],
   'Crossbow Catapult': catapult(),
-  'Cyclonic Cannon': [line('Cyclonic lance'), breach(2, 2, 'Hardness-piercing shot')],
+  'Cyclonic Cannon': [{ ...line('Cyclonic lance'), damage: 2 }, breach(2, 2, 'Hardness-piercing shot')],
   'Door Ram': ram(1, 1),
   'Drilling Ram': [breach(1), { ...breach(2, 3, 'Drill through'), cost: 3 }],
   'Falconet': [{ ...shot('Round shot', 1), cost: 1 }, breach(1, 1)],
@@ -59,21 +60,21 @@ export const SIEGE_PROFILES: Record<string, SiegeMode[]> = {
   'Flute Rocket': [lob('Rocket bombard', true), breach()],
   'Galvanic Sled': [line('Galvanic discharge', 'expose')],
   'Glacial Zephyr': [cone('Freezing gale', 'snare'), line('Ice lance', 'persistent')],
-  'Great Bronze Cannon': [burst('Grand bombard', undefined, true), shot('Siege shot', 3), breach(2, 3)],
+  'Great Bronze Cannon': [{ ...burst('Grand bombard', undefined, true), damage: 2 }, shot('Siege shot', 3), breach(2, 3)],
   'Harpoon Cannon': [{ ...shot('Hook and hold', 1), effect: 'snare' }, { ...shot('Reel in', 1), effect: 'pull' }],
   'Heavy Ballista': [shot('Heavy bolt', 3), breach(2)],
-  'Heavy Bombard': [burst('Heavy bombard', undefined, true), shot('Crushing shot', 3), breach(2)],
+  'Heavy Bombard': [{ ...burst('Heavy bombard', undefined, true), damage: 2 }, shot('Crushing shot', 3), breach(2)],
   'Hwacha': [burst('Rocket barrage'), { ...burst('Full rack', undefined, true), cost: 3, damage: 2 }],
   'Hydraulic Cannon': [burst('Hydraulic burst', 'push'), shot('Focused water jet')],
-  'Kickback Spring': [{ ...cone('Repulsing blast', 'push'), damage: 0 }],
+  'Kickback Spring': [cone('Repulsing blast', 'push')],
   'Lashtail': [cone('Sweeping lash', 'expose'), { ...shot('Toppling lash', 1), effect: 'stun' }],
-  'Long Cannon': [{ ...lob('Long-range bombard', true), minimum: 3 }, { ...breach(2, 3), minimum: 3 }],
+  'Long Cannon': [{ ...lob('Long-range bombard', true), minimum: 3, damage: 2 }, { ...breach(2, 3), minimum: 3 }],
   'Marking Powder Cannon': [{ ...burst('Mark targets', 'expose'), damage: 0 }],
   'Mortar': [lob('Mortar bombard'), breach()],
   'Mud Maker': [burst('Churn ground', 'rough'), breach(2, 2, 'Liquefy wall')],
   'Nullifier Sling': [burst('Dispel barrage', 'nullify')],
   'Pheromone Sprayer': [{ ...cone('Disorient mounts', 'stun'), damage: 0, cavalryOnly: true }, { ...line('Scatter mounts', 'expose'), damage: 0, cavalryOnly: true }],
-  'Ribauldequin': [cone('Cannon fan'), shot('Concentrated volley')],
+  'Ribauldequin': [{ ...cone('Cannon fan'), damage: 2 }, shot('Concentrated volley')],
   'Seedpod Shooter': [burst('Sickening seedpods', 'sicken', true)],
   'Seismic Amplifier': [{ ...burst('Ground quake', 'stun', true), groundOnly: true }, breach(2, 2, 'Shake foundations')],
   'Shatterpult': [burst('Shattering barrage', 'rough'), breach()],
@@ -86,7 +87,7 @@ export const SIEGE_PROFILES: Record<string, SiegeMode[]> = {
   'Trapdoor Actuator': [{ ...shot('Concealed strike', 1), highAngle: true }, { ...shot('Toppling strike', 1), effect: 'stun' }],
   'Trebuchet': [lob('Trebuchet bombard', true), { ...breach(2, 3), minimum: 2 }],
   'Volley Gun': [line('Raking volley'), shot('Concentrated volley', 3)],
-  'Web Launcher': [{ ...burst('Web field', 'web'), damage: 0 }],
+  'Web Launcher': [burst('Web field', 'web')],
   'Wolf Fang': [breach(2, 2, 'Tear down wall')],
 };
 

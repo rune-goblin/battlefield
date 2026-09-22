@@ -19,8 +19,10 @@ export const ROUTED_AT = 3;
 export interface EngineState {
   speed?: number | null;
   loadCost?: number;
+  /** Total loading actions; older saves counted full-load operations instead. */
   loadSteps?: number;
-  /** Completed load steps. Older saves begin loaded. */
+  /** Completed load steps belong to the engine and persist through crew changes and capture.
+   * Older saves begin loaded. */
   loaded?: number;
   hauling?: boolean;
   /** The equipment ID the piece took in setup, kept through capture, days, and export. */
@@ -136,8 +138,11 @@ export interface ActivityAction extends Acts {
   focus?: number;
 }
 
+/** Cells a route must pass through, in order, before it goes on to its end. */
+export interface Routes { waypoints?: string[] }
+
 /** Stride to `to`, spending as many Move actions as the route costs. */
-export interface MoveAction extends Acts { type: 'move'; to: string }
+export interface MoveAction extends Acts, Routes { type: 'move'; to: string }
 
 /** Move to a deployment-zone boundary and spend one action to leave the battlefield. */
 export interface FleeAction extends Acts { type: 'flee'; to: string }
@@ -156,10 +161,11 @@ export interface FleePlan {
 export interface ManeuverAction extends Acts { type: 'maneuver'; activity: ActivityIndex; to?: string }
 
 /** Move into contact and fight at the activity price, plus optional commitment. */
-export interface ChargeAction extends Acts { type: 'charge'; target: string; activity?: ActivityIndex; focus?: number }
+export interface ChargeAction extends Acts, Routes { type: 'charge'; target: string; activity?: ActivityIndex; focus?: number }
 
-/** Ordinary movement followed by the chosen melee, committed as one player decision. */
-export interface AdvanceAction extends Acts {
+/** Ordinary movement followed by the chosen melee, committed as one player decision. The
+ * waypoints bind the whole road; the plan decides how many the move walks. */
+export interface AdvanceAction extends Acts, Routes {
   type: 'advance'; target: string; via: string; finish: 'fight' | 'charge'; activity?: ActivityIndex; focus?: number;
 }
 
@@ -273,6 +279,8 @@ export interface MeleePlan {
   bonus: number;
   movePath: string[];
   attackPath: string[];
+  /** How many of the waypoints the move walks through; the charge runs through the rest. */
+  split: number;
 }
 
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */

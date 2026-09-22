@@ -49,7 +49,7 @@
   .dock.rail { width: 1.9rem; }
 
   .dock-head { display: flex; align-items: center; gap: .2rem; padding: .3rem .3rem .3rem .7rem; border-bottom: 1px solid var(--rule); }
-  .dock-head h2 { flex: 1; margin: 0; border: 0; padding: 0; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .dock-head h2 { flex: 1; margin: 0; border: 0; padding: 0; font-size: .9rem; font-weight: 600; color: var(--muted); }
   .dock-body { flex: 1; min-height: 0; overflow: auto; padding: .6rem .7rem .8rem; display: flex; flex-direction: column; gap: .6rem; }
 
   .railbtn {
@@ -58,7 +58,7 @@
     display: flex; flex-direction: column; align-items: center; gap: .6rem;
   }
   .railbtn:hover { color: var(--ink); background: var(--band); }
-  .railtitle { writing-mode: vertical-rl; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
+  .railtitle { writing-mode: vertical-rl; font-size: .85rem; font-weight: 600; }
   .dock.left .railtitle { rotate: 180deg; }
   .chev { font-size: .9rem; }
 

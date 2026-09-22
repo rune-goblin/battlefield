@@ -41,6 +41,8 @@
     pickableEdges?: string[];
     /** Full-bleed: fills its container instead of sitting in a capped, square-ish column. */
     fill?: boolean;
+    /** Reframe when this area changes. Null centers on the canvas; omitted preserves the view. */
+    frameWithin?: Rect | null;
     /** The board answers nothing while something else is the menu — see `BoardView.setFrozen`. */
     frozen?: boolean;
     onhover?: (event: BoardEventOf<'hover'>) => void;
@@ -50,6 +52,7 @@
     onpaint?: (event: BoardEventOf<'paint'>) => void;
     ondrop?: (event: BoardEventOf<'drop'>) => void;
     ondrag?: (event: BoardEventOf<'drag'>) => void;
+    onwaypoint?: (event: BoardEventOf<'waypoint'>) => void;
     onbrush?: (brush: Brush | null) => void;
     /** A native drag (e.g. a tray item) released over the canvas; `cell` is null outside the grid. */
     ontraydrop?: (cell: string | null, data: DataTransfer | null) => void;
@@ -58,17 +61,18 @@
   }
   let {
     board, terrainAppearance = null, inkMap = null, tokens = [], fallen = [], mode = 'view', brush = null, highlights = [], dragPath = [], barred = null, anchored = null, shot = null, cast = null, selected = null, draggable = null, pickableEdges = [], fill = false, frozen = false,
-    onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onbrush, ontraydrop, ontrayhover,
+    onhover, oncell, onedge, ontoken, onpaint, ondrop, ondrag, onwaypoint, onbrush, ontraydrop, ontrayhover, frameWithin,
   }: Props = $props();
 
   let container: HTMLDivElement;
   let view: BoardView | undefined = $state();
   let hoveredCell = $state<string | null>(null);
   const hoverTitle = $derived.by(() => {
-    const unit = tokens.find((token) => token.kind === 'unit' && token.cell === hoveredCell);
-    if (!unit || unit.kind !== 'unit') return undefined;
+    const unit = tokens.find((token) => token.cell === hoveredCell);
+    if (!unit) return undefined;
+    if (unit.kind === 'engine') return `${unit.name}${unit.loading ? `\n${unit.loading.label}` : ''}`;
     const bars = statusBars(unit.wounds, unit.disorder);
-    return `${unit.name}\n${bars.health.label}\n${bars.morale.label}`;
+    return `${unit.name}\n${bars.health.label}\n${bars.morale.label}${unit.loading ? `\n${unit.engine}: ${unit.loading.label}` : ''}`;
   });
 
   export function centerOn(cell: string) { view?.centerOn(cell); }
@@ -117,6 +121,7 @@
       target.on('paint', (e) => onpaint?.(e)),
       target.on('drop', (e) => ondrop?.(e)),
       target.on('drag', (e) => ondrag?.(e)),
+      target.on('waypoint', (e) => onwaypoint?.(e)),
     ];
     return () => {
       for (const unsubscribe of off) unsubscribe();
@@ -130,6 +135,19 @@
   $effect(() => { if (canvas) canvas.title = hoverTitle ?? ''; });
 
   $effect(() => { view?.setBoard(board); });
+  // Geometry changes need a fresh fit; painting and troop placement keep the player's zoom.
+  const geometryKey = $derived(board ? `${board.grid}:${board.squares.length}` : null);
+  $effect(() => {
+    const target = view;
+    const area = frameWithin;
+    if (!target || !geometryKey || area === undefined) return;
+    // Wait for the shell's measurements and the renderer's size to settle.
+    const frame = requestAnimationFrame(() => {
+      target.resize();
+      target.frame(null, area ?? undefined);
+    });
+    return () => cancelAnimationFrame(frame);
+  });
   $effect(() => {
     // Read every setting here: Pixi retains plain state and cannot subscribe to nested
     // Svelte mutations. Give it a fresh snapshot for each texture, scale, or tree edit.

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { game } from './game.svelte.js';
-  import { back, forward, goToStage, nav, stepDone, STEPS } from './navigation.svelte.js';
+  import { back, forward, goToStage, nav, stageReason, stepDone, STEPS } from './navigation.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { commandReporter } from './command-notices.js';
 
@@ -20,16 +19,19 @@
   <ol>
     {#each STEPS as s, i (s.id)}
       {@const done = i !== current && stepDone(s.id)}
-      <li class:on={i === current} class:done>
+      {@const reason = stageReason(s.id)}
+      <li class:on={i === current} class:done title={reason ?? undefined}>
         <button
-          disabled={s.id !== 'board' && !game.setup.board}
+          disabled={!!reason}
+          title={reason ?? s.hint}
+          aria-label={s.label}
           aria-current={i === current ? 'step' : undefined}
           onclick={() => goToStage(s.id)}
         >
           <span class="mark">{done ? '✓' : i + 1}</span>
           <span class="text">
             <span class="label">{s.label}</span>
-            <span class="hint">{s.hint}</span>
+            {#if i === current}<span class="hint">{s.hint}</span>{/if}
           </span>
         </button>
       </li>
@@ -50,7 +52,7 @@
     backdrop-filter: blur(6px);
     border-right: 1px solid var(--rule);
   }
-  h2 { margin: 0 .3rem; border: 0; padding: 0; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  h2 { margin: 0 .3rem; border: 0; padding: 0; font-size: .9rem; font-weight: 600; color: var(--muted); }
   ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 
   /* The line between two marks: a step's own mark sits on it. */

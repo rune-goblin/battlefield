@@ -85,13 +85,13 @@
 
   .detail {
     pointer-events: auto; order: -1; width: 19rem; padding: .6rem .8rem .7rem;
-    background: var(--card); border: 1px solid var(--rule); border-top: 3px solid var(--tone);
+    background: var(--card); border: 1px solid var(--tone);
     border-radius: 8px; box-shadow: 0 6px 22px rgba(0, 0, 0, .4); font-size: .9rem;
   }
   .detail header { display: flex; align-items: baseline; gap: .5rem; }
   .detail h3 { flex: 1; margin: 0; color: var(--tone); }
   .detail p { margin: .35rem 0 0; line-height: 1.4; }
-  .detail .on { margin-top: .1rem; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .detail .on { margin-top: .1rem; font-size: .78rem; font-weight: 600; color: var(--muted); }
   .close { border: 0; background: none; padding: 0 .2rem; font-size: 1.1rem; line-height: 1; color: var(--muted); }
   /* An open panel covers its neighbours' names, so they stay down while it is up. */
   .effects:has(.detail) .tip { display: none; }

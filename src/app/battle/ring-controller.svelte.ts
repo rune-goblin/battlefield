@@ -1,4 +1,5 @@
-import { type Verb, type ActionOffer, notation, type TargetRef } from '../../engine/index.js';
+import { offerReason, actionReason } from './action-menu.js';
+import { engagedEnemies, isRouted, type Verb, type ActionOffer, notation, type TargetRef } from '../../engine/index.js';
 import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon } from '../../board/art.js';
 import type { HighlightStyle } from '../../board/index.js';
 import { stage } from '../stage-view.svelte.js';
@@ -20,6 +21,7 @@ export interface Prop {
   icon: ActionIcon;
   label: string;
   legal: boolean;
+  reason?: string;
   /** The verb an aim off this slice narrows to. Charge and Maneuver have none. */
   type: Verb | null;
   style: HighlightStyle;
@@ -92,6 +94,7 @@ export function createRingController(s: RingShared) {
 
   const props = $derived.by<Prop[]>(() => {
     if (!s.active || !s.act) return [];
+    const active = s.active;
     const byType = new Map<Verb, ActionOffer[]>();
     for (const offer of s.act.offers) {
       const list = byType.get(offer.type);
@@ -108,6 +111,7 @@ export function createRingController(s: RingShared) {
         return {
           key, icon: 'maneuver', label: 'Maneuver', type: null, style: 'move',
           legal: !!w && w.targets.length > 0,
+          reason: !active.actions ? 'No actions left' : w?.activities[0]?.reason ? actionReason(w.activities[0].reason) : 'No destination in range',
           cells: w ? w.targets.map((t) => t.id) : [],
           edges: [],
         };
@@ -119,6 +123,7 @@ export function createRingController(s: RingShared) {
         return {
           key, icon: 'attack', label: 'Melee', type: null, style: 'attack',
           legal: charges.length > 0,
+          reason: isRouted(active) ? 'Routed: move or maneuver' : active.attacked ? 'Already attacked this activation' : !active.actions ? 'No actions left' : active.stats.strike === null ? 'No melee attack' : 'No target in range',
           cells: charges,
           edges: [],
         };
@@ -128,7 +133,14 @@ export function createRingController(s: RingShared) {
       const label = key === 'cast' ? 'Cast' : offers[0]?.label ?? SLOT_LABEL[key];
       return {
         key, icon: ICON_FOR[type], label, type, style: SLOT_STYLE[key],
-        legal: cells.length > 0,
+        legal: key === 'cast' ? offers.length > 0 : cells.length > 0,
+        reason: offers.length ? offerReason(offers[0])
+          : isRouted(active) ? 'Routed: move or maneuver'
+          : !active.actions ? 'No actions left'
+          : key === 'cast' ? 'No spells available'
+          : key === 'shoot' && engagedEnemies(s.b, active).length ? 'Engaged in melee'
+          : key === 'shoot' && active.stats.volley === null ? 'No ranged attack'
+          : 'No target in range',
         cells,
         edges: [...new Set(offers.flatMap(offerEdges))],
       };
@@ -164,9 +176,9 @@ export function createRingController(s: RingShared) {
     return false;
   }
 
-  /** Every tree the active unit could still cast — a fresh read, not a stored list, so a spent
+  /** Every tree the active unit knows — a fresh read, not a stored list, so a spent
    * pool point is reflected the moment the picker reopens. */
-  const castOffers = () => (s.act?.offers ?? []).filter((o) => o.type === 'cast' && o.activities.some((r) => r.legal));
+  const castOffers = () => (s.act?.offers ?? []).filter((o) => o.type === 'cast');
 
   /** Rally opens its activities; Cast opens its trees and then activities. Other verbs
    * highlight their targets, opening the target popup directly when only one exists. */
@@ -186,6 +198,7 @@ export function createRingController(s: RingShared) {
       if (castPick) { castPick = null; return; }
       const offers = castOffers();
       if (offers.length <= 1) {
+        if (offers[0] && offerReason(offers[0])) { castPick = offers; return; }
         if (offers[0]?.spell === 'blast') { s.openBlast(); return; }
         if (offers[0]) s.openActivityPicker(offers[0]);
       } else {
@@ -200,6 +213,7 @@ export function createRingController(s: RingShared) {
 
   /** A tree opens its activity picker; Blast retains its shape picker. */
   function chooseTree(o: ActionOffer) {
+    if (offerReason(o)) return;
     if (o.spell === 'blast') { s.openBlast(); return; }
     s.openActivityPicker(o);
   }
@@ -228,7 +242,7 @@ export function createRingController(s: RingShared) {
 
   let radial = $state<{ cell: string } | null>(null);
   const radialItems = $derived([
-    ...props.map((p) => ({ key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal })),
+    ...props.map((p) => ({ key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal, reason: p.reason })),
     ...(s.nearbyGates.length ? [{ key: 'gate', src: actionIconUrl('block'), label: 'Gate', legal: true }] : []),
     ...(s.siegeEquipment.length ? [{ key: 'siege', src: engineArtUrl(s.siegeEquipment[0].name) ?? actionIconUrl('shoot'), label: 'Siege engine', legal: true }] : []),
   ]);
@@ -240,11 +254,11 @@ export function createRingController(s: RingShared) {
   };
 
   // Cast's own second ring: the tree picker, on the same spot the first ring just vacated.
-  const castRadialItems = $derived((castPick ?? []).map((o) => ({
-    key: o.spell as string, src: castIconUrl(o.spell!), label: o.label, legal: true,
+  const castRadialItems = $derived((castPick ? castOffers() : []).map((o) => ({
+    key: o.spell as string, src: castIconUrl(o.spell!), label: o.label, legal: !offerReason(o), reason: offerReason(o),
   })));
   const pickCastTree = (key: string) => {
-    const o = castPick?.find((x) => x.spell === key);
+    const o = castPick && castOffers().find((x) => x.spell === key);
     if (o) chooseTree(o);
   };
 

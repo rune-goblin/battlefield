@@ -87,6 +87,51 @@ describe('siege engines', () => {
 
 describe('siege operations', () => {
   const rng = () => scriptedRng([10, 10, 10, 10]);
+  it.each([null, 'defender', 'attacker'] as const)('claims an engine owned by %s as soon as a unit enters its hex', owner => {
+    let s = createBattle({ board: openBoard(), units: [
+      { card: infantry, side: 'attacker', square: 'c2' },
+      { card: kobolds, side: 'defender', square: 'c7' },
+    ], engines: [{ card: engine('Ballista'), square: 'c4', side: 'defender' }] });
+    s.pending = 'attacker';
+    s.engines[0].side = owner;
+    s.engines[0].loaded = 0;
+    s.units[0].speed = 60;
+    s = act(s, { type: 'move', unit: 'u0', to: 'c4' }, rng());
+    expect(s.round).toBe(1);
+    expect(s.units[0].actions).toBe(2);
+    expect(s.engines[0]).toMatchObject({ side: 'attacker', status: 'crewed', loaded: 0, fired: false });
+    expect(siegeEngines(s, s.units[0]).map(e => e.id)).toEqual([s.engines[0].id]);
+    expect(siegeReason(s, s.units[0], s.engines[0], 'load')).toBeNull();
+    s = act(s, { type: 'siege', unit: 'u0', engine: s.engines[0].id, operation: 'load' }, rng());
+    expect(engineLoaded(s.engines[0])).toBe(true);
+  });
+
+  it('preserves partial loading and the shot limit when an occupant takes an enemy engine', () => {
+    let s = createBattle({ board: openBoard(), units: [
+      { card: infantry, side: 'attacker', square: 'c2' },
+      { card: kobolds, side: 'defender', square: 'c7' },
+    ], engines: [{ card: engine('Heavy Ballista'), square: 'c4', side: 'defender' }] });
+    s.pending = 'attacker';
+    s.units[1].square = parse('d4'); // An adjacent former owner cannot override the occupant.
+    Object.assign(s.engines[0], { side: 'defender', fired: true, loadSteps: 2, loaded: 1 });
+    s = act(s, { type: 'move', unit: 'u0', to: 'c4' }, rng());
+    expect(s.engines[0]).toMatchObject({ side: 'attacker', status: 'crewed', fired: true, loadSteps: 2, loaded: 1 });
+    expect(siegeReason(s, s.units[0], s.engines[0], 'attack')).toBe('This engine has already attacked this round.');
+    expect(siegeEngines(s, s.units[1])).toEqual([]);
+  });
+
+  it('repairs an occupied engine from an older save before hauling it', () => {
+    let s = battle(['Ballista']);
+    const e = s.units[0].engines.pop()!;
+    Object.assign(e, { side: null, status: 'abandoned', emplaced: true, loaded: 0 });
+    s.engines.push(e);
+    s.pending = 'attacker';
+    expect(siegeEngines(s, s.units[0])).toContain(e);
+    s = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'haul' }, rng());
+    expect(s.engines).toEqual([]);
+    expect(s.units[0].engines[0]).toMatchObject({ side: 'attacker', status: 'crewed', hauling: true, loaded: 0 });
+  });
+
   it('fires the selected engine and keeps the other engine loaded', () => {
     const s = battle(['Ballista', 'Catapult']);
     const e = unit(s, 'u0').engines[1];
@@ -136,7 +181,7 @@ describe('siege operations', () => {
   it('leaves an engine behind when its occupant moves without hauling', () => {
     let s = battle(['Trebuchet']);
     const id = unit(s, 'u0').engines[0].id;
-    expect(() => act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'haul' }, rng())).toThrow('fixed');
+    expect(() => act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'haul' }, rng())).toThrow('cannot be moved during the battle');
     s = act(s, { type: 'move', unit: 'u0', to: 'c3' }, rng());
     expect(s.engines[0]).toMatchObject({ id, square: parse('c2') });
     expect(unit(s, 'u0').engines).toHaveLength(0);
@@ -156,12 +201,13 @@ describe('siege operations', () => {
     expect(unit(s, 'u0').engines[0].hauling).toBe(true);
   });
 
-  it('blocks loading in contact, wrong-side operation, and a second engine in tow', () => {
+  it('allows loading in contact but blocks hauling, wrong-side operation, and a second engine in tow', () => {
     let s = battle(['Catapult', 'Ballista']);
     const u = unit(s, 'u0'), e = u.engines[0];
     e.loaded = 0;
     unit(s, 'u1').square = parse('c3');
-    expect(siegeReason(s, u, e, 'load')).toContain('contact');
+    expect(siegeReason(s, u, e, 'load')).toBeNull();
+    expect(siegeReason(s, u, e, 'haul')).toContain('contact');
     expect(() => act(s, { type: 'siege', unit: 'u1', engine: e.id, operation: 'haul' }, rng())).toThrow();
     unit(s, 'u1').square = parse('c7');
     s = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'haul' }, rng());

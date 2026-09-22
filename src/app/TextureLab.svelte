@@ -308,7 +308,7 @@
   .styles button { padding: .3rem .7rem; font-size: .85rem; }
   .styles button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }
   h1 { font-size: 1.2rem; }
-  .badge, .eyebrow { font: 600 .65rem/1.4 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .badge, .eyebrow { font: 600 .78rem/1.4 system-ui, sans-serif; color: var(--muted); }
   .badge { border: 1px solid var(--rule); border-radius: 4px; padding: .25rem .4rem; }
   main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 23rem; min-height: 0; }
   .map { position: relative; min-width: 0; min-height: 0; overflow: hidden; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, parse, scriptedRng, statusesOf, unit, type Rng, type UnitCard } from '../engine/index.js';
+import { createBattle, movePath, parse, scriptedRng, statusesOf, unit, type Rng, type UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { createActionResolutionService } from '../services/ActionResolutionService.js';
@@ -152,5 +152,18 @@ describe('execution events', () => {
       { type: 'unitMoved', unit: 'u0', from: 'c2', to: 'c4', route: ['c2', 'c3', 'c4'] },
     ]);
     expect(runtime.session.lastCommit!.dice).toEqual([]);
+  });
+
+  it('yields the route a move walked through its waypoints', async () => {
+    const session = battleSession();
+    const road = movePath(session.battle!, unit(session.battle!, 'u0'), 'c3', ['d2']).map((step) => step.cell);
+    const runtime = runtimeOn(session, scriptedRng([10]));
+
+    await runtime.submit({ type: 'action.resolve', action: { type: 'move', to: 'c3', unit: 'u0', waypoints: ['d2'] } });
+
+    expect(road).toContain('d2');
+    expect(runtime.session.lastCommit!.events.filter((e) => e.type === 'unitMoved')).toMatchObject([
+      { type: 'unitMoved', unit: 'u0', from: 'c2', to: 'c3', route: road },
+    ]);
   });
 });

@@ -32,6 +32,8 @@
     <button
       class="unit-card"
       class:on={selected === u.id}
+      data-selected={selected === u.id}
+      aria-pressed={selected === u.id}
       class:aside={locked && selected !== u.id}
       class:hot={hovered === u.id}
       disabled={locked && selected !== u.id}
@@ -79,9 +81,7 @@
      It centres on the canvas, not on the strip the docks leave: the board does not move when
      a panel opens, so the armies over it must not move either. */
   .reel-position {
-    /* The picked card lights in its own army's colour, not the shell accent: an accent ring on a
-       blue card reads as a different side. --hi drives it toward the ink so it stands out from
-       the card's own edge in either palette. */
+    /* Army colour identifies the card; the shared neutral outline identifies selection. */
     --hi: color-mix(in srgb, var(--side) 65%, var(--ink));
     position: absolute; pointer-events: none;
     top: calc(var(--inset-top, 0px) + .5rem);
@@ -125,8 +125,6 @@
   .unit-card.on {
     position: relative; z-index: 1;
     width: 6.6rem; padding: .45rem; font-size: .8rem;
-    border-color: var(--hi);
-    box-shadow: 0 0 0 2px var(--hi) inset, 0 6px 18px rgba(0, 0, 0, .3);
   }
   .unit-card.on img { width: 4.2rem; height: 4.2rem; }
   .unit-card.aside { opacity: .35; }

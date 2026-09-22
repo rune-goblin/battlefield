@@ -24,7 +24,11 @@ export interface SetupUnit {
 }
 /** An engine deployed on a square of its own. `engines` on a SetupUnit is the attached kind,
  * which only a campaign import fills. `hauled` holds while a friendly unit shares the square. */
-export interface SetupEngine { id: string; name: string; side: Side; square: string | null; hauled?: boolean }
+export interface SetupEngine {
+  id: string; name: string; side: Side; square: string | null; hauled?: boolean;
+  /** Initial load. Omitted in older drafts, which start loaded. */
+  loaded?: boolean;
+}
 export interface BattleSetupDraft {
   spec: BoardSpec;
   board: Board | null;
@@ -143,21 +147,21 @@ export const randomSeed = () => Math.floor(Math.random() * 1e9);
 
 export function defaultSetup(): BattleSetupDraft {
   const pick = (name: string) => [...COMBATANTS, ...OFFICIAL].find((c) => c.name === name)!;
-  const unit = (name: string, side: Side, square: string): SetupUnit =>
-    ({ id: newUnitId(), card: pick(name), side, square, engines: [] });
+  const unit = (name: string, side: Side): SetupUnit =>
+    ({ id: newUnitId(), card: pick(name), side, square: null, engines: [] });
   return {
     spec: { base: 'plains', size: 11, feature: 'none', construction: null, seed: randomSeed() },
     board: null,
     emplacements: [],
     units: [
-      unit('Line Infantry', 'attacker', 'e3'),
-      unit('Heavy Cavalry', 'attacker', 'g3'),
+      unit('Line Infantry', 'attacker'),
+      unit('Heavy Cavalry', 'attacker'),
       // Apprentice Magician Clique (L5) sits between Line Infantry (L6) and Heavy Cavalry (L7).
-      unit('Apprentice Magician Clique', 'attacker', 'f3'),
-      unit('Kobold Warriors', 'defender', 'e9'),
-      unit('Troll Marauders', 'defender', 'g9'),
+      unit('Apprentice Magician Clique', 'attacker'),
+      unit('Kobold Warriors', 'defender'),
+      unit('Troll Marauders', 'defender'),
       // Mitflit Vermin Cavalry (L4) sits between Kobold Warriors (L3) and Troll Marauders (L8).
-      unit('Mitflit Vermin Cavalry', 'defender', 'f9'),
+      unit('Mitflit Vermin Cavalry', 'defender'),
     ],
   };
 }

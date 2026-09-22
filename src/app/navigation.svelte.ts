@@ -16,8 +16,8 @@ export const STEPS: { id: SetupStage; label: string; hint: string }[] = [
   // proto: shown for every battle. A hand-built one has little to confirm; reserved for review
   // once imported battles are in play.
   { id: 'sides', label: 'Sides', hint: 'Confirm who attacks and who defends' },
-  { id: 'attackers', label: 'Attacking army', hint: 'Choose and deploy' },
-  { id: 'defenders', label: 'Defending army', hint: 'Choose and deploy' },
+  { id: 'defenders', label: 'Defending army', hint: 'Deploy first' },
+  { id: 'attackers', label: 'Attacking army', hint: 'Deploy after seeing the defenders' },
   { id: 'summary', label: 'Review and begin', hint: 'Check both armies and the field' },
 ];
 
@@ -31,8 +31,8 @@ export const STAGE_SIDE: Partial<Record<Stage, Side>> = { attackers: 'attacker',
 function openingStage(): Stage {
   if (game.battle) return 'battle';
   if (!game.setup.board) return 'board';
-  if (!sideReady('attacker')) return 'attackers';
-  return sideReady('defender') ? 'summary' : 'defenders';
+  if (!sideReady('defender')) return 'defenders';
+  return sideReady('attacker') ? 'summary' : 'attackers';
 }
 
 /** Steps the GM has been through in this pass of the wizard; a resumed session counts the
@@ -65,18 +65,26 @@ onRecord(() => {
 
 export function next() {
   const i = STAGES.indexOf(nav.stage);
-  if (i < STAGES.length - 2) enter(STAGES[i + 1]);
+  if (i < STAGES.length - 2 && !stageReason(STAGES[i + 1] as SetupStage)) enter(STAGES[i + 1]);
 }
 
 export function back() {
   const i = STAGES.indexOf(nav.stage);
-  if (i > 0) enter(STAGES[i - 1]);
+  const previous = STEPS.slice(0, i).reverse().find((step) => !stageReason(step.id));
+  if (previous) enter(previous.id);
 }
 
-/** Jump straight to any setup stage, not just the adjacent one `next`/`back` reach. `battle`
+/** The attacker deploys against the defender's complete formation. */
+export function stageReason(stage: SetupStage): string | null {
+  if (stage !== 'board' && !game.setup.board) return 'Generate a battlefield first';
+  if (stage === 'attackers' && !sideReady('defender')) return 'Place every defender first';
+  return null;
+}
+
+/** Jump straight to an available setup stage, beyond the adjacent ones `next`/`back` reach. `battle`
  * isn't a valid target: it's reached only through `beginBattle`. */
 export function goToStage(stage: Stage) {
-  if (stage === 'battle' || (stage !== 'board' && !game.setup.board)) return;
+  if (stage === 'battle' || stageReason(stage)) return;
   enter(stage);
 }
 

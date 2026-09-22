@@ -24,7 +24,7 @@
 @property --ri { syntax: "<number>"; inherits: true; initial-value: 0; }
 
 :where(.battlefield-root), :where(.battlefield-root) * { box-sizing:border-box; }
-:where(.battlefield-root) h1 { font-size:1.5rem; margin:0; letter-spacing:-.01em; }
+:where(.battlefield-root) h1 { font-size:1.5rem; margin:0; }
 :where(.battlefield-root) h2 { font-size:1.1rem; margin:.75rem 0 .4rem; border-bottom:2px solid var(--rule); padding-bottom:.15rem; }
 :where(.battlefield-root) h2:first-child { margin-top:0; }
 :where(.battlefield-root) h3 { font-size:1rem; margin:.75rem 0 .35rem; color:var(--accent); }
@@ -61,3 +61,10 @@
 :where(.battlefield-root) .palette button.on { background:var(--accent); color:var(--paper); border-color:var(--accent); }
 :where(.battlefield-root) .unitrow.sel { outline:2px solid var(--accent); }
 :where(.battlefield-root) .unitrow.click { cursor:pointer; }
+
+/* Selected objects opt in with one state attribute. Shape and layout stay with the object. */
+.battlefield-root [data-selected='true'] {
+  outline:var(--selection-width) solid var(--selection-colour);
+  outline-offset:-3px;
+  box-shadow:inset 0 0 0 4px var(--selection-edge);
+}

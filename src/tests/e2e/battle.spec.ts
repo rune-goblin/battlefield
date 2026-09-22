@@ -3,7 +3,7 @@ import { endBattle, openFromSceneControl, windowOf } from './fixtures/battle-win
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 const STEPS = [
-  'Battlefield', 'Paint the map', 'Siege engines', 'Sides', 'Attacking army', 'Defending army', 'Review and begin',
+  'Battlefield', 'Paint the map', 'Siege engines', 'Sides', 'Defending army', 'Attacking army', 'Review and begin',
 ];
 
 const chipOf = (page: Page): Locator => page.locator('#ui-right-column-1 .battlefield-chip');

@@ -18,6 +18,11 @@
   import { stage } from './stage-view.svelte.js';
   import { connectAuthority } from './authority.svelte.js';
   import { followArt } from './art-preload.js';
+  import { visibleRect } from './shell/layout.svelte.js';
+  import { selectionCss } from '../board/selection.js';
+
+  let viewportWidth = $state(window.innerWidth);
+  let viewportHeight = $state(window.innerHeight);
 
   const notifications = provideNotifications();
   presentation.connectNotices(notifications, { get userId() { return viewerId(); }, get isGm() { return gmUserId() === viewerId(); } });
@@ -41,11 +46,13 @@
   }
 </script>
 
+<svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
+
 <!-- App owns the one AppShell and the one PixiBoard, so the GL context and every uploaded
      texture outlive a stage switch. A stage renders nothing of its own: it presents its
      panels, board props and handlers through `stage-view`. The root is what the app's CSS
      hangs off and what tells a key press inside the app from one outside it. -->
-<div class="battlefield-root" {@attach appRoot}>
+<div class="battlefield-root" style={selectionCss} {@attach appRoot}>
   {#if import.meta.env.DEV && textureLab.open}
     <TextureLab />
   {:else if vfxLab}
@@ -76,7 +83,8 @@
       pin={view.pin} float={view.float} modal={view.modal}
     >
       {#snippet map()}
-        <div class="mapwrap" class:aiming={view.aiming}><PixiBoard bind:this={stage.board} fill {...view.board} /></div>
+        <div class="mapwrap" class:aiming={view.aiming}><PixiBoard bind:this={stage.board} fill {...view.board}
+          frameWithin={nav.stage === 'battle' ? null : visibleRect(viewportWidth, viewportHeight)} /></div>
       {/snippet}
     </AppShell>
   {/if}

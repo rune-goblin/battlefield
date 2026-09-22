@@ -102,7 +102,7 @@
   .swap button { width: 100%; }
   .muted { margin: .4rem 0 0; font-size: .78rem; color: var(--muted); }
 
-  h4 { margin: .6rem 0 0; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h4 { margin: .6rem 0 0; font-size: .78rem; color: var(--muted); font-weight: 600; }
   .line { margin: .3rem 0 0; font-size: .85rem; color: var(--muted); }
   .problem { margin: .4rem 0 0; font-size: .85rem; color: var(--bad); font-weight: 600; }
 

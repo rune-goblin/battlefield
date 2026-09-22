@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { ACTIONS_PER_ACTIVATION, engagedEnemies, gateReason, isRouted, levelDc, ROUTED_AT, notation, shootCeiling, shootRangeLabel, reachOf } from '../../engine/index.js';
+  import { engagedEnemies, gateReason, isRouted, levelDc, notation } from '../../engine/index.js';
   import { actionIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
+  import ActionBudget from '../ActionBudget.svelte';
+  import UnitSheet from './UnitSheet.svelte';
   import GateStatus from '../GateStatus.svelte';
   import { turnNote } from '../viewer.svelte.js';
   import type { BattleController } from './battle-controller.svelte.js';
@@ -16,13 +18,10 @@
     <span class="muted">{c.active.side} · {notation(c.active.square)}</span>
   </div>
   <div class="row action-pips">
-    {#if c.active.actions > 0}<ActionCost n={c.active.actions} size="1.3em" />{/if}
-    <span class="muted">{c.active.actions} of {ACTIONS_PER_ACTIVATION} left</span>
+    <ActionBudget remaining={c.actionsLeft} bonus={c.active.haste > 0 ? 1 : 0} />
+    <span class="muted">{c.actionsLeft} left</span>
   </div>
-  <p class="cost-key">
-    Activities show their action cost: <ActionCost n={1} />, <ActionCost n={2} /> or
-    <ActionCost n={3} />. Commit extra actions for +2 each on supported activities. One attack an activation.
-  </p>
+  <UnitSheet battle={c.b} unit={c.active} />
 
   {#if c.siegeEquipment.length || interiorGates.length}
     <div class="equipment-controls" aria-label="Equipment and gates">
@@ -41,15 +40,16 @@
       {/each}
     </div>
   {/if}
+  <details class="unit-details">
+    <summary>Tactics and rules</summary>
   <table class="stats"><tbody>
-    <tr><td>Strike</td><td class="stat">{c.active.stats.strike === null ? '—' : '+' + c.active.stats.strike}</td><td>Volley</td><td class="stat">{c.active.stats.volley === null ? '—' : `+${c.active.stats.volley} · ${['—', 'short', 'medium', 'long', 'extreme'][Math.max(0, reachOf(c.b, c.active))]}`}</td></tr>
-    {#if shootCeiling(c.b, c.active) > 0}<tr><td>Range</td><td colspan="3">{shootRangeLabel(c.b, c.active)}</td></tr>{/if}
-    <tr><td>Defence</td><td class="stat">{c.active.stats.defence}</td><td>Will</td><td class="stat">+{c.active.stats.will}</td></tr>
-    <tr><td>Morale</td><td class="stat">{ROUTED_AT - c.active.disorder}/{ROUTED_AT}</td><td>Level DC</td><td class="stat">{levelDc(c.active.level)}</td></tr>
-    <tr><td>Move</td><td class="stat">{c.act.speed} ft{c.act.feet ? ` (+${c.act.feet} banked)` : ''}</td><td>Engaged</td><td>{engagedEnemies(c.b, c.active).length}</td></tr>
+    <tr><td>Level</td><td>{c.active.level}</td><td>Level DC</td><td>{levelDc(c.active.level)}</td></tr>
+    <tr><td>Engaged</td><td>{engagedEnemies(c.b, c.active).length}</td><td>Banked move</td><td>{c.act.feet} ft</td></tr>
     {#if c.active.tactics.length}<tr><td>Tactics</td><td colspan="3">{c.active.tactics.join(', ')}</td></tr>{/if}
     {#if c.status(c.active)}<tr><td>Status</td><td colspan="3">{c.status(c.active)}</td></tr>{/if}
   </tbody></table>
+    <p class="cost-key">One attack per activation. Each extra action adds +2 to a supported roll.</p>
+  </details>
 
   <!-- Move opens with the selection rather than staying pinned: its bands are the same
        ones the board washes, and the rows track a live drag both ways. -->
@@ -66,7 +66,7 @@
         {:else if c.stuck}
           — {c.stuck.tag}
         {:else if c.moveOpen}
-          — drag the token, or read the bands
+          — drag to move
         {:else}
           — {c.moveBands[1].length + c.moveBands[2].length + c.moveBands[3].length} cells reachable
         {/if}
@@ -76,9 +76,7 @@
     {#if c.holders.length}
       <p class="move-note">
         <strong>{c.holders.map((e) => e.name).join(' and ')}</strong>
-        {c.holders.length === 1 ? 'holds' : 'hold'} you. A Stride is closed while you are in
-        contact — <strong>Maneuver</strong> is the only way off this square. Break off rolls
-        once against the highest of them; pay more and they roll instead.
+        {c.holders.length === 1 ? 'holds' : 'hold'} this unit in contact. Use Maneuver to break free.
         {#if c.act.maneuver}
           Drag to one of its {c.act.maneuver.targets.length} cell{c.act.maneuver.targets.length === 1 ? '' : 's'}.
         {/if}
@@ -109,32 +107,33 @@
 
   {#if isRouted(c.active)}
     <p class="muted">
-      Routed at {ROUTED_AT - c.active.disorder}/{ROUTED_AT} Morale — it may Move or maneuver, nothing else, and
-      it leaves the field at its own edge. An ally's Rally, Inspire or Healing can bring it back.
+      Routed · Move or Maneuver to your edge, or recover Morale with an ally.
     </p>
   {:else if !c.offers.length}
-    <p class="muted">Nothing else to do here — end the turn.</p>
+    <p class="muted">End this turn when ready.</p>
   {:else}
-    <p class="muted hint">Touch a piece for what you can do to it, or drag your own to move.</p>
+    <p class="muted hint">Select a piece for actions. Drag your unit to move.</p>
   {/if}
 
   <button class="end-turn" disabled={!c.myTurn} onclick={c.endTurn}>End turn</button>
 {:else if c.myTurn}
-  <p class="muted">Pick an army off the army reel above, or touch one of your own pieces on the board.</p>
+  <p class="muted">Select a unit from your army or the board.</p>
 {:else}
-  <p class="muted">{turnNote()}. The board shows every move as it is made.</p>
+  <p class="muted">{turnNote()}.</p>
 {/if}
 
 <style>
+  .unit-details { margin: .5rem 0; }
+  summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
   .equipment-controls { display: flex; flex-direction: column; gap: .35rem; margin: .3rem 0 .6rem; }
   .gate-control { display: flex; align-items: center; gap: .6rem; text-align: left; }
   .gate-control > span { flex: 1; }
   .gate-control small { display: block; color: var(--muted); }
   .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
-  .orders-head { display: flex; align-items: baseline; gap: .5rem; }
+  .orders-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem; }
   .orders-head h3 { margin: 0; }
   .orders-head .muted { font-size: .78rem; }
-  .action-pips { align-items: center; gap: .45rem; margin: .3rem 0 .1rem; color: var(--accent); }
+  .action-pips { align-items: center; gap: .8rem; margin: .4rem 0 .1rem; }
   .end-turn { width: 100%; margin-top: auto; }
   .cost-key { margin: .2rem 0 .5rem; font-size: .76rem; color: var(--muted); line-height: 1.7; }
   .move-card h3 { margin: 0; font-size: inherit; }

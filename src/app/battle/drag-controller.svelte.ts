@@ -1,4 +1,4 @@
-import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, chargePath, movePath, fleePlan, fleeBlockReason, maneuverOutcome, parse, engagedEnemies } from '../../engine/index.js';
+import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, maneuverOutcome, parse, engagedEnemies } from '../../engine/index.js';
 import type { BoardEventOf, HighlightStyle } from '../../board/index.js';
 import type { Activation, BattleState, TargetRef, Verb } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
@@ -36,7 +36,7 @@ export type Preview = MovePreview | ChargePreview | ManeuverPreview | AdvancePre
 
 // A released drag, parked until the player picks one of its readings and confirms. One drop
 // means more than one thing, and deciding by where the pointer landed decides for the player.
-export interface Parked { cell: string; rows: Preview[]; index: number; activity: ActivityIndex | null }
+export interface Parked { cell: string; rows: Preview[]; index: number; activity: ActivityIndex | null; waypoints: string[] }
 
 // Every other way a Stride can be closed. Contact at least draws enemies next to you; a root
 // or a spent last action leaves the board looking exactly like ground you could walk onto,
@@ -63,11 +63,18 @@ export interface DragShared extends BattleDeps {
 }
 
 export function createDragController(s: DragShared) {
+  // Space drops a waypoint under a live drag; every reading of the drop routes through them.
+  let waypoints = $state.raw<string[]>([]);
+  // The waypoints the open melee choice was dropped with, kept after the drag that set them.
+  let meleeVia = $state.raw<string[]>([]);
   const meleeOptions = $derived.by(() => {
     const active = s.active;
     return new Map(active ? s.b.units.filter(u => u.status === 'active' && u.side !== active.side)
-      .map(u => [u.id, meleePlans(s.b, active, u.id)] as const) : []);
+      .map(u => [u.id, meleePlans(s.b, active, u.id, meleeVia)] as const) : []);
   });
+  const plansFor = (id: string) => waypoints.length && s.active ? meleePlans(s.b, s.active, id, waypoints) : meleeOptions.get(id) ?? [];
+  const movesVia = $derived(s.active && waypoints.length ? moveReach(s.b, s.active, waypoints) : s.act?.moves ?? new Map());
+  const chargesVia = (via: string[]): ChargeOption[] => via.length && s.active ? chargeTargets(s.b, s.active, via) : s.act?.charges ?? [];
   let meleeTarget = $state<string | null>(null);
   let meleeSelected = $state<'fight' | 'charge' | null>(null);
   let hoveredBand = $state<MoveBand | null>(null);
@@ -81,7 +88,8 @@ export function createDragController(s: DragShared) {
   const blockedNotice = $derived(s.notices.current.find(n => n.id === DRAG_NOTICE));
 
   function explainBlocked(cell: string, enemy?: Unit) {
-    const reason = s.active ? dragBlockReason(s.b, s.active, cell) : null;
+    const reason = !s.active ? null : dragBlockReason(s.b, s.active, cell)
+      ?? (waypoints.length ? 'No legal route through your waypoints reaches it. Release and drag again to clear them.' : null);
     if (reason) s.notifications.show({ id: DRAG_NOTICE, title: enemy ? `Cannot attack ${enemy.name}` : `Cannot enter ${cell}`, message: reason, tone: 'error' });
     else s.notifications.dismiss(DRAG_NOTICE);
   }
@@ -95,8 +103,8 @@ export function createDragController(s: DragShared) {
     if (!meleeTarget || !s.active) return null;
     const plan = [...(meleeOptions.get(meleeTarget) ?? [])].sort((x, y) => x.moveActions - y.moveActions)[0];
     if (plan?.via) return advanceRow(plan);
-    const charge = s.act?.charges.find((c) => c.unit === meleeTarget);
-    return charge ? chargeRow(charge) : null;
+    const charge = chargesVia(meleeVia).find((c) => c.unit === meleeTarget);
+    return charge ? chargeRow(charge, meleeVia) : null;
   });
   let meleeHover = $state<'fight' | 'charge' | null>(null);
   const meleeHoverRoute = $derived.by<Preview | null>(() => {
@@ -118,25 +126,25 @@ export function createDragController(s: DragShared) {
     return s.b.units.find((u) => u.status === 'active' && u.side !== a.side && notation(u.square) === cell);
   }
 
-  const chargeRow = (c: ChargeOption): ChargePreview =>
-    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: chargePath(s.b, s.active!, c.unit) });
+  const chargeRow = (c: ChargeOption, via: string[] = waypoints): ChargePreview =>
+    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: chargePath(s.b, s.active!, c.unit, via) });
 
   const advanceRow = (plan: MeleePlan): AdvancePreview => ({ kind: 'advance', plan, cell: plan.cell,
     enemy: plan.target, feet: plan.feet, actions: plan.moveActions + 1, path: [...plan.movePath, ...plan.attackPath.slice(1)] });
 
-  function openMelee(id: string) {
+  function openMelee(id: string, via: string[] = []) {
     pending = null; s.closeAim(); s.focus = 0;
-    meleeTarget = id; meleeSelected = null;
+    meleeTarget = id; meleeSelected = null; meleeVia = via;
   }
 
   function chooseMelee(kind: 'fight' | 'charge') {
     const plan = meleeTarget ? meleeOptions.get(meleeTarget)?.find(p => p.kind === kind) : null;
     if (!plan) return;
     s.focus = 0; pending = null; s.closeAim(); meleeSelected = kind;
-    if (plan.via) pending = { cell: plan.cell, rows: [advanceRow(plan)], index: 0, activity: null };
+    if (plan.via) pending = { cell: plan.cell, rows: [advanceRow(plan)], index: 0, activity: null, waypoints: meleeVia };
     else if (kind === 'charge') {
-      const charge = s.act?.charges.find(c => c.unit === plan.target);
-      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge)], index: 0, activity: null };
+      const charge = chargesVia(meleeVia).find(c => c.unit === plan.target);
+      if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge, meleeVia)], index: 0, activity: null, waypoints: meleeVia };
     } else {
       const enemy = s.b.units.find(u => u.id === plan.target)!;
       s.aimAt({ kind: 'unit', id: enemy.id }, notation(enemy.square), enemy.name, 'fight');
@@ -149,29 +157,42 @@ export function createDragController(s: DragShared) {
   function rowsAt(cell: string): Preview[] {
     if (!s.active || !s.act) return [];
     const rows: Preview[] = [];
-    const m = s.act.moves.get(cell);
+    const m = movesVia.get(cell);
     if (m) {
-      const path = movePath(s.b, s.active, cell);
+      const path = movePath(s.b, s.active, cell, waypoints);
       rows.push({ kind: 'move', cell, feet: m.feet, actions: m.actions, path: path.map((s) => s.cell), ...classify(path) });
     }
     // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
-    for (const c of s.act.charges) if (c.cell === cell) rows.push(chargeRow(c));
+    for (const c of chargesVia(waypoints)) if (c.cell === cell) rows.push(chargeRow(c));
+    // proto: Maneuver and Flee walk their own roads and ignore waypoints; with any set, only the
+    // readings that honour them are offered.
+    if (waypoints.length) return rows;
     if (s.act.maneuver?.targets.some((t) => t.id === cell)) rows.push({ kind: 'maneuver', cell, path: [notation(s.active.square), cell] });
     const escape = fleePlan(s.b, s.active, cell);
     if (escape) rows.push({ kind: 'flee', ...escape });
     return rows;
   }
 
+  // The cell the live drag is on, so a waypoint can redraw the trace without the pointer moving.
+  let over: { cell: string; exit: boolean } | null = null;
+
   function onBoardDrag(e: BoardEventOf<'drag'>) {
     if (!s.active || !s.act || e.id !== s.active.id) return;
     if (e.cell === null) {
       // Interaction sends a final clear after drop. Preserve the popup or refusal it just set.
       if (drag || dragTarget || blockedCell) s.notifications.dismiss(DRAG_NOTICE);
-      drag = null; dragTarget = null; blockedCell = null;
+      drag = null; dragTarget = null; blockedCell = null; over = null;
+      if (e.end) waypoints = [];
       return;
     }
+    over = { cell: e.cell, exit: !!e.exit };
+    trace(over);
+  }
+
+  function trace(e: { cell: string; exit: boolean }) {
+    if (!s.active || !s.act) return;
     pending = null; s.closeAim(); s.notifications.dismiss(DRAG_NOTICE);
-    meleeTarget = null; meleeSelected = null;
+    meleeTarget = null; meleeSelected = null; meleeVia = [];
     dragTarget = null;
     if (e.exit) {
       const escape = fleePlan(s.b, s.active, e.cell);
@@ -186,9 +207,9 @@ export function createDragController(s: DragShared) {
     // fight already in contact. The swords go on the target the moment either one stands up.
     const enemy = enemyAt(e.cell);
     if (enemy) {
-      const plans = meleeOptions.get(enemy.id) ?? [];
+      const plans = plansFor(enemy.id);
       const plan = [...plans].sort((a, b) => a.moveActions - b.moveActions)[0];
-      const charge = s.act.charges.find((c) => c.unit === enemy.id);
+      const charge = chargesVia(waypoints).find((c) => c.unit === enemy.id);
       dragTarget = { id: enemy.id, attack: plans.length > 0 };
       // A charge redraws the route to its approach cell; anything else leaves the trace where
       // it stalled, so the arrow still shows how far the drag did get.
@@ -210,6 +231,19 @@ export function createDragController(s: DragShared) {
     if (blockedCell) explainBlocked(blockedCell);
   }
 
+  /** Space over a cell the drag can reach pins the route there; space again on the last
+   * waypoint lifts it. */
+  function onBoardWaypoint(e: BoardEventOf<'waypoint'>) {
+    if (!s.active || !s.act || e.id !== s.active.id) return;
+    if (waypoints.at(-1) === e.cell) waypoints = waypoints.slice(0, -1);
+    else if (movesVia.has(e.cell)) waypoints = [...waypoints, e.cell];
+    else {
+      s.notifications.show({ id: DRAG_NOTICE, title: `Cannot set a waypoint on ${e.cell}`, message: 'A waypoint goes on a hex this unit could stride to by the route drawn so far.', tone: 'error' });
+      return;
+    }
+    if (over) trace(over);
+  }
+
   function onBoardDrop(e: BoardEventOf<'drop'>) {
     s.focus = 0;
     drag = null;
@@ -219,7 +253,7 @@ export function createDragController(s: DragShared) {
     if (!s.active || !s.act || e.id !== s.active.id) return;
     if (e.exit) {
       const escape = fleePlan(s.b, s.active, e.cell);
-      pending = escape ? { cell: e.cell, rows: [{ kind: 'flee', ...escape }], index: 0, activity: null } : null;
+      pending = escape ? { cell: e.cell, rows: [{ kind: 'flee', ...escape }], index: 0, activity: null, waypoints: [] } : null;
       if (!escape) s.notifications.show({ id: DRAG_NOTICE, title: 'Cannot flee here', message: fleeBlockReason(s.b, s.active, e.cell), tone: 'error' });
       return;
     }
@@ -227,14 +261,14 @@ export function createDragController(s: DragShared) {
     // touching a target, never by dragging into one — a drag is the unit going there.
     const enemy = enemyAt(e.cell);
     if (enemy) {
-      if (meleeOptions.get(enemy.id)?.length) openMelee(enemy.id);
+      if (plansFor(enemy.id).length) openMelee(enemy.id, waypoints);
       else { pending = null; s.closeAim(); explainBlocked(e.cell, enemy); }
       return;
     }
     // An illegal drop parks nothing: state never changes, so `tokens` never changes, so
     // `TokenLayer` just snaps the token back to where it actually is.
     const rows = rowsAt(e.cell);
-    pending = rows.length ? { cell: e.cell, rows, index: 0, activity: null } : null;
+    pending = rows.length ? { cell: e.cell, rows, index: 0, activity: null, waypoints } : null;
     if (!rows.length) explainBlocked(e.cell);
   }
 
@@ -254,10 +288,11 @@ export function createDragController(s: DragShared) {
     if (!p || !row || !s.active || !s.requireTurn()) return;
     const unit = s.active.id;
     const scope = s.turnScope;
+    const route = p.waypoints.length ? { waypoints: p.waypoints } : {};
     if (row.kind === 'flee') await s.run(s.takeAction({ type: 'flee', unit, to: row.cell }));
-    else if (row.kind === 'advance') await s.run(s.takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus: s.focus }));
-    else if (row.kind === 'charge') await s.run(s.takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus: s.focus }));
-    else if (row.kind === 'move') await s.run(s.takeAction({ type: 'move', unit, to: row.cell }));
+    else if (row.kind === 'advance') await s.run(s.takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus: s.focus, ...route }));
+    else if (row.kind === 'charge') await s.run(s.takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus: s.focus, ...route }));
+    else if (row.kind === 'move') await s.run(s.takeAction({ type: 'move', unit, to: row.cell, ...route }));
     else if (s.act?.maneuver) await performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
     // The reply can land after this activation ended; the scope that opened the melee choice
     // has already taken it away, and the next one's is not ours to clear.
@@ -302,7 +337,13 @@ export function createDragController(s: DragShared) {
       : row.kind === 'charge' || row.kind === 'advance' ? chargeCost(row, chargeActivity) + s.focus
         : s.act?.maneuver?.activities[maneuverActivity - 1].cost ?? maneuverActivity;
 
+  const shownWaypoints = $derived(waypoints.length ? waypoints : pending?.waypoints.length ? pending.waypoints : meleeTarget ? meleeVia : []);
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
+    // proto: a waypoint borrows the deployment wash until the overlay has a marker of its own.
+    const pins = shownWaypoints.length ? [{ style: 'deploy' as const, cells: shownWaypoints }] : [];
+    return [...traceHighlights(), ...pins];
+  });
+  function traceHighlights(): { style: HighlightStyle; cells: string[] }[] {
     if (!preview) return [];
     if (preview.kind === 'flee') return [{ style: 'move', cells: preview.path.slice(1) }, { style: 'deploy', cells: [preview.cell] }];
     if (preview.kind === 'charge') return [{ style: 'attack', cells: preview.path.slice(1) }];
@@ -312,7 +353,7 @@ export function createDragController(s: DragShared) {
     ];
     if (preview.kind === 'maneuver') return [{ style: 'move', cells: [preview.cell] }];
     return [{ style: 'move', cells: preview.near }, { style: 'moveFar', cells: preview.far }];
-  });
+  }
   const previewPath = $derived(preview?.path ?? []);
   // Banked movement can carry a unit to a cell for no further action at all, so a reach's
   // cost floors at the 1-action row rather than indexing a row that does not exist.
@@ -384,12 +425,12 @@ export function createDragController(s: DragShared) {
 
   /** Everything a drag holds open: the live preview, the parked drop and the melee choice. */
   function clear() {
-    drag = null; dragTarget = null; blockedCell = null; pending = null;
+    drag = null; dragTarget = null; blockedCell = null; pending = null; waypoints = [];
     closeMelee();
   }
-  function closeMelee() { meleeTarget = null; meleeSelected = null; }
+  function closeMelee() { meleeTarget = null; meleeSelected = null; meleeVia = []; }
   const unpark = () => { pending = null; };
-  const park = (cell: string, rows: Preview[]) => { pending = { cell, rows, index: 0, activity: null }; };
+  const park = (cell: string, rows: Preview[]) => { pending = { cell, rows, index: 0, activity: null, waypoints: [] }; };
   const resetBands = () => { hoveredBand = null; moveOpen = true; };
   /** The melee choice open at a press, so the click that ends the same press leaves it open. */
   const notePress = () => { meleeAtPress = meleeTarget; };
@@ -450,5 +491,6 @@ export function createDragController(s: DragShared) {
     get anchored() { return anchored; },
     get onBoardDrag() { return onBoardDrag; },
     get onBoardDrop() { return onBoardDrop; },
+    get onBoardWaypoint() { return onBoardWaypoint; },
   };
 }

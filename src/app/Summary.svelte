@@ -8,7 +8,7 @@
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { declaredReady, game, sideReady, tableUsers } from './game.svelte.js';
   import { engineUnder } from '../services/ArmyPreparationService.js';
-  import { goToStage, type SetupStage } from './navigation.svelte.js';
+  import { goToStage, stageReason, type SetupStage } from './navigation.svelte.js';
 
   const board = $derived(game.setup.board!);
   const spec = $derived(game.setup.spec);
@@ -90,7 +90,9 @@
     <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
       <header>
         <h3>{SIDE_TITLE[army.side]}</h3>
-        <button class="edit" onclick={() => goToStage(SIDE_STEP[army.side])}>Edit</button>
+        <button class="edit" disabled={!!stageReason(SIDE_STEP[army.side])}
+          title={stageReason(SIDE_STEP[army.side]) ?? undefined}
+          onclick={() => goToStage(SIDE_STEP[army.side])}>Edit</button>
       </header>
       <p class="line">
         {army.units.length} {army.units.length === 1 ? 'unit' : 'units'} · {army.levels} levels · played by {seats(army.side)}
@@ -144,7 +146,7 @@
   .edit { padding: .1rem .6rem; font-size: .8rem; }
 
   dl { margin: .5rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .8rem; }
-  dt { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  dt { font-size: .78rem; font-weight: 600; color: var(--muted); }
   dd { margin: 0; font-size: .92rem; }
 
   .line { margin: .3rem 0 0; font-size: .85rem; color: var(--muted); }

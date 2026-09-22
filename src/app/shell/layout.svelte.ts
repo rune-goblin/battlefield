@@ -27,20 +27,18 @@ export const ui = $state({
   dock: { left: saved.left, right: saved.right } as Record<DockSide, DockState>,
   /** Which docks the current stage fills. A toggle for a dock nobody filled does nothing. */
   has: { left: false, right: false } as Record<DockSide, boolean>,
-  /** What the chrome covers, in CSS pixels, measured by the shell. The board is never given
-   * this — it fills the canvas regardless. It is here so that a deliberate framing command can
-   * aim at the part of the map nothing is covering. */
+  /** What the chrome covers, in CSS pixels. Setup and manual framing use the clear area. */
   chrome: { left: 0, right: 0, top: 0, bottom: 0 },
 });
 
 /** The map the player can actually see: the canvas minus the chrome over it. */
-export function visibleRect(): { x: number; y: number; width: number; height: number } {
+export function visibleRect(width = window.innerWidth, height = window.innerHeight): { x: number; y: number; width: number; height: number } {
   const { left, right, top, bottom } = ui.chrome;
   return {
     x: left,
     y: top,
-    width: Math.max(1, window.innerWidth - left - right),
-    height: Math.max(1, window.innerHeight - top - bottom),
+    width: Math.max(1, width - left - right),
+    height: Math.max(1, height - top - bottom),
   };
 }
 

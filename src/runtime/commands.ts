@@ -41,6 +41,7 @@ export type BattleCommand =
   | { type: 'army.removeEmplacement'; emplacementId: string }
   /** The unit standing on the emplacement starts the battle hauling it, or only works it. */
   | { type: 'army.setHauling'; emplacementId: string; hauling: boolean }
+  | { type: 'army.setEngineLoaded'; emplacementId: string; loaded: boolean }
   | { type: 'army.place'; piece: PieceRef; square: string }
   | { type: 'army.unplace'; piece: PieceRef }
   | { type: 'army.autoPlace'; piece: PieceRef }
@@ -110,6 +111,7 @@ export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
   'army.addEmplacement': 'setup',
   'army.removeEmplacement': 'setup',
   'army.setHauling': 'setup',
+  'army.setEngineLoaded': 'setup',
   'army.place': 'setup',
   'army.unplace': 'setup',
   'army.autoPlace': 'setup',

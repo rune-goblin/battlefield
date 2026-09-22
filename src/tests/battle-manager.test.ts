@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { UnitCard } from '../engine/index.js';
+import { engineLoaded, type UnitCard } from '../engine/index.js';
 import { createRuntime, type Runtime } from '../runtime/createRuntime.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession, type BattleSetupDraft } from '../runtime/session.js';
@@ -41,6 +41,23 @@ async function bothReady(runtime: Runtime) {
 }
 
 describe('the battle manager', () => {
+  it.each([undefined, true, false])('starts engines with their saved setup load of %s', async loaded => {
+    const session = { ...freshSession(), setup: draft() };
+    const repository = fakeRepository(session);
+    const runtime = createRuntime({ repository, archive: fakeArchive(), session });
+    if (loaded !== undefined) {
+      expect(await runtime.submit({ type: 'army.setEngineLoaded', emplacementId: 'eq-1', loaded })).toMatchObject({ ok: true });
+    }
+    const saved = (await repository.load())!;
+    expect(saved.setup.emplacements[0].loaded).toBe(loaded);
+    const resumed = createRuntime({ repository, archive: fakeArchive(), session: saved });
+    await bothReady(resumed);
+    expect(await resumed.submit({ type: 'battle.start' })).toMatchObject({ ok: true });
+    const engine = resumed.session.battle!.engines[0];
+    expect(engineLoaded(engine)).toBe(loaded !== false);
+    expect(engine.loaded).toBe(loaded === false ? 0 : 1);
+  });
+
   it('deploys the whole setup in one commit', async () => {
     const runtime = runtimeOn();
     await bothReady(runtime);
@@ -109,6 +126,7 @@ describe('the battle manager', () => {
     expect(result.ok).toBe(true);
     expect(runtime.session.setup.board).toBeNull();
     expect(runtime.session.setup.units).toHaveLength(6);
+    expect(runtime.session.setup.units.every(unit => unit.square === null)).toBe(true);
     expect(runtime.session.setup.emplacements).toEqual([]);
   });
 

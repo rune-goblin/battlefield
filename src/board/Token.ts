@@ -5,11 +5,10 @@ import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTextu
 import type { BoardTheme } from './theme.js';
 import { statusBars, STATUS_TRACK, STATUS_OUTLINE, type StatusBar } from './status-bars.js';
 import type { TokenReaction } from './vfx/Effect.js';
+import { drawSelection } from './selection.js';
 
-/** A ring is state, never chrome: the unit acting now, a free strike landing, or the piece a
- * placement stage has hold of. 'active' and 'selected' glow under the piece in its side's
- * colour — the flag's own; 'flash' is a stroke over the top, so a free strike still reads on
- * an already-lit piece. */
+/** Selection uses the shared neutral outline. Active turns glow in the army's colour;
+ * a free strike flashes over the piece. */
 export type TokenRing = 'active' | 'selected' | 'flash';
 
 /** Selection-stage emphasis, drawn as the piece's own scale: 'ready' breathes to say this
@@ -18,6 +17,8 @@ export type TokenRing = 'active' | 'selected' | 'flash';
 export type TokenPick = 'ready' | 'spent';
 
 export type DragVerdict = Extract<ActionIcon, 'attack' | 'no'>;
+
+export interface EngineLoading { total: number; completed: number; label: string }
 
 export interface UnitTokenModel {
   kind: 'unit';
@@ -32,6 +33,7 @@ export interface UnitTokenModel {
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
   engineId?: string;
+  loading?: EngineLoading;
   /** A drag's verdict on this piece, which the layer draws over its whole hex: the swords where
    * releasing attacks it, the cross where nothing can. The piece itself carries no aim icon. */
   verdict: DragVerdict | null;
@@ -51,6 +53,7 @@ export interface EngineTokenModel {
   name: string;
   cell: string;
   ring: TokenRing | null;
+  loading?: EngineLoading;
 }
 
 export type TokenModel = UnitTokenModel | EngineTokenModel;
@@ -185,6 +188,9 @@ export class Token extends PIXI.Container {
   private badge: PIXI.Text | null = null;
 
   private engineChip: PIXI.Sprite | null = null;
+  private readonly loadingPips = new PIXI.Graphics();
+  private loadingLabel: PIXI.Text | null = null;
+  private loadingKey = '';
   private chipPath: string | null = null;
   private chipGeneration = 0;
 
@@ -265,8 +271,7 @@ export class Token extends PIXI.Container {
     this.size = size;
     this.desaturated = wounds >= MAX_WOUNDS || routed;
     this.applyFilters();
-    // An engine's flag is hidden and it takes no ring or rout arrow, so one that is nobody's
-    // needs no colour of its own.
+    // Units use their army's colour. Engines hide the flag and share the neutral selection.
     const side = model.side ?? 'attacker';
     this.updateFlag(side, size, theme, routed);
     // An engine standing alone is nobody's: the unit that works it is what shows a side.
@@ -286,6 +291,7 @@ export class Token extends PIXI.Container {
     }
 
     this.setPick(model.kind === 'unit' ? model.pick : null);
+    this.drawLoading(model, size, theme);
     this.drawRoutArrow(routed, side, size, theme);
     this.drawRing(model.ring, side, size, theme);
 
@@ -296,6 +302,8 @@ export class Token extends PIXI.Container {
     if (this.flag) this.addChild(this.flag);
     if (this.badge) this.addChild(this.badge);
     this.addChild(this.statusColumn);
+    this.addChild(this.loadingPips);
+    if (this.loadingLabel) this.addChild(this.loadingLabel);
     this.addChild(this.routArrow);
     if (model.ring === 'flash') this.addChild(this.ring);
     else this.addChildAt(this.ring, 0);
@@ -360,7 +368,7 @@ export class Token extends PIXI.Container {
     }
     if (this.statuses.some((held) => held.intro !== null)) this.layoutStatuses(this.size);
     if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
-    else if (this.ringKind) this.breathe();
+    else if (this.ringKind === 'active') this.breathe();
     if (this.pick === 'ready') this.breathePick();
     if (this.reaction) this.animateReaction();
     this.followShadow();
@@ -580,6 +588,42 @@ export class Token extends PIXI.Container {
     }
   }
 
+  private drawLoading(model: TokenModel, size: number, theme: BoardTheme): void {
+    const load = model.loading;
+    const key = JSON.stringify([load, model.kind, size, theme.ink, theme.rule, theme.token.badgeFill]);
+    if (key === this.loadingKey) return;
+    this.loadingKey = key;
+    this.loadingPips.clear();
+    if (this.loadingLabel) this.loadingLabel.visible = false;
+    if (!load) return;
+    const y = size * (model.kind === 'unit' ? -0.53 : 0.43);
+    if (load.completed < load.total) {
+      const columns = Math.min(8, load.total), pitch = size * 0.095, pip = size * 0.065;
+      const width = columns * pitch + size * 0.04;
+      const height = Math.ceil(load.total / columns) * pitch + size * 0.04;
+      this.loadingPips.lineStyle(1, theme.rule).beginFill(theme.token.badgeFill, .95)
+        .drawRoundedRect(-width / 2, y - height / 2, width, height, size * .03).endFill();
+      for (let i = 0; i < load.total; i++) {
+        this.loadingPips.lineStyle(1, theme.rule).beginFill(i < load.completed ? 0xd4aa52 : 0x403b32)
+          .drawRoundedRect((i % columns - columns / 2) * pitch + (pitch - pip) / 2,
+            y - height / 2 + size * .02 + Math.floor(i / columns) * pitch + (pitch - pip) / 2,
+            pip, pip, size * .01).endFill();
+      }
+      return;
+    }
+    if (!this.loadingLabel) {
+      this.loadingLabel = new PIXI.Text();
+      this.loadingLabel.anchor.set(.5);
+    }
+    this.loadingLabel.visible = true;
+    this.loadingLabel.text = load.label.replace(' · ', '\n');
+    this.loadingLabel.style = new PIXI.TextStyle({ fontFamily: 'Georgia', fontSize: size * .105, fill: theme.ink, align: 'center' });
+    this.loadingLabel.position.set(0, y);
+    const width = this.loadingLabel.width + size * .08, height = this.loadingLabel.height + size * .04;
+    this.loadingPips.lineStyle(1, theme.rule).beginFill(theme.token.badgeFill, .95)
+      .drawRoundedRect(-width / 2, y - height / 2, width, height, size * .03).endFill();
+  }
+
   private drawStatusBar(bar: StatusBar, x: number, y: number, width: number, height: number): void {
     const innerWidth = width - 2;
     this.decor.lineStyle(0).beginFill(STATUS_TRACK).drawRect(x, y, width, height).endFill();
@@ -784,8 +828,14 @@ export class Token extends PIXI.Container {
     this.ring.visible = !!kind;
     this.ring.scale.set(1);
     if (!kind) { this.pulseStart = 0; return; }
-    this.pulseStart ||= performance.now();
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2 + size * RING_GAP;
+    if (kind === 'selected') {
+      this.pulseStart = 0;
+      this.ring.alpha = 1;
+      drawSelection(this.ring, outline => { outline.drawCircle(0, 0, r); });
+      return;
+    }
+    this.pulseStart ||= performance.now();
     if (kind === 'flash') {
       this.ring.lineStyle(size * 0.07, theme.token.ringFlash, 1).drawCircle(0, 0, r);
       this.ring.alpha = this.flashAlpha();
@@ -796,8 +846,7 @@ export class Token extends PIXI.Container {
     this.breathe();
   }
 
-  /** The glow swells and brightens together, so the piece in hand reads as breathing rather
-   * than blinking. */
+  /** The active unit's glow swells and brightens together. Selection stays still. */
   private breathe(): void {
     const t = ((performance.now() - this.pulseStart) % PULSE_PERIOD_MS) / PULSE_PERIOD_MS;
     const phase = Math.sin(t * Math.PI * 2);

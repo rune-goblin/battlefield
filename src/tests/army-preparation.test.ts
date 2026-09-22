@@ -36,6 +36,49 @@ function runtimeOn(session = setupSession()) {
 }
 
 describe('army preparation', () => {
+  it('defaults engines to loaded and keeps an edited load through placement', async () => {
+    const runtime = runtimeOn();
+    await runtime.submit({ type: 'army.addEmplacement', side: 'attacker', engine: 'Catapult' });
+    const engine = runtime.session.setup.emplacements[0];
+    expect(engine.loaded).toBe(true);
+    expect(await runtime.submit({ type: 'army.setEngineLoaded', emplacementId: engine.id, loaded: false })).toMatchObject({ ok: true });
+    await runtime.submit({ type: 'army.autoPlace', piece: { kind: 'engine', id: engine.id } });
+    expect(runtime.session.setup.emplacements[0]).toMatchObject({ id: engine.id, loaded: false });
+    expect(runtime.session.setup.emplacements[0].square).not.toBeNull();
+    expect(await runtime.submit({ type: 'army.setEngineLoaded', emplacementId: engine.id, loaded: true })).toMatchObject({ ok: true });
+    expect(runtime.session.setup.emplacements[0].loaded).toBe(true);
+  });
+
+  it('rejects a load setting for missing engines and equipment that needs no reload', async () => {
+    const runtime = runtimeOn();
+    expect(await runtime.submit({ type: 'army.setEngineLoaded', emplacementId: 'missing', loaded: false })).toMatchObject({ ok: false });
+    await runtime.submit({ type: 'army.addEmplacement', side: 'attacker', engine: 'Bolt Emitter' });
+    const engine = runtime.session.setup.emplacements[0];
+    expect(await runtime.submit({ type: 'army.setEngineLoaded', emplacementId: engine.id, loaded: false })).toMatchObject({ ok: false });
+    expect(runtime.session.setup.emplacements[0].loaded).toBe(true);
+  });
+
+  it('keeps the example troops in reserve through map and siege preparation', async () => {
+    const runtime = runtimeOn(freshSession());
+    expect(runtime.session.setup.units).toHaveLength(6);
+    expect(runtime.session.setup.units.every(unit => unit.square === null)).toBe(true);
+
+    expect(await runtime.submit({ type: 'setup.generate' })).toMatchObject({ ok: true });
+    expect(await runtime.submit({ type: 'army.addEmplacement', side: 'attacker', engine: 'Catapult' })).toMatchObject({ ok: true });
+    const engine = runtime.session.setup.emplacements[0];
+    expect(await runtime.submit({ type: 'army.autoPlace', piece: { kind: 'engine', id: engine.id } })).toMatchObject({ ok: true });
+    expect(runtime.session.setup.emplacements[0].square).not.toBeNull();
+    expect(runtime.session.setup.units.every(unit => unit.square === null)).toBe(true);
+    expect(sideReady(runtime.session.setup, 'attacker')).toBe(false);
+    expect(sideReady(runtime.session.setup, 'defender')).toBe(false);
+
+    for (const unit of runtime.session.setup.units.filter(unit => unit.side === 'defender')) {
+      expect(await runtime.submit({ type: 'army.autoPlace', piece: { kind: 'unit', id: unit.id } })).toMatchObject({ ok: true });
+    }
+    expect(sideReady(runtime.session.setup, 'defender')).toBe(true);
+    expect(runtime.session.setup.units.filter(unit => unit.side === 'attacker').every(unit => unit.square === null)).toBe(true);
+  });
+
   it('moves one unit to the other army, keeping its ID and lifting it off the board', async () => {
     const runtime = runtimeOn();
 

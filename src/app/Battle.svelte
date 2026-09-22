@@ -5,11 +5,12 @@
   import { notation } from '../engine/index.js';
   import BattleLog from './BattleLog.svelte';
   import BattleReport from './BattleReport.svelte';
+  import BattleOutcome from './BattleOutcome.svelte';
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
   import ArmyReel from './ArmyReel.svelte';
   import BattleAnnouncement from './BattleAnnouncement.svelte';
-  import { deselectUnit, endActivation, game, presentation, selectUnit, tableUsers, takeAction, undo } from './game.svelte.js';
+  import { deselectUnit, endActivation, game, gmUserId, presentation, selectUnit, tableUsers, takeAction, undo } from './game.svelte.js';
   import { gameMap } from './map-style.svelte.js';
   import { useNotifications } from './notification-context.js';
   import EndBattleDialog from './EndBattleDialog.svelte';
@@ -17,6 +18,7 @@
   import { createBattleController } from './battle/battle-controller.svelte.js';
   import BattleOrders from './battle/BattleOrders.svelte';
   import BattlePins from './battle/BattlePins.svelte';
+  import { battleOutcome, createBattleEnding, type EndingPhase } from './battle/battle-ending.js';
 
   const c = createBattleController({
     game, viewer, gameMap, presentation, takeAction, selectUnit, deselectUnit, endActivation, undo, tableUsers, offTurnNote,
@@ -27,17 +29,27 @@
   onMount(c.connect);
   onDestroy(c.close);
 
+  let endingPhase = $state<EndingPhase>('playing');
+  const ending = createBattleEnding(() => stage.board?.remainingMs() ?? 0, phase => { endingPhase = phase; });
+  const outcome = $derived(battleOutcome(c.b, game.control, gmUserId(), viewer.userId));
+  $effect(() => { ending.update(`${game.battleId}:${c.b.day}`, c.b.phase === 'ended'); });
+  onDestroy(ending.dispose);
+
   presentStage({
     leftTitle: 'Orders', leftWidth: 24, rightTitle: 'Battle log', rightWidth: 21,
     get top() { return top; }, get float() { return float; }, get pin() { return pin; }, get left() { return left; }, get right() { return right; },
-    get modal() { return c.b.phase === 'ended' ? result : undefined; },
+    get modal() { return c.b.phase === 'ended' && (endingPhase === 'announcement' || endingPhase === 'report') ? result : undefined; },
     get aiming() { return c.aiming; },
     get board() { return c.board; },
   });
 </script>
 
 {#snippet result()}
-  <BattleReport />
+  {#if endingPhase === 'announcement' || endingPhase === 'report'}
+    <BattleOutcome {outcome} phase={endingPhase} onfinish={ending.announcementFinished}>
+      <BattleReport backdrop={false} />
+    </BattleOutcome>
+  {/if}
 {/snippet}
 
 <svelte:window onkeydown={c.onKey} onpointerdown={c.onWindowPointerDown} onclick={c.onWindowClick} />

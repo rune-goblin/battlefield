@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { isRouted, levelDc, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadCost, engineLoaded } from '../../engine/index.js';
+  import { isRouted, levelDc, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading } from '../../engine/index.js';
+  import { offerReason } from './action-menu.js';
   import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl } from '../../board/index.js';
+  import ActivityChoices from './ActivityChoices.svelte';
+  import TargetChoices from './TargetChoices.svelte';
   import ActionCost from '../ActionCost.svelte';
+  import ActionBudget from '../ActionBudget.svelte';
   import HealingChoices from '../HealingChoices.svelte';
   import CommitmentPicker from '../CommitmentPicker.svelte';
   import BoardPopup from '../BoardPopup.svelte';
@@ -19,7 +23,7 @@
   <div class="popup-head">
     <span>{label}</span>
     <span class="popup-actions" title="Actions left this activation">
-      {#if c.actionsLeft > 0}<ActionCost n={c.actionsLeft} size="1.05em" />{:else}<span class="muted">no actions left</span>{/if}
+      <ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size="1.25rem" />
     </span>
   </div>
 {/snippet}
@@ -30,21 +34,12 @@
       <img src={tree ? castIconUrl(tree) : actionIconUrl(treatment)} alt="" />
     </span>
     <span class="picker-heading-text"><span class="picker-kicker">{treatment === 'cast' ? 'Cast' : treatment === 'rally' ? 'Command' : 'Ranged attack'}</span><strong>{label}</strong></span>
-    <span class="picker-budget" title="Actions left this activation"><ActionCost n={c.actionsLeft} size="1em" /></span>
+    <span class="picker-budget" title="Actions left this activation"><ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size="1.25rem" /></span>
   </div>
 {/snippet}
 
-{#snippet activityRows(options: ActivityOption[], selected: ActivityIndex | null, chooseActivity: (index: ActivityIndex) => void, treatment: 'plain' | 'cast' | 'rally' | 'shoot' = 'plain')}
-  {#each options as opt (opt.activity)}
-    <button class="popup-row activity-row" class:cast-row={treatment === 'cast'} class:rally-row={treatment === 'rally'} class:shoot-row={treatment === 'shoot'} class:on={opt.index === selected} class:dim={!opt.legal} disabled={!opt.legal} onclick={() => chooseActivity(opt.index)}>
-      <span class="popup-verb">
-        <span class="row-cost" class:over={(opt.cost ?? 0) > (c.active?.actions ?? 0)}><ActionCost n={opt.cost ?? Math.min(opt.index, 3)} size="1.15em" /></span>
-        {opt.label}
-        {#if !opt.legal && opt.reason}<span class="reason">{opt.reason}</span>{/if}
-      </span>
-      <span class="muted">{opt.detail}</span>
-    </button>
-  {/each}
+{#snippet activityRows(options: ActivityOption[], selected: ActivityIndex | null, chooseActivity: (index: ActivityIndex) => void)}
+  <ActivityChoices {options} {selected} choose={chooseActivity} />
 {/snippet}
 
 {#snippet popupFoot(confirm: () => void, label = 'Confirm')}
@@ -84,6 +79,7 @@
 {/if}
 {#if c.siegeOpen && c.active && c.siegeEngine}
   <BoardPopup cell={notation(c.active.square)} close={c.cancelAction}>
+    {@render popupHead(`${c.actionsLeft} ${c.actionsLeft === 1 ? 'action' : 'actions'} left`)}
     <div class="siege-heading">
       <img src={engineArtUrl(c.siegeEngine.name) ?? actionIconUrl('shoot')} alt="" />
       <div><strong>{c.siegeEngine.name}</strong><div class="muted">{c.siegeEngine.hauling ? 'Hauling' : engineSpeed(c.siegeEngine) === 0 ? 'Fixed emplacement' : 'In this hex'}</div></div>
@@ -97,17 +93,18 @@
     {/if}
     <p class="popup-escapes" aria-live="polite">
       {#if engineKind(c.siegeEngine) === 'ram'}Ram · attacks adjacent walls
-      {:else}{engineLoadSteps(c.siegeEngine) === 0 ? 'No reload needed' : engineLoaded(c.siegeEngine) ? 'Loaded' : 'Unloaded'} · {c.siegeEngine.fired ? 'Fired this round' : 'Ready to fire this round'}{/if}
+      {:else}{engineLoading(c.siegeEngine).label}{/if}
       {#if engineSpeed(c.siegeEngine) !== 0} · {Math.min(c.active.speed, engineSpeed(c.siegeEngine) ?? c.active.speed)} ft per Move while hauling{/if}
     </p>
     {#if engineLoadSteps(c.siegeEngine) > 0}
       {@const reason = siegeReason(c.b, c.active, c.siegeEngine, 'load')}
+      {@const remaining = engineLoadSteps(c.siegeEngine) - engineLoadProgress(c.siegeEngine)}
       <button class="popup-row" disabled={c.siegeBusy || !!reason} title={reason ?? 'Reload the engine'} onclick={() => c.operateSiege('load')}>
-        <span class="popup-verb">Load <ActionCost n={engineLoadCost(c.siegeEngine)} /></span>
-        <span class="muted">{reason ?? 'Ready the next shot'}</span>
+        <span class="popup-verb">Load <ActionCost n={1} /></span>
+        <span class="muted">{reason ?? `${remaining} loading ${remaining === 1 ? 'action' : 'actions'} left`}</span>
       </button>
     {/if}
-    {@const attackReason = siegeReason(c.b, c.active, c.siegeEngine, 'attack') ?? (c.siegeOffer?.activities.some(a => a.legal) ? null : 'No targets in range.')}
+    {@const attackReason = siegeReason(c.b, c.active, c.siegeEngine, 'attack') ?? (c.siegeOffer ? offerReason(c.siegeOffer) : 'No target in range')}
     <button class="popup-row" disabled={c.siegeBusy || !!attackReason} title={attackReason ?? 'Choose an attack and target'} onclick={() => c.operateSiege('attack')}>
       <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (engineKind(c.siegeEngine) === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
     </button>
@@ -115,7 +112,7 @@
       <button class="popup-row" disabled={c.siegeBusy} onclick={() => c.operateSiege('release')}>
         <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {c.active.speed} ft per Move</span>
       </button>
-    {:else if engineSpeed(c.siegeEngine) !== 0}
+    {:else}
       {@const reason = siegeReason(c.b, c.active, c.siegeEngine, 'haul')}
       <button class="popup-row" disabled={c.siegeBusy || !!reason} title={reason ?? 'Attach the engine, then move your unit'} onclick={() => c.operateSiege('haul')}>
         <span class="popup-verb">Haul siege engine <ActionCost n={1} /></span><span class="muted">{reason ?? 'Attach the engine, then move your unit'}</span>
@@ -126,33 +123,27 @@
 {#if c.activityPick && c.pickerOffer && c.active}
   <BoardPopup cell={notation(c.active.square)} close={c.cancelAction} appearance={c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
     {@render pickerHead(c.pickerOffer.label, c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally', c.pickerOffer.spell)}
-    {@render activityRows(c.pickerOffer.activities, c.pickerActivity?.index ?? null, c.choosePickerActivity, c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally')}
+    {@render activityRows(c.pickerOffer.activities, c.pickerActivity?.index ?? null, c.choosePickerActivity)}
     {#if c.pickerActivity}
       {#if canFocus(c.pickerOffer.type, c.pickerOffer.spell) && (c.pickerOffer.type !== 'cast' || (c.pickerActivity.cost ?? 3) < 3)}
         <CommitmentPicker base={c.pickerActivity.cost ?? c.pickerActivity.index} available={c.pickerOffer.type === 'cast' ? Math.min(3, c.actionsLeft) : c.actionsLeft} bind:value={c.focus} effect={c.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
       <p class="popup-escapes" aria-live="polite">
-        {#if !c.pickerActivity.needsTarget}Choose your commitment, then confirm.
+        {#if !c.pickerActivity.needsTarget}Ready to confirm.
         {:else if c.pickerService?.placement}{c.activityPick.selected.length % 2 ? 'Choose a destination hex.' : c.activityPick.selected.length === 2 && c.pickerActivity.index === 4 ? 'Confirm one transfer, or choose a second unit and its destination.' : 'Choose a unit to transfer.'}
         {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index === 4}Choose yourself or one adjacent ally.
         {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index > 1}Choose up to {c.pickerActivity.index === 4 ? 1 : c.pickerActivity.index} units on the board. {c.activityPick.selected.length} selected.
-        {:else}Choose a target icon on the board to {c.pickerActivity.label.toLowerCase()}.{/if}
+        {:else}Choose a target on the board.{/if}
       </p>
       {#if c.pickerActivity.needsTarget}
-      <div class="activity-targets" aria-label="{c.pickerOffer.label} targets">
-        {#each c.pickerCandidates.slice(0, 100) as target (target.id)}
-          <button class="popup-row" class:on={c.activityPick.target === target.id} aria-pressed={c.activityPick.target === target.id} onpointerenter={() => c.hoverTargetMarker(target.id)} onpointerleave={() => c.hoverTargetMarker(null)}
-            onfocus={() => c.hoverTargetMarker(target.id)} onblur={() => c.hoverTargetMarker(null)} onclick={() => c.choosePickerTarget(target.id)}>
-            <span class="popup-verb">{target.label}</span>
-            <span class="muted">{c.targetCells(target).join(' + ')}</span>
-          </button>
-        {/each}
-      </div>
+      {#key `${c.pickerOffer.spell}:${c.pickerActivity.index}`}
+        <TargetChoices targets={c.pickerCandidates} selected={c.activityPick.target ?? null}
+          choose={c.choosePickerTarget} hover={c.hoverTargetMarker} cells={c.targetCells} label={`${c.pickerOffer.label} targets`} />
+      {/key}
       {/if}
       {#if c.pickerOffer.spell === 'healing' && c.activityPick.target}
         <HealingChoices units={c.b.units.filter(u => c.activityPick?.target?.split('+').includes(u.id))} renewal={c.pickerActivity.index === 4} bind:choices={c.healingChoices} />
       {/if}
-      {#if c.pickerCandidates.length > 100}<p class="muted">Choose units and destinations on the board to narrow the list.</p>{/if}
       {#if c.activityPick.selected.length}<button onclick={c.resetPickerTargets}>Reset targets</button>{/if}
     {:else}
       <p class="popup-escapes">Choose an activity.</p>
@@ -167,41 +158,26 @@
 {#if c.blastOpen && c.blastOffer && c.active}
   <BoardPopup cell={notation(c.active.square)} close={c.cancelAction} appearance="cast">
     {@render pickerHead('Blast', 'cast', 'blast')}
-    <div class="blast-levels">
-      {#each c.blastOffer.activities as opt (opt.index)}
-        <button class="popup-row activity-row cast-row" class:on={c.blastLevel === opt.index} class:dim={!opt.legal} disabled={!opt.legal} aria-pressed={c.blastLevel === opt.index} onclick={() => c.chooseBlastLevel(opt.index)}>
-          <span class="popup-verb"><span class="row-cost"><ActionCost n={opt.cost ?? Math.min(opt.index, 3)} /></span>{opt.label}</span>
-          <span class="muted">{opt.reason ?? opt.detail}</span>
-        </button>
-      {/each}
-    </div>
+    {@render activityRows(c.blastOffer.activities, c.blastLevel, c.chooseBlastLevel)}
     {#if c.blastActivity}
       {#if (c.blastActivity.cost ?? 3) < 3}<CommitmentPicker base={c.blastActivity.cost ?? c.blastActivity.index} available={Math.min(3, c.actionsLeft)} bind:value={c.focus} effect="on the spell attack" />{/if}
       <p class="popup-escapes" aria-live="polite">
         {#if c.blastLevel === 1}Choose an enemy hex.
-        {:else if c.blastLevel === 2}Choose a Blast icon on an edge for the two hexes in a line.
-        {:else if c.blastLevel === 3}Choose a Blast icon at a corner for the three hexes that meet there.
-        {:else}Choose a connected area of up to four hexes from the target list. Each option shows the enemies it affects.{/if}
+        {:else if c.blastLevel === 2}Choose a two-hex line on the board.
+        {:else if c.blastLevel === 3}Choose a three-hex corner on the board.
+        {:else}Choose an area on the board or from the list.{/if}
       </p>
-      <div class="blast-targets" aria-label="Blast targets">
-        {#each c.blastCandidates as target (target.id)}
-          <button class="popup-row" class:on={c.blastTarget === target.id} aria-pressed={c.blastTarget === target.id}
-            onpointerenter={() => c.hoverTargetMarker(target.id)} onpointerleave={() => c.hoverTargetMarker(null)}
-            onfocus={() => c.hoverTargetMarker(target.id)} onblur={() => c.hoverTargetMarker(null)}
-            onclick={() => c.chooseBlastTarget(target.id)}>
-            <span class="popup-verb">{c.targetCells(target).join(' + ')}</span>
-            <span class="muted">{target.label}</span>
-          </button>
-        {/each}
-      </div>
+      {#key c.blastLevel}
+        <TargetChoices targets={c.blastCandidates} selected={c.blastTarget} choose={c.chooseBlastTarget}
+          hover={c.hoverTargetMarker} cells={c.targetCells} label="Blast targets" />
+      {/key}
       {#if c.blastCell}<button onclick={c.showAllBlastTargets}>Show all targets</button>{/if}
-      {#if c.blastPreview}<p class="popup-escapes" aria-live="polite">Affected hexes: {c.targetCells(c.blastPreview).join(', ')}. Enemies: {c.blastPreview.label}.</p>{/if}
       <div class="popup-foot">
         <button onclick={c.cancelAction}>Cancel</button>
         <button class="primary" disabled={!c.blastActivity.legal || !c.blastSelection} onclick={c.confirmBlast}>Cast {c.blastActivity.label} · {(c.blastActivity.cost ?? 0) + c.focus} action{(c.blastActivity.cost ?? 0) + c.focus === 1 ? '' : 's'}</button>
       </div>
     {:else}
-      <p class="popup-escapes">Choose a blast level, then designate its target.</p>
+      <p class="popup-escapes">Choose a spell.</p>
     {/if}
   </BoardPopup>
 {/if}
@@ -318,7 +294,8 @@
     {#if c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally'}
       {@render pickerHead(c.aim.label, c.aimGroup.offer.type, c.aimGroup.offer.spell)}
     {:else}{@render popupHead(c.aim.label)}{/if}
-    <div class="verb-row" class:solo={c.aim.groups.length === 1}>
+    {#if c.aim.groups.length > 1}
+    <div class="verb-row">
       {#each c.aim.groups as g, gi (c.offerKey(g.offer))}
         {@const icon = targetingIcon(g.offer)}
         <button class="verb-tile" class:on={gi === c.aim.group} onclick={() => c.aimVerb(gi)}>
@@ -327,7 +304,8 @@
         </button>
         {/each}
     </div>
-    {@render activityRows(c.aimActivities, c.aimed?.index ?? null, (index) => c.aimChoose(c.aimActivities.findIndex((opt) => opt.index === index)), c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally' ? c.aimGroup.offer.type : 'plain')}
+    {/if}
+    {@render activityRows(c.aimActivities, c.aimed?.index ?? null, (index) => c.aimChoose(c.aimActivities.findIndex((opt) => opt.index === index)))}
     {#if c.aimed?.legal}
       {#if canFocus(c.aimGroup.offer.type, c.aimGroup.offer.spell) && c.aimGroup.offer.spell !== 'blast'}
         <CommitmentPicker base={c.aimed.cost ?? c.aimed.index} available={c.aimGroup.offer.type === 'cast' ? Math.min(3, c.actionsLeft) : c.actionsLeft} bind:value={c.focus} effect={c.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
@@ -341,11 +319,7 @@
   .siege-heading { display: flex; align-items: center; gap: .6rem; padding: .4rem 1.5rem .4rem .3rem; }
   .siege-heading img { width: 64px; height: 64px; object-fit: contain; }
   .siege-selector { display: flex; flex-wrap: wrap; gap: .3rem; }
-  .blast-targets, .activity-targets { max-height: 10rem; overflow-y: auto; }
   .verb-row { display: flex; gap: .3rem; padding: .1rem .3rem .35rem; border-bottom: 1px solid var(--rule); margin-bottom: .3rem; }
-  /* One verb is a heading, not a choice — the activities below no longer name it themselves. */
-  .verb-row.solo .verb-tile { flex-direction: row; justify-content: center; gap: .45rem; cursor: default; }
-  .verb-row.solo .verb-tile img { width: 2rem; height: 1.6rem; }
   .verb-tile {
     display: flex; flex-direction: column; align-items: center; gap: .1rem;
     flex: 1; padding: .2rem; border: 1px solid transparent; border-radius: 8px;
@@ -373,20 +347,16 @@
   }
   .popup-row:hover:not(:disabled) { background: var(--band); }
   .popup-row.on { border-color: var(--accent); background: var(--band); }
-  .popup-row.dim { opacity: .5; cursor: default; }
   .popup-verb { display: flex; align-items: center; gap: .45rem; font-weight: 600; }
   /* The price sits first on an activity row, in the accent, so the verb reads as ◆ ◆◆ ◆◆◆ down
      the left edge before any word is read. */
   .row-cost { display: inline-flex; align-items: center; min-width: 2.4rem; color: var(--accent); }
-  .row-cost.over { color: var(--muted); }
-  .activity-row .popup-verb { gap: .3rem; }
-  .reason { margin-left: auto; font-size: .7rem; font-weight: 400; color: var(--muted); }
-  .picker-heading { display: flex; align-items: center; gap: .65rem; padding: .65rem .7rem .8rem; margin-bottom: .35rem; border-bottom: 1px solid var(--rule); }
+  .picker-heading { display: flex; align-items: center; gap: .65rem; padding: .35rem .7rem .5rem; margin-bottom: .35rem; border-bottom: 1px solid var(--rule); }
   .picker-emblem { position: relative; flex: 0 0 3rem; height: 3rem; display: grid; place-items: center; }
   .picker-emblem img { width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 2px 3px #0004); }
   .picker-heading-text { display: flex; flex-direction: column; min-width: 0; }
   .picker-heading-text strong { font-size: 1.15rem; line-height: 1.2; }
-  .picker-kicker { color: var(--accent); text-transform: uppercase; font-size: .59rem; letter-spacing: .18em; font-weight: 700; margin-bottom: .25rem; }
+  .picker-kicker { color: var(--accent); font-size: .72rem; font-weight: 700; margin-bottom: .25rem; }
   .picker-budget { margin-left: auto; align-self: end; color: var(--accent); flex-shrink: 0; }
   .cast-heading { border-bottom-color: color-mix(in srgb, var(--accent) 40%, transparent); }
   .cast-heading .picker-emblem { border: 1px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent); }
@@ -395,19 +365,6 @@
   .rally-heading .picker-emblem { background: color-mix(in srgb, var(--accent) 15%, transparent); height: 3.5rem; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); padding-bottom: .5rem; }
   .shoot-heading { padding-block: .3rem .6rem; }
   .shoot-heading .picker-emblem { border: 1px solid var(--accent); background: linear-gradient(90deg, transparent 49%, color-mix(in srgb, var(--accent) 25%, transparent) 49% 51%, transparent 51%), linear-gradient(transparent 49%, color-mix(in srgb, var(--accent) 25%, transparent) 49% 51%, transparent 51%); }
-  .activity-row.cast-row, .activity-row.rally-row { position: relative; padding: .65rem .55rem .65rem 3.5rem; margin-bottom: .35rem; min-height: 3.4rem; }
-  .activity-row.cast-row { border: 1px solid color-mix(in srgb, var(--accent) 23%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--accent) 4%, transparent); }
-  .cast-row .row-cost, .rally-row .row-cost { position: absolute; left: .55rem; top: .65rem; min-width: 0; width: 2.35rem; height: 2.35rem; display: flex; align-items: center; justify-content: center; }
-  .cast-row .row-cost { border: 1px solid var(--accent); border-radius: 50%; background: color-mix(in srgb, var(--accent) 9%, var(--card)); box-shadow: inset 0 0 0 3px var(--card); }
-  .activity-row.rally-row { border-radius: 2px; border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-bottom: 1px solid var(--rule); }
-  .rally-row .row-cost { height: 2.7rem; padding-bottom: .35rem; color: var(--card); background: var(--accent); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 83%, 0 100%); }
-  .cast-row .popup-verb, .rally-row .popup-verb { flex-wrap: wrap; row-gap: .1rem; }
-  .cast-row .reason, .rally-row .reason { margin-left: 0; width: 100%; }
-  .activity-row.cast-row.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
-  .activity-row.rally-row.on { border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
-  .activity-row.shoot-row { border-radius: 2px; border-bottom: 1px solid var(--rule); }
-  .shoot-row .row-cost { border-right: 1px solid var(--rule); margin-right: .3rem; }
-  .activity-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .activity-chips { display: flex; gap: .3rem; padding: .1rem .5rem .3rem 1rem; }
   .activity-chip {
     display: flex; gap: .3rem; align-items: center;

@@ -35,6 +35,12 @@ interface BoardView {
 
 Differences from the plan's sketch, and why:
 
+- **Selection has one shared treatment.** Set a unit or engine token's `ring` to `'selected'`
+  for a steady ivory outline with a dark edge. DOM objects use `data-selected="true"` within
+  the app root. Both use the palette in `src/board/selection.ts`; custom canvas shapes call
+  its `drawSelection` helper with their outline. The `'active'` ring and acting-cell wash
+  retain their army colour to indicate whose turn it is.
+
 - **`setSelected` takes a cell and a side, not a token id.** It predates `TokenLayer` (Wave 2);
   by the time tokens existed (Wave 4) the selection ring had moved onto the token itself
   (`Token`'s `ring` field), so nothing needed `setSelected` to mean "token" instead. It marks

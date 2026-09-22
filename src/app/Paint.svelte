@@ -73,6 +73,9 @@
     <button onclick={() => void run(generate())}>Regenerate</button>
   </div>
   <ConnectionWarning board={game.setup.board} />
+  <p class="muted">Choose a brush, then paint the board.</p>
+  <details>
+    <summary>Terrain rules and shortcuts</summary>
   <p class="muted">Higher ground attacks at +1 and shoots a hex further a level; lower ground attacks at −1. A hex as high as the higher unit blocks the shot across it, and height 2 adds mountain defence. Forest and settlement grant +1 ranged cover; rough ground stops a charge; swamp gives −1 Defence and Strike.</p>
   <p class="muted">A bridge replaces a water hex with a one-point crossing. Paint adjacent bridge or shallows hexes across a wider river until the banks connect. A bridge brush on a hex that already carries a bridge turns its deck to the next axis; the direction is decoration, and a unit crosses from any side.</p>
   <p class="muted">
@@ -81,9 +84,11 @@
     <kbd>X</kbd>, <kbd>Esc</kbd>. Wheel zooms, middle-drag or space-drag pans, double-click refits.
     Water sits at elevation 0; a difference of two levels between neighbours is a cliff.
   </p>
+  </details>
 {/snippet}
 
 <style>
+  summary { cursor: pointer; color: var(--muted); }
   .palette { margin: 0; }
   .palette button { font-size: .82rem; padding: .2rem .5rem; }
 </style>

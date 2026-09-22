@@ -6,7 +6,7 @@ import {
   wallBlocks, structuralDamage, fortification, type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
-import { CELL_FEET, pathTo, reachable, stepFeet, type ReachMap, type StepOpts } from './path.js';
+import { CELL_FEET, reachable, reachableVia, routedPath, stepFeet, type ReachMap, type Routed, type StepOpts } from './path.js';
 import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, type CheckResult, type Degree } from './check.js';
 import {
   VERBS, activityOf, treesFor, canFocus,
@@ -40,6 +40,8 @@ export interface Emplacement {
   id?: string; card: SiegeEngineCard; side: Side; square: string;
   /** The unit deployed on this square starts the battle hauling it. */
   hauled?: boolean;
+  /** Initial load; defaults to loaded. Capture preserves the engine's current load. */
+  loaded?: boolean;
 }
 
 /** Who claims an emplacement at deployment: the unit on its square, else the first beside it. */
@@ -117,6 +119,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     engineSquares.add(e.square);
     const crew = units.find((u) => sameSquare(u.square, sq));
     const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), emplacementClaimant(setup.board, units, sq), sq, true);
+    if (e.loaded === false) engine.loaded = 0;
     if (e.hauled && crew && !isFixedEngine(e.card) && !crew.engines.some((x) => x.hauling)) {
       engine.emplaced = false;
       engine.hauling = true;
@@ -137,9 +140,12 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
   return state;
 }
 
-const engineState = (e: SiegeEngineCard, id: string, side: Side | null, square: Square, emplaced: boolean): EngineState =>
-  ({ id, name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced,
-    speed: e.speed, loadCost: e.loadCost, loadSteps: e.loadSteps, loaded: e.loadSteps ?? ENGINES.find(card => card.name === e.name)?.loadSteps ?? 1, hauling: false });
+const engineState = (e: SiegeEngineCard, id: string, side: Side | null, square: Square, emplaced: boolean): EngineState => {
+  const card = ENGINES.find(card => card.name === e.name);
+  const steps = (card?.loadSteps ?? e.loadSteps) === 0 ? 0 : card?.loadCost ?? e.loadCost ?? 1;
+  return { id, name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced,
+    speed: e.speed, loadCost: e.loadCost, loadSteps: steps, loaded: steps, hauling: false };
+};
 
 
 export const unit = (state: BattleState, id: string): Unit => {
@@ -308,12 +314,11 @@ export function reachOf(state: BattleState, u: Unit): number {
 }
 
 /**
- * The unit that works an emplaced engine: a standing friendly in or beside its square. Two
- * units may both be beside it, so the crew is the first in deployment order — one engine
- * fires once a round whoever stands there, and the choice never splits a shot in two.
+ * An occupant works an emplacement immediately, regardless of its previous owner. Without
+ * an occupant, the first adjacent friendly reserves it. The shot limit belongs to the engine.
  */
 export const crewOf = (state: BattleState, e: EngineState): Unit | null =>
-  state.units.find((u) => u.side === e.side && isStanding(u) && dist(state, u.square, e.square) === 0)
+  state.units.find((u) => isStanding(u) && dist(state, u.square, e.square) === 0)
   ?? state.units.find((u) => u.side === e.side && isStanding(u) && dist(state, u.square, e.square) === 1) ?? null;
 
 /** Every engine this unit may fire: the ones riding with it, plus any emplacement it crews. */
@@ -330,7 +335,14 @@ function refreshEmplacements(state: BattleState) {
     e.hauling = false;
     state.engines.push(e);
   }
-  for (const e of state.engines) e.status = crewOf(state, e) ? 'crewed' : 'abandoned';
+  for (const e of state.engines) {
+    const crew = crewOf(state, e);
+    if (crew && sameSquare(crew.square, e.square) && e.side !== crew.side) {
+      e.side = crew.side;
+      log(state, crew, `${crew.name} takes the ${e.name} on ${notation(e.square)}.`);
+    }
+    e.status = crew ? 'crewed' : 'abandoned';
+  }
 }
 
 /** Equipment uses its imported movement and loading profile, including older saves. */
@@ -340,15 +352,30 @@ export const engineSpeed = (e: EngineState): number | null =>
   e.name === 'Wolf Fang' ? 5 : e.speed !== undefined ? e.speed : engineCard(e)?.speed !== undefined ? engineCard(e)!.speed! : (engineKind(e) === 'ram' ? null : 0);
 export const isFixedEngine = (card: SiegeEngineCard): boolean =>
   engineSpeed({ name: card.name, kind: card.kind, speed: card.speed } as EngineState) === 0;
-export const engineLoadSteps = (e: EngineState): number => engineCard(e)?.loadSteps ?? e.loadSteps ?? 1;
 export const engineLoadCost = (e: EngineState): number => engineCard(e)?.loadCost ?? e.loadCost ?? 1;
-export const engineLoaded = (e: EngineState): boolean => engineLoadSteps(e) === 0 || (e.loaded ?? e.loadSteps ?? engineLoadSteps(e)) >= (e.loadSteps ?? engineLoadSteps(e));
+/** Each load action fills one pip. Old saves used a separate full-load step count. */
+export const engineLoadSteps = (e: EngineState): number =>
+  (engineCard(e)?.loadSteps ?? e.loadSteps) === 0 ? 0 : engineLoadCost(e);
+export const engineLoadProgress = (e: EngineState): number => {
+  const total = engineLoadSteps(e);
+  if (!total) return 0;
+  const previousTotal = e.loadSteps ?? engineCard(e)?.loadSteps ?? total;
+  return Math.max(0, Math.min(total, Math.floor((e.loaded ?? previousTotal) * total / Math.max(1, previousTotal))));
+};
+export const engineLoaded = (e: EngineState): boolean => engineLoadProgress(e) >= engineLoadSteps(e);
+export function engineLoading(e: EngineState): { total: number; completed: number; label: string } {
+  const total = engineLoadSteps(e), completed = engineLoadProgress(e);
+  return { total, completed, label: completed < total ? `${completed}/${total} loaded`
+    : e.fired ? 'Loaded · fired this round' : 'Ready to fire' };
+}
 export const movementSpeed = (u: Unit): number => Math.min(u.speed,
   ...u.engines.filter(e => e.hauling && e.status === 'crewed').map(e => engineSpeed(e) ?? u.speed));
 
 /** The siege menu belongs to equipment in the unit's hex. */
 export const siegeEngines = (state: BattleState, u: Unit): EngineState[] =>
-  enginesOf(state, u).filter(e => e.status === 'crewed' && dist(state, e.square, u.square) === 0);
+  !isStanding(u) ? [] : enginesOf(state, u).filter(e =>
+    // Existing saves can retain an abandoned flag after a unit entered the hex.
+    (e.status === 'crewed' || state.engines.includes(e)) && sameSquare(e.square, u.square));
 
 export function siegeReason(state: BattleState, u: Unit, e: EngineState, operation: SiegeAction['operation']): string | null {
   if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
@@ -357,7 +384,7 @@ export function siegeReason(state: BattleState, u: Unit, e: EngineState, operati
   if (operation === 'release') return e.hauling ? null : 'This unit is not hauling this engine.';
   if (u.actions < 1) return 'No actions remain.';
   if (operation === 'haul') {
-    if (engineSpeed(e) === 0) return 'This engine is fixed in place.';
+    if (engineSpeed(e) === 0) return 'This engine cannot be moved during the battle.';
     if (e.hauling) return 'This unit is already hauling this engine.';
     if (u.engines.some(x => x.hauling)) return 'Release the other siege engine first.';
     if (engagedEnemies(state, u).length || u.pinnedBy || u.rooted) return 'Break contact and movement restrictions before hauling.';
@@ -365,12 +392,10 @@ export function siegeReason(state: BattleState, u: Unit, e: EngineState, operati
   if (operation === 'load') {
     if (engineLoadSteps(e) === 0) return 'This engine needs no reload.';
     if (engineLoaded(e)) return 'This engine is loaded.';
-    if (engagedEnemies(state, u).length) return 'Break contact before loading.';
-    if (u.actions < engineLoadCost(e)) return `Load needs ${engineLoadCost(e)} actions.`;
   }
+  // The crew can operate its engine under attack. Contact restricts hauling, not loading or firing.
   if (operation === 'attack') {
     if (e.fired) return 'This engine has already attacked this round.';
-    if (engineKind(e) === 'artillery' && engagedEnemies(state, u).length) return 'Break contact before firing.';
     if (u.attacked) return 'This unit has already attacked this activation.';
     if (engineKind(e) === 'artillery' && !engineLoaded(e)) return 'Load this engine before attacking.';
   }
@@ -380,9 +405,11 @@ export function siegeReason(state: BattleState, u: Unit, e: EngineState, operati
 /** The source actor determines the activities, shapes, and effects. */
 export function siegeAttackOffer(state: BattleState, u: Unit, e: EngineState): ActionOffer | null {
   if (siegeReason(state, u, e, 'attack')) return null;
+  // Preview from the occupant's side even before an older save records its new ownership.
+  const operated = e.side === u.side ? e : { ...e, side: u.side };
   return { type: engineKind(e) === 'ram' ? 'fight' : 'shoot', spell: null, label: e.name, detail: 'One attack per engine per round. Area attacks affect allies.',
     activities: siegeModes(e.name, engineKind(e)).map((mode, i) => {
-      const targets = siegeTargets(state, e, mode);
+      const targets = siegeTargets(state, operated, mode);
       const reason = u.actions < mode.cost ? `Needs ${mode.cost} actions.` : !targets.length ? 'No targets in range.' : null;
       return { activity: `siege-${i + 1}`, index: (i + 1) as ActivityIndex, label: mode.label, detail: siegeDetail(mode), cost: mode.cost,
         legal: !reason, reason, needsTarget: true, targets };
@@ -473,16 +500,20 @@ function resolveSiege(state: BattleState, rng: Rng, u: Unit, e: EngineState, mod
 }
 
 function doSiege(state: BattleState, rng: Rng, u: Unit, action: SiegeAction): number {
+  // Reconcile occupied engines from older saves before firing or transferring one to haul.
+  refreshEmplacements(state);
   const e = siegeEngines(state, u).find(e => e.id === action.engine);
   if (!e) throw new Error('This siege engine is not available in the unit’s hex.');
   const reason = siegeReason(state, u, e, action.operation);
   if (reason) throw new Error(reason);
   switch (action.operation) {
-    case 'load':
+    case 'load': {
+      const progress = engineLoadProgress(e);
       e.loadSteps = engineLoadSteps(e);
-      e.loaded = e.loadSteps;
-      log(state, u, `${u.name} loads ${e.name}.`);
-      return engineLoadCost(e);
+      e.loaded = progress + 1;
+      log(state, u, `${u.name} loads ${e.name}: ${engineLoaded(e) ? 'loading complete' : `${e.loaded}/${e.loadSteps} actions`}.`);
+      return 1;
+    }
     case 'haul':
       state.engines = state.engines.filter(x => x.id !== e.id);
       if (!u.engines.some(x => x.id === e.id)) u.engines.push(e);
@@ -892,20 +923,25 @@ export const moveActionsFor = (u: Unit, feet: number) =>
 
 // Shared by moveReach and movePath: the one Stride ever asks the same question, "how far does
 // this budget carry, and through what". Where it may end is a separate question, asked after.
-const strideReach = (state: BattleState, u: Unit): ReachMap =>
-  reachable(state.board, u.square, { budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u) });
+const strideReach = (state: BattleState, u: Unit, via: readonly string[] = []): Routed | null =>
+  reachableVia(state.board, u.square, via, { budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u) });
 
-/** Every cell the unit can still Stride to, what it costs in feet, and in Move actions. */
-export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
+/** A unit in contact leaves by maneuvering; incapacitated units cannot Stride. */
+const canStride = (state: BattleState, u: Unit): boolean =>
+  movementSpeed(u) !== 0 && u.rooted <= 0 && !u.pinnedBy && u.actions > 0 && u.status === 'active'
+  && engagedEnemies(state, u).length === 0;
+
+/** Every cell the unit can still Stride to, through `via` in order, what it costs in feet, and in Move actions. */
+export function moveReach(state: BattleState, u: Unit, via: readonly string[] = []): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
-  if (movementSpeed(u) === 0 || u.rooted > 0 || u.pinnedBy || u.actions <= 0 || u.status !== 'active') return out;
-  // A unit in contact leaves by maneuvering, which is its own verb and its own price.
-  if (engagedEnemies(state, u).length) return out;
-  const reach = strideReach(state, u);
+  const routed = canStride(state, u) ? strideReach(state, u, via) : null;
+  if (!routed) return out;
   const home = notation(u.square);
-  for (const [key, entry] of reach) {
+  const spent = routed.route[routed.route.length - 1].feet;
+  for (const [key, entry] of routed.reach) {
     if (key === home || !canEndOn(u, state.board, parse(key))) continue;
-    out.set(key, { feet: entry.feet, actions: moveActionsFor(u, entry.feet) });
+    const feet = spent + entry.feet;
+    out.set(key, { feet, actions: moveActionsFor(u, feet) });
   }
   return out;
 }
@@ -915,13 +951,10 @@ export function moveReach(state: BattleState, u: Unit): Map<string, MoveReach> {
  * cheapest route that runs through a hex the unit may not stop on would otherwise break the
  * walk back; this asks `reachable` directly instead of the destinations that were filtered
  * from it. Empty when `to` is not itself a legal destination. */
-export function movePath(state: BattleState, u: Unit, to: string): PathStep[] {
-  if (!moveReach(state, u).has(to)) return [];
-  const reach = strideReach(state, u);
-  return pathTo(reach, to).map((cell) => {
-    const feet = reach.get(cell)!.feet;
-    return { cell, feet, actions: moveActionsFor(u, feet) };
-  });
+export function movePath(state: BattleState, u: Unit, to: string, via: readonly string[] = []): PathStep[] {
+  if (!canStride(state, u) || to === notation(u.square) || !canEndOn(u, state.board, parse(to))) return [];
+  const routed = strideReach(state, u, via);
+  return routed ? routedPath(routed, to).map(({ cell, feet }) => ({ cell, feet, actions: moveActionsFor(u, feet) })) : [];
 }
 
 /** Contact from a hex the unit has yet to reach: a charge's landing hex, a pursuer's. Reads the
@@ -958,75 +991,90 @@ function chargeBlocked(state: BattleState, u: Unit, target: Unit): Set<string> {
 }
 
 /** Section 7: a charge runs over ground the terrain table opens to it, and never climbs. */
-const chargeRun = (state: BattleState, u: Unit, blocked: ReadonlySet<string>): ReachMap =>
-  reachable(state.board, u.square, {
+const chargeRun = (state: BattleState, u: Unit, blocked: ReadonlySet<string>, via: readonly string[]): Routed | null =>
+  reachableVia(state.board, u.square, via, {
     budget: CHARGE_SPEEDS * movementSpeed(u), ...groundFor(u), evenGround: true, occupied: blocked, stopAt: controlCells(state, u),
   });
 
-/** Where the run ends: the nearest hex within reach that touches the target. */
-function approach(state: BattleState, u: Unit, e: Unit): ChargeOption | null {
+/** Where the run ends: the nearest hex past the last waypoint that touches the target. A last
+ * waypoint that already touches it is the landing. */
+function chargeApproach(state: BattleState, u: Unit, e: Unit, via: readonly string[] = []): { option: ChargeOption; path: string[] } | null {
   if (!canCharge(state, u)) return null;
-  const blocked = chargeBlocked(state, u, e);
-  const landings = [...chargeRun(state, u, blocked)]
+  const run = chargeRun(state, u, chargeBlocked(state, u, e), via);
+  if (!run) return null;
+  const spent = run.route[run.route.length - 1].feet;
+  const landings = [...run.reach]
     .filter(([cell]) => touching(state, parse(cell), e) && canEndOn(u, state.board, parse(cell)))
-    .map(([cell, entry]) => ({ cell, feet: entry.feet }))
+    .map(([cell, entry]) => ({ cell, feet: spent + entry.feet }))
     .sort((a, b) => a.feet - b.feet || a.cell.localeCompare(b.cell));
   const best = landings[0];
-  return best ? { unit: e.id, cell: best.cell, feet: best.feet, actions: CHARGE_ACTIONS } : null;
+  return best ? {
+    option: { unit: e.id, cell: best.cell, feet: best.feet, actions: CHARGE_ACTIONS },
+    path: routedPath(run, best.cell).map((step) => step.cell),
+  } : null;
 }
+
+const approach = (state: BattleState, u: Unit, e: Unit, via: readonly string[] = []): ChargeOption | null =>
+  chargeApproach(state, u, e, via)?.option ?? null;
 
 /** The route a charge takes to its landing hex, its own cell first. Not the ordinary Move's
  * route: this one is priced on one Speed that costs no action of its own, and turns aside from
  * every zone of control but the target's. */
-export function chargePath(state: BattleState, u: Unit, targetId: string): string[] {
+export function chargePath(state: BattleState, u: Unit, targetId: string, via: readonly string[] = []): string[] {
   const target = state.units.find((e) => e.id === targetId);
   if (!target) return [];
-  const option = approach(state, u, target);
-  return option ? pathTo(chargeRun(state, u, chargeBlocked(state, u, target)), option.cell) : [];
+  return chargeApproach(state, u, target, via)?.path ?? [];
 }
 
-/** Enemies this unit can both reach and afford the melee against. */
-export function chargeTargets(state: BattleState, u: Unit): ChargeOption[] {
+/** Enemies this unit can both reach, through `via` in order, and afford the melee against. */
+export function chargeTargets(state: BattleState, u: Unit, via: readonly string[] = []): ChargeOption[] {
   if (u.stats.strike === null || u.attacked) return [];
   const out: ChargeOption[] = [];
   for (const e of state.units.filter((x) => x.side !== u.side && x.status === 'active')) {
-    const option = approach(state, u, e);
+    const option = approach(state, u, e, via);
     if (option && option.actions + 1 <= u.actions) out.push(option);
   }
   return out;
 }
 
 /** Cheapest legal route for each choice. Ordinary movement reserves one action for melee;
- * Charge still gets exactly one Speed, and every leg respects first contact. */
-export function meleePlans(state: BattleState, u: Unit, targetId: string): MeleePlan[] {
+ * Charge still gets exactly one Speed, and every leg respects first contact. The waypoints bind
+ * the whole road in order: the move walks the first `split` of them and the charge runs the
+ * rest, so a waypoint beside the target picks the hex the charge lands on. */
+export function meleePlans(state: BattleState, u: Unit, targetId: string, waypoints: readonly string[] = []): MeleePlan[] {
   const found = state.units.find(e => e.id === targetId && e.status === 'active' && e.side !== u.side);
   if (!found || u.status !== 'active' || u.actions < 1 || u.attacked || u.stats.strike === null || isRouted(u)) return [];
   const target: Unit = found;
   const candidates: MeleePlan[] = [];
   const home = notation(u.square);
-  function consider(from: Unit, via: string | null, move: string[], feet: number, moveActions: number) {
+  function consider(from: Unit, via: string | null, move: string[], feet: number, moveActions: number, split: number) {
     const projected = { ...state, units: state.units.map(x => x.id === u.id ? from : x) };
-    if (touching(projected, from.square, target)) {
+    const run = waypoints.slice(split);
+    if (!run.length && touching(projected, from.square, target)) {
       candidates.push({ target: targetId, kind: 'fight', via, cell: notation(from.square), moveActions,
-        feet, bonus: 0, movePath: move, attackPath: [notation(from.square)] });
+        feet, bonus: 0, movePath: move, attackPath: [notation(from.square)], split });
     }
-    const charge = approach(projected, from, target);
-    if (charge) candidates.push({ target: targetId, kind: 'charge', via, cell: charge.cell, moveActions,
-      feet: feet + charge.feet, bonus: ACTION_BONUS, movePath: move,
-      attackPath: chargePath(projected, from, targetId) });
+    const charge = chargeApproach(projected, from, target, run);
+    if (charge) candidates.push({ target: targetId, kind: 'charge', via, cell: charge.option.cell, moveActions,
+      feet: feet + charge.option.feet, bonus: ACTION_BONUS, movePath: move, attackPath: charge.path, split });
   }
-  consider(u, null, [home], 0, 0);
-  if (movementSpeed(u) > 0 && !u.rooted && !u.pinnedBy && !engagedEnemies(state, u).length) {
-    const reach = strideReach(state, { ...u, actions: u.actions - 1 });
-    for (const [cell, entry] of reach) {
+  consider(u, null, [home], 0, 0, 0);
+  const canMove = movementSpeed(u) > 0 && !u.rooted && !u.pinnedBy && !engagedEnemies(state, u).length;
+  for (let split = 0; canMove && split <= waypoints.length; split++) {
+    const routed = strideReach(state, { ...u, actions: u.actions - 1 }, waypoints.slice(0, split));
+    // Every later split walks this one's waypoints too, so none of them reaches either.
+    if (!routed) break;
+    for (const cell of routed.reach.keys()) {
       if (cell === home || !canEndOn(u, state.board, parse(cell))) continue;
-      const moveActions = moveActionsFor(u, entry.feet);
+      const path = routedPath(routed, cell);
+      const feet = path[path.length - 1].feet;
+      const moveActions = moveActionsFor(u, feet);
       consider({ ...u, square: parse(cell), actions: u.actions - moveActions,
-        feet: u.feet + moveActions * movementSpeed(u) - entry.feet }, cell, pathTo(reach, cell), entry.feet, moveActions);
+        feet: u.feet + moveActions * movementSpeed(u) - feet }, cell, path.map((step) => step.cell), feet, moveActions, split);
     }
   }
   candidates.sort((a, b) => a.moveActions - b.moveActions || b.bonus - a.bonus || a.feet - b.feet
-    || (a.via ?? '').localeCompare(b.via ?? '') || a.cell.localeCompare(b.cell));
+    || (a.via ?? '').localeCompare(b.via ?? '') || a.cell.localeCompare(b.cell) || a.split - b.split);
   return (['fight', 'charge'] as const).flatMap(kind => {
     const best = candidates.find(p => p.kind === kind);
     return best ? [best] : [];
@@ -1220,7 +1268,7 @@ interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
 /** How far a tree's own range carries, in hexes: the same thresholds Shooting's bands use. A
  * spell's range is a ceiling — anything from the caster's own hex out to the band counts, the
  * way "range: 30 feet" reads on any other statblock. */
-function castCeiling(state: BattleState, tree: Tree): number {
+export function castCeiling(state: BattleState, tree: Tree): number {
   const band = TREE_RANGE[tree];
   return band === 'engaged' ? 1 : BANDS[state.board.grid][band];
 }
@@ -2208,7 +2256,7 @@ const spendMovement = (u: Unit, m: { feet: number; actions: number }) => {
 };
 
 function doStride(state: BattleState, u: Unit, action: MoveAction): number {
-  const m = moveReach(state, u).get(action.to);
+  const m = moveReach(state, u, action.waypoints).get(action.to);
   if (!m) throw new Error(`${u.name} cannot reach ${action.to}`);
   spendMovement(u, m);
   moveTo(state, u, parse(action.to));
@@ -2223,7 +2271,7 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const foe = unit(state, action.target);
   if (u.stats.strike === null) throw new Error(`${u.name} has no melee`);
   if (u.attacked) throw new Error(`${u.name} has already attacked this activation`);
-  const option = approach(state, u, foe);
+  const option = approach(state, u, foe, action.waypoints);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
   const wanted = action.activity ?? 1;
   if (![1, 2, 3].includes(wanted)) throw new Error('invalid charge activity');
@@ -2249,15 +2297,19 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
 }
 
 function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction): number {
-  const plan = meleePlans(state, u, action.target).find(p => p.kind === action.finish && p.via === action.via);
+  const waypoints = action.waypoints ?? [];
+  const plan = meleePlans(state, u, action.target, waypoints).find(p => p.kind === action.finish && p.via === action.via);
   if (!plan || !plan.via) throw new Error('This move-and-attack route is no longer available. Choose the target again.');
   const activity = action.activity ?? 1;
-  const attack: ChargeAction | ActivityAction = { type: action.finish, unit: u.id, target: action.target, activity, focus: action.focus };
+  const run = waypoints.slice(plan.split);
+  const attack: ChargeAction | ActivityAction = action.finish === 'charge'
+    ? { type: 'charge', unit: u.id, target: action.target, activity, focus: action.focus, ...(run.length ? { waypoints: run } : {}) }
+    : { type: 'fight', unit: u.id, target: action.target, activity, focus: action.focus };
   const focus = validateFocus(attack);
   if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
     throw new Error('The move and chosen attack exceed the available actions.');
   }
-  const movement = doStride(state, u, { type: 'move', unit: u.id, to: plan.via });
+  const movement = doStride(state, u, { type: 'move', unit: u.id, to: plan.via, waypoints: waypoints.slice(0, plan.split) });
   // Reserve the movement cost before validating the melee. The caller subtracts the total
   // once and ends the activation once; an exception discards this entire cloned state.
   u.actions -= movement;
@@ -2327,11 +2379,12 @@ function endRound(state: BattleState, rng: Rng) {
 
 /**
  * An emplacement left with only the enemy beside it changes hands at the end of the round.
- * A friendly still standing by holds it, however outnumbered — the engine is taken by
- * standing on it, not by winning a fight over it. One that is nobody's goes to the army that
+ * A friendly still standing by reserves an empty engine hex, however outnumbered. Entering
+ * the hex takes it immediately. One that is nobody's goes to the army that
  * alone stands by it, and waits while both do.
  */
 function seizeEmplacements(state: BattleState) {
+  refreshEmplacements(state);
   for (const e of state.engines) {
     if (crewOf(state, e)) continue;
     const near = state.units.filter((c) => c.side !== e.side && isStanding(c) && dist(state, c.square, e.square) <= 1);
@@ -2339,7 +2392,7 @@ function seizeEmplacements(state: BattleState) {
     if (!captor || near.some((c) => c.side !== captor.side)) continue;
     e.side = captor.side;
     e.status = 'crewed';
-    e.fired = true;
+    // Capture changes ownership. The engine keeps its load; endRound resets its shot limit.
     log(state, captor, `${captor.name} takes the ${e.name} on ${notation(e.square)}.`);
   }
 }

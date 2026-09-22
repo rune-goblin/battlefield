@@ -64,7 +64,7 @@ function battleFrom(session: BattleSession): BattleState {
     })),
     engines: setup.emplacements
       .filter((e) => e.square)
-      .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square!, hauled: e.hauled }))
+      .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square!, hauled: e.hauled, loaded: e.loaded }))
       .filter((e) => e.card),
   });
 }

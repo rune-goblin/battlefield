@@ -122,7 +122,7 @@
   .tabs { display: flex; gap: .35rem; margin-bottom: 1rem; }
   .tabs button { flex: 1; padding: .35rem .5rem; font-size: .85rem; }
   .tabs button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }
-  .eyebrow { font: 600 .65rem/1.4 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 .6rem; }
+  .eyebrow { font: 600 .78rem/1.4 system-ui, sans-serif; color: var(--muted); margin: 0 0 .6rem; }
   nav { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: 1.4rem; }
   nav button { padding: .25rem .5rem; font-size: .8rem; }
   nav button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }

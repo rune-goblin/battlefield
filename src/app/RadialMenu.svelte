@@ -7,6 +7,7 @@
     src: string;
     label: string;
     legal: boolean;
+    reason?: string;
   }
 
   interface Props {
@@ -54,6 +55,7 @@
     css: (t: number) => `transform: scale(${0.06 + 0.94 * t}); opacity: ${t};`,
   });
 
+  const id = $props.id();
   let hover = $state<number | null>(null);
 </script>
 
@@ -71,13 +73,17 @@
         class="slice"
         class:dim={!item.legal}
         aria-disabled={!item.legal}
+        aria-label={item.label}
+        aria-describedby={`${id}-${item.key}`}
         style="--ux: {p.ux}; --uy: {p.uy}"
         onclick={() => item.legal && pick(item.key)}
+        onfocus={() => { hover = i; }}
+        onblur={() => { hover = null; }}
         onpointerenter={() => { hover = i; }}
         onpointerleave={() => { hover = hover === i ? null : hover; }}
       >
         <img class="face" src={item.src} alt={item.label} draggable="false" />
-        <span class="name" class:show={hover === i}>{item.label}</span>
+        <span id={`${id}-${item.key}`} role="tooltip" class="name" class:show={hover === i}>{item.label}{#if !item.legal && item.reason}<small>{item.reason}</small>{/if}</span>
       </button>
     {/each}
 
@@ -147,6 +153,8 @@
     background: var(--card); border: 1px solid var(--accent);
     opacity: 0; transition: opacity .1s ease;
   }
+  .name small { display: block; font-size: .78rem; font-weight: 400; color: var(--muted); }
+  .slice:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
   .name.show { opacity: 1; }
 
   /* Growth is the highlight: the hovered icon lifts off the ring instead of lighting a disc. */

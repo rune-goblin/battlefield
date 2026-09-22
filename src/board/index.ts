@@ -33,6 +33,7 @@ export type { Brush } from './brush.js';
 export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
 export type { TokenPlacement } from './hit.js';
 export type { EngineTokenModel, TokenModel, TokenPick, TokenRing, UnitTokenModel } from './Token.js';
+export { drawSelection, SELECTION, selectionCss } from './selection.js';
 
 // Empty board left around the grid on every side, in cell pitches. It is what a pan grabs:
 // without it the outermost cells sit against the viewport edge with nothing beside them to
@@ -287,13 +288,12 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     interaction.clamp();
   }
 
-  /** The padded board rectangle, in the viewport's coordinates — the pan clamp's bounds, and
-   * what "frame everything" frames. */
-  function contentRect(): Rect | null {
+  /** The padded board rectangle. Extra room below belongs to panning, not framing. */
+  function contentRect(forPanning = true): Rect | null {
     if (!geometry) return null;
     const bounds = geometry.grid.bounds(geometry.size);
     const pad = PAD_CELLS * geometry.size;
-    const bottomPad = BOTTOM_PAD_CELLS * geometry.size;
+    const bottomPad = (forPanning ? BOTTOM_PAD_CELLS : PAD_CELLS) * geometry.size;
     return {
       x: boardContainer.position.x - pad,
       y: boardContainer.position.y - pad,
@@ -377,9 +377,11 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const loading = terrainLayer.setAppearance(appearance);
       terrain = appearance;
       applyLines();
-      if (currentBoard && geometry) terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
-      void loading.then(() => {
-        if (alive && currentBoard && geometry) terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+      if (!inkMap && currentBoard && geometry) terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+      void loading.then((loaded) => {
+        if (loaded && alive && !inkMap && terrain === appearance && currentBoard && geometry) {
+          terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+        }
       });
     },
     setInkMap(appearance) {
@@ -523,7 +525,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     // frame are not cropped by their own art, then handed to `Interaction` to centre.
     frame(cells, into) {
       if (!geometry) return;
-      const box = cells?.length ? cellsBox(cells) : contentRect();
+      const box = cells?.length ? cellsBox(cells) : contentRect(false);
       if (!box) return;
       interaction.frame(box, into ?? { x: 0, y: 0, ...opts.size() });
     },

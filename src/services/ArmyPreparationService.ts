@@ -24,6 +24,7 @@ export interface ArmyPreparationService {
   addEmplacement(session: BattleSession, side: Side, engine: string): BattleSession;
   removeEmplacement(session: BattleSession, emplacementId: string): BattleSession;
   setHauling(session: BattleSession, emplacementId: string, hauling: boolean): BattleSession;
+  setEngineLoaded(session: BattleSession, emplacementId: string, loaded: boolean): BattleSession;
   place(session: BattleSession, piece: PieceRef, square: string): BattleSession;
   unplace(session: BattleSession, piece: PieceRef): BattleSession;
   autoPlace(session: BattleSession, piece: PieceRef): BattleSession;
@@ -215,7 +216,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
     addEmplacement: (session, side, engine) => withSetup(session, {
       ...session.setup,
       emplacements: [...session.setup.emplacements,
-        { id: newEquipmentId(), name: engineCard(engine).name, side, square: null }],
+        { id: newEquipmentId(), name: engineCard(engine).name, side, square: null, loaded: true }],
     }),
 
     removeEmplacement: (session, emplacementId) => {
@@ -225,6 +226,16 @@ export function createArmyPreparationService(): ArmyPreparationService {
       return withSetup(session, {
         ...session.setup,
         emplacements: session.setup.emplacements.filter((e) => e.id !== emplacementId),
+      });
+    },
+
+    setEngineLoaded: (session, emplacementId, loaded) => {
+      const setup = session.setup;
+      const engine = setup.emplacements.find(e => e.id === emplacementId);
+      if (!engine) throw new Error(`${emplacementId} is not an emplacement in this force`);
+      if (!loaded && engineCard(engine.name).loadSteps === 0) throw new Error(`${engine.name} needs no reload`);
+      return withSetup(session, {
+        ...setup, emplacements: setup.emplacements.map(e => e === engine ? { ...e, loaded } : e),
       });
     },
 

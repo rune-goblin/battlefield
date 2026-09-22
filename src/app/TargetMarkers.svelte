@@ -45,7 +45,7 @@
 {#each markers as marker (marker.id)}
   <button
     class="target-marker"
-    class:selected={(marker.selected || selected === marker.id)}
+    data-selected={(marker.selected || selected === marker.id)}
     class:resolved
     class:compact={marker.geometry === 'edge' || marker.geometry === 'corner'}
     class:shoot={marker.icon === 'shoot'}
@@ -79,8 +79,8 @@
   .target-marker img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 2px 4px #000b); }
   .target-marker.compact { background: var(--card); border-color: var(--accent); padding: 2px; }
   .geometry { position: absolute; right: -5px; bottom: -6px; font-size: .65rem; padding: 0 .15rem; border-radius: 3px; background: var(--card); color: var(--ink); }
-  .target-marker:hover, .target-marker:focus-visible, .target-marker.selected { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .target-marker:hover img, .target-marker.selected img { filter: drop-shadow(0 2px 5px #000c) brightness(1.2); }
+  .target-marker:hover:not([data-selected='true']), .target-marker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .target-marker:hover img { filter: drop-shadow(0 2px 5px #000c) brightness(1.2); }
   .target-marker.resolved { pointer-events: none; animation: resolve .8s ease-out forwards; }
   @keyframes resolve { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.9); } 45% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); } }
   @media (prefers-reduced-motion: reduce) { .target-marker.resolved { animation: none; } }

@@ -4,6 +4,7 @@ import { createLocalRepository, loadSessionSync } from '../adapters/browser/loca
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { StoreClient, TableSummons } from './client.js';
 import { createPresentation } from './presentation.js';
+import { createSetupCopy } from './setup-copy.js';
 import { sideReady as readyIn } from '../services/ArmyPreparationService.js';
 import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke, type PieceRef, type TacticalAction } from '../runtime/commands.js';
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
@@ -33,10 +34,11 @@ let runtime = $state.raw<StoreClient>({
 
 /** What every view reads. The committed record lands here and nothing else writes it; a view
  * that wants a change submits a command and waits for the record that comes back. */
+const copySetup = createSetupCopy();
 export const game = $state({
   // A copy of the committed draft, kept so a view that reads it cannot reach the executor's
   // own record. Every command's result lands here through `adoptSetup`.
-  setup: structuredClone(runtime.session.setup),
+  setup: copySetup(runtime.session.setup),
   battle: runtime.session.battle,
   battleId: runtime.session.battleId,
   history: [] as HistorySnapshot[],
@@ -48,19 +50,9 @@ export const game = $state({
   control: runtime.session.control,
 });
 
-/** The record's board the local copy was taken from. It is replaced only when the record's own
- * changed: a fresh object costs the PIXI view a full redraw, and a placement command leaves the
- * terrain exactly where it was. */
-let adoptedBoard = runtime.session.setup.board;
-
 function adoptSetup(committed: BattleSetupDraft): void {
-  const next = structuredClone(committed);
-  game.setup.spec = next.spec;
-  game.setup.units = next.units;
-  game.setup.emplacements = next.emplacements;
-  game.setup.roundsPerDay = next.roundsPerDay;
-  if (committed.board !== adoptedBoard) game.setup.board = next.board;
-  adoptedBoard = committed.board;
+  // Battle actions reuse the setup; deployment changes troops without copying terrain.
+  game.setup = copySetup(committed);
 }
 
 /** What the board plays after each commit. It observes the record before the store adopts it: a
@@ -145,6 +137,7 @@ export const removeUnit = (unitId: string) => submit({ type: 'army.removeUnit', 
 export const addEmplacement = (side: Side, engine: string) => submit({ type: 'army.addEmplacement', side, engine });
 export const removeEmplacement = (emplacementId: string) => submit({ type: 'army.removeEmplacement', emplacementId });
 export const setHauling = (emplacementId: string, hauling: boolean) => submit({ type: 'army.setHauling', emplacementId, hauling });
+export const setEngineLoaded = (emplacementId: string, loaded: boolean) => submit({ type: 'army.setEngineLoaded', emplacementId, loaded });
 export const placePiece = (piece: PieceRef, square: string) => submit({ type: 'army.place', piece: plain(piece), square });
 export const unplacePiece = (piece: PieceRef) => submit({ type: 'army.unplace', piece: plain(piece) });
 export const autoPlacePiece = (piece: PieceRef) => submit({ type: 'army.autoPlace', piece: plain(piece) });

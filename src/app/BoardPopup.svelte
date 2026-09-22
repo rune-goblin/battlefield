@@ -20,7 +20,8 @@
 
   function grab(e: PointerEvent) {
     if (e.button !== 0) return;
-    if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a')) return;
+    if (!(e.target instanceof Element) || e.target.closest('button, input, select, textarea, a, summary')) return;
+    if (!e.target.closest('.popup-head, .picker-heading, .siege-heading')) return;
     from = { x: e.clientX, y: e.clientY, dx, dy };
     dragging = true;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -61,15 +62,16 @@
     position: absolute; z-index: 6; pointer-events: auto;
     top: calc(var(--inset-top, 0px) + .6rem);
     right: calc(var(--inset-right, 0px) + .6rem);
-    min-width: 14rem; max-width: 22rem;
-    max-height: calc(100% - var(--inset-top, 0px) - 1.2rem); overflow-y: auto;
+    width: min(22rem, calc(100vw - 1.2rem)); min-width: 0; box-sizing: border-box;
+    max-height: calc(100% - var(--inset-top, 0px) - var(--inset-bottom, 0px) - 1.2rem); overflow-y: auto;
     padding: .4rem; border-radius: 10px;
     background: var(--card); border: 1px solid var(--accent);
     box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
     font-size: .85rem;
-    cursor: grab;
-    touch-action: none;
+    cursor: default;
+    touch-action: pan-y;
   }
+  .board-popup :global(.popup-head), .board-popup :global(.picker-heading), .board-popup :global(.siege-heading) { cursor: grab; touch-action: none; }
   .board-popup.dragging { cursor: grabbing; box-shadow: 0 10px 26px rgba(0, 0, 0, .45); }
 
   .board-popup[data-appearance='cast'] {

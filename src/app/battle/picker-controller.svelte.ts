@@ -1,3 +1,4 @@
+import { reachableActivities, soleLegalActivity } from './action-menu.js';
 import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
@@ -27,6 +28,7 @@ export interface PickerShared extends BattleDeps {
   readonly clearHover: () => void;
   readonly requireTurn: () => boolean;
   readonly siegeEngine: EngineState | null;
+  readonly fireSiege: (activity: ActivityIndex, target: string, commitment: number) => Promise<void>;
   readonly run: (pending: Promise<CommandResult>) => Promise<CommandResult>;
 }
 
@@ -45,7 +47,7 @@ export function createPickerController(s: PickerShared) {
    * whole ladder because choosing a level starts a separate area selection. */
   const aimActivities = $derived.by<ActivityOption[]>(() => {
     if (!aim || !aimGroup || !s.active) return [];
-    if (aimGroup.offer.spell === 'blast') return aimGroup.offer.activities;
+    if (aimGroup.offer.spell === 'blast') return reachableActivities(aimGroup.offer.activities);
     const t = aim.target;
     const own = t.kind === 'unit' && t.id === s.active.id;
     return aimGroup.offer.activities.filter((o) => o.cost !== null
@@ -91,7 +93,7 @@ export function createPickerController(s: PickerShared) {
     s.focus = 0;
     aim = null; s.unpark(); s.clearRing();
     targetHover = null;
-    activityPick = { key, index: null, selected: [] };
+    activityPick = { key, index: soleLegalActivity(offer.activities)?.index ?? null, selected: [] };
     healingChoices = {};
   }
 
@@ -117,12 +119,23 @@ export function createPickerController(s: PickerShared) {
   function confirmPicker() {
     const offer = pickerOffer, option = pickerActivity, target = activityPick?.target;
     if (!offer || !option?.legal || (option.needsTarget && !target)) return;
-    void performActivity(offer, option, target);
+    const pending = performActivity(offer, option, target);
     activityPick = null; targetHover = null;
+    return pending;
   }
 
   function pickActivityCell(cell: string) {
     if (!activityPick || !pickerActivity?.legal) return;
+    if (activityPick.key === 'siege') {
+      const matches = pickerService?.matches({ kind: 'hex', id: cell }) ?? [];
+      if (matches.length === 1) { choosePickerTarget(matches[0].id); return; }
+      if (matches.length > 1) {
+        // Siege shapes are complete targets. Let the player choose among overlapping areas.
+        activityPick = { ...activityPick, selected: [cell], target: undefined };
+        targetHover = null;
+      }
+      return;
+    }
     const pick = pickerService?.pickCell(cell, activityPick.selected);
     if (!pick) return;
     targetHover = null;
@@ -134,10 +147,11 @@ export function createPickerController(s: PickerShared) {
     aim = null; s.unpark(); s.clearRing();
     activityPick = null; targetHover = null;
     blastOpen = true;
-    chooseBlastLevel(level);
+    chooseBlastLevel(level ?? soleLegalActivity(blastOffer?.activities ?? [])?.index ?? null);
   }
 
   function chooseBlastLevel(level: ActivityIndex | null) {
+    if (level !== null && !blastOffer?.activities.some(option => option.index === level && option.legal)) return;
     s.focus = 0;
     blastLevel = level; blastTarget = null; blastHover = null; blastCell = null;
   }
@@ -229,7 +243,7 @@ export function createPickerController(s: PickerShared) {
     if (!resolution) return;
     const commitment = canFocus(offer.type, offer.spell) ? s.focus : 0;
     if (activityPick?.key === 'siege' && s.siegeEngine) {
-      await s.run(s.takeAction({ type: 'siege', operation: 'attack', engine: s.siegeEngine.id, unit: s.active.id, activity: opt.index, target, focus: commitment }));
+      if (target) await s.fireSiege(opt.index, target, commitment);
     } else await s.run(s.takeAction({ ...resolution.action, focus: commitment, ...(offer.spell === 'healing' ? { healingChoices: structuredClone($state.snapshot(healingChoices)) } : {}) }));
   }
 
@@ -298,14 +312,16 @@ export function createPickerController(s: PickerShared) {
       targetHover = null;
       if (activityPick.target) { activityPick = { ...activityPick, target: undefined }; return 'done'; }
       if (activityPick.selected.length) { activityPick = { ...activityPick, selected: activityPick.selected.slice(0, -1) }; return 'done'; }
-      if (activityPick.index !== null) { s.focus = 0; activityPick = { ...activityPick, index: null }; return 'done'; }
+      if (activityPick.index !== null && !soleLegalActivity(pickerOffer?.activities ?? [])) {
+        s.focus = 0; activityPick = { ...activityPick, index: null }; return 'done';
+      }
       const next = activityPick.key === 'siege' ? 'siege' : pickerOffer?.type === 'cast' ? 'trees' : 'ring';
       activityPick = null;
       return next;
     }
     if (blastOpen) {
       if (blastTarget || blastCell) { blastTarget = null; blastHover = null; blastCell = null; return 'done'; }
-      if (blastLevel !== null) { chooseBlastLevel(null); return 'done'; }
+      if (blastLevel !== null && !soleLegalActivity(blastOffer?.activities ?? [])) { chooseBlastLevel(null); return 'done'; }
       blastOpen = false;
       return 'trees';
     }

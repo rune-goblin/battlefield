@@ -14,9 +14,11 @@ export type BoardEvent =
   | { type: 'token'; id: string }
   | { type: 'paint'; cells: string[]; edges: string[]; brush: Brush }
   | { type: 'drop'; id: string; cell: string; exit?: boolean }
-  /** Fires on every pointer move while a token drag is live; `cell` is null off-grid or on
-   * release/cancel, which the drag-preview consumer reads as "clear". */
-  | { type: 'drag'; id: string; cell: string | null; exit?: boolean };
+  /** Fires when a live drag enters a different cell or crosses the board boundary; `cell` is null off-grid or on
+   * release/cancel, which the drag-preview consumer reads as "clear". `end` marks the release or cancel. */
+  | { type: 'drag'; id: string; cell: string | null; exit?: boolean; end?: boolean }
+  /** Space pressed during a live drag, over the cell the drag is on. */
+  | { type: 'waypoint'; id: string; cell: string };
 
 export type BoardEventType = BoardEvent['type'];
 export type BoardEventOf<T extends BoardEventType> = Extract<BoardEvent, { type: T }>;
@@ -50,7 +52,7 @@ type Gesture =
   | { kind: 'none' }
   | { kind: 'press'; token: string | null; pans: boolean }
   | { kind: 'paint'; stroke: Stroke }
-  | { kind: 'drag'; token: string }
+  | { kind: 'drag'; token: string; cell?: string | null; exit?: boolean }
   | { kind: 'pan' };
 
 export interface InteractionOptions {
@@ -347,7 +349,13 @@ export class Interaction {
       const inside = geometry ? geometry.grid.fromPoint(local, geometry.size) : null;
       const edge = !inside && geometry && this.mode === 'battle' ? boundaryCellAt(local, geometry.grid, geometry.size) : null;
       const cell = inside ?? edge;
-      this.o.emit({ type: 'drag', id: this.gesture.token, cell: cell ? geometry!.grid.key(cell) : null, exit: !!edge });
+      const key = cell ? geometry!.grid.key(cell) : null;
+      // The miniature follows every pointer event; route planning follows cell transitions.
+      if (key !== this.gesture.cell || !!edge !== this.gesture.exit) {
+        this.gesture.cell = key;
+        this.gesture.exit = !!edge;
+        this.o.emit({ type: 'drag', id: this.gesture.token, cell: key, exit: !!edge });
+      }
     }
     this.updateHover(screen);
   };
@@ -379,7 +387,7 @@ export class Interaction {
       const cell = inside ?? edge;
       if (geometry && cell) this.o.emit({ type: 'drop', id: gesture.token, cell: geometry.grid.key(cell), exit: !!edge });
       this.o.onDrag(gesture.token, null);
-      this.o.emit({ type: 'drag', id: gesture.token, cell: null });
+      this.o.emit({ type: 'drag', id: gesture.token, cell: null, end: true });
       return;
     }
 
@@ -444,6 +452,11 @@ export class Interaction {
 
   private onKeyDown = (e: KeyboardEvent): void => {
     if (this.frozen) return;
+    if (e.key === ' ' && this.gesture.kind === 'drag') {
+      e.preventDefault();
+      if (!e.repeat && this.gesture.cell && !this.gesture.exit) this.o.emit({ type: 'waypoint', id: this.gesture.token, cell: this.gesture.cell });
+      return;
+    }
     if (e.key === ' ') {
       e.preventDefault();
       this.spaceDown = true;
@@ -561,7 +574,7 @@ export class Interaction {
     this.o.onPreview([], [], null);
     if (gesture.kind === 'drag') {
       this.o.onDrag(gesture.token, null);
-      this.o.emit({ type: 'drag', id: gesture.token, cell: null });
+      this.o.emit({ type: 'drag', id: gesture.token, cell: null, end: true });
     }
     this.applyCursor();
   }

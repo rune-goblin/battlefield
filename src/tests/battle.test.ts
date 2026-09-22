@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
   endActivation, engagedEnemies, holdersOf, isOutflanked, maneuverOutcome, maneuverTargets, isRouted, isStanding, moveReach, movePath,
-  rangeBetween, select, shootModifier, strikeModifier, unit, willModifier,
+  rangeBetween, select, shootModifier, siegeAttackOffer, siegeReason, strikeModifier, unit, willModifier,
 } from '../engine/battle.js';
 import { edgeKey, gridOf, hexGrid, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
@@ -1416,22 +1416,54 @@ describe('an emplaced engine', () => {
     expect(shootModifier(state, unit(state, 'u1'), unit(state, 'u0'))).not.toBe(catapult.launch);
   });
 
-  it('holds its square when the crew walks off, and goes abandoned', () => {
+  it.each([0, 1])('keeps its load of %i when the crew walks off and returns', loaded => {
     let state = emplaced();
+    state.engines[0].loaded = loaded;
     place(state, 'u1', 'c5');
     state = refresh(state);
     expect(notation(state.engines[0].square)).toBe('c8');
     expect(state.engines[0].status).toBe('abandoned');
     expect(crewOf(state, state.engines[0])).toBeNull();
+    expect(state.engines[0].loaded).toBe(loaded);
+    place(state, 'u1', 'c7');
+    state = refresh(state);
+    expect(state.engines[0].status).toBe('crewed');
+    expect(crewOf(state, state.engines[0])!.id).toBe('u1');
+    expect(state.engines[0].loaded).toBe(loaded);
   });
 
-  it('changes hands at the end of a round once only the enemy stands by it', () => {
+  it.each([0, 1])('changes hands with a load of %i and preserves that load', loaded => {
     let state = emplaced();
+    state.engines[0].loaded = loaded;
+    const engineId = state.engines[0].id;
     place(state, 'u1', 'c5');
     place(state, 'u0', 'b8');
     state = runRound(state);
+    expect(state.engines[0].id).toBe(engineId);
     expect(state.engines[0].side).toBe('attacker');
     expect(crewOf(state, state.engines[0])!.id).toBe('u0');
+    expect(state.engines[0].fired).toBe(false);
+    expect(state.engines[0].loaded).toBe(loaded);
+    place(state, 'u0', 'c8');
+    state = select(state, 'u0');
+    expect(siegeReason(state, unit(state, 'u0'), state.engines[0], 'attack'))
+      .toBe(loaded ? null : 'Load this engine before attacking.');
+    if (!loaded) {
+      state = act(state, { type: 'siege', unit: 'u0', engine: engineId, operation: 'load' }, scriptedRng([]));
+      expect(state.engines[0].loaded).toBe(1);
+      expect(siegeReason(state, unit(state, 'u0'), state.engines[0], 'attack')).toBeNull();
+    }
+  });
+
+  it('preserves partial loading when an enemy captures the engine', () => {
+    let state = emplaced();
+    Object.assign(state.engines[0], { name: 'Custom engine', loadCost: 6, loadSteps: 6, loaded: 2 });
+    place(state, 'u1', 'c5');
+    place(state, 'u0', 'c8');
+    state = runRound(state);
+    expect(state.engines[0]).toMatchObject({ side: 'attacker', loaded: 2, loadSteps: 6 });
+    state = act(state, { type: 'siege', unit: 'u0', engine: state.engines[0].id, operation: 'load' }, scriptedRng([]));
+    expect(state.engines[0].loaded).toBe(3);
   });
 
   const unclaimed = () => createBattle({
@@ -1449,12 +1481,19 @@ describe('an emplaced engine', () => {
     expect(crewOf(state, state.engines[0])).toBeNull();
   });
 
-  it('goes to the army that alone stands by an unclaimed engine at the end of a round', () => {
+  it.each([0, 1])('allows claiming a neutral engine with a load of %i', loaded => {
     let state = unclaimed();
+    state.engines[0].loaded = loaded;
     place(state, 'u0', 'e5');
     state = runRound(state);
     expect(state.engines[0].side).toBe('attacker');
     expect(crewOf(state, state.engines[0])!.id).toBe('u0');
+    expect(state.engines[0].fired).toBe(false);
+    expect(state.engines[0].loaded).toBe(loaded);
+    state = select(state, 'u0');
+    const offer = siegeAttackOffer(state, unit(state, 'u0'), state.engines[0]);
+    if (loaded) expect(offer?.activities.some(option => option.legal)).toBe(true);
+    else expect(offer).toBeNull();
   });
 
   it('leaves an unclaimed engine waiting while both armies stand by it', () => {

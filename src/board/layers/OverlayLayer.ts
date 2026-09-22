@@ -80,7 +80,11 @@ export class OverlayLayer {
   }
 
   setHighlight(cells: string[], style: HighlightStyle): void {
-    this.highlights.set(style, new Set(cells));
+    const previous = this.highlights.get(style);
+    const next = new Set(cells);
+    // The view sends every style when one preview changes. Keep unchanged washes intact.
+    if (next.size === (previous?.size ?? 0) && [...next].every(cell => previous?.has(cell))) return;
+    this.highlights.set(style, next);
     this.redraw();
   }
 

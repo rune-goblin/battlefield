@@ -58,7 +58,7 @@
 </section>
 
 <style>
-  .eyebrow { font: 600 .65rem/1.4 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 .6rem; }
+  .eyebrow { font: 600 .78rem/1.4 system-ui, sans-serif; color: var(--muted); margin: 0 0 .6rem; }
   section { border-top: 1px solid var(--rule); margin-top: 1.2rem; padding-top: 1rem; }
   .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
   h2 { border: 0; margin: 0; padding: 0; }

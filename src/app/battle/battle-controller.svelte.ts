@@ -2,7 +2,7 @@ import { fromStore } from 'svelte/store';
 import { commandReporter, COMMAND_NOTICE } from '../command-notices.js';
 import { createScope } from '../scope.js';
 import { tick } from 'svelte';
-import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked } from '../../engine/index.js';
+import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked } from '../../engine/index.js';
 import { withinApp } from '../app-root.js';
 import type { HighlightStyle, TokenPick, TokenModel, UnitTokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
 import { createDragController, DRAG_NOTICE } from './drag-controller.svelte.js';
@@ -70,6 +70,7 @@ export function createBattleController(deps: BattleDeps) {
     clearHover: () => { hoveredCell = null; hoveredEdge = null; },
     openGates: () => { cancelAction(); gateOpen = true; },
     openSiege: (id?: string) => openSiege(id),
+    fireSiege: (activity: NonNullable<SiegeAction['activity']>, target: string, commitment: number) => fireSiege(activity, target, commitment),
 
     get pending() { return dragging.pending; },
     get meleeOptions() { return dragging.meleeOptions; },
@@ -149,6 +150,19 @@ export function createBattleController(deps: BattleDeps) {
     siegeBusy = true;
     try {
       await run(deps.takeAction({ type: 'siege', unit: active.id, engine: siegeEngine.id, operation }));
+    } finally { siegeBusy = false; }
+  }
+
+  async function fireSiege(activity: NonNullable<SiegeAction['activity']>, target: string, commitment: number) {
+    if (!active || !siegeEngine || siegeBusy || !requireTurn()) return;
+    const engine = siegeEngine.id, unit = active.id, turn = activationKey;
+    siegeBusy = true;
+    try {
+      const result = await run(deps.takeAction({ type: 'siege', operation: 'attack', engine, unit, activity, target, focus: commitment }));
+      // Keep the next operation within reach while this crew still has its turn.
+      if (result.ok && !view.closed && turn === activationKey && myTurn && active && active.actions > 0
+        && siegeSelected === engine && !picker.activityPick && !picker.aim && !picker.blastOpen
+        && !ring.radial && !ring.castPick && !dragging.pending) siegeOpen = true;
     } finally { siegeBusy = false; }
   }
 
@@ -259,6 +273,8 @@ export function createBattleController(deps: BattleDeps) {
     if (!withinApp(e.target)) return;
     // One Escape, one step back — the same walk out that a click off the target takes.
     if (e.key === 'Escape') { stepBack(); return; }
+    // Native controls handle Enter themselves; a disabled choice must never confirm another action.
+    if (e.target instanceof Element && e.target.closest('button, input, select, textarea, summary, a')) return;
     if (picker.blastOpen || picker.activityPick) return;
     if (dragging.pending) {
       if (e.key === 'Enter') { e.preventDefault(); void dragging.commit(); }
@@ -292,6 +308,7 @@ export function createBattleController(deps: BattleDeps) {
     return deps.viewer.isHolder ? 'Your turn' : deps.viewer.holderName;
   }
   $effect(() => {
+    if (b.phase !== 'battle') { announced = null; return; }
     const next = { day: b.day, round: b.round, activated: b.activated.length, pending: b.pending, player: playerNow() };
     return afterBoardSettles(deps.board, ANNOUNCE_OVERLAP_MS, () => { announced = next; });
   });
@@ -340,13 +357,14 @@ export function createBattleController(deps: BattleDeps) {
       disorder: u.disorder,
       engine: engineOn(u)?.name ?? null,
       engineId: engineOn(u)?.id,
+      loading: engineOn(u) ? engineLoading(engineOn(u)!) : undefined,
       verdict: dragging.dragTarget?.id === u.id ? (dragging.dragTarget.attack ? 'attack' : 'no') : null,
       statuses: statusesOf(u),
       pick: pickOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
     })),
     ...boardEngines.filter(e => !b.units.some(u => u.status === 'active' && notation(u.square) === notation(e.square)))
-      .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
+      .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null, loading: engineLoading(e) })),
   ]);
 
   const fallen = $derived(b.units.filter((u) => u.status === 'destroyed')
@@ -623,6 +641,7 @@ export function createBattleController(deps: BattleDeps) {
           onhover: (e: BoardEventOf<'hover'>) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; },
           oncell: active ? onCell : undefined, ontoken: onToken, onedge: active ? onEdge : undefined,
           ondrag: active ? dragging.onBoardDrag : undefined, ondrop: active ? dragging.onBoardDrop : undefined,
+          onwaypoint: active ? dragging.onBoardWaypoint : undefined,
         };
     },
   };

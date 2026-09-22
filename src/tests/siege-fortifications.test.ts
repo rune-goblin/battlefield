@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, createBattle, defenceOf, endActivation, engineLoaded, engineLoadCost, ENGINES,
+  act, createBattle, defenceOf, endActivation, engineLoaded, engineLoadCost, engineLoadProgress, engineLoading, ENGINES,
   gateReason, generateBoard, gridOf, makeWall, notation, parse, siegeAttackOffer, siegeReason,
   stepFeet, structuralDamage, unit, type BattleState, type UnitCard,
 } from '../engine/index.js';
-import { SIEGE_PROFILES, siegeModes } from '../engine/siege-profiles.js';
+import { SIEGE_PROFILES, siegeDetail, siegeModes } from '../engine/siege-profiles.js';
 import { siegeTargets } from '../engine/siege-targets.js';
 import { scriptedRng } from '../engine/rng.js';
 import { applyStroke } from '../services/MapPreparationService.js';
@@ -51,7 +51,57 @@ describe('siege catalog and combat', () => {
       expect(after.units[0].engines[0].fired).toBe(true);
       expect(b.units[0].engines[0].fired).toBe(false);
       expect(after.log.some(l => l.text.includes(mode.label))).toBe(true);
+      if (mode.shape !== 'wall') {
+        expect(after.units[1].wounds, `${name}: ${mode.label} critical damage`)
+          .toBe(mode.damage ? Math.min(4, mode.damage + 1) : 0);
+      } else {
+        expect(after.board.walls[target.id].remaining, `${name}: ${mode.label} damages a fortress on a critical hit`)
+          .toBeLessThan(b.board.walls[target.id].remaining);
+      }
     }
+  });
+
+  it('reserves zero damage for explicitly designated support modes', () => {
+    const support = Object.entries(SIEGE_PROFILES).flatMap(([name, modes]) =>
+      modes.filter(mode => mode.damage === 0).map(mode => `${name}: ${mode.label}`));
+    expect(support.sort()).toEqual([
+      'Blob Paste Propulsor: Binding paste',
+      'Marking Powder Cannon: Mark targets',
+      'Pheromone Sprayer: Disorient mounts',
+      'Pheromone Sprayer: Scatter mounts',
+    ]);
+    for (const modes of Object.values(SIEGE_PROFILES)) for (const mode of modes) {
+      expect(mode.damage).toBeGreaterThanOrEqual(0);
+      expect(mode.damage).toBeLessThanOrEqual(3);
+      if (mode.damage === 0) {
+        expect(mode.effect).toBeDefined();
+        expect(siegeDetail(mode)).toContain('No damage');
+      }
+    }
+  });
+
+  it.each([
+    ['Anesthetizing Jaws', 1, 2, 'snare'],
+    ['Anesthetizing Jaws', 2, 2, 'stun'],
+    ['Web Launcher', 1, 1, 'web'],
+    ['Cyclonic Cannon', 1, 2, undefined],
+    ['Ribauldequin', 1, 2, undefined],
+    ['Great Bronze Cannon', 1, 2, undefined],
+    ['Heavy Bombard', 1, 2, undefined],
+    ['Long Cannon', 1, 2, undefined],
+  ] as const)('%s mode %i deals %i on an ordinary hit and preserves its effect', (name, activity, damage, effect) => {
+    const b = setup(name), e = b.units[0].engines[0], mode = siegeModes(name, e.kind)[activity - 1];
+    b.units[1].square = parse(mode.shape === 'cone' ? 'f6' : 'g6');
+    // A roll of ten lands exactly on Defence; separate later rolls keep morale stable.
+    b.units[1].stats.defence = e.launch + 10;
+    const cell = notation(b.units[1].square);
+    const target = siegeTargets(b, e, mode).find(t => t.kind === 'unit' ? t.id === 'u1' : t.id.split('+').includes(cell))!;
+    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity, target: target.id }, scriptedRng([10, 20, 20, 20]));
+    expect(after.units[1].wounds).toBe(damage);
+    if (effect === 'snare' || effect === 'web') expect(after.units[1].rooted).toBe(1);
+    if (effect === 'stun') expect(after.units[1].stunned).toBe(true);
+    if (effect === 'web') expect(after.board.siegeFields).toContainEqual(expect.objectContaining({ kind: 'web', cells: target.id.split('+') }));
+    expect(siegeDetail(mode)).toContain(`${damage}/${damage + 1} damage on hit/critical`);
   });
   it('damages allies in the selected area and previews the whole shape', () => {
     const b = setup(), u = b.units[0], e = u.engines[0];
@@ -72,15 +122,42 @@ describe('siege catalog and combat', () => {
     expect(volley.units[0].engines[0].fired).toBe(false);
     expect(engineLoaded(volley.units[0].engines[0])).toBe(true);
   });
-  it('rejects malformed shapes, extra commitment, close-range lobs, and firing in contact', () => {
+  it('rejects malformed shapes, extra commitment, and lobs inside their minimum range', () => {
     const b = setup();
     expect(() => fire(b, 1, 'a1+b1+c1')).toThrow('target');
     expect(() => fire(b, 2, 'u1', 2)).toThrow('actions');
     expect(() => fire(b, 2, 'u1', -1)).toThrow('Commit');
     const lob = setup('Trebuchet'); lob.units[1].square = parse('e6');
-    expect(siegeReason(lob, lob.units[0], lob.units[0].engines[0], 'attack')).toContain('contact');
+    expect(siegeReason(lob, lob.units[0], lob.units[0].engines[0], 'attack')).toBeNull();
     const e = lob.units[0].engines[0];
     expect(siegeTargets(lob, e, siegeModes(e.name, e.kind)[0]).every(t => t.id.split('+').every(c => gridOf(lob.board).distance(e.square, parse(c)) >= 2))).toBe(true);
+  });
+
+  it.each([
+    ['Kickback Spring', false], ['Kickback Spring', true],
+    ['Ballista', false], ['Ballista', true],
+  ] as const)('loads and fires %s beside an enemy with emplacement=%s', (name, emplaced) => {
+    let b = setup(name);
+    b.units[1].square = parse('e6');
+    const e = b.units[0].engines[0];
+    e.loaded = 0;
+    if (emplaced) {
+      b.units[0].engines = [];
+      b.engines.push(e);
+      e.emplaced = true;
+    }
+    expect(siegeReason(b, b.units[0], e, 'load')).toBeNull();
+    expect(siegeReason(b, b.units[0], e, 'attack')).toBe('Load this engine before attacking.');
+    b = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'load' }, scriptedRng([]));
+    const loaded = emplaced ? b.engines[0] : b.units[0].engines[0];
+    const option = siegeAttackOffer(b, b.units[0], loaded)!.activities[0];
+    expect(option.legal).toBe(true);
+    const target = option.targets.find(t => t.kind === 'unit' ? t.id === 'u1' : t.id.split('+').includes('e6'))!;
+    expect(target).toBeDefined();
+    b = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 1, target: target.id }, scriptedRng([20, 20, 20, 20]));
+    expect(b.units[1].wounds).toBe(name === 'Kickback Spring' ? 2 : 3);
+    expect(b.activated).toContain('u0');
+    expect((emplaced ? b.engines[0] : b.units[0].engines[0]).fired).toBe(true);
   });
   it('upgrades old loading counters without granting a free loaded shot', () => {
     const b = setup(), e = b.units[0].engines[0]; e.loadSteps = 2; e.loadCost = 2; e.loaded = 1;
@@ -95,6 +172,68 @@ describe('siege catalog and combat', () => {
     const b = setup('Bolt Emitter'), after = fire(b, 1, 'u1'), e = after.units[0].engines[0];
     expect(engineLoaded(e)).toBe(true); expect(e.fired).toBe(true);
     expect(siegeReason(after, after.units[0], e, 'attack')).toContain('already attacked');
+  });
+  it.each(['fire first', 'load first'])('allows firing and loading in one activation: %s', order => {
+    let b = setup('Ballista');
+    const engine = b.units[0].engines[0].id;
+    const load = () => { b = act(b, { type: 'siege', unit: 'u0', engine, operation: 'load' }, scriptedRng([])); };
+    const shoot = () => { b = act(b, { type: 'siege', unit: 'u0', engine, operation: 'attack', activity: 1, target: 'u1' }, scriptedRng([1])); };
+    if (order === 'load first') {
+      b.units[0].engines[0].loaded = 0;
+      load();
+      expect(b.units[0].actions).toBe(2);
+      shoot();
+    } else {
+      shoot();
+      expect(b.units[0].actions).toBe(1);
+      expect(siegeReason(b, b.units[0], b.units[0].engines[0], 'load')).toBeNull();
+      load();
+    }
+    expect(b.activated).toContain('u0');
+    expect(b.units[0].engines[0].fired).toBe(true);
+    expect(engineLoaded(b.units[0].engines[0])).toBe(order === 'fire first');
+  });
+
+  it('rejects loading when the shot and boost spend the whole action budget', () => {
+    const b = fire(setup('Heavy Ballista'), 1, 'u1', 1);
+    expect(b.activated).toContain('u0');
+    expect(engineLoaded(b.units[0].engines[0])).toBe(false);
+    expect(() => act(b, { type: 'siege', unit: 'u0', engine: b.units[0].engines[0].id, operation: 'load' }, scriptedRng([]))).toThrow();
+  });
+
+  it('spends the final action on partial loading after firing', () => {
+    const b = fire(setup('Heavy Ballista'), 1, 'u1');
+    const e = b.units[0].engines[0];
+    expect(b.units[0].actions).toBe(1);
+    expect(siegeReason(b, b.units[0], e, 'load')).toBeNull();
+    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'load' }, scriptedRng([]));
+    expect(after.activated).toContain('u0');
+    expect(engineLoading(after.units[0].engines[0])).toMatchObject({ total: 2, completed: 1, label: '1/2 loaded' });
+    expect(engineLoaded(after.units[0].engines[0])).toBe(false);
+  });
+
+  it.each([1, 2, 3, 6])('accumulates %i loading actions across turns', total => {
+    let b = setup();
+    Object.assign(b.units[0].engines[0], { name: 'Custom engine', loadCost: total, loadSteps: total, loaded: 0 });
+    for (let progress = 1; progress <= total; progress++) {
+      if (b.activated.includes('u0')) {
+        while (b.round === 1) b = endActivation(b, scriptedRng([]));
+      }
+      b = act(b, { type: 'siege', unit: 'u0', engine: b.units[0].engines[0].id, operation: 'load' }, scriptedRng([]));
+      expect(engineLoadProgress(b.units[0].engines[0])).toBe(progress);
+      expect(engineLoaded(b.units[0].engines[0])).toBe(progress === total);
+    }
+    expect(engineLoading(b.units[0].engines[0]).label).toBe('Ready to fire');
+  });
+
+  it('reads legacy full-load counters without discarding a loaded shot', () => {
+    const b = setup('Heavy Ballista'), e = b.units[0].engines[0];
+    e.loadSteps = 1; e.loaded = 1;
+    expect(engineLoading(e)).toEqual({ total: 2, completed: 2, label: 'Ready to fire' });
+    delete e.loadSteps;
+    expect(engineLoaded(e)).toBe(true);
+    e.loaded = 0;
+    expect(engineLoadProgress(e)).toBe(0);
   });
   it('marks without wounds and strips magical buffs on a nullifier hit', () => {
     for (const name of ['Marking Powder Cannon', 'Nullifier Sling']) {
@@ -114,8 +253,35 @@ describe('siege catalog and combat', () => {
     const push = setup('Kickback Spring'); push.units[1].square = parse('f6');
     const e = push.units[0].engines[0], target = siegeTargets(push, e, siegeModes(e.name, e.kind)[0])[0];
     const next = fire(push, 1, target.id);
-    expect(next.units[1].wounds).toBe(0);
+    expect(next.units[1].wounds).toBe(2);
     expect(gridOf(push.board).distance(e.square, next.units[1].square)).toBe(3);
+  });
+
+  it.each([
+    { roll: 1, damage: 0, distance: 2 },
+    { roll: 15, damage: 1, distance: 3 },
+    { roll: 20, damage: 2, distance: 3 },
+  ])('Repulsing blast deals $damage damage with roll $roll and pushes only on a hit', ({ roll, damage, distance }) => {
+    const b = setup('Kickback Spring');
+    b.units[1].square = parse('f6');
+    const e = b.units[0].engines[0], mode = siegeModes(e.name, e.kind)[0];
+    const target = siegeTargets(b, e, mode).find(t => t.id.split('+').includes('f6'))!;
+    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 1, target: target.id }, scriptedRng([roll, 20, 20, 20]));
+    expect(after.units[1].wounds).toBe(damage);
+    expect(gridOf(b.board).distance(e.square, after.units[1].square)).toBe(distance);
+    expect(siegeDetail(mode)).toContain('1/2 damage on hit/critical');
+    expect(siegeDetail(mode)).toContain('A hit pushes 1 hex away');
+  });
+
+  it('Repulsing blast still damages a target whose knockback route is blocked', () => {
+    const b = setup('Kickback Spring');
+    b.units[1].square = parse('f6');
+    b.units[1].rooted = 1;
+    const e = b.units[0].engines[0];
+    const target = siegeTargets(b, e, siegeModes(e.name, e.kind)[0]).find(t => t.id.split('+').includes('f6'))!;
+    const after = fire(b, 1, target.id);
+    expect(after.units[1].wounds).toBe(2);
+    expect(notation(after.units[1].square)).toBe('f6');
   });
   it('clears only the web cells reached by fire and preserves webs under cold', () => {
     for (const name of ['Flame Bellows', 'Glacial Zephyr']) {
