@@ -157,6 +157,8 @@ describe('action menu availability', () => {
   it('allows inspection of the spell book when every known tree is spent', () => {
     const b = casterBattle();
     b.units[0].castTrees = ['blast', 'controlling', 'movement'];
+    b.active = b.units[0].id;
+    b.begun = true;
     const { c, dispose } = controllerOver(b);
     expect(c.radialItems.find(item => item.key === 'cast')?.legal).toBe(true);
     c.pickProp('cast');

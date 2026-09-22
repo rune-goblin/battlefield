@@ -14,9 +14,9 @@ if (manifest.id !== MODULE_ID) {
 
 const OUT_DIR = 'dist-foundry';
 
-// The art and fonts are what `assetUrl` fetches at `modules/<id>/...`, and `module.json` is what
-// Foundry reads to find the bundle. Both sit beside the build output, which is the folder
-// Foundry serves as the module.
+// The art, fonts and rules page are what `assetUrl` fetches at `modules/<id>/...`, and
+// `module.json` is what Foundry reads to find the bundle. All of them sit beside the build
+// output, which is the folder Foundry serves as the module.
 const moduleFiles = (): Plugin => ({
   name: 'battlefield-module-files',
   apply: 'build',
@@ -24,6 +24,7 @@ const moduleFiles = (): Plugin => ({
     cpSync(here('./public/art'), here(`./${OUT_DIR}/art`), { recursive: true });
     cpSync(here('./public/fonts'), here(`./${OUT_DIR}/fonts`), { recursive: true });
     cpSync(here('./public/outcome'), here(`./${OUT_DIR}/outcome`), { recursive: true });
+    cpSync(here('./public/rules.html'), here(`./${OUT_DIR}/rules.html`));
     cpSync(here('./module.json'), here(`./${OUT_DIR}/module.json`));
     cpSync(here('./LICENSE'), here(`./${OUT_DIR}/LICENSE`));
   },

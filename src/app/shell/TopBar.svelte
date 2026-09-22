@@ -6,6 +6,7 @@
   import { setDock, toggleDock, ui } from './layout.svelte.js';
   import { tableCalled, tableSummons } from '../game.svelte.js';
   import { viewer } from '../viewer.svelte.js';
+  import { assetUrl } from '../../board/asset-base.js';
 
   interface Props {
     /** Stage-specific readout, left of centre: round and turn in battle, the deploy note in
@@ -64,7 +65,7 @@
         <a href="?textures" title="Terrain texture lab">Textures</a>
         <a href="?vfx" title="Spell effect gallery">Effects</a>
       {/if}
-      <a href="rules.html" target="_blank" rel="noopener">Rules</a>
+      <a href={assetUrl('rules.html')} target="_blank" rel="noopener">Rules</a>
       <a href="https://github.com/rune-goblin/battlefield" target="_blank" rel="noopener">Source</a>
     </nav>
   </div>

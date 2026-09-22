@@ -9,9 +9,13 @@
   const rollNote = 'Roll 1d20 plus this bonus. Target, height, range and action modifiers apply when choosing an attack.';
   const volley = $derived((unit.stats.volley ?? 0) - unit.disorder + rollBonus(unit) + (garrisoned(battle, unit) ? 1 : 0));
   const spellRanges = $derived(unit.trees.map(tree => `${TREE_LABEL[tree]}: ${castCeiling(battle, tree)} hexes`).join(' · '));
+  const sourceName = (name?: string) => name?.replace(/\s*\[(Battle|Salvo)\]/g, '');
 </script>
 
 <section class="unit-sheet" aria-label={`${unit.name} stats`}>
+  {#if unit.tradition}
+    <div class="caster" title={spellRanges}>{unit.tradition[0].toUpperCase() + unit.tradition.slice(1)} caster</div>
+  {/if}
   {#if fort}
     <div class="fortified" title="Cover applies to incoming ranged attacks across an intact, closed wall. Gaps, high-angle attacks and attackers inside bypass that wall. Cover uses the highest bonus, including Guard.">
       <strong>{fort.label}</strong><span>+{fort.cover}{fort.maxCover !== fort.cover ? `–${fort.maxCover}` : ''} ranged cover</span>
@@ -25,10 +29,10 @@
   </dl>
   <div class="attacks" aria-label="Attack rolls and weapon ranges">
     {#if unit.stats.strike !== null}
-      <div class="attack" title={rollNote}><span>Strike</span><strong>{signed(strikeModifier(battle, unit, unit))}</strong><small>Adjacent</small></div>
+      <div class="attack" title={rollNote}><span>{sourceName(unit.attackSources?.strike) ?? 'Strike'}</span><strong>{signed(strikeModifier(battle, unit, unit))}</strong><small>Adjacent</small></div>
     {/if}
     {#if unit.stats.volley !== null}
-      <div class="attack" title={`${rollNote} ${shootRangeLabel(battle, unit)}`}><span>Volley</span><strong>{signed(volley)}</strong><small>{shootFloor(battle, unit)}–{shootCeiling(battle, unit)} hexes</small></div>
+      <div class="attack" title={`${rollNote} ${shootRangeLabel(battle, unit)}`}><span>{sourceName(unit.attackSources?.volley) ?? 'Volley'}</span><strong>{signed(volley)}</strong><small>{shootFloor(battle, unit)}–{shootCeiling(battle, unit)} hexes</small></div>
     {/if}
     {#if unit.stats.spellAttack !== null}
       <div class="attack" title={`${rollNote} ${spellRanges}`}><span>Spell attack</span><strong>{signed(spellAttackModifier(unit))}</strong><small>{unit.trees.includes('blast') ? `Blast ${castCeiling(battle, 'blast')} hexes` : 'By spell'}</small></div>
@@ -45,6 +49,7 @@
 
 <style>
   .unit-sheet { display: flex; flex-direction: column; gap: .6rem; margin: .35rem 0 .25rem; }
+  .caster { color: var(--accent); font-size: .85rem; font-weight: 650; }
   .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: .8rem; padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
   dl { margin: 0; }
   dt { color: var(--muted); font-size: .76rem; }

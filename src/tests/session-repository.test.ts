@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, type BattleState, type UnitCard } from '../engine/index.js';
+import { createBattle, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
 import { submissionOf } from '../runtime/interactions.js';
 import {
   freshSession, isBattleSession, migrateLegacySave, reviveSession, SCHEMA_VERSION, type BattleSession,
@@ -38,6 +38,32 @@ function fakeStorage(seed: Record<string, string> = {}): WebStorage & { items: R
 }
 
 describe('the browser session repository', () => {
+  it('repairs old catalogue spell stats without changing morale, wounds or custom overrides', () => {
+    const session = freshSession();
+    const old = structuredClone(OFFICIAL.find(c => c.name === 'Apprentice Magician Clique')!);
+    delete old.sheet!.spellAttack;
+    delete old.sheet!.spellDc;
+    delete old.sheet!.battleName;
+    delete old.sheet!.salvoName;
+    session.setup.units = [{ id: 'mage', card: old, side: 'attacker', square: 'c2', engines: [] }];
+    session.battle = createBattle({ board: openBoard(), units: [{ id: 'mage', card: old, side: 'attacker', square: 'c2' }] });
+    const unit = session.battle.units[0];
+    unit.wounds = 3;
+    unit.disorder = 1;
+    expect(unit.stats.spellAttack).toBe(9);
+    const custom = structuredClone(session);
+    custom.setup.units[0].card.overrides!.spellAttack = 17;
+    custom.battle!.units[0].stats.spellAttack = 17;
+    expect(reviveSession(custom)!.battle!.units[0].stats.spellAttack).toBe(17);
+    const changedSheet = structuredClone(session);
+    changedSheet.setup.units[0].card.sheet!.ac = 30;
+    expect(reviveSession(changedSheet)!.battle!.units[0].stats.spellAttack).toBe(9);
+    const fixed = reviveSession(session)!;
+    expect(fixed.battle!.units[0]).toMatchObject({ wounds: 3, disorder: 1, stats: { spellAttack: 15, spellDc: 22 },
+      attackSources: { strike: 'Sparking Wands', volley: 'Barrage of Force' } });
+    expect(reviveSession(structuredClone(fixed))).toEqual(fixed);
+  });
+
   it('migrates a v4 save with its unit IDs and log intact', async () => {
     const battle = battleState();
     const storage = fakeStorage({ [LEGACY_KEY]: legacySave(battle) });

@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { COMBATANTS, deriveStats, type UnitCard } from '../engine/index.js';
+import { COMBATANTS, OFFICIAL, deriveStats, type UnitCard } from '../engine/index.js';
 import {
   cardFromActor, demoralizedOf, importBaselineOf, troopActorProblems, woundsOf,
   type TroopActor, type TroopItem,
@@ -39,6 +39,49 @@ function troopActor(extra: TroopItem[] = [], hitPoints = 96): TroopActor {
 }
 
 describe('pf2e troop card', () => {
+  it('imports the Clique’s spell attack independently of its two DC-based attacks', () => {
+    const actor = troopActor();
+    actor.name = 'Apprentice Magician Clique';
+    actor.system!.details!.level!.value = 5;
+    actor.items = [
+      { name: 'Sparking Wands', type: 'action', system: { description: { value: '@Template[type:emanation|distance:5] @Damage[1d8[electricity]] @Check[reflex|dc:19|basic]' } } },
+      { name: 'Barrage of Force', type: 'action', system: { description: { value: '@Template[type:burst|distance:10] within 120 feet @Damage[5d4[force]] @Check[reflex|dc:19|basic]' } } },
+      { name: 'Arcane Prepared Spells', type: 'spellcastingEntry', system: { tradition: { value: 'arcane' }, spelldc: { value: 15, dc: 22 } } },
+    ];
+    const card = cardFromActor(actor);
+    expect(card.sheet).toMatchObject({ battleName: 'Sparking Wands', salvoName: 'Barrage of Force', spellAttack: 15, spellDc: 22 });
+    expect(deriveStats(card)).toMatchObject({ strike: 9, volley: 9, spellAttack: 15, spellDc: 22 });
+    expect(deriveStats(OFFICIAL.find(c => c.name === actor.name)!)).toMatchObject({ strike: 9, volley: 9, spellAttack: 15, spellDc: 22 });
+  });
+
+  it('grants no Volley from spellcasting or ranged spell items', () => {
+    const actor = troopActor();
+    actor.items = [battleAction(19),
+      { type: 'spellcastingEntry', system: { tradition: { value: 'arcane' }, spelldc: { value: 15, dc: 22 } } },
+      { name: 'Ranged spell', type: 'spell', system: { description: { value: '@Template[type:burst|distance:10] within 120 feet @Damage[5d4[force]] @Check[reflex|dc:22|basic]' } } },
+    ];
+    expect(deriveStats(cardFromActor(actor))).toMatchObject({ volley: null, reach: null, spellAttack: 15, spellDc: 22 });
+  });
+
+  it('reads prepared spell statistics and restores Demoralized only on prepared values', () => {
+    const raw: TroopItem = { type: 'spellcastingEntry', system: { spelldc: { value: 15, dc: 22 } } };
+    expect(cardFromActor(troopActor([raw, demoralized(2)])).sheet).toMatchObject({ spellAttack: 15, spellDc: 22 });
+    const prepared = { ...raw, statistic: { check: { mod: 15 }, dc: { value: 22 } } };
+    expect(cardFromActor(troopActor([prepared, demoralized(2)])).sheet).toMatchObject({ spellAttack: 17, spellDc: 24 });
+  });
+
+  it('keeps a single entry’s attack/DC pair in the selected tradition', () => {
+    const entry = (tradition: string, value: number, dc: number): TroopItem => ({ type: 'spellcastingEntry', system: { tradition: { value: tradition }, spelldc: { value, dc } } });
+    const card = cardFromActor(troopActor([entry('divine', 24, 32), entry('divine', 27, 35), entry('arcane', 30, 40)]));
+    expect(card).toMatchObject({ tradition: 'divine', sheet: { spellAttack: 27, spellDc: 35 } });
+  });
+
+  it('keeps the fallback for innate entries with no source attack statistic', () => {
+    const card = cardFromActor(troopActor([{ type: 'spellcastingEntry', system: { spelldc: { value: 0, dc: 24 } } }]));
+    expect(card.sheet!.spellAttack).toBeUndefined();
+    expect(deriveStats(card)).toMatchObject({ spellAttack: 11, spellDc: 24 });
+  });
+
   it.each(['arcane', 'divine', 'occult', 'primal'] as const)('imports an explicit %s tradition', tradition => {
     const card = cardFromActor(troopActor([{ type: 'spellcastingEntry', name: 'Spellcasting', system: { tradition: { value: tradition } } }]));
     expect(card).toMatchObject({ caster: true, tradition });

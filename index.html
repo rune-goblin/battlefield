@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battlefield</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='1' y='6' width='14' height='4' rx='1' fill='%237a2e1f'/></svg>">
+<style>
+  :root { --ink:#1f1a17; --paper:#f8f4ec; --rule:#b9ab93; --accent:#7a2e1f; --muted:#6b5f52; --band:#efe7d8; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--paper); color:var(--ink); font:17px/1.55 Georgia,"Iowan Old Style","Palatino Linotype",serif; }
+  main { max-width:44rem; margin:0 auto; padding:4rem 1rem 5rem; }
+  h1 { font-size:2.8rem; line-height:1.1; margin:0 0 .4rem; }
+  .sub { color:var(--muted); font-style:italic; margin:0 0 2.5rem; }
+  .choices { display:grid; gap:1rem; }
+  .choice { display:block; padding:1.1rem 1.25rem; border:1px solid var(--rule); border-left:4px solid var(--accent);
+    background:var(--band); color:var(--ink); text-decoration:none; border-radius:2px; }
+  .choice:hover, .choice:focus-visible { border-color:var(--accent); outline:none; }
+  .choice strong { display:block; font-size:1.3rem; color:var(--accent); }
+  .choice span { color:var(--muted); }
+  .choice[hidden] { display:none; }
+  footer { margin-top:3rem; font-size:.9rem; color:var(--muted); }
+  footer a { color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Battlefield</h1>
+  <p class="sub">A fast battle game for armies: three actions, four Health, three Morale.</p>
+
+  <div class="choices">
+    <a class="choice" id="resume" href="play.html" hidden>
+      <strong>Continue</strong>
+      <span id="resume-detail">Return to the battle in progress.</span>
+    </a>
+    <a class="choice" href="play.html?new">
+      <strong>New battle</strong>
+      <span>Build the field and muster both armies from the troop library.</span>
+    </a>
+    <a class="choice" href="play.html?example">
+      <strong>Example battle</strong>
+      <span>Three units a side: Line Infantry, Heavy Cavalry and magicians against kobolds, trolls and mitflits.</span>
+    </a>
+    <a class="choice" href="rules.html">
+      <strong>Rules</strong>
+      <span>The complete rules, with reference tables for troops, spells and siege engines.</span>
+    </a>
+  </div>
+
+  <footer><a href="https://github.com/rune-goblin/battlefield" rel="noopener">Source</a></footer>
+</main>
+<script>
+  // proto: reads the key `src/adapters/browser/localRepository.ts` writes, so a page with no
+  // bundle can offer the saved battle.
+  try {
+    const session = JSON.parse(localStorage.getItem('battlefield.session.v1') ?? 'null');
+    if (session) {
+      const battle = session.battle;
+      document.getElementById('resume').hidden = false;
+      document.getElementById('resume-detail').textContent = battle
+        ? `Return to the battle in progress: day ${battle.day ?? 1}, round ${battle.round}.`
+        : 'Return to the battle you were setting up.';
+    }
+  } catch { /* private browsing */ }
+</script>
+</body>
+</html>

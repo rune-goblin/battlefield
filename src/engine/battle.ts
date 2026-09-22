@@ -96,6 +96,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     return {
       id, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
+      ...(d.card.sheet ? { attackSources: { strike: d.card.sheet.battleName, volley: d.card.sheet.salvoName } } : {}),
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
       speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
@@ -1498,8 +1499,11 @@ function activityOption(state: BattleState, u: Unit, type: Verb, index: Activity
 }
 
 function offerFor(state: BattleState, u: Unit, type: Verb, spell: Tree | null): ActionOffer {
-  const blocked = isAttack(type, spell) && u.attacked ? 'already attacked this activation'
-    : spell && u.castTrees.includes(spell) ? 'already cast this activation' : null;
+  // Before `begin`, flags on the unit belong to its last activation — and a battle saved before
+  // `finish` cleared `castTrees` still carries them.
+  const current = state.begun && state.active === u.id;
+  const blocked = current && isAttack(type, spell) && u.attacked ? 'already attacked this activation'
+    : current && spell && u.castTrees.includes(spell) ? 'already cast this activation' : null;
   const activities = (type === 'cast' ? [1, 2, 3, 4] : [1, 2, 3]).map((i) => activityOption(state, u, type, i as ActivityIndex, spell, blocked));
   return {
     type, spell,

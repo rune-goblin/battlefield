@@ -1,3 +1,4 @@
+import './launch.js';
 import { mount } from 'svelte';
 import App from './App.svelte';
 import { blockPageZoom } from './app-root.js';

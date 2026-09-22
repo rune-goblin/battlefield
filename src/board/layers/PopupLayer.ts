@@ -56,9 +56,9 @@ const CROWDED_STAGGER_MS = 500;
 const CROWDED = 4;
 const LIFE_MS = 3500;
 const POP_MS = 250;
-// What a blow cost arrives under the word that caused it: smaller, and slower to swell.
+// What a blow cost arrives under the word that caused it, slower to swell.
 const EFFECT_POP_MS = 400;
-const EFFECT_SCALE = 0.85;
+const EFFECT_SCALE = 1;
 const LOUD_SCALE = 1.25;
 // A word that grows from a point, fully opaque, reads as a flash: it swells from this size and fades in.
 const POP_FROM = 0.6;
@@ -104,6 +104,8 @@ function styleFor(tone: PopupTone): PIXI.TextStyle {
 }
 
 const ICON_PX = DRAWN_PX * 0.8;
+// The Health heart and Morale banner carry the meaning of a bare number, so they outsize it.
+const BAR_ICON_PX = DRAWN_PX * 1.3;
 const ICON_GAP = DRAWN_PX * 0.12;
 
 const icons = new Map<PopupIcon, PIXI.Texture>();
@@ -121,9 +123,11 @@ function iconFor(icon: PopupIcon, x: number): PIXI.Sprite | null {
   const texture = icons.get(icon);
   if (!texture) return null;
   const sprite = new PIXI.Sprite(texture);
-  sprite.anchor.set(0, 1);
-  sprite.scale.set(ICON_PX / Math.max(texture.width, texture.height));
-  sprite.position.set(x, -DRAWN_PX * 0.26);
+  const bar = isBar(icon);
+  sprite.anchor.set(0, bar ? 0.5 : 1);
+  sprite.scale.set((bar ? BAR_ICON_PX : ICON_PX) / Math.max(texture.width, texture.height));
+  // A bar icon centres on the glyphs, which sit above the baseline by their own height.
+  sprite.position.set(x, bar ? -DRAWN_PX * 0.62 : -DRAWN_PX * 0.26);
   return sprite;
 }
 

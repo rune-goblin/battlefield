@@ -1,5 +1,5 @@
 import {
-  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification,
+  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification, deriveStats,
   type BattleState, type Board, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
@@ -231,6 +231,28 @@ function repairFortifications(board: Board): void {
   }
 }
 
+/** Backfill source statistics only when the saved sheet still matches a catalogue card.
+ * Preserve custom sheets, explicit overrides and battle statistics that have changed. */
+function repairSourceAttacks(setup: BattleSetupDraft, battle: BattleState | null): void {
+  for (const saved of setup.units) {
+    const card = saved.card;
+    const source = [...COMBATANTS, ...OFFICIAL].find(c => c.name === card.name && c.level === card.level && c.role === card.role);
+    if (!card.sheet || !source?.sheet) continue;
+    if (!Object.entries(card.sheet).every(([key, value]) => source.sheet![key as keyof typeof source.sheet] === value)) continue;
+    const before = deriveStats(card);
+    card.sheet = { ...source.sheet, ...card.sheet };
+    const after = deriveStats(card);
+    const unit = battle?.units.find(u => u.id === saved.id && u.name === card.name);
+    if (!unit) continue;
+    for (const key of ['spellAttack', 'spellDc'] as const) {
+      if (unit.stats[key] === before[key]) unit.stats[key] = after[key];
+    }
+    unit.attackSources ??= {};
+    unit.attackSources.strike ??= card.sheet.battleName;
+    unit.attackSources.volley ??= card.sheet.salvoName;
+  }
+}
+
 /** Fill the fields a setup gained after it was written. A setup written before Wave 2.2 named
  * its pieces by array position and its attached engines by name alone; both take IDs here. */
 function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
@@ -312,6 +334,7 @@ export function isBattleSession(value: unknown): value is BattleSession {
 
 function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleId: string): BattleSession {
   const battle = saved && intactBattle(saved) ? repairBattleIds(migrateMorale(saved)) : null;
+  repairSourceAttacks(setup, battle);
   return {
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
@@ -357,6 +380,7 @@ function foldSubmissions(s: BattleSession & HeldSubmissions): InteractionRecord[
 export function reviveSession(value: unknown): BattleSession | null {
   const s = value as BattleSession | null;
   if (!s || typeof s !== 'object' || s.schemaVersion !== SCHEMA_VERSION || !isSetupDraft(s.setup)) return null;
+  repairSourceAttacks(s.setup, s.battle && intactBattle(s.battle) ? s.battle : null);
   repairSetup(s.setup);
   s.battle = s.battle && intactBattle(s.battle) ? repairBattleIds(migrateMorale(s.battle)) : null;
   s.stage = LIFECYCLE_STAGES.includes(s.stage) ? s.stage : s.battle ? 'battle' : 'setup';

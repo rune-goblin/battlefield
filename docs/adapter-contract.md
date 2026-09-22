@@ -86,6 +86,17 @@ Troop imports read the first explicit spellcasting-entry tradition, then its nam
 structured field is absent. Legacy cards without a tradition retain the Arcane fallback.
 Bundled roster generation follows the same rule.
 
+Spell statistics come from the strongest spellcasting entry in that tradition, ordered by DC
+then attack bonus. Both values come from the same entry. Live actors provide prepared
+`statistic.check.mod` and `statistic.dc.value`; raw NPC documents provide `system.spelldc.value`
+and `system.spelldc.dc`. Prepared values regain the campaign Demoralized penalty before
+Battlefield applies it. Raw values already exclude that penalty. A raw zero attack value on
+an innate entry means no source attack statistic; missing statistics retain the level fallback.
+Spellcasting alone grants no Volley. Battle and Salvo still require source troop actions.
+Their names travel through `sheet.battleName` / `sheet.salvoName` to `Unit.attackSources`.
+The unit sheet displays those names and the caster tradition. Save loading backfills these
+fields and spell statistics for unchanged catalogue sheets, while preserving custom overrides.
+
 Multi-recipient spells use unit IDs joined by `+`. Storm uses connected cell IDs; its menu
 collapses areas that affect the same enemies. Gate uses ordered source/destination cell pairs,
 with a maximum of two pairs. Destinations must be distinct and empty before either transfer.

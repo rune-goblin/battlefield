@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { actionsOf, casterOf, traditionOf, signalsOf } from './troop-signals.mjs';
+import { actionsOf, casterOf, signalsOf } from './troop-signals.mjs';
+import { spellcastingOf } from '../src/adapters/pf2e/spellcasting.ts';
 
 const dir = new URL('../data/troops/', import.meta.url);
 const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
@@ -29,6 +30,7 @@ const cards = files.map((f) => {
   const reach = salvo ? reachOf(salvo.system.description.value) : null;
   const actions = actionsOf(d);
   const fly = (s.attributes.speed.otherSpeeds ?? []).some((o) => o.type === 'fly');
+  const { tradition, ...spellStats } = spellcastingOf(d.items);
   return {
     slug: f.replace(/\.json$/, ''),
     name: d.name,
@@ -37,7 +39,7 @@ const cards = files.map((f) => {
     pace: fly || s.attributes.speed.value >= 30,
     fear: false,
     caster: casterOf(d, actions),
-    tradition: traditionOf(d),
+    tradition,
     signals: signalsOf(actions),
     tactics: [],
     sheet: {
@@ -52,6 +54,9 @@ const cards = files.map((f) => {
       perception: s.perception?.mod ?? s.attributes.perception?.value ?? 0,
       speed: s.attributes.speed.value,
       fly,
+      battleName: battle.name,
+      ...(salvo ? { salvoName: salvo.name } : {}),
+      ...spellStats,
     },
     overrides: {
       strike: battleDc - 10,

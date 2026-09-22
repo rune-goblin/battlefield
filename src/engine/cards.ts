@@ -46,15 +46,15 @@ export interface TroopSheet {
   battleDc: number;
   salvoDc: number | null;
   salvoFeet: number | null;
+  battleName?: string;
+  salvoName?: string;
   fortitude: number;
   reflex: number;
   will: number;
   perception: number;
   speed: number;
   fly: boolean;
-  // proto: no importer reads a spellcasting entry yet — these stay unset on every real troop, and
-  // `deriveStats` falls back to the level tables. A hand-authored `overrides` can supply real
-  // numbers meanwhile, the same way official.ts already overrides strike/volley/will today.
+  /** Source spellcasting statistics. Legacy/custom casters without these use level estimates. */
   spellAttack?: number;
   spellDc?: number;
 }

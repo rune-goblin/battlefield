@@ -1,5 +1,6 @@
-import { MAX_WOUNDS, type Tradition, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
+import { MAX_WOUNDS, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
 import type { ImportBaseline } from '../../runtime/session.js';
+import { spellcastingOf } from './spellcasting.js';
 
 /** The slice of a PF2e item this adapter reads. Structural, so a live embedded document, an
  * unprepared source object and a test fixture all satisfy it. */
@@ -7,9 +8,11 @@ export interface TroopItem {
   toObject?: () => TroopItem;
   name?: string;
   type?: string;
+  statistic?: { check?: { mod?: number }; dc?: { value?: number } };
   system?: {
     slug?: string | null;
     tradition?: { value?: string | null } | null;
+    spelldc?: { value?: number; dc?: number } | null;
     description?: { value?: string | null } | null;
     badge?: { value?: number | null } | null;
     value?: { value?: number | null } | null;
@@ -56,17 +59,6 @@ const SIGNALS: [Signal, RegExp][] = [
   ['no-retreat', /no retreat/i],
 ];
 
-/** The first explicit spellcasting tradition supplies the troop’s single battlefield list. */
-function traditionOf(items: TroopItem[]): Tradition | undefined {
-  for (const item of items.filter(item => item.type === 'spellcastingEntry')) {
-    const value = item.system?.tradition?.value;
-    if (value && ['arcane', 'divine', 'occult', 'primal'].includes(value)) return value as Tradition;
-    const name = /\b(arcane|divine|occult|primal)\b/i.exec(item.name ?? '')?.[1].toLowerCase();
-    if (name) return name as Tradition;
-  }
-  return undefined;
-}
-
 const CASTING_ACTION = /troop spellcasting|constant spells/i;
 // No published troop names one; the trait pair below is how Fey Host's Wild Gaze reads as fear.
 const FEAR_ACTION = /frightful presence|fear aura|aura of fear/i;
@@ -98,7 +90,7 @@ const withinFeet = (html: string): number | null => {
 // derives it, however far its range increment runs.
 const bandOf = (feet: number): Reach => (feet <= 60 ? 'short' : feet <= 120 ? 'medium' : 'long');
 
-interface Attacks { battleDc: number; salvoDc: number | null; salvoFeet: number | null }
+interface Attacks { battleDc: number; salvoDc: number | null; salvoFeet: number | null; battleName?: string; salvoName?: string }
 
 /** Feet within which an attack still counts as the troop's own reach. */
 const BATTLE_REACH = 10;
@@ -113,8 +105,8 @@ const TEMPLATE = /@Template\[(?:type:)?(\w+)\|distance:(\d+)/g;
  * burst, breathed as a cone or loosed at a stated distance is a Salvo, and the longest is kept.
  */
 function publishedAttacks(actions: TroopItem[]): Attacks | null {
-  const battle: { dc: number; reflex: boolean }[] = [];
-  let salvo: { dc: number | null; feet: number } | null = null;
+  const battle: { dc: number; reflex: boolean; name?: string }[] = [];
+  let salvo: { dc: number | null; feet: number; name?: string } | null = null;
   for (const action of actions) {
     const text = description(action).replace(/<[^>]+>/g, ' ');
     // proto: a once-a-day area is a special ability, and no card carries one yet.
@@ -127,15 +119,16 @@ function publishedAttacks(actions: TroopItem[]): Attacks | null {
     const feet = thrown.length ? Math.max(withinFeet(text) ?? 0, ...thrown) : templates.length ? 0 : withinFeet(text) ?? 0;
     if (feet > BATTLE_REACH) {
       // A breath or volley that names no save of its own is resolved at the troop's Battle DC.
-      if (!salvo || feet > salvo.feet) salvo = { dc, feet };
-    } else if (dc !== null) battle.push({ dc, reflex: save![1] === 'reflex' });
+      if (!salvo || feet > salvo.feet) salvo = { dc, feet, name: action.name };
+    } else if (dc !== null) battle.push({ dc, reflex: save![1] === 'reflex', name: action.name });
   }
   // A Fortitude DC at close reach is usually a poison riding on the attack, so Reflex leads.
   const close = battle.some((b) => b.reflex) ? battle.filter((b) => b.reflex) : battle;
   // proto: a troop with no close attack fights hand to hand at its Salvo's DC.
   const battleDc = close.length ? Math.min(...close.map((b) => b.dc)) : salvo?.dc ?? null;
   if (battleDc === null) return null;
-  return { battleDc, salvoDc: salvo ? salvo.dc ?? battleDc : null, salvoFeet: salvo?.feet ?? null };
+  return { battleDc, salvoDc: salvo ? salvo.dc ?? battleDc : null, salvoFeet: salvo?.feet ?? null,
+    battleName: close.find(b => b.dc === battleDc)?.name, salvoName: salvo?.name };
 }
 
 /** ReignMaker labels an army's two attacks `[Battle]` and `[Salvo]`; a published troop labels
@@ -155,7 +148,8 @@ function attacksOf(items: TroopItem[]): { attacks: Attacks | null; problems: str
   const salvoFeet = salvo ? withinFeet(description(salvo)) : null;
   if (salvo && salvoDc === null) problems.push('the [Salvo] action states no check DC');
   if (salvo && salvoFeet === null) problems.push('the [Salvo] action states no distance');
-  return { attacks: problems.length ? null : { battleDc: battleDc!, salvoDc, salvoFeet }, problems };
+  return { attacks: problems.length ? null : { battleDc: battleDc!, salvoDc, salvoFeet,
+    battleName: battle?.name, salvoName: salvo?.name }, problems };
 }
 
 /** PF2e leaves `system.slug` null on hand-authored items and falls back to the sluggified
@@ -247,7 +241,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
   const actions = items.filter((it) => it.type === 'action');
   const actionNames = actions.map((it) => it.name ?? '');
 
-  const { battleDc, salvoDc, salvoFeet } = attacksOf(items).attacks!;
+  const { battleDc, salvoDc, salvoFeet, battleName, salvoName } = attacksOf(items).attacks!;
   const reach = salvoFeet === null ? null : bandOf(salvoFeet);
 
   const speed = attributes.speed!.value!;
@@ -256,6 +250,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
   // Demoralized's status penalty reaches every check and AC, and the engine subtracts disorder
   // itself; leaving it in the prepared numbers would take it twice.
   const demoralized = demoralizedOf(actor);
+  const { tradition, ...spellStats } = spellcastingOf(items, demoralized);
   const sheet: TroopSheet = {
     ac: attributes.ac!.value! + demoralized,
     hp: attributes.hp!.max!,
@@ -268,6 +263,9 @@ export function cardFromActor(actor: TroopActor): UnitCard {
     perception: (system.perception?.mod ?? attributes.perception?.value ?? 0) + demoralized,
     speed,
     fly: flySpeed !== undefined,
+    ...(battleName ? { battleName } : {}),
+    ...(salvoName ? { salvoName } : {}),
+    ...spellStats,
   };
 
   const signals = SIGNALS.filter(([, re]) => actionNames.some((n) => re.test(n))).map(([s]) => s);
@@ -285,7 +283,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
     pace: sheet.fly || speed >= SPEED_PER_SQUARE,
     fear,
     caster,
-    ...(caster && traditionOf(items) ? { tradition: traditionOf(items) } : {}),
+    ...(caster && tradition ? { tradition } : {}),
     signals,
     // proto: the contract keeps tactics a hand-authored list and the statblock states none, so
     // an import authors none, as scripts/import-troops.mjs does. This suppresses the role's

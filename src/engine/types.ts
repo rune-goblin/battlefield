@@ -52,6 +52,7 @@ export interface Unit {
   level: number;
   role: Role;
   stats: UnitStats;
+  attackSources?: { strike?: string; volley?: string };
   pace: boolean;
   /** Feet a single Move action buys. */
   speed: number;
