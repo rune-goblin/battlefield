@@ -1,5 +1,5 @@
 import {
-  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES,
+  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification,
   type BattleState, type Board, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
@@ -219,9 +219,23 @@ function isSetupDraft(value: unknown): value is BattleSetupDraft {
   return !!s && typeof s === 'object' && !!s.spec && typeof s.spec === 'object' && Array.isArray(s.units);
 }
 
+/** Retire the old tier-zero barricade without restoring a breached wall. */
+function repairFortifications(board: Board): void {
+  if (board.spec.construction?.tier === 0) board.spec.construction.tier = 1;
+  for (const wall of Object.values(board.walls)) {
+    if (wall.tier !== 0) continue;
+    const damage = wall.boxes - wall.remaining;
+    wall.tier = 1;
+    wall.boxes = fortification(1).boxes;
+    if (wall.remaining > 0) wall.remaining = Math.max(0, wall.boxes - damage);
+  }
+}
+
 /** Fill the fields a setup gained after it was written. A setup written before Wave 2.2 named
  * its pieces by array position and its attached engines by name alone; both take IDs here. */
 function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
+  if (setup.spec.construction?.tier === 0) setup.spec.construction.tier = 1;
+  if (setup.board) repairFortifications(setup.board);
   setup.spec.size ??= (setup.board?.squares.length as 9 | 11 | undefined) ?? 11;
   setup.emplacements ??= [];
   for (const u of setup.units) {
@@ -238,6 +252,9 @@ function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
 /** A battle keeps the unit IDs it was created with; its engines predate equipment IDs, and
  * nothing outside the record referred to them, so they take fresh ones. */
 function repairBattleIds(battle: BattleState): BattleState {
+  repairFortifications(battle.board);
+  if (battle.nextBoard) repairFortifications(battle.nextBoard);
+  for (const field of battle.previousBattlefields ?? []) repairFortifications(field.board);
   const engines = [
     ...battle.engines,
     ...battle.units.flatMap((u) => u.engines),

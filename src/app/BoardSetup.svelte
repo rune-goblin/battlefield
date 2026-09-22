@@ -74,7 +74,7 @@
     <label>Construction
       <select value={fortTier} onchange={(e) => setConstruction(Number(e.currentTarget.value))}>
         <option value={-1}>none</option>
-        {#each [0, 1, 2, 3, 4] as t (t)}<option value={t}>{FORTIFICATIONS[t].name} · tier {t}</option>{/each}
+        {#each FORTIFICATIONS as wall (wall.tier)}<option value={wall.tier}>{wall.tier} · {wall.name}</option>{/each}
       </select>
     </label>
     <label>Seed <input type="number" value={spec.seed} onchange={(e) => void run(editSpec({ seed: Number(e.currentTarget.value) }))}></label>

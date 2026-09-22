@@ -323,14 +323,19 @@ describe('fortifications and gates', () => {
       expect(gates).toHaveLength(1); expect(gates[0][0].split('|')).toContain(gates[0][1].inside);
     }
   });
-  it('cycles a painted gate through its interior, the reverse, and plain wall', () => {
+  it('cycles open A, closed A, open B, closed B, plain wall, then repeats', () => {
     const b = openBoard(); b.walls['c4|c5'] = makeWall(4, 'c5');
     const click = (board: typeof b) => applyStroke(board, { cells: [], edges: ['c4|c5', 'd4|d5'], brush: { kind: 'gate' } });
-    const once = click(b), twice = click(once), thrice = click(twice);
-    expect(once.walls['c4|c5']).toMatchObject({ tier: 4, inside: 'c5', gate: { open: false } });
-    expect(twice.walls['c4|c5']).toMatchObject({ tier: 4, inside: 'c4', gate: { open: false } });
-    expect(thrice.walls['c4|c5']).toEqual(makeWall(4, 'c5'));
-    expect(once.walls['d4|d5']).toBeUndefined();
+    let board = b;
+    for (let cycle = 0; cycle < 2; cycle++) {
+      for (const [inside, open, flipped] of [['c5', true, false], ['c5', false, false], ['c4', true, true], ['c4', false, true]] as const) {
+        board = click(board);
+        expect(board.walls['c4|c5']).toEqual({ ...makeWall(4, inside), gate: { open, flipped, facing: inside } });
+        expect(board.walls['d4|d5']).toBeUndefined();
+      }
+      board = click(board);
+      expect(board.walls['c4|c5']).toEqual(makeWall(4, 'c5'));
+    }
     expect(b.walls['c4|c5'].gate).toBeUndefined();
   });
   it('paints swamp at any height', () => {
@@ -355,7 +360,7 @@ describe('fortifications and gates', () => {
   it('removes wall cover when a gate opens and bars operating in contact', () => {
     const b = setup(); b.board.walls['f6|g6'] = { ...makeWall(4, 'g6'), gate: { open: false } };
     const [u, t] = b.units;
-    expect(defenceOf(b, t, u, true)).toBe(t.stats.defence + 2);
+    expect(defenceOf(b, t, u, true)).toBe(t.stats.defence + 4);
     b.board.walls['f6|g6'].gate!.open = true;
     expect(defenceOf(b, t, u, true)).toBe(t.stats.defence);
     b.board.walls['d6|e6'] = { ...makeWall(3, 'd6'), gate: { open: false } };

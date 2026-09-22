@@ -68,7 +68,7 @@ describe('action commitment', () => {
     const s = act(state, { unit: 'u0', type: 'cast', spell: 'blast', activity: 1, target: 'u2', focus: 2 }, scriptedRng([10, 20]));
     expect(checkFor(s, 'Missile against').modifier).toBe(15);
     expect(unit(s, 'u2').wounds).toBe(1);
-    expect(unit(s, 'u0').castTrees).toContain('blast');
+    expect(s.activated).toContain('u0');
   });
 
   it('uses one boosted Line roll for both enemies, with one wound resolution each', () => {

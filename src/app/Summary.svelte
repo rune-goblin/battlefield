@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FORTIFICATIONS, SIDES, type Side } from '../engine/index.js';
+  import { fortification, SIDES, type Side } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
   import { gameMap } from './map-style.svelte.js';
   import { MapControls, TopBar } from './shell/index.js';
@@ -37,7 +37,7 @@
     ['Ground', spec.base],
     ['Grid', `${spec.grid ?? 'hex'} · ${(spec.size ?? 11) === 11 ? 'large' : 'original'}`],
     ['Feature', spec.feature ?? 'none'],
-    ['Construction', spec.construction ? `${FORTIFICATIONS[spec.construction.tier].name} · tier ${spec.construction.tier}` : 'none'],
+    ['Construction', spec.construction ? `${fortification(spec.construction.tier).name} · tier ${spec.construction.tier}` : 'none'],
     ['Day length', `${game.setup.roundsPerDay ?? 6} rounds`],
     ['Seed', String(spec.seed)],
   ]);

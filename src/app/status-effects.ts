@@ -1,4 +1,4 @@
-import { statusesOf, type BattleState, type Status, type Unit } from '../engine/index.js';
+import { wallsFor, statusesOf, type BattleState, type Status, type Unit } from '../engine/index.js';
 import { conditionWord } from './result-words.js';
 
 export interface StatusEffect {
@@ -17,6 +17,11 @@ const sourceName = (state: BattleState, id: string | null): string =>
 // The wording follows the modifier table in `public/rules.html`; a rule that changes there
 // changes here.
 const TEXT: Record<Status, (u: Unit, state: BattleState) => string> = {
+  fortified: (u, s) => {
+    const fort = wallsFor(s.board).fortifiedAt(u.square)!;
+    const bonus = fort.cover === fort.maxCover ? `+${fort.cover}` : `+${fort.cover}–${fort.maxCover}`;
+    return `${fort.label}. ${bonus} ranged cover when the attack crosses an intact, closed wall. Open gates, breaches, high-angle fire and attackers inside bypass that wall's cover. Use the highest cover or Guard bonus.`;
+  },
   guard: (u) => `+${u.guard!.defence} Defence until this unit next activates.${u.guard!.cap ? ' Dug in: every hit against it caps at 1 damage.' : ''}${u.guard!.holds ? ' Under cover: it holds its ground against an Overrun.' : ''}`,
   pinned: (u, s) => `Held by ${sourceName(s, u.pinnedBy)} at Volley + 10. It leaves its hex by Maneuver, which ends the pin when it changes hex, and it cannot charge.`,
   rooted: () => 'No Move, Charge or Maneuver on its next activation.',
@@ -43,7 +48,7 @@ const BADGE: Partial<Record<Status, (u: Unit) => string>> = {
 };
 
 export const statusEffectsOf = (unit: Unit, state: BattleState): StatusEffect[] =>
-  statusesOf(unit).map((status) => {
+  statusesOf(unit, state.board).map((status) => {
     const word = conditionWord(status);
     return {
       status, label: word.text, tone: word.tone === 'good' ? 'good' : 'warn',

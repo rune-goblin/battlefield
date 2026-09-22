@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { engagedEnemies, gateReason, isRouted, levelDc, notation } from '../../engine/index.js';
+  import { wallsFor, engagedEnemies, gateReason, isRouted, levelDc, notation } from '../../engine/index.js';
   import { actionIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
   import ActionBudget from '../ActionBudget.svelte';
@@ -9,7 +9,7 @@
   import type { BattleController } from './battle-controller.svelte.js';
 
   let { c }: { c: BattleController } = $props();
-  const interiorGates = $derived(c.nearbyGates.filter(([, wall]) => c.active && wall.inside === notation(c.active.square)));
+  const interiorGates = $derived(c.nearbyGates.filter(([key]) => c.active && wallsFor(c.b.board).insideOf(key) === notation(c.active.square)));
 </script>
 
 {#if c.active && c.act}

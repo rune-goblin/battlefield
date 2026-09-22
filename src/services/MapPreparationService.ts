@@ -1,5 +1,5 @@
 import {
-  BRIDGE_AXES, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
+  BRIDGE_AXES, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
 import type { BattleSession } from '../runtime/session.js';
@@ -24,7 +24,6 @@ function paintCell(board: Board, key: string, brush: PaintBrush): void {
     }
     square.terrain = brush.terrain;
     delete square.bridgeTurns;
-    if (brush.terrain === 'water') square.elevation = 0;
   } else if (brush.kind === 'elevation') {
     square.elevation = brush.level;
   } else if (brush.kind === 'erase') {
@@ -40,13 +39,23 @@ function paintEdge(board: Board, key: string, brush: PaintBrush): void {
   else if (brush.kind === 'gate') {
     const w = board.walls[key];
     if (!w) return;
-    const inside = w.inside ?? ends[0];
-    const reversed = ends.find((id) => id !== inside);
-    // Each stroke steps the edge through gate, reversed gate, plain wall; the second reversal
-    // hands the wall back the interior it started with.
-    if (!w.gate) { w.inside = inside; w.gate = { open: false }; }
-    else if (!w.gate.flipped) { w.inside = reversed; w.gate = { open: false, flipped: true }; }
-    else { w.inside = reversed; delete w.gate; }
+    const inside = wallsFor(board).insideOf(key) ?? ends[0];
+    const reversed = ends.find((id) => id !== inside)!;
+    // A starts on the inferred interior. Explicit facing preserves B even on a closed fort.
+    // Open A → closed A → open B → closed B → plain wall, then repeat.
+    if (!w.gate) {
+      w.inside = inside;
+      w.gate = { open: true, flipped: false, facing: inside };
+    } else if (w.gate.open) {
+      w.inside = inside;
+      w.gate = { ...w.gate, open: false, facing: inside };
+    } else if (!w.gate.flipped) {
+      w.inside = reversed;
+      w.gate = { open: true, flipped: true, facing: reversed };
+    } else {
+      w.inside = reversed;
+      delete w.gate;
+    }
   }
   else if (brush.kind === 'wall-clear' || brush.kind === 'erase') delete board.walls[key];
 }

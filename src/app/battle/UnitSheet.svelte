@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL,
+  import { wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL,
     shootCeiling, shootFloor, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
     type BattleState, type Unit } from '../../engine/index.js';
 
   let { battle, unit }: { battle: BattleState; unit: Unit } = $props();
+  const fort = $derived(unit.status === 'active' ? wallsFor(battle.board).fortifiedAt(unit.square) : null);
   const signed = (value: number) => `${value < 0 ? '−' : '+'}${Math.abs(value)}`;
   const rollNote = 'Roll 1d20 plus this bonus. Target, height, range and action modifiers apply when choosing an attack.';
   const volley = $derived((unit.stats.volley ?? 0) - unit.disorder + rollBonus(unit) + (garrisoned(battle, unit) ? 1 : 0));
@@ -11,6 +12,11 @@
 </script>
 
 <section class="unit-sheet" aria-label={`${unit.name} stats`}>
+  {#if fort}
+    <div class="fortified" title="Cover applies to incoming ranged attacks across an intact, closed wall. Gaps, high-angle attacks and attackers inside bypass that wall. Cover uses the highest bonus, including Guard.">
+      <strong>{fort.label}</strong><span>+{fort.cover}{fort.maxCover !== fort.cover ? `–${fort.maxCover}` : ''} ranged cover</span>
+    </div>
+  {/if}
   <dl class="vitals">
     <div title="Distance gained per Move action"><dt>Move</dt><dd>{movementSpeed(unit)} <small>ft</small></dd></div>
     <div title="Current armor class, including conditions and terrain. Cover against a ranged attacker can add protection."><dt>AC</dt><dd>{defenceOf(battle, unit, null, false)}</dd></div>
@@ -39,6 +45,7 @@
 
 <style>
   .unit-sheet { display: flex; flex-direction: column; gap: .6rem; margin: .35rem 0 .25rem; }
+  .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: .8rem; padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
   dl { margin: 0; }
   dt { color: var(--muted); font-size: .76rem; }
   dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 650; }

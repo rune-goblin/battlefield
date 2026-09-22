@@ -1,7 +1,8 @@
 import * as PIXI from 'pixi.js';
-import { at, gridOf, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
+import { wallsFor, at, gridOf, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { mix, shade } from './color.js';
+import { GATE_HALF_OPENING, gateHandles, gateLeaves } from '../gate-geometry.js';
 
 // The wall is a map symbol, not a picture of masonry: a thin spine along the edge with square
 // merlons straddling it. Its width never changes — a wall is a wall from any side of any hex —
@@ -257,17 +258,14 @@ function wallGraphics(a: Point, b: Point, size: number, wall: Wall, key: string,
   const shapes = breached ? breach(len, size, rnd) : battlement(len, span, shift, size, wall, rnd);
   if (wall.gate && !breached) {
     shapes.spine = null;
-    shapes.blocks = shapes.blocks.filter(block => Math.abs(block.cx - shift) > span * 0.23);
+    shapes.blocks = shapes.blocks.filter(block => Math.abs(block.cx - shift) > span * GATE_HALF_OPENING);
   }
   drawWall(bar, shapes, colours, size, breached);
   if (wall.gate && !breached) {
-    const gap = span * 0.24;
+    const gap = span * GATE_HALF_OPENING;
     bar.lineStyle({ width: spineWidth(size) * 2, color: colours.stone });
     bar.moveTo(-len / 2, 0).lineTo(shift - gap, 0);
     bar.moveTo(shift + gap, 0).lineTo(len / 2, 0);
-    bar.lineStyle({ width: spineWidth(size) * 2.4, color: wall.gate.open ? 0x6e9c67 : 0xb48b4c });
-    bar.moveTo(shift - gap, 0).lineTo(wall.gate.open ? shift - gap : shift, wall.gate.open ? -gap : 0);
-    bar.moveTo(shift + gap, 0).lineTo(wall.gate.open ? shift + gap : shift, wall.gate.open ? -gap : 0);
     bar.lineStyle(0);
   }
 
@@ -278,16 +276,49 @@ function wallGraphics(a: Point, b: Point, size: number, wall: Wall, key: string,
   return { bar, shadow };
 }
 
-/** Points out through the gate, away from the interior hex a unit operates it from. */
-function gateArrow(g: PIXI.Graphics, mid: Point, interior: Point, size: number): void {
-  const reach = Math.hypot(interior.x - mid.x, interior.y - mid.y) || 1;
-  const n = { x: (mid.x - interior.x) / reach, y: (mid.y - interior.y) / reach };
-  const along = (d: number, side = 0): [number, number] => [mid.x + n.x * d - n.y * side, mid.y + n.y * d + n.x * side];
-  const head = reach * 0.16;
-  g.lineStyle({ width: spineWidth(size) * 1.6, color: 0xb48b4c });
-  g.moveTo(...along(-reach * 0.3)).lineTo(...along(reach * 0.3));
+/** Plan-view timber doors. Their shape carries the state; the hinges identify the opening. */
+function drawGate(g: PIXI.Graphics, a: Point, b: Point, interior: Point, open: boolean, size: number, colours: EdgePalette): void {
+  const leaves = gateLeaves(a, b, interior, open);
+  const width = spineWidth(size) * 2.6;
+  const wood = 0xb48b4c;
+  const radius = Math.max(1.8, size * .023);
+  const handleOffset = width / 2 + radius;
+  const handles = gateHandles(a, b, interior, open, handleOffset);
+  for (const [index, { hinge, tip }] of leaves.entries()) {
+    g.lineStyle({ width: width + jointWidth(size) * 2, color: colours.joint, cap: PIXI.LINE_CAP.SQUARE });
+    g.moveTo(hinge.x, hinge.y).lineTo(tip.x, tip.y);
+    g.lineStyle({ width, color: wood, cap: PIXI.LINE_CAP.BUTT });
+    g.moveTo(hinge.x, hinge.y).lineTo(tip.x, tip.y);
+    // The iron reinforcement follows the outer face, opposite the handle, through the swing.
+    const { anchor, center } = handles[index];
+    const offset = width * .45 / handleOffset;
+    const ox = (anchor.x - center.x) * offset;
+    const oy = (anchor.y - center.y) * offset;
+    g.lineStyle({ width: Math.max(1.5, width * .5), color: 0x241d16, cap: PIXI.LINE_CAP.BUTT });
+    g.moveTo(hinge.x + ox, hinge.y + oy).lineTo(tip.x + ox, tip.y + oy);
+  }
+  // A small seam marks the two leaves without opening a hole in the closed barrier.
+  if (!open) {
+    const dx = b.x - a.x, dy = b.y - a.y, span = Math.hypot(dx, dy) || 1;
+    const mid = leaves[0].tip;
+    g.lineStyle({ width: jointWidth(size), color: colours.joint });
+    g.moveTo(mid.x - dy / span * width / 2, mid.y + dx / span * width / 2)
+      .lineTo(mid.x + dy / span * width / 2, mid.y - dx / span * width / 2);
+  }
+  for (const { hinge } of leaves) {
+    g.lineStyle({ width: jointWidth(size), color: colours.joint });
+    g.beginFill(wood).drawCircle(hinge.x, hinge.y, width * .65).endFill();
+  }
+  for (const { anchor, center } of handles) {
+    // Brass ring pulls sit beyond the timber on its inner face, with a short mounting stem.
+    g.lineStyle({ width: jointWidth(size) * 3, color: colours.joint });
+    g.moveTo(anchor.x, anchor.y).lineTo(center.x, center.y);
+    g.drawCircle(center.x, center.y, radius);
+    g.lineStyle({ width: jointWidth(size) * 1.5, color: 0xe8ce91 });
+    g.moveTo(anchor.x, anchor.y).lineTo(center.x, center.y);
+    g.drawCircle(center.x, center.y, radius);
+  }
   g.lineStyle(0);
-  g.beginFill(0xb48b4c).drawPolygon([...along(reach * 0.3 + head), ...along(reach * 0.3, head * 0.7), ...along(reach * 0.3, -head * 0.7)]).endFill();
 }
 
 /** A row of solid trapezoid teeth biting from the edge into `lowerCenter`'s side — a rock
@@ -404,10 +435,12 @@ export class EdgeLayer {
       bar.name = `Wall_${entry.key}`;
       shadows.addChild(shadow);
       this.container.addChild(bar);
-      if (entry.wall.gate && entry.wall.remaining > 0 && entry.wall.inside) {
-        const c = grid.center(parse(entry.wall.inside), size);
-        const midpoint = { x: (entry.p.x + entry.q.x) / 2, y: (entry.p.y + entry.q.y) / 2 };
-        gateArrow(g, midpoint, c, size);
+      if (entry.wall.gate && entry.wall.remaining > 0) {
+        const interior = grid.center(parse(wallsFor(board).insideOf(entry.key)!), size);
+        const doors = new PIXI.Graphics();
+        doors.name = `Gate_${entry.key}`;
+        drawGate(doors, entry.p, entry.q, interior, entry.wall.gate.open, size, colours);
+        this.container.addChild(doors);
       }
     });
 

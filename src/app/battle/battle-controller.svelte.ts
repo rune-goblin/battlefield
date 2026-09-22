@@ -359,7 +359,7 @@ export function createBattleController(deps: BattleDeps) {
       engineId: engineOn(u)?.id,
       loading: engineOn(u) ? engineLoading(engineOn(u)!) : undefined,
       verdict: dragging.dragTarget?.id === u.id ? (dragging.dragTarget.attack ? 'attack' : 'no') : null,
-      statuses: statusesOf(u),
+      statuses: statusesOf(u, b.board),
       pick: pickOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
     })),

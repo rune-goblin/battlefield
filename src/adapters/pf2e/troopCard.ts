@@ -4,6 +4,7 @@ import type { ImportBaseline } from '../../runtime/session.js';
 /** The slice of a PF2e item this adapter reads. Structural, so a live embedded document, an
  * unprepared source object and a test fixture all satisfy it. */
 export interface TroopItem {
+  toObject?: () => TroopItem;
   name?: string;
   type?: string;
   system?: {
@@ -19,6 +20,8 @@ export interface TroopItem {
 /** The slice of a PF2e troop actor this adapter reads. No Foundry global appears here: the
  * caller hands over the actor, and a plain object of the same shape does as well. */
 export interface TroopActor {
+  /** Foundry prepares an in-memory actor clone without changing the campaign actor. */
+  clone?: (changes: { items: TroopItem[] }, options: { keepId: boolean; save: false }) => TroopActor;
   name?: string;
   system?: {
     details?: { level?: { value?: number } };
@@ -227,6 +230,14 @@ export function troopActorProblems(actor: unknown): string[] {
  * malformed actor throws, so nothing half-read reaches a battle.
  */
 export function cardFromActor(actor: TroopActor): UnitCard {
+  // Recompute on a temporary actor so suppressed circumstance modifiers can resume. Merely
+  // subtracting the fort bonus would also remove cover/Guard that it previously superseded.
+  const originalItems = itemsOf(actor);
+  if (actor.clone && originalItems.some(item => item.type === 'effect' && item.system?.slug === 'fortification')) {
+    actor = actor.clone({ items: originalItems
+      .filter(item => !(item.type === 'effect' && item.system?.slug === 'fortification'))
+      .map(item => item.toObject?.() ?? item) }, { keepId: true, save: false });
+  }
   const problems = troopActorProblems(actor);
   if (problems.length) throw new Error(problems.join('; '));
   const system = actor.system!;

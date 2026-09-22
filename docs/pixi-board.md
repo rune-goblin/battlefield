@@ -102,6 +102,9 @@ at each call site.
 
 ## Layers and pieces
 
+Gates use double doors viewed from above. Closed leaves meet in a solid line across the opening; open leaves swing 90 degrees outward, away from the interior hex. Hinge marks anchor both states. Brass ring handles mark the interior face of each leaf; a thick dark iron strip reinforces the outside face. Both turn with the doors as they open. The same timber color serves both states, so shape conveys the difference. Breached gates remain rubble. `gate-geometry.ts` keeps the swing direction consistent across square and hex wall orientations. The walls service infers the initial gate interior from a closed enclosure. Gate painting cycles open A, closed A, open B, closed B, then no gate; its explicit facing overrides inference and persists into battle. Open wall runs and partitions retain their chosen default facing. The Fortified condition uses the gate icon and appears in the selected unit's status display.
+
+
 ```
 src/board/BoardApp.ts          owns PIXI.Application, canvas, resize, theme — the in-app board only
 src/board/BoardContainer.ts    a plain PIXI.Container + LayerManager; mountable anywhere

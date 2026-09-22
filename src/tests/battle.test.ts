@@ -341,6 +341,12 @@ describe('Controlling', () => {
     expect(() => act(s, { type: 'cast', spell: 'controlling', activity: 1, target: 'u1', unit: 'u0' }, scriptedRng([10])))
       .toThrow(/already cast this activation/);
   });
+
+  it('offers the tree again on the next activation, before that unit has acted', () => {
+    const s = endActivation(dread([10]), scriptedRng([10]));
+    const controlling = availableActions(s, 'u0').find((o) => o.spell === 'controlling')!;
+    expect(controlling.activities[0].legal).toBe(true);
+  });
 });
 
 describe('Offense', () => {

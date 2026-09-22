@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createBattle, type BattleState, type UnitCard } from '../engine/index.js';
 import { submissionOf } from '../runtime/interactions.js';
 import {
-  freshSession, isBattleSession, migrateLegacySave, SCHEMA_VERSION, type BattleSession,
+  freshSession, isBattleSession, migrateLegacySave, reviveSession, SCHEMA_VERSION, type BattleSession,
 } from '../runtime/session.js';
 import {
   createLocalRepository, loadSessionSync, LEGACY_KEY, SESSION_KEY, type WebStorage,
@@ -142,5 +142,36 @@ describe('the session record', () => {
     expect(migrateLegacySave({ setup: null })).toBeNull();
     expect(isBattleSession({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 })).toBe(false);
     expect(isBattleSession({ ...freshSession(), battleId: '' })).toBe(false);
+  });
+});
+
+describe('fortification tier alignment', () => {
+  it('migrates barricades across saved maps, preserves breaches, and leaves tiers 1–4 intact', () => {
+    const session = freshSession();
+    const oldBoard = () => {
+      const board = openBoard();
+      board.spec.construction = { kind: 'fort', tier: 0 };
+      board.walls = {
+        'c4|c5': { tier: 0, boxes: 1, remaining: 1, inside: 'c5', gate: { open: true } },
+        'd4|d5': { tier: 0, boxes: 1, remaining: 0 },
+        'e4|e5': { tier: 4, boxes: 5, remaining: 3 },
+      };
+      return board;
+    };
+    session.setup.spec.construction = { kind: 'fort', tier: 0 };
+    session.setup.board = oldBoard();
+    session.battle = battleState();
+    session.battle.board = oldBoard();
+    session.battle.nextBoard = oldBoard();
+    session.battle.previousBattlefields = [{ day: 1, board: oldBoard(), engines: [] }];
+    const migrated = reviveSession(structuredClone(session))!;
+    expect(migrated.setup.spec.construction?.tier).toBe(1);
+    for (const board of [migrated.setup.board!, migrated.battle!.board, migrated.battle!.nextBoard!, migrated.battle!.previousBattlefields![0].board]) {
+      expect(board.spec.construction?.tier).toBe(1);
+      expect(board.walls['c4|c5']).toEqual({ tier: 1, boxes: 2, remaining: 2, inside: 'c5', gate: { open: true } });
+      expect(board.walls['d4|d5']).toEqual({ tier: 1, boxes: 2, remaining: 0 });
+      expect(board.walls['e4|e5']).toEqual({ tier: 4, boxes: 5, remaining: 3 });
+    }
+    expect(reviveSession(structuredClone(migrated))).toEqual(migrated);
   });
 });

@@ -196,6 +196,17 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     at(b.board,parse('f6')).elevation=2;
     expect(siegeAttackOffer(b,u,e)!.activities[0].targets).toEqual([]);
   });
+  it('reads one hex, not two, where the line runs along a shared edge',()=>{
+    const b=battlefield(kind);
+    if(kind!=='hex')return;
+    // f6 and f8 sit one above the other on screen, so the line between them lies exactly on
+    // the f7/g7 edge. It picks a side: a hill on the other one leaves the shot open.
+    expect(sightCells(b.board,parse('f6'),parse('f8')).map(notation)).toEqual(['g7']);
+    at(b.board,parse('f7')).elevation=1;
+    expect(hasSight(b.board,parse('f6'),parse('f8'))).toBe(true);
+    at(b.board,parse('f7')).elevation=0;at(b.board,parse('g7')).elevation=1;
+    expect(hasSight(b.board,parse('f6'),parse('f8'))).toBe(false);
+  });
   it('keeps sight reciprocal for every pair, with endpoints excluded',()=>{
     const b=battlefield(kind);const g=gridOf(b.board);
     for(const to of g.cells()) {

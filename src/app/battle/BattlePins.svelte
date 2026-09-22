@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isRouted, levelDc, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading } from '../../engine/index.js';
+  import { wallsFor, isRouted, levelDc, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading } from '../../engine/index.js';
   import { offerReason } from './action-menu.js';
   import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl } from '../../board/index.js';
   import ActivityChoices from './ActivityChoices.svelte';
@@ -9,6 +9,7 @@
   import HealingChoices from '../HealingChoices.svelte';
   import CommitmentPicker from '../CommitmentPicker.svelte';
   import BoardPopup from '../BoardPopup.svelte';
+  import GateStatus from '../GateStatus.svelte';
   import { stage } from '../stage-view.svelte.js';
   import RadialMenu from '../RadialMenu.svelte';
   import TargetMarkers from '../TargetMarkers.svelte';
@@ -71,8 +72,8 @@
     {#each c.nearbyGates as [key, wall] (key)}
       {@const reason = gateReason(c.b, c.active, key)}
       <button class="popup-row" disabled={!c.myTurn || c.gateBusy || !!reason} title={reason ?? 'Operate gate'} onclick={() => c.operateGate(key)}>
-        <span class="popup-verb">{wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
-        <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wall.inside}{reason ? ` · ${reason}` : ''}</span>
+        <span class="popup-verb"><GateStatus open={wall.gate!.open} /> {wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
+        <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wallsFor(c.b.board).insideOf(key)}{reason ? ` · ${reason}` : ''}</span>
       </button>
     {/each}
   </BoardPopup>

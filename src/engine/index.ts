@@ -19,3 +19,5 @@ export * from './force.js';
 
 export * from './sight.js';
 export * from './terrain.js';
+
+export * from './walls.js';

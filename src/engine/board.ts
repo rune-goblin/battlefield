@@ -28,22 +28,25 @@ export interface SquareState { terrain: SquareTerrain; elevation: number; bridge
  * `bridgeTurns` of 0 is the axis the board infers from the banks, and each turn steps on by
  * one, so a stored turn reads the same however the water around it is later repainted. */
 export const BRIDGE_AXES: Record<GridKind, number> = { hex: 3, square: 2 };
-export interface Wall { tier: number; boxes: number; remaining: number; inside?: string; gate?: { open: boolean; flipped?: boolean }; }
+export interface Wall {
+  tier: number; boxes: number; remaining: number; inside?: string;
+  /** Painted gates preserve an explicit facing cell; flipped tracks side B in the brush cycle. */
+  gate?: { open: boolean; flipped?: boolean; facing?: string };
+}
 export interface SiegeField { cells: string[]; kind: 'rough' | 'web'; expires: number; }
 export const FORTIFICATIONS = [
-  { name: 'Barricade', boxes: 1, hardness: 0, cover: 1 },
-  { name: 'Earthworks', boxes: 2, hardness: 0, cover: 1 },
-  { name: 'Wooden Tower', boxes: 3, hardness: 1, cover: 1 },
-  { name: 'Stone Tower', boxes: 4, hardness: 2, cover: 2 },
-  { name: 'Fortress', boxes: 5, hardness: 2, cover: 2 },
+  { tier: 1, name: 'Earthworks', boxes: 2, hardness: 0, cover: 1 },
+  { tier: 2, name: 'Wood', boxes: 3, hardness: 1, cover: 2 },
+  { tier: 3, name: 'Stone', boxes: 4, hardness: 2, cover: 3 },
+  { tier: 4, name: 'Fortress', boxes: 5, hardness: 2, cover: 4 },
 ] as const;
-export const fortification = (tier: number) => FORTIFICATIONS[Math.max(0, Math.min(4, Math.floor(tier)))] ?? FORTIFICATIONS[0];
+export const fortification = (tier: number) => FORTIFICATIONS[Math.max(1, Math.min(4, Math.floor(tier))) - 1] ?? FORTIFICATIONS[0];
 export const wallBlocks = (wall: Wall): boolean => wall.remaining > 0 && !wall.gate?.open;
 export const structuralDamage = (wall: Wall, damage: number, penetration = 0): number =>
   Math.max(0, damage - Math.max(0, fortification(wall.tier).hardness - penetration));
 export function makeWall(tier: number, inside?: string): Wall {
-  const boxes = fortification(tier).boxes;
-  return { tier, boxes, remaining: boxes, ...(inside ? { inside } : {}) };
+  const wall = fortification(tier);
+  return { tier: wall.tier, boxes: wall.boxes, remaining: wall.boxes, ...(inside ? { inside } : {}) };
 }
 
 export interface Board {
@@ -52,6 +55,8 @@ export interface Board {
   squares: SquareState[][];
   walls: Record<string, Wall>;
   siegeFields?: SiegeField[];
+  /** Explicit courtyard of a generated fort backed by the map edge. */
+  fortInterior?: string[];
 }
 
 // Boards are JSON in localStorage and in cloned battle states, so they carry the kind, not the
@@ -312,6 +317,7 @@ function layFort(board: Board, rnd: Random, tier: number): void {
   const walled = block.filter(sq => grid.inBounds(sq));
   for (const sq of walled) { at(board, sq).terrain = 'settlement'; at(board, sq).elevation = 0; }
   const inside = new Set(walled.map(notation));
+  board.fortInterior = [...inside];
   const front = walled.filter(sq => sq.rank === SIZE - depth).map(sq => edgeKey(sq, { file: sq.file, rank: sq.rank - 1 }));
   const flanks = walled.flatMap(sq => grid.neighbours(sq)
     .filter(n => n.rank === sq.rank && !inside.has(notation(n)))

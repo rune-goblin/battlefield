@@ -103,7 +103,7 @@ function stateEvents(before: BattleState, after: BattleState): BattleEventBody[]
     if (!was) continue;
     if (u.wounds !== was.wounds) events.push({ type: 'woundsChanged', unit: u.id, from: was.wounds, to: u.wounds });
     if (u.disorder !== was.disorder) events.push({ type: 'disorderChanged', unit: u.id, from: was.disorder, to: u.disorder });
-    if (u.status === 'active') for (const condition of statusesGained(was, u)) events.push({ type: 'conditionGained', unit: u.id, condition });
+    if (u.status === 'active') for (const condition of statusesGained(was, u, before.board, after.board)) events.push({ type: 'conditionGained', unit: u.id, condition });
     if ((isRouted(u) || u.status === 'left' && u.disorder >= ROUTED_AT)
       && was.disorder < ROUTED_AT) events.push({ type: 'unitRouted', unit: u.id });
   }

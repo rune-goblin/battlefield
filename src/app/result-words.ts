@@ -31,7 +31,7 @@ export const tookHold = (label: string): ResultWord => ({ text: label, tone: 'go
 
 // Orange for what an enemy did to the piece, green for its own stance and its side's casts.
 const STATUS_WORD: Record<Status, [string, ResultWord['tone']]> = {
-  guard: ['Guard', 'good'],
+  guard: ['Guard', 'good'], fortified: ['Fortified', 'good'],
   pinned: ['Pinned', 'warn'], rooted: ['Held', 'warn'], suppressed: ['Suppressed', 'warn'], stunned: ['Stunned', 'warn'],
   frightened: ['Frightened', 'warn'], exposed: ['Exposed', 'warn'], persistent: ['Marked', 'warn'],
   aegis: ['Aegis', 'good'], warded: ['Warded', 'good'], stoneskin: ['Stoneskin', 'good'],

@@ -142,3 +142,27 @@ describe('published troops', () => {
     }
   });
 });
+
+describe('location-dependent fortification import', () => {
+  it('prepares a temporary actor without the fort effect, retaining other circumstance sources', () => {
+    const effect: TroopItem = { type: 'effect', name: 'Fortification', system: { slug: 'fortification' } };
+    const guard: TroopItem = { type: 'effect', name: 'Guard', system: { slug: 'guard' } };
+    const actor = troopActor([effect, guard]);
+    actor.system!.attributes!.ac!.value = 28;
+    let cloned = false;
+    actor.clone = (changes, options) => {
+      cloned = true;
+      expect(options).toEqual({ keepId: true, save: false });
+      expect(changes.items).toContain(guard);
+      expect(changes.items).not.toContain(effect);
+      // PF2e's preparation restores Guard's +2 when the +4 fort effect is removed.
+      const temporary = troopActor([guard]);
+      temporary.system!.attributes!.ac!.value = 26;
+      return temporary;
+    };
+    expect(cardFromActor(actor).sheet!.ac).toBe(26);
+    expect(cloned).toBe(true);
+    expect(actor.system!.attributes!.ac!.value).toBe(28);
+    expect(actor.items).toContain(effect);
+  });
+});

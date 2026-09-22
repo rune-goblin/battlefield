@@ -243,7 +243,7 @@ export function createRingController(s: RingShared) {
   let radial = $state<{ cell: string } | null>(null);
   const radialItems = $derived([
     ...props.map((p) => ({ key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal, reason: p.reason })),
-    ...(s.nearbyGates.length ? [{ key: 'gate', src: actionIconUrl('block'), label: 'Gate', legal: true }] : []),
+    ...(s.nearbyGates.length ? [{ key: 'gate', src: actionIconUrl('gate'), label: 'Gate', legal: true }] : []),
     ...(s.siegeEquipment.length ? [{ key: 'siege', src: engineArtUrl(s.siegeEquipment[0].name) ?? actionIconUrl('shoot'), label: 'Siege engine', legal: true }] : []),
   ]);
   const pickProp = (key: string) => {

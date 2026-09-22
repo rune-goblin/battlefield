@@ -90,7 +90,7 @@ describe('generateBoard', () => {
   });
 
   it('a fort spends its wall budget on a block against the defender edge', () => {
-    for (const tier of [0, 1, 2, 3]) {
+    for (const tier of [1, 2, 3]) {
       const b = generateBoard({ base: 'plains', construction: { kind: 'fort', tier }, seed: 9 });
       expect(Object.keys(b.walls)).toHaveLength(wallBudget(tier));
       expect(Object.values(b.walls).every(w => w.boxes === tier + 1)).toBe(true);

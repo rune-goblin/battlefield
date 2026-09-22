@@ -1,3 +1,4 @@
+import { wallsFor } from './walls.js';
 import type { HealingChoice, HealingCondition } from './types.js';
 import { coverBetween, wallCoverBetween, hasSight, isMountain } from './sight.js';
 import { heightEdge, heightRange, TERRAIN } from './terrain.js';
@@ -238,11 +239,9 @@ export function rangeBetween(state: BattleState, a: Unit, b: Unit): Range {
 
 export const isOutflanked = (state: BattleState, u: Unit) => engagedEnemies(state, u).length >= 2;
 
-// Walls belong to the defender: a defender beside a standing segment is garrisoned.
-export function garrisoned(state: BattleState, u: Unit): boolean {
-  if (u.side !== 'defender') return false;
-  return grid(state).neighbours(u.square)
-    .some((n) => { const w = state.board.walls[edgeKey(u.square, n)]; return w && wallBlocks(w) && (!w.inside || w.inside === notation(u.square)); });
+// A defender occupies a firing position on the interior side of an intact wall.
+export function garrisoned(state: BattleState, u: Unit, target?: Unit): boolean {
+  return u.side === 'defender' && wallsFor(state.board).firingPosition(u.square, target?.square);
 }
 
 /** Brace's Defence bonus, and what a defend-allies Guard shares with a neighbour. */
@@ -421,7 +420,7 @@ export function gateReason(state: BattleState, u: Unit, key: string): string | n
   if (!w?.gate || w.remaining <= 0) return 'This gate is breached or absent.';
   if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
     || (state.begun && state.active !== u.id)) return 'This unit cannot act now.';
-  if (w.inside !== notation(u.square)) return 'Operate the gate from its interior hex.';
+  if (wallsFor(state.board).insideOf(key) !== notation(u.square)) return 'Operate the gate from its interior hex.';
   if (u.actions < 1) return 'The gate needs one action.';
   if (engagedEnemies(state, u).length) return 'Break contact before operating the gate.';
   return null;
@@ -614,7 +613,7 @@ export function shootModifier(state: BattleState, u: Unit, target: Unit): number
   let m = (u.stats.volley ?? 0) + rollBonus(u);
   m -= shotRangePenalty(state, u, target.square);
   m -= u.disorder;
-  m += Math.max(highGroundBonus(state, shotFrom(state, u), target.square), garrisoned(state, u) ? 1 : 0);
+  m += Math.max(highGroundBonus(state, shotFrom(state, u), target.square), garrisoned(state, u, target) ? 1 : 0);
   m -= uphillPenalty(state, shotFrom(state, u), target.square);
   if (state.units.some((a) => a.side === u.side && a.id !== u.id && isEngaged(state, target, a))) m -= 4;
   return m;
@@ -2091,6 +2090,9 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
 function finish(state: BattleState, rng: Rng, u: Unit) {
   u.actions = ACTIONS_PER_ACTIVATION;
   u.attacked = false;
+  // Cleared here as well as in `begin`: the menu is read before the unit's first action, when
+  // `begin` has not run, and a tree left standing from last time reads "already cast".
+  u.castTrees = [];
   u.feet = 0;
   u.rooted = Math.max(0, u.rooted - 1);
   u.haste = Math.max(0, u.haste - 1);

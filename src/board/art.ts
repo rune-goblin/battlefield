@@ -48,12 +48,12 @@ export function bannerTexture(colour: number): PIXI.Texture {
  * of the piece itself, and a maneuver moves in contact. Every spell shares
  * the one `cast` prop and is told apart by its label. `no` is the odd one out: it names no
  * action at all, and marks the cell a drag may not take. */
-export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'no' | 'rally' | 'shoot' | 'maneuver';
+export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'gate' | 'no' | 'rally' | 'shoot' | 'maneuver';
 
-/** The engine's list of statuses is the list of icons: each names a file in `art/condition-icons/`. */
+/** Condition icons follow engine status names; Fortified shares the gate artwork. */
 export type StatusIcon = Status;
 
-export const statusIconUrl = (icon: StatusIcon): string => assetUrl(`art/condition-icons/${icon}.webp`);
+export const statusIconUrl = (icon: StatusIcon): string => icon === 'fortified' ? actionIconUrl('gate') : assetUrl(`art/condition-icons/${icon}.webp`);
 
 export const actionIconUrl = (icon: ActionIcon): string => assetUrl(`art/action-icons/${icon === 'maneuver' ? 'withdraw' : icon}.webp`);
 

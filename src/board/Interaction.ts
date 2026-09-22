@@ -1,5 +1,5 @@
 import type * as PIXI from 'pixi.js';
-import type { Grid, Point } from '../engine/index.js';
+import { FORTIFICATIONS, type Grid, type Point } from '../engine/index.js';
 import { BRUSH_TERRAINS, eraseForm, isEdgeBrush, type Brush } from './brush.js';
 import { boundaryCellAt, edgeCandidates, hitTest, nearestEdge, type Hit, type TokenPlacementProvider } from './hit.js';
 
@@ -30,7 +30,7 @@ const ZOOM_STEP = 0.0015;
 // A mouse wheel notch arrives as one delta this big or larger; a trackpad two-finger drag
 // arrives as a stream of small ones. The wheel zooms, the trackpad pans.
 const WHEEL_NOTCH = 40;
-const WALL_TIERS = 5;
+const WALL_TIERS = FORTIFICATIONS.length;
 // A wall stroke prefers edges it is travelling along: |cos| ≥ this against the drag vector.
 // 0.45 admits a hex's 60° edges, which a zigzag row boundary needs, and rejects the square
 // grid's perpendicular edge at a cell corner.
@@ -100,7 +100,7 @@ export class Interaction {
   private pointerInside = false;
   private hoverCell: string | null = null;
   private hoverEdge: string | null = null;
-  private wallTier = 0;
+  private wallTier = 1;
   /** The edges a press may take, from `setPickableEdges`. Empty means none. */
   private pickableEdges = new Set<string>();
   private lastPainted: Point | null = null;
@@ -498,7 +498,7 @@ export class Interaction {
       case 'a': return { kind: 'elevation', level: -1 };
       case 's': return { kind: 'elevation', level: -2 };
       // Repeated R cycles the tier, so one key reaches all four walls.
-      case 'r': return { kind: 'wall', tier: this.brush?.kind === 'wall' ? (this.wallTier + 1) % WALL_TIERS : this.wallTier };
+      case 'r': return { kind: 'wall', tier: this.brush?.kind === 'wall' ? this.wallTier % WALL_TIERS + 1 : this.wallTier };
       case 'x': return { kind: 'erase' };
       default: return null;
     }
