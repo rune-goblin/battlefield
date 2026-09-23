@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { assetUrl } from '../board/asset-base.js';
   import { outcomeArt } from './battle/battle-ending.js';
+  import { outcomeScene } from './scene-art.js';
 
   let { outcome, phase, onfinish, children }: {
     outcome: string;
@@ -9,7 +9,8 @@
     onfinish: () => void;
     children: Snippet;
   } = $props();
-  const art = $derived(outcomeArt(outcome));
+  const kind = $derived(outcomeArt(outcome));
+  const art = $derived(kind && outcomeScene(kind));
   let loaded = $state(false);
   let failed = $state(false);
   const ready = $derived(!art || loaded || failed);
@@ -19,7 +20,7 @@
   <div class="outcome-scene" class:ready class:intro={phase === 'announcement'}
     onanimationend={(event) => { if (event.target === event.currentTarget && phase === 'announcement') onfinish(); }}>
     {#if art && !failed}
-      <img class="outcome-art" src={assetUrl(`outcome/${art}.webp`)} alt=""
+      <img class="outcome-art" src={art} alt=""
         onload={() => { loaded = true; }} onerror={() => { failed = true; }} />
     {/if}
     <div class="outcome-title" role="status" aria-live="polite" aria-atomic="true">{outcome}</div>

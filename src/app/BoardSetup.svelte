@@ -11,6 +11,7 @@
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
   import { onDestroy } from 'svelte';
+  import { openingScene } from './scene-art.js';
 
   const notifications = useNotifications();
   const run = commandReporter(notifications);
@@ -34,6 +35,7 @@
   presentStage({
     leftTitle: 'The ground', leftWidth: 20,
     get top() { return top; }, get rail() { return rail; }, get float() { return float; }, get left() { return left; },
+    get pin() { return game.setup.board ? undefined : scene; },
     get board() {
       return { board: game.setup.board, terrainAppearance: gameMap.terrainAppearance, inkMap: gameMap.inkMap };
     },
@@ -45,6 +47,8 @@
     {#snippet status()}<span class="muted">Rank 1 is the attacker's edge, rank {game.setup.board?.squares.length ?? 11} the defender's.</span>{/snippet}
   </TopBar>
 {/snippet}
+
+{#snippet scene()}<img class="scene" src={openingScene} alt="" />{/snippet}
 
 {#snippet rail()}<WizardRail />{/snippet}
 
@@ -89,6 +93,7 @@
 {/snippet}
 
 <style>
+  .scene { width: 100%; height: 100%; object-fit: cover; }
   .fields { display: flex; flex-direction: column; gap: .45rem; }
   .fields label { display: grid; grid-template-columns: 7rem minmax(0, 1fr); align-items: center; gap: .4rem; }
 </style>

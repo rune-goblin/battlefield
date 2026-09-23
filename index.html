@@ -5,52 +5,140 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Battlefield</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='1' y='6' width='14' height='4' rx='1' fill='%237a2e1f'/></svg>">
+<link rel="preload" as="image" href="art/scenes/battlemap.webp" fetchpriority="high">
+<meta name="description" content="Command your armies in Battlefield. Start a battle, try the example, or learn the rules.">
 <style>
-  :root { --ink:#1f1a17; --paper:#f8f4ec; --rule:#b9ab93; --accent:#7a2e1f; --muted:#6b5f52; --band:#efe7d8; }
-  @media (prefers-color-scheme: dark) { :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#a79a8a; --band:#2a2520; } }
+  :root {
+    color-scheme:dark;
+    --ivory:#f4ead6;
+    --muted:#c7b99f;
+    --gold:#c5a66b;
+    --line:rgba(197,166,107,.32);
+    --serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;
+    --sans:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; background:var(--paper); color:var(--ink); font:17px/1.55 Georgia,"Iowan Old Style","Palatino Linotype",serif; }
-  main { max-width:44rem; margin:0 auto; padding:4rem 1rem 5rem; }
-  h1 { font-size:2.8rem; line-height:1.1; margin:0 0 .4rem; }
-  .sub { color:var(--muted); font-style:italic; margin:0 0 2.5rem; }
-  .choices { display:grid; gap:1rem; }
-  .choice { display:block; padding:1.1rem 1.25rem; border:1px solid var(--rule); border-left:4px solid var(--accent);
-    background:var(--band); color:var(--ink); text-decoration:none; border-radius:2px; }
-  .choice:hover, .choice:focus-visible { border-color:var(--accent); outline:none; }
-  .choice strong { display:block; font-size:1.3rem; color:var(--accent); }
-  .choice span { color:var(--muted); }
+  body { margin:0; min-height:100svh; color:var(--ivory); background:#171510; font:16px/1.5 var(--sans); }
+  .scene { position:fixed; inset:0; z-index:-2; }
+  .scene img { width:100%; height:100%; object-fit:cover; object-position:54% center; }
+  .scene::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(10,9,7,.36),transparent 65%),linear-gradient(0deg,rgba(10,9,7,.35),transparent 35%); }
+  main { min-height:100svh; display:flex; align-items:center; padding:clamp(1.25rem,5vw,5rem); }
+  .menu {
+    position:relative; width:28rem; max-width:100%; padding:2.5rem 2rem 1.5rem;
+    background:linear-gradient(145deg,rgba(37,29,20,.82),rgba(17,17,14,.76));
+    border:1px solid var(--line); outline:1px solid rgba(197,166,107,.16); outline-offset:5px;
+    box-shadow:0 20px 70px rgba(0,0,0,.3),inset 0 0 50px rgba(0,0,0,.15);
+    -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  }
+  .menu::before,.menu::after { content:""; position:absolute; width:1.5rem; height:1.5rem; pointer-events:none; border-color:var(--gold); }
+  .menu::before { top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; color:var(--gold); }
+  .menu::after { bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; color:var(--gold); }
+  .eyebrow { display:flex; align-items:center; gap:.75rem; margin:0 0 1.1rem; color:var(--gold); font:600 .6875rem/1.5 var(--sans); letter-spacing:.22em; text-transform:uppercase; }
+  .eyebrow::before { content:""; width:1.5rem; height:1px; background:var(--gold); }
+  h1 { margin:0; font:400 clamp(2.5rem,4.25vw,3.5rem)/1.1 var(--serif); letter-spacing:-.035em; text-shadow:0 2px 12px rgba(0,0,0,.35); }
+  .sub { margin:1rem 0 2rem; color:var(--muted); font:400 1rem/1.6 var(--serif); }
+  .sub span { white-space:nowrap; }
+  .choices { display:grid; gap:.5rem; }
+  .choice { position:relative; display:block; padding:1rem 2.25rem 1rem 1rem; color:var(--ivory); text-decoration:none; border:1px solid transparent; border-bottom-color:var(--line); background:rgba(19,17,13,.18); transition:background-color .2s ease,border-color .2s ease; }
+  .choice::after { content:"→"; position:absolute; top:1.125rem; right:.875rem; color:var(--gold); font:1.125rem/1.4 var(--serif); }
+  .choice:hover { background:rgba(197,166,107,.1); border-color:rgba(197,166,107,.6); }
+  .choice:focus-visible,footer a:focus-visible { outline:2px solid var(--ivory); outline-offset:4px; background:rgba(91,66,35,.6); }
+  .choice strong { display:block; font:400 1.375rem/1.25 var(--serif); letter-spacing:.01em; }
+  .choice span { display:block; margin-top:.4rem; color:var(--muted); font-size:.8125rem; line-height:1.55; }
+  .choice--primary { background:rgba(107,43,30,.45); border-color:rgba(197,166,107,.5); }
+  .choice--primary:hover { background:rgba(130,57,37,.65); }
   .choice[hidden] { display:none; }
-  footer { margin-top:3rem; font-size:.9rem; color:var(--muted); }
-  footer a { color:var(--muted); }
+  footer { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-top:1.75rem; color:var(--gold); }
+  footer::before { content:"◆"; font-size:.5rem; }
+  footer a { padding:.25rem 0; color:var(--muted); font-size:.6875rem; letter-spacing:.1em; text-transform:uppercase; text-decoration:none; text-underline-offset:.25em; }
+  footer a:hover { color:var(--ivory); text-decoration:underline; }
+  /* The image loads first. Only the menu fades; the scene stays still. */
+  .intro-pending .menu { opacity:0; visibility:hidden; }
+  .intro-pending.scene-ready .menu { animation:menu-reveal 1.2s ease-out .7s forwards; }
+  @keyframes menu-reveal { from { opacity:0; visibility:visible; } to { opacity:1; visibility:visible; } }
+  @media (max-width:40rem) {
+    main { align-items:flex-end; padding:5rem 1.25rem 1.5rem; }
+    .scene img { object-position:52% center; }
+    .menu { margin:0 auto; padding:1.75rem 1.25rem 1.25rem; }
+    .eyebrow { margin-bottom:.75rem; }
+    .sub { margin:.75rem 0 1.25rem; }
+    .choice { padding:.875rem 2.25rem .875rem .875rem; }
+    footer { margin-top:1.25rem; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .intro-pending .menu,.intro-pending.scene-ready .menu { animation:none; opacity:1; visibility:visible; }
+    .choice { transition:none; }
+  }
 </style>
 </head>
 <body>
+<div class="scene" aria-hidden="true"><img id="battle-scene" src="art/scenes/battlemap.webp" alt="" fetchpriority="high" decoding="async" width="2880" height="1616"></div>
 <main>
-  <h1>Battlefield</h1>
-  <p class="sub">A fast battle game for armies: three actions, four Health, three Morale.</p>
+<section class="menu" aria-labelledby="game-title">
+  <p class="eyebrow">Field Battles</p>
+  <h1 id="game-title">Battlefield</h1>
+  <p class="sub"><span>Three actions.</span> <span>Four Health.</span> <span>Three Morale.</span><br>Command the field.</p>
 
-  <div class="choices">
+  <nav class="choices" aria-label="Main menu">
     <a class="choice" id="resume" href="play.html" hidden>
       <strong>Continue</strong>
       <span id="resume-detail">Return to the battle in progress.</span>
     </a>
-    <a class="choice" href="play.html?new">
+    <a class="choice choice--primary" href="play.html?new">
       <strong>New battle</strong>
-      <span>Build the field and muster both armies from the troop library.</span>
+      <span>Build the field and muster your armies.</span>
     </a>
     <a class="choice" href="play.html?example">
       <strong>Example battle</strong>
-      <span>Three units a side: Line Infantry, Heavy Cavalry and magicians against kobolds, trolls and mitflits.</span>
+      <span>Take command of a ready-to-play battle.</span>
     </a>
     <a class="choice" href="rules.html">
       <strong>Rules</strong>
-      <span>The complete rules, with reference tables for troops, spells and siege engines.</span>
+      <span>Learn the basics, then use the full reference.</span>
     </a>
-  </div>
+  </nav>
 
   <footer><a href="https://github.com/rune-goblin/battlefield" rel="noopener">Source</a></footer>
+</section>
 </main>
 <script>
+  // Progressive enhancement: the menu remains visible without JavaScript.
+  const root = document.documentElement;
+  const scene = document.getElementById('battle-scene');
+  const menu = document.querySelector('.menu');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  if (!reducedMotion.matches) {
+    root.classList.add('intro-pending');
+    let revealed = false;
+    let fallback;
+    function finishIntro() {
+      revealed = true;
+      clearTimeout(fallback);
+      root.classList.remove('intro-pending', 'scene-ready');
+    }
+    async function revealMenu() {
+      if (revealed) return;
+      revealed = true;
+      try { if (scene.naturalWidth) await scene.decode(); } catch { /* Show controls if decoding fails. */ }
+      if (!root.classList.contains('intro-pending')) return;
+      requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('scene-ready')));
+    }
+    // Slow or failed artwork must still leave the menu accessible.
+    fallback = setTimeout(finishIntro, 4000);
+    if (scene.complete) {
+      if (scene.naturalWidth) revealMenu();
+      else finishIntro();
+    }
+    else {
+      scene.addEventListener('load', revealMenu, { once:true });
+      scene.addEventListener('error', finishIntro, { once:true });
+    }
+    menu.addEventListener('animationend', finishIntro, { once:true });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Tab' || event.key === 'Escape') finishIntro();
+    });
+    reducedMotion.addEventListener('change', event => { if (event.matches) finishIntro(); });
+  }
   // proto: reads the key `src/adapters/browser/localRepository.ts` writes, so a page with no
   // bundle can offer the saved battle.
   try {
