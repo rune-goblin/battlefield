@@ -1,0 +1,990 @@
+{
+  "version": 1,
+  "status": "Design review; approximations are deliberate, not claims of runtime support.",
+  "entries": [
+    {
+      "id": "battle",
+      "sourceHash": "b0b9a30a05c4c27b75f5faf3bcf8c9b61bad469c6564a2424d9bc5f632a2bc5d",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the normal melee profile and common Attack rules; omit PF2e action-scaled damage and footprint saves."
+    },
+    {
+      "id": "salvo",
+      "sourceHash": "0e7bad823ae2718fa603d8466180a78e82d2603b718a30c037fbe7a6458fe8d1",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the normal ranged profile and Volley rules; preserve ranged identity without adding an ability."
+    },
+    {
+      "id": "disengage",
+      "sourceHash": "6807da73c80216e568f2e3243d1722c6efff3b3975dbe78694bb46926cc84d6d",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the game's existing withdrawal activity and its contact rules; omit the separate PF2e safe half-Stride."
+    },
+    {
+      "id": "form-up",
+      "sourceHash": "8b2618a5f209db1f497dea7e547484cd79054324dd071877d3094ebfa156924b",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the single-unit hex abstraction; omit individual troop segments."
+    },
+    {
+      "id": "troop-movement",
+      "sourceHash": "b6dfb6b14975661c274656e72a4cdf23972da6f155cb96baa5498cec062b06a2",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use imported movement modes and game Move; omit free segment reshaping."
+    },
+    {
+      "id": "battlefield-medicine",
+      "sourceHash": "83c35bbd8417032856941381b8b6b7010d85c8fa29a4891e67c1e98787da2c48",
+      "disposition": "abstracted",
+      "abilities": [
+        "recovery"
+      ],
+      "reactions": [],
+      "conversion": "Paid two-action Recovery for self or one adjacent ally, Health mode. Omit Medicine DC tiers, dice, critical-failure damage, and healer-specific hourly immunity; use the catalogue limit."
+    },
+    {
+      "id": "cavalry-charge",
+      "sourceHash": "bcee0f3b092a3573bbaa0ad9cc8f3c91795431530581327c6224d98763820242",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge. Omit the source critical-failure knockdown and extra PF2e movement."
+    },
+    {
+      "id": "covering-fire",
+      "sourceHash": "2e4f30d439cac5ad1cf98a2ddf89fa13a72d31010c56649a7f670446a4528c5b",
+      "disposition": "abstracted",
+      "abilities": [
+        "suppression"
+      ],
+      "reactions": [],
+      "conversion": "Two-action non-damaging Volley replacement: on a successful game attack check, Suppress. Omit graded save outcomes and Speed penalties; this grants no normal Volley damage."
+    },
+    {
+      "id": "defend-allies",
+      "sourceHash": "c6d4dc418015582ea84d6087688ee96b462e33b317a034930dd1e1b1a57c435e",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Share Guard with one adjacent ally. Omit anti-flanking geometry and level-scaled fortified bonuses."
+    },
+    {
+      "id": "demoralize",
+      "sourceHash": "2d0aab105e9bef530eb117e0986b2c298eddaf3053d6326db7832b180455f404",
+      "disposition": "abstracted",
+      "abilities": [
+        "fear"
+      ],
+      "reactions": [],
+      "conversion": "One-action Menace against one visible enemy within two hexes, resolved with a Will resistance check at the unit's normal ability DC. Omit Intimidation proficiency and ten-minute immunity."
+    },
+    {
+      "id": "dirty-fighting",
+      "sourceHash": "8f11346a25eeb3a2a9004e37bbeb07cb7e2e6a9133d7fd3ad3ac2abf8dd1a51c",
+      "disposition": "abstracted",
+      "abilities": [
+        "fear"
+      ],
+      "reactions": [],
+      "conversion": "A successful melee hit applies Menace. Omit separate frightened grades."
+    },
+    {
+      "id": "false-retreat",
+      "sourceHash": "3988cb7441be3d3d48413cfbe1d211acef6d74fc2adccd859f82b8c0af326cc2",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "counterplay"
+      ],
+      "conversion": "Keep the successful-rout-resistance trigger; use Counterplay in the future reaction system."
+    },
+    {
+      "id": "feint",
+      "sourceHash": "9af2b11e42298ca31e9d88a40b41e7b3e4ad7e456ab7e6675d804221b97560f3",
+      "disposition": "abstracted",
+      "abilities": [
+        "expose"
+      ],
+      "reactions": [],
+      "conversion": "One-action Expose against an adjacent enemy, using a game attack check against Will. Omit Deception and Perception skills and per-attack save penalties."
+    },
+    {
+      "id": "raise-shields",
+      "sourceHash": "3ad13f6bf112fcb337f59298aff63f1bb21b58d04f29e354af764a78a07fbb02",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Use Shielding with the ordinary Guard activity and a shield requirement. Omit the extra physical-ranged bonus."
+    },
+    {
+      "id": "reactive-attack",
+      "sourceHash": "521893f892e51e25c6d9049f83ee654cffcd58b0bf5366646cbd51adce7fd0e3",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "retaliate"
+      ],
+      "conversion": "Future Retaliate; preserve the triggering activity as a prerequisite. It is not a passive extra attack."
+    },
+    {
+      "id": "shield-block",
+      "sourceHash": "2613ffbfb20cd993da0af670b9c9847451a593b04925d651e208e0681f12fb17",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "block"
+      ],
+      "conversion": "Future Block requires a shield and raised protection. Omit the source Hardness value."
+    },
+    {
+      "id": "ambush",
+      "sourceHash": "2921584916c176ade11c938729e826c13a6b8bac5bbc6796569ff16c88d483c5",
+      "disposition": "abstracted",
+      "abilities": [
+        "opening-move"
+      ],
+      "reactions": [],
+      "conversion": "Vanguard only when acting before all enemies. Omit Stealth initiative and the first-attack DC bonus. This replaces rather than adds to the existing Ambush deployment abstraction."
+    },
+    {
+      "id": "battlefield-adaptability",
+      "sourceHash": "cede7c2ff9edeb9ce12f3127db5024fa1750e83f602e95880b96966b63ffaab0",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage",
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Choose Pathfinder for ordinary ground or Shielding when assigning the card; grant one of them. Omit the round-by-round choice to keep one clear specialty."
+    },
+    {
+      "id": "bloodied-but-unbroken",
+      "sourceHash": "c2c6df3054599db31a152f52f5c430a4ad72b96ff142f2db28d68a0d855c4e59",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Exploit: +1 Defence while at half Health or less. Omit Battle and save bonuses and level scaling."
+    },
+    {
+      "id": "combat-medics",
+      "sourceHash": "c0abb47bf4205fe18ee07d323393f503c76c6845e33962036479face07eb2067",
+      "disposition": "abstracted",
+      "abilities": [
+        "recovery"
+      ],
+      "reactions": [],
+      "conversion": "Grant the same paid Recovery activity as Battlefield Medicine, once. The grant and its child item must not create two healing allowances."
+    },
+    {
+      "id": "commanding-presence",
+      "sourceHash": "4e8f7b8bfa4786cb58ec1ce71daa92b579f4042d33d9e07d264508b0a6f6f979",
+      "disposition": "abstracted",
+      "abilities": [
+        "temporary-protection"
+      ],
+      "reactions": [],
+      "conversion": "At the start of one adjacent ally's activation, grant Vitality while the commander is active. Omit the 60-foot multi-target reach and level scaling; use the shared recipient limit."
+    },
+    {
+      "id": "foragers",
+      "sourceHash": "218a257888d51485df5f4ca95857c20fe9a44cbe5a44d26eb41ab0a0dc78e34a",
+      "disposition": "omit",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Campaign food logistics; no tactical ability."
+    },
+    {
+      "id": "forest-passage",
+      "sourceHash": "a19e2c8a0997919835616960fcaf9d1bf858ea04bd3236edf5b2da380d5c7268",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage"
+      ],
+      "reactions": [],
+      "conversion": "Pathfinder: woods. Preserve the movement specialty; omit plant/fungus taxonomy."
+    },
+    {
+      "id": "form-a-phalanx",
+      "sourceHash": "74e2c6a31eacf0c0104dfb0c4bc556d24a2408e2f1acf92498f5c811ce6e465c",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Shielding through Guard; omit a separate formation state and PF2e save modifiers."
+    },
+    {
+      "id": "frightening-foe",
+      "sourceHash": "65c60294d34eeeeb62f4bba6ae34ab8c768bd0577dfc7f6402c894766c5489e5",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Exploit: +1 on the Menace check granted by Demoralize. This requires Menace and grants no second frightening activity."
+    },
+    {
+      "id": "hold-the-line",
+      "sourceHash": "6decd66971ff0d65314f5abb8d73f74825dc6595e0a1bdbc296e5a5f75f10816",
+      "disposition": "abstracted",
+      "abilities": [
+        "resolve"
+      ],
+      "reactions": [],
+      "conversion": "Resolve: fear resistance. Omit the additional frightened-value reduction."
+    },
+    {
+      "id": "increased-ammunition",
+      "sourceHash": "afbafc231dad0b275894966f89457273c5a9409a88ddad0a2d247688c737a9f6",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "The game has no troop ammunition depletion; the common abstraction already absorbs this benefit."
+    },
+    {
+      "id": "inspiring-banner",
+      "sourceHash": "13b75283f4717a45e9964728bb074458e87093eeacb12f2fd024161b7c682e07",
+      "disposition": "abstracted",
+      "abilities": [
+        "resolve"
+      ],
+      "reactions": [],
+      "conversion": "Adjacent allies gain Resolve: fear resistance while the banner unit is active. Omit initiative and frightened-value reduction."
+    },
+    {
+      "id": "keen-eyed",
+      "sourceHash": "dec0ee05ec04b12929b594173266960590bab74d800ca63ad864ef20da3a1dd4",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Exploit: +1 initiative. Omit detailed Seek and perception bonuses."
+    },
+    {
+      "id": "keep-up-the-pressure",
+      "sourceHash": "f4a4fa31cfa4b0359bf08329b3f81b08f1205fb68a44b79a498bcfb2f01c48fe",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Exploit: +1 melee on a three-action attack, if that investment exists in the chosen game activity. Otherwise suggest Exploit on the first melee attack and require explicit assignment. Do not silently invent a three-action attack or extra Salvo."
+    },
+    {
+      "id": "no-escape",
+      "sourceHash": "ef6829f658e5221c10bead19e320c223e3261cb01033c04857d0917c895106eb",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "pursue"
+      ],
+      "conversion": "Future Pursue follows a departing engaged enemy. Preserve legal movement modes."
+    },
+    {
+      "id": "no-retreat",
+      "sourceHash": "86beef238d01773f14dea0c2475251cd76a55cc63a35a711dbf02406ce487b44",
+      "disposition": "abstracted",
+      "abilities": [
+        "resolve"
+      ],
+      "reactions": [],
+      "conversion": "Resolve: hold ground. Omit fleeing-to-slowed conversion. Never map this source to pursuit."
+    },
+    {
+      "id": "opening-salvo",
+      "sourceHash": "6058a8fb035d173e9d4727b8d24c3c881cdf8a8fe6aac98242eb511461523b80",
+      "disposition": "abstracted",
+      "abilities": [
+        "opening-move"
+      ],
+      "reactions": [],
+      "conversion": "The display name is Reposition: Vanguard only when acting before all enemies. This grants movement, not an opening shot."
+    },
+    {
+      "id": "overrun",
+      "sourceHash": "1fd09a89dde6ee463a84cd9540a81632497f92d5cd730e2bd349c3ce90e77ca8",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "The display name is Aggressive Mounts: Exploit melee against unmounted troops. Omit individual-size predicates, low-level defensive drawbacks, and level scaling. It grants no forced movement."
+    },
+    {
+      "id": "practiced-gunners",
+      "sourceHash": "5717a2db26e4b9efa6003dcf6c3faceae7d262e354579c04e45ad1a6cc9ef3d1",
+      "disposition": "abstracted",
+      "abilities": [
+        "siege-crew"
+      ],
+      "reactions": [],
+      "conversion": "Siege Crew. Omit combined Aim/Launch and expert proficiency; merge with other crew training into one bonus."
+    },
+    {
+      "id": "practiced-loaders",
+      "sourceHash": "c6c4e2f535a84d9f29c922d352e3712b8fa873541d4d0f024ddb35794267143a",
+      "disposition": "abstracted",
+      "abilities": [
+        "siege-crew"
+      ],
+      "reactions": [],
+      "conversion": "Siege Crew. Omit the load-action discount; merge with other crew training into one bonus."
+    },
+    {
+      "id": "revel-in-battle",
+      "sourceHash": "828c8471bd98cc5ff7d8b3cc92aeac848f333373ef521765b0c259116d070a84",
+      "disposition": "reaction",
+      "abilities": [
+        "recovery"
+      ],
+      "reactions": [
+        "battle-recovery"
+      ],
+      "conversion": "Future Battle Recovery after a critical melee result. Actual Health recovery remains distinct from temporary Vitality."
+    },
+    {
+      "id": "sea-legs",
+      "sourceHash": "51cc44ec36b0ba282b877fc7be7ba87ae4cbc11164072034137c97be941477d9",
+      "disposition": "omit",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Vehicle control and firing penalties lie outside this tactical catalogue. Preserve the source text."
+    },
+    {
+      "id": "shield-discipline",
+      "sourceHash": "5462451f5e7a7360fe56c7dc2b8c68e6dac4d35e839d4d4999c5c9f7562f8153",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [
+        "block"
+      ],
+      "conversion": "Grant Shielding while carrying shields; record future Block separately. Deduplicate the Raise Shields and Shield Block child items."
+    },
+    {
+      "id": "shield-wall",
+      "sourceHash": "62530565ec257bece6f4bcf0e8446fbe29c7499b903c7d9c2745addef6f8e553",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Use Shielding through Guard. Omit a separate cover tier, Take Cover escalation, and hiding restrictions."
+    },
+    {
+      "id": "siege-training",
+      "sourceHash": "95e1453e3a6fceeee4eb658314c4f27fedc32cbfffa0de1061f6c09ecde37270",
+      "disposition": "abstracted",
+      "abilities": [
+        "siege-crew"
+      ],
+      "reactions": [],
+      "conversion": "Siege Crew. Omit proficiency ranks and source Launch DC formula."
+    },
+    {
+      "id": "signal-the-advance",
+      "sourceHash": "86f63c85c1f6034a796d7ab1ce017d19c6f46ffb002510cf4945228b473d9157",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "coordinated-advance"
+      ],
+      "conversion": "The commander spends two actions; one adjacent ally spends its reaction to Move. The source is a paid activity with recipient reactions, so defer the whole command until reactions exist."
+    },
+    {
+      "id": "stay-in-the-fight",
+      "sourceHash": "e130cedd4b7aeeef262dcb5a4eb2e84e008f4208ad1a2ab55540ebea8af520e4",
+      "disposition": "abstracted",
+      "abilities": [
+        "temporary-protection"
+      ],
+      "reactions": [],
+      "conversion": "Two-action Vitality for one adjacent ally. Omit the 60-foot group effect and one-minute duration; it does not restore Health."
+    },
+    {
+      "id": "sure-stride",
+      "sourceHash": "6bf39cb90603e3eb2ec213c0e8b1eeb140743404e8145aeef1d10ec25266d179",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage"
+      ],
+      "reactions": [],
+      "conversion": "Pathfinder: rough ground. Omit separate rubble, sand, and debris classifications."
+    },
+    {
+      "id": "swift-recovery",
+      "sourceHash": "e9c9defcb4e63dc970b87162ecd77a8e2d495f84a014d33af0e2d76aae3c59d9",
+      "disposition": "abstracted",
+      "abilities": [
+        "recovery"
+      ],
+      "reactions": [],
+      "conversion": "At activation start, condition-mode Recovery once per battle. Omit the DC 15 flat check. Explicit start timing is a restricted exception to the normal paid/rider Recovery deliveries."
+    },
+    {
+      "id": "thunder-of-hooves",
+      "sourceHash": "f57db4ba353e660d70a3f8fade94ba0602e6b2456464e95d156a5a1298538549",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge",
+        "expose"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge with Expose on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity."
+    },
+    {
+      "id": "toughened-soldiers",
+      "sourceHash": "8c1e66919e6dd2e177eaa5a3ad23b4e10252137c2dc6102ba0af3af8c899626e",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Preserve the source HP in import evidence and existing stat conversion; add no fifth Health box. A small PF2e HP bonus may disappear at this scale."
+    },
+    {
+      "id": "trample",
+      "sourceHash": "928eabf39a163c5ae7359faa251f8b050f6026e9df717818e80e1dc34b718f10",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge",
+        "sweep"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge plus Sweep after a successful Charge. Omit movement through occupied troop spaces and attacks against every traversed creature."
+    },
+    {
+      "id": "unpredictable-movement",
+      "sourceHash": "1c90ecf6e4c7edfe3b4518a437cb4a8c606f13cb435a2e4527b814da38e08d5b",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Exploit: +1 Defence against ranged attacks. Omit the separate Salvo save bonus."
+    },
+    {
+      "id": "volunteers",
+      "sourceHash": "218840a1fee0680d2dac62b23feb853e17a7909ce2a4fd14b25da998dbb858c4",
+      "disposition": "omit",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Campaign pay logistics; no tactical ability."
+    },
+    {
+      "id": "wanderers",
+      "sourceHash": "e381d79ee9b551b2cc351ed4fb6825b8eb3191ba4505fa674c6588c8f67ccc6f",
+      "disposition": "omit",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Campaign garrison logistics; no tactical ability."
+    },
+    {
+      "id": "accustomed-to-panic",
+      "sourceHash": "6e7cfbabe10acc734f5f8e244df501458132f2bf6f575ffeb66f4d34b02d4ef6",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "hold-nerve"
+      ],
+      "conversion": "Future Hold Nerve while not routed. Omit the source next-check bonus."
+    },
+    {
+      "id": "amphibious",
+      "sourceHash": "10014cdc0e804e97b20f3dd6471b574c8971ad81936561b7312381f6458a5c76",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage"
+      ],
+      "reactions": [],
+      "conversion": "Pathfinder: water and swamp. Use actual imported swim capability; this ability grants none. Omit terrain-conditioned skill and Battle bonuses."
+    },
+    {
+      "id": "brave",
+      "sourceHash": "b57703411c15c8586ce5e5f12385cff0a479005fcc216eff554998adf0308fad",
+      "disposition": "abstracted",
+      "abilities": [
+        "resolve"
+      ],
+      "reactions": [],
+      "conversion": "Resolve: fear resistance. Merge duplicate bravery bonuses."
+    },
+    {
+      "id": "brutal-assault",
+      "sourceHash": "32b194ba1aff60f3cded4a6494fdbefe65d53f4f51f5bace068398932803357b",
+      "disposition": "abstracted",
+      "abilities": [
+        "fear"
+      ],
+      "reactions": [],
+      "conversion": "After melee damage, apply Menace if the target fails a Will resistance check. Use the unit's normal game ability DC; omit fixed DC 24 and fear grades."
+    },
+    {
+      "id": "burning-weaponry",
+      "sourceHash": "5d9bc35150e2d5544eb1de3be857c54aaa2b15fc3f3fa504a3a481bdb8b5ca20",
+      "disposition": "abstracted",
+      "abilities": [
+        "persistent-injury"
+      ],
+      "reactions": [],
+      "conversion": "Critical melee hit applies Lingering Harm with the fire tag. Omit source persistent damage dice."
+    },
+    {
+      "id": "chorus-of-croaks",
+      "sourceHash": "6af1d4efba550e5169fff52a75289d53b442c140bf5a6d1ba176bcb0f4d5e342",
+      "disposition": "abstracted",
+      "abilities": [
+        "fear"
+      ],
+      "reactions": [],
+      "conversion": "Adjacent hostile Menace aura. The registry version is passive; omit its separate Demoralize grant and fear-save penalty rather than creating three benefits."
+    },
+    {
+      "id": "explosive-defeat",
+      "sourceHash": "3ccc9a90cb47d64ec437bd81c9d2f21f0ef26a9244beda6c4ce0f4aad91f8fb5",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Retain the death-explosion identity for a later death-trigger proposal. Do not approximate it with Sweep or add a custom one-creature callback now."
+    },
+    {
+      "id": "furious-charge",
+      "sourceHash": "37641f8a39b2b1bd99ec3afb8f9de4e726962dfdf6c7d251d953d9d68593e5eb",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge once per battle. Omit doubled PF2e Speed; retain the limited-use identity."
+    },
+    {
+      "id": "hurl-nets",
+      "sourceHash": "59e9001ed7b69b0ac5a6377f5c66174b50136a6bf0c014e8510f4fa53e0caf1e",
+      "disposition": "abstracted",
+      "abilities": [
+        "snare"
+      ],
+      "reactions": [],
+      "conversion": "Two-action non-damaging Volley replacement: a successful game attack check applies Snare. This replaces the source slowed/action penalty and Escape DC with a movement restriction and one-action release."
+    },
+    {
+      "id": "primal-magic",
+      "sourceHash": "54dd7e25fdc94f928a32ddfb562d02292d243bb25cf0edf63cbc70e5b3e42988",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Retain as a spell-catalogue choice. The random multi-condition table does not justify five troop-specific ability branches."
+    },
+    {
+      "id": "ragged-formation",
+      "sourceHash": "501e82834efa39dd823a69555ff65c8ad7419880915e95837771eae211686014",
+      "disposition": "omit",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Shared occupancy needs a different board model. Preserve the source description and grant no substitute bonus."
+    },
+    {
+      "id": "rise-from-the-swamp",
+      "sourceHash": "b6a63072493bdb62701daecdfbef209d20b183e9076c953cce4c437897932e59",
+      "disposition": "abstracted",
+      "abilities": [
+        "opening-move"
+      ],
+      "reactions": [],
+      "conversion": "Vanguard when deployed in water or swamp. Respect legal movement and finish outside contact. Omit adjacent-enemy deployment and first-round Battle bonus."
+    },
+    {
+      "id": "supernatural-attacks",
+      "sourceHash": "6264b4e6fe22bcfb4da1c5e10fb4a888054598e383a038580a8937b5d96daed7",
+      "disposition": "abstracted",
+      "abilities": [
+        "suppression"
+      ],
+      "reactions": [],
+      "conversion": "Critical melee or Volley hit applies Suppression. This deliberately broadens a one-turn enfeebled penalty into one existing game condition."
+    },
+    {
+      "id": "water-stride",
+      "sourceHash": "c1514084ee9d929bd7cc66eca2592f42e0fc108c8709c7527a6f56772e994941",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage"
+      ],
+      "reactions": [],
+      "conversion": "Pathfinder: water and swamp. Omit the water-battle initiative bonus. The source does not grant water walking."
+    },
+    {
+      "id": "wyvern-venom",
+      "sourceHash": "d3a1c4f597568e62fbd1a9adac11f8b817fb7805fdda17f65085ab9899366c12",
+      "disposition": "abstracted",
+      "abilities": [
+        "persistent-injury"
+      ],
+      "reactions": [],
+      "conversion": "Successful melee hit applies Lingering Harm with the poison tag. Omit the linked enfeebled penalty and separate poison stages; no extra save."
+    },
+    {
+      "id": "arrow-volley",
+      "sourceHash": "f0b34cf4f7a3f19b1fe8066c30235dc0cd138797a215301c3c24c6442f851ba6",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary ranged profile; omit source burst geometry and action count."
+    },
+    {
+      "id": "bolt-salvo",
+      "sourceHash": "9f21f5459fc4d03a19b519057ce1cedd7deddb425558de9dff5ed4956def7d1f",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary ranged profile; omit source action count."
+    },
+    {
+      "id": "city-passage",
+      "sourceHash": "4a25f4089ab53a083edb167bdfc41be402651f6d9fcccf4fa742d7b180184de5",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage"
+      ],
+      "reactions": [],
+      "conversion": "Pathfinder: urban ground. Omit segment fitting through narrow streets."
+    },
+    {
+      "id": "clash-of-steel",
+      "sourceHash": "bb560839824dc0e091020795738860c0a05588ebbce3c7ce7ebb49b9c10f93a3",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary melee profile."
+    },
+    {
+      "id": "dagger-defense",
+      "sourceHash": "f7e19d571cdd90fdb254ee8a022cf7435f9eccf2777b0e2e9a9b42689585a883",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Using the melee attack grants self Shielding until the next activation. It still grants protection on a miss; omit the separate +1 PF2e AC value."
+    },
+    {
+      "id": "drilled-in-formations",
+      "sourceHash": "16a5b39d52a8bb80e7226b94b8046e0f408af341d34aed23fcb96dbc93dc5435",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Assign Shielding as the unit's formation specialty. Omit switching among loose, column, and wedge formations; this is a deliberate selection, not an exact conversion of every formation."
+    },
+    {
+      "id": "first-class-charge",
+      "sourceHash": "4371bea6e575bae4ddb4ce73fd7412c394b3622c79610ff0ea8b19498b7afef1",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge with the game's normal route and action rules."
+    },
+    {
+      "id": "grave-tide",
+      "sourceHash": "cdd0413dc3060c7ffc67c90892250c6dcd16c4e2dca5ab289b009bd6dbf10552",
+      "disposition": "omit",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Shared-space movement would change the board model; preserve the source description."
+    },
+    {
+      "id": "harry-prey",
+      "sourceHash": "d79f82136b03c03818a2c46ef05eefa3754443e633fe5777ebc464e81c0f2fde",
+      "disposition": "abstracted",
+      "abilities": [
+        "expose"
+      ],
+      "reactions": [],
+      "conversion": "A successful melee hit Exposes its target. Omit the follow-up Athletics Trip check."
+    },
+    {
+      "id": "hurl-javelins",
+      "sourceHash": "7283dc02f94f44903c50b18de64203a77695d1be88f0498aa7a09b80550645e9",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary short ranged profile."
+    },
+    {
+      "id": "indiscriminate-assault",
+      "sourceHash": "d4a66b624d3238fa0b75c408ff81a4243faeba783fc5c16cff178335aca232e0",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "The attack's friendly-fire drawback needs explicit target selection. Keep ordinary attack numbers, flag the omitted drawback, and grant no bonus."
+    },
+    {
+      "id": "join-the-fray",
+      "sourceHash": "9cf079993f22a3aa7e1572c6ec0497d24ed9bbe074ea17c301e1e4ac47cae5ff",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary melee profile."
+    },
+    {
+      "id": "keep-up-with-me",
+      "sourceHash": "6f1d7afd7c93cd40cf5c0ac023b9e52c6932923f4f3c18b2247a20b8abb2dc82",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "After dealing melee damage, spend one action to grant one adjacent ally Exploit on its next attack before the source's next activation. Omit source range and +3 scaling."
+    },
+    {
+      "id": "lance-charge",
+      "sourceHash": "211becbcfee37d59179a8611066782e36ff8313030b5b92d93af23cb4923dfc7",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge. Omit the additional ten feet and source three-action movement sequence."
+    },
+    {
+      "id": "lower-halberds",
+      "sourceHash": "cf65ab0f9be88f36e22dee18ba1a19f67f02f2c61be2506243e855d37d1bdca0",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use ordinary melee stats and source damage tags. Omit reach and physical-damage-type selection as extra abilities."
+    },
+    {
+      "id": "lower-spears",
+      "sourceHash": "cfb0fa5374e46106aa1c57a924185bbc4741c4b3a9d1260d4a5c5377a3d2e3de",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use ordinary melee stats; omit ten-foot individual reach."
+    },
+    {
+      "id": "mounted-troop",
+      "sourceHash": "10080bf92a957aa8325baf6d1a29e3db1cdb221bcece6e895b466579243f7604",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the troop's role and imported movement. Omit mixed rider/mount spell-target accounting."
+    },
+    {
+      "id": "no-retreat-elite",
+      "sourceHash": "7c087ed39e33a212d575bf7c4d7e736c4c1d9a6111d07b4ac6381e8b785e638a",
+      "disposition": "abstracted",
+      "abilities": [
+        "resolve"
+      ],
+      "reactions": [],
+      "conversion": "Resolve: hold ground, same as No Retreat. Omit the stronger source distance reduction and fleeing-to-slowed conversion."
+    },
+    {
+      "id": "pack-hunt",
+      "sourceHash": "0917d113b266198dcf82d318691d676dbb4942e23756a9896acbe92203703508",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Exploit: +1 melee against an Exposed target. Substitute the existing Exposed state for source prone/clumsy interaction."
+    },
+    {
+      "id": "phalanx-charge",
+      "sourceHash": "6938f641e3cf4649ed7e20aa510872e51ebce43ab9d4733f69f4c0aac26a7036",
+      "disposition": "abstracted",
+      "abilities": [
+        "charge",
+        "expose"
+      ],
+      "reactions": [],
+      "conversion": "Shock Charge; Expose on a successful hit while Shielding was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry."
+    },
+    {
+      "id": "rain-of-arrows",
+      "sourceHash": "11a457075d74be84a9077a0934c7e633ceeb2b96ec81107deada7300cb4f2517",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the imported ranged profile. Omit the second range/burst tradeoff as an additional ability."
+    },
+    {
+      "id": "seek-quarry",
+      "sourceHash": "00b60444eae60156bdaf754ba170d5653b121925ea74ee167c382705e6a4a972",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Mark one enemy before battle; Exploit +1 melee against that quarry. This deliberately replaces detailed tracking Perception with a battlefield hunting specialty."
+    },
+    {
+      "id": "shambling-onslaught",
+      "sourceHash": "aa8182b057ac0131ceeacd326d838749af10450365beff6dfa8217a27e7be568",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "The registry wording affects all nearby creatures. Keep attack numbers and flag the friendly-fire clause for review; do not assume enemies-only behavior from another source version."
+    },
+    {
+      "id": "shoot-crossbows",
+      "sourceHash": "d30fa22b07371caf1fad6861eee4af25b9275366f9bde9a87219ca70ac03afdf",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary ranged profile."
+    },
+    {
+      "id": "slow-zombie",
+      "sourceHash": "126f46c08a8282eab2525ec8be3d05602ebd90beba3af0085f1e0452436b8760",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Permanent action loss is a major drawback. Preserve and flag it; decide a common Sluggish drawback before importing this unit as mechanically complete. Do not quietly turn it into reduced movement."
+    },
+    {
+      "id": "spears-out",
+      "sourceHash": "e3213e4238af561eda165daef3c2dadb8c7c4ceaf5eb997d6b622748fc59495e",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary melee profile."
+    },
+    {
+      "id": "stab-from-the-saddle",
+      "sourceHash": "75e7e14ffd82cb66b8ecc40d880e010f4215c12e5967781306c0c7363d18bda5",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the ordinary melee profile and imported mounted role."
+    },
+    {
+      "id": "trailblazing-stride",
+      "sourceHash": "673638735ec52f2c41b687a916f0da5fb2b56e6d8a066a770e3d1ff77f7fc1ce",
+      "disposition": "abstracted",
+      "abilities": [
+        "terrain-passage"
+      ],
+      "reactions": [],
+      "conversion": "Pathfinder: all ordinary ground. Preserve barriers and hazards."
+    },
+    {
+      "id": "troop-spellcasting",
+      "sourceHash": "f0d54f173f58cd061cbaae2b189f57a444f36ec9395948f8391053bb3d4448a4",
+      "disposition": "baseline",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Use the game's spell shapes and caster import. Omit PF2e troop area expansion as a second area bonus."
+    },
+    {
+      "id": "untrained-rabble",
+      "sourceHash": "6fb78e9c578468efb2080d8e99913fa45c732bb32cc243e10a10862c0b287b47",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Random confusion changes player control. Preserve as a candidate Unreliable drawback; do not add random-turn rules to the first catalogue."
+    },
+    {
+      "id": "wild-swing",
+      "sourceHash": "3b4e58a056593719918807600abbec37735d9edd0cbbf84133410a931d2aef8a",
+      "disposition": "defer",
+      "abilities": [],
+      "reactions": [],
+      "conversion": "Retain the self-damage drawback as a review item. Keep attack numbers but grant no extra damage until a common Reckless drawback is defined."
+    },
+    {
+      "id": "idealist-inspiring-aura",
+      "sourceHash": "0e0a4e7be4fa8b9f4c39198f329be9a07e4d8b001b4062ce9f92d51b645e2d37",
+      "disposition": "abstracted",
+      "abilities": [
+        "resolve"
+      ],
+      "reactions": [],
+      "conversion": "Adjacent allied Resolve: fear resistance. Omit the initiative bonus and source radius. Deduplicate Inspiring Banner."
+    },
+    {
+      "id": "idealist-aura-of-righteousness",
+      "sourceHash": "daf89b64fd93fea1f0b5bf709549e127d3f79de43e6b56b1adb705f8b854c6d8",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Adjacent allies gain Exploit on melee attacks against unholy targets. Omit the separate AC and flat damage bonuses; retain the unholy predicate rather than generalizing to undead."
+    },
+    {
+      "id": "ruthless-no-quarter",
+      "sourceHash": "208813ccd10663f8991608dc6ba06c5a85f678ce96b80aa217b5cc0e544a4856",
+      "disposition": "abstracted",
+      "abilities": [
+        "advantage"
+      ],
+      "reactions": [],
+      "conversion": "Adjacent allies gain Exploit on attacks while the commander is active. Omit the separate damage bonus and larger source radius."
+    },
+    {
+      "id": "ruthless-despair",
+      "sourceHash": "0f4f69e8cd811b74797ebcadd3a7e1294061c768587f2f9ff26da0fee0015549",
+      "disposition": "abstracted",
+      "abilities": [
+        "fear"
+      ],
+      "reactions": [],
+      "conversion": "Adjacent hostile Menace aura. This intentionally replaces a campaign Demoralized floor with temporary tactical fear; it never writes campaign disorder or blocks campaign recovery. Preserve fear immunity."
+    },
+    {
+      "id": "practical-rally",
+      "sourceHash": "55e651dcfd987590b0f0da15a203884735300891922d19d3cc05b6574bbc6026",
+      "disposition": "abstracted",
+      "abilities": [
+        "guard"
+      ],
+      "reactions": [],
+      "conversion": "Share Shielding with one adjacent ally while guarding. Omit the always-on group save bonus. This source is a protective aura, not the game's morale-restoring Rally activity."
+    },
+    {
+      "id": "practical-rigorous-discipline",
+      "sourceHash": "0d100db0f27642d13ab14341fd9bb43af68d136f28075227b54b35c79b019a3e",
+      "disposition": "reaction",
+      "abilities": [],
+      "reactions": [
+        "block"
+      ],
+      "conversion": "Future Block only against an incoming physical critical hit. Omit the DC 17 flat check and critical-to-normal conversion; preserve this prerequisite even though shield equipment is unnecessary."
+    }
+  ],
+  "generatedRules": "ReignMaker generates Troop Defenses from HP thresholds outside the 97-entry registry. Classify it as baseline: use Battlefield\u2019s single hex and four-Health abstraction. Form Up and Troop Movement already appear in the registry. Omit segment loss, individual-target immunity, and formation resizing; preserve source HP and traits as evidence.",
+  "importFindings": [
+    "ReignMaker is supplementary evidence. The broader saved review contains 200 source actors and 1,384 actions; Siphoning Grip and regeneration inform the catalogue even though the registry has no corresponding definition.",
+    "Training copies system.slug to action items, but the creature ability builder copies name and mechanics without preserving that slug. Read mechanics and portable explicit assignments; actor names, item names, slugs, and UUIDs are recognition hints only.",
+    "Doctrine grants include five effect items and one reaction action. Inspect both item types. Actor slugs use doctrine-ability- followed by the grant ID; the snapshot saves that value and the underlying definition.",
+    "The actual doctrine code requires dominance for all six grants. The older doctrine reference document differs from current definitions; use the saved code and item text as evidence.",
+    "Keep source action, passive, and reaction economy in the audit. A proposed abstraction may deliberately change a passive into a paid Guard effect, but must label that change. Signal the Advance requires recipient reactions despite being a paid source action.",
+    "Prepared Foundry statistics may already include rule-element bonuses. Deduplicate imported bonuses against prepared stats before applying Exploit, Resolve, or auras; never add a modifier just because its ability text survived.",
+    "Bundle children and parent tactics collapse to one assignment. Examples include Combat Medics/Battlefield Medicine, Shield Discipline/Raise Shields, and the three siege crew training abilities.",
+    "Abstracted means a proposed shared game effect, not implemented support. Deferred entries retain an explicit review note; omitted and baseline entries add no new ability.",
+    "Keep historical source text, exact hashes, and deliberate omissions. Persist selected catalogue IDs, trigger, local attack attachment, prerequisites, and flavor label separately from source identity."
+  ]
+}
