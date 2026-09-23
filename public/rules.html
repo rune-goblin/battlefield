@@ -23,15 +23,18 @@
     --leading-heading:1.25;
   }
   * { box-sizing:border-box; }
-  body { background:var(--paper); color:var(--ink); }
+  body { background:#171510; color:var(--ink); isolation:isolate; }
+  body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(rgba(17,16,12,.78),rgba(17,16,12,.9)),url("art/scenes/battlemap.webp") center/cover no-repeat; }
+
   table { border-collapse:collapse; width:100%; margin:.75rem 0 1.25rem; }
   th,td { text-align:left; vertical-align:top; border-bottom:1px solid var(--rule); }
-  th { background:var(--band); font-weight:600; }
+  th { background:var(--table-head); color:var(--ivory); font-weight:600; border-bottom-color:var(--gold); }
+  tbody tr:nth-child(even) { background:var(--wash); }
   td:first-child { font-weight:600; }
   .wrap { overflow-x:auto; }
-  .key { background:var(--band); border-left:4px solid var(--accent); padding:.75rem 1rem; margin:1rem 0; }
+  .key { background:var(--band); border:1px solid var(--rule); border-left:3px solid var(--gold); padding:1rem 1.25rem; margin:1.5rem 0; }
   ol,ul { padding-left:1.4rem; }
-  .ref th { background:var(--accent); color:var(--paper); }
+  .ref th { background:var(--table-head); color:var(--ivory); }
   figure { margin:1.25rem 0; }
   figure svg { max-width:100%; height:auto; display:block; margin:0 auto; }
   figcaption { font-size:var(--type-small); line-height:var(--leading-compact); color:var(--muted); margin-top:.35rem; }
@@ -46,50 +49,62 @@
   .hx.b3 { fill:var(--accent); opacity:.07; } .hx.here { fill:var(--accent); opacity:.6; }
   .matrix { min-width:49rem; table-layout:fixed; }
   .matrix th:first-child { width:23%; } .matrix th:last-child { width:7%; }
-  .matrix tbody th { background:transparent; }
+  .matrix tbody th { background:transparent; color:var(--ink); border-bottom-color:var(--rule); }
   .matrix .row-total { font-weight:bold; background:var(--band); }
   .level-band,.meta { color:var(--muted); font-size:var(--type-small); line-height:var(--leading-compact); }
   caption { text-align:left; font-size:var(--type-body); line-height:var(--leading-heading); font-weight:600; margin-bottom:.75rem; }
   .spells { min-width:38rem; } .spells th:nth-child(2) { width:20%; }
   .siege-reference { min-width:48rem; }
-  .siege-reference tbody th { background:transparent; width:21%; }
+  .siege-reference tbody th { background:transparent; color:var(--ink); border-bottom-color:var(--rule); width:21%; }
   .siege-reference .meta { display:block; font-weight:normal; }
   .siege-reference td:last-child { width:40%; }
   .siege-reference ul { margin:.5rem 0; padding-left:1.1rem; }
   .in-foundry .standalone { display:none; }
-  :root { --ink:#24231f; --paper:#faf8f2; --rule:#d8d2c6; --accent:#873923; --muted:#696258; --band:#f0ece2; --header:3.75rem; }
-  @media (prefers-color-scheme:dark) { :root { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#e49a7e; --muted:#b3a899; --band:#2a2520; } }
+  :root {
+    --ink:#2b261e; --paper:#f5efdf; --rule:#d5c7aa; --accent:#7c3524; --muted:#6c5d48; --band:#eae0ca;
+    --gold:#c5a66b; --ivory:#f4ead6; --frame-muted:#c7b99f; --frame-line:rgba(197,166,107,.3);
+    --page-surface:rgba(248,242,228,.98); --wash:rgba(137,106,55,.045);
+    --table-head:#343025; --header:4rem;
+  }
+  @media (prefers-color-scheme:dark) {
+    :root { --ink:#ede3d0; --paper:#211e18; --rule:#504632; --accent:#deb47b; --muted:#c1b298; --band:#302a20; --page-surface:rgba(29,26,21,.98); --wash:rgba(197,166,107,.04); }
+  }
   html { scroll-padding-top:5.5rem; }
   body { margin:0; font:var(--type-body)/var(--leading-body) var(--font-body); }
   a { color:var(--accent); text-underline-offset:.18em; }
   a:hover { text-decoration-thickness:2px; }
   :focus-visible { outline:2px solid var(--accent); outline-offset:4px; }
+  .rules-page :is(h2,h3,h4,section)[tabindex="-1"]:focus { outline:none; }
+  .site :focus-visible,.sidebar :focus-visible,.on-page :focus-visible { outline-color:var(--gold); }
+  button:hover { border-color:var(--gold); background:rgba(197,166,107,.12); }
   [hidden] { display:none !important; }
-  .site { position:sticky; top:0; background:var(--paper); border-bottom:1px solid var(--rule); height:var(--header); display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; gap:1rem; z-index:5; }
-  .site a { display:inline; padding:0; margin:0; font-size:var(--type-small); font-weight:600; }
+  .site { position:sticky; top:0; background:rgba(23,21,16,.94); color:var(--ivory); border-bottom:1px solid var(--frame-line); height:var(--header); display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; gap:1rem; z-index:5; }
+  .site a { display:inline; padding:0; margin:0; color:var(--ivory); font:400 var(--type-1)/1.25 var(--font-display); text-decoration:none; }
+  .site a:hover { color:var(--gold); }
   .site-title { display:flex; gap:1rem; align-items:baseline; }
-  .site h1 { font:inherit; font-weight:700; margin:0; }
-  .site-title span { color:var(--muted); font-size:var(--type-small); }
-  button { font:500 var(--type-small)/var(--leading-compact) var(--font-body); color:var(--ink); background:var(--band); border:1px solid var(--rule); border-radius:4px; padding:.45rem .75rem; cursor:pointer; }
+  .site h1 { font:700 var(--type-body)/1.5 var(--font-body); margin:0; color:var(--gold); }
+  .site-title span { color:var(--frame-muted); font:italic var(--type-small)/1.5 var(--font-display); border-left:1px solid var(--frame-line); padding-left:1rem; }
+  button { font:500 var(--type-small)/var(--leading-compact) var(--font-body); color:var(--ivory); background:rgba(197,166,107,.06); border:1px solid var(--frame-line); border-radius:0; padding:.45rem .75rem; cursor:pointer; }
   .js-only { display:none; }
   .enhanced .js-only { display:block; }
   .skip-link { position:fixed; top:-6rem; left:1rem; z-index:10; background:var(--paper); padding:.6rem; }
   .skip-link:focus { top:.5rem; }
   .rules-layout { display:grid; grid-template-columns:15rem minmax(0,1fr) 12rem; max-width:90rem; margin:auto; align-items:start; }
-  .sidebar { position:sticky; top:var(--header); height:calc(100dvh - var(--header)); overflow-y:auto; border-right:1px solid var(--rule); padding:1.5rem 1rem 3rem; }
+  .sidebar { background:rgba(23,21,16,.5); color:var(--ivory); position:sticky; top:var(--header); height:calc(100dvh - var(--header)); overflow-y:auto; border-right:1px solid var(--frame-line); padding:2rem 1rem 3rem; }
   .nav-group { margin-bottom:1.4rem; }
-  .nav-group p { margin:0 .65rem .5rem; color:var(--muted); font-size:var(--type-label); line-height:var(--leading-compact); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .nav-group p { margin:0 .65rem .75rem; color:var(--gold); font-size:var(--type-body); line-height:var(--leading-compact); font-weight:700; }
   .nav-group ul { list-style:none; padding:0; margin:0; }
   .nav-group li { margin:.15rem 0; }
-  .nav-group a { display:block; padding:.45rem .65rem; color:var(--ink); font-size:var(--type-small); line-height:var(--leading-compact); text-decoration:none; border-radius:4px; border-left:3px solid transparent; }
-  .nav-group a:hover { background:var(--band); }
-  .nav-group a[aria-current="page"] { background:var(--band); color:var(--accent); border-left-color:var(--accent); font-weight:650; }
-  main { width:100%; min-width:0; max-width:58rem; margin:0 auto; padding:2.75rem clamp(1.25rem,3vw,3.5rem) 4rem; }
-  .rules-page > h2 { font:400 var(--type-4)/1.1 var(--font-display); border:0; padding:0; margin:0 0 2rem; letter-spacing:-.025em; text-wrap:balance; }
+  .nav-group a { display:block; padding:.5rem .65rem; color:var(--frame-muted); font-size:var(--type-small); line-height:var(--leading-compact); text-decoration:none; border-radius:0; border-left:2px solid transparent; }
+  .nav-group a:hover { background:rgba(197,166,107,.1); color:var(--ivory); }
+  .nav-group a[aria-current="page"] { background:linear-gradient(90deg,rgba(107,43,30,.5),rgba(107,43,30,.18)); color:var(--ivory); border-left-color:var(--gold); font-weight:600; }
+  main { position:relative; background:var(--page-surface); box-shadow:0 0 60px rgba(0,0,0,.18); min-height:calc(100svh - var(--header)); width:100%; min-width:0; max-width:58rem; margin:0 auto; padding:2.75rem clamp(1.25rem,3vw,3.5rem) 4rem; }
+  .rules-page > h2 { position:relative; font:400 var(--type-4)/1.1 var(--font-display); border:0; border-bottom:1px solid var(--rule); padding:0 0 1.5rem; margin:0 0 2rem; letter-spacing:-.025em; text-wrap:balance; }
+  .rules-page > h2::after { content:""; position:absolute; left:0; bottom:-3.5px; width:6px; height:6px; background:var(--gold); transform:rotate(45deg); }
   .rules-page + .rules-page { margin-top:4rem; }
   .enhanced .rules-page { margin-top:0; }
-  h3 { font-size:var(--type-2); line-height:var(--leading-heading); font-weight:600; letter-spacing:-.02em; margin:3rem 0 1rem; color:var(--ink); text-wrap:balance; }
-  h4 { font-size:var(--type-1); line-height:var(--leading-heading); font-weight:600; letter-spacing:-.01em; color:var(--accent); margin:2.25rem 0 .75rem; text-wrap:balance; }
+  h3 { font-family:var(--font-display); font-size:var(--type-2); line-height:var(--leading-heading); font-weight:400; letter-spacing:-.02em; margin:3rem 0 1rem; color:var(--ink); text-wrap:balance; }
+  h4 { font-family:var(--font-display); font-size:var(--type-1); line-height:var(--leading-heading); font-weight:600; letter-spacing:-.01em; color:var(--accent); margin:2.25rem 0 .75rem; text-wrap:balance; }
   p,li { max-width:68ch; }
   p { margin:1rem 0; }
   li { margin:.5rem 0; }
@@ -100,20 +115,21 @@
   .wrap { max-width:100%; margin:1rem 0; }
   .wrap:focus-visible { outline-offset:2px; }
   .basics { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1.75rem 0 2.5rem; }
-  .basics > div { padding:1rem; background:var(--band); border-top:2px solid var(--accent); }
-  .basics strong { display:block; font:400 var(--type-4)/1.1 var(--font-display); }
+  .basics > div { position:relative; padding:1rem; background:linear-gradient(135deg,var(--band),transparent); border:1px solid var(--rule); border-top:2px solid var(--gold); }
+  .basics > div::after { content:""; position:absolute; right:-1px; bottom:-1px; width:.6rem; height:.6rem; border-right:1px solid var(--gold); border-bottom:1px solid var(--gold); }
+  .basics strong { display:block; color:var(--accent); font:400 var(--type-4)/1.1 var(--font-display); }
   .basics span { display:block; font-size:var(--type-small); line-height:var(--leading-compact); margin-top:.5rem; color:var(--muted); }
   details { margin:1.25rem 0; }
   summary { cursor:pointer; color:var(--accent); font-weight:600; }
-  .on-page { position:sticky; top:calc(var(--header) + 2rem); max-height:calc(100dvh - var(--header) - 3rem); overflow-y:auto; padding:0 1.25rem; font-size:var(--type-small); line-height:var(--leading-compact); border-left:1px solid var(--rule); margin-top:2.75rem; }
-  .on-page p { margin:0 0 .8rem; color:var(--muted); font-weight:600; }
+  .on-page { color:var(--frame-muted); position:sticky; top:calc(var(--header) + 2rem); max-height:calc(100dvh - var(--header) - 3rem); overflow-y:auto; padding:0 1.25rem; font-size:var(--type-small); line-height:var(--leading-compact); border-left:1px solid var(--frame-line); margin-top:2.75rem; }
+  .on-page p { margin:0 0 .8rem; color:var(--gold); font-size:var(--type-body); font-weight:700; }
   .on-page ul { list-style:none; padding:0; margin:0; }
-  .on-page a { display:block; color:var(--muted); text-decoration:none; padding:.3rem 0; }
-  .on-page a:hover { color:var(--accent); }
+  .on-page a { display:block; color:var(--frame-muted); text-decoration:none; padding:.3rem 0; }
+  .on-page a:hover { color:var(--ivory); }
   .page-nav { display:flex; justify-content:space-between; gap:1rem; padding-top:1.5rem; margin-top:3rem; border-top:1px solid var(--rule); }
-  .page-nav a { flex:1; text-decoration:none; font-size:var(--type-body); line-height:var(--leading-compact); }
+  .page-nav a { flex:1; min-width:0; font-family:var(--font-display); text-decoration:none; font-size:var(--type-1); line-height:var(--leading-compact); }
   .page-nav a:last-child { text-align:right; }
-  .page-nav small { display:block; font-size:var(--type-small); color:var(--muted); margin-bottom:.5rem; }
+  .page-nav small { display:block; font-family:var(--font-body); font-size:var(--type-small); color:var(--muted); margin-bottom:.5rem; }
   .enhanced.sidebar-closed .sidebar { display:none; }
   .enhanced.sidebar-closed .rules-layout { grid-template-columns:minmax(0,1fr) 12rem; max-width:72rem; }
   @media (max-width:75rem) {
@@ -124,9 +140,11 @@
   @media (max-width:48rem) {
     /* Keep body and table text readable; reduce only the display size. */
     .site { padding:0 1rem; }
+    .site a { font-size:var(--type-small); }
+    .site h1 { font-size:var(--type-small); }
     .site-title span { display:none; }
     .rules-layout { display:block; }
-    .sidebar { position:sticky; z-index:4; top:var(--header); height:auto; max-height:65dvh; border-right:0; border-bottom:1px solid var(--rule); background:var(--paper); padding:1rem; }
+    .sidebar { background:rgba(23,21,16,.5); color:var(--ivory); position:sticky; z-index:4; top:var(--header); height:auto; max-height:65dvh; border-right:0; border-bottom:1px solid var(--frame-line); background:rgba(23,21,16,.98); padding:1rem; }
     .nav-group { margin-bottom:1rem; }
     .nav-group a { padding:.7rem; }
     main { padding:2rem 1rem 3rem; }
@@ -136,10 +154,12 @@
     td,th { padding:.5rem; }
   }
   @media print {
-    :root { --ink:#000; --paper:#fff; --muted:#444; --rule:#aaa; --band:#eee; }
+    :root { --ink:#000; --paper:#fff; --muted:#444; --rule:#aaa; --band:#eee; --page-surface:#fff; --table-head:#eee; --ivory:#000; --gold:#777; --wash:transparent; }
+    body { background:#fff; }
+    body::before { display:none; }
     .site,.sidebar,.on-page,.page-nav,.skip-link { display:none !important; }
     .rules-layout { display:block !important; }
-    main { max-width:none; padding:0; }
+    main { max-width:none; padding:0; box-shadow:none; }
     .rules-page[hidden] { display:block !important; }
     .rules-page { break-before:page; margin:0 !important; }
     .rules-page:first-child { break-before:auto; }
@@ -156,7 +176,7 @@
 <a class="skip-link" href="#rules-content">Skip to rules</a>
 <header class="site"><div class="site-title"><a class="standalone" href="./">← Battlefield</a><h1>Rules</h1><span>Field Battles</span></div><button class="js-only" id="nav-toggle" type="button" aria-controls="rules-sidebar" aria-expanded="true">Hide navigation</button></header>
 <div class="rules-layout">
-<aside class="sidebar" id="rules-sidebar"><nav aria-label="Rules pages"><div class="nav-group"><p>Learn to play</p><ul><li><a href="#start">Start here</a></li><li><a href="#setup">Setup</a></li><li><a href="#round">Rounds and turns</a></li><li><a href="#activities">Actions and checks</a></li></ul></div><div class="nav-group"><p>Core rules</p><ul><li><a href="#move">Movement</a></li><li><a href="#health">Combat and Health</a></li><li><a href="#morale">Morale and Rally</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="#ref">Quick reference</a></li><li><a href="#board">Battlefield</a></li><li><a href="#card">Unit statistics</a></li><li><a href="#need">Game materials</a></li><li><a href="#ground">Terrain and walls</a></li><li><a href="#magic">Magic</a></li><li><a href="#siege">Siege engines</a></li><li><a href="#end">Dusk and recovery</a></li><li><a href="#odds">Battle tactics</a></li></ul></div></nav></aside>
+<aside class="sidebar" id="rules-sidebar"><nav aria-label="Rules pages"><div class="nav-group"><p>Learn to Play</p><ul><li><a href="#start">Start here</a></li><li><a href="#setup">Setup</a></li><li><a href="#round">Rounds and turns</a></li><li><a href="#activities">Actions and checks</a></li></ul></div><div class="nav-group"><p>Core Rules</p><ul><li><a href="#move">Movement</a></li><li><a href="#health">Combat and Health</a></li><li><a href="#morale">Morale and Rally</a></li></ul></div><div class="nav-group"><p>Reference</p><ul><li><a href="#ref">Quick reference</a></li><li><a href="#board">Battlefield</a></li><li><a href="#card">Unit statistics</a></li><li><a href="#need">Game materials</a></li><li><a href="#ground">Terrain and walls</a></li><li><a href="#magic">Magic</a></li><li><a href="#siege">Siege engines</a></li><li><a href="#end">Dusk and recovery</a></li><li><a href="#odds">Battle tactics</a></li></ul></div></nav></aside>
 <main id="rules-content" tabindex="-1">
 <section class="rules-page" data-page="start" aria-labelledby="start">
 <h2 id="start">Start here</h2>
@@ -874,7 +894,7 @@
 
 <nav class="page-nav" aria-label="Previous and next rules pages" hidden><a id="previous-page"></a><a id="next-page"></a></nav>
 </main>
-<aside class="on-page" hidden><nav aria-label="On this page"><p>On this page</p><ul id="page-headings"></ul></nav></aside>
+<aside class="on-page" hidden><nav aria-label="On this page"><p>On This Page</p><ul id="page-headings"></ul></nav></aside>
 </div>
 <script>
   // This file also runs standalone from Foundry's module folder.
