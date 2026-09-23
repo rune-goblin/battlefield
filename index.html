@@ -6,6 +6,9 @@
 <title>Battlefield</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='1' y='6' width='14' height='4' rx='1' fill='%237a2e1f'/></svg>">
 <link rel="preload" as="image" href="art/scenes/battlemap.webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Almendra:wght@700&amp;text=Battlefield&amp;display=swap">
 <meta name="description" content="Command your armies in Battlefield. Start a battle, try the example, or learn the rules.">
 <style>
   :root {
@@ -33,11 +36,8 @@
   .menu::before,.menu::after { content:""; position:absolute; width:1.5rem; height:1.5rem; pointer-events:none; border-color:var(--gold); }
   .menu::before { top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; color:var(--gold); }
   .menu::after { bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; color:var(--gold); }
-  .eyebrow { display:flex; align-items:center; gap:.75rem; margin:0 0 1.1rem; color:var(--gold); font:700 1rem/1.5 var(--sans); }
-  .eyebrow::before { content:""; width:1.5rem; height:1px; background:var(--gold); }
-  h1 { margin:0; font:400 clamp(2.5rem,4.25vw,3.5rem)/1.1 var(--serif); letter-spacing:-.035em; text-shadow:0 2px 12px rgba(0,0,0,.35); }
+  h1 { margin:0; font:700 clamp(2.75rem,5vw,4rem)/1.1 Almendra,var(--serif); text-shadow:0 2px 12px rgba(0,0,0,.35); }
   .sub { margin:1rem 0 2rem; color:var(--muted); font:400 1rem/1.6 var(--serif); }
-  .sub span { white-space:nowrap; }
   .choices { display:grid; gap:.5rem; }
   .choice { position:relative; display:block; padding:1rem 2.25rem 1rem 1rem; color:var(--ivory); text-decoration:none; border:1px solid transparent; border-bottom-color:var(--line); background:rgba(19,17,13,.18); transition:background-color .2s ease,border-color .2s ease; }
   .choice::after { content:"→"; position:absolute; top:1.125rem; right:.875rem; color:var(--gold); font:1.125rem/1.4 var(--serif); }
@@ -60,7 +60,6 @@
     main { align-items:flex-end; padding:5rem 1.25rem 1.5rem; }
     .scene img { object-position:52% center; }
     .menu { margin:0 auto; padding:1.75rem 1.25rem 1.25rem; }
-    .eyebrow { margin-bottom:.75rem; }
     .sub { margin:.75rem 0 1.25rem; }
     .choice { padding:.875rem 2.25rem .875rem .875rem; }
     footer { margin-top:1.25rem; }
@@ -75,9 +74,8 @@
 <div class="scene" aria-hidden="true"><img id="battle-scene" src="art/scenes/battlemap.webp" alt="" fetchpriority="high" decoding="async" width="2880" height="1616"></div>
 <main>
 <section class="menu" aria-labelledby="game-title">
-  <p class="eyebrow">Field Battles</p>
   <h1 id="game-title">Battlefield</h1>
-  <p class="sub"><span>Three actions.</span> <span>Four Health.</span> <span>Three Morale.</span><br>Command the field.</p>
+  <p class="sub">Quick tactical combat for armies.</p>
 
   <nav class="choices" aria-label="Main menu">
     <a class="choice" id="resume" href="play.html" hidden>
