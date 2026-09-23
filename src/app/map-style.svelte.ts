@@ -16,7 +16,7 @@ function load(key: string): unknown {
 }
 function loadStyle(): MapStyle {
   const saved = load(STYLE_KEY);
-  return MAP_STYLES.includes(saved as MapStyle) ? saved as MapStyle : 'ink';
+  return MAP_STYLES.includes(saved as MapStyle) ? saved as MapStyle : 'textures';
 }
 
 // The lab and the game board share one object rather than a saved file each reads on load:
