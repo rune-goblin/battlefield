@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "purpose": "Audit examples from the broad creature review; never use source identity as runtime assignment logic.",
+  "examples": [
+    {
+      "sourceId": "pf2e:packs/pf2e/battlecry-bestiary/lich-legion#zNngRDMNalyBs1dp",
+      "sourceHash": "ed6b476d33b7c5c1acc5a7482d3eb32dac8445ff4823cce4cf248f7969c362c1",
+      "troop": "Lich Legion",
+      "sourceAbility": "Siphoning Grip",
+      "ability": "temporary-protection",
+      "conversion": "On use of the attached melee attack, including a miss; omit source amount and action scaling."
+    },
+    {
+      "sourceId": "reignmaker:data/troops/troll-marauders#8",
+      "sourceHash": "1790bfb3e2508b40e354677c56a21ecdbda503348c3df08089f174879c1493b1",
+      "troop": "Troll Marauders",
+      "sourceAbility": "Regeneration 25 (Deactivated by Electricity or Fire)",
+      "ability": "regeneration",
+      "conversion": "Activation start; electricity or fire suppresses recovery. Omit dying rules."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/lost-omens-bestiary/hellfire-dispatches/sacristan-scourge#QYRf4d8Onol7Mls2",
+      "sourceHash": "376ed40158ba9a56eec93b2c42b72243ec6d5ef015d230b8e2ffcc1ea47d1a8f",
+      "troop": "Sacristan Scourge",
+      "sourceAbility": "Regeneration 10 (Deactivated by Holy or Silver)",
+      "ability": "regeneration",
+      "conversion": "Activation start; holy or silver suppresses recovery. Omit dying rules."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/battlecry-bestiary/scamp-flood#BSejpvFZwpYmOdR1",
+      "sourceHash": "be37f9826d0b64e62b4f8c47280731fe94b7fbeded70bdd9544bc0076ec3d5f6",
+      "troop": "Scamp Flood",
+      "sourceAbility": "Fast Healing (While Underwater)",
+      "ability": "regeneration",
+      "conversion": "Activation start while underwater. Retain the environmental prerequisite."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/battlecry-bestiary/protean-tumult#NsbD0XXJd9rWTG6K",
+      "sourceHash": "b117ab82c5ab11a0d6e5823c5d05051c549551f0bedef0cb6905f28ec55dd96e",
+      "troop": "Protean Tumult",
+      "sourceAbility": "Fast Healing 8",
+      "ability": "regeneration",
+      "conversion": "Activation start; no damage suppressor in this ability. Omit source HP rate."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/battlecry-bestiary/dezullon-thicket#mfOWNNPO2steQArM",
+      "sourceHash": "120f30909aeeb5e36e99cda59c19bdfb2e9ffc30a59153b3ae445daede0f14d9",
+      "troop": "Dezullon Thicket",
+      "sourceAbility": "Regeneration",
+      "ability": "regeneration",
+      "conversion": "Activation start. Preserve any suppressing types from actor data when resolved; do not invent one from glossary text."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/pathfinder-npc-core/official/arrester-squadron#7plqqmq49cE7a6PQ",
+      "sourceHash": "b74d584e1822556369866913dc3a44aa554541cb5f0f5898b82876806557933b",
+      "troop": "Arrester Squadron",
+      "sourceAbility": "Seize Them!",
+      "ability": "snare",
+      "conversion": "Qualifying melee result; collapse graded restraints into one root. Use the catalogue release rule."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/battlecry-bestiary/druid-circle#eVKtrWe3AVnZoOrz",
+      "sourceHash": "fff05b4a7fde77d730fd7be567124b6703294ebd1fe4160c5f4ae88c09ef9955",
+      "troop": "Druid Circle",
+      "sourceAbility": "Call Down the Storm",
+      "ability": "displace",
+      "conversion": "Successful storm hit pushes one legal hex. Preserve the actual local storm attack attachment."
+    },
+    {
+      "sourceId": "pf2e:packs/pf2e/battlecry-bestiary/deinonychus-pack#6PukXd6ei7NiNQfG",
+      "sourceHash": "d3a9dff6efc633c17139e4665672f79371ac8c12ac17f7bc902e4c277b49c66b",
+      "troop": "Deinonychus Pack",
+      "sourceAbility": "Predator's Advantage",
+      "ability": "advantage",
+      "conversion": "Melee against a target carrying pending bleed-tagged Lingering Harm. Omit the original Reflex modifier."
+    }
+  ]
+}

@@ -11,9 +11,9 @@
       "options": [
         "health or condition",
         "self or one adjacent ally",
-        "paid activity or attack rider"
+        "paid activity, attack rider, or once-per-battle activation-start condition clear"
       ],
-      "limits": "Health recovery once per recipient per battle; condition recovery once per recipient per round. Never revive a destroyed unit or erase campaign wounds.",
+      "limits": "Health recovery once per recipient per battle, up to battle-start tactical Health; condition recovery once per recipient per round. Never revive a destroyed unit or erase campaign wounds. An activation-start condition clear has a once-per-battle limit.",
       "primitive": "Healing and condition clearing exist; generic assignment and limits need implementation."
     },
     {
@@ -23,7 +23,7 @@
       "effect": "Gain a buffer that absorbs the next 1 Health of damage. It expires at the start of the recipient's next activation.",
       "options": [
         "self or one adjacent ally",
-        "on attack use, after damage, paid activity, or activation start"
+        "on attack use, after damage, paid activity, or recipient activation start from an adjacent ally"
       ],
       "limits": "One buffer per unit. Refresh instead of adding. Once per round per recipient; never restores Health or persists into campaign state.",
       "primitive": "Requires temporary damage-buffer state."
@@ -177,7 +177,8 @@
       "effect": "Before its first activation, make one free Move of up to its ordinary allowance.",
       "options": [
         "unconditional",
-        "only when acting before all enemies"
+        "only when acting before all enemies",
+        "only when deployed in water or swamp"
       ],
       "limits": "Once per battle. Respect legal paths and deployment boundaries; finish outside enemy contact. It grants no attack.",
       "primitive": "Requires an opening-movement window. Existing Ambush deployment depth is an alternative abstraction, not this behavior."
@@ -188,12 +189,14 @@
       "category": "Offense",
       "effect": "Gain +1 to one assigned check type while one concrete condition holds.",
       "options": [
-        "melee, volley, Defence, or initiative",
-        "target trait or condition",
+        "melee, volley, Defence, initiative, or a named granted ability check",
+        "target tag or condition",
         "preferred terrain",
-        "first attack",
+        "first qualifying attack",
         "self at half Health or less",
-        "one marked quarry"
+        "one marked quarry",
+        "active adjacent commander",
+        "explicit parent-activity requirement"
       ],
       "limits": "One Exploit bonus per check. Select a predicate from the closed list; no free-form scripts. Adjacent command support may grant the same bonus to allies without stacking.",
       "primitive": "Requires shared conditional modifiers and deduplication against imported prepared statistics."

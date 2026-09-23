@@ -2,6 +2,8 @@
 
 Design revision: 2026-09-23. This proposal enables no runtime behavior. It revises the [import design](README.md#import-design) while retaining the full source inventory as evidence.
 
+The [assignable catalogue](catalogue.md) now supplies the concrete first set: 17 shared abilities and seven separate future reaction patterns. Its selective scope, effect definitions, and timing supersede the exploratory list and illustrative values below. ReignMaker is supplementary evidence; the broader troop review also supplies defining mechanics such as Siphoning Grip and regeneration. Full Pathfinder feature parity is outside this design.
+
 Define a small catalogue of abilities that any troop can carry. Recognize the mechanics of the source ability, instantiate a catalogue definition, and attach it to the troop's local attack or activity. A creature name, actor ID, or original compendium entry is optional provenance. None is a prerequisite for having the ability.
 
 The review's many `family` labels describe source cases. They are not a proposed list of separate engine implementations. Use the records as examples and eventual regression fixtures for a smaller vocabulary.

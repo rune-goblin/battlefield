@@ -65,6 +65,12 @@ const unique = (rows, key, label) => {
 };
 const abilities = unique(catalogue.abilities, 'id', 'ability');
 const reactions = unique(catalogue.reactionPatterns, 'id', 'reaction');
+const creatureReview = read('reviews.json');
+const examples = read('catalogue-examples.json');
+for (const example of examples.examples) {
+  const source = creatureReview.abilities.find(a => a.id === example.sourceId);
+  if (!source || source.sourceHash !== example.sourceHash || !abilities.has(example.ability)) throw new Error(`Stale catalogue example: ${example.sourceId}`);
+}
 const sources = unique(snapshot.entries, 'id', 'source');
 const mappings = unique(review.entries, 'id', 'mapping');
 const dispositions = new Set(['abstracted', 'baseline', 'omit', 'defer', 'reaction']);
@@ -123,4 +129,10 @@ for (const row of snapshot.training) lines.push(`| \`${row.slug}\` | ${row.famil
 lines.push('', '## Common generated rules', '', review.generatedRules, '', '## Import findings', '', ...review.importFindings.map(t => `- ${t}`), '', '## Evidence', '',
   '[Source snapshot](../../../data/troop-abilities/reignmaker-sources.json) preserves the original definitions, doctrine grants, training ladder, and relevant import code. [Mapping data](../../../data/troop-abilities/reignmaker-mappings.json) pins each interpretation to its source definition hash. These hashes audit the review; they do not select abilities at runtime.', '');
 fs.writeFileSync(path.join(root, 'docs/reviews/troop-abilities/reignmaker-mapping.md'), lines.join('\n'));
-console.log(JSON.stringify({ abilities: abilities.size, reactionPatterns: reactions.size, reviewedSources: sources.size, trainingEntries: snapshot.training.length, dispositions: counts, missing: 0 }, null, 2));
+const catalogueDoc = path.join(root, 'docs/reviews/troop-abilities/catalogue.md');
+const table = ['| Category | Ability | Proposed game effect |', '|---|---|---|',
+  ...catalogue.abilities.map(a => `| ${a.category} | **${a.name}** (\`${a.id}\`) | ${esc(a.effect)} |`)];
+const doc = fs.readFileSync(catalogueDoc, 'utf8');
+if (!doc.includes('<!-- catalogue:start -->') || !doc.includes('<!-- catalogue:end -->')) throw new Error('Missing catalogue table markers');
+fs.writeFileSync(catalogueDoc, doc.replace(/<!-- catalogue:start -->[\s\S]*?<!-- catalogue:end -->/, `<!-- catalogue:start -->\n${table.join('\n')}\n<!-- catalogue:end -->`));
+console.log(JSON.stringify({ abilities: abilities.size, reactionPatterns: reactions.size, creatureExamples: examples.examples.length, reviewedSources: sources.size, trainingEntries: snapshot.training.length, dispositions: counts, missing: 0 }, null, 2));

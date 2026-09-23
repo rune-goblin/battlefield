@@ -2,12 +2,16 @@
 
 Review date: 2026-09-23. This is a design proposal and source inventory. It enables no gameplay effects. [Current game rules](../../../public/rules.html) remain authoritative.
 
+**Current design:** the [assignable catalogue](catalogue.md) defines 17 shared abilities that preserve key unit differences. It supersedes this inventory's detailed conversion proposals where they differ. The goal is selective abstraction; the source inventory does not create an obligation to reproduce every Pathfinder mechanic. The [ReignMaker mapping](reignmaker-mapping.md) supplements the broader creature review with 97 registry abilities and six doctrine grants.
+
 The imports preserve attack numbers and names, but discard most of the mechanics that make troops distinctive. Restore those mechanics through a shared ability catalogue, composable effects, and a separate reaction activity. Match the abilities a creature carries. Actor identity records provenance and never gates access to an ability. See the [reusable ability model](ability-model.md) for the revised design.
 
 ## Saved inventory
 
 | Artifact | Content |
 |---|---|
+| [Assignable catalogue](catalogue.md) | Seventeen shared abilities, source examples, deliberate simplifications, assignment standards, and seven separate future reaction patterns |
+| [ReignMaker mapping](reignmaker-mapping.md) | A disposition for every registry and doctrine ability, training grants, generated troop rules, and import findings |
 | [Reusable ability model](ability-model.md) | Shared categories, effect templates, and import matching that survives creature renaming and copying |
 | [Every troop and its proposed effects](inventory.md) | One section per source actor, including ordinary attacks, special activities, passive riders, and spell lists |
 | [Separate reaction inventory](reactions.md) | Each explicit reaction, its source trigger/effect, and its proposed conversion; embedded reaction rules appear separately |
