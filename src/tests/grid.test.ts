@@ -99,7 +99,7 @@ describe('battle on hex', () => {
   it('sends a routed unit homeward by rows and off its own edge', () => {
     const state = hexBattle();
     unit(state, 'u0').disorder = 3;
-    const s = act(state, { type: 'maneuver', activity: 1, to: 'c1', unit: 'u0' }, scriptedRng([10]));
+    const s = act(state, { type: 'step', to: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').status).toBe('left');
   });
 });

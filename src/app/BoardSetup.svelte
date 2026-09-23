@@ -5,6 +5,7 @@
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
   import WizardRail from './WizardRail.svelte';
+  import WizardSteps from './WizardSteps.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { editSpec, game, generate, rerollSeed, setRoundsPerDay } from './game.svelte.js';
   import { goToStage } from './navigation.svelte.js';
@@ -34,7 +35,7 @@
 
   presentStage({
     leftTitle: 'The ground', leftWidth: 20,
-    get top() { return top; }, get rail() { return rail; }, get float() { return float; }, get left() { return left; },
+    get top() { return top; }, get rail() { return rail; }, get leftHead() { return steps; }, get float() { return float; }, get left() { return left; },
     get pin() { return game.setup.board ? undefined : scene; },
     get board() {
       return { board: game.setup.board, terrainAppearance: gameMap.terrainAppearance, inkMap: gameMap.inkMap };
@@ -51,6 +52,8 @@
 {#snippet scene()}<img class="scene" src={openingScene} alt="" />{/snippet}
 
 {#snippet rail()}<WizardRail />{/snippet}
+
+{#snippet steps()}<WizardSteps />{/snippet}
 
 {#snippet float()}
   <MapControls board={stage.board} />

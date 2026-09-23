@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   act, at, chargePath, chargeTargets, createBattle, defenceOf, edgeKey, engagedEnemies,
-  escapeModifier, fortitudeModifier, gridOf, maneuverOffer, maneuverTargets, movePath, moveReach,
+  escapeModifier, fortitudeModifier, gridOf, stepTargets, movePath, moveReach,
   notation, parse, reachOf, select, shootModifier, stepFeet, strikeModifier, TERRAIN_FEET, willModifier,
   type UnitCard,
 } from '../engine/index.js';
@@ -53,21 +53,15 @@ describe('wounds record survival without reducing performance', () => {
 });
 
 describe('routes respect enemy control', () => {
-  it('prices a Maneuver step at the worst of its terrain and its climb', () => {
+  it('prices a Move out of contact like any Move, and keeps a Step off difficult ground', () => {
     const b = state('square'); const [u, holder] = b.units;
     holder.square = parse('c3');
     at(b.board, parse('d2')).terrain = 'forest';
-    const offer = maneuverOffer(b, u.id)!;
-    expect(offer.activities[0].targets.map(t => t.id)).not.toContain('d2');
-    expect(offer.activities[1].targets.map(t => t.id)).toContain('d2');
-    expect(() => act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'d2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
-    const moved = act(select(b, u.id), {type:'maneuver',unit:u.id,activity:2,to:'d2'},scriptedRng([10]));
+    expect(stepTargets(b, u)).not.toContain('d2');
+    expect(stepTargets(b, u)).toContain('b2');
+    const moved = act(select(b, u.id), {type:'move',unit:u.id,to:'d2'},scriptedRng([15]));
     expect(notation(moved.units[0].square)).toBe('d2');
-    expect(moved.units[0].actions).toBe(1);
-    at(b.board, parse('d2')).terrain = 'swamp';
-    at(b.board, parse('d2')).elevation = 1;
-    expect(stepFeet(b.board, parse('c2'), parse('d2'))).toBe(TERRAIN_FEET.swamp);
-    expect(maneuverOffer(b, u.id)!.targets.map(t => t.id)).toContain('d2');
+    expect(moved.units[0].actions).toBe(3 - moveReach(b, u).get('d2')!.actions);
   });
 
   it('ends at first contact and rejects a long drag through a controlled corridor', () => {
@@ -80,7 +74,7 @@ describe('routes respect enemy control', () => {
     expect(() => act(select(b, u.id), {type: 'move', unit: u.id, to: 'g1'}, scriptedRng([10]))).toThrow(/cannot reach/);
     const entered = act(select(b, u.id), {type: 'move', unit: u.id, to: 'd1'}, scriptedRng([10]));
     expect(engagedEnemies(entered, entered.units[0]).map(e => e.id)).toEqual([enemy.id]);
-    expect(moveReach(entered, entered.units[0]).size).toBe(0);
+    expect(moveReach(entered, entered.units[0]).has('c1')).toBe(true);
   });
 
   it('allows alternate routes around control, and walls interrupt control', () => {
@@ -105,18 +99,5 @@ describe('routes respect enemy control', () => {
     expect(engagedEnemies(b, {...u, square: parse(path.at(-1)!)}).map(e => e.id)).toEqual([enemy.id]);
   });
 
-  it('a critical Maneuver can clear its holder but must stop at a new enemy zone', () => {
-    const b = state('square'); const [u, holder, blocker] = b.units;
-    u.speed = 60; holder.square = parse('c3'); blocker.square = parse('f3');
-    for (const cell of gridOf(b.board).cells()) at(b.board, cell).terrain = 'water';
-    for (const key of ['c2', 'd2', 'e2', 'f2', 'g2', 'c3', 'f3']) at(b.board, parse(key)).terrain = 'open';
-    const targets = maneuverTargets(b, u, u.speed).map(notation);
-    expect(targets).toContain('f2'); expect(targets).not.toContain('g2');
-    expect(() => act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'g2'},scriptedRng([20]))).toThrow(/cannot maneuver/);
-    const escaped = act(select(b, u.id), {type:'maneuver',unit:u.id,activity:1,to:'f2'},scriptedRng([20]));
-    expect(notation(escaped.units[0].square)).toBe('f2');
-    expect(escaped.log.some(entry => entry.check && entry.text.includes('check to break off'))).toBe(true);
-    expect(engagedEnemies(escaped, escaped.units[0]).map(e => e.id)).toEqual([blocker.id]);
-    expect(moveReach(escaped, escaped.units[0]).size).toBe(0);
-  });
+
 });

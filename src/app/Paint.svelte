@@ -5,6 +5,7 @@
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
   import WizardRail from './WizardRail.svelte';
+  import WizardSteps from './WizardSteps.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { game, generate, paintStroke, undo } from './game.svelte.js';
   import { useNotifications } from './notification-context.js';
@@ -26,7 +27,7 @@
 
   presentStage({
     leftTitle: 'Brushes', leftWidth: 17,
-    get top() { return top; }, get rail() { return rail; }, get float() { return float; }, get left() { return left; },
+    get top() { return top; }, get rail() { return rail; }, get leftHead() { return steps; }, get float() { return float; }, get left() { return left; },
     get board() {
       return {
         board: game.setup.board, mode: 'paint' as const, brush, onpaint: apply, onbrush: (b: Brush | null) => (brush = b),
@@ -43,6 +44,8 @@
 {/snippet}
 
 {#snippet rail()}<WizardRail />{/snippet}
+
+{#snippet steps()}<WizardSteps />{/snippet}
 
 {#snippet float()}
   <MapControls board={stage.board} />

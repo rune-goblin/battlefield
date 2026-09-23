@@ -263,6 +263,9 @@ export function cardFromActor(actor: TroopActor): UnitCard {
     perception: (system.perception?.mod ?? attributes.perception?.value ?? 0) + demoralized,
     speed,
     fly: flySpeed !== undefined,
+    otherSpeeds: (attributes.speed!.otherSpeeds ?? [])
+      .filter((s): s is { type: string; value: number } => typeof s.type === 'string' && Number.isFinite(s.value) && s.value! >= 0)
+      .map(s => ({ type: s.type, value: s.value })),
     ...(battleName ? { battleName } : {}),
     ...(salvoName ? { salvoName } : {}),
     ...spellStats,

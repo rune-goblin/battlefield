@@ -8,6 +8,18 @@ const walk = (board = openBoard('hex'), budget = 100, flying = false) =>
   reachable(board, from, { budget, flying });
 
 describe('terrain costs in feet', () => {
+  it.each(['square', 'hex'] as const)('uses only the highest cost on a %s rough hill with overlapping siege fields', kind => {
+    const board = openBoard(kind);
+    board.squares[2][2] = { terrain: 'rough', elevation: 1 };
+    board.siegeFields = [
+      { kind: 'rough', cells: ['c3'], expires: 2 },
+      { kind: 'web', cells: ['c3'], expires: 2 },
+    ];
+    expect(stepFeet(board, from, parse('c3'))).toBe(20);
+    expect(feetTo(walk(board, 20), 'c3')).toBe(20);
+    board.squares[2][2].terrain = 'swamp';
+    expect(stepFeet(board, from, parse('c3'))).toBe(30);
+  });
   it('charges two squares\u2019 worth for difficult ground, three for very difficult', () => {
     const board = openBoard('hex');
     board.squares[2][2].terrain = 'forest';

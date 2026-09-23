@@ -14,7 +14,7 @@ import type { BattleDeps } from './battle-controller.svelte.js';
 // Always these six, always in this order. A ring is learned by direction, so a verb the
 // situation forbids dims in place — letting it vanish would rotate every other verb onto a
 // new angle and cost the player the muscle memory the ring exists to build.
-export type Slot = 'melee' | 'shoot' | 'cast' | 'maneuver' | 'rally' | 'guard';
+export type Slot = 'melee' | 'shoot' | 'cast' | 'step' | 'rally' | 'guard';
 
 export interface Prop {
   key: Slot;
@@ -22,7 +22,7 @@ export interface Prop {
   label: string;
   legal: boolean;
   reason?: string;
-  /** The verb an aim off this slice narrows to. Charge and Maneuver have none. */
+  /** The verb an aim off this slice narrows to. Charge and Step have none. */
   type: Verb | null;
   style: HighlightStyle;
   /** Everything this verb can touch right now. */
@@ -72,12 +72,12 @@ export function createRingController(s: RingShared) {
   const ICON_FOR: Record<Verb, ActionIcon> = {
     fight: 'attack', shoot: 'shoot', guard: 'block', rally: 'rally', cast: 'cast',
   };
-  const SLOTS: Slot[] = ['melee', 'shoot', 'cast', 'maneuver', 'rally', 'guard'];
+  const SLOTS: Slot[] = ['melee', 'shoot', 'cast', 'step', 'rally', 'guard'];
   const SLOT_LABEL: Record<Slot, string> = {
-    melee: 'Fight', shoot: 'Shoot', cast: 'Cast', maneuver: 'Maneuver', rally: 'Rally', guard: 'Guard',
+    melee: 'Melee', shoot: 'Shoot', cast: 'Cast', step: 'Step', rally: 'Rally', guard: 'Guard',
   };
   const SLOT_STYLE: Record<Slot, HighlightStyle> = {
-    melee: 'attack', shoot: 'attack', cast: 'deploy', maneuver: 'move', rally: 'deploy', guard: 'deploy',
+    melee: 'attack', shoot: 'attack', cast: 'deploy', step: 'move', rally: 'deploy', guard: 'deploy',
   };
 
   const offerEdges = (offer: ActionOffer): string[] =>
@@ -104,15 +104,15 @@ export function createRingController(s: RingShared) {
     // Charge shares the melee slice with Fight. Charging is how a unit out of contact reaches
     // the fight the slice already holds, so one direction means "hit them" either way.
     const charges = [...s.meleeOptions].filter(([, plans]) => plans.length).map(([id]) => s.cellOf(id)).filter((x): x is string => x !== null);
-    const w = s.act.maneuver;
+    const steps = s.act.steps;
 
     return SLOTS.map((key): Prop => {
-      if (key === 'maneuver') {
+      if (key === 'step') {
         return {
-          key, icon: 'maneuver', label: 'Maneuver', type: null, style: 'move',
-          legal: !!w && w.targets.length > 0,
-          reason: !active.actions ? 'No actions left' : w?.activities[0]?.reason ? actionReason(w.activities[0].reason) : 'No destination in range',
-          cells: w ? w.targets.map((t) => t.id) : [],
+          key, icon: 'step', label: 'Step', type: null, style: 'move',
+          legal: steps.length > 0,
+          reason: !active.actions ? 'No actions left' : active.rooted > 0 ? 'Rooted' : active.pinnedBy ? 'Pinned: Move to get away' : 'No open hex beside you',
+          cells: steps,
           edges: [],
         };
       }
@@ -123,7 +123,7 @@ export function createRingController(s: RingShared) {
         return {
           key, icon: 'attack', label: 'Melee', type: null, style: 'attack',
           legal: charges.length > 0,
-          reason: isRouted(active) ? 'Routed: move or maneuver' : active.attacked ? 'Already attacked this activation' : !active.actions ? 'No actions left' : active.stats.strike === null ? 'No melee attack' : 'No target in range',
+          reason: isRouted(active) ? 'Routed: move or step' : active.attacked ? 'Already attacked this activation' : !active.actions ? 'No actions left' : active.stats.strike === null ? 'No melee attack' : 'No target in range',
           cells: charges,
           edges: [],
         };
@@ -135,7 +135,7 @@ export function createRingController(s: RingShared) {
         key, icon: ICON_FOR[type], label, type, style: SLOT_STYLE[key],
         legal: key === 'cast' ? offers.length > 0 : cells.length > 0,
         reason: offers.length ? offerReason(offers[0])
-          : isRouted(active) ? 'Routed: move or maneuver'
+          : isRouted(active) ? 'Routed: move or step'
           : !active.actions ? 'No actions left'
           : key === 'cast' ? 'No spells available'
           : key === 'shoot' && engagedEnemies(s.b, active).length ? 'Engaged in melee'
@@ -228,10 +228,9 @@ export function createRingController(s: RingShared) {
       s.openMelee(enemy.id);
       return;
     }
-    // A maneuver is a destination, not a target, so it parks the same drop a drag there
-    // would — and reads its escapes and distance in that popup.
-    if (p.key === 'maneuver') {
-      const rows = s.rowsAt(cell).filter((r) => r.kind === 'maneuver');
+    // A step is a destination, not a target, so it parks the same drop a drag there would.
+    if (p.key === 'step') {
+      const rows = s.rowsAt(cell).filter((r) => r.kind === 'step');
       if (rows.length) s.park(cell, rows);
       return;
     }
@@ -288,7 +287,7 @@ export function createRingController(s: RingShared) {
   // An armed prop lights everything it can touch, so picking the verb first still teaches
   // reach — the thing pure object-first hides until you happen to touch a distant enemy.
   const propCells = $derived(arming?.cells ?? []);
-  // A maneuver lights ground to run to, not a target to hit, so it washes like a move.
+  // A step lights ground to go to, not a target to hit, so it washes like a move.
   const propStyle = $derived<HighlightStyle>(arming?.style ?? 'attack');
 
   /** The ring is the menu while it is open: the board answers nothing (`frozen`), and a press

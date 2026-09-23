@@ -31,8 +31,8 @@ describe('siege engines', () => {
     expect(ENGINES).toHaveLength(59);
     expect(engine('Catapult')).toMatchObject({ kind: 'artillery', launch: 12, reach: 'extreme' });
     expect(engine('Battering Ram')).toMatchObject({ kind: 'ram', speed: null });
-    expect(engine('Catapult').speed).toBe(5);
-    expect(engine('Ballista').speed).toBe(10);
+    expect(engine('Catapult').speed).toBe(10);
+    expect(engine('Ballista').speed).toBe(20);
     expect(engine('Trebuchet').speed).toBe(0);
   });
 
@@ -77,7 +77,7 @@ describe('siege engines', () => {
       const u = activeUnit(s)!;
       s = availableActions(s, u.id).some((o) => o.type === 'guard')
         ? act(s, { type: 'guard', activity: 1, unit: u.id }, scriptedRng([10]))
-        : act(s, { type: 'maneuver', activity: 1, unit: u.id }, scriptedRng([1]));
+        : endActivation(s, scriptedRng([1]));
     }
     expect(activeUnit(s)).toBeNull();
     expect(unit(s, 'u0').engines[0].status).toBe('captured');
@@ -162,13 +162,13 @@ describe('siege operations', () => {
     unit(s, 'u0').feet = 20;
     unit(s, 'u0').engines[0].speed = 15;
     s = act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'haul' }, rng());
-    expect(movementSpeed(unit(s, 'u0'))).toBe(15);
+    expect(movementSpeed(unit(s, 'u0'))).toBe(20);
     expect(unit(s, 'u0').feet).toBe(0);
     const reach = moveReach(s, unit(s, 'u0'));
     const [to, route] = [...reach].find(([to, route]) => to !== 'c2' && route.actions === 1)!;
     s = act(s, { type: 'move', unit: 'u0', to }, rng());
     expect(unit(s, 'u0').engines[0].square).toEqual(parse(to));
-    expect(unit(s, 'u0').feet).toBe(15 - route.feet);
+    expect(unit(s, 'u0').feet).toBe(20 - route.feet);
     const actions = unit(s, 'u0').actions;
     s = act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'release' }, rng());
     expect(unit(s, 'u0').actions).toBe(actions);
@@ -176,6 +176,17 @@ describe('siege operations', () => {
     expect(s.engines[0]).toMatchObject({ id, square: parse(to), hauling: false, emplaced: true });
     expect(siegeEngines(s, unit(s, 'u0')).map(e => e.id)).toEqual([id]);
     expect(unit(s, 'u0').engines).toHaveLength(0);
+  });
+
+  it('updates a saved Ballista to its source Speed on the faster movement scale', () => {
+    const s = battle(['Ballista']); const u = unit(s, 'u0');
+    u.speed = 30;
+    u.engines[0].speed = 10;
+    u.engines[0].hauling = true;
+    u.actions = 1;
+    expect(movementSpeed(u)).toBe(20);
+    expect(moveReach(s, u).get('c4')?.actions).toBe(1);
+    expect(moveReach(s, u).has('c5')).toBe(false);
   });
 
   it('leaves an engine behind when its occupant moves without hauling', () => {
@@ -226,14 +237,15 @@ describe('siege operations', () => {
 });
 
 
-it('spends two movement actions per open hex while hauling a slow engine', () => {
+it('spends one movement action per open hex while hauling a slow engine', () => {
   let s = battle(['Catapult']);
   const id = unit(s, 'u0').engines[0].id;
   s = act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'haul' }, scriptedRng([]));
-  expect(movementSpeed(unit(s, 'u0'))).toBe(5);
-  expect(moveReach(s, unit(s, 'u0')).get('c3')?.actions).toBe(2);
+  expect(movementSpeed(unit(s, 'u0'))).toBe(10);
+  expect(moveReach(s, unit(s, 'u0')).get('c3')?.actions).toBe(1);
   s = act(s, { type: 'move', unit: 'u0', to: 'c3' }, scriptedRng([]));
   expect(unit(s, 'u0').engines[0].square).toEqual(parse('c3'));
+  s = endActivation(s, scriptedRng([]), 'u0');
   s = endActivation(s, scriptedRng([]), 'u1');
   s = act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'release' }, scriptedRng([]));
   expect(movementSpeed(unit(s, 'u0'))).toBe(10);

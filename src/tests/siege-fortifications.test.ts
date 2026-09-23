@@ -35,7 +35,7 @@ describe('siege catalog and combat', () => {
       expect(card.loadCost).toBeLessThanOrEqual(3);
       expect(siegeModes(card.name, card.kind).length).toBeGreaterThan(0);
     }
-    expect(ENGINES.find(e => e.name === 'Wolf Fang')).toMatchObject({ kind: 'ram', speed: 5 });
+    expect(ENGINES.find(e => e.name === 'Wolf Fang')).toMatchObject({ kind: 'ram', speed: 10 });
   });
   it.each(ENGINES.map(e => e.name))('%s resolves every offered mode', name => {
     const b = setup(name), u = b.units[0], e = u.engines[0];

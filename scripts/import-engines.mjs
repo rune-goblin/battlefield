@@ -14,6 +14,7 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
   const dc = Number(/DC (\d+) (?:basic )?(?:Reflex|Fortitude|Will)/.exec(launch)?.[1] ?? NaN);
   const rangeFt = Number(/range increment (\d+) feet/.exec(text)?.[1] ?? NaN);
   const level = d.level ?? 1;
+  const sourceSpeed = /portable/.test(d.usage ?? '') ? null : /tracks/.test(d.speed ?? '') ? 0 : Number(/^(\d+)/.exec(d.speed ?? '')?.[1] ?? 0);
   return {
     name: d.name,
     level,
@@ -23,10 +24,10 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
     // siege equipment is for.
     reach: ram ? null : Number.isNaN(rangeFt) ? 'medium' : rangeFt <= 60 ? 'short' : rangeFt <= 120 ? 'medium' : 'extreme',
     defence: d.defenses?.ac ?? 10 + level,
-    // Thirty sheet feet become one 10-foot battlefield hex, as for troops.
-    // Engines retain half-hex pacing so slower equipment costs two Moves per hex.
+    // Fifteen source feet become one hex, as for troops.
     // Portable equipment travels at its crew's pace; mounted equipment needs a listed speed.
-    speed: d.name === 'Wolf Fang' ? 5 : /portable/.test(d.usage ?? '') ? null : /tracks/.test(d.speed ?? '') ? 0 : Math.ceil(Number(/^(\d+)/.exec(d.speed ?? '')?.[1] ?? 0) / 15) * 5,
+    sourceSpeed,
+    speed: sourceSpeed === null ? null : Math.ceil(sourceSpeed / 15) * 10,
     loadCost: noLoad ? 0 : rawLoad <= 4 ? 1 : rawLoad <= 8 ? 2 : 3,
     loadSteps: noLoad ? 0 : 1,
 
@@ -35,7 +36,7 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
 }).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 
 const body = engines.map((e) =>
-  `  { name: ${JSON.stringify(e.name)}, level: ${e.level}, kind: '${e.kind}', launch: ${e.launch}, reach: ${e.reach ? `'${e.reach}'` : 'null'}, defence: ${e.defence}, speed: ${e.speed}, loadCost: ${e.loadCost}, loadSteps: ${e.loadSteps} }, // ${e.source}`).join('\n');
+  `  { name: ${JSON.stringify(e.name)}, level: ${e.level}, kind: '${e.kind}', launch: ${e.launch}, reach: ${e.reach ? `'${e.reach}'` : 'null'}, defence: ${e.defence}, sourceSpeed: ${e.sourceSpeed}, speed: ${e.speed}, loadCost: ${e.loadCost}, loadSteps: ${e.loadSteps} }, // ${e.source}`).join('\n');
 
 writeFileSync(new URL('../src/engine/engines.ts', import.meta.url),
 `import type { SiegeEngineCard } from './cards.js';

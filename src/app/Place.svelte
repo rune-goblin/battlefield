@@ -5,6 +5,7 @@
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
   import WizardRail from './WizardRail.svelte';
+  import WizardSteps from './WizardSteps.svelte';
   import TroopPicker from './TroopPicker.svelte';
   import {
     addEmplacement, addUnit, autoPlacePiece,
@@ -247,7 +248,7 @@
   presentStage({
     get leftTitle() { return siege ? 'Siege engines' : `${sideWord} army`; },
     leftWidth: 26,
-    get top() { return top; }, get rail() { return rail; }, get modal() { return modal; }, get float() { return float; }, get left() { return left; },
+    get top() { return top; }, get rail() { return rail; }, get leftHead() { return steps; }, get modal() { return modal; }, get float() { return float; }, get left() { return left; },
     get board() {
       return {
         board, tokens, mode: 'place' as const, highlights,
@@ -304,6 +305,8 @@
 {/snippet}
 
 {#snippet rail()}<WizardRail />{/snippet}
+
+{#snippet steps()}<WizardSteps />{/snippet}
 
 {#snippet modal()}
   {#if picking}<TroopPicker {side} {held} add={(card) => void add(card)} close={() => (picking = false)} />{/if}

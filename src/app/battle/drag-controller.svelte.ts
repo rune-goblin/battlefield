@@ -1,4 +1,4 @@
-import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, maneuverOutcome, parse, engagedEnemies } from '../../engine/index.js';
+import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
 import type { BoardEventOf, HighlightStyle } from '../../board/index.js';
 import type { Activation, BattleState, TargetRef, Verb } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
@@ -27,12 +27,12 @@ export interface ChargePreview { kind: 'charge'; cell: string; enemy: string; fe
 
 export interface AdvancePreview { kind: 'advance'; cell: string; enemy: string; feet: number; actions: number; path: string[]; plan: MeleePlan }
 
-// Maneuver previews connect the starting hex to the chosen destination.
-export interface ManeuverPreview { kind: 'maneuver'; cell: string; path: string[] }
+// A Step connects the starting hex to the one beside it.
+export interface StepPreview { kind: 'step'; cell: string; path: string[] }
 
 export interface FleePreview extends FleePlan { kind: 'flee' }
 
-export type Preview = MovePreview | ChargePreview | ManeuverPreview | AdvancePreview | FleePreview;
+export type Preview = MovePreview | ChargePreview | StepPreview | AdvancePreview | FleePreview;
 
 // A released drag, parked until the player picks one of its readings and confirms. One drop
 // means more than one thing, and deciding by where the pointer landed decides for the player.
@@ -164,10 +164,10 @@ export function createDragController(s: DragShared) {
     }
     // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
     for (const c of chargesVia(waypoints)) if (c.cell === cell) rows.push(chargeRow(c));
-    // proto: Maneuver and Flee walk their own roads and ignore waypoints; with any set, only the
+    // proto: Step and Flee walk their own roads and ignore waypoints; with any set, only the
     // readings that honour them are offered.
     if (waypoints.length) return rows;
-    if (s.act.maneuver?.targets.some((t) => t.id === cell)) rows.push({ kind: 'maneuver', cell, path: [notation(s.active.square), cell] });
+    if (s.act.steps.includes(cell)) rows.push({ kind: 'step', cell, path: [notation(s.active.square), cell] });
     const escape = fleePlan(s.b, s.active, cell);
     if (escape) rows.push({ kind: 'flee', ...escape });
     return rows;
@@ -275,7 +275,7 @@ export function createDragController(s: DragShared) {
   /** A plain move can confirm on its row. Melee always keeps its explicit confirmation. */
   function choose(i: number) {
     if (!pending) return;
-    if (pending.index === i && pending.rows[i].kind === 'move') { void commit(); return; }
+    if (pending.index === i && (pending.rows[i].kind === 'move' || pending.rows[i].kind === 'step')) { void commit(); return; }
     s.focus = 0;
     pending = { ...pending, index: i, activity: null };
   }
@@ -293,7 +293,7 @@ export function createDragController(s: DragShared) {
     else if (row.kind === 'advance') await s.run(s.takeAction({ type: 'advance', unit, target: row.enemy, via: row.plan.via!, finish: row.plan.kind, activity: p.activity ?? undefined, focus: s.focus, ...route }));
     else if (row.kind === 'charge') await s.run(s.takeAction({ type: 'charge', unit, target: row.enemy, activity: p.activity ?? undefined, focus: s.focus, ...route }));
     else if (row.kind === 'move') await s.run(s.takeAction({ type: 'move', unit, to: row.cell, ...route }));
-    else if (s.act?.maneuver) await performManeuver(p.activity ?? firstManeuverActivity(row.cell), row.cell);
+    else if (row.kind === 'step') await s.run(s.takeAction({ type: 'step', unit, to: row.cell }));
     // The reply can land after this activation ended; the scope that opened the melee choice
     // has already taken it away, and the next one's is not ours to clear.
     if (!scope.closed) { meleeTarget = null; meleeSelected = null; }
@@ -306,28 +306,22 @@ export function createDragController(s: DragShared) {
     row.kind === 'flee' ? 'Flee'
       : row.kind === 'charge' ? `Charge ${enemyName(row.enemy)}`
       : row.kind === 'advance' ? `Move + ${row.plan.kind === 'charge' ? 'Charge' : 'Attack'} ${enemyName(row.enemy)}`
-      : row.kind === 'maneuver' ? (s.active && maneuverOutcome(s.b, s.active, parse(row.cell)) === 'reposition' ? 'Reposition here' : 'Withdraw here') : 'Move here';
+      : row.kind === 'step' ? 'Step here' : 'Move here';
   const rowDetail = (row: Preview) =>
     row.kind === 'flee' ? `${row.moveActions ? `${actions(row.moveActions)} to move + ` : ''}1 action to flee · morale DC ${row.dc}`
       : row.kind === 'charge' ? `${actions(row.actions)}, melee included`
       : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + 1 to ${row.plan.kind === 'charge' ? 'charge' : 'attack'}`
-      : row.kind === 'maneuver' ? maneuverDetail(row.cell)
-        : actionCost(row.actions);
-  function maneuverDetail(cell: string): string {
-    if (!s.active) return 'Maneuver';
-    return maneuverOutcome(s.b, s.active, parse(cell)) === 'reposition' ? 'Maneuver · stay in contact'
-      : 'Maneuver · break contact';
-  }
+      : row.kind === 'step' ? '1 action · no roll'
+        : s.act?.escape ? `${actionCost(row.actions)} · Reflex ${signed(s.act.escape.modifier)} vs DC ${s.act.escape.dc} to get away`
+          : actionCost(row.actions);
+  const signed = (n: number) => (n < 0 ? `−${-n}` : `+${n}`);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' || row.kind === 'advance' ? row.enemy : row.cell}`;
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
-  // Maneuver's own three ride the same picker.
   const ACTIVITIES: ActivityIndex[] = [1, 2, 3];
   // The three the rules name, since a charge's Fight is bought at the charge's own price.
   const CHARGES = ['Charge', 'Charge and Press', 'Charge and Overrun'];
   const chargeActivity = $derived(pending?.activity ?? 1);
-  const firstManeuverActivity = (cell?: string): ActivityIndex => s.act?.maneuver?.activities.find(opt => opt.legal && (!cell || opt.targets.some(t => t.id === cell)))?.index ?? 1;
-  const maneuverActivity = $derived(pending?.activity ?? firstManeuverActivity(pending?.cell));
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
   const chargeCost = (c: ChargePreview | AdvancePreview, activity: ActivityIndex) => c.actions - 1 + activity;
 
@@ -335,7 +329,7 @@ export function createDragController(s: DragShared) {
   const dropCost = (row: Preview): number =>
     row.kind === 'move' || row.kind === 'flee' ? row.actions
       : row.kind === 'charge' || row.kind === 'advance' ? chargeCost(row, chargeActivity) + s.focus
-        : s.act?.maneuver?.activities[maneuverActivity - 1].cost ?? maneuverActivity;
+        : 1;
 
   const shownWaypoints = $derived(waypoints.length ? waypoints : pending?.waypoints.length ? pending.waypoints : meleeTarget ? meleeVia : []);
   const previewHighlights = $derived.by<{ style: HighlightStyle; cells: string[] }[]>(() => {
@@ -351,7 +345,7 @@ export function createDragController(s: DragShared) {
       { style: 'move', cells: preview.plan.movePath.slice(1) },
       { style: 'attack', cells: preview.plan.attackPath.slice(1) },
     ];
-    if (preview.kind === 'maneuver') return [{ style: 'move', cells: [preview.cell] }];
+    if (preview.kind === 'step') return [{ style: 'move', cells: [preview.cell] }];
     return [{ style: 'move', cells: preview.near }, { style: 'moveFar', cells: preview.far }];
   }
   const previewPath = $derived(preview?.path ?? []);
@@ -363,7 +357,7 @@ export function createDragController(s: DragShared) {
   const dragBand = $derived.by<MoveBand | null>(() => {
     if (!preview) return null;
     if (preview.kind === 'move') return bandOf(preview.actions);
-    return null; // a charge and a maneuver are not Move rows
+    return null; // a charge and a step are not Move rows
   });
 
   // Move's three bands, grouped straight off the engine's own `moves` map — no pathing
@@ -373,19 +367,14 @@ export function createDragController(s: DragShared) {
     if (s.act) for (const [cell, m] of s.act.moves) bands[bandOf(m.actions)].push(cell);
     return bands;
   });
-  // Contact empties `moves` outright (see `moveReach`), so the Move card would otherwise sit
-  // there reading "0 cells reachable" three times over with no reason given.
+  // With no Move left the card would otherwise sit there reading "0 cells reachable" three
+  // times over with no reason given.
   const holders = $derived(s.active ? engagedEnemies(s.b, s.active) : []);
   const stuck = $derived.by<Stuck | null>(() => {
     if (!s.active || !s.act || s.act.moves.size) return null;
-    // Contact keeps its own card in the panel; here it is one more reason a drag goes nowhere.
-    if (holders.length) return {
-      tag: 'held in contact',
-      why: 'A Stride is closed while you are in contact. Maneuver is the only way off this square.',
-    };
     if (s.active.rooted > 0) return {
       tag: 'rooted',
-      why: 'Rooted where you stand: no Stride, no Charge and no Maneuver. Your remaining actions still fight, shoot, rally and cast.',
+      why: 'Rooted where you stand: no Move, Step or Charge. Your remaining actions can still melee, shoot, rally and cast.',
     };
     if (s.active.speed === 0) return { tag: 'no speed', why: 'This piece has Speed 0. It holds the ground it was placed on.' };
     if (s.act.actions <= 0) return { tag: 'out of actions', why: 'No actions left to spend — end the activation.' };
@@ -393,10 +382,10 @@ export function createDragController(s: DragShared) {
   });
 
   // The piece lifts only while some drop could still land. `stuck` already means no Stride, so
-  // with no charge and nowhere to maneuver to there is nothing to carry: lifting it to snap it
+  // with no charge and nowhere to step to there is nothing to carry: lifting it to snap it
   // straight back mimes a move being considered, where the X alone is the answer.
   const anchored = $derived(
-    stuck && !s.act?.charges.length && !s.act?.maneuver?.targets.length ? s.active?.id ?? null : null,
+    stuck && !s.act?.charges.length && !s.act?.steps.length ? s.active?.id ?? null : null,
   );
 
   const bandStyle = (n: MoveBand): HighlightStyle => (n === 1 ? 'move' : n === 2 ? 'moveFar' : 'moveFar3');
@@ -408,11 +397,6 @@ export function createDragController(s: DragShared) {
     if (!s.active || !s.act || preview || s.arming || s.blastOpen || s.activityPick || !hoveredBand) return [];
     return [{ style: bandStyle(hoveredBand), cells: moveBands[hoveredBand] }];
   });
-
-  async function performManeuver(activity: ActivityIndex, to?: string) {
-    if (!s.active || !s.requireTurn()) return;
-    await s.run(s.takeAction({ type: 'maneuver', unit: s.active.id, activity, to }));
-  }
 
   // The board emits nothing for a click off the grid, so the melee choice closes here. A drop
   // that opened the choice also ends in a click; `meleeAtPress` tells that one apart.
@@ -479,8 +463,6 @@ export function createDragController(s: DragShared) {
     get ACTIVITIES() { return ACTIVITIES; },
     get CHARGES() { return CHARGES; },
     get chargeActivity() { return chargeActivity; },
-    get firstManeuverActivity() { return firstManeuverActivity; },
-    get maneuverActivity() { return maneuverActivity; },
     get chargeCost() { return chargeCost; },
     get dragBand() { return dragBand; },
     get moveBands() { return moveBands; },

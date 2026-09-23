@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL,
+  import { wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
     shootCeiling, shootFloor, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
     type BattleState, type Unit } from '../../engine/index.js';
 
@@ -22,11 +22,16 @@
     </div>
   {/if}
   <dl class="vitals">
-    <div title="Distance gained per Move action"><dt>Move</dt><dd>{movementSpeed(unit)} <small>ft</small></dd></div>
+    <div title="Maximum distance per Move; each step uses the fastest legal movement mode."><dt>Move</dt><dd>{movementSpeed(unit) / CELL_FEET} <small>hexes</small></dd></div>
     <div title="Current armor class, including conditions and terrain. Cover against a ranged attacker can add protection."><dt>AC</dt><dd>{defenceOf(battle, unit, null, false)}</dd></div>
     <div title="Health remaining"><dt>Health</dt><dd>{MAX_WOUNDS - unit.wounds}<small>/{MAX_WOUNDS}</small></dd></div>
     <div title="Morale remaining. Lost morale reduces rolls and armor class."><dt>Morale</dt><dd>{Math.max(0, ROUTED_AT - unit.disorder)}<small>/{ROUTED_AT}</small></dd></div>
   </dl>
+  {#if unit.sourceSpeed}
+    <div class="movement-source"><span>Army Speed: {sourceSpeedLabel(unit.sourceSpeed)}</span>
+      {#if unit.movementRates}<span>{movementRateLabel(unit.movementRates)}</span>{/if}
+    </div>
+  {/if}
   <div class="attacks" aria-label="Attack rolls and weapon ranges">
     {#if unit.stats.strike !== null}
       <div class="attack" title={rollNote}><span>{sourceName(unit.attackSources?.strike) ?? 'Strike'}</span><strong>{signed(strikeModifier(battle, unit, unit))}</strong><small>Adjacent</small></div>
@@ -40,7 +45,7 @@
   </div>
   <dl class="checks" aria-label="Saves and basic checks">
     <div title="Fortitude save"><dt>Fort</dt><dd>{signed(fortitudeModifier(unit))}</dd></div>
-    <div title="Reflex save and Maneuver checks"><dt>Reflex</dt><dd>{signed(escapeModifier(unit))}</dd></div>
+    <div title="Reflex save, and the roll to leave a zone of control"><dt>Reflex</dt><dd>{signed(escapeModifier(unit))}</dd></div>
     <div title="Will save and Rally checks"><dt>Will</dt><dd>{signed(willModifier(unit))}</dd></div>
     <div title="Base Perception"><dt>Perception</dt><dd>{signed(unit.stats.perception)}</dd></div>
     {#if unit.stats.spellDc !== null}<div title="DC for enemies resisting this unit's spells"><dt>Spell DC</dt><dd>{spellDcFor(unit)}</dd></div>{/if}
@@ -49,6 +54,7 @@
 
 <style>
   .unit-sheet { display: flex; flex-direction: column; gap: .6rem; margin: .35rem 0 .25rem; }
+  .movement-source { display: flex; flex-direction: column; gap: .15rem; font-size: .8rem; color: var(--muted); }
   .caster { color: var(--accent); font-size: .85rem; font-weight: 650; }
   .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: .8rem; padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
   dl { margin: 0; }

@@ -602,8 +602,6 @@ export function createBattleController(deps: BattleDeps) {
     get ACTIVITIES() { return dragging.ACTIVITIES; },
     get CHARGES() { return dragging.CHARGES; },
     get chargeActivity() { return dragging.chargeActivity; },
-    get firstManeuverActivity() { return dragging.firstManeuverActivity; },
-    get maneuverActivity() { return dragging.maneuverActivity; },
     get chargeCost() { return dragging.chargeCost; },
     get dropCost() { return dragging.dropCost; },
     get cost() { return cost; },

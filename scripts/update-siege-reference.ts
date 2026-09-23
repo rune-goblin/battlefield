@@ -9,7 +9,7 @@ const end = '<!-- siege-reference:end -->';
 const escape = (value: string | number) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const reach = { short: 3, medium: 5, long: 7, extreme: 11 };
 const rows = [...ENGINES].sort((a, b) => a.name.localeCompare(b.name)).map(engine => {
-  const mobility = engine.speed === 0 ? 'Fixed' : engine.speed == null ? 'Crew speed' : `${Math.ceil(engine.speed / 15) / 2} hex/action`;
+  const mobility = engine.speed === 0 ? 'Fixed' : engine.speed == null ? 'Crew speed' : `${engine.speed / 10} hex/action`;
   const modes = siegeModes(engine.name, engine.kind).map(mode =>
     `<li><strong>${escape(mode.label)} · ${mode.cost} action${mode.cost === 1 ? '' : 's'}.</strong> ${escape(siegeDetail(mode))}${mode.ignites ? ' · Clears webs' : ''}.</li>`).join('');
   return `<tr><th scope="row">${escape(engine.name)}<span class="meta">Level ${engine.level}</span></th><td>+${engine.launch}</td><td>${engine.reach ? reach[engine.reach] : 'Adjacent'}</td><td>${engine.loadSteps === 0 ? '—' : engine.loadCost}</td><td>${mobility}</td><td><details><summary>Attacks (${siegeModes(engine.name, engine.kind).length})</summary><ul>${modes}</ul></details></td></tr>`;

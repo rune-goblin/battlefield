@@ -4,7 +4,7 @@
     nightResolved, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
     type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
-  import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, startNextDay } from './game.svelte.js';
+  import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, saveBattle, startNextDay } from './game.svelte.js';
   import { allSubmitted, submissionOf } from '../runtime/interactions.js';
   import { viewer } from './viewer.svelte.js';
   import { leaveBattle } from './navigation.svelte.js';
@@ -128,6 +128,15 @@
   /** The authority generates tomorrow's field over the spec it already holds. */
   function generateNext(changes: Partial<BoardSpec> = {}) {
     void attempt(chooseNextBattlefield(changes));
+  }
+  async function saveForAnotherDay() {
+    const name = `Day ${b.day} complete · ${new Date().toLocaleString()}`;
+    try {
+      await saveBattle(name);
+      notifications.show({ id: 'end-of-day-save', title: 'Battle saved', message: name, tone: 'success', expiresInMs: 4000 });
+    } catch (e) {
+      notifications.show({ id: 'end-of-day-save', title: 'Save failed', message: e instanceof Error ? e.message : String(e), tone: 'error' });
+    }
   }
   async function finishDecisions() {
     if (!b.dayOrders?.confirmed && !(await attempt(confirmDayOrders())).ok) return;
@@ -288,10 +297,6 @@
                     <span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span>
                     <span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span>
                   </div>
-                  {#if stage === 'deployment' || stage === 'orders'}
-                    {@const result = resultOf(u)}
-                    {#if result}<p class="recovery-result">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')}<small>{result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc} · +{result.recovered} {result.activity === 'rally' ? 'morale' : 'health'}</small></p>{/if}
-                  {/if}
                   {#if stage === 'deployment'}
                     <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} disabled={!mine(side)} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell (cell)}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
                   {/if}
@@ -309,6 +314,7 @@
       {/if}
       <div class="footer-actions">
         <button class="end-battle" disabled={!viewer.isGm} onclick={() => void attempt(leaveBattle())}>End battle</button>
+        {#if continuing && resolved}<button class="save-day" onclick={() => void saveForAnotherDay()}>Save for another day</button>{/if}
         {#if stage === 'deployment'}
           <button class="primary" disabled={!deployReady || !viewer.isGm} onclick={() => void attempt(startNextDay())}>Begin day {b.day + 1}</button>
         {:else if stage === 'recovery'}
@@ -400,7 +406,6 @@
   .check-preview { font-variant-numeric: tabular-nums; }
   .instruction { padding: .75rem 1rem; border-left: 2px solid var(--accent); background: var(--band); margin-bottom: 1.25rem; }
   .instruction p { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
-  .recovery-result { font-size: .85rem; margin: .6rem 0; }
   .loss-note { font-size: .8rem; color: var(--muted); margin: .7rem 0 0; }
   .map-choices button { display: flex; gap: .8rem; text-align: left; padding: 1rem; }
   .map-choices strong { display: block; font-size: 1.1rem; }
@@ -416,7 +421,8 @@
   .deployment-preview { position: relative; height: 18rem; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-bottom: 1rem; }
   footer { padding: 1rem 1.6rem; border-top: 1px solid var(--rule); background: var(--card); }
   .footer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
-  .end-battle { margin-right: auto; }
+  .end-battle, .save-day { margin-right: auto; }
+  .end-battle:has(+ .save-day) { margin-right: 0; }
   @media (max-width: 650px) {
     .armies, .map-choices, .field-layout { grid-template-columns: 1fr; }
     .report-scrim { padding: .5rem; }

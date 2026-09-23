@@ -1,0 +1,23 @@
+{
+  "sourceActors": 200,
+  "playableTroopNames": 193,
+  "suppressedActors": 7,
+  "actionItems": 1384,
+  "structuralItems": 457,
+  "sourceActionTypes": {
+    "action": 590,
+    "free": 6,
+    "passive": 726,
+    "reaction": 62
+  },
+  "dispositions": {
+    "baseline": 683,
+    "extension": 130,
+    "proposed": 453,
+    "reference": 86,
+    "source-question": 32
+  },
+  "reactionItems": 62,
+  "missingOrChangedReviews": 0,
+  "staleReviews": 0
+}

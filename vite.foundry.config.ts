@@ -23,7 +23,6 @@ const moduleFiles = (): Plugin => ({
   closeBundle() {
     cpSync(here('./public/art'), here(`./${OUT_DIR}/art`), { recursive: true });
     cpSync(here('./public/fonts'), here(`./${OUT_DIR}/fonts`), { recursive: true });
-    cpSync(here('./public/outcome'), here(`./${OUT_DIR}/outcome`), { recursive: true });
     cpSync(here('./public/rules.html'), here(`./${OUT_DIR}/rules.html`));
     cpSync(here('./module.json'), here(`./${OUT_DIR}/module.json`));
     cpSync(here('./LICENSE'), here(`./${OUT_DIR}/LICENSE`));

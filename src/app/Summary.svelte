@@ -5,6 +5,7 @@
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
   import WizardRail from './WizardRail.svelte';
+  import WizardSteps from './WizardSteps.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { declaredReady, game, sideReady, tableUsers } from './game.svelte.js';
   import { engineUnder } from '../services/ArmyPreparationService.js';
@@ -54,7 +55,7 @@
 
   presentStage({
     leftTitle: 'Review and begin', leftWidth: 30,
-    get top() { return top; }, get rail() { return rail; }, get float() { return float; }, get left() { return left; },
+    get top() { return top; }, get rail() { return rail; }, get leftHead() { return steps; }, get float() { return float; }, get left() { return left; },
     get board() {
       return { board, tokens, terrainAppearance: gameMap.terrainAppearance, inkMap: gameMap.inkMap };
     },
@@ -74,6 +75,8 @@
 {/snippet}
 
 {#snippet rail()}<WizardRail />{/snippet}
+
+{#snippet steps()}<WizardSteps />{/snippet}
 
 {#snippet float()}<MapControls board={stage.board} />{/snippet}
 

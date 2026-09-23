@@ -43,7 +43,7 @@
           class="dockbtn {side}"
           class:on={ui.has[side] && ui.dock[side] !== 'hidden'}
           disabled={!ui.has[side]}
-          title={ui.has[side] ? `${ui.dock[side] === 'hidden' ? 'Show' : 'Hide'} the ${side} panel (${side === 'left' ? '[' : ']'}) · double-click to collapse it to a strip` : `No ${side} panel here`}
+          title={ui.has[side] ? `${ui.dock[side] === 'hidden' ? 'Show' : 'Hide'} the ${side} panel (${side === 'left' ? '[' : ']'}) · double-click to collapse it to a strip` : `This stage fixes the ${side} panel`}
           aria-label="Toggle the {side} panel"
           onclick={() => toggleDock(side)}
           ondblclick={() => setDock(side, 'rail')}

@@ -1,5 +1,5 @@
 import type { Board, GridKind, Square } from './board.js';
-import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats } from './cards.js';
+import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats, MovementRates, TroopSheet } from './cards.js';
 import type { CheckResult } from './check.js';
 import type { ActivityIndex, Verb } from './ladders.js';
 import type { CastActivityIndex, Tree } from './magic.js';
@@ -58,7 +58,9 @@ export interface Unit {
   speed: number;
   /** A flier ignores terrain cost and blocked edges. */
   flying: boolean;
-  /** Read off the 'no-retreat' signal. Such a troop follows an enemy that maneuvers from it,
+  movementRates?: MovementRates;
+  sourceSpeed?: Pick<TroopSheet, 'speed' | 'otherSpeeds'>;
+  /** Read off the 'no-retreat' signal. Such a troop follows an enemy that moves away from it,
    * one free Move, to re-establish contact — it is a hold on others, not on itself. */
   noRetreat: boolean;
   /** Imported off a frightful presence and read by nothing: an aura's effect stays the
@@ -157,9 +159,8 @@ export interface FleePlan {
   dc: number;
 }
 
-/** Break contact by one of the three activities, then move. `to` is the cell to leave for; a
- * critical Break off is the only one that carries further than a single hex. */
-export interface ManeuverAction extends Acts { type: 'maneuver'; activity: ActivityIndex; to?: string }
+/** Break contact by one of the three activities, then move one hex to `to`. */
+export interface StepAction extends Acts { type: 'step'; to: string }
 
 /** Move into contact and fight at the activity price, plus optional commitment. */
 export interface ChargeAction extends Acts, Routes { type: 'charge'; target: string; activity?: ActivityIndex; focus?: number }
@@ -181,7 +182,7 @@ export interface SiegeAction extends Acts {
 
 export interface GateAction extends Acts { type: 'gate'; edge: string; open: boolean; }
 
-export type Action = GateAction | SiegeAction | ActivityAction | MoveAction | ManeuverAction | ChargeAction | AdvanceAction | FleeAction;
+export type Action = GateAction | SiegeAction | ActivityAction | MoveAction | StepAction | ChargeAction | AdvanceAction | FleeAction;
 
 export type TargetKind = 'cell' | 'unit' | 'wall';
 
@@ -216,32 +217,23 @@ export interface ActionOffer {
   activities: ActivityOption[];
 }
 
-/** One enemy holding the unit: what the Break off roll is read against for it, and what it
- * does about the maneuver. */
+/** One enemy holding the unit: the DC its zone of control sets, and what it does when the unit leaves. */
 export interface Holder {
   unit: string;
   name: string;
-  /** Its attack DC — its strike bonus plus ten, or a pinning shooter's Volley plus ten. */
+  /** Its Battle DC, or a pinning shooter's Salvo DC. */
   dc: number;
-  /** Holding at range, by a Pin: it lands no free strike and never gives chase. */
+  /** Holding at range, by a Pin: its free attack is a Volley, and it never gives chase. */
   pinning: boolean;
-  /** A `no-retreat` holder follows a Break off that is not a critical success, and a Disengage
-   * or Fighting retreat it passes its own roll against. */
+  /** A `no-retreat` holder follows every Move or Step out of its zone. */
   follows: boolean;
 }
 
-/** Maneuver has no table, but it offers three activities like a verb that has one: Break off, Disengage,
- * Fighting retreat. A maneuver moves one hex to reposition or withdraw, and only a
- * critical Break off carries further. */
-export interface ManeuverOffer {
-  activities: ActivityOption[];
-  /** The unit's Reflex, less disorder: what Break off rolls. */
+/** What a Move out of a zone of control rolls: Reflex, less disorder, against the highest holder's DC. */
+export interface EscapeOffer {
   modifier: number;
-  /** The highest attack DC among the holders, which Break off rolls against. */
   dc: number;
   holders: Holder[];
-  /** Cells to leave for. Beyond the first hex they are the reach of a critical's free Move. */
-  targets: ActivityTarget[];
 }
 
 export interface MoveReach {
@@ -295,8 +287,10 @@ export interface Activation {
   /** Feet a single Move action buys. */
   speed: number;
   offers: ActionOffer[];
-  /** Offered in contact, and to a routed unit. `null` when there is nothing to break from. */
-  maneuver: ManeuverOffer | null;
+  /** The roll a Move from here makes first. `null` when nothing holds the unit. */
+  escape: EscapeOffer | null;
+  /** Cells one Step reaches. */
+  steps: string[];
   moves: Map<string, MoveReach>;
   charges: ChargeOption[];
 }

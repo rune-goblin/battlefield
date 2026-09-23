@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, engagedEnemies, gateReason, isRouted, levelDc, notation } from '../../engine/index.js';
+  import { wallsFor, engagedEnemies, gateReason, isRouted, levelDc, notation, CELL_FEET } from '../../engine/index.js';
   import { actionIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
   import ActionBudget from '../ActionBudget.svelte';
@@ -44,7 +44,7 @@
     <summary>Tactics and rules</summary>
   <table class="stats"><tbody>
     <tr><td>Level</td><td>{c.active.level}</td><td>Level DC</td><td>{levelDc(c.active.level)}</td></tr>
-    <tr><td>Engaged</td><td>{engagedEnemies(c.b, c.active).length}</td><td>Banked move</td><td>{c.act.feet} ft</td></tr>
+    <tr><td>Engaged</td><td>{engagedEnemies(c.b, c.active).length}</td><td>Banked move</td><td>{Number((c.act.feet / CELL_FEET).toFixed(2))} points</td></tr>
     {#if c.active.tactics.length}<tr><td>Tactics</td><td colspan="3">{c.active.tactics.join(', ')}</td></tr>{/if}
     {#if c.status(c.active)}<tr><td>Status</td><td colspan="3">{c.status(c.active)}</td></tr>{/if}
   </tbody></table>
@@ -76,12 +76,12 @@
     {#if c.holders.length}
       <p class="move-note">
         <strong>{c.holders.map((e) => e.name).join(' and ')}</strong>
-        {c.holders.length === 1 ? 'holds' : 'hold'} this unit in contact. Use Maneuver to break free.
-        {#if c.act.maneuver}
-          Drag to one of its {c.act.maneuver.targets.length} cell{c.act.maneuver.targets.length === 1 ? '' : 's'}.
-        {/if}
+        {c.holders.length === 1 ? 'holds' : 'hold'} this unit in contact.
+        {#if c.act.escape}A Move away rolls Reflex {c.act.escape.modifier < 0 ? '−' : '+'}{Math.abs(c.act.escape.modifier)} against DC {c.act.escape.dc}.{/if}
+        {#if c.act.steps.length}A Step to open ground needs no roll.{/if}
       </p>
-    {:else if c.stuck}
+    {/if}
+    {#if c.stuck}
       <p class="move-note">
         <img class="row-prop" src={actionIconUrl('no')} alt="" />
         {c.stuck.why}
@@ -107,7 +107,7 @@
 
   {#if isRouted(c.active)}
     <p class="muted">
-      Routed · Move or Maneuver to your edge, or recover Morale with an ally.
+      Routed · Move or Step to your edge, or recover Morale with an ally.
     </p>
   {:else if !c.offers.length}
     <p class="muted">End this turn when ready.</p>

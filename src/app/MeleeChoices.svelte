@@ -34,7 +34,7 @@
 {#if anchor}
   <div class="melee-choices" role="group" aria-label="Choose a melee action" style:left="{anchor.x}px" style:top="{anchor.y}px">
     {#each plans as plan (plan.kind)}
-      {@const label = plan.kind === 'fight' ? 'Attack' : 'Charge'}
+      {@const label = plan.kind === 'fight' ? 'Melee' : 'Charge'}
       <button class:selected={selected === plan.kind} aria-pressed={selected === plan.kind}
         title={`${label}. Choose to review and confirm.`}
         onpointerenter={() => hover(plan.kind)} onpointerleave={() => hover(null)}

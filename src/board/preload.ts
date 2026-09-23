@@ -7,7 +7,7 @@ import { silhouetteTexture } from './piece-shadow.js';
 import { terrainAtlas } from './terrain-sheet.js';
 import { BROKEN_OVERLAY, defaultTextureSettings, TEXTURE_CHOICES, type TerrainGroup } from './terrain-textures.js';
 
-const ACTION_ICONS: ActionIcon[] = ['attack', 'block', 'cast', 'charge', 'gate', 'no', 'rally', 'shoot', 'maneuver'];
+const ACTION_ICONS: ActionIcon[] = ['attack', 'block', 'cast', 'charge', 'gate', 'no', 'rally', 'shoot', 'step'];
 
 // An `<img>` decodes on its own path, apart from the `ImageBitmap` PIXI holds. Keeping the
 // element keeps the decoded image in the browser's memory cache, so a card that mounts later

@@ -1,9 +1,9 @@
 import { cardTraits, type Tactic, type UnitCard } from './cards.js';
 import { treesForTradition, type Tree } from './magic.js';
 
-// Two verbs have no table of their own. A Move action spends the troop's Speed in feet, and
-// Maneuver rolls the escaping unit's Reflex against whoever is holding it — see `doManeuver`
-// in `battle.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
+// Move and Step have no table of their own. A Move spends the troop's Speed in feet, rolling
+// first to get away from whoever holds it, and a Step goes one open hex — see `doStride` and
+// `doStep` in `battle.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
 // its own six trees live in `magic.ts`.
 export type Verb = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 export const VERB_TYPES: Verb[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];

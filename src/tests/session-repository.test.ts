@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
+import { createBattle, COMBATANTS, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
 import { submissionOf } from '../runtime/interactions.js';
 import {
   freshSession, isBattleSession, migrateLegacySave, reviveSession, SCHEMA_VERSION, type BattleSession,
@@ -38,6 +38,35 @@ function fakeStorage(seed: Record<string, string> = {}): WebStorage & { items: R
 }
 
 describe('the browser session repository', () => {
+  it('restores source movement modes in old catalogue saves and preserves a custom battle Speed', () => {
+    const session = freshSession();
+    const old = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
+    delete old.sheet!.otherSpeeds;
+    session.setup.units = [{ id: 'flyer', card: old, side: 'attacker', square: 'c2', engines: [] }];
+    session.battle = createBattle({ board: openBoard(), units: [{ id: 'flyer', card: old, side: 'attacker', square: 'c2' }] });
+    delete session.battle.units[0].movementRates;
+    delete session.battle.units[0].sourceSpeed;
+    session.battle.units[0].speed = 10;
+    const custom = structuredClone(session);
+    custom.battle!.units[0].speed = 40;
+    expect(reviveSession(custom)!.battle!.units[0].speed).toBe(40);
+    const restored = reviveSession(session)!;
+    expect(restored.battle!.units[0]).toMatchObject({ speed: 40, flying: true,
+      movementRates: { land: 20, fly: 40, swim: 0 },
+      sourceSpeed: { speed: 20, otherSpeeds: [{ type: 'fly', value: 60 }] } });
+    expect(reviveSession(structuredClone(restored))).toEqual(restored);
+  });
+
+  it('upgrades the previous movement scale once and preserves the fraction of a Move in reserve', () => {
+    const session = freshSession();
+    const army = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
+    session.setup.units = [{ id: 'flyer', card: army, side: 'attacker', square: 'c2', engines: [] }];
+    session.battle = createBattle({ board: openBoard(), units: [{ id: 'flyer', card: army, side: 'attacker', square: 'c2' }] });
+    Object.assign(session.battle.units[0], { speed: 20, feet: 10, movementRates: { land: 10, fly: 20, swim: 0 } });
+    const fixed = reviveSession(session)!;
+    expect(fixed.battle!.units[0]).toMatchObject({ speed: 40, feet: 20, movementRates: { land: 20, fly: 40, swim: 0 } });
+    expect(reviveSession(structuredClone(fixed))).toEqual(fixed);
+  });
   it('repairs old catalogue spell stats without changing morale, wounds or custom overrides', () => {
     const session = freshSession();
     const old = structuredClone(OFFICIAL.find(c => c.name === 'Apprentice Magician Clique')!);

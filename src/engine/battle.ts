@@ -6,7 +6,7 @@ import {
   at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
   wallBlocks, structuralDamage, fortification, type Board, type Square, type Wall,
 } from './board.js';
-import { cardTraits, deriveStats, paceOf, speedOf, type SiegeEngineCard, type UnitCard } from './cards.js';
+import { cardTraits, deriveStats, paceOf, speedOf, movementRates, convertSpeed, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { CELL_FEET, reachable, reachableVia, routedPath, stepFeet, type ReachMap, type Routed, type StepOpts } from './path.js';
 import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, type CheckResult, type Degree } from './check.js';
 import {
@@ -24,9 +24,9 @@ import { levelDc } from './tables.js';
 import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT,
   type GateAction, type SiegeAction, type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
-  type ChargeOption, type EngineState, type MoveAction, type MoveReach, type PathStep, type MeleePlan, type AdvanceAction, type FleeAction, type FleePlan,
+  type ChargeOption, type EngineState, type MoveAction, type StepAction, type EscapeOffer, type MoveReach, type PathStep, type MeleePlan, type AdvanceAction, type FleeAction, type FleePlan,
   type Range, type ActivityAction, type ActivityOption, type ActivityTarget, type Side,
-  type TargetOffer, type TargetRef, type Unit, type ManeuverAction, type ManeuverOffer, type LogTag, type CheckLanding,
+  type TargetOffer, type TargetRef, type Unit, type LogTag, type CheckLanding,
 } from './types.js';
 
 /** An engine riding with a unit. Its `id` is the equipment ID setup gave it. */
@@ -99,7 +99,10 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       ...(d.card.sheet ? { attackSources: { strike: d.card.sheet.battleName, volley: d.card.sheet.salvoName } } : {}),
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
-      speed: speedOf(d.card), flying: d.card.sheet?.fly ?? false,
+      speed: speedOf(d.card), flying: movementRates(d.card).fly > 0,
+      ...(d.card.sheet ? { movementRates: movementRates(d.card), sourceSpeed: {
+        speed: d.card.sheet.speed, otherSpeeds: d.card.sheet.otherSpeeds?.map(s => ({ ...s })),
+      } } : {}),
       noRetreat: traits.signals.includes('no-retreat'),
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e, slot) =>
@@ -348,8 +351,17 @@ function refreshEmplacements(state: BattleState) {
 /** Equipment uses its imported movement and loading profile, including older saves. */
 const engineCard = (e: EngineState) => ENGINES.find(card => card.name === e.name);
 export const engineKind = (e: EngineState) => engineCard(e)?.kind ?? e.kind;
-export const engineSpeed = (e: EngineState): number | null =>
-  e.name === 'Wolf Fang' ? 5 : e.speed !== undefined ? e.speed : engineCard(e)?.speed !== undefined ? engineCard(e)!.speed! : (engineKind(e) === 'ram' ? null : 0);
+export const engineSpeed = (e: EngineState): number | null => {
+  const source = engineCard(e)?.sourceSpeed;
+  if (source != null && (e.speed === undefined || e.speed === convertSpeed(source)
+    || e.speed === Math.ceil(source / 30) * CELL_FEET || e.speed === Math.ceil(source / 15) * CELL_FEET / 2)) {
+    return convertSpeed(source);
+  }
+  const speed = e.name === 'Wolf Fang' ? CELL_FEET : e.speed !== undefined ? e.speed
+    : engineCard(e)?.speed !== undefined ? engineCard(e)!.speed! : (engineKind(e) === 'ram' ? null : 0);
+  // Older saves store half-hex rates. Round them to the same whole hexes as new imports.
+  return speed === null || speed === 0 ? speed : Math.ceil(speed / CELL_FEET) * CELL_FEET;
+};
 export const isFixedEngine = (card: SiegeEngineCard): boolean =>
   engineSpeed({ name: card.name, kind: card.kind, speed: card.speed } as EngineState) === 0;
 export const engineLoadCost = (e: EngineState): number => engineCard(e)?.loadCost ?? e.loadCost ?? 1;
@@ -368,8 +380,11 @@ export function engineLoading(e: EngineState): { total: number; completed: numbe
   return { total, completed, label: completed < total ? `${completed}/${total} loaded`
     : e.fired ? 'Loaded · fired this round' : 'Ready to fire' };
 }
-export const movementSpeed = (u: Unit): number => Math.min(u.speed,
-  ...u.engines.filter(e => e.hauling && e.status === 'crewed').map(e => engineSpeed(e) ?? u.speed));
+export const movementSpeed = (u: Unit): number => {
+  const hauled = u.engines.filter(e => e.hauling && e.status === 'crewed');
+  return Math.min(u.speed, ...(hauled.length && u.movementRates ? [u.movementRates.land] : []),
+    ...hauled.map(e => engineSpeed(e) ?? u.speed));
+};
 
 /** The siege menu belongs to equipment in the unit's hex. */
 export const siegeEngines = (state: BattleState, u: Unit): EngineState[] =>
@@ -521,7 +536,7 @@ function doSiege(state: BattleState, rng: Rng, u: Unit, action: SiegeAction): nu
       e.hauling = true;
       // A faster movement pool cannot be carried into a slower hauling rate.
       u.feet = 0;
-      log(state, u, `${u.name} hauls ${e.name} at ${movementSpeed(u)} ft per Move.`);
+      log(state, u, `${u.name} hauls ${e.name} at ${movementSpeed(u) / CELL_FEET} hexes per Move.`);
       return 1;
     case 'release':
       u.engines = u.engines.filter(x => x.id !== e.id);
@@ -529,7 +544,7 @@ function doSiege(state: BattleState, rng: Rng, u: Unit, action: SiegeAction): nu
       e.hauling = false;
       e.square = { ...u.square };
       state.engines.push(e);
-      log(state, u, `${u.name} releases ${e.name} on ${notation(e.square)}; movement returns to ${movementSpeed(u)} ft per Move.`);
+      log(state, u, `${u.name} releases ${e.name} on ${notation(e.square)}; movement returns to ${movementSpeed(u) / CELL_FEET} hexes per Move.`);
       return 0;
     case 'attack': {
       const offer = siegeAttackOffer(state, u, e);
@@ -767,7 +782,7 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
   const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + Math.max(0, (opts.circumstance ?? 0) - highGroundBonus(state, u.square, target.square)) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, rollLine(u.name, `${opts.label} against ${target.name}`, c, 'attack'), c,
     opts.free ? { kind: 'freeStrike', attacker: u.id, target: target.id } : undefined, attackOn(target));
-  const rolled = c.degree === 'critical-success' ? (opts.free ? 1 : 2) : c.degree === 'success' ? 1 : 0;
+  const rolled = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
   applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0);
   // A charger is exposed already, so the critical miss has nothing left to take.
   if (c.degree === 'critical-failure' && !opts.free && !u.exposed) {
@@ -814,7 +829,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Ac
  * board's edge merely blocks the shove. A native flier has the sky behind it. */
 const cornered = (state: BattleState, target: Unit, ground: Square, away: Square): boolean =>
   !target.flying && grid(state).inBounds(away)
-  && (at(state.board, away).terrain === 'water' || barrierBetween(state.board, ground, away) !== null);
+  && ((at(state.board, away).terrain === 'water' && !nativeWaterMovement(target)) || barrierBetween(state.board, ground, away) !== null);
 
 function giveGround(state: BattleState, u: Unit, target: Unit) {
   const ground = target.square;
@@ -839,7 +854,8 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
     addDisorder(state, target, 1, 'cornered');
     return;
   }
-  if (!away || !enterable(state, ground, away, { flying: target.flying })) {
+  if (!away || !enterable(state, ground, away, { flying: target.flying,
+    swimming: at(state.board, away).terrain === 'water' && (target.movementRates?.swim ?? 0) > 0 })) {
     log(state, target, `${target.name} has nowhere to give ground and holds its hex without losing extra Morale.`);
     return;
   }
@@ -867,6 +883,17 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: 
   }
 }
 
+/** A pinning shooter's shot at a unit that fumbles its way out: ordinary Volley damage, and not
+ * the shooter's own attack for its next activation. */
+function freeShot(state: BattleState, rng: Rng, u: Unit, target: Unit): Degree | null {
+  if (!attackGate(state, rng, u, target)) return null;
+  const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true, false, shotFrom(state, u)));
+  log(state, u, rollLine(u.name, `Free shot against ${target.name}`, c, 'attack'), c,
+    { kind: 'freeStrike', attacker: u.id, target: target.id }, attackOn(target));
+  applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, `${u.name}'s volley`, u);
+  return c.degree;
+}
+
 const wallDc = (state: BattleState, wall: Wall) =>
   10 + wall.tier + Math.max(0, ...state.units.filter((d) => d.side === 'defender' && d.status === 'active').map((d) => d.level));
 
@@ -883,16 +910,24 @@ function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier
   log(state, u, wall.remaining ? `The wall holds ${wall.remaining}/${wall.boxes}.` : `The wall at ${key} is breached.`);
 }
 
-/** How this unit pays for ground: a native flier and Fly are the same thing, and Sure footing
- * flattens every price short of water. */
-const groundFor = (u: Unit): StepOpts => ({ climber: u.role === 'infantry' && !u.engines.some(e => e.hauling), flying: !u.engines.some(e => e.hauling && e.status === 'crewed') && (u.flying || u.flies), surefooted: u.sureFooting });
+/** Source movement modes share a budget; each step chooses the cheapest legal mode.
+ * Temporary Fly uses the unit's current Speed, and hauling restricts movement to land. */
+const groundFor = (u: Unit): StepOpts => {
+  const hauling = u.engines.some(e => e.hauling && e.status === 'crewed');
+  const rates = u.movementRates && !hauling ? { ...u.movementRates,
+    fly: u.flies ? Math.max(u.speed, u.movementRates.fly) : u.flying ? u.movementRates.fly || u.speed : 0 } : undefined;
+  return { climber: u.role === 'infantry' && !hauling, flying: !hauling && (u.flying || u.flies),
+    rates, surefooted: u.sureFooting };
+};
+
+const nativeWaterMovement = (u: Unit): boolean => u.flying || (u.movementRates?.swim ?? 0) > 0;
 
 /** Whether `u` could stand on `sq` unassisted: section 7 gives a native flier free run of
  * anywhere, but Fly only "crosses" water (section 11) — it never says a unit ends its move
  * there, and `finish` strips the buff, so a unit that ends its Move or Translocate on water
  * with only an unspent Fly would be grounded in a river with no way out. */
 const canEndOn = (u: Unit, board: Board, sq: Square) =>
-  u.flying || !u.flies || at(board, sq).terrain !== 'water';
+  at(board, sq).terrain !== 'water' || (nativeWaterMovement(u) && !u.engines.some(e => e.hauling && e.status === 'crewed'));
 
 const enterable = (state: BattleState, from: Square, to: Square, opts: StepOpts) =>
   !unitAt(state, to) && Number.isFinite(stepFeet(state.board, from, to, opts));
@@ -900,8 +935,8 @@ const enterable = (state: BattleState, from: Square, to: Square, opts: StepOpts)
 const occupiedBy = (state: BattleState, u: Unit) =>
   new Set(state.units.filter((o) => o.status === 'active' && o.id !== u.id).map((o) => notation(o.square)));
 
-/** Entering an enemy's adjacent, unblocked hex ends ordinary movement. A Maneuver
- * roll clears its starting holders; a new enemy's zone still ends that movement. */
+/** Entering an enemy's adjacent, unblocked hex ends ordinary movement, even one that stays
+ * beside the enemy it started against. */
 function controlCells(state: BattleState, u: Unit, cleared: ReadonlySet<string> = new Set()): Set<string> {
   const cells = new Set<string>();
   for (const enemy of state.units) {
@@ -926,15 +961,14 @@ export const moveActionsFor = (u: Unit, feet: number) =>
 const strideReach = (state: BattleState, u: Unit, via: readonly string[] = []): Routed | null =>
   reachableVia(state.board, u.square, via, { budget: movementBudget(u), ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u) });
 
-/** A unit in contact leaves by maneuvering; incapacitated units cannot Stride. */
-const canStride = (state: BattleState, u: Unit): boolean =>
-  movementSpeed(u) !== 0 && u.rooted <= 0 && !u.pinnedBy && u.actions > 0 && u.status === 'active'
-  && engagedEnemies(state, u).length === 0;
+/** A unit in contact or pinned may still Stride; it rolls to get away first. */
+const canStride = (u: Unit): boolean =>
+  movementSpeed(u) !== 0 && u.rooted <= 0 && u.actions > 0 && u.status === 'active';
 
 /** Every cell the unit can still Stride to, through `via` in order, what it costs in feet, and in Move actions. */
 export function moveReach(state: BattleState, u: Unit, via: readonly string[] = []): Map<string, MoveReach> {
   const out = new Map<string, MoveReach>();
-  const routed = canStride(state, u) ? strideReach(state, u, via) : null;
+  const routed = canStride(u) ? strideReach(state, u, via) : null;
   if (!routed) return out;
   const home = notation(u.square);
   const spent = routed.route[routed.route.length - 1].feet;
@@ -952,7 +986,7 @@ export function moveReach(state: BattleState, u: Unit, via: readonly string[] = 
  * walk back; this asks `reachable` directly instead of the destinations that were filtered
  * from it. Empty when `to` is not itself a legal destination. */
 export function movePath(state: BattleState, u: Unit, to: string, via: readonly string[] = []): PathStep[] {
-  if (!canStride(state, u) || to === notation(u.square) || !canEndOn(u, state.board, parse(to))) return [];
+  if (!canStride(u) || to === notation(u.square) || !canEndOn(u, state.board, parse(to))) return [];
   const routed = strideReach(state, u, via);
   return routed ? routedPath(routed, to).map(({ cell, feet }) => ({ cell, feet, actions: moveActionsFor(u, feet) })) : [];
 }
@@ -1090,10 +1124,10 @@ export function dragBlockReason(state: BattleState, u: Unit, cell: string): stri
     if (u.attacked) return `${u.name} has already attacked this activation. Each unit gets one attack per activation.`;
     if (u.stats.strike === null) return `${u.name} has no melee attack.`;
     if (u.actions <= 0) return 'All actions are spent. End the activation.';
-    if (isRouted(u)) return 'This unit is routed. Use Move or Maneuver to retreat toward its own edge.';
-    if (engagedEnemies(state, u).length) return 'This unit is already in contact. Fight an adjacent enemy or use Maneuver to change position.';
-    if (u.rooted > 0) return 'This unit is rooted. A charge requires movement; you can still fight an adjacent enemy.';
-    if (u.pinnedBy) return 'This unit is pinned. Use Maneuver to break the pin before charging.';
+    if (isRouted(u)) return 'This unit is routed. Move or Step toward its own edge.';
+    if (engagedEnemies(state, u).length) return 'This unit is already in contact. Use Melee against an adjacent enemy, or Move or Step to change position.';
+    if (u.rooted > 0) return 'This unit is rooted. A charge requires movement; you can still use Melee against an adjacent enemy.';
+    if (u.pinnedBy) return 'This unit is pinned. Move out of the pin before charging.';
     if (movementSpeed(u) === 0) return 'This unit has Speed 0. A charge requires movement.';
     const landings = (reach: ReachMap) => [...reach].filter(([key]) =>
       touching(state, parse(key), target) && canEndOn(u, state.board, parse(key)));
@@ -1105,64 +1139,42 @@ export function dragBlockReason(state: BattleState, u: Unit, cell: string): stri
     const withoutOtherControl = reachable(state.board, u.square, {
       budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u),
     });
-    if (landings(withoutOtherControl).length) return 'Another enemy controls the approach. A charge must engage its target first. Move into contact and use Fight, or choose another target.';
+    if (landings(withoutOtherControl).length) return 'Another enemy controls the approach. A charge must engage its target first. Move into contact and use Melee, or choose another target.';
     return 'Terrain, barriers or occupied hexes block every approach to this enemy.';
   }
-  if (moveReach(state, u).has(cell) || maneuverOffer(state, u.id)?.targets.some(t => t.id === cell)) return null;
+  if (moveReach(state, u).has(cell) || stepTargets(state, u).includes(cell)) return null;
   if (target) return `${target.name} occupies ${cell}. Choose an empty hex.`;
   if (u.actions <= 0) return 'All actions are spent. End the activation.';
-  if (u.rooted > 0) return 'This unit is rooted. Move, Charge and Maneuver are unavailable until the root ends.';
+  if (u.rooted > 0) return 'This unit is rooted. Move, Step and Charge are unavailable until the root ends.';
   if (movementSpeed(u) === 0) return 'This unit has Speed 0 and must hold its position.';
-  if (u.pinnedBy) return 'This unit is pinned. Choose a destination within Maneuver reach to break the pin.';
-  if (engagedEnemies(state, u).length) return 'This unit is in contact. Choose a destination within Maneuver reach to change position.';
-  if (at(state.board, parse(cell)).terrain === 'water' && !u.flying) return 'This unit must end its movement on land. Water is an invalid destination.';
+  if (!canEndOn(u, state.board, parse(cell))) return 'This unit must end its movement on land. Water is an invalid destination.';
   const route = reachable(state.board, u.square, {
     budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u),
   });
   const feet = route.get(cell)?.feet;
   if (feet !== undefined) {
     const needed = moveActionsFor(u, feet);
-    return `Reaching ${cell} needs ${needed} movement actions; this unit has ${u.actions} left.`;
+    return `Reaching ${cell} needs ${needed} movement actions; this unit has ${u.actions} left. The whole route uses ${Number((feet / movementSpeed(u)).toFixed(2))} Moves before banked movement. Each step uses its highest terrain, climb or field cost.`;
   }
   const withoutControl = reachable(state.board, u.square, { budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u) });
   return withoutControl.has(cell)
-    ? 'Enemy contact ends movement before this hex. Move into contact, then use Maneuver to continue.'
+    ? 'Enemy contact ends movement before this hex. Move into contact, then Move again to continue.'
     : 'Terrain, barriers or occupied hexes block the route to this hex.';
 }
 
-/** The destination decides whether Maneuver repositions in contact or withdraws from it. */
-export function maneuverOutcome(state: BattleState, u: Unit, to: Square): 'reposition' | 'withdraw' {
-  return engagedEnemies(state, { ...u, square: to }).length ? 'reposition' : 'withdraw';
-}
-
-/** One adjacent destination, plus the free Move's reach on a critical success. */
-export function maneuverTargets(state: BattleState, u: Unit, feet = 0, actions = 1): Square[] {
+/** Hexes one Step reaches: adjacent, empty, open to land movement at the plain cost, and
+ * homeward for a routed unit. A pinned or rooted unit cannot Step. */
+export function stepTargets(state: BattleState, u: Unit): string[] {
+  if (u.status !== 'active' || u.actions < 1 || u.rooted > 0 || u.pinnedBy || movementSpeed(u) === 0) return [];
   const g = grid(state);
-  const routing = isRouted(u);
-  const step = homewardStep(u);
-  const cells = new Set((routing ? g.homeward(u.square, u.side) : g.neighbours(u.square))
-    .filter((n) => enterable(state, u.square, n, groundFor(u)) && stepFeet(state.board, u.square, n, groundFor(u)) <= actions * movementSpeed(u) && canEndOn(u, state.board, n))
-    .map(notation));
-  if (feet > 0 && movementSpeed(u) > 0) {
-    const reach = reachable(state.board, u.square, { budget: feet, ...groundFor(u), occupied: occupiedBy(state, u), stopAt: controlCells(state, u, new Set(holdersOf(state, u).map(h => h.id))) });
-    for (const key of reach.keys()) {
-      const sq = parse(key);
-      if (sameSquare(sq, u.square) || !canEndOn(u, state.board, sq)) continue;
-      // A routed unit runs for its own edge and nowhere else.
-      if (routing && Math.sign(sq.rank - u.square.rank) !== step) continue;
-      cells.add(key);
-    }
-  }
-  // Nearest first, so the cell a caller gets by naming none is a step away rather than a sprint.
-  const all = [...cells].map(parse)
-    .sort((a, c) => g.distance(u.square, a) - g.distance(u.square, c) || notation(a).localeCompare(notation(c)));
-  return all;
+  const land: StepOpts = { climber: groundFor(u).climber, surefooted: u.sureFooting };
+  return (isRouted(u) ? g.homeward(u.square, u.side) : g.neighbours(u.square))
+    .filter((n) => !unitAt(state, n) && stepFeet(state.board, u.square, n, land) <= CELL_FEET && canEndOn(u, state.board, n))
+    .map(notation).sort();
 }
 
 const homewardStep = (u: Unit) => u.side === 'attacker' ? -1 : 1;
 
-// proto: reads the piece even when another unit fired it and the crew pinned with its own
-// Volley, so the escape DC can say launch + 10 for a shot that rolled Volley.
 /** What a shot off this unit rolls: a crewed artillery piece stands in for a Volley the crew
  * may not have, loaded or not — a pinning crew holds its target with the shot it already made. */
 const volleyOf = (state: BattleState, u: Unit) => {
@@ -1170,13 +1182,11 @@ const volleyOf = (state: BattleState, u: Unit) => {
   return e ? e.launch : (u.stats.volley ?? 0);
 };
 
-/** The DC to break from a holder: its attack DC, its strike bonus plus ten — or, for a pinning
- * shooter, its Volley plus ten, since nobody is in contact to strike. */
+/** A holder's Battle DC, or its Salvo DC when it pins: Strike and Volley are stored as those less ten. */
 export const escapeDcFor = (state: BattleState, holder: Unit, target: Unit) =>
   (holder.id === target.pinnedBy ? volleyOf(state, holder) : (holder.stats.strike ?? 0)) + 10;
 
-/** Reflex is the widest-spreading defensive stat on a troop sheet (5.6 points within a level
- * against AC's 3.2), so it is the one that tells troops apart. */
+/** Reflex, less disorder: what a unit rolls to leave a zone of control. */
 export const escapeModifier = (u: Unit) => u.stats.reflex - u.disorder + rollBonus(u);
 
 /** Enemies that can actually hold a unit: one with no melee strike cannot, but an active
@@ -1187,11 +1197,11 @@ export const holdersOf = (state: BattleState, u: Unit): Unit[] => {
   return pinner && !engaged.some((e) => e.id === pinner.id) ? [...engaged, pinner] : engaged;
 };
 
-function moveTo(state: BattleState, u: Unit, to: Square) {
+function moveTo(state: BattleState, u: Unit, to: Square, carry = true) {
   u.square = to;
   for (const e of [...u.engines]) {
     if (e.status !== 'crewed') continue;
-    if (e.hauling && engineSpeed(e) !== 0) e.square = to;
+    if (carry && e.hauling && engineSpeed(e) !== 0) e.square = to;
     else {
       u.engines = u.engines.filter(x => x.id !== e.id);
       e.emplaced = true;
@@ -1218,6 +1228,8 @@ export function fleePlan(state: BattleState, u: Unit, cell: string): FleePlan | 
   if (state.phase !== 'battle' || u.status !== 'active' || u.actions < 1 || movementSpeed(u) <= 0
     || u.rooted > 0 || u.pinnedBy || !isFleeEdge(state, u, cell)) return null;
   const home = notation(u.square);
+  // A held unit gets away with a Move first; only one already on the edge may Flee from contact.
+  if (cell !== home && holdersOf(state, u).length) return null;
   const movement = cell === home ? { feet: 0, actions: 0 } : moveReach(state, u).get(cell);
   if (!movement || movement.actions + 1 > u.actions) return null;
   return { cell, path: cell === home ? [home] : movePath(state, u, cell).map(s => s.cell),
@@ -1229,6 +1241,7 @@ export function fleeBlockReason(state: BattleState, u: Unit, cell: string): stri
   if (!isFleeEdge(state, u, cell)) return 'Flee through a map edge in this unit’s starting zone.';
   if (u.rooted > 0) return 'This unit is rooted and cannot leave its hex.';
   if (u.pinnedBy) return 'Break the pin before fleeing.';
+  if (holdersOf(state, u).length && notation(u.square) !== cell) return 'Move out of contact before fleeing.';
   if (movementSpeed(u) <= 0) return 'This unit has no movement and cannot flee.';
   if (notation(u.square) !== cell && !moveReach(state, u).has(cell)) return dragBlockReason(state, u, cell) ?? 'This unit cannot reach that edge.';
   return 'Reaching this edge and fleeing requires movement plus one action to flee.';
@@ -1237,7 +1250,7 @@ export function fleeBlockReason(state: BattleState, u: Unit, cell: string): stri
 function doFlee(state: BattleState, rng: Rng, u: Unit, action: FleeAction): number {
   const plan = fleePlan(state, u, action.to);
   if (!plan) throw new Error(fleeBlockReason(state, u, action.to));
-  if (plan.path.length > 1) doStride(state, u, { type: 'move', unit: u.id, to: action.to });
+  if (plan.path.length > 1) doStride(state, rng, u, { type: 'move', unit: u.id, to: action.to });
   const wasRouted = isRouted(u);
   const c = roll(state, rng, u, plan.modifier, plan.dc);
   log(state, u, rollLine(u.name, `Will check to flee through ${action.to}`, c), c);
@@ -1396,7 +1409,7 @@ function healTargets(state: BattleState, u: Unit, index: ActivityIndex): Activit
 /** A hex a unit may be set down in: empty, and ground it could stand on — water holds nobody
  * but a native flier. */
 const standable = (state: BattleState, u: Unit, sq: Square) =>
-  !unitAt(state, sq) && (u.flying || at(state.board, sq).terrain !== 'water');
+  !unitAt(state, sq) && canEndOn(u, state.board, sq);
 
 // proto: the pair is one target, the ally's own hex and the hex it lands on joined by '+', so
 // the aim popup needs no second pick — the same shape a Blast's Line uses. Touching either hex
@@ -1517,7 +1530,7 @@ function offerFor(state: BattleState, u: Unit, type: Verb, spell: Tree | null): 
 export function availableActions(state: BattleState, unitId?: string): ActionOffer[] {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return [];
-  // Only zero Morale restricts activities to Move and Maneuver.
+  // Only zero Morale restricts activities to Move and Step.
   if (isRouted(u)) return [];
   const contact = engagedEnemies(state, u).length > 0;
   const types: Verb[] = contact ? ['fight', 'guard'] : ['shoot', 'guard'];
@@ -1533,123 +1546,43 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   return offers;
 }
 
-/** Maneuver's three activities. No table in `ladders.ts` holds them — Maneuver is not one of
- * the five verbs a menu offers — but they are priced and read like any other: cost is index. */
-const MANEUVER: { id: string; label: string; detail: string }[] = [
-  {
-    id: 'break-off', label: 'Break off',
-    detail: 'One Maneuver check against the highest holder. A success moves you one hex to reposition or withdraw; a critical adds a free Move of your Speed and throws off every pursuer. A failure still moves you, but each holder whose grip the roll missed strikes free, 1 damage at most; a critical failure costs you 1 Morale and you stay.',
-  },
-  {
-    id: 'disengage', label: 'Disengage',
-    detail: 'Move one hex to reposition or withdraw without a check or free strike. Each holder rolls Reflex against your level DC instead, and one that fails is rooted on its next activation and does not follow.',
-  },
-  {
-    id: 'fighting-retreat', label: 'Fighting retreat',
-    detail: 'Disengage, and a holder that fails its roll loses 1 Morale as well, drawn out of its line.',
-  },
-];
-
-/** What the maneuver did: whether the unit leaves its hex, whether a free Move carries it
- * further than one, and which holders are still on its heels. */
-interface Break { leaves: boolean; far: boolean; chasers: Unit[] }
-
 /**
- * Move in contact. At Break off the moving unit rolls; higher activities make the holders roll.
+ * Tumbling out of a zone of control: one Reflex roll, read against each holder's own DC. Falling
+ * short of any holds the unit where it stands; each holder the roll critically fails against also
+ * makes its free attack — a Strike, or a pinning shooter's Volley. True when the unit gets away.
  */
-function doManeuver(state: BattleState, rng: Rng, u: Unit, action: ManeuverAction) {
-  const holders = holdersOf(state, u);
-  // Read before anything moves: breaking away clears the pin, and a pinning shooter never chases.
-  const chasers = holders.filter((h) => h.noRetreat && h.id !== u.pinnedBy);
-  const result = action.activity === 1
-    ? breakOff(state, rng, u, holders, chasers)
-    : disengage(state, rng, u, holders, chasers, action.activity === 3);
-  if (u.status !== 'active') return;
-  if (!result.leaves) {
-    log(state, u, `${u.name} cannot break contact and stays where it stands.`);
-    return;
-  }
-  maneuverTo(state, u, action.to, result.far, action.activity);
-  follow(state, u, result.chasers);
-  if (isRouted(u) && u.square.rank === homeRank(u.side, state.board.squares.length)) leaveField(state, u);
-}
-
-/**
- * One Maneuver check, however many enemies hold the unit: Reflex against the highest attack DC
- * among them. The same roll is then read against each holder's own DC, so a grip it cleared
- * lands no free strike even when the highest one held.
- */
-function breakOff(state: BattleState, rng: Rng, u: Unit, holders: Unit[], chasers: Unit[]): Break {
-  if (!holders.length) return { leaves: true, far: false, chasers: [] };
-  const dc = Math.max(...holders.map((h) => escapeDcFor(state, h, u)));
-  const c = roll(state, rng, u, escapeModifier(u), dc);
-  log(state, u, rollLine(u.name, 'Reflex check to break off', c), c);
-  if (succeeded(c.degree)) {
-    const clean = c.degree === 'critical-success';
-    if (clean && chasers.length) log(state, u, `${u.name} is away clean: ${chasers.map((h) => h.name).join(' and ')} cannot keep up.`);
-    return { leaves: true, far: clean, chasers: clean ? [] : chasers };
-  }
+function escape(state: BattleState, rng: Rng, u: Unit, holders: Unit[]): boolean {
+  const c = roll(state, rng, u, escapeModifier(u), Math.max(...holders.map((h) => escapeDcFor(state, h, u))));
+  log(state, u, rollLine(u.name, 'Reflex check to get away', c), c);
+  if (succeeded(c.degree)) return true;
   for (const h of holders) {
     if (u.status !== 'active') break;
-    // A pinning shooter stands at range, so no grip of its own lands a blow.
-    if (h.id === u.pinnedBy) continue;
-    if (succeeded(readCheck(c.roll, c.modifier, escapeDcFor(state, h, u)).degree)) continue;
-    resolveStrike(state, rng, h, u, { free: true, label: 'Free strike' });
+    if (readCheck(c.roll, c.modifier, escapeDcFor(state, h, u)).degree !== 'critical-failure') continue;
+    if (h.id === u.pinnedBy) freeShot(state, rng, h, u);
+    else resolveStrike(state, rng, h, u, { free: true, label: 'Free strike' });
   }
-  if (u.status !== 'active') return { leaves: false, far: false, chasers: [] };
-  if (c.degree !== 'critical-failure') return { leaves: true, far: false, chasers };
-  addDisorder(state, u, 1, 'a grip that held');
-  return { leaves: false, far: false, chasers: [] };
+  if (u.status === 'active') log(state, u, `${u.name} cannot break away and stays where it stands.`);
+  return false;
 }
 
-/**
- * The unit simply goes. Every holder rolls its own Reflex against the maneuvering unit's level
- * DC to keep hold of it, and one that fails is left rooted where it stands — and, at Fighting
- * retreat, drawn out of its line for a point of disorder.
- */
-function disengage(state: BattleState, rng: Rng, u: Unit, holders: Unit[], chasers: Unit[], fighting: boolean): Break {
-  const passed = new Set<string>();
-  for (const h of holders) {
-    const c = roll(state, rng, h, escapeModifier(h), levelDc(u.level));
-    log(state, h, rollLine(h.name, `Reflex check to keep hold of ${u.name}`, c), c);
-    if (succeeded(c.degree)) { passed.add(h.id); continue; }
-    h.rooted = 1;
-    log(state, h, `${h.name} is left holding air: no Move, Charge or Maneuver on its next activation.`);
-    if (fighting) addDisorder(state, h, 1, `${u.name}'s fighting retreat`);
-  }
-  return { leaves: true, far: false, chasers: chasers.filter((h) => passed.has(h.id)) };
-}
-
-// proto: a `to` the break cannot carry to lands on whichever legal cell lies nearest it, so a
-// short break still goes the way the player pointed.
-/**
- * Reposition or withdraw one hex; a critical Break off allows movement up to Speed.
- */
-function maneuverTo(state: BattleState, u: Unit, to: string | undefined, far: boolean, actions: number) {
-  const options = maneuverTargets(state, u, far ? movementSpeed(u) : 0, actions);
-  if (!options.length) {
-    log(state, u, `${u.name} has nowhere to go and holds where it stands.`);
-    return;
-  }
-  const g = grid(state);
-  const wanted = to ? parse(to) : null;
-  const chosen = !wanted ? options[0]
-    : options.find((sq) => sameSquare(sq, wanted))
-      ?? options.reduce((best, sq) => (g.distance(sq, wanted) < g.distance(best, wanted) ? sq : best));
-  moveTo(state, u, chosen);
-  const outcome = maneuverOutcome(state, u, chosen);
-  log(state, u, `${u.name} ${outcome === 'reposition' ? 'repositions' : 'withdraws'} to ${notation(chosen)}${far ? ' — a free Move on the clean break' : ''}.`);
-  // Changing hex ends a pin, even if the unit keeps contact with a melee opponent.
+/** After a unit changes hex: the pin ends, a no-retreat holder gives chase, and a routed unit
+ * that reached its own edge leaves. */
+function departed(state: BattleState, u: Unit, chasers: Unit[]) {
   if (u.pinnedBy) {
     const pinner = state.units.find((e) => e.id === u.pinnedBy);
     u.pinnedBy = null;
     log(state, u, `${u.name} is out from under ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
   }
+  follow(state, u, chasers);
+  if (isRouted(u) && u.square.rank === homeRank(u.side, state.board.squares.length)) leaveField(state, u);
 }
+
+/** Read before anything moves: a pinning shooter never chases. */
+const chasersOf = (u: Unit, holders: Unit[]) => holders.filter((h) => h.noRetreat && h.id !== u.pinnedBy);
 
 /**
  * A `no-retreat` holder gives chase: one free Move of its own Speed, through the ordinary
- * terrain costs, to a cell touching wherever the maneuver ended. It deals no damage — it
+ * terrain costs, to a cell touching wherever the unit ended. It deals no damage — it
  * only keeps contact, so outrunning it is the only way clear.
  */
 function follow(state: BattleState, u: Unit, chasers: Unit[]) {
@@ -1806,8 +1739,9 @@ function translocate(state: BattleState, u: Unit, label: string, index: Activity
   const held = engagedEnemies(state, ally).length > 0;
   log(state, u, `${u.name} casts ${label} on ${ally.name}.`, undefined,
     { kind: 'spell', caster: u.id, tree: 'movement', activity: index, targets: [ally.id] });
-  moveTo(state, ally, parse(landing));
-  log(state, ally, `${ally.name} is set down on ${landing}${held ? ', out of contact with nothing to strike it' : ''}.`);
+  const left = ally.engines.filter(e => e.hauling && e.status === 'crewed');
+  moveTo(state, ally, parse(landing), false);
+  log(state, ally, `${ally.name} is set down on ${landing}${held ? ', out of contact with nothing to strike it' : ''}${left.length ? `, leaving its ${left[0].name} behind` : ''}.`);
 
 }
 
@@ -1822,7 +1756,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       const parts = action.target!.split('+');
       const transfers = Array.from({ length: parts.length / 2 }, (_, i) => ({ ally: unitAt(state, parse(parts[i * 2]))!, landing: parse(parts[i * 2 + 1]) }));
       log(state, u, `${u.name} casts ${label}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: transfers.map(t => t.ally.id) });
-      for (const { ally, landing } of transfers) { moveTo(state, ally, landing); log(state, ally, `${ally.name} is set down on ${notation(landing)}.`); }
+      for (const { ally, landing } of transfers) { moveTo(state, ally, landing, false); log(state, ally, `${ally.name} is set down on ${notation(landing)}.`); }
       return;
     }
     const targets = action.target!.split('+').map(id => unit(state, id));
@@ -2038,7 +1972,8 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
   return {
     unit: u.id, actions: u.actions, attacked: u.attacked, feet: u.feet, speed: movementSpeed(u),
     offers: availableActions(state, u.id),
-    maneuver: maneuverOffer(state, u.id),
+    escape: escapeOffer(state, u),
+    steps: stepTargets(state, u),
     moves: moveReach(state, u),
     charges: chargeTargets(state, u),
   };
@@ -2216,57 +2151,44 @@ export function offersAt(state: BattleState, target: TargetRef, unitId?: string)
   return out;
 }
 
-/** Maneuver is offered in contact, and to a routed unit heading for its home edge. A rooted unit
- * is offered nothing: no Move, no Charge and no Maneuver while the root stands. */
-export function maneuverOffer(state: BattleState, unitId?: string): ManeuverOffer | null {
-  const u = unitId ? unit(state, unitId) : activeUnit(state);
-  if (!u || state.phase !== 'battle' || u.status !== 'active' || u.rooted > 0 || movementSpeed(u) === 0) return null;
+/** The roll a Move out of a zone of control makes. `null` when nothing holds the unit. */
+export function escapeOffer(state: BattleState, u: Unit): EscapeOffer | null {
   const holders = holdersOf(state, u);
-  if (!holders.length && !engagedEnemies(state, u).length && !isRouted(u)) return null;
-  const activities = ([1, 2, 3] as ActivityIndex[]).map((index): ActivityOption => {
-    const w = MANEUVER[index - 1];
-    const targets = maneuverTargets(state, u, index === 1 ? movementSpeed(u) : 0, index).map(sq => cellTarget(notation(sq)));
-    // Above Break off the holders are the ones who roll, so with none there is nothing to buy.
-    const reason = index > u.actions ? `needs ${index} actions`
-      : index > 1 && !holders.length ? 'nothing holds you' : !targets.length ? 'no destination within the terrain budget' : null;
-    return {
-      activity: w.id, index, label: w.label, detail: w.detail, cost: index,
-      legal: reason === null, reason, needsTarget: false, targets,
-    };
-  }) as [ActivityOption, ActivityOption, ActivityOption];
+  if (!holders.length) return null;
   return {
-    activities,
     modifier: escapeModifier(u),
-    dc: Math.max(0, ...holders.map((h) => escapeDcFor(state, h, u))),
+    dc: Math.max(...holders.map((h) => escapeDcFor(state, h, u))),
     holders: holders.map((h) => ({
       unit: h.id, name: h.name, dc: escapeDcFor(state, h, u),
       pinning: h.id === u.pinnedBy, follows: h.noRetreat && h.id !== u.pinnedBy,
     })),
-    targets: [...new Map(activities.filter(a => a.legal).flatMap(a => a.targets).map(t => [t.id, t])).values()],
   };
 }
 
-function doManeuverAction(state: BattleState, rng: Rng, u: Unit, action: ManeuverAction): number {
-  const offer = maneuverOffer(state, u.id);
-  if (!offer) throw new Error(`${u.name} has nothing to maneuver from`);
-  const option = offer.activities[action.activity - 1];
-  if (!option) throw new Error(`${u.name} has no maneuver ${action.activity}`);
-  if (!option.legal) throw new Error(`${u.name} cannot ${option.label.toLowerCase()}: ${option.reason}`);
-  if (action.to && !option.targets.some((t) => t.id === action.to)) throw new Error(`${u.name} cannot maneuver to ${action.to}`);
-  doManeuver(state, rng, u, action);
-  return action.activity;
+function doStep(state: BattleState, u: Unit, action: StepAction): number {
+  if (!stepTargets(state, u).includes(action.to)) throw new Error(`${u.name} cannot step to ${action.to}`);
+  const chasers = chasersOf(u, holdersOf(state, u));
+  moveTo(state, u, parse(action.to));
+  log(state, u, `${u.name} steps to ${action.to}.`);
+  departed(state, u, chasers);
+  return 1;
 }
 
 const spendMovement = (u: Unit, m: { feet: number; actions: number }) => {
   u.feet += m.actions * movementSpeed(u) - m.feet;
 };
 
-function doStride(state: BattleState, u: Unit, action: MoveAction): number {
+// proto: a Move that fails to get away spends one action, even one banked movement would have paid.
+function doStride(state: BattleState, rng: Rng, u: Unit, action: MoveAction): number {
   const m = moveReach(state, u, action.waypoints).get(action.to);
   if (!m) throw new Error(`${u.name} cannot reach ${action.to}`);
+  const holders = holdersOf(state, u);
+  const chasers = chasersOf(u, holders);
+  if (holders.length && !escape(state, rng, u, holders)) return 1;
   spendMovement(u, m);
   moveTo(state, u, parse(action.to));
   log(state, u, `${u.name} strides to ${action.to} — ${m.feet} ft, ${m.actions} action${m.actions === 1 ? '' : 's'}.`);
+  if (holders.length) departed(state, u, chasers);
   return m.actions;
 
 }
@@ -2290,10 +2212,10 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const impact = u.tactics.includes('cavalry-charge');
   moveTo(state, u, parse(option.cell));
   const carried = [
-    `+${bonus} on the Fight`,
+    `+${bonus} on the Melee attack`,
     saveShift ? `${foe.name}'s save is at −${ACTION_BONUS}, charged from above` : '',
     impact ? 'the impact forces two Fortitude rolls, keeping the worse' : '',
-    focus ? `commitment +${focus * ACTION_BONUS} on the Fight (${cost} actions total)` : '',
+    focus ? `commitment +${focus * ACTION_BONUS} on the Melee attack (${cost} actions total)` : '',
   ].filter(Boolean);
   log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}, ${carried.join(', ')}.`);
   u.exposed = true;
@@ -2315,7 +2237,7 @@ function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction)
   if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
     throw new Error('The move and chosen attack exceed the available actions.');
   }
-  const movement = doStride(state, u, { type: 'move', unit: u.id, to: plan.via, waypoints: waypoints.slice(0, plan.split) });
+  const movement = doStride(state, rng, u, { type: 'move', unit: u.id, to: plan.via, waypoints: waypoints.slice(0, plan.split) });
   // Reserve the movement cost before validating the melee. The caller subtracts the total
   // once and ends the activation once; an exception discards this entire cloned state.
   u.actions -= movement;
@@ -2334,9 +2256,9 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u);
   const cost = action.type === 'gate' ? doGate(state, u, action) : action.type === 'siege' ? doSiege(state, rng, u, action)
-    : action.type === 'move' ? doStride(state, u, action)
+    : action.type === 'move' ? doStride(state, rng, u, action)
     : action.type === 'flee' ? doFlee(state, rng, u, action)
-    : action.type === 'maneuver' ? doManeuverAction(state, rng, u, action)
+    : action.type === 'step' ? doStep(state, u, action)
       : action.type === 'charge' ? doCharge(state, rng, u, action)
         : action.type === 'advance' ? doAdvance(state, rng, u, action)
           : doActivity(state, rng, u, action);

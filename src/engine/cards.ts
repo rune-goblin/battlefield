@@ -54,6 +54,8 @@ export interface TroopSheet {
   perception: number;
   speed: number;
   fly: boolean;
+  /** Original movement categories and speeds in feet. Omitted on legacy cards. */
+  otherSpeeds?: { type: string; value: number }[];
   /** Source spellcasting statistics. Legacy/custom casters without these use level estimates. */
   spellAttack?: number;
   spellDc?: number;
@@ -123,20 +125,41 @@ export function cardTraits(card: UnitCard) {
   };
 }
 
-/** Feet of Speed a square of the board asks for. A troop is not one creature: thirty feet of
+/** Feet of Speed a square of the board asks for. A troop is not one creature: fifteen feet of
  * the actor's Speed carries the formation one square. */
-const SPEED_PER_SQUARE = 30;
+const SPEED_PER_SQUARE = 15;
 
-/**
- * Squares one Move action buys, off the sheet's Speed: 30 ft and under walks one, 60 ft two,
- * 90 ft three. Flight buys no distance at all — it only changes what the ground costs, which
- * `Unit.flying` already handles. A card with no sheet falls back to its type: cavalry two,
- * infantry one.
- */
+/** Maximum hexes per Move from the source's land, fly and swim speeds.
+ * Legacy prototype cards without a sheet retain their Pace fallback. */
 export function squaresPerAction(card: UnitCard): number {
   const sheet = card.sheet;
   if (!sheet) return cardTraits(card).pace ? 2 : 1;
-  return Math.max(1, Math.ceil(sheet.speed / SPEED_PER_SQUARE));
+  return Math.max(...Object.values(movementRates(card))) / CELL_FEET;
+}
+
+export interface MovementRates { land: number; fly: number; swim: number }
+
+/** Convert each source mode independently. A zero speed grants no movement. */
+export const convertSpeed = (feet: number): number =>
+  Number.isFinite(feet) && feet > 0 ? Math.ceil(feet / SPEED_PER_SQUARE) * CELL_FEET : 0;
+
+export function movementRates(card: UnitCard): MovementRates {
+  const sheet = card.sheet;
+  if (!sheet) return { land: (cardTraits(card).pace ? 2 : 1) * CELL_FEET, fly: 0, swim: 0 };
+  const other = (type: string) => Math.max(0, ...(sheet.otherSpeeds ?? []).filter(s => s.type === type).map(s => s.value));
+  return { land: convertSpeed(sheet.speed),
+    fly: sheet.otherSpeeds === undefined && sheet.fly ? Math.max(CELL_FEET, convertSpeed(sheet.speed)) : convertSpeed(other('fly')),
+    swim: convertSpeed(other('swim')) };
+}
+
+export function sourceSpeedLabel(sheet: Pick<TroopSheet, 'speed' | 'otherSpeeds'>): string {
+  return [{ type: 'land', value: sheet.speed }, ...(sheet.otherSpeeds ?? [])]
+    .map(s => `${s.type} ${s.value} ft`).join(' · ');
+}
+
+export function movementRateLabel(rates: MovementRates): string {
+  return Object.entries(rates).filter(([, rate]) => rate > 0)
+    .map(([mode, rate]) => `${mode} ${rate / CELL_FEET} ${rate === CELL_FEET ? 'hex' : 'hexes'}/Move`).join(' · ') || 'Speed 0';
 }
 
 export const paceOf = (card: UnitCard): boolean => squaresPerAction(card) > 1;
@@ -147,6 +170,8 @@ export const speedOf = (card: UnitCard): number => squaresPerAction(card) * CELL
 export type EngineKind = 'artillery' | 'ram';
 
 export interface SiegeEngineCard {
+  /** Original engine Speed in source feet; null means portable at crew Speed. */
+  sourceSpeed?: number | null;
   /** Feet per movement action; null means portable at the crew's speed, zero means fixed. */
   speed?: number | null;
   loadCost?: number;
@@ -187,11 +212,7 @@ export function derivation(card: UnitCard): Derivation[] {
   ];
 }
 
-const SQUARE_WORDS = ['no', 'one square', 'two squares', 'three squares'];
-
 export function paceReason(card: UnitCard): string {
-  const n = squaresPerAction(card);
-  const squares = `${SQUARE_WORDS[n] ?? `${n} squares`} an Advance`;
-  const flight = card.sheet?.fly ? ', over any ground' : '';
-  return card.sheet ? `Speed ${card.sheet.speed} ft → ${squares}${flight}` : `${paceOf(card) ? 'Pace' : 'no Pace'}: ${squares}`;
+  const rates = movementRateLabel(movementRates(card));
+  return card.sheet ? `${sourceSpeedLabel(card.sheet)} → ${rates}` : rates;
 }

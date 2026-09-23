@@ -79,7 +79,7 @@
   {#if !lab && view}
     <AppShell
       leftTitle={view.leftTitle} rightTitle={view.rightTitle} leftWidth={view.leftWidth} rightWidth={view.rightWidth}
-      top={view.top} bottom={view.bottom} left={view.left} right={view.right} rail={view.rail}
+      top={view.top} bottom={view.bottom} left={view.left} leftHead={view.leftHead} right={view.right} rail={view.rail}
       pin={view.pin} float={view.float} modal={view.modal}
     >
       {#snippet map()}

@@ -13,6 +13,7 @@
     top?: Snippet;
     bottom?: Snippet;
     left?: Snippet;
+    leftHead?: Snippet;
     right?: Snippet;
     /** A fixed strip outside the left dock, which stays when the dock collapses: the setup
      * wizard's steps. */
@@ -27,7 +28,7 @@
     modal?: Snippet;
   }
   let {
-    map, pin, top, bottom, left, right, rail,
+    map, pin, top, bottom, left, leftHead, right, rail,
     leftTitle = 'Panel', rightTitle = 'Panel', leftWidth = 25, rightWidth = 24,
     float, modal,
   }: Props = $props();
@@ -52,9 +53,9 @@
 
   $effect(() => { ui.chrome = { left: leftW, right: rightW, top: topH, bottom: bottomH }; });
 
-  // Which docks this stage offers at all, so the top bar's toggles can grey out the ones
-  // with nothing behind them. Not persisted: it is a fact about the stage, not a preference.
-  $effect(() => { ui.has = { left: !!left, right: !!right }; });
+  // Which docks this stage lets the player put away, so the top bar's toggles grey out the
+  // rest. The wizard's entry panel stays open. Not persisted: it is a fact about the stage.
+  $effect(() => { ui.has = { left: !!left && !rail, right: !!right }; });
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -75,7 +76,7 @@
     <div class="mid">
       <div class="slot" bind:clientWidth={leftW}>
         {#if rail}{@render rail()}{/if}
-        {#if left}<Dock side="left" title={leftTitle} width={leftWidth}>{@render left()}</Dock>{/if}
+        {#if left}<Dock side="left" title={leftTitle} width={leftWidth} head={leftHead} fixed={!!rail}>{@render left()}</Dock>{/if}
       </div>
       <!-- The docks run floor to ceiling; a bottom bar belongs to the map between them, not
            under them, so it lives in this column rather than in the shell's own last row. -->

@@ -14,6 +14,8 @@ export interface StageView {
   readonly top?: Snippet;
   readonly bottom?: Snippet;
   readonly left?: Snippet;
+  /** Pinned above the left dock's scrolling body: the setup wizard's Back and Next. */
+  readonly leftHead?: Snippet;
   readonly right?: Snippet;
   readonly rail?: Snippet;
   readonly pin?: Snippet;

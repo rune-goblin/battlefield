@@ -35,12 +35,11 @@ function runtimeOn(session: BattleSession, dice: Rng) {
 }
 
 describe('execution events', () => {
-  it('yields one free strike event for a maneuver that fails its escape', async () => {
-    // Reflex +14 against the Kobolds' DC 17: a 2 misses the grip, so the holder strikes free.
-    const runtime = runtimeOn(battleSession('c3'), scriptedRng([2, 10]));
+  it('yields one free strike event for a Move that critically fails to get away', async () => {
+    const runtime = runtimeOn(battleSession('c3'), scriptedRng([1, 10]));
 
     const result = await runtime.submit({
-      type: 'action.resolve', action: { type: 'maneuver', activity: 1, to: 'c1', unit: 'u0' },
+      type: 'action.resolve', action: { type: 'move', to: 'c1', unit: 'u0' },
     });
 
     expect(result.ok).toBe(true);
@@ -82,7 +81,7 @@ describe('execution events', () => {
 
   it('lands a missed attack on its target and the repulse on the attacker', async () => {
     // A 2 misses, so the attacker rolls a 10 against the repulse.
-    const runtime = runtimeOn(battleSession('c3'), scriptedRng([2, 10]));
+    const runtime = runtimeOn(battleSession('c3'), scriptedRng([1, 10]));
 
     await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
 

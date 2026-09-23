@@ -1,5 +1,5 @@
 import {
-  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification, deriveStats,
+  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification, deriveStats, movementRates, speedOf, CELL_FEET,
   type BattleState, type Board, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
@@ -238,7 +238,8 @@ function repairSourceAttacks(setup: BattleSetupDraft, battle: BattleState | null
     const card = saved.card;
     const source = [...COMBATANTS, ...OFFICIAL].find(c => c.name === card.name && c.level === card.level && c.role === card.role);
     if (!card.sheet || !source?.sheet) continue;
-    if (!Object.entries(card.sheet).every(([key, value]) => source.sheet![key as keyof typeof source.sheet] === value)) continue;
+    if (!Object.entries(card.sheet).every(([key, value]) =>
+      JSON.stringify(source.sheet![key as keyof typeof source.sheet]) === JSON.stringify(value))) continue;
     const before = deriveStats(card);
     card.sheet = { ...source.sheet, ...card.sheet };
     const after = deriveStats(card);
@@ -250,6 +251,20 @@ function repairSourceAttacks(setup: BattleSetupDraft, battle: BattleState | null
     unit.attackSources ??= {};
     unit.attackSources.strike ??= card.sheet.battleName;
     unit.attackSources.volley ??= card.sheet.salvoName;
+  }
+  for (const saved of setup.units) {
+    const sheet = saved.card.sheet;
+    const unit = battle?.units.find(u => u.id === saved.id && u.name === saved.card.name);
+    if (!sheet || !unit) continue;
+    const previous = unit.movementRates ? Math.max(...Object.values(unit.movementRates))
+      : Math.max(1, Math.ceil(sheet.speed / 30)) * CELL_FEET;
+    unit.sourceSpeed = { speed: sheet.speed, otherSpeeds: sheet.otherSpeeds?.map(s => ({ ...s })) };
+    unit.movementRates = movementRates(saved.card);
+    if (unit.speed === previous) {
+      unit.speed = speedOf(saved.card);
+      if (previous > 0) unit.feet *= unit.speed / previous;
+    }
+    unit.flying = unit.movementRates.fly > 0;
   }
 }
 

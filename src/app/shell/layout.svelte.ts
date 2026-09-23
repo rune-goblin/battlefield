@@ -25,7 +25,7 @@ const saved = load();
 
 export const ui = $state({
   dock: { left: saved.left, right: saved.right } as Record<DockSide, DockState>,
-  /** Which docks the current stage fills. A toggle for a dock nobody filled does nothing. */
+  /** Which docks the current stage lets the player open and put away. */
   has: { left: false, right: false } as Record<DockSide, boolean>,
   /** What the chrome covers, in CSS pixels. Setup and manual framing use the clear area. */
   chrome: { left: 0, right: 0, top: 0, bottom: 0 },

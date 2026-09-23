@@ -44,18 +44,18 @@ export function bannerTexture(colour: number): PIXI.Texture {
   return texture;
 }
 
-/** The action props. `charge` and `maneuver` have no table behind them: charging is the drag
- * of the piece itself, and a maneuver moves in contact. Every spell shares
+/** The action props. `charge` and `step` have no table behind them: charging is the drag
+ * of the piece itself, and a step moves one open hex. Every spell shares
  * the one `cast` prop and is told apart by its label. `no` is the odd one out: it names no
  * action at all, and marks the cell a drag may not take. */
-export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'gate' | 'no' | 'rally' | 'shoot' | 'maneuver';
+export type ActionIcon = 'attack' | 'block' | 'cast' | 'charge' | 'gate' | 'no' | 'rally' | 'shoot' | 'step';
 
 /** Condition icons follow engine status names; Fortified shares the gate artwork. */
 export type StatusIcon = Status;
 
 export const statusIconUrl = (icon: StatusIcon): string => icon === 'fortified' ? actionIconUrl('gate') : assetUrl(`art/condition-icons/${icon}.webp`);
 
-export const actionIconUrl = (icon: ActionIcon): string => assetUrl(`art/action-icons/${icon === 'maneuver' ? 'withdraw' : icon}.webp`);
+export const actionIconUrl = (icon: ActionIcon): string => assetUrl(`art/action-icons/${icon === 'step' ? 'withdraw' : icon}.webp`);
 
 // One face per tree, for the picker that branches off Cast — a second ring, not a slice of
 // the first, so it needs its own art rather than the single generic `cast` face above.

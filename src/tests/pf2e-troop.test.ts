@@ -39,6 +39,14 @@ function troopActor(extra: TroopItem[] = [], hitPoints = 96): TroopActor {
 }
 
 describe('pf2e troop card', () => {
+  it('retains the original numeric movement categories', () => {
+    const actor = troopActor();
+    actor.system!.attributes!.speed = { value: 20, otherSpeeds: [
+      { type: 'fly', value: 60 }, { type: 'swim', value: 15 }, { type: 'climb', value: 10 },
+    ] };
+    expect(cardFromActor(actor).sheet).toMatchObject({ speed: 20, fly: true,
+      otherSpeeds: [{ type: 'fly', value: 60 }, { type: 'swim', value: 15 }, { type: 'climb', value: 10 }] });
+  });
   it('imports the Clique’s spell attack independently of its two DC-based attacks', () => {
     const actor = troopActor();
     actor.name = 'Apprentice Magician Clique';

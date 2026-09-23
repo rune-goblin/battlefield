@@ -1,17 +1,7 @@
 <script lang="ts">
-  import { back, forward, goToStage, nav, stageReason, stepDone, STEPS } from './navigation.svelte.js';
-  import { useNotifications } from './notification-context.js';
-  import { commandReporter } from './command-notices.js';
+  import { goToStage, nav, stageReason, stepDone, STEPS } from './navigation.svelte.js';
 
-  const run = commandReporter(useNotifications());
-
-  const step = $derived(forward());
   const current = $derived(STEPS.findIndex((s) => s.id === nav.stage));
-
-  async function advance() {
-    const pending = step.go();
-    if (pending) await run(pending);
-  }
 </script>
 
 <nav class="wizard" aria-label="Create a battle">
@@ -37,10 +27,6 @@
       </li>
     {/each}
   </ol>
-  <div class="foot">
-    <button onclick={back} disabled={current === 0}>Back</button>
-    <button class="primary" disabled={!step.enabled} onclick={() => void advance()}>{step.label}</button>
-  </div>
 </nav>
 
 <style>
@@ -79,13 +65,8 @@
   li.on .mark { background: var(--accent); border-color: var(--accent); color: var(--paper); font-weight: 700; }
   li.on .label { color: var(--ink); font-weight: 600; }
 
-  .foot { margin-top: auto; display: flex; gap: .35rem; padding-top: .6rem; border-top: 1px solid var(--rule); }
-  .foot button { flex: 1; min-width: 0; font-size: .85rem; padding: .35rem .5rem; }
-
   @media (max-width: 60rem) {
     .wizard { width: 3rem; padding-inline: .3rem; }
     h2, .text { display: none; }
-    .foot { flex-direction: column-reverse; }
-    .foot button { font-size: .7rem; padding: .3rem .1rem; }
   }
 </style>

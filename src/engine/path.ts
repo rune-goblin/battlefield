@@ -1,11 +1,11 @@
 import { at, barrierBetween, gridOf, notation, parse, type Board, type Square, type SquareTerrain } from './board.js';
 import { TERRAIN } from './terrain.js';
+import type { MovementRates } from './cards.js';
 
-/** One board cell is ten feet, so every cost below reads as a PF2e distance. */
+/** Internal movement units per point. Source actor feet convert separately in cards.ts. */
 export const CELL_FEET = 10;
 
-/** What entering a square costs in feet, off section 10's terrain table. A troop moves a square
- * an action, so it pays a forest in two whole actions; a Pace unit pays it in one. */
+/** Terrain costs in internal movement units, from section 10's terrain table. */
 export const TERRAIN_FEET = Object.fromEntries(
   Object.entries(TERRAIN).map(([terrain, effect]) => [terrain, effect.enter * CELL_FEET]),
 ) as Record<SquareTerrain, number>;
@@ -19,6 +19,9 @@ export interface MoveOpts {
   budget: number;
   /** A flier ignores terrain cost and every blocked edge. */
   flying?: boolean;
+  swimming?: boolean;
+  /** Each mode's rate; costs share the fastest mode's movement budget. */
+  rates?: MovementRates;
   /** Sure footing: every hex costs one and a climb nothing. Water and blocked edges still stop it. */
   surefooted?: boolean;
   /** A charge's run: hexes the terrain table bars to a charge, and climbs, are impassable. Sure
@@ -47,6 +50,15 @@ export type ReachMap = Map<string, ReachEntry>;
  */
 export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts = {}): number {
   if (!gridOf(board).inBounds(to)) return Infinity;
+  if (opts.rates) {
+    const { rates, ...base } = opts;
+    const fastest = Math.max(rates.land, rates.fly, rates.swim);
+    const price = (rate: number, mode: StepOpts) => rate > 0
+      ? stepFeet(board, from, to, { ...base, ...mode }) * fastest / rate : Infinity;
+    return Math.min(price(rates.land, { flying: false, swimming: false }),
+      price(rates.fly, { flying: true, swimming: false }),
+      price(rates.swim, { flying: false, swimming: true }));
+  }
   const ground = TERRAIN_FEET[at(board, to).terrain];
   const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
   // Even ground is a question about the ground, not about the price, so it is asked ahead of
@@ -56,6 +68,12 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
   const barrier = barrierBetween(board, from, to);
   const web = opts.climber && board.siegeFields?.some(f => f.kind === 'web' && f.cells.includes(notation(from)) && f.cells.includes(notation(to)));
   if (barrier && !(barrier.kind === 'wall' && web)) return Infinity;
+  if (opts.swimming) {
+    if (!['water', 'shallows'].includes(at(board, to).terrain)) return Infinity;
+    if (opts.surefooted) return CELL_FEET;
+    const field = board.siegeFields?.some(f => f.cells.includes(notation(to)));
+    return Math.max(CELL_FEET, field ? 2 * CELL_FEET : 0, climb ? CELL_FEET + climb * CLIMB_FEET : 0);
+  }
   // Water is the one ground Sure footing cannot flatten: it blocks where forest merely costs.
   if (opts.surefooted) return Number.isFinite(ground) ? CELL_FEET : Infinity;
   const field = board.siegeFields?.some(f => f.cells.includes(notation(to)));
@@ -69,7 +87,7 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
  */
 export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap {
   const g = gridOf(board);
-  const step: StepOpts = { climber: opts.climber, flying: opts.flying, surefooted: opts.surefooted, evenGround: opts.evenGround };
+  const step: StepOpts = { climber: opts.climber, flying: opts.flying, swimming: opts.swimming, rates: opts.rates, surefooted: opts.surefooted, evenGround: opts.evenGround };
   const occupied = opts.occupied ?? new Set<string>();
   const startKey = notation(start);
   const reach: ReachMap = new Map([[startKey, { feet: 0, from: null }]]);

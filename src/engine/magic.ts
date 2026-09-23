@@ -76,7 +76,7 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
   controlling: [
     ['Dread', 'The target rolls Will against your spell DC; a failure costs it 1 Morale, a success frightens it.'],
     ['Stun', 'Dread, and one action fewer on its next activation.'],
-    ['Hold', 'Stun, and it is rooted on its next activation: no Move, Charge or Maneuver.'],
+    ['Hold', 'Stun, and it is rooted on its next activation: no Move, Step or Charge.'],
     ['Terror', 'Up to three connected enemies each save Will. Critical success: nothing; success: frightened; failure: lose 1 Morale; critical failure: lose 2. No stun or root.'],
   ],
   offense: [

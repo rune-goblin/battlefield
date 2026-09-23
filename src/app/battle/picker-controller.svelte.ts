@@ -205,7 +205,7 @@ export function createPickerController(s: PickerShared) {
       : s.hoveredCell && s.arming.cells.includes(s.hoveredCell) ? [s.hoveredCell] : [];
     if (!cells.length) return [];
     return [{ from: notation(s.active.square), to: cells[0], toCells: cells,
-      tone: s.arming.key === 'maneuver' ? 'movement' : s.arming.key === 'melee' ? 'fight' : s.arming.key }];
+      tone: s.arming.key === 'step' ? 'movement' : s.arming.key === 'melee' ? 'fight' : s.arming.key }];
   });
   let heldArrows = $state<{ context: string; arrows: TargetArrow[] } | null>(null);
   let resolvedArrows = $state<TargetArrow[]>([]);

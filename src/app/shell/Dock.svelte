@@ -7,11 +7,14 @@
     title: string;
     /** Panel width in rem when open. */
     width?: number;
+    head?: Snippet;
+    /** Always open, with no collapse or hide: the setup wizard's entry panel. */
+    fixed?: boolean;
     children: Snippet;
   }
-  let { side, title, width = 25, children }: Props = $props();
+  let { side, title, width = 25, head, fixed = false, children }: Props = $props();
 
-  const state = $derived(ui.dock[side]);
+  const state = $derived(fixed ? 'open' : ui.dock[side]);
   const away = $derived(side === 'left' ? '‹' : '›');
   const back = $derived(side === 'left' ? '›' : '‹');
 </script>
@@ -26,9 +29,12 @@
     {:else}
       <header class="dock-head">
         <h2>{title}</h2>
-        <button class="ghost" title="Collapse to a strip" aria-label="Collapse {title}" onclick={() => setDock(side, 'rail')}>{away}</button>
-        <button class="ghost" title="Hide — the top bar brings it back" aria-label="Hide {title}" onclick={() => setDock(side, 'hidden')}>×</button>
+        {#if !fixed}
+          <button class="ghost" title="Collapse to a strip" aria-label="Collapse {title}" onclick={() => setDock(side, 'rail')}>{away}</button>
+          <button class="ghost" title="Hide — the top bar brings it back" aria-label="Hide {title}" onclick={() => setDock(side, 'hidden')}>×</button>
+        {/if}
       </header>
+      {#if head}<div class="dock-sub">{@render head()}</div>{/if}
       <div class="dock-body">{@render children()}</div>
     {/if}
   </aside>
@@ -50,6 +56,7 @@
 
   .dock-head { display: flex; align-items: center; gap: .2rem; padding: .3rem .3rem .3rem .7rem; border-bottom: 1px solid var(--rule); }
   .dock-head h2 { flex: 1; margin: 0; border: 0; padding: 0; font-size: .9rem; font-weight: 600; color: var(--muted); }
+  .dock-sub { padding: .45rem .7rem; border-bottom: 1px solid var(--rule); }
   .dock-body { flex: 1; min-height: 0; overflow: auto; padding: .6rem .7rem .8rem; display: flex; flex-direction: column; gap: .6rem; }
 
   .railbtn {

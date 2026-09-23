@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, isRouted, levelDc, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading } from '../../engine/index.js';
+  import { wallsFor, isRouted, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading, CELL_FEET } from '../../engine/index.js';
   import { offerReason } from './action-menu.js';
   import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl } from '../../board/index.js';
   import ActivityChoices from './ActivityChoices.svelte';
@@ -95,7 +95,7 @@
     <p class="popup-escapes" aria-live="polite">
       {#if engineKind(c.siegeEngine) === 'ram'}Ram · attacks adjacent walls
       {:else}{engineLoading(c.siegeEngine).label}{/if}
-      {#if engineSpeed(c.siegeEngine) !== 0} · {Math.min(c.active.speed, engineSpeed(c.siegeEngine) ?? c.active.speed)} ft per Move while hauling{/if}
+      {#if engineSpeed(c.siegeEngine) !== 0} · {Math.min(c.active.speed, c.active.movementRates?.land ?? c.active.speed, engineSpeed(c.siegeEngine) ?? c.active.speed) / CELL_FEET} hexes per Move while hauling{/if}
     </p>
     {#if engineLoadSteps(c.siegeEngine) > 0}
       {@const reason = siegeReason(c.b, c.active, c.siegeEngine, 'load')}
@@ -111,7 +111,7 @@
     </button>
     {#if c.siegeEngine.hauling}
       <button class="popup-row" disabled={c.siegeBusy} onclick={() => c.operateSiege('release')}>
-        <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {c.active.speed} ft per Move</span>
+        <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {c.active.speed / CELL_FEET} hexes per Move</span>
       </button>
     {:else}
       {@const reason = siegeReason(c.b, c.active, c.siegeEngine, 'haul')}
@@ -196,7 +196,7 @@
 {:else if c.dragTarget?.attack && !c.blockedNotice}
   <div class="drag-hud">
     <strong>Attack {c.enemyName(c.dragTarget.id)}</strong>
-    <span class="muted">Release to choose a Fight activity · from 1 action</span>
+    <span class="muted">Release to choose a Melee activity · from 1 action</span>
   </div>
 {/if}
 {#if c.pending}
@@ -207,7 +207,7 @@
         <span class="popup-verb">
           {#if row.kind === 'charge' || row.kind === 'advance'}<img class="row-prop" src={actionIconUrl(row.kind === 'charge' || row.plan.kind === 'charge' ? 'charge' : 'attack')} alt="" />{/if}
           {c.rowLabel(row)}
-          <span class="row-cost"><ActionCost n={i === c.pending.index ? c.dropCost(row) : row.kind === 'maneuver' ? c.firstManeuverActivity(row.cell) : row.actions} /></span>
+          <span class="row-cost"><ActionCost n={i === c.pending.index ? c.dropCost(row) : row.kind === 'step' ? 1 : row.actions} /></span>
         </span>
         <span class="muted">
           {#if i === c.pending.index && row.kind === 'advance'}{c.actionCost(row.plan.moveActions)} to move + {c.actions(c.chargeActivity + c.focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
@@ -222,42 +222,21 @@
           {#if c.active && isRouted(c.active)}This unit is already routed and stays routed after leaving.{/if}
         </p>
       {/if}
-      {#if i === c.pending.index && row.kind === 'maneuver' && c.act?.maneuver && c.active}
-        {@const w = c.act.maneuver}
+      {#if i === c.pending.index && row.kind === 'move' && c.act?.escape}
+        {@const w = c.act.escape}
         <div class="popup-escapes">
           {#each w.holders as h (h.unit)}
             <p class="escape">
               <span class="escape-name">{h.name}</span>
-              <span class="muted">DC {h.dc}{h.pinning ? ' · pinning at range, no free strike' : ''}</span>
+              <span class="muted">DC {h.dc}{h.pinning ? ' · pinning' : ''}</span>
               {#if h.follows}<span class="tag">gives no retreat — follows you</span>{/if}
             </p>
-          {:else}
-            <p class="muted">Nothing holds you.{isRouted(c.active) ? ' Run for your own edge.' : ' Choose your position.'}</p>
           {/each}
-          {#if w.holders.length}
-            <p class="muted activity-detail">
-              Break off is one roll, d20+{w.modifier} against DC {w.dc}, the highest of them,
-              read again for each. Above it they roll instead, against DC {levelDc(c.active.level)}.
-            </p>
-          {/if}
+          <p class="muted activity-detail">
+            One roll, d20{w.modifier < 0 ? '−' : '+'}{Math.abs(w.modifier)}, read against each DC. Fall short of any and you stay, spending one action;
+            a holder you critically fail against also attacks free. A Step to open ground needs no roll.
+          </p>
         </div>
-        <div class="activity-chips">
-          {#each c.ACTIVITIES as g (g)}
-            {@const opt = w.activities[g - 1]}
-            {@const reaches = opt.targets.some(t => t.id === row.cell)}
-            <button
-              class="activity-chip"
-              class:on={c.maneuverActivity === g}
-              disabled={!opt.legal || !reaches}
-              title={opt.reason ?? (!reaches ? 'Terrain or distance needs a different Maneuver' : '')}
-              onclick={() => c.chooseDropActivity(g)}
-            >
-              {opt.label}
-              <ActionCost n={opt.cost ?? g} />
-            </button>
-          {/each}
-        </div>
-        <p class="muted activity-detail popup-escapes">{w.activities[c.maneuverActivity - 1].detail}</p>
       {/if}
       {#if i === c.pending.index && (row.kind === 'charge' || row.kind === 'advance') && c.active}
         {@const charging = row.kind === 'charge' || row.plan.kind === 'charge'}

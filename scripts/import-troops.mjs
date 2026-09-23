@@ -54,6 +54,7 @@ const cards = files.map((f) => {
       perception: s.perception?.mod ?? s.attributes.perception?.value ?? 0,
       speed: s.attributes.speed.value,
       fly,
+      otherSpeeds: s.attributes.speed.otherSpeeds ?? [],
       battleName: battle.name,
       ...(salvo ? { salvoName: salvo.name } : {}),
       ...spellStats,

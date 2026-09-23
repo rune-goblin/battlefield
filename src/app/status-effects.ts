@@ -23,8 +23,8 @@ const TEXT: Record<Status, (u: Unit, state: BattleState) => string> = {
     return `${fort.label}. ${bonus} ranged cover when the attack crosses an intact, closed wall. Open gates, breaches, high-angle fire and attackers inside bypass that wall's cover. Use the highest cover or Guard bonus.`;
   },
   guard: (u) => `+${u.guard!.defence} Defence until this unit next activates.${u.guard!.cap ? ' Dug in: every hit against it caps at 1 damage.' : ''}${u.guard!.holds ? ' Under cover: it holds its ground against an Overrun.' : ''}`,
-  pinned: (u, s) => `Held by ${sourceName(s, u.pinnedBy)} at Volley + 10. It leaves its hex by Maneuver, which ends the pin when it changes hex, and it cannot charge.`,
-  rooted: () => 'No Move, Charge or Maneuver on its next activation.',
+  pinned: (u, s) => `Held by ${sourceName(s, u.pinnedBy)} at its Salvo DC. It cannot Step or Charge; a Move away must beat that DC, and ends the pin.`,
+  rooted: () => 'No Move, Step or Charge on its next activation.',
   suppressed: (u, s) => `−2 to everything the unit rolls and to its Defence until ${sourceName(s, u.suppressedBy)} next activates.`,
   stunned: () => 'One action fewer on its next activation.',
   frightened: () => '−1 to everything the unit rolls and to its Defence until the end of its next activation.',
