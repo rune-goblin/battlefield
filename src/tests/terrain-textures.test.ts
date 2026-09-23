@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hexGrid, squareGrid } from '../engine/grid.js';
+import { gridFor, hexGrid, squareGrid } from '../engine/grid.js';
 import { polygonArea, terrainRegions } from '../board/terrain-regions.js';
 import { areaTrees, forestTrees } from '../board/forest-placement.js';
 import { blendWeights, coverage, createBlendField } from '../board/terrain-blending.js';
@@ -135,11 +135,12 @@ describe('area mode', () => {
 
 it.each([0, 1, 7, 42, 1234, 99999])('exhibits every terrain group in a connected patch of multiple hexes (layout %i)', (seed) => {
   const { groups } = createTextureSample(seed);
+  const grid = gridFor('hex', 11);
   expect(Object.keys(groups)).toHaveLength(91);
   for (const group of TERRAIN_GROUPS) {
-    const cells = hexGrid.cells().filter(cell => groups[hexGrid.key(cell)] === group);
+    const cells = grid.cells().filter(cell => groups[grid.key(cell)] === group);
     expect(cells.length).toBeGreaterThanOrEqual(3);
-    expect(terrainRegions(hexGrid, cells, 1)).toHaveLength(1);
+    expect(terrainRegions(grid, cells, 1)).toHaveLength(1);
   }
 });
 

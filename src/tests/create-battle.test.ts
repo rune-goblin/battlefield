@@ -90,7 +90,7 @@ describe('the battle request validator', () => {
       board: { base: 'tundra', size: 12, seed: 3 } as unknown as BattleRequest['board'],
     }));
 
-    expect(problems).toEqual(['tundra is not a hex terrain', 'a board is 9 or 11 squares, not 12']);
+    expect(problems).toEqual(['tundra is not a hex terrain', 'a board is 9, 11 or 15 squares, not 12']);
   });
 
   it('refuses a source binding with no actor and a malformed baseline', () => {

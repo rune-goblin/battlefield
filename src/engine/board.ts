@@ -13,9 +13,11 @@ export type SquareTerrain = 'open' | 'forest' | 'rough' | 'swamp' | 'shallows' |
 
 export interface Construction { kind: 'fort'; tier: number; }
 
+export type BoardSize = 9 | 11 | 15;
+
 export interface BoardSpec {
   base: HexTerrain;
-  size?: 9 | 11;
+  size?: BoardSize;
   feature?: Feature;
   construction?: Construction | null;
   grid?: GridKind;
@@ -121,10 +123,12 @@ const DENSITY: Record<HexTerrain, Density> = {
     low: { share: [0, 0.1], deep: [0, 0], cliffs: false, layouts: ['spine'] } },
 };
 
-export const DEPLOY_DEPTH = 3;
+/** Ranks each army deploys on. The 15-hex board takes four, leaving its front ranks eight
+ * apart — one hex beyond a Speed-2 unit's charge. The older boards keep three. */
+export const deployDepth = (dimension = SIZE) => (dimension >= 15 ? 4 : 3);
 
 export function deployRanks(side: 'attacker' | 'defender', ambush = false, dimension = SIZE): number[] {
-  const depth = DEPLOY_DEPTH + (ambush ? 1 : 0);
+  const depth = deployDepth(dimension) + (ambush ? 1 : 0);
   return Array.from({ length: depth }, (_, i) => side === 'attacker' ? i : dimension - 1 - i);
 }
 
@@ -139,7 +143,7 @@ function between(rnd: Random, [lo, hi]: [number, number]): number {
 function pick<T>(rnd: Random, items: T[]): T { return items[Math.floor(rnd() * items.length)]; }
 
 function emptyBoard(spec: BoardSpec): Board {
-  const SIZE = spec.size ?? 11;
+  const SIZE = spec.size ?? 15;
   const squares = Array.from({ length: SIZE }, () =>
     Array.from({ length: SIZE }, (): SquareState => ({ terrain: 'open', elevation: 0 })));
   return { spec, grid: spec.grid ?? 'hex', squares, walls: {} };
@@ -244,7 +248,8 @@ function groundConnected(board: Board): boolean {
 function layRiver(board: Board, rnd: Random): void {
   const SIZE = board.squares.length;
   const grid = gridOf(board);
-  const band = Array.from({ length: SIZE - 2 * DEPLOY_DEPTH }, (_, i) => i + DEPLOY_DEPTH);
+  const depth = deployDepth(SIZE);
+  const band = Array.from({ length: SIZE - 2 * depth }, (_, i) => i + depth);
   let rank = between(rnd, [band[0], band[band.length - 1]]);
   const course: Square[] = [];
   const place = (file: number, r: number): Square => {
@@ -338,7 +343,8 @@ export function generateBoard(spec: BoardSpec): Board {
   if (feature === 'river') layRiver(board, rnd);
   if (feature === 'lakeside') layLake(board, rnd);
   if (spec.construction) layFort(board, rnd, spec.construction.tier);
-  const middle = (sq: Square) => sq.rank >= DEPLOY_DEPTH && sq.rank < board.squares.length - DEPLOY_DEPTH;
+  const depth = deployDepth(board.squares.length);
+  const middle = (sq: Square) => sq.rank >= depth && sq.rank < board.squares.length - depth;
   const level = (sq: Square) => at(board, sq).elevation === 0;
   const low = (sq: Square) => at(board, sq).elevation <= 0;
   const sunk = (sq: Square) => at(board, sq).elevation < 0;
@@ -347,13 +353,16 @@ export function generateBoard(spec: BoardSpec): Board {
   // Woods favour the valleys, scree the slopes, and bog the hollows. Swamp never climbs above
   // level 0, and a pond sits at level 0 with the river and the lake.
   // Bog and dry broken ground rarely share a field: nine boards in ten keep the commoner one.
-  let swamps = between(rnd, d.swampPatches), roughs = between(rnd, d.roughPatches);
+  // proto: patch counts were tuned on 91 hexes; scale them so a larger field keeps its density.
+  const scale = Math.max(1, gridOf(board).cells().length / 91);
+  const patches = (range: [number, number]) => Math.round(between(rnd, range) * scale);
+  let swamps = patches(d.swampPatches), roughs = patches(d.roughPatches);
   if (swamps && roughs && rnd() < 0.9) {
     if (swamps > roughs || (swamps === roughs && rnd() < 0.5)) roughs = 0; else swamps = 0;
   }
-  for (let i = between(rnd, d.forestPatches); i > 0; i--) growPatch(board, rnd, 'forest', size(), d.merge, rnd() < 0.7 ? low : () => true);
+  for (let i = patches(d.forestPatches); i > 0; i--) growPatch(board, rnd, 'forest', size(), d.merge, rnd() < 0.7 ? low : () => true);
   for (let i = swamps; i > 0; i--) growPatch(board, rnd, 'swamp', size(), d.merge, rnd() < 0.5 ? sunk : low);
-  for (let i = between(rnd, d.waterPatches); i > 0; i--) growPatch(board, rnd, 'water', between(rnd, [1, 2]), true, sq => middle(sq) && level(sq));
+  for (let i = patches(d.waterPatches); i > 0; i--) growPatch(board, rnd, 'water', between(rnd, [1, 2]), true, sq => middle(sq) && level(sq));
   for (let i = roughs; i > 0; i--) growPatch(board, rnd, 'rough', size(), d.merge, rnd() < 0.6 ? high : () => true);
 
   // Cliffs may channel the advance and never seal it; a river's crossings stay the GM's call.

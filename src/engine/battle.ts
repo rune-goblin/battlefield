@@ -573,14 +573,13 @@ export const canShoot = (state: BattleState, u: Unit) => u.stats.volley !== null
 
 const SHOT_BANDS = ['short', 'medium', 'long', 'extreme'] as const;
 
-/** Preferred distance interval. Short's normal distance is two; contact still bars shooting. */
+/** Preferred distance interval: from two hexes out to the weapon's band. */
 function shootPreferred(state: BattleState, u: Unit): { min: number; max: number } {
-  const home = shootHome(state, u);
-  const bands = BANDS[state.board.grid];
-  return { min: home === 1 ? 2 : bands[SHOT_BANDS[home - 2]] + 1, max: bands[SHOT_BANDS[home - 1]] };
+  return { min: 2, max: BANDS[state.board.grid][SHOT_BANDS[shootHome(state, u) - 1]] };
 }
 
-/** Weapons flex one hex beyond either end of their preferred interval. */
+/** Weapons flex one hex past their band at −2. Only short weapons flex inward, to a target
+ * across a wall at distance 1. */
 export function shootCeiling(state: BattleState, u: Unit): number {
   return canShoot(state, u) ? shootPreferred(state, u).max + 1 : 0;
 }
@@ -588,7 +587,7 @@ export function shootCeiling(state: BattleState, u: Unit): number {
 const downhillReach = (state: BattleState, u: Unit, to: Square): number =>
   heightRange(at(state.board, shotFrom(state, u)).elevation, at(state.board, to).elevation);
 export function shootFloor(state: BattleState, u: Unit): number {
-  return Math.max(1, shootPreferred(state, u).min - 1);
+  return shootHome(state, u) === 1 ? 1 : 2;
 }
 export function shootRangeLabel(state: BattleState, u: Unit): string {
   const preferred = shootPreferred(state, u);
@@ -1933,13 +1932,13 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
     }
     case 'rally': {
       // One roll, d20 + Will vs the rallying unit's own rout DC, read for every unit reached:
-      // Steady is u alone, Rally adds one adjacent ally, Inspire every ally within 2.
+      // Steady is u alone, Rally adds one adjacent ally, Inspire every ally within short range.
       const eff = activity.rally!;
       const reached: Unit[] = [u];
       if (eff.scope === 'adjacent') {
         reached.push(unit(state, action.target!));
       } else if (eff.scope === 'nearby') {
-        reached.push(...alliesWithin(state, u, 2));
+        reached.push(...alliesWithin(state, u, BANDS[state.board.grid].short));
       }
       const c = roll(state, rng, u, willModifier(u) + focusBonus, routDcFor(state, u));
       log(state, u, rollLine(u.name, `Will check to ${activity.label}`, c), c);

@@ -36,7 +36,7 @@
 
   const field = $derived([
     ['Ground', spec.base],
-    ['Grid', `${spec.grid ?? 'hex'} · ${(spec.size ?? 11) === 11 ? 'large' : 'original'}`],
+    ['Grid', `${spec.grid ?? 'hex'} · ${({ 15: 'field', 11: 'large', 9: 'original' } as const)[spec.size ?? 15]}`],
     ['Feature', spec.feature ?? 'none'],
     ['Construction', spec.construction ? `${fortification(spec.construction.tier).name} · tier ${spec.construction.tier}` : 'none'],
     ['Day length', `${game.setup.roundsPerDay ?? 6} rounds`],

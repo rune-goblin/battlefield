@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { bandOf } from './troop-signals.mjs';
 
 const dir = new URL('../data/siege-weapons/', import.meta.url);
 const LEVEL_DC = [14, 15, 16, 18, 19, 20, 22, 23, 24, 26, 27, 28, 30, 31, 32, 34, 35, 36, 38, 39, 40];
@@ -22,7 +23,7 @@ const engines = readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((
     launch: (Number.isNaN(dc) ? LEVEL_DC[Math.min(20, level)] : dc) - 10,
     // Unlike a troop's Salvo, an engine's reach may land on extreme — that band is what
     // siege equipment is for.
-    reach: ram ? null : Number.isNaN(rangeFt) ? 'medium' : rangeFt <= 60 ? 'short' : rangeFt <= 120 ? 'medium' : 'extreme',
+    reach: ram ? null : Number.isNaN(rangeFt) ? 'medium' : rangeFt <= 150 ? bandOf(rangeFt) : 'extreme',
     defence: d.defenses?.ac ?? 10 + level,
     // Fifteen source feet become one hex, as for troops.
     // Portable equipment travels at its crew's pace; mounted equipment needs a listed speed.

@@ -17,13 +17,12 @@ export const TREE_TARGET: Record<Tree, 'enemy' | 'ally'> = {
   healing: 'ally', offense: 'ally', defense: 'ally', movement: 'ally',
 };
 
-/** Each tree's one range, which is never for sale. Healing needs touch, the three buffs a step
- * out, Controlling further still, and Blast — the one tree an ordinary shot could also reach —
- * anchored past what most troops carry natively. */
+/** Each tree's one range, which is never for sale. Healing needs touch; Blast reaches long,
+ * as the source's long-range attack spells do; every other tree is short, like the source's
+ * 30-foot spells. */
 export const TREE_RANGE: Record<Tree, 'engaged' | Reach> = {
   healing: 'engaged',
-  offense: 'short', defense: 'short', movement: 'short',
-  controlling: 'medium',
+  offense: 'short', defense: 'short', movement: 'short', controlling: 'short',
   blast: 'long',
 };
 

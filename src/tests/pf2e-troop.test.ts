@@ -100,13 +100,13 @@ describe('pf2e troop card', () => {
   it('maps the sheet, the overrides and the signals off the statblock', () => {
     const card = cardFromActor(troopActor([{ name: 'Form Up', type: 'action' }]));
     expect(card).toMatchObject({
-      name: 'Line Infantry', level: 6, role: 'infantry', salvo: 'medium', pace: false,
+      name: 'Line Infantry', level: 6, role: 'infantry', salvo: 'long', pace: false,
       fear: false, caster: false, signals: ['formation'], tactics: [],
       sheet: {
         ac: 24, hp: 96, battleDc: 21, salvoDc: 21, salvoFeet: 120,
         fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false,
       },
-      overrides: { strike: 11, volley: 11, reach: 'medium', defence: 24, will: 13, perception: 13 },
+      overrides: { strike: 11, volley: 11, reach: 'long', defence: 24, will: 13, perception: 13 },
     });
     expect(deriveStats(card)).toMatchObject({ strike: 11, volley: 11, defence: 24, will: 13, reflex: 14 });
   });

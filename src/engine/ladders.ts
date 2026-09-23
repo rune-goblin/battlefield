@@ -49,7 +49,7 @@ export interface Activity {
 export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]> = {
   // Fire, Suppress and Pin share the weapon's preferred band and one-hex flexibility.
   shoot: [
-    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'A volley at preferred Reach, or one hex shorter or longer at −2. Mountains block intervening shots; forests grant cover.', shoot: { suppress: false, pin: false } },
+    { id: 'fire', verb: 'fires', type: 'shoot', index: 1, label: 'Fire', detail: 'A volley within Reach, or one hex beyond at −2. Mountains block intervening shots; forests grant cover.', shoot: { suppress: false, pin: false } },
     { id: 'suppress', verb: 'suppresses', type: 'shoot', index: 2, label: 'Suppress', detail: 'Fire, and hit or miss the target is suppressed: −2 to everything until your next activation.', shoot: { suppress: true, pin: false } },
     { id: 'pin', verb: 'pins', type: 'shoot', index: 3, label: 'Pin', detail: 'Suppress, and the target is pinned: you count as one of its holders, at Volley + 10, until your next activation.', shoot: { suppress: true, pin: true } },
   ],
@@ -66,7 +66,7 @@ export const VERBS: Record<Exclude<Verb, 'cast'>, [Activity, Activity, Activity]
   rally: [
     { id: 'steady', verb: 'steadies', type: 'rally', index: 1, label: 'Steady', detail: 'Roll. A success restores 1 Morale, or inspires you if your Morale is full.', rally: { scope: 'self' } },
     { id: 'rally', verb: 'rallies', type: 'rally', index: 2, label: 'Rally', detail: 'Steady, and the same result for one adjacent ally you name: it clears 1, or is inspired if it has none.', rally: { scope: 'adjacent' } },
-    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'Rally, and the same result for every friendly unit within 2.', rally: { scope: 'nearby' } },
+    { id: 'inspire', verb: 'inspires', type: 'rally', index: 3, label: 'Inspire', detail: 'Rally, and the same result for every friendly unit within 3.', rally: { scope: 'nearby' } },
   ],
 };
 

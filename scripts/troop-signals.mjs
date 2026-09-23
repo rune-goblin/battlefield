@@ -50,7 +50,8 @@ export function rangeOf(text) {
 
 // Extreme is reserved for siege engines (see BANDS in types.ts) — a troop's own Salvo attack
 // never derives it, however far its range increment runs.
-export const bandOf = (ft) => (ft === null ? null : ft <= 60 ? 'short' : ft <= 120 ? 'medium' : 'long');
+// Fifteen source feet to a hex, as Speed converts: short 3 hexes, medium 6, long 9.
+export const bandOf = (ft) => (ft === null ? null : ft <= 50 ? 'short' : ft <= 90 ? 'medium' : 'long');
 
 export const traditionOf = (doc) => {
   for (const item of doc.items.filter(item => item.type === 'spellcastingEntry')) {

@@ -44,7 +44,7 @@ export function specFromSite(site: BattleSite, seed: number): BoardSpec {
   const tier = Math.min(4, Math.max(0, Math.trunc(site.fortificationTier)));
   return {
     base: known ? site.terrain as HexTerrain : 'plains',
-    size: 11,
+    size: 15,
     // proto: a water hex is fought on its shore. Reserved for review with the terrain mapping.
     feature: site.terrain === 'water' ? 'lakeside' : 'none',
     construction: tier > 0 ? { kind: 'fort', tier } : null,

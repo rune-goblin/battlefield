@@ -18,12 +18,12 @@ describe('generateBoard', () => {
 
   it('plains carry few trees and marsh', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'plains', seed }));
-    expect(every(boards, b => count(b, 'forest') <= 9 && count(b, 'swamp') <= 3 && count(b, 'water') <= 2)).toBe(true);
+    expect(every(boards, b => count(b, 'forest') <= 17 && count(b, 'swamp') <= 6 && count(b, 'water') <= 4)).toBe(true);
   });
 
   it('forest boards run from a quarter to two thirds wooded', () => {
     const boards = seeds.map(seed => generateBoard({ base: 'forest', seed }));
-    expect(every(boards, b => count(b, 'forest') >= 22 && count(b, 'forest') <= 60)).toBe(true);
+    expect(every(boards, b => count(b, 'forest') >= 42 && count(b, 'forest') <= 112)).toBe(true);
   });
 
   it('hills raise a quarter of the board or more, off the home ranks, with no cliff', () => {

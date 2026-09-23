@@ -71,7 +71,8 @@ describe('deployment', () => {
   });
   it('starts the attacker out of shooting range of the defender', () => {
     const { state } = battle([]);
-    expect(rangeBetween(state, unit(state, 'u0'), unit(state, 'u2'))).toBe('extreme');
+    expect(rangeBetween(state, unit(state, 'u0'), unit(state, 'u2'))).toBe('medium');
+    expect(targets(offer(state, 'shoot', 'u2'), 1)).toEqual([]);
   });
 });
 
@@ -997,10 +998,9 @@ describe('shooting', () => {
       place(hex, 'u2', cell);
       return rangeBetween(hex, unit(hex, 'u0'), unit(hex, 'u2'));
     };
-    expect(bandAt('c4')).toBe('short');
-    expect(bandAt('c5')).toBe('medium');
-    expect(bandAt('c6')).toBe('long');
-    expect(bandAt('c8')).toBe('extreme');
+    expect(bandAt('c5')).toBe('short');
+    expect(bandAt('c6')).toBe('medium');
+    expect(bandAt('c8')).toBe('medium');
     expect(targets(offer(hex, 'shoot', 'u2'), 1)).toEqual([]);
     const sq = battle([], openBoard('square')).state;
     place(sq, 'u0', 'a1');

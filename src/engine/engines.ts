@@ -6,35 +6,35 @@ export const ENGINES: SiegeEngineCard[] = [
   { name: "Door Ram", level: 2, kind: 'ram', launch: 6, reach: null, defence: 12, sourceSpeed: null, speed: null, loadCost: 0, loadSteps: 0 }, // Guns & Gears (Remastered)
   { name: "Crossbow Catapult", level: 3, kind: 'artillery', launch: 7, reach: 'medium', defence: 13, sourceSpeed: 20, speed: 20, loadCost: 3, loadSteps: 1 }, // Battlecry!
   { name: "Flame Bellows", level: 3, kind: 'artillery', launch: 7, reach: 'medium', defence: 15, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
-  { name: "Trapdoor Actuator", level: 3, kind: 'artillery', launch: 8, reach: 'medium', defence: 16, sourceSpeed: 0, speed: 0, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
-  { name: "Falconet", level: 4, kind: 'artillery', launch: 8, reach: 'medium', defence: 16, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
+  { name: "Trapdoor Actuator", level: 3, kind: 'artillery', launch: 8, reach: 'long', defence: 16, sourceSpeed: 0, speed: 0, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
+  { name: "Falconet", level: 4, kind: 'artillery', launch: 8, reach: 'long', defence: 16, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Hwacha", level: 4, kind: 'artillery', launch: 8, reach: 'extreme', defence: 16, sourceSpeed: 25, speed: 20, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Ribauldequin", level: 4, kind: 'artillery', launch: 8, reach: 'medium', defence: 16, sourceSpeed: 20, speed: 20, loadCost: 3, loadSteps: 1 }, // Battlecry!
-  { name: "Ballista", level: 5, kind: 'artillery', launch: 9, reach: 'medium', defence: 17, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
+  { name: "Ballista", level: 5, kind: 'artillery', launch: 9, reach: 'long', defence: 17, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Battering Ram", level: 5, kind: 'ram', launch: 10, reach: null, defence: 15, sourceSpeed: null, speed: null, loadCost: 0, loadSteps: 0 }, // Guns & Gears (Remastered)
-  { name: "Bombard", level: 5, kind: 'artillery', launch: 9, reach: 'extreme', defence: 17, sourceSpeed: 10, speed: 10, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
-  { name: "Marking Powder Cannon", level: 5, kind: 'artillery', launch: 9, reach: 'medium', defence: 18, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
+  { name: "Bombard", level: 5, kind: 'artillery', launch: 9, reach: 'long', defence: 17, sourceSpeed: 10, speed: 10, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
+  { name: "Marking Powder Cannon", level: 5, kind: 'artillery', launch: 9, reach: 'long', defence: 18, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
   { name: "Pheromone Sprayer", level: 5, kind: 'artillery', launch: 10, reach: 'medium', defence: 19, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
   { name: "Steam Artillery", level: 5, kind: 'artillery', launch: 9, reach: 'short', defence: 16, sourceSpeed: 25, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Wolf Fang", level: 5, kind: 'ram', launch: 10, reach: null, defence: 18, sourceSpeed: 15, speed: 10, loadCost: 0, loadSteps: 0 }, // Battlecry!
   { name: "Drilling Ram", level: 6, kind: 'ram', launch: 12, reach: null, defence: 16, sourceSpeed: null, speed: null, loadCost: 0, loadSteps: 0 }, // Battlecry!
   { name: "Blasting Ram", level: 7, kind: 'ram', launch: 13, reach: null, defence: 17, sourceSpeed: null, speed: null, loadCost: 0, loadSteps: 0 }, // Guns & Gears (Remastered)
-  { name: "Catapult", level: 7, kind: 'artillery', launch: 12, reach: 'extreme', defence: 20, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
+  { name: "Catapult", level: 7, kind: 'artillery', launch: 12, reach: 'long', defence: 20, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Harpoon Cannon", level: 7, kind: 'artillery', launch: 12, reach: 'medium', defence: 20, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
-  { name: "Kickback Spring", level: 7, kind: 'artillery', launch: 12, reach: 'short', defence: 20, sourceSpeed: 0, speed: 0, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
-  { name: "Mortar", level: 7, kind: 'artillery', launch: 13, reach: 'medium', defence: 20, sourceSpeed: 20, speed: 20, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
-  { name: "Springald", level: 7, kind: 'artillery', launch: 12, reach: 'medium', defence: 20, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
+  { name: "Kickback Spring", level: 7, kind: 'artillery', launch: 12, reach: 'medium', defence: 20, sourceSpeed: 0, speed: 0, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
+  { name: "Mortar", level: 7, kind: 'artillery', launch: 13, reach: 'long', defence: 20, sourceSpeed: 20, speed: 20, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
+  { name: "Springald", level: 7, kind: 'artillery', launch: 12, reach: 'long', defence: 20, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Arcane Ram", level: 8, kind: 'ram', launch: 14, reach: null, defence: 18, sourceSpeed: null, speed: null, loadCost: 0, loadSteps: 0 }, // Battlecry!
   { name: "Blob Paste Propulsor", level: 8, kind: 'artillery', launch: 14, reach: 'medium', defence: 18, sourceSpeed: null, speed: null, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
   { name: "Cannon", level: 8, kind: 'artillery', launch: 13, reach: 'extreme', defence: 22, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Firedrake", level: 8, kind: 'artillery', launch: 13, reach: 'medium', defence: 22, sourceSpeed: 15, speed: 10, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Heavy Ballista", level: 8, kind: 'artillery', launch: 13, reach: 'extreme', defence: 22, sourceSpeed: 15, speed: 10, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
-  { name: "Web Launcher", level: 8, kind: 'artillery', launch: 13, reach: 'medium', defence: 21, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
+  { name: "Web Launcher", level: 8, kind: 'artillery', launch: 13, reach: 'long', defence: 21, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Bolt Emitter", level: 9, kind: 'artillery', launch: 13, reach: 'medium', defence: 22, sourceSpeed: 0, speed: 0, loadCost: 0, loadSteps: 0 }, // Pathfinder #215: To Blot Out the Sun
   { name: "Heavy Bombard", level: 9, kind: 'artillery', launch: 15, reach: 'extreme', defence: 23, sourceSpeed: 0, speed: 0, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
-  { name: "Lashtail", level: 9, kind: 'artillery', launch: 15, reach: 'medium', defence: 23, sourceSpeed: 0, speed: 0, loadCost: 2, loadSteps: 1 }, // Howl of the Wild
-  { name: "Shatterpult", level: 9, kind: 'artillery', launch: 15, reach: 'extreme', defence: 22, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Battlecry!
-  { name: "Blessed Onager", level: 10, kind: 'artillery', launch: 16, reach: 'medium', defence: 24, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Battlecry!
+  { name: "Lashtail", level: 9, kind: 'artillery', launch: 15, reach: 'long', defence: 23, sourceSpeed: 0, speed: 0, loadCost: 2, loadSteps: 1 }, // Howl of the Wild
+  { name: "Shatterpult", level: 9, kind: 'artillery', launch: 15, reach: 'long', defence: 22, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Battlecry!
+  { name: "Blessed Onager", level: 10, kind: 'artillery', launch: 16, reach: 'long', defence: 24, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Sonic Horn", level: 10, kind: 'artillery', launch: 15, reach: 'extreme', defence: 22, sourceSpeed: 15, speed: 10, loadCost: 2, loadSteps: 1 }, // Howl of the Wild
   { name: "Trebuchet", level: 10, kind: 'artillery', launch: 16, reach: 'extreme', defence: 24, sourceSpeed: 0, speed: 0, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Fiend's Mouth Cannon", level: 11, kind: 'artillery', launch: 17, reach: 'extreme', defence: 26, sourceSpeed: 0, speed: 0, loadCost: 1, loadSteps: 1 }, // Guns & Gears (Remastered)
@@ -43,12 +43,12 @@ export const ENGINES: SiegeEngineCard[] = [
   { name: "Tar Spitter", level: 11, kind: 'artillery', launch: 17, reach: 'medium', defence: 24, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Battlecry!
   { name: "Clockwork Ballista", level: 12, kind: 'artillery', launch: 19, reach: 'extreme', defence: 28, sourceSpeed: 25, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Galvanic Sled", level: 12, kind: 'artillery', launch: 19, reach: 'medium', defence: 28, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Battlecry!
-  { name: "Alchemical Springald", level: 13, kind: 'artillery', launch: 20, reach: 'medium', defence: 29, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
+  { name: "Alchemical Springald", level: 13, kind: 'artillery', launch: 20, reach: 'long', defence: 29, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Anesthetizing Jaws", level: 13, kind: 'artillery', launch: 21, reach: 'medium', defence: 30, sourceSpeed: 0, speed: 0, loadCost: 2, loadSteps: 1 }, // Howl of the Wild
   { name: "Blasting Horn", level: 13, kind: 'artillery', launch: 20, reach: 'medium', defence: 29, sourceSpeed: 10, speed: 10, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Cyclonic Cannon", level: 13, kind: 'artillery', launch: 21, reach: 'medium', defence: 30, sourceSpeed: 5, speed: 10, loadCost: 2, loadSteps: 1 }, // Pathfinder #223: Hell's Destiny
   { name: "Hydraulic Cannon", level: 13, kind: 'artillery', launch: 20, reach: 'extreme', defence: 29, sourceSpeed: 20, speed: 20, loadCost: 2, loadSteps: 1 }, // Guns & Gears (Remastered)
-  { name: "Mud Maker", level: 13, kind: 'artillery', launch: 20, reach: 'medium', defence: 30, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
+  { name: "Mud Maker", level: 13, kind: 'artillery', launch: 20, reach: 'long', defence: 30, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Sigilstone Slinger", level: 14, kind: 'artillery', launch: 21, reach: 'extreme', defence: 32, sourceSpeed: 15, speed: 10, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Aquatic Disintegrator", level: 15, kind: 'artillery', launch: 23, reach: 'extreme', defence: 30, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Howl of the Wild
   { name: "Burning Glass", level: 15, kind: 'artillery', launch: 23, reach: 'medium', defence: 32, sourceSpeed: 10, speed: 10, loadCost: 3, loadSteps: 1 }, // Battlecry!
@@ -56,7 +56,7 @@ export const ENGINES: SiegeEngineCard[] = [
   { name: "Great Bronze Cannon", level: 15, kind: 'artillery', launch: 23, reach: 'short', defence: 32, sourceSpeed: 10, speed: 10, loadCost: 3, loadSteps: 1 }, // Guns & Gears (Remastered)
   { name: "Seismic Amplifier", level: 15, kind: 'artillery', launch: 23, reach: 'extreme', defence: 29, sourceSpeed: 0, speed: 0, loadCost: 2, loadSteps: 1 }, // Howl of the Wild
   { name: "Flute Rocket", level: 16, kind: 'artillery', launch: 24, reach: 'extreme', defence: 34, sourceSpeed: 20, speed: 20, loadCost: 2, loadSteps: 1 }, // Battlecry!
-  { name: "Fleshforged Disgorger", level: 17, kind: 'artillery', launch: 25, reach: 'medium', defence: 36, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Battlecry!
+  { name: "Fleshforged Disgorger", level: 17, kind: 'artillery', launch: 25, reach: 'long', defence: 36, sourceSpeed: 10, speed: 10, loadCost: 2, loadSteps: 1 }, // Battlecry!
   { name: "Volley Gun", level: 17, kind: 'artillery', launch: 25, reach: 'medium', defence: 36, sourceSpeed: 20, speed: 20, loadCost: 1, loadSteps: 1 }, // Battlecry!
   { name: "Long Cannon", level: 18, kind: 'artillery', launch: 27, reach: 'extreme', defence: 38, sourceSpeed: 5, speed: 10, loadCost: 3, loadSteps: 1 }, // Battlecry!
   { name: "Corrupted Polyp", level: 19, kind: 'artillery', launch: 28, reach: 'extreme', defence: 38, sourceSpeed: 10, speed: 10, loadCost: 3, loadSteps: 1 }, // Battlecry!

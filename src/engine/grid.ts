@@ -4,15 +4,15 @@ export interface Cell { file: number; rank: number; }
 export type Square = Cell;
 export interface Point { x: number; y: number; }
 
-export const SIZE = 11;
-export const FILES = 'abcdefghijk';
+export const SIZE = 15;
+export const FILES = 'abcdefghijklmno';
 export const RADIUS = (SIZE - 1) / 2;
 
 export function notation(c: Cell): string { return `${FILES[c.file]}${c.rank + 1}`; }
 export function parse(text: string): Cell { return { file: FILES.indexOf(text[0]), rank: Number(text.slice(1)) - 1 }; }
 export function inBounds(c: Cell, dimension = SIZE): boolean { return c.file >= 0 && c.file < dimension && c.rank >= 0 && c.rank < dimension; }
 
-/** The hexagon of hexes: radius five, centred on f6. Every cell of it fits the
+/** The hexagon of hexes: radius seven, centred on h8. Every cell of it fits the
  * SIZE × SIZE store, so `at()` never sees a hole — the trimmed corners simply go unused. */
 export function inHexagon(c: Cell, dimension = SIZE): boolean {
   const radius = (dimension - 1) / 2;
@@ -230,7 +230,9 @@ export interface Grid {
 export const squareGrid: Grid = new SquareGrid();
 export const hexGrid: Grid = new HexGrid();
 
-const legacySquare = new SquareGrid(9);
-const legacyHex = new HexGrid(9);
-export const gridFor = (kind: GridKind | undefined, dimension = SIZE): Grid =>
-  dimension === 9 ? (kind === 'square' ? legacySquare : legacyHex) : (kind === 'square' ? squareGrid : hexGrid);
+const grids = new Map<string, Grid>([[`square${SIZE}`, squareGrid], [`hex${SIZE}`, hexGrid]]);
+export function gridFor(kind: GridKind | undefined, dimension = SIZE): Grid {
+  const key = `${kind ?? 'hex'}${dimension}`;
+  if (!grids.has(key)) grids.set(key, kind === 'square' ? new SquareGrid(dimension) : new HexGrid(dimension));
+  return grids.get(key)!;
+}

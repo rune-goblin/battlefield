@@ -139,6 +139,10 @@ export function squaresPerAction(card: UnitCard): number {
 
 export interface MovementRates { land: number; fly: number; swim: number }
 
+/** A troop's Salvo band from its source feet, at Speed's fifteen feet a hex: short reaches 3
+ * hexes, medium 6, long 9. Extreme stays with siege engines. */
+export const reachForFeet = (feet: number): Reach => (feet <= 50 ? 'short' : feet <= 90 ? 'medium' : 'long');
+
 /** Convert each source mode independently. A zero speed grants no movement. */
 export const convertSpeed = (feet: number): number =>
   Number.isFinite(feet) && feet > 0 ? Math.ceil(feet / SPEED_PER_SQUARE) * CELL_FEET : 0;
@@ -201,7 +205,7 @@ export function derivation(card: UnitCard): Derivation[] {
       { stat: 'perception', value: sign(st.perception), from: `level ${card.level} ${p.perception} perception` },
     ];
   }
-  const band = sh.salvoFeet === null ? null : sh.salvoFeet <= 60 ? 'short' : sh.salvoFeet <= 120 ? 'medium' : 'long';
+  const band = sh.salvoFeet === null ? null : reachForFeet(sh.salvoFeet);
   return [
     { stat: 'strike', value: sign(st.strike), from: `Battle DC ${sh.battleDc} − 10` },
     { stat: 'volley', value: st.volley === null ? '—' : `${sign(st.volley)} ${st.reach}`, from: sh.salvoDc === null ? 'no Salvo' : `Salvo DC ${sh.salvoDc} − 10; ${sh.salvoFeet} ft → ${band}` },

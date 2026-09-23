@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { actionsOf, casterOf, signalsOf } from './troop-signals.mjs';
+import { actionsOf, bandOf, casterOf, signalsOf } from './troop-signals.mjs';
 import { spellcastingOf } from '../src/adapters/pf2e/spellcasting.ts';
 
 const dir = new URL('../data/troops/', import.meta.url);
@@ -12,7 +12,7 @@ const feet = (html) => Number(/within (\d+) feet/.exec(html ?? '')?.[1] ?? NaN);
 // never derives it, however far its range increment runs.
 const reachOf = (html) => {
   const ft = feet(html);
-  return Number.isNaN(ft) ? null : ft <= 60 ? 'short' : ft <= 120 ? 'medium' : 'long';
+  return Number.isNaN(ft) ? null : bandOf(ft);
 };
 
 function role(d) {

@@ -311,7 +311,7 @@ function layWalls(board: Board, grid: Grid, groups: Record<string, TerrainGroup>
  * hand-placed reference layout; any other seed draws the patches, the heights and the walls
  * afresh, so the art can be judged on ground it was not tuned over. */
 export function createTextureSample(seed = 0): { board: Board; groups: Record<string, TerrainGroup> } {
-  const board = generateBoard({ base: 'plains', seed: 1, grid: 'hex' });
+  const board = generateBoard({ base: 'plains', seed: 1, grid: 'hex', size: 11 });
   const grid = gridOf(board);
   const rnd = seededRandom(seed);
   let groups = voronoi(grid, REFERENCE_SEEDS.map(key => grid.parse(key)));

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FORTIFICATIONS } from '../engine/board.js';
-  import { FEATURES, HEX_TERRAINS, type Feature, type GridKind, type HexTerrain } from '../engine/index.js';
+  import { FEATURES, HEX_TERRAINS, type BoardSize, type Feature, type GridKind, type HexTerrain } from '../engine/index.js';
   import { gameMap } from './map-style.svelte.js';
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
@@ -45,7 +45,7 @@
 
 {#snippet top()}
   <TopBar>
-    {#snippet status()}<span class="muted">Rank 1 is the attacker's edge, rank {game.setup.board?.squares.length ?? 11} the defender's.</span>{/snippet}
+    {#snippet status()}<span class="muted">Rank 1 is the attacker's edge, rank {game.setup.board?.squares.length ?? 15} the defender's.</span>{/snippet}
   </TopBar>
 {/snippet}
 
@@ -73,8 +73,8 @@
       </select>
     </label>
     <label>Board size
-      <select value={spec.size ?? 11} onchange={(e) => void editAndRegenerate({ size: Number(e.currentTarget.value) as 9 | 11 })}>
-        <option value={11}>Large · {spec.grid === 'square' ? '11 × 11' : '91 hexes'}</option><option value={9}>Original · {spec.grid === 'square' ? '9 × 9' : '61 hexes'}</option>
+      <select value={spec.size ?? 15} onchange={(e) => void editAndRegenerate({ size: Number(e.currentTarget.value) as BoardSize })}>
+        <option value={15}>Field · {spec.grid === 'square' ? '15 × 15' : '169 hexes'}</option><option value={11}>Large · {spec.grid === 'square' ? '11 × 11' : '91 hexes'}</option><option value={9}>Original · {spec.grid === 'square' ? '9 × 9' : '61 hexes'}</option>
       </select>
     </label>
     <label>Feature <select value={spec.feature} onchange={(e) => void run(editSpec({ feature: e.currentTarget.value as Feature }))}>{#each FEATURES as f (f)}<option value={f}>{f}</option>{/each}</select></label>

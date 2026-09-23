@@ -2,13 +2,13 @@ import { at, gridOf, notation, parse, fortification } from './board.js';
 import { ENGINES } from './engines.js';
 import { hasSight } from './sight.js';
 import type { SiegeMode } from './siege-profiles.js';
-import type { ActivityTarget, BattleState, EngineState } from './types.js';
+import { BANDS, type ActivityTarget, type BattleState, type EngineState } from './types.js';
 
 /** Canonical targets are shared by the menu and command validation. A shape is one target. */
 export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode): ActivityTarget[] {
   const g = gridOf(state.board);
   const kind = ENGINES.find(card => card.name === e.name)?.kind ?? e.kind;
-  const max = kind === 'ram' ? 1 : ({ short: 3, medium: 5, long: 7, extreme: 11 }[e.reach ?? 'medium']);
+  const max = kind === 'ram' ? 1 : BANDS[state.board.grid][e.reach ?? 'medium'];
   const inRange = (id: string) => {
     const sq = parse(id), d = g.distance(e.square, sq);
     return d >= (mode.minimum ?? (kind === 'ram' ? 0 : 1)) && d <= max && hasSight(state.board, e.square, sq);

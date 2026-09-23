@@ -29,7 +29,7 @@ const offer = (state: BattleState, type: 'shoot' | 'fight', id = 'u0') =>
 describe('siege engines', () => {
   it('imports all 59 Trooper weapons with launch bonuses', () => {
     expect(ENGINES).toHaveLength(59);
-    expect(engine('Catapult')).toMatchObject({ kind: 'artillery', launch: 12, reach: 'extreme' });
+    expect(engine('Catapult')).toMatchObject({ kind: 'artillery', launch: 12, reach: 'long' });
     expect(engine('Battering Ram')).toMatchObject({ kind: 'ram', speed: null });
     expect(engine('Catapult').speed).toBe(10);
     expect(engine('Ballista').speed).toBe(20);

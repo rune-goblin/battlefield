@@ -2,12 +2,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { ENGINES } from '../src/engine/engines.ts';
 import { siegeModes, siegeDetail } from '../src/engine/siege-profiles.ts';
+import { BANDS } from '../src/engine/types.ts';
 
 const file = new URL('../public/rules.html', import.meta.url);
 const start = '<!-- siege-reference:start -->';
 const end = '<!-- siege-reference:end -->';
 const escape = (value: string | number) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
-const reach = { short: 3, medium: 5, long: 7, extreme: 11 };
+const reach = BANDS.hex;
 const rows = [...ENGINES].sort((a, b) => a.name.localeCompare(b.name)).map(engine => {
   const mobility = engine.speed === 0 ? 'Fixed' : engine.speed == null ? 'Crew speed' : `${engine.speed / 10} hex/action`;
   const modes = siegeModes(engine.name, engine.kind).map(mode =>

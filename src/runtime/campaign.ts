@@ -61,7 +61,7 @@ export type CreateBattleResult =
 
 const ROLES: Role[] = ['infantry', 'cavalry'];
 const REACHES: Reach[] = ['short', 'medium', 'long', 'extreme'];
-const SIZES = [9, 11];
+const SIZES = [9, 11, 15];
 
 const named = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
 const counted = (value: unknown, least = 0): value is number =>
@@ -73,7 +73,7 @@ function boardProblems(spec: unknown): string[] {
   const out: string[] = [];
   if (!HEX_TERRAINS.includes(s.base)) out.push(`${String(s.base)} is not a hex terrain`);
   if (!Number.isFinite(s.seed)) out.push('the board spec needs a numeric seed');
-  if (s.size !== undefined && !SIZES.includes(s.size)) out.push(`a board is 9 or 11 squares, not ${String(s.size)}`);
+  if (s.size !== undefined && !SIZES.includes(s.size)) out.push(`a board is 9, 11 or 15 squares, not ${String(s.size)}`);
   if (s.feature !== undefined && !FEATURES.includes(s.feature)) out.push(`${String(s.feature)} is not a board feature`);
   if (s.grid !== undefined && s.grid !== 'square' && s.grid !== 'hex') out.push(`${String(s.grid)} is not a grid`);
   const construction = s.construction;

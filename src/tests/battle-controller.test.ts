@@ -142,7 +142,7 @@ function casterBattle(level = 5, enemyCell = 'e7') {
 
 describe('action menu availability', () => {
   it('keeps known trees in place when their targets are out of range', () => {
-    const { c, dispose } = controllerOver(casterBattle());
+    const { c, dispose } = controllerOver(casterBattle(5, 'a9'));
     c.pickProp('cast');
     expect(c.castRadialItems.map(item => item.key)).toEqual(['blast', 'controlling', 'movement']);
     expect(c.castRadialItems.find(item => item.key === 'blast')).toMatchObject({ legal: false, reason: 'No target in range' });

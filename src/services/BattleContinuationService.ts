@@ -1,7 +1,7 @@
 import {
   answerSurrender as answerSurrenderProposal, canContinueBattle, declareDayOrder as declareOrder,
   generateBoard, nextDayBattlefield, nightResolved, recoverAtNight, resolveDayOrders, SIDES,
-  type BattleState, type BoardSpec, type DayOrder, type RecoveryChoice, type Side,
+  type BattleState, type BoardSize, type BoardSpec, type DayOrder, type RecoveryChoice, type Side,
 } from '../engine/index.js';
 import { closeInteraction, dropInteraction, submitTo } from '../runtime/interactions.js';
 import type { DicePort } from '../runtime/ports.js';
@@ -40,7 +40,7 @@ function requireSide(side: Side): Side {
 function nextSpec(battle: BattleState, changes: Partial<BoardSpec>): BoardSpec {
   const base = battle.nextBoard?.spec ?? { ...battle.board.spec, construction: null, seed: randomSeed() };
   return {
-    ...base, grid: battle.board.grid, size: battle.board.squares.length as 9 | 11, ...changes,
+    ...base, grid: battle.board.grid, size: battle.board.squares.length as BoardSize, ...changes,
   };
 }
 

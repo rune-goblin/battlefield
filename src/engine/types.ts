@@ -368,6 +368,6 @@ export const REACH_RANK: Record<Reach, number> = { short: 1, medium: 2, long: 3,
 
 /** Distance-band upper bounds. Weapons prefer one band; spells use a band as a fixed ceiling. */
 export const BANDS: Record<GridKind, Record<Reach, number>> = {
-  square: { short: 2, medium: 3, long: 4, extreme: 7 },
-  hex: { short: 2, medium: 3, long: 4, extreme: 7 },
+  square: { short: 3, medium: 6, long: 9, extreme: 12 },
+  hex: { short: 3, medium: 6, long: 9, extreme: 12 },
 };

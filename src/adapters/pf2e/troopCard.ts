@@ -1,4 +1,4 @@
-import { MAX_WOUNDS, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
+import { MAX_WOUNDS, reachForFeet, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
 import type { ImportBaseline } from '../../runtime/session.js';
 import { spellcastingOf } from './spellcasting.js';
 
@@ -88,7 +88,6 @@ const withinFeet = (html: string): number | null => {
 
 // Extreme is reserved for siege engines (BANDS in types.ts) — a troop's own Salvo never
 // derives it, however far its range increment runs.
-const bandOf = (feet: number): Reach => (feet <= 60 ? 'short' : feet <= 120 ? 'medium' : 'long');
 
 interface Attacks { battleDc: number; salvoDc: number | null; salvoFeet: number | null; battleName?: string; salvoName?: string }
 
@@ -242,7 +241,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
   const actionNames = actions.map((it) => it.name ?? '');
 
   const { battleDc, salvoDc, salvoFeet, battleName, salvoName } = attacksOf(items).attacks!;
-  const reach = salvoFeet === null ? null : bandOf(salvoFeet);
+  const reach = salvoFeet === null ? null : reachForFeet(salvoFeet);
 
   const speed = attributes.speed!.value!;
   const flySpeed = (attributes.speed!.otherSpeeds ?? []).find((o) => o.type === 'fly');

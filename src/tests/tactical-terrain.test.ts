@@ -8,10 +8,10 @@ import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
 const troop: UnitCard = {name:'Archers',level:6,role:'infantry',salvo:'long',caster:true,tradition:'arcane',tactics:[]};
-function battlefield(kind: GridKind = 'hex') {
-  const b = createBattle({board:openBoard(kind,11),units:[
+function battlefield(kind: GridKind = 'hex', size = 11) {
+  const b = createBattle({board:openBoard(kind,size),units:[
     {card:troop,side:'attacker',square:'f3'},
-    {card:troop,side:'defender',square:'f9'},
+    {card:troop,side:'defender',square:`f${size-2}`},
   ]});
   unit(b,'u0').square=parse('c6'); unit(b,'u1').square=parse('g6');
   return b;
@@ -20,15 +20,16 @@ const targets = (b: ReturnType<typeof battlefield>, type: 'shoot'|'cast', activi
   availableActions(b,'u0').find(o => o.type===type && (type!=='cast'||o.spell==='blast'))?.activities[activity-1].targets.map(t=>t.id) ?? [];
 
 describe('larger battlefield', () => {
-  it('has 91 centred hexes, a diameter of ten, and three deployment ranks per side', () => {
+  it('has 169 centred hexes, a diameter of fourteen, and four deployment ranks per side, their fronts eight apart', () => {
     const b=generateBoard({base:'plains',seed:1}); const g=gridOf(b), cells=g.cells();
-    expect(cells).toHaveLength(91);
-    expect(Array.from({length:11},(_,rank)=>cells.filter(c=>c.rank===rank).length)).toEqual([6,7,8,9,10,11,10,9,8,7,6]);
-    expect(Math.max(...cells.flatMap(a=>cells.map(b=>g.distance(a,b))))).toBe(10);
-    expect(deployRanks('defender')).toEqual([10,9,8]);
-    expect(cells.filter(c=>canDeploy(b,'attacker',false,c))).toHaveLength(21);
-    expect(cells.filter(c=>canDeploy(b,'defender',false,c))).toHaveLength(21);
-    expect(g.center(parse('f6'),40)).toEqual({x:g.bounds(40).width/2,y:g.bounds(40).height/2});
+    expect(cells).toHaveLength(169);
+    expect(Array.from({length:15},(_,rank)=>cells.filter(c=>c.rank===rank).length)).toEqual([8,9,10,11,12,13,14,15,14,13,12,11,10,9,8]);
+    expect(Math.max(...cells.flatMap(a=>cells.map(b=>g.distance(a,b))))).toBe(14);
+    expect(deployRanks('defender')).toEqual([14,13,12,11]);
+    expect(deployRanks('defender')[3]-deployRanks('attacker')[3]).toBe(8);
+    expect(cells.filter(c=>canDeploy(b,'attacker',false,c))).toHaveLength(38);
+    expect(cells.filter(c=>canDeploy(b,'defender',false,c))).toHaveLength(38);
+    expect(g.center(parse('h8'),40)).toEqual({x:g.bounds(40).width/2,y:g.bounds(40).height/2});
     for(const c of cells) {
       expect(g.fromPoint(g.center(c,40),40)).toEqual(c);
       for(const p of g.vertices(c,40)) {
@@ -36,6 +37,12 @@ describe('larger battlefield', () => {
         expect(p.y).toBeGreaterThanOrEqual(-1e-8);expect(p.y).toBeLessThanOrEqual(g.bounds(40).height+1e-8);
       }
     }
+  });
+  it('keeps three deployment ranks on the 11 board', () => {
+    const b=generateBoard({base:'plains',seed:1,size:11});
+    expect(gridOf(b).cells()).toHaveLength(91);
+    expect(deployRanks('defender',false,11)).toEqual([10,9,8]);
+    expect(gridOf(b).cells().filter(c=>canDeploy(b,'attacker',false,c))).toHaveLength(21);
   });
   it('preserves old JSON boards and their deployment and retreat edges', () => {
     const b=JSON.parse(JSON.stringify(openBoard('hex')));
@@ -50,7 +57,7 @@ describe('larger battlefield', () => {
       const b=generateBoard({base,seed});
       total+=gridOf(b).cells().filter(c=>at(b,c).terrain===base).length;
     }
-    const fraction=total/(200*91);
+    const fraction=total/(200*169);
     expect(fraction).toBeGreaterThan(base==='forest'?.40:.30);
     expect(fraction).toBeLessThan(base==='forest'?.52:.43);
   });
@@ -58,21 +65,20 @@ describe('larger battlefield', () => {
 
 describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
   it.each(['short','medium','long','extreme'] as const)('enforces the %s preferred distances and one-hex flexibility for every shooting activity', reach=>{
-    const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1'),g=gridOf(b.board);
-    u.stats.reach=reach;
+    const b=battlefield(kind,15),u=unit(b,'u0'),foe=unit(b,'u1'),g=gridOf(b.board);
+    u.square=parse('a8');u.stats.reach=reach;
+    const band={short:3,medium:6,long:9,extreme:12}[reach];
     for(const c of g.cells()) {
       foe.square=c;
       const d=g.distance(u.square,c);
       if(d<=1)continue;
-      const legal = {short:[2,3],medium:[2,3,4],long:[3,4,5],extreme:[4,5,6,7,8]}[reach].includes(d);
-      const preferred = {short:[2],medium:[3],long:[4],extreme:[5,6,7]}[reach].includes(d);
-      for(const index of [1,2,3])expect(targets(b,'shoot',index).includes(foe.id)).toBe(legal);
-      if(legal) expect(shootModifier(b,u,foe)).toBe(u.stats.volley! - (preferred?0:2));
+      for(const index of [1,2,3])expect(targets(b,'shoot',index).includes(foe.id)).toBe(d<=band+1);
+      if(d<=band+1) expect(shootModifier(b,u,foe)).toBe(u.stats.volley! - (d<=band?0:2));
     }
-    u.square=parse('a1');foe.square=parse('k11');at(b.board,u.square).elevation=2;
+    foe.square=parse('o8');at(b.board,u.square).elevation=reach==='extreme'?0:2;
     expect(()=>act(b,{unit:u.id,type:'shoot',activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow();
   });
-  it.each([['e6',-2],['f6',0],['g6',-2]] as const)('resolves medium shots at %s with a %i range modifier', (cell, penalty)=>{
+  it.each([['e6',0],['i6',0],['j6',-2]] as const)('resolves medium shots at %s with a %i range modifier', (cell, penalty)=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
     u.stats.reach='medium';foe.square=parse(cell);
     const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
@@ -81,14 +87,14 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
   });
   it('extends a shot one hex a level downhill, and leaves the near end where it was',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
-    foe.square=parse('i6');
+    u.square=parse('a6');u.stats.reach='medium';foe.square=parse('i6');
     expect(targets(b,'shoot')).toEqual([]);
     at(b.board,u.square).elevation=1;
     expect(targets(b,'shoot')).toContain(foe.id);
     expect(shootModifier(b,u,foe)).toBe(u.stats.volley!+1-2);
     at(b.board,u.square).elevation=2;
     expect(shootModifier(b,u,foe)).toBe(u.stats.volley!+1);
-    foe.square=parse('e6');
+    foe.square=parse('b6');b.board.walls['a6|b6']={tier:1,boxes:2,remaining:2};
     expect(targets(b,'shoot')).toEqual([]);
     expect(()=>act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id,focus:2},scriptedRng([20]))).toThrow(/no target/);
   });
@@ -109,9 +115,9 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
     const result=act(b,{type:'siege',engine:'eq-artillery',operation:'attack',unit:u.id,activity:2,target:wall},scriptedRng([10]));
     expect(result.log.find(e=>e.check)!.check!.modifier).toBe(11);
   });
-  it.each([['f6',-2],['g6',0],['h6',0],['i6',0],['j6',-2]] as const)('resolves extreme shots at %s with modifier %i', (cell, penalty)=>{
-    const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');
-    u.square=parse('b6');u.stats.reach='extreme';foe.square=parse(cell);
+  it.each([['c8',0],['m8',0],['n8',-2]] as const)('resolves extreme shots at %s with modifier %i', (cell, penalty)=>{
+    const b=battlefield(kind,15),u=unit(b,'u0'),foe=unit(b,'u1');
+    u.square=parse('a8');u.stats.reach='extreme';foe.square=parse(cell);
     const result=act(b,{type:'shoot',unit:u.id,activity:1,target:foe.id},scriptedRng([10]));
     expect(result.log.find(e=>e.text.includes('Fire against'))!.check!.modifier).toBe(u.stats.volley!+penalty);
   });
@@ -124,8 +130,9 @@ describe.each(['hex','square'] as const)('%s range and terrain',kind=>{
   });
   it('keeps spell ranges as fixed ceilings without weapon minimum ranges',()=>{
     const b=battlefield(kind),foe=unit(b,'u1');
-    foe.square=parse('e6');expect(targets(b,'cast')).toContain(foe.id);
-    foe.square=parse('h6');expect(targets(b,'cast')).toEqual([]);
+    unit(b,'u0').square=parse('a6');
+    foe.square=parse('j6');expect(targets(b,'cast')).toContain(foe.id);
+    foe.square=parse('k6');expect(targets(b,'cast')).toEqual([]);
   });
   it('allows shots into mountains but rejects shots and spell shapes beyond them',()=>{
     const b=battlefield(kind),u=unit(b,'u0'),foe=unit(b,'u1');

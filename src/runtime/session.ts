@@ -1,6 +1,6 @@
 import {
   COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification, deriveStats, movementRates, speedOf, CELL_FEET,
-  type BattleState, type Board, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
+  type BattleState, type Board, type BoardSize, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
 } from '../engine/index.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
 import type { BattleEvent } from './events.js';
@@ -150,7 +150,7 @@ export function defaultSetup(): BattleSetupDraft {
   const unit = (name: string, side: Side): SetupUnit =>
     ({ id: newUnitId(), card: pick(name), side, square: null, engines: [] });
   return {
-    spec: { base: 'plains', size: 11, feature: 'none', construction: null, seed: randomSeed() },
+    spec: { base: 'plains', size: 15, feature: 'none', construction: null, seed: randomSeed() },
     board: null,
     emplacements: [],
     units: [
@@ -273,7 +273,7 @@ function repairSourceAttacks(setup: BattleSetupDraft, battle: BattleState | null
 function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
   if (setup.spec.construction?.tier === 0) setup.spec.construction.tier = 1;
   if (setup.board) repairFortifications(setup.board);
-  setup.spec.size ??= (setup.board?.squares.length as 9 | 11 | undefined) ?? 11;
+  setup.spec.size ??= (setup.board?.squares.length as BoardSize | undefined) ?? 11;
   setup.emplacements ??= [];
   for (const u of setup.units) {
     if (!u.id) u.id = newUnitId();

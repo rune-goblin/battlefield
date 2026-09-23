@@ -51,7 +51,7 @@ describe('what a target affords', () => {
       return shoot?.activities.map((r) => r.label) ?? [];
     };
     expect(activitiesAt('c5')).toEqual(['Fire', 'Suppress', 'Pin']);
-    expect(activitiesAt('c7')).toEqual([]);
+    expect(activitiesAt('f8')).toEqual([]);
   });
 
   it('offers nothing at an empty cell — movement is not an activity', () => {
