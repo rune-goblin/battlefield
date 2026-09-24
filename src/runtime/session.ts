@@ -154,14 +154,12 @@ export function defaultSetup(): BattleSetupDraft {
     board: null,
     emplacements: [],
     units: [
-      unit('Line Infantry', 'attacker'),
+      unit('Town Militia', 'attacker'),
       unit('Heavy Cavalry', 'attacker'),
-      // Apprentice Magician Clique (L5) sits between Line Infantry (L6) and Heavy Cavalry (L7).
       unit('Apprentice Magician Clique', 'attacker'),
-      unit('Kobold Warriors', 'defender'),
       unit('Troll Marauders', 'defender'),
-      // Mitflit Vermin Cavalry (L4) sits between Kobold Warriors (L3) and Troll Marauders (L8).
-      unit('Mitflit Vermin Cavalry', 'defender'),
+      unit('Orc Raiding Party', 'defender'),
+      unit('Swiftrun Clergy', 'defender'),
     ],
   };
 }
