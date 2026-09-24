@@ -783,7 +783,7 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
     opts.free ? { kind: 'freeStrike', attacker: u.id, target: target.id } : undefined, attackOn(target));
   const rolled = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
   applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0);
-  // A charger is exposed already, so the critical miss has nothing left to take.
+  // A unit exposed already has nothing more for the critical miss to take.
   if (c.degree === 'critical-failure' && !opts.free && !u.exposed) {
     u.exposed = true;
     log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
@@ -995,16 +995,19 @@ export function movePath(state: BattleState, u: Unit, to: string, via: readonly 
 const touching = (state: BattleState, sq: Square, e: Unit) =>
   dist(state, sq, e.square) === 1 && barrierBetween(state.board, sq, e.square) === null;
 
-/** A charge is a Fight with a run folded into it: one Speed of movement at the ordinary terrain
- * prices, buying no action of its own — the discount the verb sells. */
-const CHARGE_ACTIONS = 0;
-const CHARGE_SPEEDS = 1;
+/** A charge is Sudden Charge: one action of run on top of the Fight's own price buys twice the
+ * unit's Speed at the ordinary terrain prices. */
+const CHARGE_ACTIONS = 1;
+const CHARGE_SPEEDS = 2;
+/** A charge that ends a short range from where it began has built momentum: +2 on the attack. */
+const runUp = (state: BattleState, from: Square, landing: Square) =>
+  dist(state, from, landing) >= BANDS[state.board.grid].short;
 
 /** Whether the unit may charge at all. One in contact fights instead, and a pinned, rooted or
  * spent unit charges nothing. */
 const canCharge = (state: BattleState, u: Unit) =>
   u.status === 'active' && movementSpeed(u) > 0 && u.rooted === 0 && !u.pinnedBy
-  && u.actions > 0 && engagedEnemies(state, u).length === 0;
+  && u.actions > CHARGE_ACTIONS && engagedEnemies(state, u).length === 0;
 
 /**
  * Cells the run may not enter: where somebody stands, and every hex an enemy other than the
@@ -1029,8 +1032,8 @@ const chargeRun = (state: BattleState, u: Unit, blocked: ReadonlySet<string>, vi
     budget: CHARGE_SPEEDS * movementSpeed(u), ...groundFor(u), evenGround: true, occupied: blocked, stopAt: controlCells(state, u),
   });
 
-/** Where the run ends: the nearest hex past the last waypoint that touches the target. A last
- * waypoint that already touches it is the landing. */
+/** Where the run ends: the nearest hex past the last waypoint that touches the target, preferring
+ * one that earns the run-up. A last waypoint that already touches it is the landing. */
 function chargeApproach(state: BattleState, u: Unit, e: Unit, via: readonly string[] = []): { option: ChargeOption; path: string[] } | null {
   if (!canCharge(state, u)) return null;
   const run = chargeRun(state, u, chargeBlocked(state, u, e), via);
@@ -1038,11 +1041,11 @@ function chargeApproach(state: BattleState, u: Unit, e: Unit, via: readonly stri
   const spent = run.route[run.route.length - 1].feet;
   const landings = [...run.reach]
     .filter(([cell]) => touching(state, parse(cell), e) && canEndOn(u, state.board, parse(cell)))
-    .map(([cell, entry]) => ({ cell, feet: spent + entry.feet }))
-    .sort((a, b) => a.feet - b.feet || a.cell.localeCompare(b.cell));
+    .map(([cell, entry]) => ({ cell, feet: spent + entry.feet, runUp: runUp(state, u.square, parse(cell)) }))
+    .sort((a, b) => Number(b.runUp) - Number(a.runUp) || a.feet - b.feet || a.cell.localeCompare(b.cell));
   const best = landings[0];
   return best ? {
-    option: { unit: e.id, cell: best.cell, feet: best.feet, actions: CHARGE_ACTIONS },
+    option: { unit: e.id, cell: best.cell, feet: best.feet, actions: CHARGE_ACTIONS, runUp: best.runUp },
     path: routedPath(run, best.cell).map((step) => step.cell),
   } : null;
 }
@@ -1051,8 +1054,8 @@ const approach = (state: BattleState, u: Unit, e: Unit, via: readonly string[] =
   chargeApproach(state, u, e, via)?.option ?? null;
 
 /** The route a charge takes to its landing hex, its own cell first. Not the ordinary Move's
- * route: this one is priced on one Speed that costs no action of its own, and turns aside from
- * every zone of control but the target's. */
+ * route: this one is priced on twice Speed, and turns aside from every zone of control but the
+ * target's. */
 export function chargePath(state: BattleState, u: Unit, targetId: string, via: readonly string[] = []): string[] {
   const target = state.units.find((e) => e.id === targetId);
   if (!target) return [];
@@ -1071,7 +1074,7 @@ export function chargeTargets(state: BattleState, u: Unit, via: readonly string[
 }
 
 /** Cheapest legal route for each choice. Ordinary movement reserves one action for melee;
- * Charge still gets exactly one Speed, and every leg respects first contact. The waypoints bind
+ * Charge still gets exactly twice Speed, and every leg respects first contact. The waypoints bind
  * the whole road in order: the move walks the first `split` of them and the charge runs the
  * rest, so a waypoint beside the target picks the hex the charge lands on. */
 export function meleePlans(state: BattleState, u: Unit, targetId: string, waypoints: readonly string[] = []): MeleePlan[] {
@@ -1089,7 +1092,7 @@ export function meleePlans(state: BattleState, u: Unit, targetId: string, waypoi
     }
     const charge = chargeApproach(projected, from, target, run);
     if (charge) candidates.push({ target: targetId, kind: 'charge', via, cell: charge.option.cell, moveActions,
-      feet: feet + charge.option.feet, bonus: ACTION_BONUS, movePath: move, attackPath: charge.path, split });
+      feet: feet + charge.option.feet, bonus: charge.option.runUp ? ACTION_BONUS : 0, movePath: move, attackPath: charge.path, split });
   }
   consider(u, null, [home], 0, 0, 0);
   const canMove = movementSpeed(u) > 0 && !u.rooted && !u.pinnedBy && !engagedEnemies(state, u).length;
@@ -1134,7 +1137,7 @@ export function dragBlockReason(state: BattleState, u: Unit, cell: string): stri
       budget: Infinity, ...groundFor(u), occupied: chargeBlocked(state, u, target), stopAt: controlCells(state, u),
     });
     const feet = Math.min(...landings(route).map(([, entry]) => entry.feet));
-    if (Number.isFinite(feet)) return `Reaching ${target.name} needs ${feet} ft of movement. This unit has ${u.actions} action${u.actions === 1 ? '' : 's'} left; every legal move-and-attack route exceeds that budget. A charge covers ${movementSpeed(u)} ft and still spends one action.`;
+    if (Number.isFinite(feet)) return `Reaching ${target.name} needs ${feet} ft of movement. This unit has ${u.actions} action${u.actions === 1 ? '' : 's'} left; every legal move-and-attack route exceeds that budget. A charge covers ${CHARGE_SPEEDS * movementSpeed(u)} ft for ${CHARGE_ACTIONS + 1} actions.`;
     const withoutOtherControl = reachable(state.board, u.square, {
       budget: Infinity, ...groundFor(u), occupied: occupiedBy(state, u),
     });
@@ -2192,8 +2195,8 @@ function doStride(state: BattleState, rng: Rng, u: Unit, action: MoveAction): nu
 
 }
 
-// A Charge costs the Fight activity's own price and no more — a Strike unless the action names
-// another — with one Speed of run folded in. The run's leftover feet never bank.
+// A Charge costs one action more than the Fight it ends in — a Strike unless the action names
+// another — for twice Speed of run. The run's leftover feet never bank.
 function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): number {
   const foe = unit(state, action.target);
   if (u.stats.strike === null) throw new Error(`${u.name} has no melee`);
@@ -2205,20 +2208,18 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const focus = validateFocus(action);
   const cost = CHARGE_ACTIONS + wanted + focus;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
-  const bonus = ACTION_BONUS;
+  const bonus = option.runUp ? ACTION_BONUS : 0;
   // Read from the hex the charge starts in, whatever hex it ends on.
   const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
   const impact = u.tactics.includes('cavalry-charge');
   moveTo(state, u, parse(option.cell));
   const carried = [
-    `+${bonus} on the Melee attack`,
+    bonus ? `+${bonus} on the Melee attack for the run-up` : '',
     saveShift ? `${foe.name}'s save is at −${ACTION_BONUS}, charged from above` : '',
     impact ? 'the impact forces two Fortitude rolls, keeping the worse' : '',
     focus ? `commitment +${focus * ACTION_BONUS} on the Melee attack (${cost} actions total)` : '',
   ].filter(Boolean);
-  log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}, ${carried.join(', ')}.`);
-  u.exposed = true;
-  log(state, u, `${u.name} is exposed (−2 Defence) until it acts again.`);
+  log(state, u, `${u.name} charges ${foe.name} — ${option.feet} ft to ${option.cell}${carried.length ? `, ${carried.join(', ')}` : ''}.`);
   melee(state, rng, u, foe, activityOf('fight', wanted), { circumstance: bonus, bonus: focus * ACTION_BONUS, saveShift, impact });
   return cost;
 }

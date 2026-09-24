@@ -399,7 +399,7 @@
 <div class="wrap"><table>
 <tr><th>Verb</th><th>Activities</th><th>Rule</th></tr>
 <tr><td>Move</td><td>Move ◆</td><td><a href="#move">Movement</a></td></tr>
-<tr><td>Charge</td><td>Charge ◆ &middot; Charge and Press ◆◆ &middot; Charge and Overrun ◆◆◆</td><td><a href="#move">Movement</a></td></tr>
+<tr><td>Charge</td><td>Charge ◆◆ &middot; Charge and Press ◆◆◆</td><td><a href="#move">Movement</a></td></tr>
 <tr><td>Step</td><td>Step ◆</td><td><a href="#step">Movement</a></td></tr>
 <tr><td>Shoot</td><td>Fire ◆ &middot; Suppress ◆◆ &middot; Pin ◆◆◆</td><td><a href="#health">Combat and Health</a></td></tr>
 <tr><td>Melee</td><td>Strike ◆ &middot; Press ◆◆ &middot; Overrun ◆◆◆</td><td><a href="#health">Combat and Health</a></td></tr>
@@ -437,9 +437,9 @@
 <p>For <strong>one action</strong>, move one hex without a roll, into or out of any zone of control. The hex must cost 1 movement by land: open ground, a settlement, a bridge, or level or downhill ground. You cannot Step into forest, rough ground, shallows, swamp, an uphill hex or a siege field, and you cannot Step by flying or swimming. A rooted or pinned unit, or one with zero Speed, cannot Step. A routed unit Steps only toward its home edge.</p>
 <p>Step is the sure way out of a zone of control on open ground. It covers one hex where a Move covers your Speed. In rough ground, a Move and its roll are the only way out.</p>
 <h3 id="charge">Charge</h3>
-<p>A Charge combines movement up to your Speed with a melee attack at <strong>+2</strong>. It uses your attack for the activation. You become <strong>exposed</strong>: −2 Defence until your next activation.</p>
-<div class="wrap"><table><thead><tr><th scope="col">Activity</th><th scope="col">Actions</th><th scope="col">Attack after moving</th></tr></thead><tbody><tr><td>Charge</td><td>1</td><td>Strike</td></tr><tr><td>Charge and Press</td><td>2</td><td>Press</td></tr><tr><td>Charge and Overrun</td><td>3</td><td>Overrun</td></tr></tbody></table></div>
-<ul><li>Start outside every enemy’s zone of control, and unpinned. End in contact with your target.</li><li>Enter no zone of control but the target’s along the route. Walls and cliffs block engagement across their edges.</li><li>Use open ground or bridges. Forest, rough ground, settlements, swamp, shallows and uphill steps stop a charge, including a flying unit’s charge. Sure footing allows these terrain crossings and climbs.</li><li>A charge from above gives the target −2 on its save against Morale loss.</li><li>The cavalry charge tactic upgrades Strike to Press and Press to Overrun at the same action cost.</li><li>Take cover prevents an Overrun from pushing its target. Unused charge movement expires.</li></ul>
+<p>A Charge moves up to <strong>twice your Speed</strong> and ends in a melee attack. It uses your attack for the activation. If the charge ends at least 3 hexes from where it began, the run-up adds <strong>+2</strong> to the attack.</p>
+<div class="wrap"><table><thead><tr><th scope="col">Activity</th><th scope="col">Actions</th><th scope="col">Attack after moving</th></tr></thead><tbody><tr><td>Charge</td><td>2</td><td>Strike</td></tr><tr><td>Charge and Press</td><td>3</td><td>Press</td></tr></tbody></table></div>
+<ul><li>Start outside every enemy’s zone of control, and unpinned. End in contact with your target.</li><li>Enter no zone of control but the target’s along the route. Walls and cliffs block engagement across their edges.</li><li>Use open ground or bridges. Forest, rough ground, settlements, swamp, shallows and uphill steps stop a charge, including a flying unit’s charge. Sure footing allows these terrain crossings and climbs.</li><li>A charge from above gives the target −2 on its save against Morale loss.</li><li>Cavalry charge with impact: a Charge lands as a Press and a Charge and Press as an Overrun, at the same action cost. Only cavalry charge and Overrun.</li><li>Commitment adds to the run-up bonus; a Charge with one extra action attacks at up to +4.</li><li>Take cover prevents an Overrun from pushing its target. Unused charge movement expires.</li></ul>
 <p>By default, a charge ends at the nearest legal hex beside its target. Use a waypoint to choose another approach.</p>
 <h3 id="flee">Flee</h3>
 <p>Leave through an outer edge in your deployment zone, including its side edges and any ambush rank. Pay the movement cost to reach the edge, then <strong>one action</strong> to Flee. Clear roots and pinning first. Move or Step out of every zone of control to reach the edge; a unit already on the edge may Flee directly, without the Reflex roll.</p>
@@ -522,7 +522,7 @@
 <h2 id="ref">Quick reference</h2>
 <p><strong>Three actions. One attack. Maximum 4 Health and 3 Morale.</strong> Each missing Morale point gives −1 to rolls and Defence.</p>
 <div class="wrap"><table><thead><tr><th scope="col">Action</th><th scope="col">1 action</th><th scope="col">2 actions</th><th scope="col">3 actions</th><th scope="col">Rule</th></tr></thead><tbody><tr><td>Melee</td><td>Strike</td><td>Press</td><td>Overrun</td><td><a href="#melee">Combat</a></td></tr><tr><td>Shoot</td><td>Fire</td><td>Suppress</td><td>Pin</td><td><a href="#shooting">Shooting</a></td></tr><tr><td>Guard</td><td>Brace</td><td>Dig in</td><td>Take cover</td><td><a href="#guard">Guard</a></td></tr><tr><td>Rally</td><td>Steady</td><td>Rally</td><td>Inspire</td><td><a href="#rally">Morale</a></td></tr></tbody></table></div>
-<p><strong>Move:</strong> 1 action adds Speed to movement; entering a zone of control ends it, and leaving one takes Reflex against each holder’s Battle or Salvo DC. <strong>Step:</strong> 1 action, one open hex, no roll. <strong>Charge:</strong> Melee with one Speed of movement and +2 attack; become exposed. <strong>Commitment:</strong> 1 extra action gives +2, 2 give +4. See <a href="#price">eligible activities</a>.</p>
+<p><strong>Move:</strong> 1 action adds Speed to movement; entering a zone of control ends it, and leaving one takes Reflex against each holder’s Battle or Salvo DC. <strong>Step:</strong> 1 action, one open hex, no roll. <strong>Charge:</strong> 2 actions, twice Speed of movement and a Melee attack; +2 if it ends 3 or more hexes from its start. <strong>Commitment:</strong> 1 extra action gives +2, 2 give +4. See <a href="#price">eligible activities</a>.</p>
 <p><strong>Attack:</strong> meet Defence to deal 1 damage; beat it by 10 to deal 2. A natural 20 improves the result one step; a natural 1 worsens it one step. After damage, Fortitude against the attacker’s level DC or lose 1 Morale. After a missed melee attack, Will against the target’s level DC or lose 1 Morale.</p>
 <p><strong>Rally DC:</strong> highest enemy level DC within 3 hexes of the recipient, or highest on the field if none is that close.</p>
 <p>Use <a href="#magic">Magic</a>, <a href="#engine-reference">Engine catalogue</a> and <a href="#ground">Terrain</a> for specialist rules.</p>
@@ -534,7 +534,7 @@
 <tr><td>Morale</td><td>Maximum 3. Each missing point gives −1 to rolls and Defence. At 0, retreat using Move or Step. Restoring 1 ends rout.</td></tr>
 
 <tr><td>Outflanked</td><td>&minus;2 Defence while engaged with two or more enemies</td></tr>
-<tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike or a charge, until the unit acts again</td></tr>
+<tr><td>Exposed</td><td>&minus;2 Defence after a critically failed Strike, until the unit acts again</td></tr>
 <tr><td>Health</td><td>Maximum 4. Damage removes Health. At 0, the unit is destroyed. Surviving units keep their normal statistics.</td></tr>
 <tr><td>Inspired</td><td>+2 status bonus to the next roll. Ends after that roll or at the end of the unit’s activation.</td></tr>
 <tr><td>Suppressed</td><td>−2 to rolls and Defence until the shooter’s next activation.</td></tr>

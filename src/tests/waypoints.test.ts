@@ -37,10 +37,10 @@ describe('waypoints', () => {
     const b = battle('c4');
     const [u, enemy] = b.units;
     u.speed = 30;
-    expect(chargeTargets(b, u).find((c) => c.unit === enemy.id)?.cell).toBe('c3');
-    expect(chargePath(b, u, enemy.id, ['b4'])).toEqual(['c2', 'b2', 'b3', 'b4']);
-    const charged = act(select(b, u.id), { type: 'charge', unit: u.id, target: enemy.id, waypoints: ['b4'] }, scriptedRng([10, 10, 10]));
-    expect(notation(charged.units[0].square)).toBe('b4');
+    expect(chargeTargets(b, u).find((c) => c.unit === enemy.id)?.cell).toBe('b4');
+    expect(chargePath(b, u, enemy.id, ['d4'])).toEqual(['c2', 'd2', 'd3', 'd4']);
+    const charged = act(select(b, u.id), { type: 'charge', unit: u.id, target: enemy.id, waypoints: ['d4'] }, scriptedRng([10, 10, 10]));
+    expect(notation(charged.units[0].square)).toBe('d4');
   });
 
   it('let a waypoint beside the target choose where a move and charge lands', () => {
@@ -48,8 +48,8 @@ describe('waypoints', () => {
     const [u, enemy] = b.units;
     expect(meleePlans(b, u, enemy.id).find((p) => p.kind === 'charge')).toMatchObject({ via: null, cell: 'c3' });
     const plan = meleePlans(b, u, enemy.id, ['b4']).find((p) => p.kind === 'charge')!;
-    expect(plan).toMatchObject({ via: 'b3', cell: 'b4', moveActions: 2 });
-    const charged = act(select(b, u.id), { type: 'advance', unit: u.id, target: enemy.id, via: 'b3', finish: 'charge', waypoints: ['b4'] }, scriptedRng([10, 10, 10]));
+    expect(plan).toMatchObject({ via: 'b2', cell: 'b4', moveActions: 1 });
+    const charged = act(select(b, u.id), { type: 'advance', unit: u.id, target: enemy.id, via: 'b2', finish: 'charge', waypoints: ['b4'] }, scriptedRng([10, 10, 10]));
     expect(notation(charged.units[0].square)).toBe('b4');
   });
 });

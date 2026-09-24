@@ -7,9 +7,12 @@ An item leaves this list when it is answered or built.
 - **Artillery and Pin.** Artillery may need a cheaper Pin now that the gun crew has no extra action. Deferred on 2026-09-09.
 - **Pin's automatic landing.** Pin lands hit or miss, like Suppress. Pin is the stronger effect: a hold at Volley + 10 with no roll and no save. Gating it on the shot would turn rung 3 from a purchase into a gamble.
 - **Unbreached walls.** A standing wall breaks engagement, so a garrison can be shot at and never fought until a segment is breached. Judge the strength at the table.
-- **Rough ground and short charges.** A charge runs one Speed. Infantry's 10 ft cannot pay a forest hex's 20, so rough ground refuses the charge outright, and sure footing gains value.
+- **Charge landing.** Among the hexes beside its target, a charge picks one that earns the run-up before the cheapest. That can land the charger on a flank the player did not intend; a waypoint overrides it. Judge at the table.
+- **Slow chargers.** A Speed-1 unit runs 2 hexes and can never earn the run-up's +2 alone. Decide whether that is right for slow troops.
+- **Shooting on the larger field.** With bands of 3, 6, 9 and 12, medium shooters get about one free volley against Speed-2 infantry and long shooters two. Watch whether shooting now dominates.
+- **Blast at 9 hexes.** If a caster at long range proves too strong, give Storm a limit of 6 first.
+- **Siege minimum ranges.** Arcing engines (catapult, trebuchet, mortar) have no minimum range beyond what their profiles list. Decide whether they need one.
 - **Reach of "balance against moderate".** The worked examples in `rules.html` quote a moderate level-6 Will of +14. The engine's fallback profile gives a sheet-less infantry card high Will (+17). Rule whether the fallback follows the examples.
-- Does a concentrated charge at +6 total retain enough risk through exposure?
 - Does concentrated Controlling deny too many actions, especially against units with disorder?
 - Does Press retain sufficient value beside a more accurate Strike?
 - Does concentrated Rally offer a useful alternative to repeated Steady attempts?
@@ -18,14 +21,12 @@ An item leaves this list when it is answered or built.
 ## Terrain
 
 - Two units in one hollow lose sight of each other across a level-0 hex between them.
-- Forest at 46% average may slow infantry too much. `forestPatches` and `patchSize` in `DENSITY` are the dials.
+- Forest at 46% average may slow infantry too much. `forestPatches` and `patchSize` in `DENSITY` are the dials. Patch counts scale with board area, so the 169-hex board keeps the same share; check it at the table.
 - Level-1 ground blocks sight from the flat, so hills boards shorten most shots.
 - A layout picker on the setup screen would let the GM ask for "a pass" directly. The layout is drawn from the seed today.
 
 ## Result popups
 
-- A charge shows Exposed over the charger. It may be noise.
-- Exposed may belong first in the charge's popups, before the Strike's word. It comes last in the queue today.
 - Helpful states (Inspired, Warded, Sure strike) may deserve green words of their own.
 - Criticals and Routed may deserve the loud treatment Resisted has.
 - A lapsing status may deserve an exit popup.

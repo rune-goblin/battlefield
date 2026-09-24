@@ -654,32 +654,33 @@ describe('movement points', () => {
     expect(chargeTargets(state, unit(state, 'u0'))).toEqual([]);
   });
 
-  it("a Charge is one Speed of run folded into a Fight, at the Fight's own price", () => {
+  it('a Charge is twice Speed of run for one action more than its Fight, and leaves the charger unexposed', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c4');
-    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c3', feet: 10, actions: 0 }]);
+    expect(chargeTargets(state, unit(state, 'u0'))).toEqual([{ unit: 'u2', cell: 'c3', feet: 10, actions: 1, runUp: false }]);
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([20, 1]));
     expect(unit(s, 'u0').square).toEqual(parse('c3'));
-    expect(unit(s, 'u0').actions).toBe(2);
-    expect(unit(s, 'u0').exposed).toBe(true);
+    expect(unit(s, 'u0').actions).toBe(1);
+    expect(unit(s, 'u0').exposed).toBe(false);
     expect(unit(s, 'u2').wounds).toBeGreaterThanOrEqual(1);
   });
 
-  it('lands its +2 over open ground and refuses a run through forest', () => {
+  it('lands its +2 only from three hexes out, and refuses a run through forest', () => {
     const strikeMod = (s: BattleState) => s.log.find((e) => e.check)!.check!.modifier;
+    const short = battle([]).state;
+    place(short, 'u2', 'c4');
+    expect(strikeMod(act(short, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(11);
     const open = battle([]).state;
-    place(open, 'u2', 'c4');
+    unit(open, 'u0').speed = 20;
+    place(open, 'u2', 'c6');
     expect(strikeMod(act(open, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5])))).toBe(13);
 
-    // One Speed of infantry cannot pay 20 ft for a forest hex at all, so the refusal is read
-    // off a troop that could afford the run.
     const board = openBoard();
-    board.squares[2][2].terrain = 'forest';
+    for (const sq of board.squares[2]) sq.terrain = 'forest';
     const wooded = battle([], board).state;
-    place(wooded, 'u0', 'a1');
-    place(wooded, 'u1', 'c2');
-    place(wooded, 'u2', 'c4');
-    expect(() => act(wooded, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]))).toThrow();
+    unit(wooded, 'u0').speed = 20;
+    place(wooded, 'u2', 'c5');
+    expect(() => act(wooded, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 5]))).toThrow(/cannot reach/);
   });
 
   it('lands on the hex an open route reaches when the cheapest way in is forest', () => {
@@ -691,10 +692,8 @@ describe('movement points', () => {
     place(state, 'u1', 'c2');
     place(state, 'u2', 'c4');
     const cavalry = unit(state, 'u1');
-    // A run of one Speed only has a route to choose when the Speed is long enough for two.
-    cavalry.speed = 40;
     expect(chargeTargets(state, cavalry).find((c) => c.unit === 'u2'))
-      .toEqual({ unit: 'u2', cell: 'b4', feet: 30, actions: 0 });
+      .toEqual({ unit: 'u2', cell: 'b4', feet: 30, actions: 1, runUp: true });
     const s = act(state, { type: 'charge', target: 'u2', unit: 'u1' }, scriptedRng([10, 5]));
     expect(unit(s, 'u1').square).toEqual(parse('b4'));
     expect(s.log.find((e) => e.check)!.check!.modifier).toBe(cavalry.stats.strike! + ACTION_BONUS);
@@ -706,11 +705,10 @@ describe('movement points', () => {
     place(state, 'u1', 'c2');
     place(state, 'u2', 'b4');
     place(state, 'u3', 'c5');
-    unit(state, 'u1').speed = 40;
     const options = chargeTargets(state, unit(state, 'u1'));
     // c4 is the cheapest hex touching u3 and b4 holds it, so the run goes round to d5.
-    expect(options.find((c) => c.unit === 'u3')).toEqual({ unit: 'u3', cell: 'd5', feet: 40, actions: 0 });
-    expect(options.find((c) => c.unit === 'u2')).toEqual({ unit: 'u2', cell: 'b3', feet: 20, actions: 0 });
+    expect(options.find((c) => c.unit === 'u3')).toEqual({ unit: 'u3', cell: 'd5', feet: 40, actions: 1, runUp: true });
+    expect(options.find((c) => c.unit === 'u2')).toEqual({ unit: 'u2', cell: 'a4', feet: 40, actions: 1, runUp: true });
   });
 
   it('a charge from a higher hex puts the target’s save at −2', () => {
@@ -723,12 +721,13 @@ describe('movement points', () => {
     expect(save.modifier).toBe(unit(s, 'u2').stats.fortitude - 2);
   });
 
-  it('three actions cover a stride and then a charge that Presses, and no more', () => {
+  it('three actions cover a stride and then a charge, and no more', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c5');
     let s = act(state, { type: 'move', to: 'c3', unit: 'u0' }, scriptedRng([10]));
     expect(unit(s, 'u0').actions).toBe(2);
-    s = act(s, { type: 'charge', target: 'u2', unit: 'u0', activity: 2 }, scriptedRng([10, 10]));
+    expect(() => act(s, { type: 'charge', target: 'u2', unit: 'u0', activity: 2 }, scriptedRng([10, 10]))).toThrow(/too few actions/);
+    s = act(s, { type: 'charge', target: 'u2', unit: 'u0' }, scriptedRng([10, 10]));
     expect(unit(s, 'u0').square).toEqual(parse('c4'));
     expect(s.activated).toEqual(['u0']);
     expect(s.pending).toBe('defender');

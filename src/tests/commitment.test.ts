@@ -38,11 +38,11 @@ describe('action commitment', () => {
     expect(s.activated).toContain('u0');
   });
 
-  it('stacks commitment with the charge bonus and retains exposure', () => {
-    const state = setup(); unit(state, 'u2').square = parse('c4');
-    const s = act(state, { unit: 'u0', type: 'charge', target: 'u2', focus: 2 }, scriptedRng([10, 20]));
-    expect(checkFor(s, 'Strike against').modifier).toBe(17);
-    expect(unit(s, 'u0').exposed).toBe(true);
+  it('stacks commitment with the run-up bonus within the three-action budget', () => {
+    const state = setup(); unit(state, 'u2').square = parse('c6'); unit(state, 'u0').speed = 20;
+    expect(() => act(state, { unit: 'u0', type: 'charge', target: 'u2', focus: 2 }, scriptedRng([10, 20]))).toThrow(/too few actions/);
+    const s = act(state, { unit: 'u0', type: 'charge', target: 'u2', focus: 1 }, scriptedRng([10, 20]));
+    expect(checkFor(s, 'Strike against').modifier).toBe(15);
     expect(s.activated).toContain('u0');
   });
 

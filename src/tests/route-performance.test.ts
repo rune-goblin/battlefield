@@ -15,9 +15,9 @@ describe('movement route work', () => {
     const unit = state.units[0];
     unit.actions = 3;
     unit.speed = 20;
-    state.units[1].square = parse('c5');
+    state.units[1].square = parse('c6');
     const search = vi.spyOn(paths, 'reachableVia');
-    expect(chargePath(state, unit, state.units[1].id)).toEqual(['c2', 'c3', 'c4']);
+    expect(chargePath(state, unit, state.units[1].id)).toEqual(['c2', 'c3', 'c4', 'c5']);
     expect(search).toHaveBeenCalledTimes(1);
   });
 

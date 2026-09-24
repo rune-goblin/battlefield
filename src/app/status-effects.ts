@@ -28,7 +28,7 @@ const TEXT: Record<Status, (u: Unit, state: BattleState) => string> = {
   suppressed: (u, s) => `−2 to everything the unit rolls and to its Defence until ${sourceName(s, u.suppressedBy)} next activates.`,
   stunned: () => 'One action fewer on its next activation.',
   frightened: () => '−1 to everything the unit rolls and to its Defence until the end of its next activation.',
-  exposed: () => '−2 Defence after a critically failed Strike or a charge, until the unit acts again.',
+  exposed: () => '−2 Defence after a critically failed Strike, until the unit acts again.',
   persistent: (u) => `1 damage at the end of its next activation, then Fortitude against DC ${u.persistent!.dc} or lose 1 Morale, as with any damage.`,
   aegis: (u) => `An attacker rolls Will against DC ${u.aegis!.dc} before it attacks; a failure wastes the attempt, actions and all. Ends once this unit has next acted.`,
   warded: () => 'The next attack against it rolls twice and the attacker keeps the worse. Spent by that attack, or once it has next acted.',

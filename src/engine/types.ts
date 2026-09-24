@@ -257,8 +257,10 @@ export interface ChargeOption {
   /** The cell the charge stops on. */
   cell: string;
   feet: number;
-  /** Move actions, before the one the melee itself costs. */
+  /** The run's own actions, before the melee's. */
   actions: number;
+  /** It ends a short range from where it began, for +2 on the attack. */
+  runUp: boolean;
 }
 
 export interface MeleePlan {

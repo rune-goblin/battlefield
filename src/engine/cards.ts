@@ -113,6 +113,7 @@ export function deriveStats(card: UnitCard): UnitStats {
 
 export function cardTraits(card: UnitCard) {
   const p = ROLE_PROFILES[card.role];
+  const tactics: Tactic[] = card.tactics ?? p.tactics;
   return {
     pace: card.pace ?? p.pace,
     fear: card.fear ?? false,
@@ -121,7 +122,9 @@ export function cardTraits(card: UnitCard) {
     // without one retain their arcane default.
     tradition: card.tradition ?? 'arcane',
     signals: card.signals ?? [],
-    tactics: card.tactics ?? p.tactics,
+    // Every cavalry troop charges with impact, imported ones included, whose own tactic lists
+    // come from the kingdom and never name it.
+    tactics: card.role === 'cavalry' && !tactics.includes('cavalry-charge') ? [...tactics, 'cavalry-charge' as const] : tactics,
   };
 }
 

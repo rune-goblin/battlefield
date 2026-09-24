@@ -16,7 +16,7 @@ describe('complete melee routes', () => {
   it('offers the ordinary attack and the cheaper charge as distinct choices', () => {
     const b = battle(); const [u, target] = b.units;
     const plans = meleePlans(b, u, target.id);
-    expect(plans.map(p => [p.kind, p.moveActions + 1])).toEqual([['fight', 3], ['charge', 2]]);
+    expect(plans.map(p => [p.kind, p.moveActions + (p.kind === 'charge' ? 2 : 1)])).toEqual([['fight', 3], ['charge', 2]]);
     expect(plans.find(p => p.kind === 'charge')!.bonus).toBe(2);
     expect(notation(u.square)).toBe('e2');
     expect(b.log).toHaveLength(1);
@@ -24,6 +24,7 @@ describe('complete melee routes', () => {
 
   it.each(['fight', 'charge'] as const)('resolves move + %s exactly like the separate legal actions', kind => {
     const b = battle(); const [u, target] = b.units;
+    if (kind === 'charge') target.square = parse('e8');
     const plan = meleePlans(b, u, target.id).find(p => p.kind === kind)!;
     const combined = act(b, { type: 'advance', unit: u.id, target: target.id, via: plan.via!, finish: kind }, scriptedRng([15, 15]));
     const moved = act(b, { type: 'move', unit: u.id, to: plan.via! }, scriptedRng([]));
@@ -56,7 +57,7 @@ describe('complete melee routes', () => {
 
   it('uses banked movement, prices rough ground and preserves the final one-action attack', () => {
     const b = battle(); const [u, target] = b.units;
-    b.begun = true; u.actions = 1; u.feet = 20; target.square = parse('e6');
+    b.begun = true; u.actions = 2; u.feet = 20; target.square = parse('e8');
     const plan = meleePlans(b, u, target.id).find(p => p.kind === 'charge')!;
     expect(plan.moveActions).toBe(0);
     expect(() => act(b, { type: 'advance', unit: u.id, target: target.id, via: plan.via!, finish: 'charge' }, scriptedRng([15, 15]))).not.toThrow();

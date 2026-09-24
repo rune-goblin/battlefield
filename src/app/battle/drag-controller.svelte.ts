@@ -23,7 +23,7 @@ export type MoveBand = 1 | 2 | 3;
 // drawing an illegal one (see `onBoardDrag`).
 export interface MovePreview { kind: 'move'; cell: string; feet: number; actions: number; path: string[]; near: string[]; far: string[] }
 
-export interface ChargePreview { kind: 'charge'; cell: string; enemy: string; feet: number; actions: number; path: string[] }
+export interface ChargePreview { kind: 'charge'; cell: string; enemy: string; feet: number; actions: number; runUp: boolean; path: string[] }
 
 export interface AdvancePreview { kind: 'advance'; cell: string; enemy: string; feet: number; actions: number; path: string[]; plan: MeleePlan }
 
@@ -127,10 +127,10 @@ export function createDragController(s: DragShared) {
   }
 
   const chargeRow = (c: ChargeOption, via: string[] = waypoints): ChargePreview =>
-    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, path: chargePath(s.b, s.active!, c.unit, via) });
+    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, runUp: c.runUp, path: chargePath(s.b, s.active!, c.unit, via) });
 
   const advanceRow = (plan: MeleePlan): AdvancePreview => ({ kind: 'advance', plan, cell: plan.cell,
-    enemy: plan.target, feet: plan.feet, actions: plan.moveActions + 1, path: [...plan.movePath, ...plan.attackPath.slice(1)] });
+    enemy: plan.target, feet: plan.feet, actions: plan.moveActions + (plan.kind === 'charge' ? 2 : 1), path: [...plan.movePath, ...plan.attackPath.slice(1)] });
 
   function openMelee(id: string, via: string[] = []) {
     pending = null; s.closeAim(); s.focus = 0;
@@ -167,7 +167,9 @@ export function createDragController(s: DragShared) {
     // proto: Step and Flee walk their own roads and ignore waypoints; with any set, only the
     // readings that honour them are offered.
     if (waypoints.length) return rows;
-    if (s.act.steps.includes(cell)) rows.push({ kind: 'step', cell, path: [notation(s.active.square), cell] });
+    // A free unit's Move to a neighbour costs the same action and banks the leftover movement,
+    // so Step is offered only where it differs: out of a hold with no roll, or where Move can't go.
+    if (s.act.steps.includes(cell) && (s.act.escape || !m)) rows.push({ kind: 'step', cell, path: [notation(s.active.square), cell] });
     const escape = fleePlan(s.b, s.active, cell);
     if (escape) rows.push({ kind: 'flee', ...escape });
     return rows;
@@ -310,7 +312,7 @@ export function createDragController(s: DragShared) {
   const rowDetail = (row: Preview) =>
     row.kind === 'flee' ? `${row.moveActions ? `${actions(row.moveActions)} to move + ` : ''}1 action to flee · morale DC ${row.dc}`
       : row.kind === 'charge' ? `${actions(row.actions)}, melee included`
-      : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + 1 to ${row.plan.kind === 'charge' ? 'charge' : 'attack'}`
+      : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + ${row.plan.kind === 'charge' ? '2 to charge' : '1 to attack'}`
       : row.kind === 'step' ? '1 action · no roll'
         : s.act?.escape ? `${actionCost(row.actions)} · Reflex ${signed(s.act.escape.modifier)} vs DC ${s.act.escape.dc} to get away`
           : actionCost(row.actions);
@@ -319,8 +321,11 @@ export function createDragController(s: DragShared) {
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
   const ACTIVITIES: ActivityIndex[] = [1, 2, 3];
-  // The three the rules name, since a charge's Fight is bought at the charge's own price.
-  const CHARGES = ['Charge', 'Charge and Press', 'Charge and Overrun'];
+  // A charge adds an action to its Fight, so only the first two fit an activation. Cavalry
+  // charge with impact: each lands one step harder at the same price.
+  const CHARGE_ACTIVITIES: ActivityIndex[] = [1, 2];
+  const CHARGES = $derived(s.active?.tactics.includes('cavalry-charge')
+    ? ['Charge and Press', 'Charge and Overrun'] : ['Charge', 'Charge and Press']);
   const chargeActivity = $derived(pending?.activity ?? 1);
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.
   const chargeCost = (c: ChargePreview | AdvancePreview, activity: ActivityIndex) => c.actions - 1 + activity;
@@ -462,6 +467,7 @@ export function createDragController(s: DragShared) {
     get rowKey() { return rowKey; },
     get ACTIVITIES() { return ACTIVITIES; },
     get CHARGES() { return CHARGES; },
+    get CHARGE_ACTIVITIES() { return CHARGE_ACTIVITIES; },
     get chargeActivity() { return chargeActivity; },
     get chargeCost() { return chargeCost; },
     get dragBand() { return dragBand; },

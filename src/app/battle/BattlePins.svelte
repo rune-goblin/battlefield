@@ -210,7 +210,7 @@
           <span class="row-cost"><ActionCost n={i === c.pending.index ? c.dropCost(row) : row.kind === 'step' ? 1 : row.actions} /></span>
         </span>
         <span class="muted">
-          {#if i === c.pending.index && row.kind === 'advance'}{c.actionCost(row.plan.moveActions)} to move + {c.actions(c.chargeActivity + c.focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
+          {#if i === c.pending.index && row.kind === 'advance'}{c.actionCost(row.plan.moveActions)} to move + {c.actions(c.chargeActivity + (row.plan.kind === 'charge' ? 1 : 0) + c.focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
           {:else if i === c.pending.index && row.kind === 'charge'}{c.actions(c.dropCost(row))}, melee included
           {:else}{c.rowDetail(row)}{/if}
         </span>
@@ -243,12 +243,11 @@
         <p class="muted activity-detail popup-escapes">
           {#if row.kind === 'advance'}Move to {row.plan.via}, then {charging ? 'charge' : 'attack'} from there. {row.actions} actions total for the basic attack. {/if}
           {#if charging}
-            {#if row.kind === 'advance'}{row.plan.bonus ? `+${row.plan.bonus} on the attack.` : 'Rough ground removes the charge bonus.'} {/if}
-            Charge leaves this unit exposed: −2 Defence until it next acts.
+            {(row.kind === 'advance' ? row.plan.bonus > 0 : row.runUp) ? '+2 on the attack for the run-up.' : 'No run-up: the charge ends within 3 hexes of its start, so the attack takes no bonus.'}
           {:else}Attack uses the normal melee rules.{/if}
         </p>
         <div class="activity-chips">
-          {#each c.ACTIVITIES as g (g)}
+          {#each charging ? c.CHARGE_ACTIVITIES : c.ACTIVITIES as g (g)}
             {@const total = c.chargeCost(row, g)}
             {@const can = total <= c.active.actions}
             <button
@@ -263,7 +262,7 @@
             </button>
           {/each}
         </div>
-        <CommitmentPicker base={c.chargeCost(row, c.chargeActivity)} available={c.actionsLeft} bind:value={c.focus} effect={charging ? 'on the attack, in addition to the charge bonus' : 'on the attack'} />
+        <CommitmentPicker base={c.chargeCost(row, c.chargeActivity)} available={c.actionsLeft} bind:value={c.focus} effect={charging ? 'on the attack, in addition to any run-up bonus' : 'on the attack'} />
       {/if}
     {/each}
     {@render popupFoot(c.commit, c.picked?.kind === 'flee' ? 'Confirm flee' : c.picked?.kind === 'charge' || (c.picked?.kind === 'advance' && c.picked.plan.kind === 'charge') ? 'Confirm charge' : c.picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
