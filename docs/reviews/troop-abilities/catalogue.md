@@ -22,7 +22,7 @@ These definitions enable no runtime behavior. Numerical values below are initial
 | Control | **Shove** (`displace`) | Move the target one legal hex away from or toward the source after a qualifying hit. |
 | Protection | **Shielding** (`guard`) | Use Guard, or share its +2 protection with one adjacent ally while guarding. |
 | Protection | **Resolve** (`resolve`) | Gain +2 on checks to resist fear or rout. Ignore the first one-hex forced displacement each round. |
-| Movement | **Shock Charge** (`charge`) | Use the existing cavalry-charge impact benefit on a legal Charge. |
+| Movement | **Cavalry Charge** (`charge`) | Use the existing cavalry-charge impact benefit on a legal Charge. |
 | Movement | **Pathfinder** (`terrain-passage`) | Ignore ordinary difficult terrain in one assigned terrain group. |
 | Movement | **Vanguard** (`opening-move`) | Before its first activation, make one free Move of up to its ordinary allowance. |
 | Offense | **Exploit** (`advantage`) | Gain +1 to one assigned check type while one concrete condition holds. |
@@ -56,7 +56,7 @@ Recovery, Vitality, and Regeneration share Sustain but deserve distinct player c
 ## Assignment standards
 
 1. **Choose defining traits.** Aim for one to three visible abilities per unit, as a design target rather than a hard limit. Prefer mechanics that change positioning, target choice, timing, or counterplay. Record the source details we deliberately omit.
-2. **Keep one primary effect per source feature.** Combine two effects only when both matter to its identity, such as Shock Charge plus Sweep for trampling cavalry. More source paragraphs do not automatically grant more benefits.
+2. **Keep one primary effect per source feature.** Combine two effects only when both matter to its identity, such as Cavalry Charge plus Sweep for trampling cavalry. More source paragraphs do not automatically grant more benefits.
 3. **Attach mechanics to the ability.** Store its catalogue ID, flavor label, local attack reference, trigger, target, prerequisites, duration, and limits. A renamed creature or ability keeps those assignments. Source names, UUIDs, and slugs remain evidence and recognition hints.
 4. **Use fixed choices.** Restrict parameters to the catalogue's options. Use source damage tags and environmental requirements where they supply meaningful counters. A missing mechanical fact yields a review note, not a guessed benefit.
 5. **Preserve the triggering distinction.** On attack use, on hit, on damage, and on critical hit are separate choices. On-use Vitality still works on a miss. A replacement Volley with Snare or Suppression deals no normal damage.

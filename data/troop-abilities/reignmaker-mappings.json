@@ -60,7 +60,7 @@
         "charge"
       ],
       "reactions": [],
-      "conversion": "Shock Charge. Omit the source critical-failure knockdown and extra PF2e movement."
+      "conversion": "Cavalry Charge. Omit the source critical-failure knockdown and extra PF2e movement."
     },
     {
       "id": "covering-fire",
@@ -450,7 +450,7 @@
         "expose"
       ],
       "reactions": [],
-      "conversion": "Shock Charge with Expose on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity."
+      "conversion": "Cavalry Charge with Expose on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity."
     },
     {
       "id": "toughened-soldiers",
@@ -469,7 +469,7 @@
         "sweep"
       ],
       "reactions": [],
-      "conversion": "Shock Charge plus Sweep after a successful Charge. Omit movement through occupied troop spaces and attacks against every traversed creature."
+      "conversion": "Cavalry Charge plus Sweep after a successful Charge. Omit movement through occupied troop spaces and attacks against every traversed creature."
     },
     {
       "id": "unpredictable-movement",
@@ -573,7 +573,7 @@
         "charge"
       ],
       "reactions": [],
-      "conversion": "Shock Charge once per battle. Omit doubled PF2e Speed; retain the limited-use identity."
+      "conversion": "Cavalry Charge once per battle. Omit doubled PF2e Speed; retain the limited-use identity."
     },
     {
       "id": "hurl-nets",
@@ -703,7 +703,7 @@
         "charge"
       ],
       "reactions": [],
-      "conversion": "Shock Charge with the game's normal route and action rules."
+      "conversion": "Cavalry Charge with the game's normal route and action rules."
     },
     {
       "id": "grave-tide",
@@ -765,7 +765,7 @@
         "charge"
       ],
       "reactions": [],
-      "conversion": "Shock Charge. Omit the additional ten feet and source three-action movement sequence."
+      "conversion": "Cavalry Charge. Omit the additional ten feet and source three-action movement sequence."
     },
     {
       "id": "lower-halberds",
@@ -820,7 +820,7 @@
         "expose"
       ],
       "reactions": [],
-      "conversion": "Shock Charge; Expose on a successful hit while Shielding was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry."
+      "conversion": "Cavalry Charge; Expose on a successful hit while Shielding was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry."
     },
     {
       "id": "rain-of-arrows",

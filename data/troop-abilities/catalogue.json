@@ -145,7 +145,7 @@
     },
     {
       "id": "charge",
-      "name": "Shock Charge",
+      "name": "Cavalry Charge",
       "category": "Movement",
       "effect": "Use the existing cavalry-charge impact benefit on a legal Charge.",
       "options": [

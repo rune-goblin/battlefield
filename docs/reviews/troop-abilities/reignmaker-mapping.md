@@ -26,7 +26,7 @@ Dispositions: abstracted: 62; baseline: 20; omit: 6; defer: 7; reaction: 8.
 | Form Up (`form-up`) | baseline | — | Use the single-unit hex abstraction; omit individual troop segments. |
 | Troop Movement (`troop-movement`) | baseline | — | Use imported movement modes and game Move; omit free segment reshaping. |
 | Battlefield Medicine (`battlefield-medicine`) | abstracted | Recovery | Paid two-action Recovery for self or one adjacent ally, Health mode. Omit Medicine DC tiers, dice, critical-failure damage, and healer-specific hourly immunity; use the catalogue limit. |
-| Cavalry Charge (`cavalry-charge`) | abstracted | Shock Charge | Shock Charge. Omit the source critical-failure knockdown and extra PF2e movement. |
+| Cavalry Charge (`cavalry-charge`) | abstracted | Cavalry Charge | Cavalry Charge. Omit the source critical-failure knockdown and extra PF2e movement. |
 | Covering Fire (`covering-fire`) | abstracted | Suppression | Two-action non-damaging Volley replacement: on a successful game attack check, Suppress. Omit graded save outcomes and Speed penalties; this grants no normal Volley damage. |
 | Defend Allies (`defend-allies`) | abstracted | Shielding | Share Guard with one adjacent ally. Omit anti-flanking geometry and level-scaled fortified bonuses. |
 | Demoralize (`demoralize`) | abstracted | Menace | One-action Menace against one visible enemy within two hexes, resolved with a Will resistance check at the unit's normal ability DC. Omit Intimidation proficiency and ten-minute immunity. |
@@ -60,9 +60,9 @@ Dispositions: abstracted: 62; baseline: 20; omit: 6; defer: 7; reaction: 8.
 | Stay in the Fight! (`stay-in-the-fight`) | abstracted | Vitality | Two-action Vitality for one adjacent ally. Omit the 60-foot group effect and one-minute duration; it does not restore Health. |
 | Sure Stride (`sure-stride`) | abstracted | Pathfinder | Pathfinder: rough ground. Omit separate rubble, sand, and debris classifications. |
 | Swift Recovery (`swift-recovery`) | abstracted | Recovery | At activation start, condition-mode Recovery once per battle. Omit the DC 15 flat check. Explicit start timing is a restricted exception to the normal paid/rider Recovery deliveries. |
-| Thunder of Hooves (`thunder-of-hooves`) | abstracted | Shock Charge + Expose | Shock Charge with Expose on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity. |
+| Thunder of Hooves (`thunder-of-hooves`) | abstracted | Cavalry Charge + Expose | Cavalry Charge with Expose on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity. |
 | Toughened Soldiers (`toughened-soldiers`) | baseline | — | Preserve the source HP in import evidence and existing stat conversion; add no fifth Health box. A small PF2e HP bonus may disappear at this scale. |
-| Trample (`trample`) | abstracted | Shock Charge + Sweep | Shock Charge plus Sweep after a successful Charge. Omit movement through occupied troop spaces and attacks against every traversed creature. |
+| Trample (`trample`) | abstracted | Cavalry Charge + Sweep | Cavalry Charge plus Sweep after a successful Charge. Omit movement through occupied troop spaces and attacks against every traversed creature. |
 | Unpredictable Movement (`unpredictable-movement`) | abstracted | Exploit | Exploit: +1 Defence against ranged attacks. Omit the separate Salvo save bonus. |
 | Volunteers (`volunteers`) | omit | — | Campaign pay logistics; no tactical ability. |
 | Wanderers (`wanderers`) | omit | — | Campaign garrison logistics; no tactical ability. |
@@ -72,7 +72,7 @@ Dispositions: abstracted: 62; baseline: 20; omit: 6; defer: 7; reaction: 8.
 | Burning Weaponry (`burning-weaponry`) | abstracted | Lingering Harm | Critical melee hit applies Lingering Harm with the fire tag. Omit source persistent damage dice. |
 | Chorus of Croaks (`chorus-of-croaks`) | abstracted | Menace | Adjacent hostile Menace aura. The registry version is passive; omit its separate Demoralize grant and fear-save penalty rather than creating three benefits. |
 | Explosive Defeat (`explosive-defeat`) | defer | — | Retain the death-explosion identity for a later death-trigger proposal. Do not approximate it with Sweep or add a custom one-creature callback now. |
-| Furious Charge (`furious-charge`) | abstracted | Shock Charge | Shock Charge once per battle. Omit doubled PF2e Speed; retain the limited-use identity. |
+| Furious Charge (`furious-charge`) | abstracted | Cavalry Charge | Cavalry Charge once per battle. Omit doubled PF2e Speed; retain the limited-use identity. |
 | Hurl Nets (`hurl-nets`) | abstracted | Snare | Two-action non-damaging Volley replacement: a successful game attack check applies Snare. This replaces the source slowed/action penalty and Escape DC with a movement restriction and one-action release. |
 | Primal Magic (`primal-magic`) | defer | — | Retain as a spell-catalogue choice. The random multi-condition table does not justify five troop-specific ability branches. |
 | Ragged Formation (`ragged-formation`) | omit | — | Shared occupancy needs a different board model. Preserve the source description and grant no substitute bonus. |
@@ -86,20 +86,20 @@ Dispositions: abstracted: 62; baseline: 20; omit: 6; defer: 7; reaction: 8.
 | Clash of Steel (`clash-of-steel`) | baseline | — | Use the ordinary melee profile. |
 | Dagger Defense (`dagger-defense`) | abstracted | Shielding | Using the melee attack grants self Shielding until the next activation. It still grants protection on a miss; omit the separate +1 PF2e AC value. |
 | Drilled in Formations (`drilled-in-formations`) | abstracted | Shielding | Assign Shielding as the unit's formation specialty. Omit switching among loose, column, and wedge formations; this is a deliberate selection, not an exact conversion of every formation. |
-| First-Class Charge (`first-class-charge`) | abstracted | Shock Charge | Shock Charge with the game's normal route and action rules. |
+| First-Class Charge (`first-class-charge`) | abstracted | Cavalry Charge | Cavalry Charge with the game's normal route and action rules. |
 | Grave Tide (`grave-tide`) | omit | — | Shared-space movement would change the board model; preserve the source description. |
 | Harry Prey (`harry-prey`) | abstracted | Expose | A successful melee hit Exposes its target. Omit the follow-up Athletics Trip check. |
 | Hurl Javelins (`hurl-javelins`) | baseline | — | Use the ordinary short ranged profile. |
 | Indiscriminate Assault (`indiscriminate-assault`) | defer | — | The attack's friendly-fire drawback needs explicit target selection. Keep ordinary attack numbers, flag the omitted drawback, and grant no bonus. |
 | Join the Fray (`join-the-fray`) | baseline | — | Use the ordinary melee profile. |
 | Keep Up With Me! (`keep-up-with-me`) | abstracted | Exploit | After dealing melee damage, spend one action to grant one adjacent ally Exploit on its next attack before the source's next activation. Omit source range and +3 scaling. |
-| Lance Charge (`lance-charge`) | abstracted | Shock Charge | Shock Charge. Omit the additional ten feet and source three-action movement sequence. |
+| Lance Charge (`lance-charge`) | abstracted | Cavalry Charge | Cavalry Charge. Omit the additional ten feet and source three-action movement sequence. |
 | Lower Halberds! (`lower-halberds`) | baseline | — | Use ordinary melee stats and source damage tags. Omit reach and physical-damage-type selection as extra abilities. |
 | Lower Spears! (`lower-spears`) | baseline | — | Use ordinary melee stats; omit ten-foot individual reach. |
 | Mounted Troop (`mounted-troop`) | baseline | — | Use the troop's role and imported movement. Omit mixed rider/mount spell-target accounting. |
 | No Retreat (Elite) (`no-retreat-elite`) | abstracted | Resolve | Resolve: hold ground, same as No Retreat. Omit the stronger source distance reduction and fleeing-to-slowed conversion. |
 | Pack Hunt (`pack-hunt`) | abstracted | Exploit | Exploit: +1 melee against an Exposed target. Substitute the existing Exposed state for source prone/clumsy interaction. |
-| Phalanx Charge (`phalanx-charge`) | abstracted | Shock Charge + Expose | Shock Charge; Expose on a successful hit while Shielding was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry. |
+| Phalanx Charge (`phalanx-charge`) | abstracted | Cavalry Charge + Expose | Cavalry Charge; Expose on a successful hit while Shielding was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry. |
 | Rain of Arrows (`rain-of-arrows`) | baseline | — | Use the imported ranged profile. Omit the second range/burst tradeoff as an additional ability. |
 | Seek Quarry (`seek-quarry`) | abstracted | Exploit | Mark one enemy before battle; Exploit +1 melee against that quarry. This deliberately replaces detailed tracking Perception with a battlefield hunting specialty. |
 | Shambling Onslaught (`shambling-onslaught`) | defer | — | The registry wording affects all nearby creatures. Keep attack numbers and flag the friendly-fire clause for review; do not assume enemies-only behavior from another source version. |
