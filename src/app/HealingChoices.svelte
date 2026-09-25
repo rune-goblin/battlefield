@@ -35,6 +35,6 @@
 </fieldset>
 <style>
 fieldset { margin:.6rem .3rem; padding:.5rem; border:1px solid var(--rule); border-radius:8px; }
-legend { font-weight:600; } p { font-size:.85rem; color:var(--muted); } label { display:flex; gap:.5rem; justify-content:space-between; margin:.4rem 0; }
+legend { font-weight:600; } p { font-size: var(--type-small); color:var(--muted); } label { display:flex; gap:.5rem; justify-content:space-between; margin:.4rem 0; }
 select { max-width:65%; background:var(--card); color:var(--ink); font:inherit; }
 </style>

@@ -110,7 +110,7 @@
     position: absolute; right: 0; top: calc(100% + .3rem); z-index: 10; width: 20rem;
     display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
     background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: .85rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: var(--type-small);
   }
   .row { display: flex; gap: .4rem; }
   .row input { flex: 1; min-width: 0; }
@@ -119,7 +119,7 @@
   li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .meta { display: flex; flex-direction: column; min-width: 0; }
   .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .muted { color: var(--muted); font-size: .78rem; }
+  .muted { color: var(--muted); font-size: var(--type-label); }
   .actions { display: flex; gap: .25rem; flex: none; }
-  .actions button { padding: .1rem .4rem; font-size: .78rem; }
+  .actions button { padding: .1rem .4rem; font-size: var(--type-label); }
 </style>

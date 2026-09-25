@@ -59,21 +59,21 @@
 
 <style>
   .unit-sheet { display: flex; flex-direction: column; gap: .6rem; margin: .35rem 0 .25rem; }
-  .movement-source { display: flex; flex-direction: column; gap: .15rem; font-size: .8rem; color: var(--muted); }
-  .caster { color: var(--accent); font-size: .85rem; font-weight: 650; }
-  .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: .8rem; padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
+  .movement-source { display: flex; flex-direction: column; gap: .15rem; font-size: var(--type-label); color: var(--muted); }
+  .caster { color: var(--accent); font-size: var(--type-small); font-weight: 600; }
+  .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: var(--type-label); padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
   dl { margin: 0; }
-  dt { color: var(--muted); font-size: .76rem; }
-  dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 650; }
+  dt { color: var(--muted); font-size: var(--type-label); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
   .vitals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem; }
   .vitals > div { padding: .35rem .4rem; background: var(--band); border-radius: 5px; }
-  .vitals dd { font-size: 1.3rem; line-height: 1.3; }
-  small { color: var(--muted); font-size: .76rem; font-weight: 400; }
+  .vitals dd { font-size: var(--type-2); line-height: var(--leading-compact); }
+  small { color: var(--muted); font-size: var(--type-label); font-weight: 400; }
   .attacks { display: flex; flex-direction: column; gap: .25rem; }
-  .attack { display: grid; grid-template-columns: minmax(0, 1fr) 3rem 6.5rem; gap: .4rem; align-items: baseline; font-size: .9rem; }
+  .attack { display: grid; grid-template-columns: minmax(0, 1fr) 3rem 6.5rem; gap: .4rem; align-items: baseline; font-size: var(--type-small); }
   .attack strong { font-variant-numeric: tabular-nums; text-align: right; }
   .attack small { text-align: right; }
   .checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem .8rem; padding-top: .5rem; border-top: 1px solid var(--rule); }
   .checks > div { display: flex; justify-content: space-between; gap: .35rem; align-items: baseline; }
-  .checks dd { font-size: .85rem; }
+  .checks dd { font-size: var(--type-small); }
 </style>

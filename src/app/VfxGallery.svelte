@@ -101,7 +101,7 @@
 </div>
 
 <style>
-  .gallery { position: fixed; inset: 0; display: grid; grid-template-rows: 1fr auto; background: #111; color: #ddd; font: 13px system-ui, sans-serif; }
+  .gallery { position: fixed; inset: 0; display: grid; grid-template-rows: 1fr auto; background: #111; color: #ddd; font: 13px var(--sans); }
   .panes { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.5rem; padding: 0.5rem; min-height: 0; }
   /* min-width: 0 on every grid item: the canvas's own width attribute would otherwise blow
      the pane out past its column and the board would frame itself for that wider box. */

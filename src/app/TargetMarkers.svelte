@@ -78,7 +78,7 @@
   }
   .target-marker img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 2px 4px #000b); }
   .target-marker.compact { background: var(--card); border-color: var(--accent); padding: 2px; }
-  .geometry { position: absolute; right: -5px; bottom: -6px; font-size: .65rem; padding: 0 .15rem; border-radius: 3px; background: var(--card); color: var(--ink); }
+  .geometry { position: absolute; right: -5px; bottom: -6px; font-size: var(--type-label); padding: 0 .15rem; border-radius: 3px; background: var(--card); color: var(--ink); }
   .target-marker:hover:not([data-selected='true']), .target-marker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .target-marker:hover img { filter: drop-shadow(0 2px 5px #000c) brightness(1.2); }
   .target-marker.resolved { pointer-events: none; animation: resolve .8s ease-out forwards; }

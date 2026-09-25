@@ -59,8 +59,8 @@
     background: var(--card); border: 1px solid var(--rule); border-top: 3px solid var(--accent);
     border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
   }
-  h2 { margin: 0; padding: 0; border: 0; font-size: 1.15rem; line-height: 1.3; }
-  p { margin: 0; line-height: 1.45; }
+  h2 { margin: 0; padding: 0; border: 0; font-size: var(--type-1); line-height: var(--leading-compact); }
+  p { margin: 0; line-height: var(--leading-compact); }
   input { width: 100%; }
   .buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
 </style>

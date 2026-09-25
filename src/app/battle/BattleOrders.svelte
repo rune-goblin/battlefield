@@ -124,7 +124,7 @@
 
 <style>
   .unit-details { margin: .5rem 0; }
-  summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
+  summary { cursor: pointer; color: var(--muted); font-size: var(--type-small); }
   .equipment-controls { display: flex; flex-direction: column; gap: .35rem; margin: .3rem 0 .6rem; }
   .gate-control { display: flex; align-items: center; gap: .6rem; text-align: left; }
   .gate-control > span { flex: 1; }
@@ -132,10 +132,10 @@
   .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
   .orders-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem; }
   .orders-head h3 { margin: 0; }
-  .orders-head .muted { font-size: .78rem; }
+  .orders-head .muted { font-size: var(--type-label); }
   .action-pips { align-items: center; gap: .8rem; margin: .4rem 0 .1rem; }
   .end-turn { width: 100%; margin-top: auto; }
-  .cost-key { margin: .2rem 0 .5rem; font-size: .76rem; color: var(--muted); line-height: 1.7; }
+  .cost-key { margin: .2rem 0 .5rem; font-size: var(--type-label); color: var(--muted); line-height: var(--leading-body); }
   .move-card h3 { margin: 0; font-size: inherit; }
   .move-head {
     display: flex; align-items: baseline; gap: .4rem; width: 100%;
@@ -148,8 +148,8 @@
     padding: .3rem .55rem; border-radius: 6px; background: var(--band);
   }
   .move-note .row-prop { vertical-align: -.35rem; margin-right: .2rem; }
-  .move-note { margin: 0; padding: .45rem .55rem; border-radius: 6px; border-left: 4px solid var(--bad); background: var(--band); line-height: 1.45; }
+  .move-note { margin: 0; padding: .45rem .55rem; border-radius: 6px; border-left: 4px solid var(--bad); background: var(--band); line-height: var(--leading-compact); }
   .move-row.current { outline: 2px solid var(--accent); outline-offset: -1px; }
   .move-row-label { display: inline-flex; align-items: center; min-width: 3rem; color: var(--ink); }
-  .hint { font-size: .8rem; }
+  .hint { font-size: var(--type-label); }
 </style>

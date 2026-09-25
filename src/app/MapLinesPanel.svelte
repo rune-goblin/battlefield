@@ -58,17 +58,17 @@
 </section>
 
 <style>
-  .eyebrow { font: 600 .78rem/1.4 system-ui, sans-serif; color: var(--muted); margin: 0 0 .6rem; }
+  .eyebrow { font: 600 var(--type-label)/var(--leading-compact) var(--sans); color: var(--muted); margin: 0 0 .6rem; }
   section { border-top: 1px solid var(--rule); margin-top: 1.2rem; padding-top: 1rem; }
   .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
   h2 { border: 0; margin: 0; padding: 0; }
-  h3 { font-size: .85rem; margin: 0; }
-  .section-title span { font-size: .75rem; color: var(--muted); }
+  h3 { font-size: var(--type-small); margin: 0; }
+  .section-title span { font-size: var(--type-label); color: var(--muted); }
   .level { border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); margin-top: 1rem; padding-top: .8rem; }
-  .description { margin: .4rem 0 .9rem; color: var(--muted); font-size: .8rem; }
-  .slider { display: flex; justify-content: space-between; width: 100%; font-size: .85rem; }
+  .description { margin: .4rem 0 .9rem; color: var(--muted); font-size: var(--type-label); }
+  .slider { display: flex; justify-content: space-between; width: 100%; font-size: var(--type-small); }
   output { font-variant-numeric: tabular-nums; color: var(--accent); }
   input[type=range] { display: block; width: 100%; padding: 0; margin: .5rem 0 .65rem; accent-color: var(--accent); }
-  .check { display: flex; align-items: center; gap: .4rem; margin: .7rem 0 .2rem; font-size: .85rem; }
+  .check { display: flex; align-items: center; gap: .4rem; margin: .7rem 0 .2rem; font-size: var(--type-small); }
   input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>

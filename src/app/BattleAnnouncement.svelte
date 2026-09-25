@@ -41,7 +41,7 @@
   }
   .message::after { transform: rotate(180deg); }
   .round .message {
-    font-size: clamp(2.4rem, 4.6vw, 4rem); font-weight: 650;
+    font-size: clamp(var(--type-7), 4.6vw, var(--type-12)); font-weight: 600;
     white-space: nowrap;
     animation: round-title 4.2s ease both;
   }
@@ -51,13 +51,13 @@
     gap: 1rem;
     color: color-mix(in srgb, var(--turn-colour) 75%, var(--ink));
     -webkit-text-stroke-width: 4px;
-    font-size: clamp(1.8rem, 2.9vw, 2.6rem); font-weight: 700;
+    font-size: clamp(var(--type-5), 2.9vw, var(--type-8)); font-weight: 700;
     animation: side-label 4s ease both;
   }
   .detail {
     margin-top: .15rem; opacity: 0; visibility: hidden;
     color: var(--ink); -webkit-text-stroke: 3px var(--paper); paint-order: stroke fill;
-    font-size: clamp(1rem, 1.5vw, 1.3rem); font-weight: 650;
+    font-size: clamp(var(--type-body), 1.5vw, var(--type-2)); font-weight: 600;
     animation: side-label 4s ease both; animation-delay: .25s;
   }
   /* Starts as the 4.2s round title begins its descent at 70%. */

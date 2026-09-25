@@ -38,8 +38,8 @@
   .outcome-art { width: min(100%, 100rem); height: 100%; object-fit: contain; }
   .outcome-title {
     position: absolute; inset: auto 1rem 12%; text-align: center; color: #fff1dc;
-    font-size: clamp(2.4rem, 6vw, 5.5rem); font-weight: 650;
-    text-shadow: 0 2px 5px #000, 0 5px 30px #000; line-height: 1.1;
+    font-size: clamp(var(--type-7), 6vw, var(--type-14)); font-weight: 600;
+    text-shadow: 0 2px 5px #000, 0 5px 30px #000; line-height: var(--leading-heading);
     transition: opacity .6s ease;
   }
   .reporting .outcome-title { opacity: 0; }

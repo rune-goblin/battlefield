@@ -149,11 +149,11 @@
   .name {
     position: absolute; top: 100%; left: 50%; transform: translate(-50%, .15rem);
     padding: .15rem .45rem; border-radius: 6px; white-space: nowrap;
-    font-size: .95rem; font-weight: 600; pointer-events: none;
+    font-size: var(--type-body); font-weight: 600; pointer-events: none;
     background: var(--card); border: 1px solid var(--accent);
     opacity: 0; transition: opacity .1s ease;
   }
-  .name small { display: block; font-size: .78rem; font-weight: 400; color: var(--muted); }
+  .name small { display: block; font-size: var(--type-label); font-weight: 400; color: var(--muted); }
   .slice:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
   .name.show { opacity: 1; }
 
@@ -175,7 +175,7 @@
     background: rgb(26 23 20 / .78);
     /* Fixed, not `--ink`/`--paper`: the band behind it is dark in either theme, and those two
        swap which one that means. */
-    color: #f4efe6; font-size: 1.5rem; font-weight: 700; line-height: 1; cursor: pointer;
+    color: #f4efe6; font-size: var(--type-3); font-weight: 700; line-height: 1; cursor: pointer;
     filter: drop-shadow(0 2px 4px rgb(0 0 0 / .4));
     transition: transform .12s cubic-bezier(.25, 1.3, .45, 1), background-color .12s ease;
   }

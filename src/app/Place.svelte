@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { canEmplace, deployRanks, ENGINES, derivation, gridOf, notation, paceReason, type Side, type UnitCard } from '../engine/index.js';
+  import { abilityDescription, abilitySummary, canEmplace, deployRanks, ENGINES, derivation, gridOf, notation, paceReason, type Side, type UnitCard } from '../engine/index.js';
   import { engineArtUrl, troopArtUrl, type BoardEventOf, type TokenModel } from '../board/index.js';
   import { gameMap } from './map-style.svelte.js';
   import { MapControls, TopBar } from './shell/index.js';
@@ -246,7 +246,7 @@
   ]);
 
   presentStage({
-    get leftTitle() { return siege ? 'Siege engines' : `${sideWord} army`; },
+    get leftTitle() { return siege ? 'Siege engines' : `${side === 'attacker' ? 'Attacking' : 'Defending'} army`; },
     leftWidth: 26,
     get top() { return top; }, get rail() { return rail; }, get leftHead() { return steps; }, get modal() { return modal; }, get float() { return float; }, get left() { return left; },
     get board() {
@@ -276,6 +276,7 @@
   </dl>
 {/snippet}
 
+<!-- proto: the review note's opening sentences address the designer; the rest describes the ability. -->
 {#snippet sheetLines(card: UnitCard)}
   {@const sh = card.sheet}
   <p class="line">
@@ -286,6 +287,23 @@
     {/if}
   </p>
   <p class="line">{paceReason(card)}</p>
+  {#if card.abilities?.length || card.abilityReview?.length}
+    <div class="abilities" aria-label="Troop abilities">
+      <p class="caption">Abilities</p>
+      {#each card.abilities ?? [] as ability, i (i)}
+        <details>
+          <summary onclick={(ev) => ev.stopPropagation()}>{abilitySummary(ability)}</summary>
+          <p>{abilityDescription(ability)}</p>
+        </details>
+      {/each}
+      {#each card.abilityReview ?? [] as note, i (i)}
+        <details class="unplayed">
+          <summary onclick={(ev) => ev.stopPropagation()}>{note.label} <span class="tag">not in play</span></summary>
+          <p>{note.reason.replace(/^No assignment in the shared catalogue\..*?grant no substitute benefit automatically\.\s*/, '')}</p>
+        </details>
+      {/each}
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet engineOptions()}
@@ -355,9 +373,9 @@
   {/if}
 
   {#if siege}
-    <h3>Engines</h3>
+    <h3 class="listhead">Engines</h3>
   {:else}
-    <h3 class={side === 'attacker' ? 'side-att' : 'side-def'}>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
+    <h3 class="listhead {side === 'attacker' ? 'side-att' : 'side-def'}">{side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
   {/if}
   <div class="unitlist" style:--side={siege ? 'var(--muted)' : side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
     {#each mine as u (u.id)}
@@ -401,8 +419,8 @@
         </div>
 
         <div class="details">
-          {@render sheetLines(u.card)}
           <p class="line where">{u.square ? `Standing on ${u.square}` : `Off the board · deploys on ${deployNote(u)}`}</p>
+          {@render sheetLines(u.card)}
           {#each u.engines as e (e.id)}
             <p class="line">⚙ {e.name} rides along</p>
           {/each}
@@ -488,13 +506,14 @@
 
 <style>
   /* The longest engine name is wider than the dock, and a select sizes to its longest option. */
+  .listhead { margin: .4rem 0 0; font-size: var(--type-small); }
   .card .row select { flex: 1 1 10rem; min-width: 0; }
   .scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; background: rgba(0, 0, 0, .45); }
   .ask {
     width: min(26rem, 100%); padding: 1rem 1.1rem; background: var(--paper); border: 1px solid var(--rule);
     border-top: 4px solid var(--side); border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
   }
-  .ask h2 { margin: 0 0 .4rem; border: 0; padding: 0; font-size: 1.05rem; }
+  .ask h2 { margin: 0 0 .4rem; border: 0; padding: 0; font-size: var(--type-body); }
 
   /* The card. A piece off the board is a card still in hand: dashed edge, hatched paper. Put
      it down and the card goes solid, with its square stamped under the portrait. */
@@ -523,7 +542,7 @@
   .piece:not(.down) {
     border-style: dashed;
     background-image:
-      repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--side) 30%, transparent) 7px 8px),
+      repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--side) 12%, transparent) 7px 8px),
       linear-gradient(to right, color-mix(in srgb, var(--side) 16%, transparent), transparent 60%);
   }
   .piece:hover { border-color: var(--hi); }
@@ -537,33 +556,40 @@
   .unitlist { gap: .5rem; --hi: color-mix(in srgb, var(--side) 65%, var(--ink)); }
   .grip {
     display: block;
-    width: .6rem; height: 1.05rem; margin-top: .15rem; align-self: center;
+    width: .6rem; height: 1.05rem; margin-top: .15rem; align-self: start;
     background-image: radial-gradient(currentColor .9px, transparent 1px);
     background-size: .3rem .3rem;
-    color: var(--rule);
+    color: var(--muted);
     cursor: grab;
   }
   .piece:hover .grip { color: var(--hi); }
-  .name { margin: 0; font-size: .95rem; font-weight: 600; line-height: 1.15; }
-  .meta { margin: .1rem 0 0; font-size: .75rem; color: var(--muted); }
+  .name { margin: 0; font-size: var(--type-body); font-weight: 700; line-height: var(--leading-heading); }
+  .meta { margin: .1rem 0 0; font-size: var(--type-label); color: var(--muted); }
+  .abilities { display: grid; gap: .15rem; margin-top: .45rem; }
+  .caption { margin: 0; font-size: var(--type-label); color: var(--muted); }
+  .abilities details { font-size: var(--type-label); line-height: var(--leading-compact); }
+  .abilities summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .abilities .unplayed summary { color: var(--ink-2); font-weight: 400; }
+  .abilities .tag { font-size: var(--type-label); font-style: italic; color: var(--muted); }
+  .abilities p { margin: .15rem 0 .35rem .9rem; color: var(--ink-2); }
 
   .stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .4rem; margin: .5rem 0 0; }
   .statcell { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--side) 60%, transparent); padding-left: .35rem; }
-  .statcell dt { font-size: .72rem; font-weight: 600; color: var(--muted); }
-  .statcell dd { margin: 0; font-size: .92rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .statcell dt { font-size: var(--type-label); color: var(--muted); }
+  .statcell dd { margin: 0; font-size: var(--type-body); font-weight: 700; line-height: var(--leading-compact); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .plate { grid-area: plate; display: flex; flex-direction: column; gap: .3rem; }
   /* The miniature stands on the card itself: the art is cut out, so a plate behind it would
      only put a box round a piece that has none on the board. */
   .portrait { position: relative; aspect-ratio: 1; display: grid; place-items: center; }
   .portrait img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .portrait .cog { font-size: 1.6rem; color: var(--muted); }
+  .portrait .cog { font-size: var(--type-4); color: var(--muted); }
   .level {
     position: absolute; top: 0; right: 0; min-width: 1.15rem; padding: .05rem .2rem;
-    font-size: .68rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;
+    font-size: var(--type-label); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;
     color: var(--paper); background: var(--side); border-radius: 4px;
   }
-  .deploy { width: 100%; padding: .2rem .1rem; font-size: .8rem; border-radius: 5px; font-variant-numeric: tabular-nums; }
+  .deploy { width: 100%; padding: .25rem .1rem; font-size: var(--type-label); border-radius: 5px; font-variant-numeric: tabular-nums; }
   .deploy:not(.set) { color: var(--hi); border-color: var(--hi); font-weight: 600; }
   .deploy:hover:not(:disabled) { border-color: var(--hi); }
   .deploy.set { color: var(--muted); }
@@ -571,12 +597,11 @@
   .deploy.set:hover .undo { opacity: 1; }
 
   .details { grid-area: details; margin-top: .5rem; padding-top: .35rem; border-top: 1px solid color-mix(in srgb, var(--side) 55%, transparent); }
-  .line { margin: 0; font-size: .72rem; line-height: 1.4; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .where { color: var(--ink); }
-  .piece:not(.down) .where { font-style: italic; color: var(--muted); }
+  .line { margin: 0; font-size: var(--type-label); line-height: var(--leading-compact); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .where { margin-bottom: .2rem; font-weight: 600; color: var(--ink); }
 
 
-  .kill { border: 0; background: none; color: var(--muted); padding: 0 .2rem; font-size: 1rem; line-height: 1; opacity: .5; }
+  .kill { min-width: 1.5rem; min-height: 1.5rem; border: 0; background: none; color: var(--muted); padding: 0; font-size: var(--type-1); line-height: 1; }
   .kill:hover:not(:disabled) { color: var(--bad); opacity: 1; border-color: transparent; }
-  .line .inline { font-size: .75rem; padding: .05rem .4rem; margin-left: .3rem; }
+  .line .inline { font-size: var(--type-label); padding: .05rem .4rem; margin-left: .3rem; }
 </style>

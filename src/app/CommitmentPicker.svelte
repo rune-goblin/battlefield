@@ -21,10 +21,10 @@
 
 <style>
   .commitment { margin: .35rem .3rem; padding: .35rem; border: 1px solid var(--rule); border-radius: 8px; min-width: 0; }
-  legend { padding: 0 .3rem; font-weight: 600; font-size: .85rem; }
+  legend { padding: 0 .3rem; font-weight: 600; font-size: var(--type-small); }
   .choices { display: flex; gap: .35rem; }
-  button { flex: 1; display: flex; flex-direction: row; justify-content: center; gap: .3rem; align-items: center; padding: .45rem .2rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); cursor: pointer; font: inherit; font-size: .8rem; }
+  button { flex: 1; display: flex; flex-direction: row; justify-content: center; gap: .3rem; align-items: center; padding: .45rem .2rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); cursor: pointer; font: inherit; font-size: var(--type-label); }
   button.chosen { border-color: var(--accent); background: var(--band); }
   button:disabled { opacity: .4; cursor: default; }
-  p { margin: .45rem 0 0; color: var(--muted); font-size: .8rem; }
+  p { margin: .45rem 0 0; color: var(--muted); font-size: var(--type-label); }
 </style>

@@ -104,27 +104,27 @@
     background: color-mix(in srgb, var(--side) 30%, var(--glass));
     border: 1px solid color-mix(in srgb, var(--side) 60%, var(--rule));
     border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
-    font: inherit; font-size: .68rem; color: var(--ink); text-align: center; cursor: pointer;
+    font: inherit; font-size: var(--type-label); color: var(--ink); text-align: center; cursor: pointer;
     transition: width .16s ease, padding .16s ease, font-size .16s ease, opacity .16s ease;
   }
   .unit-card img {
     width: 2.5rem; height: 2.5rem; object-fit: contain;
     transition: width .16s ease, height .16s ease;
   }
-  .unit-card .name { font-weight: 600; line-height: 1.15; }
-  .unit-card .meta { color: var(--muted); font-size: .92em; }
+  .unit-card .name { font-weight: 600; line-height: var(--leading-heading); }
+  .unit-card .meta { color: var(--muted); font-size: var(--type-label); }
 
   /* The army reel reads like the Dock: the chosen army stands up out of the row and the rest step
      back, with a hover that shows what picking one would do. `.hot` is the same hover arriving
      from the board: card and miniature light together, whichever one the pointer is over. */
   .unit-card:hover:not(.on):not(:disabled),
-  .unit-card.hot:not(.on):not(:disabled) { width: 5.2rem; font-size: .72rem; }
+  .unit-card.hot:not(.on):not(:disabled) { width: 5.2rem; font-size: var(--type-label); }
   .unit-card:hover:not(.on):not(:disabled) img,
   .unit-card.hot:not(.on):not(:disabled) img { width: 3.1rem; height: 3.1rem; }
   .unit-card:hover:not(:disabled), .unit-card.hot { border-color: var(--hi); }
   .unit-card.on {
     position: relative; z-index: 1;
-    width: 6.6rem; padding: .45rem; font-size: .8rem;
+    width: 6.6rem; padding: .45rem; font-size: var(--type-label);
   }
   .unit-card.on img { width: 4.2rem; height: 4.2rem; }
   .unit-card.aside { opacity: .35; }
@@ -135,14 +135,14 @@
   .chit {
     pointer-events: auto;
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .1rem;
-    width: 3.2rem; padding: .15rem .1rem; opacity: .7;
+    width: 3.2rem; padding: .15rem .1rem;
     background: color-mix(in srgb, var(--side) 18%, transparent);
     border: 1px solid color-mix(in srgb, var(--side) 35%, transparent); border-radius: 6px;
-    color: color-mix(in srgb, var(--hi) 65%, var(--muted));
+    color: var(--ink-2);
     text-shadow: 0 1px 2px var(--paper);
   }
-  .chit img { width: 2rem; height: 2rem; object-fit: contain; filter: grayscale(1); }
-  .chit .name { font-size: .6rem; line-height: 1.1; text-align: center; }
+  .chit img { width: 2rem; height: 2rem; object-fit: contain; filter: grayscale(1); opacity: .7; }
+  .chit .name { font-size: var(--type-label); line-height: var(--leading-heading); text-align: center; }
 
   .status-bars { display: flex; flex-direction: column; gap: 2px; width: 2.7rem; margin-top: 1px; }
   .status-bar { position: relative; display: block; height: .45rem; border: 1px solid var(--outline); background: var(--track); overflow: hidden; }

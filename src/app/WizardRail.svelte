@@ -38,7 +38,7 @@
     backdrop-filter: blur(6px);
     border-right: 1px solid var(--rule);
   }
-  h2 { margin: 0 .3rem; border: 0; padding: 0; font-size: .9rem; font-weight: 600; color: var(--muted); }
+  h2 { margin: 0 .3rem; border: 0; padding: 0; font-size: var(--type-body); font-weight: 700; color: var(--ink); }
   ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 
   /* The line between two marks: a step's own mark sits on it. */
@@ -54,12 +54,12 @@
   li button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); }
   .mark {
     position: relative; z-index: 1; flex: none; width: 1.65rem; height: 1.65rem; border-radius: 50%;
-    display: grid; place-items: center; font-size: .8rem; font-variant-numeric: tabular-nums;
+    display: grid; place-items: center; font-size: var(--type-label); font-variant-numeric: tabular-nums;
     border: 1px solid var(--rule); background: var(--card); color: var(--muted);
   }
   .text { display: flex; flex-direction: column; min-width: 0; }
-  .label { font-size: .92rem; line-height: 1.25; color: var(--muted); }
-  .hint { font-size: .7rem; line-height: 1.3; color: var(--muted); opacity: .8; }
+  .label { font-size: var(--type-small); line-height: var(--leading-heading); color: var(--ink-2); }
+  .hint { font-size: var(--type-label); line-height: var(--leading-compact); color: var(--muted); }
 
   li.done .mark { border-color: var(--good); color: var(--good); }
   li.on .mark { background: var(--accent); border-color: var(--accent); color: var(--paper); font-weight: 700; }

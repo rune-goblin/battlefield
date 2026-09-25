@@ -21,6 +21,6 @@
 
 <style>
   .steps { display: flex; gap: .4rem; }
-  .steps button { flex: 1; min-width: 0; font-size: .85rem; padding: .35rem .5rem; }
+  .steps button { flex: 1; min-width: 0; padding: .35rem .5rem; }
   .steps .primary { flex: 2; }
 </style>

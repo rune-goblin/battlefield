@@ -66,18 +66,18 @@
   }
   .icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
   .icon.on { box-shadow: 0 0 0 2px var(--tone), 0 2px 8px rgba(0, 0, 0, .35); }
-  .initial { font-size: 1.3rem; font-weight: 700; color: var(--tone); }
+  .initial { font-size: var(--type-2); font-weight: 700; color: var(--tone); }
   .good { --tone: var(--good); }
   .warn { --tone: var(--warn2); }
   .badge {
     position: absolute; right: -.3rem; bottom: -.3rem; min-width: 1.15rem; padding: 0 .2rem;
-    font-size: .68rem; font-weight: 700; line-height: 1.15rem; text-align: center; font-variant-numeric: tabular-nums;
+    font-size: var(--type-label); font-weight: 700; line-height: 1.15rem; text-align: center; font-variant-numeric: tabular-nums;
     color: var(--paper); background: var(--tone); border-radius: 999px;
   }
 
   .tip {
     position: absolute; right: calc(100% + .45rem); top: 50%; translate: 0 -50%;
-    padding: .15rem .5rem; font-size: .8rem; white-space: nowrap; border-radius: 4px;
+    padding: .15rem .5rem; font-size: var(--type-label); white-space: nowrap; border-radius: 4px;
     color: var(--paper); background: color-mix(in srgb, var(--ink) 88%, transparent);
     opacity: 0; pointer-events: none; transition: opacity .12s;
   }
@@ -86,13 +86,13 @@
   .detail {
     pointer-events: auto; order: -1; width: 19rem; padding: .6rem .8rem .7rem;
     background: var(--card); border: 1px solid var(--tone);
-    border-radius: 8px; box-shadow: 0 6px 22px rgba(0, 0, 0, .4); font-size: .9rem;
+    border-radius: 8px; box-shadow: 0 6px 22px rgba(0, 0, 0, .4); font-size: var(--type-small);
   }
   .detail header { display: flex; align-items: baseline; gap: .5rem; }
   .detail h3 { flex: 1; margin: 0; color: var(--tone); }
-  .detail p { margin: .35rem 0 0; line-height: 1.4; }
-  .detail .on { margin-top: .1rem; font-size: .78rem; font-weight: 600; color: var(--muted); }
-  .close { border: 0; background: none; padding: 0 .2rem; font-size: 1.1rem; line-height: 1; color: var(--muted); }
+  .detail p { margin: .35rem 0 0; line-height: var(--leading-compact); }
+  .detail .on { margin-top: .1rem; font-size: var(--type-label); font-weight: 600; color: var(--muted); }
+  .close { border: 0; background: none; padding: 0 .2rem; font-size: var(--type-1); line-height: 1; color: var(--muted); }
   /* An open panel covers its neighbours' names, so they stay down while it is up. */
   .effects:has(.detail) .tip { display: none; }
 </style>

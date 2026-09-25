@@ -120,27 +120,27 @@
 
 <style>
   .tabs { display: flex; gap: .35rem; margin-bottom: 1rem; }
-  .tabs button { flex: 1; padding: .35rem .5rem; font-size: .85rem; }
+  .tabs button { flex: 1; padding: .35rem .5rem; font-size: var(--type-small); }
   .tabs button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }
-  .eyebrow { font: 600 .78rem/1.4 system-ui, sans-serif; color: var(--muted); margin: 0 0 .6rem; }
+  .eyebrow { font: 600 var(--type-label)/var(--leading-compact) var(--sans); color: var(--muted); margin: 0 0 .6rem; }
   nav { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: 1.4rem; }
-  nav button { padding: .25rem .5rem; font-size: .8rem; }
+  nav button { padding: .25rem .5rem; font-size: var(--type-label); }
   nav button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }
   section { border-top: 1px solid var(--rule); margin-top: 1.2rem; padding-top: 1rem; }
   .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
   h2 { border: 0; margin: 0; padding: 0; }
-  .section-title span { font-size: .75rem; color: var(--muted); }
-  .description { margin: .4rem 0 .9rem; color: var(--muted); font-size: .8rem; }
-  .select { display: flex; justify-content: space-between; align-items: center; gap: .5rem; width: 100%; font-size: .85rem; margin: .5rem 0; }
-  .select select { flex: 1; max-width: 60%; font-size: .85rem; }
-  .slider { display: flex; justify-content: space-between; width: 100%; font-size: .85rem; }
+  .section-title span { font-size: var(--type-label); color: var(--muted); }
+  .description { margin: .4rem 0 .9rem; color: var(--muted); font-size: var(--type-label); }
+  .select { display: flex; justify-content: space-between; align-items: center; gap: .5rem; width: 100%; font-size: var(--type-small); margin: .5rem 0; }
+  .select select { flex: 1; max-width: 60%; font-size: var(--type-small); }
+  .slider { display: flex; justify-content: space-between; width: 100%; font-size: var(--type-small); }
   output { font-variant-numeric: tabular-nums; color: var(--accent); }
   input[type=range] { display: block; width: 100%; padding: 0; margin: .5rem 0 .65rem; accent-color: var(--accent); }
-  .no-art { background: var(--band); color: var(--muted); font-size: .8rem; border-radius: 7px; padding: .8rem; }
+  .no-art { background: var(--band); color: var(--muted); font-size: var(--type-label); border-radius: 7px; padding: .8rem; }
   .levels { display: flex; gap: .35rem; margin: .7rem 0 0; }
-  .levels button { flex: 1; padding: .25rem .4rem; font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .levels button { flex: 1; padding: .25rem .4rem; font-size: var(--type-label); font-variant-numeric: tabular-nums; }
   .levels button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }
   footer { border-top: 1px solid var(--rule); margin-top: 1.2rem; padding-top: 1rem; }
-  footer button { font-size: .8rem; }
+  footer button { font-size: var(--type-label); }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>

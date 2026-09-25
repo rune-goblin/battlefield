@@ -19,9 +19,19 @@
     --line:rgba(197,166,107,.32);
     --serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;
     --sans:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    /* The app's scale: see src/app/app.css. */
+    --type-ratio:1.125;
+    --type-body:1rem;
+    --type-small:calc(var(--type-body) / var(--type-ratio));
+    --type-label:calc(var(--type-small) / var(--type-ratio));
+    --type-1:calc(var(--type-body) * var(--type-ratio));
+    --type-2:calc(var(--type-1) * var(--type-ratio));
+    --type-3:calc(var(--type-2) * var(--type-ratio));
+    --type-9:calc(var(--type-3) * var(--type-ratio) * var(--type-ratio) * var(--type-ratio) * var(--type-ratio) * var(--type-ratio) * var(--type-ratio));
+    --type-12:calc(var(--type-9) * var(--type-ratio) * var(--type-ratio) * var(--type-ratio));
   }
   * { box-sizing:border-box; }
-  body { margin:0; min-height:100svh; color:var(--ivory); background:#171510; font:16px/1.5 var(--sans); }
+  body { margin:0; min-height:100svh; color:var(--ivory); background:#171510; font:var(--type-body)/1.5 var(--sans); }
   .scene { position:fixed; inset:0; z-index:-2; }
   .scene img { width:100%; height:100%; object-fit:cover; object-position:54% center; }
   .scene::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(10,9,7,.36),transparent 65%),linear-gradient(0deg,rgba(10,9,7,.35),transparent 35%); }
@@ -36,21 +46,21 @@
   .menu::before,.menu::after { content:""; position:absolute; width:1.5rem; height:1.5rem; pointer-events:none; border-color:var(--gold); }
   .menu::before { top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; color:var(--gold); }
   .menu::after { bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; color:var(--gold); }
-  h1 { margin:0; font:700 clamp(2.75rem,5vw,4rem)/1.1 Almendra,var(--serif); text-shadow:0 2px 12px rgba(0,0,0,.35); }
-  .sub { margin:1rem 0 2rem; color:var(--muted); font:400 1rem/1.6 var(--serif); }
+  h1 { margin:0; font:700 clamp(var(--type-9),5vw,var(--type-12))/1.1 Almendra,var(--serif); text-shadow:0 2px 12px rgba(0,0,0,.35); }
+  .sub { margin:1rem 0 2rem; color:var(--muted); font:400 var(--type-body)/1.5 var(--serif); }
   .choices { display:grid; gap:.5rem; }
   .choice { position:relative; display:block; padding:1rem 2.25rem 1rem 1rem; color:var(--ivory); text-decoration:none; border:1px solid transparent; border-bottom-color:var(--line); background:rgba(19,17,13,.18); transition:background-color .2s ease,border-color .2s ease; }
-  .choice::after { content:"→"; position:absolute; top:1.125rem; right:.875rem; color:var(--gold); font:1.125rem/1.4 var(--serif); }
+  .choice::after { content:"→"; position:absolute; top:1.125rem; right:.875rem; color:var(--gold); font:var(--type-1)/1.35 var(--serif); }
   .choice:hover { background:rgba(197,166,107,.1); border-color:rgba(197,166,107,.6); }
   .choice:focus-visible,footer a:focus-visible { outline:2px solid var(--ivory); outline-offset:4px; background:rgba(91,66,35,.6); }
-  .choice strong { display:block; font:400 1.375rem/1.25 var(--serif); letter-spacing:.01em; }
-  .choice span { display:block; margin-top:.4rem; color:var(--muted); font-size:.8125rem; line-height:1.55; }
+  .choice strong { display:block; font:400 var(--type-3)/1.2 var(--serif); letter-spacing:.01em; }
+  .choice span { display:block; margin-top:.4rem; color:var(--muted); font-size:var(--type-label); line-height:1.5; }
   .choice--primary { background:rgba(107,43,30,.45); border-color:rgba(197,166,107,.5); }
   .choice--primary:hover { background:rgba(130,57,37,.65); }
   .choice[hidden] { display:none; }
   footer { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-top:1.75rem; color:var(--gold); }
   footer::before { content:"◆"; font-size:.5rem; }
-  footer a { padding:.25rem 0; color:var(--muted); font-size:.875rem; font-weight:700; text-decoration:none; text-underline-offset:.25em; }
+  footer a { padding:.25rem 0; color:var(--muted); font-size:var(--type-small); font-weight:700; text-decoration:none; text-underline-offset:.25em; }
   footer a:hover { color:var(--ivory); text-decoration:underline; }
   /* The image loads first. Only the menu fades; the scene stays still. */
   .intro-pending .menu { opacity:0; visibility:hidden; }
