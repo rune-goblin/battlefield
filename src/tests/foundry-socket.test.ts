@@ -322,7 +322,7 @@ describe('world seating on the primary GM', () => {
 
 describe('the primary GM\'s chat publisher', () => {
   it('posts one chat card per checkResolved event, stamped with its event ID', async () => {
-    const posted: { eventId: string; face: number }[] = [];
+    const posted: { eventId: string; face: number | null }[] = [];
     const chat: ChatPoster = { post: async (card) => { posted.push({ eventId: card.eventId, face: card.face }); } };
     const t = table3(fakeWorld(meleeSession()), undefined, chat);
     await t.ready;

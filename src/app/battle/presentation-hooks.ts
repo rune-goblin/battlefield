@@ -24,7 +24,7 @@ export function presentationHooks(
       route: (unit, cells) => board()?.setRoute(unit, cells),
       flash,
       burst: (cell, tree, from) => board()?.burst(cell, tree, from),
-      popup: ({ unit, ...popup }) => board()?.popup({ token: unit, ...popup }),
+      combatText: ({ unit, ...line }) => board()?.combatText({ token: unit, ...line }),
       resolved: (markers, arrows) => {
         show(markers, arrows);
         if (afterglow) clearTimeout(afterglow);

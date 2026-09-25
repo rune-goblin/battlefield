@@ -1,7 +1,7 @@
-import type { PopupIcon, PopupPart } from '../board/index.js';
+import type { CombatTextIcon, CombatTextPart } from '../services/CombatTextService.js';
 import type { CheckLanding, Degree, Status } from '../engine/index.js';
 
-export type ResultWord = PopupPart;
+export type ResultWord = CombatTextPart;
 
 // proto: English only. Every word the board floats over a piece lives here, so localization has
 // one table to replace.
@@ -55,6 +55,6 @@ export function wordFor(reads: CheckLanding['reads'], degree: Degree): ResultWor
 }
 
 /** A change to one of the token's bars, signed as the bar moves: a wound takes a heart away. */
-export function effectWord(icon: PopupIcon, lost: number): ResultWord {
+export function effectWord(icon: CombatTextIcon, lost: number): ResultWord {
   return { text: `${lost > 0 ? '−' : '+'}${Math.abs(lost)}`, tone: lost > 0 ? 'bad' : 'good', icon };
 }

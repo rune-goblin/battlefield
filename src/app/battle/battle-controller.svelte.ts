@@ -15,7 +15,7 @@ import type { gameMap } from '../map-style.svelte.js';
 import type { NotificationService } from '../notifications.js';
 import type { offTurnNote, viewer } from '../viewer.svelte.js';
 
-export type BattleBoard = Pick<BoardView, 'screenOf' | 'cellRadius' | 'centerOn' | 'setRoute' | 'burst' | 'popup' | 'remainingMs'>;
+export type BattleBoard = Pick<BoardView, 'screenOf' | 'cellRadius' | 'centerOn' | 'setRoute' | 'burst' | 'combatText' | 'remainingMs'>;
 
 export interface BattleDeps {
   game: typeof game;

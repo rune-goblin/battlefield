@@ -1,4 +1,4 @@
-import type { TroopAbility, AbilityReview, AbilityMemory } from './abilities.js';
+import type { TroopAbility, AbilityReview, AbilityMemory, AbilityMark, AbilityOutcome } from './abilities.js';
 import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats, MovementRates, TroopSheet } from './cards.js';
 import type { CheckResult } from './check.js';
@@ -313,7 +313,9 @@ export interface Activation {
 export type LogTag =
   | { kind: 'freeStrike'; attacker: string; target: string }
   | { kind: 'spell'; caster: string; tree: Tree; activity: ActivityIndex; targets: string[] }
-  | { kind: 'secondDie'; faces: [number, number] };
+  | { kind: 'secondDie'; faces: [number, number] }
+  /** `unit` is the piece the ability lands on or that resists it. */
+  | ({ kind: 'ability'; unit: string; outcome: AbilityOutcome } & AbilityMark);
 
 /** Where a check's result lands and how it reads. An attack lands on its target as a hit or a
  * miss; a failed repulse save and an attack an aegis turned each have their own word; a brace

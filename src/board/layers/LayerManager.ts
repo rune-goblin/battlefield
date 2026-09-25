@@ -50,7 +50,7 @@ export const LAYER_ORDER = [
   'effects',        // flames, frames and sparks
   'mapLines',       // terrain-area outlines and elevation rings
   'fallenIntro',    // a death as it is announced, large over the piece before it drops to `fallen`
-  'popups',         // the word a roll came to, floated over the piece it landed on
+  'combatText',     // the word a roll came to, floated over the piece it landed on
 ] as const;
 
 /**

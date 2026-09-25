@@ -81,7 +81,7 @@ const sinkInto = (played: string[]): PresentationSink => ({
   flash: (id) => played.push(`flash:${id}`),
   burst: (cell) => played.push(`burst:${cell}`),
   resolved: () => played.push('resolved'),
-  popup: ({ unit, parts }) => played.push(`popup:${unit}:${parts.map((p) => p.text).join(' ')}`),
+  combatText: ({ unit, parts }) => played.push(`combatText:${unit}:${parts.map((p) => p.text).join(' ')}`),
 });
 
 /**

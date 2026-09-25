@@ -1,5 +1,5 @@
 import { at, barrierBetween, gridOf, notation, type Square } from './board.js';
-import { abilityName, abilityDescription, freshAbilityMemory, type TroopAbility, type AttackKind, type AbilityEnvironment } from './abilities.js';
+import { abilityName, abilityDescription, freshAbilityMemory, type AbilityMark, type AbilityOutcome, type TroopAbility, type AttackKind, type AbilityEnvironment } from './abilities.js';
 import type { ActionOffer, ActivityTarget, BattleState, Unit } from './types.js';
 import type { Degree } from './check.js';
 import { levelDc } from './tables.js';
@@ -11,9 +11,11 @@ const adjacent = (s: BattleState, a: Unit, b: Unit) => gridOf(s.board).distance(
 export const unitAbilities = (u: Unit) => u.abilities ?? [];
 export const hasAbility = (u: Unit, kind: TroopAbility['kind']) => unitAbilities(u).some(a => a.kind === kind);
 
+export const markOf = (a: TroopAbility): AbilityMark => ({ label: a.label, name: abilityName(a) });
+
 export interface AbilityContext {
-  log: (u: Unit, message: string) => void;
-  will: (target: Unit, dc: number, fear?: boolean) => boolean;
+  log: (u: Unit, message: string, mark?: AbilityMark, outcome?: AbilityOutcome) => void;
+  will: (target: Unit, dc: number, ability: TroopAbility, fear?: boolean) => boolean;
   regenerationSave: (target: Unit) => boolean;
   attack: (target: Unit) => boolean;
   clear: (target: Unit) => boolean;
@@ -84,12 +86,12 @@ export function refreshAbilityAuras(s: BattleState): void {
     && adjacent(s, x, u) && unitAbilities(x).some(a => a.kind === 'fear' && a.delivery === 'aura'));
 }
 
-function vitality(s: BattleState, target: Unit, label: string, ctx: AbilityContext): void {
+function vitality(s: BattleState, target: Unit, a: TroopAbility, ctx: AbilityContext): void {
   const m = abilityMemory(target);
   if (!alive(target) || m.vitalityRound === roundKey(s)) return;
   m.buffer = 1;
   m.vitalityRound = roundKey(s);
-  ctx.log(target, `${label}: gains 1 damage absorption until its next activation.`);
+  ctx.log(target, `${a.label}: gains 1 damage absorption until its next activation.`, markOf(a));
 }
 
 function recover(s: BattleState, target: Unit, a: TroopAbility, ctx: AbilityContext): void {
@@ -101,7 +103,7 @@ function recover(s: BattleState, target: Unit, a: TroopAbility, ctx: AbilityCont
   } else if (!m.healed && target.wounds > m.initialWounds) {
     target.wounds--;
     m.healed = true;
-    ctx.log(target, `${a.label}: restores 1 Health.`);
+    ctx.log(target, `${a.label}: restores 1 Health.`, markOf(a));
   }
 }
 
@@ -117,16 +119,16 @@ export function startAbilities(s: BattleState, u: Unit, ctx: AbilityContext): vo
       m.regenerationRound = roundKey(s);
       if (ctx.regenerationSave(u)) {
         u.wounds--;
-        ctx.log(u, `${a.label}: regenerates 1 Health.`);
+        ctx.log(u, `${a.label}: regenerates 1 Health.`, markOf(a));
       }
     }
     if (a.delivery !== 'start') continue;
     if (a.kind === 'recovery') recover(s, u, a, ctx);
-    if (a.kind === 'temporary-protection') vitality(s, u, a.label, ctx);
+    if (a.kind === 'temporary-protection') vitality(s, u, a, ctx);
   }
   for (const ally of s.units) if (ally.side === u.side && alive(ally) && adjacent(s, ally, u)) {
     const a = unitAbilities(ally).find(a => a.kind === 'temporary-protection' && a.delivery === 'aura');
-    if (a) vitality(s, u, a.label, ctx);
+    if (a) vitality(s, u, a, ctx);
   }
   refreshAbilityAuras(s);
 }
@@ -148,23 +150,24 @@ export function absorbAbilityDamage(s: BattleState, target: Unit, damage: number
   if (unitAbilities(target).some(a => a.kind === 'regeneration' && a.suppressors?.some(tag => tags.includes(tag)))) {
     suppressRegeneration(target, 'A damage counter', log);
   }
-  if (m.buffer) { damage--; m.buffer = 0; log(target, 'Damage Absorption absorbs 1 damage.'); }
+  if (m.buffer) { damage--; m.buffer = 0; log(target, 'Damage Absorption absorbs 1 damage.', { label: 'Damage Absorption', name: 'Absorbed' }); }
   return damage;
 }
 
 function applyEffect(s: BattleState, u: Unit, target: Unit, a: TroopAbility, ctx: AbilityContext): void {
-  if (a.kind === 'temporary-protection') { vitality(s, a.recipient === 'ally' ? target : u, a.label, ctx); return; }
+  if (a.kind === 'temporary-protection') { vitality(s, a.recipient === 'ally' ? target : u, a, ctx); return; }
   if (a.kind === 'recovery') { recover(s, a.recipient === 'ally' ? target : u, a, ctx); return; }
   if (a.kind === 'guard') {
     u.guard ??= { defence: 2, cap: false, holds: false };
-    ctx.log(u, `${a.label}: gains Guard until its next activation.`);
+    ctx.log(u, `${a.label}: gains Guard until its next activation.`, markOf(a));
     return;
   }
   if (!alive(target)) return;
   switch (a.kind) {
     case 'persistent-injury': target.persistent ??= { dc: levelDc(u.level), tag: a.damageTag }; break;
     case 'fear':
-      if (target.immuneFear || (a.willSave && ctx.will(target, levelDc(u.level), true))) return;
+      if (target.immuneFear) { ctx.log(target, `immune to ${u.name}'s ${a.label}.`, markOf(a), 'immune'); return; }
+      if (a.willSave && ctx.will(target, levelDc(u.level), a, true)) return;
       target.frightened = true; break;
     case 'expose': target.exposed = true; break;
     case 'suppression': target.suppressedBy = u.id; break;
@@ -172,7 +175,7 @@ function applyEffect(s: BattleState, u: Unit, target: Unit, a: TroopAbility, ctx
     case 'displace': ctx.displace(target, a.direction ?? 'push'); break;
     default: return;
   }
-  ctx.log(target, `${a.label}: ${abilityName(a)}.`);
+  ctx.log(target, `${abilityName(a)} from ${u.name}'s ${a.label}.`, markOf(a));
 }
 
 export function attackAbilities(s: BattleState, u: Unit, target: Unit, attack: AttackKind, stage: 'use' | 'result', degree: Degree | null,
@@ -233,13 +236,13 @@ export function abilityOffers(s: BattleState, u: Unit, opening: () => string[], 
 export function performAbility(s: BattleState, u: Unit, key: string, target: Unit | null, cell: Square | null, ctx: AbilityContext): void {
   if (key === 'release-snare') { u.rooted = 0; abilityMemory(u).snare = false; ctx.log(u, 'Breaks free of immobilization.'); return; }
   const a = unitAbilities(u).find(a => a.key === key)!;
-  if (a.kind === 'opening-move') { ctx.move(u, cell!); abilityMemory(u).openingUsed = true; ctx.log(u, `${a.label}: makes its opening Move.`); }
+  if (a.kind === 'opening-move') { ctx.move(u, cell!); abilityMemory(u).openingUsed = true; ctx.log(u, `${a.label}: makes its opening Move.`, markOf(a)); }
   else if (a.kind === 'guard') { abilityMemory(u).supportTarget = target!.id; applyEffect(s, u, target!, a, ctx); }
   else if (['fear', 'expose', 'snare', 'suppression'].includes(a.kind)) {
     if (a.kind === 'snare' || a.kind === 'suppression') u.attacked = true;
     // One resistance roll replaces the attack/save pairing; no damage or normal riders.
     const lands = a.kind === 'snare' || a.kind === 'suppression' ? ctx.attack(target!)
-      : !ctx.will(target!, levelDc(u.level) + (a.kind === 'fear' ? exploitBonus(s, u, target, 'menace') : 0), a.kind === 'fear');
+      : !ctx.will(target!, levelDc(u.level) + (a.kind === 'fear' ? exploitBonus(s, u, target, 'menace') : 0), a, a.kind === 'fear');
     if (lands) {
       applyEffect(s, u, target!, { ...a, willSave: false }, ctx);
     }

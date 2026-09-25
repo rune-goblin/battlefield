@@ -79,7 +79,7 @@ function movementEvents(before: BattleState, after: BattleState, action?: Tactic
   return events;
 }
 
-/** The lines a comparison cannot read: a free strike, a cast, and every ordinary check. */
+/** The lines a comparison cannot read: a free strike, a cast, an ability, and every ordinary check. */
 function logEvents(before: BattleState, after: BattleState): BattleEventBody[] {
   const events: BattleEventBody[] = [];
   for (const entry of after.log.slice(before.log.length)) {
@@ -88,6 +88,8 @@ function logEvents(before: BattleState, after: BattleState): BattleEventBody[] {
       events.push({ type: 'freeStrikeResolved', unit: tag.attacker, target: tag.target, check: entry.check ?? null, text: entry.text });
     } else if (tag?.kind === 'spell') {
       events.push({ type: 'spellResolved', unit: tag.caster, tree: tag.tree, activity: tag.activity, targets: tag.targets, check: entry.check ?? null });
+    } else if (tag?.kind === 'ability') {
+      events.push({ type: 'abilityResolved', unit: tag.unit, label: tag.label, name: tag.name, outcome: tag.outcome, check: entry.check ?? null, text: entry.text });
     } else if (entry.check) {
       const lands = entry.lands ?? (entry.unit ? { unit: entry.unit, reads: 'check' as const } : null);
       events.push({ type: 'checkResolved', unit: entry.unit ?? null, check: entry.check, text: entry.text, lands });

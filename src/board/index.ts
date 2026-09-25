@@ -12,7 +12,7 @@ import { DEFAULT_MAP_LINES, MapLineLayer } from './layers/MapLineLayer.js';
 import { InkLayer, type InkMapAppearance } from './layers/InkLayer.js';
 import { OverlayLayer } from './layers/OverlayLayer.js';
 import { FallenLayer, type FallenModel } from './layers/FallenLayer.js';
-import { PopupLayer, type BoardPopup } from './layers/PopupLayer.js';
+import { CombatTextLayer, type BoardCombatText } from './layers/CombatTextLayer.js';
 import type { TargetArrow } from './target-point.js';
 import { ShotLayer } from './layers/ShotLayer.js';
 import { TerrainLayer } from './layers/TerrainLayer.js';
@@ -54,8 +54,8 @@ export interface BoardView {
    * textured surfaces. Set, it is what the board draws; null returns it to the textures. */
   setInkMap(appearance: InkMapAppearance | null): void;
   setTokens(tokens: TokenModel[]): void;
-  /** The units that died here, each marked on the ground of its cell. A death a popup names
-   * with the `dead` icon plays in over the piece, which stands until then. */
+  /** The units that died here, each marked on the ground of its cell. A death that combat text
+   * names with the `dead` icon plays in over the piece, which stands until then. */
   setFallen(fallen: FallenModel[]): void;
   setHighlight(cells: string[], style: HighlightStyle): void;
   /** The token-drag path trace (unit's own cell first), drawn as a trail over the highlight
@@ -79,13 +79,13 @@ export interface BoardView {
   burst(cell: string, tree: Tree, from?: string | null): void;
   /** Floats a word over a piece: the result of a roll, or a condition it just took. Words take
    * turns in the order given, and all of them wait for the pieces to stop moving. */
-  popup(popup: BoardPopup): void;
+  combatText(line: BoardCombatText): void;
   /** How long the board still needs to show what the last commit did: a cast playing, words
    * waiting or showing, a status settling into its slot. Infinity while pieces walk, since the
    * words wait for them. Whatever announces the next turn times itself against this, and may
    * come in over the tail. */
   remainingMs(): number;
-  /** Drops every burst and popup in flight. A stage switch calls it: the next stage's board
+  /** Drops every burst and combat text line in flight. A stage switch calls it: the next stage's board
    * is the same view, and an effect from the last one would play on over it. */
   clearEffects(): void;
   /** The route the token's next move walks, its own cell first — the same cells the drag
@@ -210,7 +210,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     hold: (id) => tokenLayer.hold(id),
     release: (id) => tokenLayer.release(id),
   });
-  const popupLayer = new PopupLayer(layers.createLayer('popups'), opts.parent, opts.ticker, {
+  const combatTextLayer = new CombatTextLayer(layers.createLayer('combatText'), opts.parent, opts.ticker, {
     positionOf: (id) => tokenLayer.positionOf(id),
     moving: () => tokenLayer.moving(),
     expect: (id, icons) => tokenLayer.expectStatuses(id, icons),
@@ -257,7 +257,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       shotLayer.setGeometry(null, 0, opts.theme);
       castLayer.setGeometry(null, 0, opts.theme);
       effectLayer.setGeometry(null, 0, opts.theme);
-      popupLayer.setGeometry(null, 0);
+      combatTextLayer.setGeometry(null, 0);
       fallenLayer.setGeometry(null, 0);
       tokenLayer.setGeometry(null, 0, opts.theme);
       return;
@@ -282,7 +282,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     shotLayer.setGeometry(grid, size, opts.theme);
     castLayer.setGeometry(grid, size, opts.theme);
     effectLayer.setGeometry(grid, size, opts.theme);
-    popupLayer.setGeometry(grid, size);
+    combatTextLayer.setGeometry(grid, size);
     fallenLayer.setGeometry(grid, size);
     tokenLayer.setGeometry(grid, size, opts.theme);
     interaction.clamp();
@@ -437,16 +437,16 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const origin = castLayer.resolve();
       effectLayer.burst(cell, tree, from ?? origin);
     },
-    popup(popup) {
-      popupLayer.show(popup);
+    combatText(line) {
+      combatTextLayer.show(line);
     },
     clearEffects() {
       effectLayer.clear();
-      popupLayer.clear();
+      combatTextLayer.clear();
     },
     remainingMs() {
       if (tokenLayer.moving()) return Infinity;
-      return Math.max(tokenLayer.settlingMs(), effectLayer.remainingMs(), popupLayer.remainingMs());
+      return Math.max(tokenLayer.settlingMs(), effectLayer.remainingMs(), combatTextLayer.remainingMs());
     },
     setRoute(id, cells) {
       tokenLayer.setRoute(id, cells);
@@ -552,7 +552,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       tokenLayer.destroy();
       castLayer.destroy();
       effectLayer.destroy();
-      popupLayer.destroy();
+      combatTextLayer.destroy();
       boardContainer.destroy({ children: true });
     },
   };
@@ -627,7 +627,7 @@ export { BoardContainer } from './BoardContainer.js';
 export { setAssetBase } from './asset-base.js';
 export { setVfxTimeScale } from './layers/EffectLayer.js';
 export type { FallenModel } from './layers/FallenLayer.js';
-export type { BoardPopup, PopupIcon, PopupPart, PopupTone } from './layers/PopupLayer.js';
+export type { BoardCombatText, CombatTextIcon, CombatTextPart, CombatTextTone } from './layers/CombatTextLayer.js';
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the asset-base prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.

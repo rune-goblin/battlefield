@@ -78,7 +78,7 @@ const STATUS_RATIO = 0.3;
 /** A status joining the column: large over the piece, growing as it fades in, held, then down
  * into its slot. Several joining at once take turns, each starting as the last begins to settle. */
 export const STATUS_INTRO = { ratio: 0.85, from: 0.6, fadeMs: 300, holdMs: 500, settleMs: 400 };
-// A status the popup queue never came for shows itself after this long.
+// A status the combat text queue never came for shows itself after this long.
 const STATUS_WAIT_MS = 20000;
 /** The column hangs under the flag on the piece's right, since an engine's chip takes the left.
  * It fills downward, and a full column starts another to its right. */
@@ -225,7 +225,7 @@ export class Token extends PIXI.Container {
 
   get moving(): boolean { return this.tween !== null; }
 
-  /** How long until every status has settled into its slot. One still waiting for the popup
+  /** How long until every status has settled into its slot. One still waiting for the combat text
    * queue does not count: the queue answers for it. */
   get settlingMs(): number {
     const { fadeMs, holdMs, settleMs } = STATUS_INTRO;
@@ -745,7 +745,7 @@ export class Token extends PIXI.Container {
     this.layoutStatuses(size);
   }
 
-  /** The popup queue will announce these, so they stay hidden until it does. */
+  /** The combat text queue will announce these, so they stay hidden until it does. */
   expectStatuses(icons: readonly StatusIcon[]): void {
     for (const icon of icons) {
       this.awaited.add(icon);

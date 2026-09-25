@@ -96,7 +96,7 @@ describe('event presentation', () => {
 
     const play = commitPlay(record(1, battle), record(2, battle, fought))!;
 
-    expect(play.popups).toEqual([
+    expect(play.combatText).toEqual([
       { unit: 'u1', cell: 'c7', parts: [{ text: 'Miss', tone: 'bad' }] },
       { unit: 'u0', cell: 'c2', parts: [{ text: 'Repulsed', tone: 'warn' }] },
       { unit: 'u0', cell: 'c2', parts: [{ text: 'Critical Hit', tone: 'good' }] },
@@ -105,7 +105,7 @@ describe('event presentation', () => {
     ]);
   });
 
-  it("follows each piece's result with what it cost in one popup, and keeps a brace silent", () => {
+  it("follows each piece's result with what it cost in one line, and keeps a brace silent", () => {
     const battle = battleState();
     const check = (degree: 'success' | 'failure') => ({ roll: 10, modifier: 6, total: 16, dc: 17, degree });
     const fought: BattleEvent[] = [
@@ -120,7 +120,7 @@ describe('event presentation', () => {
 
     const play = commitPlay(record(1, battle), record(2, battle, fought))!;
 
-    expect(play.popups.map((p) => [p.unit, p.parts.map((part) => `${part.text}${part.icon ?? ''}:${part.tone}`)])).toEqual([
+    expect(play.combatText.map((p) => [p.unit, p.parts.map((part) => `${part.text}${part.icon ?? ''}:${part.tone}`)])).toEqual([
       ['u1', ['Hit:good']],
       ['u1', ['−2wounds:bad', '−1morale:bad']],
       ['u1', ['Routedrouted:warn']],
@@ -134,13 +134,13 @@ describe('event presentation', () => {
     const cast = (degree: 'critical-success' | 'success' | 'failure'): BattleEvent =>
       ({ id: 'cmd-0:0', type: 'spellResolved', unit: 'u0', tree: 'controlling', activity: 3, targets: ['u1'],
         check: { roll: 10, modifier: 6, total: 16, dc: 17, degree } });
-    const popupsFor = (events: BattleEvent[]) =>
-      commitPlay(record(1, battle), record(2, battle, events))!.popups.map((p) => p.parts.map((part) => `${part.text}:${part.tone}`));
+    const linesFor = (events: BattleEvent[]) =>
+      commitPlay(record(1, battle), record(2, battle, events))!.combatText.map((p) => p.parts.map((part) => `${part.text}:${part.tone}`));
 
-    expect(popupsFor([cast('critical-success')])).toEqual([['Resisted:bad']]);
-    expect(popupsFor([cast('success'), { id: 'cmd-0:1', type: 'conditionGained', unit: 'u1', condition: 'frightened' }]))
+    expect(linesFor([cast('critical-success')])).toEqual([['Resisted:bad']]);
+    expect(linesFor([cast('success'), { id: 'cmd-0:1', type: 'conditionGained', unit: 'u1', condition: 'frightened' }]))
       .toEqual([['Resisted:bad'], ['Frightened:warn']]);
-    expect(popupsFor([
+    expect(linesFor([
       cast('failure'),
       { id: 'cmd-0:1', type: 'disorderChanged', unit: 'u1', from: 0, to: 1 },
       { id: 'cmd-0:2', type: 'conditionGained', unit: 'u1', condition: 'stunned' },
@@ -160,7 +160,7 @@ describe('event presentation', () => {
 
     const play = commitPlay(record(1, battle), record(2, battle, shot))!;
 
-    expect(play.popups.map((p) => p.parts.map((part) => part.text))).toEqual([['Hit'], ['−1'], ['Suppressed', 'Pinned']]);
+    expect(play.combatText.map((p) => p.parts.map((part) => part.text))).toEqual([['Hit'], ['−1'], ['Suppressed', 'Pinned']]);
   });
 
   it('reads an attack an aegis turned as Blocked over the warded piece, and one that passed as nothing', () => {
@@ -170,9 +170,9 @@ describe('event presentation', () => {
         check: { roll: 10, modifier: 6, total: 16, dc: 17, degree } },
     ];
 
-    expect(commitPlay(record(1, battle), record(2, battle, aegis('failure')))!.popups)
+    expect(commitPlay(record(1, battle), record(2, battle, aegis('failure')))!.combatText)
       .toEqual([{ unit: 'u1', cell: 'c7', parts: [{ text: 'Blocked', tone: 'bad' }] }]);
-    expect(commitPlay(record(1, battle), record(2, battle, aegis('success')))!.popups).toEqual([]);
+    expect(commitPlay(record(1, battle), record(2, battle, aegis('success')))!.combatText).toEqual([]);
   });
 
   it('says nothing over a repulse the attacker shrugged off', () => {
@@ -182,6 +182,6 @@ describe('event presentation', () => {
         check: { roll: 15, modifier: 6, total: 21, dc: 17, degree: 'success' } },
     ];
 
-    expect(commitPlay(record(1, battle), record(2, battle, held))!.popups).toEqual([]);
+    expect(commitPlay(record(1, battle), record(2, battle, held))!.combatText).toEqual([]);
   });
 });

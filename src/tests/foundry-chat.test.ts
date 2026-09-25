@@ -20,6 +20,19 @@ describe('checkCardsOf', () => {
     ]);
   });
 
+  it('posts troop abilities, with the save die where there was one', () => {
+    const check = { roll: 15, modifier: 4, total: 19, dc: 18, degree: 'success' as const };
+    const events: BattleEvent[] = [
+      { id: 'cmd:0', type: 'abilityResolved', unit: 'u1', label: 'War Song', name: 'Fear', outcome: 'resisted', check, text: 'Orcs resist.' },
+      { id: 'cmd:1', type: 'abilityResolved', unit: 'u0', label: 'Raise Shields', name: 'Guard', outcome: 'applied', check: null, text: 'Dwarves guard.' },
+    ];
+
+    expect(checkCardsOf(events)).toEqual([
+      { eventId: 'cmd:0', content: 'Orcs resist.', face: 15 },
+      { eventId: 'cmd:1', content: 'Dwarves guard.', face: null },
+    ]);
+  });
+
   it('yields nothing for a commit with no checks', () => {
     expect(checkCardsOf([{ id: 'cmd:0', type: 'activationEnded', unit: 'u0' }])).toEqual([]);
   });

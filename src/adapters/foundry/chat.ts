@@ -5,16 +5,18 @@ import { MODULE_ID } from './module-id.js';
 export interface CheckCard {
   eventId: string;
   content: string;
-  face: number;
+  /** Null for an ability that lands without a save. */
+  face: number | null;
 }
 
-// proto: only checkResolved events post a chat card, per the DoD's literal wording. A free
-// strike or a spell also carries a CheckResult but stays off-chat this wave.
-/** Every `checkResolved` event in a commit, one card each, in order. */
+// proto: a free strike or a spell also carries a CheckResult but stays off-chat this wave.
+/** Every check and every troop ability in a commit, one card each, in order. */
 export function checkCardsOf(events: readonly BattleEvent[]): CheckCard[] {
-  return events
-    .filter((event): event is BattleEvent & { type: 'checkResolved' } => event.type === 'checkResolved')
-    .map((event) => ({ eventId: event.id, content: event.text, face: event.check.roll }));
+  return events.flatMap((event) => {
+    if (event.type === 'checkResolved') return [{ eventId: event.id, content: event.text, face: event.check.roll }];
+    if (event.type === 'abilityResolved') return [{ eventId: event.id, content: event.text, face: event.check?.roll ?? null }];
+    return [];
+  });
 }
 
 export interface ChatPoster {
@@ -44,10 +46,10 @@ export function foundryChatPoster(): ChatPoster {
         // entry marks the term evaluated in the constructor, and `evaluate()` throws on a term
         // that already is, so nothing evaluates this die; `Roll.fromTerms` reads `_evaluated`
         // off the term and totals it, which is what `ChatMessage` demands of a posted roll.
-        const die = new foundry.dice.terms.Die({ faces: 20, results: [{ result: face, active: true }] });
+        const rolls = face === null ? [] : [Roll.fromTerms([new foundry.dice.terms.Die({ faces: 20, results: [{ result: face, active: true }] })])];
         await (ChatMessage as unknown as ChatMessageCreator).create({
           content,
-          rolls: [Roll.fromTerms([die])],
+          rolls,
           flags: { [MODULE_ID]: { eventId } },
         });
       } catch (error) {

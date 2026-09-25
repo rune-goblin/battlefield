@@ -1,17 +1,13 @@
 import { castActivityOf, MAX_WOUNDS, notation, type BattleState, type Tree, type Verb } from '../engine/index.js';
-import type { PopupPart, TargetArrow, TargetIcon } from '../board/index.js';
+import type { TargetArrow, TargetIcon } from '../board/index.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
+import { createCombatTextService, type CombatTextDisplay, type CombatTextLine, type CombatTextService } from '../services/CombatTextService.js';
 import { unitOf } from './battle-lookup.js';
 import type { NotificationService } from './notifications.js';
 import { noticesFor, type NoticeViewer } from './session-notices.js';
 import { conditionWord, DESTROYED, effectWord, RESISTED, ROUTED, tookHold, wordFor, type ResultWord } from './result-words.js';
 import type { TargetMarker } from './targeting.js';
-
-/** What floats over a piece at one moment: a word, or every bar a blow moved, side by side.
- * `cell` is where the piece stands once the commit settles, for a piece the board has already
- * taken off. */
-export interface ResultPopup { unit: string; cell: string; parts: PopupPart[] }
 
 /** What one commit shows on the board: the roads walked, the pieces that struck free, the
  * spell effects, the marks the blows left, and the word each roll came to. */
@@ -21,7 +17,7 @@ export interface CommitPlay {
   bursts: { cell: string; tree: Tree; from: string }[];
   markers: TargetMarker[];
   arrows: TargetArrow[];
-  popups: ResultPopup[];
+  combatText: CombatTextLine[];
 }
 
 export interface PresentationSink {
@@ -30,7 +26,8 @@ export interface PresentationSink {
   burst(cell: string, tree: Tree, from: string): void;
   /** The afterglow of a resolved action: marks where it landed and arrows to each. */
   resolved(markers: TargetMarker[], arrows: TargetArrow[]): void;
-  popup(popup: ResultPopup): void;
+  /** Attached to the combat text service while the board is on screen. */
+  combatText: CombatTextDisplay;
 }
 
 function cellOf(battle: BattleState, id: string): string | null {
@@ -88,6 +85,9 @@ function wordOf(event: BattleEvent): { unit: string; word: ResultWord | null } |
     const saved = event.check.degree === 'success' || event.check.degree === 'critical-success';
     return { unit: event.targets[0], word: saved ? RESISTED : tookHold(castActivityOf(event.tree, event.activity).label) };
   }
+  // An ability reads in the chat log. Only a save floats a word; what a failed one costs shows as
+  // the condition it leaves.
+  if (event.type === 'abilityResolved') return event.outcome === 'resisted' ? { unit: event.unit, word: RESISTED } : null;
   return null;
 }
 
@@ -105,34 +105,34 @@ function effectOf(event: BattleEvent): { unit: string; word: ResultWord } | null
 const kindOf = (event: BattleEvent): 'bars' | 'conditions' | null =>
   event.type === 'woundsChanged' || event.type === 'disorderChanged' ? 'bars' : event.type === 'conditionGained' ? 'conditions' : null;
 
-function popupsOf(events: readonly BattleEvent[], battle: BattleState): ResultPopup[] {
-  const popups: ResultPopup[] = [];
-  const kinds = new Map<ResultPopup, 'bars' | 'conditions'>();
-  const popupOf = (said: { unit: string; word: ResultWord | null } | null): ResultPopup | null => {
+function combatTextOf(events: readonly BattleEvent[], battle: BattleState): CombatTextLine[] {
+  const lines: CombatTextLine[] = [];
+  const kinds = new Map<CombatTextLine, 'bars' | 'conditions'>();
+  const lineOf = (said: { unit: string; word: ResultWord | null } | null): CombatTextLine | null => {
     const cell = said && cellOf(battle, said.unit);
     return said?.word && cell ? { unit: said.unit, cell, parts: [said.word] } : null;
   };
   for (const event of events) {
-    const word = popupOf(wordOf(event));
-    if (word) popups.push(word);
+    const word = lineOf(wordOf(event));
+    if (word) lines.push(word);
   }
   for (const event of events) {
-    const effect = popupOf(effectOf(event));
+    const effect = lineOf(effectOf(event));
     if (!effect) continue;
-    const last = popups.map((p) => p.unit).lastIndexOf(effect.unit);
+    const last = lines.map((p) => p.unit).lastIndexOf(effect.unit);
     const kind = kindOf(event);
-    if (kind && last >= 0 && kinds.get(popups[last]) === kind) popups[last].parts.push(...effect.parts);
-    else popups.splice(last < 0 ? popups.length : last + 1, 0, effect);
+    if (kind && last >= 0 && kinds.get(lines[last]) === kind) lines[last].parts.push(...effect.parts);
+    else lines.splice(last < 0 ? lines.length : last + 1, 0, effect);
     if (kind) kinds.set(effect, kind);
   }
   // proto: no event names a death, so the wound that fills the track stands for it. It is the
   // last word over the piece.
   for (const event of events) {
     if (event.type !== 'woundsChanged' || event.to < MAX_WOUNDS) continue;
-    const death = popupOf({ unit: event.unit, word: DESTROYED });
-    if (death) popups.splice(popups.map((p) => p.unit).lastIndexOf(event.unit) + 1, 0, death);
+    const death = lineOf({ unit: event.unit, word: DESTROYED });
+    if (death) lines.splice(lines.map((p) => p.unit).lastIndexOf(event.unit) + 1, 0, death);
   }
-  return popups;
+  return lines;
 }
 
 function playFor(events: readonly BattleEvent[], battle: BattleState, actor: string | null): CommitPlay {
@@ -158,7 +158,7 @@ function playFor(events: readonly BattleEvent[], battle: BattleState, actor: str
       cells: [to], anchorCells: [to], geometry: 'hex', icon: mark.icon,
     })),
     arrows: marks.map(({ mark, to, from }) => ({ from, to, toCells: [to], tone: mark.tone })),
-    popups: popupsOf(events, battle),
+    combatText: combatTextOf(events, battle),
   };
 }
 
@@ -181,6 +181,8 @@ export interface Presentation {
   reset(session: BattleSession): void;
   /** The board view takes the play while it is on screen. */
   connect(sink: PresentationSink): () => void;
+  /** Every commit's words go here, and so may any other line the app wants over a piece. */
+  readonly combatText: CombatTextService;
   /** The notification host takes the session notices while the app is mounted. */
   connectNotices(notifications: NotificationService, viewer: NoticeViewer): () => void;
 }
@@ -193,7 +195,7 @@ function deliver(host: NoticeHost, next: BattleSession): void {
   for (const id of dismiss) host.service.dismiss(id);
 }
 
-export function createPresentation(seed: BattleSession): Presentation {
+export function createPresentation(seed: BattleSession, combatText = createCombatTextService()): Presentation {
   let last: BattleSession = seed;
   let sink: PresentationSink | null = null;
   let notices: NoticeHost | null = null;
@@ -207,7 +209,7 @@ export function createPresentation(seed: BattleSession): Presentation {
       for (const unit of play.flashes) sink.flash(unit);
       for (const burst of play.bursts) sink.burst(burst.cell, burst.tree, burst.from);
       if (play.markers.length || play.arrows.length) sink.resolved(play.markers, play.arrows);
-      for (const popup of play.popups) sink.popup(popup);
+      combatText.queue(...play.combatText);
     },
     reset(session) {
       last = session;
@@ -215,8 +217,13 @@ export function createPresentation(seed: BattleSession): Presentation {
     },
     connect(next) {
       sink = next;
-      return () => { if (sink === next) sink = null; };
+      const detach = combatText.attach(next.combatText);
+      return () => {
+        detach();
+        if (sink === next) sink = null;
+      };
     },
+    combatText,
     connectNotices(service, viewer) {
       const entry = { service, viewer };
       notices = entry;

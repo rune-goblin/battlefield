@@ -1,4 +1,4 @@
-import type { ActivityIndex, BattleState, CheckLanding, CheckResult, Side, Status, Tree } from '../engine/index.js';
+import type { AbilityOutcome, ActivityIndex, BattleState, CheckLanding, CheckResult, Side, Status, Tree } from '../engine/index.js';
 
 // proto: the list of event types is reserved for review.
 /** What one commit did, in the order it happened. `ActionResolutionService` derives these by
@@ -16,6 +16,8 @@ export type BattleEventBody =
   /** Every status a piece takes on, a stance and a buff as much as what an enemy did to it. */
   | { type: 'conditionGained'; unit: string; condition: Status }
   | { type: 'unitRouted'; unit: string }
+  /** A troop ability landing on `unit`, or `unit` resisting it; `check` is the save, if any. */
+  | { type: 'abilityResolved'; unit: string; label: string; name: string; outcome: AbilityOutcome; check: CheckResult | null; text: string }
   | { type: 'spellResolved'; unit: string; tree: Tree; activity: ActivityIndex; targets: string[]; check: CheckResult | null }
   | { type: 'activationEnded'; unit: string }
   | { type: 'roundEnded'; round: number }

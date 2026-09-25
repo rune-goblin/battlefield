@@ -25,11 +25,11 @@ An item leaves this list when it is answered or built.
 - Level-1 ground blocks sight from the flat, so hills boards shorten most shots.
 - A layout picker on the setup screen would let the GM ask for "a pass" directly. The layout is drawn from the seed today.
 
-## Result popups
+## Combat text
 
 - Helpful states (Inspired, Warded, Sure strike) may deserve green words of their own.
 - Criticals and Routed may deserve the loud treatment Resisted has.
-- A lapsing status may deserve an exit popup.
+- A lapsing status may deserve an exit line of combat text.
 
 ## Service architecture rulings
 

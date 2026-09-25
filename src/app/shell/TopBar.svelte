@@ -3,8 +3,9 @@
   import { MAP_STYLES, MAP_STYLE_LABELS, mapSettings, setMapStyle } from '../map-style.svelte.js';
   import SaveLoadPanel from '../SaveLoadPanel.svelte';
   import SeatingPanel from '../SeatingPanel.svelte';
+  import QuitDialog from '../QuitDialog.svelte';
   import { setDock, toggleDock, ui } from './layout.svelte.js';
-  import { tableCalled, tableSummons } from '../game.svelte.js';
+  import { quitGame, sessionUnsaved, tableCalled, tableSummons } from '../game.svelte.js';
   import { viewer } from '../viewer.svelte.js';
   import { assetUrl } from '../../board/asset-base.js';
 
@@ -19,6 +20,10 @@
 
   const table = $derived(viewer.isGm ? tableSummons() : null);
   const called = $derived(tableCalled());
+
+  let quitting = $state(false);
+  // A player's save would not be the table's, so only the GM is asked to keep one.
+  const quit = () => { if (viewer.isGm && sessionUnsaved()) quitting = true; else quitGame(); };
 </script>
 
 <div class="topbar">
@@ -58,6 +63,7 @@
     {/if}
     <SeatingPanel />
     <SaveLoadPanel />
+    <button onclick={quit} title="Leave this game">Quit</button>
     <nav>
       <!-- The labs are otherwise reachable only by typing the query param. Both read it once
            on load, so these are real navigations; the game survives one through localStorage. -->
@@ -70,6 +76,8 @@
     </nav>
   </div>
 </div>
+
+{#if quitting}<QuitDialog close={() => (quitting = false)} />{/if}
 
 <style>
   .topbar { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .9rem; padding: .3rem .8rem; }

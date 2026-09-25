@@ -34,9 +34,9 @@ Still to write:
   client follows each switch without a reload. The spec runs against the installed ReignMaker,
   a built copy the harness clones with the other modules. It lacks `getArmies()` and
   `getFactions()`, so the spec exercises the kingdom-flag fallback until ReignMaker ships them.
-- A damage popup with an empty console. `PopupLayer` reads `TEXT_GRADIENT` and `TextMetrics`,
+- Damage combat text with an empty console. `CombatTextLayer` reads `TEXT_GRADIENT` and `TextMetrics`,
   and the gallery plays bursts alone. It needs an attack played through the canvas, or a
-  popup added to the `?vfx` gallery. `play.spec.ts` drags a move and spends Guard; a Strike
+  combat text line added to the `?vfx` gallery. `play.spec.ts` drags a move and spends Guard; a Strike
   needs a fixture with an enemy in reach at the start.
 - A setup the spec builds for itself, so a fresh world clone needs no hand deployment.
 - The release workflow has never run. The next tag is its first test.
@@ -46,7 +46,7 @@ Still to write:
 Done 2026-09-20: `App.svelte` mounts the one `AppShell` and the one
 `PixiBoard`; a stage renders nothing and presents its snippets, board props and handlers through
 `src/app/stage-view.svelte.ts`. `shared-board.ts` and the `shared` prop are gone, and
-`clearEffects()` drops bursts and popups on a stage switch. `Battle.svelte` is a view over
+`clearEffects()` drops bursts and combat text on a stage switch. `Battle.svelte` is a view over
 `src/app/battle/battle-controller.svelte.ts`, which composes the drag, ring and picker
 controllers.
 

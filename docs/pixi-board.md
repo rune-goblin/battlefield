@@ -154,7 +154,7 @@ The view `createBoardView` returns also has `attach(container, onBrush?)` and `d
 host that moves one canvas between elements: `detach` stops the ticker and keeps the GL context
 and its uploaded textures. The app has no use for them now. `App.svelte` mounts one `PixiBoard`
 for every stage's main board and the stages present their props to it
-(`src/app/stage-view.svelte.ts`); `clearEffects()` drops the bursts and popups in flight when
+(`src/app/stage-view.svelte.ts`); `clearEffects()` drops the bursts and combat text in flight when
 the stage changes. Every other `PixiBoard` (the battle report's previews, the labs) builds and
 destroys its own view.
 

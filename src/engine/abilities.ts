@@ -42,6 +42,10 @@ export interface TroopAbility {
 }
 
 export interface AbilityReview { label: string; reason: string }
+/** `saveFailed` marks the save a later `applied` line follows, so the ability is named once. */
+export type AbilityOutcome = 'applied' | 'resisted' | 'saveFailed' | 'immune';
+/** What a log line names when an ability lands on, or is resisted by, the unit it logs. */
+export interface AbilityMark { label: string; name: string }
 export interface AbilityMemory {
   guardAtStart?: boolean;
   initialWounds: number;

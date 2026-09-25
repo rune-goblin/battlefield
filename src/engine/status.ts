@@ -4,7 +4,7 @@ import type { Unit } from './types.js';
 
 /** Everything a piece can be under until it lapses, in the order the board stacks it: the stance
  * it chose, its fortified position, what enemies did to it, then its own side's spells.
- * Art resolves each name to an icon. This list is the only one: events, board slots, popups
+ * Art resolves each name to an icon. This list is the only one: events, board slots, combat text
  * and their words are all typed against it. */
 export const STATUSES = [
   'guard', 'fortified',

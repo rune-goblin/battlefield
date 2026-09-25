@@ -236,6 +236,17 @@ export const battleUnsaved = (): boolean => {
   void savedTick;
   return game.battle !== null && savedAt !== `${runtime.session.battleId}:${runtime.session.revision}`;
 };
+/** Whether the record has moved since this client last saved it, at any stage. */
+export const sessionUnsaved = (): boolean => {
+  void savedTick;
+  return runtime.session.revision > 0 && savedAt !== `${runtime.session.battleId}:${runtime.session.revision}`;
+};
+
+// The browser's game is a page under the landing page; a host with a window of its own shuts that.
+let quitHost = (): void => { location.assign('index.html'); };
+export const bindQuit = (quit: () => void): void => { quitHost = quit; };
+export const quitGame = (): void => quitHost();
+
 export const removeSave = (slot: string): Promise<void> => runtime.archive.remove(slot);
 export const exportSave = (slot: string): Promise<string> => runtime.archive.export(slot);
 export const importSave = (data: string): Promise<ArchiveEntry> => runtime.archive.import(data);

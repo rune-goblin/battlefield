@@ -2,7 +2,7 @@ import './install-asset-base.js';
 import { blockPageZoom } from '../../app/app-root.js';
 import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
-import { bindClient, presenceChanged, tableChanged } from '../../app/game.svelte.js';
+import { bindClient, bindQuit, presenceChanged, tableChanged } from '../../app/game.svelte.js';
 import { stage } from '../../app/stage-view.svelte.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
@@ -84,6 +84,7 @@ Hooks.once('init', () => {
     chat: foundryChatPoster(),
     onAuthority: reportAuthority,
   });
+  bindQuit(() => void BattlefieldApp.close());
   bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive, table: tableCall }));
   channel.on((message) => host?.handleMessage(message));
   sessionWatcher.subscribe(() => tableCall.handleSession());

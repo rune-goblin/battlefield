@@ -1,5 +1,5 @@
-import { validatedAbilities, freshAbilityMemory } from './abilities.js';
-import { abilityMemory, hasAbility, unitAbilities, exploitBonus, resolveBonus, holdsGround, shieldBonus, refreshAbilityAuras, startAbilities, absorbAbilityDamage, suppressRegeneration, attackAbilities, abilityOffers, performAbility, type AbilityContext } from './ability-effects.js';
+import { validatedAbilities, freshAbilityMemory, type AbilityMark, type AbilityOutcome } from './abilities.js';
+import { abilityMemory, hasAbility, unitAbilities, exploitBonus, resolveBonus, holdsGround, shieldBonus, refreshAbilityAuras, startAbilities, absorbAbilityDamage, suppressRegeneration, attackAbilities, abilityOffers, performAbility, markOf, type AbilityContext } from './ability-effects.js';
 import { wallsFor } from './walls.js';
 import type { HealingChoice, HealingCondition } from './types.js';
 import { coverBetween, wallCoverBetween, hasSight, isMountain } from './sight.js';
@@ -682,13 +682,18 @@ const log =(state: BattleState, u: Unit | null, text: string, c?: CheckResult, t
 
 const attackOn = (target: Unit): CheckLanding => ({ unit: target.id, reads: 'attack' });
 
+const abilityLog = (state: BattleState): AbilityContext['log'] => (u, text, mark?: AbilityMark, outcome: AbilityOutcome = 'applied') =>
+  log(state, u, text, undefined, mark && { kind: 'ability', unit: u.id, outcome, ...mark });
+
 function abilityContext(state: BattleState, rng: Rng, source: Unit): AbilityContext {
   return {
-    log: (u, text) => log(state, u, `${u.name}: ${text}`),
-    will: (target, dc, fear = false) => {
+    log: (u, text, mark, outcome) => abilityLog(state)(u, `${u.name}: ${text}`, mark, outcome),
+    will: (target, dc, ability, fear = false) => {
       const c = roll(state, rng, target, willModifier(target) + (fear ? resolveBonus(state, target) : 0), dc);
-      log(state, target, rollLine(target.name, 'resists the ability', c), c);
-      return succeeded(c.degree);
+      const saved = succeeded(c.degree);
+      log(state, target, rollLine(target.name, `Will save against ${possessive(source.name)} ${ability.label}`, c), c,
+        { kind: 'ability', unit: target.id, outcome: saved ? 'resisted' : 'saveFailed', ...markOf(ability) });
+      return saved;
     },
     regenerationSave: target => {
       const c = roll(state, rng, target, fortitudeModifier(target), levelDc(target.level));
@@ -748,7 +753,7 @@ function clearAsShooter(state: BattleState, shooterId: string) {
  */
 function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, source: string, attacker: Unit, pressed = false, saveShift = 0, sourceLevel = attacker.level, tags: string[] = []): number {
   const capped = reduceWounds(target, raw);
-  const n = absorbAbilityDamage(state, target, capped, tags, (u, text) => log(state, u, text));
+  const n = absorbAbilityDamage(state, target, capped, tags, abilityLog(state));
   if (capped < raw) log(state, target, target.stoneskin && !target.guard?.cap
     ? `${target.name}'s stoneskin caps the critical at 1 damage.`
     : `${target.name} has dug in: the critical lands as an ordinary hit.`);
@@ -2096,7 +2101,7 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
   const tag = target.persistent!.tag;
   target.persistent = null;
   if (target.status !== 'active') return;
-  const n = absorbAbilityDamage(state, target, reduceWounds(target, 1), tag ? [tag] : [], (u, text) => log(state, u, text));
+  const n = absorbAbilityDamage(state, target, reduceWounds(target, 1), tag ? [tag] : [], abilityLog(state));
   if (n <= 0) return;
   target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
   const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';

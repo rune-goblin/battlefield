@@ -1,30 +1,27 @@
 import * as PIXI from 'pixi.js';
 import { STATUSES, type Grid, type Point } from '../../engine/index.js';
+import type { CombatTextIcon, CombatTextPart, CombatTextTone } from '../../services/CombatTextService.js';
 import { assetUrl } from '../asset-base.js';
 import type { StatusIcon } from '../art.js';
 import { STATUS_INTRO } from '../Token.js';
 
-export type PopupTone = 'good' | 'bad' | 'warn';
+export type { CombatTextIcon, CombatTextPart, CombatTextTone };
 const BARS = ['wounds', 'morale'] as const;
-const ICONS = [...BARS, 'routed', 'dead', ...STATUSES] as const;
-/** A file in `art/condition-icons/`. A bar's icon follows its number; any other leads its word. */
-export type PopupIcon = typeof ICONS[number];
-const isBar = (icon: PopupIcon | undefined): boolean => BARS.some((bar) => bar === icon);
+const ICONS = [...BARS, 'routed', 'dead', ...STATUSES] as const satisfies readonly CombatTextIcon[];
+const isBar = (icon: CombatTextIcon | undefined): boolean => BARS.some((bar) => bar === icon);
 // A part that names a status is played by the token's own slot, and the word becomes its caption.
-const conditionOf = (part: PopupPart): StatusIcon | null => STATUSES.find((status) => status === part.icon) ?? null;
+const conditionOf = (part: CombatTextPart): StatusIcon | null => STATUSES.find((status) => status === part.icon) ?? null;
 
-export interface PopupPart { text: string; tone: PopupTone; icon?: PopupIcon; /** Drawn larger: the one word that settles the whole action. */ loud?: boolean }
-
-export interface BoardPopup {
+export interface BoardCombatText {
   /** The piece the word rides; it follows a piece that is still walking. */
   token: string;
   /** Where the word stands when the board no longer holds that piece. */
   cell: string;
   /** Shown side by side: one word, or every bar a blow moved. */
-  parts: PopupPart[];
+  parts: CombatTextPart[];
 }
 
-export interface PopupLayerOptions {
+export interface CombatTextLayerOptions {
   positionOf(token: string): Point | null;
   /** Words wait for the pieces to stop, so a charge reads its result where it ends. */
   moving(): boolean;
@@ -39,7 +36,7 @@ export interface PopupLayerOptions {
 }
 
 const FONT = 'Carter One';
-const FILL: Record<PopupTone, [string, string]> = {
+const FILL: Record<CombatTextTone, [string, string]> = {
   good: ['#1ac300', '#3cff00'],
   bad: ['#c30000', '#ff0000'],
   warn: ['#f47a00', '#ffff00'],
@@ -84,7 +81,7 @@ function loadFont(): void {
   }, () => { fontLoad = null; });
 }
 
-function styleFor(tone: PopupTone): PIXI.TextStyle {
+function styleFor(tone: CombatTextTone): PIXI.TextStyle {
   return new PIXI.TextStyle({
     fontFamily: `"${FONT}", Signika, sans-serif`,
     fontSize: DRAWN_PX,
@@ -108,10 +105,10 @@ const ICON_PX = DRAWN_PX * 0.8;
 const BAR_ICON_PX = DRAWN_PX * 1.3;
 const ICON_GAP = DRAWN_PX * 0.12;
 
-const icons = new Map<PopupIcon, PIXI.Texture>();
+const icons = new Map<CombatTextIcon, PIXI.Texture>();
 let iconLoad: Promise<void> | null = null;
 
-// One fetch for the lifetime of the page. A popup that lands mid-load shows its words alone.
+// One fetch for the lifetime of the page. A line that lands mid-load shows its words alone.
 function loadIcons(): void {
   iconLoad ??= Promise.all(ICONS.map(async (name) => {
     icons.set(name, await PIXI.Assets.load<PIXI.Texture>(assetUrl(`art/condition-icons/${name}.webp`)));
@@ -119,7 +116,7 @@ function loadIcons(): void {
 }
 
 // Stands on the baseline: the text box ends below it by its descent and its outline.
-function iconFor(icon: PopupIcon, x: number): PIXI.Sprite | null {
+function iconFor(icon: CombatTextIcon, x: number): PIXI.Sprite | null {
   const texture = icons.get(icon);
   if (!texture) return null;
   const sprite = new PIXI.Sprite(texture);
@@ -133,10 +130,10 @@ function iconFor(icon: PopupIcon, x: number): PIXI.Sprite | null {
 
 const PART_GAP = DRAWN_PX * 0.45;
 
-function build(popup: BoardPopup, bare = false): PIXI.Container {
+function build(line: BoardCombatText, bare = false): PIXI.Container {
   const body = new PIXI.Container();
   let x = 0;
-  for (const part of popup.parts) {
+  for (const part of line.parts) {
     if (x) x += PART_GAP;
     const leads = !bare && part.icon && !isBar(part.icon) ? iconFor(part.icon, x) : null;
     if (leads) { body.addChild(leads); x += leads.width + ICON_GAP; }
@@ -153,16 +150,16 @@ function build(popup: BoardPopup, bare = false): PIXI.Container {
   return body;
 }
 
-const isEffect = (popup: BoardPopup): boolean => popup.parts.every((part) => isBar(part.icon));
-const conditionsOf = (popup: BoardPopup): StatusIcon[] | null => {
-  const icons = popup.parts.map(conditionOf);
+const isEffect = (line: BoardCombatText): boolean => line.parts.every((part) => isBar(part.icon));
+const conditionsOf = (line: BoardCombatText): StatusIcon[] | null => {
+  const icons = line.parts.map(conditionOf);
   return icons.every((icon): icon is StatusIcon => icon !== null) ? icons : null;
 };
-const isDeath = (popup: BoardPopup): boolean => popup.parts.length === 1 && popup.parts[0].icon === 'dead';
+const isDeath = (line: BoardCombatText): boolean => line.parts.length === 1 && line.parts[0].icon === 'dead';
 const CAPTION_SCALE = 0.7;
 
 interface Live {
-  popup: BoardPopup;
+  line: BoardCombatText;
   text: PIXI.Container | null;
   /** Negative while the word waits its turn. */
   elapsed: number;
@@ -180,11 +177,11 @@ const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
 
 /** The word a roll came to, popped over the piece it landed on, then lifted and faded. The words
  * of a commit take turns in the order they happened, whichever pieces they land on. */
-export class PopupLayer {
+export class CombatTextLayer {
   private readonly container: PIXI.Container;
   private readonly viewport: PIXI.Container;
   private readonly ticker: PIXI.Ticker;
-  private readonly opts: PopupLayerOptions;
+  private readonly opts: CombatTextLayerOptions;
   private grid: Grid | null = null;
   private size = 0;
   private live: Live[] = [];
@@ -202,7 +199,7 @@ export class PopupLayer {
     }
   };
 
-  constructor(container: PIXI.Container, viewport: PIXI.Container, ticker: PIXI.Ticker, opts: PopupLayerOptions) {
+  constructor(container: PIXI.Container, viewport: PIXI.Container, ticker: PIXI.Ticker, opts: CombatTextLayerOptions) {
     this.container = container;
     this.viewport = viewport;
     this.ticker = ticker;
@@ -223,35 +220,35 @@ export class PopupLayer {
     return Math.max(0, ...this.live.map((entry) => (entry.caption ?? LIFE_MS) - entry.elapsed));
   }
 
-  show(popup: BoardPopup): void {
+  show(line: BoardCombatText): void {
     if (!this.grid || !this.size) return;
     const waiting = this.live.filter((entry) => !entry.text);
     const latest = Math.min(...this.live.map((entry) => entry.elapsed));
     const stagger = waiting.length >= CROWDED ? CROWDED_STAGGER_MS : STAGGER_MS;
-    this.live.push({ popup, text: null, elapsed: Math.min(-LEAD_MS, latest - stagger), scale: 1, lift: 0, lifted: 0, caption: null });
-    const conditions = conditionsOf(popup);
-    if (conditions) this.opts.expect(popup.token, conditions);
-    if (isDeath(popup)) this.opts.expectFallen(popup.token);
+    this.live.push({ line, text: null, elapsed: Math.min(-LEAD_MS, latest - stagger), scale: 1, lift: 0, lifted: 0, caption: null });
+    const conditions = conditionsOf(line);
+    if (conditions) this.opts.expect(line.token, conditions);
+    if (isDeath(line)) this.opts.expectFallen(line.token);
   }
 
   private draw(entry: Live): void {
     if (!entry.text) {
-      const conditions = conditionsOf(entry.popup);
-      if (conditions && this.opts.announce(entry.popup.token, conditions)) {
+      const conditions = conditionsOf(entry.line);
+      if (conditions && this.opts.announce(entry.line.token, conditions)) {
         const { fadeMs, holdMs, settleMs } = STATUS_INTRO;
         entry.caption = conditions.length * (fadeMs + holdMs) + settleMs;
       }
-      if (isDeath(entry.popup) && this.opts.announceFallen(entry.popup.token)) {
+      if (isDeath(entry.line) && this.opts.announceFallen(entry.line.token)) {
         entry.caption = STATUS_INTRO.fadeMs + STATUS_INTRO.holdMs + STATUS_INTRO.settleMs;
       }
-      entry.text = build(entry.popup, entry.caption !== null);
+      entry.text = build(entry.line, entry.caption !== null);
       const zoom = this.viewport.scale.x || 1;
       const screenPx = Math.min(SCREEN_PX.max, Math.max(SCREEN_PX.min, this.size * zoom * SCREEN_PX.perCell));
-      const emphasis = entry.caption !== null ? CAPTION_SCALE : isEffect(entry.popup) ? EFFECT_SCALE : entry.popup.parts.some((part) => part.loud) ? LOUD_SCALE : 1;
+      const emphasis = entry.caption !== null ? CAPTION_SCALE : isEffect(entry.line) ? EFFECT_SCALE : entry.line.parts.some((part) => part.loud) ? LOUD_SCALE : 1;
       entry.scale = emphasis * screenPx / (DRAWN_PX * zoom);
       this.container.addChild(entry.text);
       if (entry.caption === null) {
-        const stack = this.live.filter((older) => older !== entry && older.text && older.caption === null && older.popup.token === entry.popup.token);
+        const stack = this.live.filter((older) => older !== entry && older.text && older.caption === null && older.line.token === entry.line.token);
         const line = stack.length ? Math.min(...stack.map((older) => older.lift)) - entry.text.height * entry.scale * LINE : this.size * RISE_CELLS;
         // A stack too deep for the gap climbs as a whole, so no line drops onto the piece.
         if (line < 0) for (const older of stack) older.lift -= line;
@@ -260,7 +257,7 @@ export class PopupLayer {
     }
     const t = entry.elapsed;
     entry.lifted += (entry.lift - entry.lifted) * Math.min(1, this.ticker.deltaMS / LIFT_MS);
-    const at = this.opts.positionOf(entry.popup.token) ?? this.grid!.center(this.grid!.parse(entry.popup.cell), this.size);
+    const at = this.opts.positionOf(entry.line.token) ?? this.grid!.center(this.grid!.parse(entry.line.cell), this.size);
     if (entry.caption !== null) {
       const { fadeMs, settleMs } = STATUS_INTRO;
       entry.text.position.set(at.x, at.y + this.size * 0.5 + entry.text.height * entry.scale);
@@ -270,7 +267,7 @@ export class PopupLayer {
     }
     const rise = entry.lifted * easeOutCubic(Math.min(1, t / RISE_MS));
     const fade = Math.max(0, (t - (LIFE_MS - FADE_MS)) / FADE_MS);
-    const pop = isEffect(entry.popup) ? EFFECT_POP_MS : POP_MS;
+    const pop = isEffect(entry.line) ? EFFECT_POP_MS : POP_MS;
     entry.text.position.set(at.x, at.y - this.size * 0.3 - rise);
     const swell = t < pop ? POP_FROM + (1 - POP_FROM) * easeOutBack(t / pop) : 1 - (1 - FADE_TO) * fade ** 2;
     entry.text.scale.set(entry.scale * swell);
