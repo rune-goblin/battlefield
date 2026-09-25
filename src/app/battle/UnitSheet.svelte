@@ -39,10 +39,10 @@
   {/if}
   <div class="attacks" aria-label="Attack rolls and weapon ranges">
     {#if unit.stats.strike !== null}
-      <div class="attack" title={rollNote}><span>{sourceName(unit.attackSources?.strike) ?? 'Strike'}</span><strong>{signed(strikeModifier(battle, unit, unit))}</strong><small>Adjacent</small></div>
+      <div class="attack" title={rollNote}><span>{sourceName(unit.attackSources?.strike) ?? 'Melee'}</span><strong>{signed(strikeModifier(battle, unit, unit))}</strong><small>Adjacent</small></div>
     {/if}
     {#if unit.stats.volley !== null}
-      <div class="attack" title={`${rollNote} ${shootRangeLabel(battle, unit)}`}><span>{sourceName(unit.attackSources?.volley) ?? 'Volley'}</span><strong>{signed(volley)}</strong><small>{shootFloor(battle, unit)}–{shootCeiling(battle, unit)} hexes</small></div>
+      <div class="attack" title={`${rollNote} ${shootRangeLabel(battle, unit)}`}><span>{sourceName(unit.attackSources?.volley) ?? 'Shoot'}</span><strong>{signed(volley)}</strong><small>{shootFloor(battle, unit)}–{shootCeiling(battle, unit)} hexes</small></div>
     {/if}
     {#if unit.stats.spellAttack !== null}
       <div class="attack" title={`${rollNote} ${spellRanges}`}><span>Spell attack</span><strong>{signed(spellAttackModifier(unit))}</strong><small>{unit.trees.includes('blast') ? `Blast ${castCeiling(battle, 'blast')} hexes` : 'By spell'}</small></div>
@@ -59,21 +59,21 @@
 
 <style>
   .unit-sheet { display: flex; flex-direction: column; gap: .6rem; margin: .35rem 0 .25rem; }
-  .movement-source { display: flex; flex-direction: column; gap: .15rem; font-size: var(--type-label); color: var(--muted); }
-  .caster { color: var(--accent); font-size: var(--type-small); font-weight: 600; }
-  .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: var(--type-label); padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
+  .movement-source { display: flex; flex-direction: column; gap: .15rem; font-size: var(--type-small); color: var(--muted); }
+  .caster { color: var(--accent); font-size: var(--type-body); font-weight: 600; }
+  .fortified { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem; color: var(--good); font-size: var(--type-small); padding: .4rem; border: 1px solid var(--rule); border-radius: 5px; }
   dl { margin: 0; }
-  dt { color: var(--muted); font-size: var(--type-label); }
+  dt { color: var(--muted); font-size: var(--type-small); }
   dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
   .vitals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem; }
   .vitals > div { padding: .35rem .4rem; background: var(--band); border-radius: 5px; }
-  .vitals dd { font-size: var(--type-2); line-height: var(--leading-compact); }
-  small { color: var(--muted); font-size: var(--type-label); font-weight: 400; }
+  .vitals dd { font-size: var(--type-3); line-height: var(--leading-compact); }
+  small { color: var(--muted); font-size: var(--type-small); font-weight: 400; }
   .attacks { display: flex; flex-direction: column; gap: .25rem; }
-  .attack { display: grid; grid-template-columns: minmax(0, 1fr) 3rem 6.5rem; gap: .4rem; align-items: baseline; font-size: var(--type-small); }
+  .attack { display: grid; grid-template-columns: minmax(0, 1fr) 3rem 6.5rem; gap: .4rem; align-items: baseline; font-size: var(--type-body); }
   .attack strong { font-variant-numeric: tabular-nums; text-align: right; }
   .attack small { text-align: right; }
   .checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem .8rem; padding-top: .5rem; border-top: 1px solid var(--rule); }
   .checks > div { display: flex; justify-content: space-between; gap: .35rem; align-items: baseline; }
-  .checks dd { font-size: var(--type-small); }
+  .checks dd { font-size: var(--type-body); }
 </style>

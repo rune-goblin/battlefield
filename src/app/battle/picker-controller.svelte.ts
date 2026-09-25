@@ -203,7 +203,7 @@ export function createPickerController(s: PickerShared) {
     if (activityPick && pickerService) return pickerService.surface(activityPick.selected);
     if (blastOpen) return blastCandidates;
     if (targetingChoice && targetingService) return targetingService.markersFor(targetingChoice);
-    if (aim && aimService && aimChoices.length) return [{ id: `aim:${aim.cell}`, label: aimService.activity.label, cells: [aim.cell], anchorCells: [aim.cell], geometry: 'hex', icon: aimService.icon }];
+    if (aim && aimService && aimChoices.length) return [{ ...aimService.hexMarker(aim.cell), id: `aim:${aim.cell}` }];
     return candidates.filter((target) => target.geometry !== 'group'
       && candidates.filter((other) => other.anchorCells.join('+') === target.anchorCells.join('+')).length === 1);
   });

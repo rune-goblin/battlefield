@@ -9,25 +9,26 @@
   --sans:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   --serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;
   /* One harmonic scale: each step is the last times the ratio, as in public/rules.html. The
-     rules page reads at 1.25; the app is dense interface and steps at 1.125. */
+     rules page reads at 1.25; the app is dense interface and steps at 1.125. Text reads at
+     --type-body; --type-small is the floor; --type-label is for badges in fixed boxes alone. */
   --type-ratio:1.125;
   --type-body:1rem;
-  --type-small:calc(var(--type-body) / var(--type-ratio));
-  --type-label:calc(var(--type-small) / var(--type-ratio));
-  --type-1:calc(var(--type-body) * var(--type-ratio));
-  --type-2:calc(var(--type-1) * var(--type-ratio));
-  --type-3:calc(var(--type-2) * var(--type-ratio));
-  --type-4:calc(var(--type-3) * var(--type-ratio));
-  --type-5:calc(var(--type-4) * var(--type-ratio));
-  --type-6:calc(var(--type-5) * var(--type-ratio));
-  --type-7:calc(var(--type-6) * var(--type-ratio));
-  --type-8:calc(var(--type-7) * var(--type-ratio));
-  --type-9:calc(var(--type-8) * var(--type-ratio));
-  --type-10:calc(var(--type-9) * var(--type-ratio));
-  --type-11:calc(var(--type-10) * var(--type-ratio));
-  --type-12:calc(var(--type-11) * var(--type-ratio));
-  --type-13:calc(var(--type-12) * var(--type-ratio));
-  --type-14:calc(var(--type-13) * var(--type-ratio));
+  --type-small:calc(var(--type-1) / var(--type-ratio));
+  --type-label:calc(var(--type-body) / var(--type-ratio));
+  --type-1:calc(var(--type-1) * var(--type-ratio));
+  --type-2:calc(var(--type-2) * var(--type-ratio));
+  --type-3:calc(var(--type-3) * var(--type-ratio));
+  --type-4:calc(var(--type-4) * var(--type-ratio));
+  --type-5:calc(var(--type-5) * var(--type-ratio));
+  --type-6:calc(var(--type-6) * var(--type-ratio));
+  --type-7:calc(var(--type-7) * var(--type-ratio));
+  --type-8:calc(var(--type-8) * var(--type-ratio));
+  --type-9:calc(var(--type-9) * var(--type-ratio));
+  --type-10:calc(var(--type-10) * var(--type-ratio));
+  --type-11:calc(var(--type-11) * var(--type-ratio));
+  --type-12:calc(var(--type-12) * var(--type-ratio));
+  --type-13:calc(var(--type-13) * var(--type-ratio));
+  --type-14:calc(var(--type-14) * var(--type-ratio));
   --leading-body:1.5; --leading-compact:1.35; --leading-heading:1.2;
   --ink-2:color-mix(in srgb, var(--ink) 80%, var(--paper));
   /* Chrome that floats over the map: readable, but the ground still shows through it. Resolved
@@ -49,17 +50,17 @@
 
 :where(.battlefield-root), :where(.battlefield-root) * { box-sizing:border-box; }
 :where(.battlefield-root) :is(h1, h2, h3, h4) { font-family:var(--serif); line-height:var(--leading-heading); }
-:where(.battlefield-root) h1 { font-size:var(--type-3); margin:0; }
-:where(.battlefield-root) h2 { font-size:var(--type-1); margin:.75rem 0 .4rem; border-bottom:2px solid var(--rule); padding-bottom:.15rem; }
+:where(.battlefield-root) h1 { font-size:var(--type-4); margin:0; }
+:where(.battlefield-root) h2 { font-size:var(--type-2); margin:.75rem 0 .4rem; border-bottom:2px solid var(--rule); padding-bottom:.15rem; }
 :where(.battlefield-root) h2:first-child { margin-top:0; }
-:where(.battlefield-root) h3 { font-size:var(--type-body); margin:.75rem 0 .35rem; color:var(--ink); }
-:where(.battlefield-root) button { font:inherit; font-size:var(--type-small); font-weight:500; color:var(--ink); background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:.4rem .8rem; cursor:pointer; }
+:where(.battlefield-root) h3 { font-size:var(--type-1); margin:.75rem 0 .35rem; color:var(--ink); }
+:where(.battlefield-root) button { font:inherit; font-size:var(--type-body); font-weight:500; color:var(--ink); background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:.4rem .8rem; cursor:pointer; }
 :where(.battlefield-root) button:hover:not(:disabled) { border-color:var(--accent); }
 :where(.battlefield-root) button:disabled { opacity:.45; cursor:default; }
 :where(.battlefield-root) button.primary { background:var(--accent); color:var(--paper); border-color:var(--accent); font-weight:600; }
 :where(.battlefield-root) select, :where(.battlefield-root) input { font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--edge); border-radius:6px; padding:.3rem .5rem; }
 :where(.battlefield-root) label { display:inline-flex; gap:.4rem; align-items:center; }
-:where(.battlefield-root) .muted { color:var(--muted); font-size:var(--type-label); }
+:where(.battlefield-root) .muted { color:var(--muted); font-size:var(--type-small); }
 :where(.battlefield-root) .card { background:var(--card); border:1px solid var(--rule); border-radius:8px; padding:.9rem 1rem; }
 :where(.battlefield-root) .row { display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; }
 :where(.battlefield-root) .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
@@ -67,20 +68,20 @@
 :where(.battlefield-root) .side-att { color:var(--att); } :where(.battlefield-root) .side-def { color:var(--def); }
 :where(.battlefield-root) .actions { display:flex; flex-direction:column; gap:.4rem; }
 :where(.battlefield-root) .action { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
-:where(.battlefield-root) .action .cost { color:var(--muted); font-size:var(--type-label); min-width:5rem; }
-:where(.battlefield-root) .log { overflow:auto; font-size:var(--type-small); padding:.5rem .75rem; background:var(--band); border-radius:8px; }
+:where(.battlefield-root) .action .cost { color:var(--muted); font-size:var(--type-small); min-width:5rem; }
+:where(.battlefield-root) .log { overflow:auto; font-size:var(--type-body); padding:.5rem .75rem; background:var(--band); border-radius:8px; }
 :where(.battlefield-root) .log p { margin:.2rem 0; }
 :where(.battlefield-root) .log p.round { font-weight:600; margin-top:.6rem; color:var(--accent); }
 :where(.battlefield-root) .log .crit { color:var(--good); font-weight:600; } :where(.battlefield-root) .log .fail { color:var(--bad); }
 :where(.battlefield-root) .unitlist { display:flex; flex-direction:column; gap:.4rem; margin:.5rem 0; }
-:where(.battlefield-root) .unitrow { display:grid; grid-template-columns:1fr auto auto auto; gap:.5rem; align-items:center; background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:.35rem .6rem; font-size:var(--type-small); }
+:where(.battlefield-root) .unitrow { display:grid; grid-template-columns:1fr auto auto auto; gap:.5rem; align-items:center; background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:.35rem .6rem; font-size:var(--type-body); }
 :where(.battlefield-root) .stat { font-variant-numeric:tabular-nums; }
 :where(.battlefield-root) .derived { font-style:italic; }
-:where(.battlefield-root) table.stats { border-collapse:collapse; font-size:var(--type-small); margin:.4rem 0; }
+:where(.battlefield-root) table.stats { border-collapse:collapse; font-size:var(--type-body); margin:.4rem 0; }
 :where(.battlefield-root) table.stats td { padding:.15rem .6rem .15rem 0; }
 :where(.battlefield-root) table.stats td:first-child { color:var(--muted); }
 :where(.battlefield-root) .result { text-align:center; padding:2rem 1rem; }
-:where(.battlefield-root) .result h2 { border:0; font-size:var(--type-6); }
+:where(.battlefield-root) .result h2 { border:0; font-size:var(--type-7); }
 :where(.battlefield-root) .palette { display:flex; gap:.4rem; flex-wrap:wrap; margin:.5rem 0; }
 :where(.battlefield-root) kbd { font:inherit; font-size:.85em; border:1px solid var(--rule); border-radius:4px; padding:0 .25em; background:var(--band); }
 :where(.battlefield-root) .palette button.on { background:var(--accent); color:var(--paper); border-color:var(--accent); }

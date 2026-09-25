@@ -49,7 +49,7 @@
 
 <style>
   .melee-choices { position: absolute; z-index: 5; display: flex; gap: .35rem; transform: translate(-50%, -100%); pointer-events: auto; }
-  button { display: flex; flex-direction: column; align-items: center; min-width: 4.2rem; gap: .1rem; padding: .3rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: var(--type-label); box-shadow: 0 2px 8px #0006; cursor: pointer; }
+  button { display: flex; flex-direction: column; align-items: center; min-width: 4.2rem; gap: .1rem; padding: .3rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: var(--type-small); box-shadow: 0 2px 8px #0006; cursor: pointer; }
   button:hover, button:focus-visible, button.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
   img { height: 2.5rem; width: auto; pointer-events: none; }
 </style>

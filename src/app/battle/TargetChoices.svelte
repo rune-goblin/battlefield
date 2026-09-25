@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ActivityTarget } from '../../engine/index.js';
+  import { targetText } from '../targeting.js';
 
   let { targets, selected, choose, hover, cells, label = 'Targets' }: {
     targets: ActivityTarget[]; selected: string | null;
@@ -17,7 +18,7 @@
 </script>
 
 <div class="target-choices">
-  {#if selection}<p class="selection" aria-live="polite">{selection.label} · {cells(selection).join(' + ')}</p>{/if}
+  {#if selection}<p class="selection" aria-live="polite">{targetText(selection, cells(selection))}</p>{/if}
   <button bind:this={toggle} class="toggle" aria-expanded={open} onclick={() => { open = !open; hover(null); }}>
     {open ? 'Hide target list' : 'Choose from list'} <span>{targets.length}</span>
   </button>

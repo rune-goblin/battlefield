@@ -1,5 +1,5 @@
 import {
-  gridOf, notation, type ActionOffer, type ActivityAction, type ActivityOption,
+  gridOf, notation, occupantTarget, unitTarget, type ActionOffer, type ActivityAction, type ActivityOption,
   type ActivityTarget, type BattleState, type TargetRef, type Tree, type Unit,
 } from '../engine/index.js';
 import type { TargetIcon } from '../board/art.js';
@@ -23,6 +23,8 @@ export interface TargetResolution {
   arrows: TargetArrow[];
   effects: { cell: string; tree: Tree; from: string }[];
 }
+
+export const targetText = (target: { label: string }, cells: string[]): string => `${target.label} · ${cells.join(' + ')}`;
 
 export function cellsForTarget(state: BattleState, target: ActivityTarget): string[] {
   if (target.kind === 'wall') return target.id.split('|');
@@ -66,10 +68,14 @@ export class TargetingService {
       ? selected.length === 0 && target.cells.length === 4 ? [target.cells[0], target.cells[2]]
         : this.placementCells(target, selected).slice(selected.length, selected.length + 1)
       : target.cells))];
-    return [...new Set([...selected, ...cells])].map(cell => ({
-      id: `hex:${cell}`, label: `${this.activity.label}: ${this.state.units.find(u => u.status === 'active' && notation(u.square) === cell)?.name ?? cell}`,
-      cells: [cell], anchorCells: [cell], geometry: 'hex', icon: this.icon, selected: selected.includes(cell),
-    }));
+    return [...new Set([...selected, ...cells])].map(cell => ({ ...this.hexMarker(cell), selected: selected.includes(cell) }));
+  }
+
+  hexMarker(cell: string): TargetMarker {
+    return {
+      id: `hex:${cell}`, label: occupantTarget(this.state, cell).label,
+      cells: [cell], anchorCells: [cell], geometry: 'hex', icon: this.icon,
+    };
   }
 
   pickCell(cell: string, selected: string[] = []): { selected: string[]; target: TargetChoice | null } | null {
@@ -113,7 +119,7 @@ export class TargetingService {
     this.icon = targetingIcon(offer);
     this.style = offer.hostile || offer.type === 'shoot' || offer.type === 'fight' || offer.spell === 'blast' || offer.spell === 'controlling' ? 'attack' : 'deploy';
     const targets: ActivityTarget[] = activity.needsTarget ? activity.targets
-      : [{ kind: 'unit', id: actor.id, label: actor.name }];
+      : [unitTarget(actor)];
     this.choices = activity.legal ? targets.map((target) => this.describe(target)) : [];
   }
 
@@ -129,7 +135,6 @@ export class TargetingService {
     return {
       ...target, cells, geometry, icon: this.icon,
       anchorCells: placement ? cells.filter((_, i) => i % 2 === 1) : cells,
-      label: `${this.activity.label}: ${target.label}`,
     };
   }
 

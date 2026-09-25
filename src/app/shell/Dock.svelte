@@ -55,7 +55,7 @@
   .dock.rail { width: 1.9rem; }
 
   .dock-head { display: flex; align-items: center; gap: .2rem; padding: .3rem .3rem .3rem .7rem; border-bottom: 1px solid var(--rule); }
-  .dock-head h2 { flex: 1; margin: 0; border: 0; padding: 0; font-size: var(--type-body); font-weight: 700; color: var(--ink); }
+  .dock-head h2 { flex: 1; margin: 0; border: 0; padding: 0; font-size: var(--type-1); font-weight: 700; color: var(--ink); }
   .dock-sub { padding: .45rem .7rem; border-bottom: 1px solid var(--rule); }
   .dock-body { flex: 1; min-height: 0; overflow: auto; padding: .6rem .7rem .8rem; display: flex; flex-direction: column; gap: .6rem; }
 
@@ -65,9 +65,9 @@
     display: flex; flex-direction: column; align-items: center; gap: .6rem;
   }
   .railbtn:hover { color: var(--ink); background: var(--band); }
-  .railtitle { writing-mode: vertical-rl; font-size: var(--type-small); font-weight: 600; }
+  .railtitle { writing-mode: vertical-rl; font-size: var(--type-body); font-weight: 600; }
   .dock.left .railtitle { rotate: 180deg; }
-  .chev { font-size: var(--type-small); }
+  .chev { font-size: var(--type-body); }
 
   .ghost { border: 0; background: none; color: var(--muted); padding: .1rem .3rem; line-height: 1; }
   .ghost:hover { color: var(--ink); background: var(--band); }

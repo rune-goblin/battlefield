@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Point } from '../engine/index.js';
   import { targetIconUrl } from '../board/art.js';
-  import { targetAnchor, type TargetMarker } from './targeting.js';
+  import { targetAnchor, targetText, type TargetMarker } from './targeting.js';
 
   interface Props {
     targets: TargetMarker[];
@@ -55,9 +55,9 @@
     style:height="{marker.size}px"
     style:left="{marker.x}px"
     style:top="{marker.y}px"
-    aria-label={`${marker.label} · ${marker.cells.join(' + ')}`}
+    aria-label={targetText(marker, marker.cells)}
     aria-pressed={(marker.selected || selected === marker.id)}
-    title={`${marker.label} · ${marker.cells.join(' + ')}`}
+    title={targetText(marker, marker.cells)}
     onpointerenter={() => hover(marker.id)}
     onpointerleave={() => hover(null)}
     onfocus={() => hover(marker.id)}

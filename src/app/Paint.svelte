@@ -112,13 +112,13 @@
 {/snippet}
 
 <style>
-  summary { cursor: pointer; color: var(--muted); font-size: var(--type-label); }
+  summary { cursor: pointer; color: var(--muted); font-size: var(--type-small); }
   .brush-section { margin-bottom: .85rem; }
-  h3 { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 .4rem; font-size: var(--type-body); }
-  h3 span { color: var(--muted); font-size: var(--type-label); font-weight: 400; }
+  h3 { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 .4rem; font-size: var(--type-1); }
+  h3 span { color: var(--muted); font-size: var(--type-small); font-weight: 400; }
   .palette { margin: 0; gap: .3rem; }
-  .palette button { font-size: var(--type-label); padding: .3rem .45rem; min-width: 0; }
-  .palette kbd { font-size: var(--type-label); border: 0; padding: 0; background: transparent; color: var(--muted); }
+  .palette button { font-size: var(--type-small); padding: .3rem .45rem; min-width: 0; }
+  .palette kbd { font-size: var(--type-small); border: 0; padding: 0; background: transparent; color: var(--muted); }
   .terrain-brushes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .terrain-brushes button, .wall-brushes button { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
   .terrain-name { text-transform: capitalize; }
@@ -126,12 +126,12 @@
   .elevation-brushes button { display: flex; flex-direction: column; align-items: center; gap: .15rem; }
   .wall-brushes { display: grid; grid-template-columns: minmax(0, 1fr); }
   .tier { display: inline-block; width: 1rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .wall-strength { display: flex; align-items: center; gap: .4rem; font-size: var(--type-label); white-space: nowrap; }
+  .wall-strength { display: flex; align-items: center; gap: .4rem; font-size: var(--type-small); white-space: nowrap; }
   .strength-pips { display: flex; gap: 2px; }
   .strength-pips i { width: 4px; height: 8px; background: currentColor; opacity: .18; }
   .strength-pips i.filled { opacity: .8; }
   .wall-tools { display: grid; grid-template-columns: 1fr 1fr; margin-top: .4rem; }
   .brush-tools { border-top: 1px solid var(--rule); padding-top: .65rem; margin-bottom: .8rem; }
   .brush-tools .palette { display: grid; grid-template-columns: 1fr 1fr; }
-  .regenerate { width: 100%; margin-top: .3rem; font-size: var(--type-label); padding: .3rem .45rem; }
+  .regenerate { width: 100%; margin-top: .3rem; font-size: var(--type-small); padding: .3rem .45rem; }
 </style>

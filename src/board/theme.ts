@@ -4,8 +4,8 @@ import type { SquareTerrain, Tree } from '../engine/index.js';
 // band, 'moveFar'/'moveFar3' the costed band at two and three actions — one shade per extra
 // action. The drag preview reuses 'move'/'moveFar' for its near/far path cells. The washes
 // themselves are ink at three alphas; see `OverlayLayer`.
-export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3' | 'invalid';
-export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3', 'invalid'];
+export type HighlightStyle = 'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3' | 'valid' | 'invalid';
+export const HIGHLIGHT_STYLES: HighlightStyle[] = ['deploy', 'move', 'attack', 'moveFar', 'moveFar3', 'valid', 'invalid'];
 
 export interface BoardTheme {
   mode: 'light' | 'dark';
@@ -26,6 +26,8 @@ export interface BoardTheme {
     /** The shot arc and the barred X — where colour on the board means danger rather than
      * terrain. */
     shot: number;
+    /** A legal drop under the pointer: the answer to `shot`'s red. */
+    valid: number;
     /** An aiming arc at something out of reach. */
     muted: number;
     /** The cast line and its swirling glow motes, one hue per tree, while a spell is aimed. */
@@ -73,6 +75,7 @@ const LIGHT: BoardTheme = {
     hover: 0x1f1a17,
     selected: 0xb4611f,
     shot: 0xb4231b,
+    valid: 0x2f8f3a,
     muted: 0x8a8580,
     cast: {
       blast: 0xd1481f,
@@ -116,6 +119,7 @@ const DARK: BoardTheme = {
     hover: 0xe8e1d5,
     selected: 0xd98b6e,
     shot: 0xe0453a,
+    valid: 0x5fd068,
     muted: 0x9a958f,
     cast: {
       blast: 0xff7a3d,

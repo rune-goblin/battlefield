@@ -51,10 +51,10 @@
 
 <style>
   .lch { margin: .6rem 0 .8rem; }
-  .head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: var(--type-small); }
-  .name em { font-style: normal; font-size: var(--type-label); color: var(--muted); }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: var(--type-body); }
+  .name em { font-style: normal; font-size: var(--type-small); color: var(--muted); }
   .head input[type=color] { width: 3rem; height: 1.4rem; padding: 0; border: 1px solid var(--rule); border-radius: 4px; background: none; }
-  .slider { display: flex; justify-content: space-between; width: 100%; font-size: var(--type-label); color: var(--muted); margin-top: .35rem; }
+  .slider { display: flex; justify-content: space-between; width: 100%; font-size: var(--type-small); color: var(--muted); margin-top: .35rem; }
   output { font-variant-numeric: tabular-nums; color: var(--accent); }
   input[type=range] { display: block; width: 100%; padding: 0; margin: .2rem 0 .1rem; accent-color: var(--accent); }
   input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

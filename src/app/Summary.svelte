@@ -146,21 +146,21 @@
   section h3 { flex: 1; margin: 0; }
   .army { border-left: 4px solid var(--side); }
   .army h3 { color: var(--side); }
-  .edit { padding: .1rem .6rem; font-size: var(--type-label); }
+  .edit { padding: .1rem .6rem; font-size: var(--type-small); }
 
   dl { margin: .5rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .8rem; }
-  dt { font-size: var(--type-label); font-weight: 600; color: var(--muted); }
-  dd { margin: 0; font-size: var(--type-body); }
+  dt { font-size: var(--type-small); font-weight: 600; color: var(--muted); }
+  dd { margin: 0; font-size: var(--type-1); }
 
-  .line { margin: .3rem 0 0; font-size: var(--type-small); color: var(--muted); }
+  .line { margin: .3rem 0 0; font-size: var(--type-body); color: var(--muted); }
   .ready { color: var(--good); font-weight: 600; }
-  .problem { margin: .4rem 0 0; font-size: var(--type-small); color: var(--bad); font-weight: 600; }
+  .problem { margin: .4rem 0 0; font-size: var(--type-body); color: var(--bad); font-weight: 600; }
 
   ul { list-style: none; margin: .5rem 0 0; padding: 0; }
-  li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: baseline; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: var(--type-small); }
+  li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: baseline; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: var(--type-body); }
   .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .meta { font-size: var(--type-label); color: var(--muted); white-space: nowrap; }
+  .meta { font-size: var(--type-small); color: var(--muted); white-space: nowrap; }
   .cell { min-width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; }
-  .cell.off { color: var(--bad); font-style: italic; font-size: var(--type-label); }
+  .cell.off { color: var(--bad); font-style: italic; font-size: var(--type-small); }
   .link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; font-size: inherit; }
 </style>

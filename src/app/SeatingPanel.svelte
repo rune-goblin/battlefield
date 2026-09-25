@@ -144,14 +144,14 @@
     position: absolute; right: 0; top: calc(100% + .3rem); z-index: 10; width: 20rem;
     display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
     background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: var(--type-small);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: var(--type-body);
   }
   .hand { align-self: flex-start; }
-  h4 { margin: 0 0 .2rem; font-size: var(--type-small); color: var(--def); }
+  h4 { margin: 0 0 .2rem; font-size: var(--type-body); color: var(--def); }
   .att h4 { color: var(--att); }
   .modes { display: flex; flex-direction: column; gap: .3rem; }
   button.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
-  .muted { color: var(--muted); margin: 0; font-size: var(--type-label); }
+  .muted { color: var(--muted); margin: 0; font-size: var(--type-small); }
   ol { list-style: none; margin: 0 0 .3rem; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
   li { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
   .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -159,7 +159,7 @@
   .who.holder { font-weight: 600; color: var(--accent); }
   .who.pass { padding: 0 .35rem; text-align: left; }
   .order { display: flex; gap: .15rem; flex: none; }
-  .order button { padding: 0 .35rem; font-size: var(--type-label); }
+  .order button { padding: 0 .35rem; font-size: var(--type-small); }
   .add { display: flex; gap: .3rem; }
   .add select { flex: 1; min-width: 0; }
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, isRouted, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading, CELL_FEET } from '../../engine/index.js';
+  import { wallsFor, isRouted, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading, CELL_FEET, wallName } from '../../engine/index.js';
   import { offerReason } from './action-menu.js';
   import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl } from '../../board/index.js';
   import ActivityChoices from './ActivityChoices.svelte';
@@ -73,7 +73,7 @@
       {@const reason = gateReason(c.b, c.active, key)}
       <button class="popup-row" disabled={!c.myTurn || c.gateBusy || !!reason} title={reason ?? 'Operate gate'} onclick={() => c.operateGate(key)}>
         <span class="popup-verb"><GateStatus open={wall.gate!.open} /> {wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
-        <span class="muted">{key.replace('|', ' / ')} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wallsFor(c.b.board).insideOf(key)}{reason ? ` · ${reason}` : ''}</span>
+        <span class="muted">{wallName(key)} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wallsFor(c.b.board).insideOf(key)}{reason ? ` · ${reason}` : ''}</span>
       </button>
     {/each}
   </BoardPopup>
@@ -302,7 +302,7 @@
   .verb-tile {
     display: flex; flex-direction: column; align-items: center; gap: .1rem;
     flex: 1; padding: .2rem; border: 1px solid transparent; border-radius: 8px;
-    background: transparent; color: var(--ink); font: inherit; font-size: var(--type-label); font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--ink); font: inherit; font-size: var(--type-small); font-weight: 600; cursor: pointer;
   }
   .verb-tile img { width: 2.4rem; height: 1.9rem; object-fit: contain; }
   .verb-tile:hover { background: var(--band); }
@@ -313,7 +313,7 @@
     bottom: calc(var(--inset-bottom, 0px) + .85rem);
     left: calc(var(--inset-left, 0px) + .85rem);
     display: flex; gap: .6rem; align-items: center;
-    padding: .35rem .7rem; border-radius: 8px; font-size: var(--type-small);
+    padding: .35rem .7rem; border-radius: 8px; font-size: var(--type-body);
     background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
     pointer-events: none;
   }
@@ -334,8 +334,8 @@
   .picker-emblem { position: relative; flex: 0 0 3rem; height: 3rem; display: grid; place-items: center; }
   .picker-emblem img { width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 2px 3px #0004); }
   .picker-heading-text { display: flex; flex-direction: column; min-width: 0; }
-  .picker-heading-text strong { font-size: var(--type-1); line-height: var(--leading-heading); }
-  .picker-kicker { color: var(--accent); font-size: var(--type-label); font-weight: 700; margin-bottom: .25rem; }
+  .picker-heading-text strong { font-size: var(--type-2); line-height: var(--leading-heading); }
+  .picker-kicker { color: var(--accent); font-size: var(--type-small); font-weight: 700; margin-bottom: .25rem; }
   .picker-budget { margin-left: auto; align-self: end; color: var(--accent); flex-shrink: 0; }
   .cast-heading { border-bottom-color: color-mix(in srgb, var(--accent) 40%, transparent); }
   .cast-heading .picker-emblem { border: 1px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent); }
@@ -348,16 +348,16 @@
   .activity-chip {
     display: flex; gap: .3rem; align-items: center;
     padding: .1rem .45rem; border: 1px solid var(--rule); border-radius: 999px;
-    background: transparent; color: var(--ink); font: inherit; font-size: var(--type-label); cursor: pointer;
+    background: transparent; color: var(--ink); font: inherit; font-size: var(--type-small); cursor: pointer;
   }
   .activity-chip.on { border-color: var(--accent); background: var(--band); }
   .activity-chip:disabled { opacity: .4; cursor: default; }
   .popup-foot { display: flex; gap: .5rem; align-items: center; padding: .3rem .5rem 0; border-top: 1px solid var(--rule); margin-top: .3rem; }
   .popup-foot .muted { margin-right: auto; }
-  .popup-foot button { font-size: var(--type-label); padding: .15rem .5rem; }
+  .popup-foot button { font-size: var(--type-small); padding: .15rem .5rem; }
   .activity-detail { margin: .1rem 0; }
-  .popup-escapes { padding: .1rem .5rem .2rem 1rem; font-size: var(--type-label); }
-  .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: var(--type-label); }
+  .popup-escapes { padding: .1rem .5rem .2rem 1rem; font-size: var(--type-small); }
+  .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: var(--type-small); }
   .escape-name { font-weight: 600; }
-  .tag { padding: .02rem .35rem; border-radius: 999px; border: 1px solid var(--bad); color: var(--bad); font-size: var(--type-label); }
+  .tag { padding: .02rem .35rem; border-radius: 999px; border: 1px solid var(--bad); color: var(--bad); font-size: var(--type-small); }
 </style>

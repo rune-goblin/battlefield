@@ -137,7 +137,7 @@ const legacyLabels: Record<AbilityKind, string> = {
   'terrain-passage': 'Pathfinder', 'opening-move': 'Vanguard', advantage: 'Exploit', 'siege-crew': 'Siege Crew',
 };
 
-const bonusNames = { melee: 'Melee Bonus', volley: 'Volley Bonus', spell: 'Spell Attack Bonus',
+const bonusNames = { melee: 'Melee Bonus', volley: 'Shoot Bonus', spell: 'Spell Attack Bonus',
   defence: 'Defence Bonus', initiative: 'Opening Initiative Bonus', menace: 'Fear Difficulty Bonus' } as const;
 
 /** Display the assigned effect, while keeping portable IDs and source flavor labels intact. */
@@ -169,7 +169,7 @@ function bonusDescription(a: TroopAbility): string {
     terrain: ` when the opposing unit stands in ${(a.terrain ?? []).join(', ')}; checks without an opposing unit use your terrain`,
     ranged: ' against ranged attacks',
   };
-  const stat = { melee: 'to melee attack rolls', volley: 'to Volley attack rolls', spell: 'to spell attack rolls',
+  const stat = { melee: 'to melee attack rolls', volley: 'to Shoot attack rolls', spell: 'to spell attack rolls',
     defence: 'Defence', initiative: 'to the opening initiative comparison, used only when side counts tie',
     menace: 'to the Will save difficulty of your Fear activity' }[a.stat ?? 'melee'];
   return `+1 ${stat}${conditions[a.predicate ?? 'always']}.${a.delivery === 'aura' ? ' Applies to self and adjacent allies.' : ''} Bonuses from this template share a +1 limit per check.`;
@@ -196,7 +196,7 @@ export function abilityDescription(a: TroopAbility): string {
     'siege-crew': '+1 to the first engine attack each activation. Loading keeps its ordinary cost.',
   };
   const cost = a.cost ?? (['recovery', 'temporary-protection', 'snare', 'suppression'].includes(a.kind) ? 2 : 1);
-  const timing = a.delivery === 'attack' ? `${a.attack === 'melee' ? 'Melee' : a.attack === 'volley' ? 'Volley' : 'Blast'}: ${a.trigger === 'use' ? 'on use, even on a miss' : a.trigger === 'critical' ? 'on a critical hit' : a.trigger === 'damage' ? 'after Health damage' : 'on a hit'}. `
+  const timing = a.delivery === 'attack' ? `${a.attack === 'melee' ? 'Melee' : a.attack === 'volley' ? 'Shoot' : 'Blast'}: ${a.trigger === 'use' ? 'on use, even on a miss' : a.trigger === 'critical' ? 'on a critical hit' : a.trigger === 'damage' ? 'after Health damage' : 'on a hit'}. `
     : a.delivery === 'aura' ? 'Aura. ' : a.delivery === 'start' ? 'At activation start. ' : a.delivery === 'activity' && a.kind !== 'opening-move' ? `${cost} action${cost === 1 ? '' : 's'}. ` : '';
   return timing + effects[a.kind] + (a.requiresCharge ? ' Requires a Charge.' : '') + (a.requiresGuard ? ' Requires Guard at activation start or during this activation.' : '')
     + (a.delivery === 'activity' && ['fear', 'expose'].includes(a.kind) ? ` One enemy within ${a.kind === 'fear' ? '2 hexes' : '1 hex'} and sight; the target resists with Will.` : '')

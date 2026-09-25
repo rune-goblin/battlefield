@@ -1,5 +1,6 @@
 import { at, barrierBetween, gridOf, notation, type Square } from './board.js';
 import { abilityName, abilityDescription, freshAbilityMemory, type AbilityMark, type AbilityOutcome, type TroopAbility, type AttackKind, type AbilityEnvironment } from './abilities.js';
+import { cellTarget, unitTarget } from './targets.js';
 import type { ActionOffer, ActivityTarget, BattleState, Unit } from './types.js';
 import type { Degree } from './check.js';
 import { levelDc } from './tables.js';
@@ -213,7 +214,7 @@ export function abilityOffers(s: BattleState, u: Unit, opening: () => string[], 
     const cost = a.kind === 'opening-move' ? 0 : a.cost ?? (['recovery', 'temporary-protection', 'snare', 'suppression'].includes(a.kind) ? 2 : 1);
     let targets: ActivityTarget[];
     if (release) targets = [];
-    else if (a.kind === 'opening-move') targets = opening().map(id => ({ kind: 'cell', id, label: id }));
+    else if (a.kind === 'opening-move') targets = opening().map(id => cellTarget(id));
     else targets = s.units.filter(t => alive(t) && (hostile ? t.side !== u.side : t.side === u.side)
       && !(a.recipient === 'self' && t.id !== u.id)
       && gridOf(s.board).distance(u.square, t.square) <= (hostile && a.kind !== 'expose' ? 2 : 1) && sight(t)
@@ -223,7 +224,7 @@ export function abilityOffers(s: BattleState, u: Unit, opening: () => string[], 
       && !(a.kind === 'recovery' && a.mode === 'condition' && (t.abilityState?.conditionRound === roundKey(s)
         || !(t.pinnedBy || t.rooted || t.suppressedBy || t.exposed || t.frightened || t.persistent)))
       && !(a.kind === 'recovery' && a.mode !== 'condition' && (t.abilityState?.healed || t.wounds <= (t.abilityState?.initialWounds ?? 0))))
-      .map(t => ({ kind: 'unit', id: t.id, label: t.name }));
+      .map(unitTarget);
     const reason = (!release && u.disorder >= 3 ? 'Routed' : null) ?? activityAvailable(s, u, a)
       ?? (u.actions < cost ? `Needs ${cost} actions` : !release && !targets.length ? 'No eligible target' : null);
     const detail = release ? 'Spend one action to end immobilization.'

@@ -2,6 +2,7 @@ import { at, gridOf, notation, parse, fortification } from './board.js';
 import { ENGINES } from './engines.js';
 import { hasSight, sightBlock } from './sight.js';
 import { siegeModes, type SiegeMode } from './siege-profiles.js';
+import { cellTarget, unitTarget, wallName, wallTarget } from './targets.js';
 import { BANDS, type ActivityTarget, type BattleState, type EngineState } from './types.js';
 
 /** Canonical targets are shared by the menu and command validation. A shape is one target. */
@@ -15,13 +16,13 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
   };
   if (mode.shape === 'wall') return Object.entries(state.board.walls)
     .filter(([key, w]) => w.remaining > 0 && key.split('|').some(id => inRange(id) && (kind !== 'ram' || id === notation(e.square))))
-    .map(([id, w]) => ({ kind: 'wall', id, label: `${w.gate ? 'Gate' : 'Wall'} ${id.replace('|', ' / ')} · ${w.remaining}/${w.boxes} · hardness ${fortification(w.tier).hardness}` }));
+    .map(([id, w]) => wallTarget(id, `${w.gate ? 'Gate' : 'Wall'} ${wallName(id)} · ${w.remaining}/${w.boxes} · hardness ${fortification(w.tier).hardness}`));
   const affected = (u: BattleState['units'][number]) => u.status === 'active'
     && (!mode.groundOnly || (!u.flying && !u.flies))
     && (!mode.cavalryOnly || u.role === 'cavalry')
     && (!mode.waterOnly || ['water', 'shallows'].includes(at(state.board, u.square).terrain));
   if (mode.shape === 'single') return state.units.filter(u => u.side !== e.side && affected(u) && inRange(notation(u.square)))
-    .map(u => ({ kind: 'unit', id: u.id, label: u.name }));
+    .map(unitTarget);
   const groups: string[][] = [];
   if (mode.shape === 'burst') for (const c of g.cells()) for (const corner of g.corners(c)) groups.push(corner.map(notation));
   if (mode.shape === 'wide') for (const c of g.cells()) groups.push([c, ...g.neighbours(c)].map(notation));
@@ -46,7 +47,7 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
     && (mode.effect === 'rough' || mode.effect === 'web' || state.units.some(u => u.side !== e.side && affected(u) && id.split('+').includes(notation(u.square))))).map(id => {
     const names = state.units.filter(u => affected(u) && id.split('+').includes(notation(u.square)))
       .map(u => `${u.name}${u.side === e.side ? ' (ally)' : ''}`);
-    return { kind: 'cell', id, label: `${id.replaceAll('+', ' / ')}${names.length ? ` — ${names.join(', ')}` : ''}` };
+    return cellTarget(id, `${id.replaceAll('+', ' / ')}${names.length ? ` — ${names.join(', ')}` : ''}`);
   });
 }
 

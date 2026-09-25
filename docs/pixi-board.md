@@ -20,7 +20,7 @@ interface BoardView {
   setBoard(board: Board | null): void;
   setTokens(tokens: TokenModel[]): void;
   setFallen(fallen: FallenModel[]): void;                         // ground marks where units died; takes no pointer
-  setHighlight(cells: string[], style: HighlightStyle): void;   // 'deploy' | 'move' | 'attack'
+  setHighlight(cells: string[], style: HighlightStyle): void;   // see HIGHLIGHT_STYLES
   setSelected(sel: { cell: string; side: Side } | null): void;   // a cell, not a token id — see below
   setMode(mode: BoardMode): void;                                 // 'view' | 'paint' | 'place' | 'battle'
   setBrush(brush: Brush | null): void;                            // paint mode only
@@ -64,8 +64,10 @@ Differences from the plan's sketch, and why:
 - **`resetView`** exists because Wave 3 added real pan/zoom; the plan didn't anticipate it
   needing an explicit reset (double-click empty space calls the same thing).
 
-`HighlightStyle` is `'deploy' | 'move' | 'attack'`, fixed at three; there is no side parameter,
-so a "your side's deploy zone" wash is the caller's job (pass only that side's cells).
+`HighlightStyle` is `'deploy' | 'move' | 'attack' | 'moveFar' | 'moveFar3' | 'valid' | 'invalid'`
+(`HIGHLIGHT_STYLES` in `theme.ts`). The first five are ink washes; `valid` and `invalid` are the
+green and red verdict on a drop cell, washed and outlined. There is no side parameter, so a "your
+side's deploy zone" wash is the caller's job (pass only that side's cells).
 
 ## The `Grid` interface
 

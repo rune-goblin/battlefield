@@ -44,6 +44,10 @@ export function bannerTexture(colour: number): PIXI.Texture {
   return texture;
 }
 
+/** The flag as inline markup, for the DOM to show beside the board's piece. Pass
+ * `currentColor` to let the surrounding CSS colour the cloth. */
+export const bannerSvg = (fill: string): string => bannerTemplate.split(BANNER_SENTINEL).join(fill);
+
 /** The action props. `charge` and `step` have no table behind them: charging is the drag
  * of the piece itself, and a step moves one open hex. Every spell shares
  * the one `cast` prop and is told apart by its label. `no` is the odd one out: it names no

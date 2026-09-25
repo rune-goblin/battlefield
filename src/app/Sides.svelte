@@ -103,15 +103,15 @@
   .army { border-left: 4px solid var(--side); }
   .army h3 { color: var(--side); }
   .swap button { width: 100%; }
-  .muted { margin: .4rem 0 0; font-size: var(--type-label); color: var(--muted); }
+  .muted { margin: .4rem 0 0; font-size: var(--type-small); color: var(--muted); }
 
-  h4 { margin: .6rem 0 0; font-size: var(--type-label); color: var(--muted); font-weight: 600; }
-  .line { margin: .3rem 0 0; font-size: var(--type-small); color: var(--muted); }
-  .problem { margin: .4rem 0 0; font-size: var(--type-small); color: var(--bad); font-weight: 600; }
+  h4 { margin: .6rem 0 0; font-size: var(--type-small); color: var(--muted); font-weight: 600; }
+  .line { margin: .3rem 0 0; font-size: var(--type-body); color: var(--muted); }
+  .problem { margin: .4rem 0 0; font-size: var(--type-body); color: var(--bad); font-weight: 600; }
 
   ul { list-style: none; margin: .25rem 0 0; padding: 0; }
-  li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: center; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: var(--type-small); }
+  li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: center; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: var(--type-body); }
   .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .meta { font-size: var(--type-label); color: var(--muted); white-space: nowrap; }
-  .move { padding: 0 .45rem; font-size: var(--type-small); }
+  .meta { font-size: var(--type-small); color: var(--muted); white-space: nowrap; }
+  .move { padding: 0 .45rem; font-size: var(--type-body); }
 </style>

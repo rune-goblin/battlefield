@@ -55,23 +55,23 @@
     /* Overlay scrollbars ignore scrollbar-gutter, so keep a separate clear lane too. */
     padding-inline-end: 1rem; scrollbar-gutter: stable; scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--muted) 65%, var(--paper)) transparent;
-    font: var(--type-small)/var(--leading-body) var(--sans);
+    font: var(--type-body)/var(--leading-body) var(--sans);
     font-variant-numeric: tabular-nums;
   }
   .turn { --side: var(--muted); margin: .7rem 0; border: 1px solid var(--side); background: color-mix(in srgb, var(--side) 7%, transparent); }
   .turn[data-side='attacker'] { --side: var(--att); }
   .turn[data-side='defender'] { --side: var(--def); }
   .turn-head { padding: .65rem .7rem .55rem; background: color-mix(in srgb, var(--side) 10%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--side) 23%, transparent); }
-  h3 { color: var(--ink); font-size: var(--type-body); line-height: var(--leading-compact); margin: 0; font-weight: 600; }
+  h3 { color: var(--ink); font-size: var(--type-1); line-height: var(--leading-compact); margin: 0; font-weight: 600; }
   .turn-events { padding: .1rem .7rem; }
   .event { margin: 0; padding: .5rem 0; overflow-wrap: anywhere; }
   .event + .event { border-top: 1px solid color-mix(in srgb, var(--rule) 25%, transparent); }
   .event[data-outcome='critical-success'] { color: var(--good); font-weight: 600; }
   .event[data-outcome='critical-failure'] { color: var(--bad); }
-  .turn-end { display: flex; align-items: center; gap: .5rem; padding: .35rem .7rem .55rem; color: var(--muted); font-size: var(--type-label); font-weight: 600; }
+  .turn-end { display: flex; align-items: center; gap: .5rem; padding: .35rem .7rem .55rem; color: var(--muted); font-size: var(--type-small); font-weight: 600; }
   .turn-end::after { content: ''; height: 1px; flex: 1; background: color-mix(in srgb, var(--side) 35%, transparent); }
-  .waiting { color: var(--muted); margin: .6rem 0; font-size: var(--type-label); }
+  .waiting { color: var(--muted); margin: .6rem 0; font-size: var(--type-small); }
   .events { padding: 0 .2rem; }
-  .event.round { padding: .6rem 0 .4rem; margin-top: .5rem; color: var(--muted); font-size: var(--type-label); font-weight: 600; border-top: 1px solid var(--rule); }
-  .latest { flex-shrink: 0; font: 600 var(--type-label)/var(--leading-body) var(--sans); padding: .4rem .6rem; }
+  .event.round { padding: .6rem 0 .4rem; margin-top: .5rem; color: var(--muted); font-size: var(--type-small); font-weight: 600; border-top: 1px solid var(--rule); }
+  .latest { flex-shrink: 0; font: 600 var(--type-small)/var(--leading-body) var(--sans); padding: .4rem .6rem; }
 </style>

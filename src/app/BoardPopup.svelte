@@ -67,7 +67,7 @@
     padding: .4rem; border-radius: 10px;
     background: var(--card); border: 1px solid var(--accent);
     box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
-    font-size: var(--type-small);
+    font-size: var(--type-body);
     cursor: default;
     touch-action: pan-y;
   }
@@ -105,7 +105,7 @@
     display: flex; align-items: center; justify-content: center;
     border: 0; border-radius: 5px;
     background: transparent; color: var(--muted);
-    font: inherit; font-size: var(--type-body); line-height: 1; cursor: pointer;
+    font: inherit; font-size: var(--type-1); line-height: 1; cursor: pointer;
   }
   .popup-close:hover { background: var(--band); color: var(--ink); }
 </style>

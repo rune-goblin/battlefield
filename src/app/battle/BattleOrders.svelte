@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, engagedEnemies, gateReason, isRouted, levelDc, notation, CELL_FEET } from '../../engine/index.js';
+  import { wallsFor, engagedEnemies, gateReason, isRouted, levelDc, notation, CELL_FEET, wallName } from '../../engine/index.js';
   import { actionIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
   import ActionBudget from '../ActionBudget.svelte';
@@ -31,10 +31,10 @@
       {#each interiorGates as [key, wall] (key)}
         {@const reason = gateReason(c.b, c.active, key)}
         <button class="gate-control" disabled={!c.myTurn || c.gateBusy || !!reason}
-          title={reason ?? `Gate ${key.replace('|', ' / ')} is ${wall.gate!.open ? 'open' : 'closed'}. Costs one action.`}
+          title={reason ?? `Gate ${wallName(key)} is ${wall.gate!.open ? 'open' : 'closed'}. Costs one action.`}
           onclick={() => { c.cancelAction(); void c.operateGate(key); }}>
           <GateStatus open={wall.gate!.open} />
-          <span>{wall.gate!.open ? 'Close' : 'Open'} gate{#if interiorGates.length > 1}<small>{key.replace('|', ' / ')}</small>{/if}</span>
+          <span>{wall.gate!.open ? 'Close' : 'Open'} gate{#if interiorGates.length > 1}<small>{wallName(key)}</small>{/if}</span>
           <ActionCost n={1} />
         </button>
       {/each}
@@ -124,7 +124,7 @@
 
 <style>
   .unit-details { margin: .5rem 0; }
-  summary { cursor: pointer; color: var(--muted); font-size: var(--type-small); }
+  summary { cursor: pointer; color: var(--muted); font-size: var(--type-body); }
   .equipment-controls { display: flex; flex-direction: column; gap: .35rem; margin: .3rem 0 .6rem; }
   .gate-control { display: flex; align-items: center; gap: .6rem; text-align: left; }
   .gate-control > span { flex: 1; }
@@ -132,10 +132,10 @@
   .row-prop { width: 1.7rem; height: 1.3rem; object-fit: contain; }
   .orders-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem; }
   .orders-head h3 { margin: 0; }
-  .orders-head .muted { font-size: var(--type-label); }
+  .orders-head .muted { font-size: var(--type-small); }
   .action-pips { align-items: center; gap: .8rem; margin: .4rem 0 .1rem; }
   .end-turn { width: 100%; margin-top: auto; }
-  .cost-key { margin: .2rem 0 .5rem; font-size: var(--type-label); color: var(--muted); line-height: var(--leading-body); }
+  .cost-key { margin: .2rem 0 .5rem; font-size: var(--type-small); color: var(--muted); line-height: var(--leading-body); }
   .move-card h3 { margin: 0; font-size: inherit; }
   .move-head {
     display: flex; align-items: baseline; gap: .4rem; width: 100%;
@@ -151,5 +151,5 @@
   .move-note { margin: 0; padding: .45rem .55rem; border-radius: 6px; border-left: 4px solid var(--bad); background: var(--band); line-height: var(--leading-compact); }
   .move-row.current { outline: 2px solid var(--accent); outline-offset: -1px; }
   .move-row-label { display: inline-flex; align-items: center; min-width: 3rem; color: var(--ink); }
-  .hint { font-size: var(--type-label); }
+  .hint { font-size: var(--type-small); }
 </style>

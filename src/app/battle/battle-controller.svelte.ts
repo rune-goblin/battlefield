@@ -2,7 +2,7 @@ import { fromStore } from 'svelte/store';
 import { commandReporter, COMMAND_NOTICE } from '../command-notices.js';
 import { createScope } from '../scope.js';
 import { tick } from 'svelte';
-import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked } from '../../engine/index.js';
+import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked, wallName } from '../../engine/index.js';
 import { withinApp } from '../app-root.js';
 import type { HighlightStyle, TokenPick, TokenModel, UnitTokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
 import { createDragController, DRAG_NOTICE } from './drag-controller.svelte.js';
@@ -450,7 +450,7 @@ export function createBattleController(deps: BattleDeps) {
     }
     const p = ring.arming;
     if (!p) { if (b.board.walls[e.edge]?.gate) { cancelAction(); gateOpen = true; } else stepBack(); return; }
-    picker.aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], e.edge.replace('|', ' / '), p.type);
+    picker.aimAt({ kind: 'wall', id: e.edge }, e.edge.split('|')[0], wallName(e.edge), p.type);
   }
 
   /** `centre` is off when the pick came off the board: the piece is already under the pointer,

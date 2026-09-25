@@ -1,6 +1,7 @@
 import { validatedAbilities, freshAbilityMemory, type AbilityMark, type AbilityOutcome } from './abilities.js';
 import { abilityMemory, hasAbility, unitAbilities, exploitBonus, resolveBonus, holdsGround, shieldBonus, refreshAbilityAuras, startAbilities, absorbAbilityDamage, suppressRegeneration, attackAbilities, abilityOffers, performAbility, markOf, type AbilityContext } from './ability-effects.js';
 import { wallsFor } from './walls.js';
+import { groupTarget, moveTarget, pairTarget, unitTarget, wallTarget } from './targets.js';
 import type { HealingChoice, HealingCondition } from './types.js';
 import { coverBetween, wallCoverBetween, hasSight, isMountain } from './sight.js';
 import { heightEdge, heightRange, TERRAIN } from './terrain.js';
@@ -1351,9 +1352,6 @@ const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filte
 const wallCells = (key: string) => key.split('|').map(parse);
 const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameSquare(c, u.square));
 
-const cellTarget = (id: string): ActivityTarget => ({ kind: 'cell', id, label: id });
-const unitTarget = (u: Unit): ActivityTarget => ({ kind: 'unit', id: u.id, label: u.name });
-const wallTarget = (key: string): ActivityTarget => ({ kind: 'wall', id: key, label: key.replace('|', ' / ') });
 
 interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
 
@@ -1461,9 +1459,6 @@ function combinations<T>(pool: T[], size: number): T[][] {
 function groupsUpTo<T>(pool: T[], maximum: number): T[][] {
   return Array.from({ length: Math.min(maximum, pool.length) }, (_, i) => combinations(pool, i + 1)).flat();
 }
-function groupTargets(groups: Unit[][]): ActivityTarget[] {
-  return groups.map(group => ({ kind: 'unit', id: group.map(t => t.id).sort().join('+'), label: group.map(t => t.name).join(', ') }));
-}
 function connected(state: BattleState, cells: Square[]): boolean {
   const reached = new Set([0]);
   for (let changed = true; changed;) {
@@ -1502,7 +1497,7 @@ function translocateTargets(state: BattleState, allies: Unit[]): ActivityTarget[
     for (const sq of g.cells()) {
       const away = dist(state, a.square, sq);
       if (away < 1 || away > hexes || !standable(state, a, sq)) continue;
-      out.push({ kind: 'cell', id: `${notation(a.square)}+${notation(sq)}`, label: `${a.name} to ${notation(sq)}` });
+      out.push(moveTarget(a, sq));
     }
   }
   return out;
@@ -1515,11 +1510,10 @@ function gateTargets(state: BattleState, allies: Unit[]): ActivityTarget[] {
   for (let i = 0; i < choices.length; i++) {
     const first = choices[i];
     for (const dest of first.destinations) {
-      const prefix = `${notation(first.ally.square)}+${notation(dest)}`;
-      const label = `${first.ally.name} to ${notation(dest)}`;
-      out.push({ kind: 'cell', id: prefix, label });
+      const move = moveTarget(first.ally, dest);
+      out.push(move);
       for (let j = i + 1; j < choices.length; j++) for (const other of choices[j].destinations) {
-        if (!sameSquare(dest, other)) out.push({ kind: 'cell', id: `${prefix}+${notation(choices[j].ally.square)}+${notation(other)}`, label: `${label}; ${choices[j].ally.name} to ${notation(other)}` });
+        if (!sameSquare(dest, other)) out.push(pairTarget(move, moveTarget(choices[j].ally, other)));
       }
     }
   }
@@ -1535,7 +1529,7 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
     }
     case 'fight': {
       const targets: ActivityTarget[] = engagedEnemies(state, u).map(unitTarget);
-      if (u.side === 'attacker') targets.push(...wallKeys(state).filter((k) => bordersWall(u, k)).map(wallTarget));
+      if (u.side === 'attacker') targets.push(...wallKeys(state).filter((k) => bordersWall(u, k)).map(k => wallTarget(k)));
       return { needsTarget: true, targets };
     }
     case 'guard':
@@ -1557,7 +1551,7 @@ function targetsFor(state: BattleState, u: Unit, type: Verb, index: ActivityInde
       if (tree === 'movement' && index === 4) return { needsTarget: true, targets: gateTargets(state, inReach) };
       if (index === 4) {
         const groups = groupsUpTo(inReach, tree === 'defense' ? 2 : 3);
-        return { needsTarget: true, targets: groupTargets(tree === 'controlling' ? groups.filter(group => connected(state, group.map(t => t.square))) : groups) };
+        return { needsTarget: true, targets: (tree === 'controlling' ? groups.filter(group => connected(state, group.map(t => t.square))) : groups).map(groupTarget) };
       }
       if (tree === 'movement' && index === 3) return { needsTarget: true, targets: translocateTargets(state, inReach) };
       return { needsTarget: true, targets: inReach.map(unitTarget) };

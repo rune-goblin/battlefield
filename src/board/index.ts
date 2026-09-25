@@ -631,7 +631,7 @@ export type { BoardCombatText, CombatTextIcon, CombatTextPart, CombatTextTone } 
 // proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
 // DOM) that Token.ts also calls for the same art. Re-deriving the asset-base prefixing here
 // would just duplicate it; see "Wave 2 notes" in the todos.
-export { targetIconUrl, type TargetIcon, actionIconUrl, castIconUrl, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
+export { targetIconUrl, type TargetIcon, actionIconUrl, bannerSvg, castIconUrl, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
 export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
 export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';

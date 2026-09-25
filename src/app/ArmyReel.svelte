@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { MAX_WOUNDS, ROUTED_AT, notation, type Unit } from '../engine/index.js';
-  import { troopArtUrl } from '../board/index.js';
+  import { bannerSvg, troopArtUrl } from '../board/index.js';
   import { statusBars, statusColourCss, STATUS_TRACK, STATUS_OUTLINE } from '../board/status-bars.js';
 
   interface Props {
@@ -23,6 +23,7 @@
   const side = $derived(units[0]?.side === 'defender' ? 'var(--def)' : 'var(--att)');
   const ready = $derived(units.filter((u) => !done.has(u.id)));
   const spent = $derived(units.filter((u) => done.has(u.id)));
+  const flag = bannerSvg('currentColor');
 </script>
 
 <div class="reel-position" style:--side={side}>
@@ -44,9 +45,10 @@
       onfocus={() => hover(u.id)}
       onblur={() => hover(null)}
     >
+      <span class="square">{notation(u.square)}</span>
+      <span class="flag" aria-label="Level {u.level}">{@html flag}<span class="level">{u.level}</span></span>
       <img class:desaturated={u.wounds >= MAX_WOUNDS || u.disorder >= ROUTED_AT} src={troopArtUrl(u.name, u.role)} alt="" />
-      <span class="name">{u.name}</span>
-      <span class="meta">L{u.level} · {notation(u.square)}</span>
+      <span class="name" lang="en">{u.name}</span>
       <span class="status-bars" style:--track={statusColourCss(STATUS_TRACK)} style:--outline={statusColourCss(STATUS_OUTLINE)}>
         {#each [bars.health, bars.morale] as bar, i}
           <span class="status-bar" class:morale={i === 1} role="meter" aria-label={bar.label} aria-valuemin={0} aria-valuemax={bar.max} aria-valuenow={bar.remaining} aria-valuetext={bar.label} title={bar.label}>
@@ -66,7 +68,7 @@
     {#each spent as u (u.id)}
       <span class="chit" title="{u.name} has acted">
         <img src={troopArtUrl(u.name, u.role)} alt="" />
-        <span class="name">{u.name}</span>
+        <span class="name" lang="en">{u.name}</span>
       </span>
     {/each}
   {/if}
@@ -82,7 +84,7 @@
      a panel opens, so the armies over it must not move either. */
   .reel-position {
     /* Army colour identifies the card; the shared neutral outline identifies selection. */
-    --hi: color-mix(in srgb, var(--side) 65%, var(--ink));
+    --hi: color-mix(in srgb, var(--side) 65%, #fff);
     position: absolute; pointer-events: none;
     top: calc(var(--inset-top, 0px) + .5rem);
     left: .5rem;
@@ -98,48 +100,66 @@
   }
 
   .unit-card {
-    pointer-events: auto;
+    pointer-events: auto; position: relative;
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .15rem;
-    width: 4.4rem; padding: .25rem;
-    background: color-mix(in srgb, var(--side) 30%, var(--glass));
-    border: 1px solid color-mix(in srgb, var(--side) 60%, var(--rule));
+    width: min-content; min-width: 5.4rem; padding: .25rem .35rem;
+    /* Dark in both themes so the miniature and flag stand out; only the border carries the side. */
+    background: rgba(24, 22, 20, .92);
+    border: 2px solid var(--side);
     border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
-    font: inherit; font-size: var(--type-label); color: var(--ink); text-align: center; cursor: pointer;
-    transition: width .16s ease, padding .16s ease, font-size .16s ease, opacity .16s ease;
+    font: inherit; font-size: var(--type-small); color: #ece6dc; text-align: center; cursor: pointer;
+    /* Width follows the name's longest word and cannot tween, so a card grows by padding: the
+       name keeps its room and does not rewrap mid-animation. */
+    transition: min-width .16s ease, padding .16s ease, opacity .16s ease;
+  }
+  .unit-card .square {
+    position: absolute; top: .2rem; left: .3rem;
+    color: #b5ab9c; font-size: var(--type-label); line-height: 1;
+  }
+  /* The piece's own flag, in the army's colour, with the level on its cloth. */
+  .flag {
+    position: absolute; top: -.1rem; right: .1rem; width: 1.5rem; height: 1.5rem;
+    color: var(--side);
+  }
+  .flag :global(svg) { display: block; width: 100%; height: 100%; }
+  .flag .level {
+    position: absolute; inset: 0 0 .25rem; display: grid; place-items: center;
+    color: #f8f4ec; font-size: var(--type-label); font-weight: 700; line-height: 1;
   }
   .unit-card img {
-    width: 2.5rem; height: 2.5rem; object-fit: contain;
+    width: 3.2rem; height: 3.2rem; object-fit: contain;
     transition: width .16s ease, height .16s ease;
   }
+  /* A card is as wide as its name's longest word, so a name wraps only between words; a third
+     line is cut, since the title carries the whole name. */
+  .name { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   .unit-card .name { font-weight: 600; line-height: var(--leading-heading); }
-  .unit-card .meta { color: var(--muted); font-size: var(--type-label); }
 
   /* The army reel reads like the Dock: the chosen army stands up out of the row and the rest step
      back, with a hover that shows what picking one would do. `.hot` is the same hover arriving
      from the board: card and miniature light together, whichever one the pointer is over. */
   .unit-card:hover:not(.on):not(:disabled),
-  .unit-card.hot:not(.on):not(:disabled) { width: 5.2rem; font-size: var(--type-label); }
+  .unit-card.hot:not(.on):not(:disabled) { min-width: 5.6rem; padding-inline: .7rem; }
   .unit-card:hover:not(.on):not(:disabled) img,
-  .unit-card.hot:not(.on):not(:disabled) img { width: 3.1rem; height: 3.1rem; }
+  .unit-card.hot:not(.on):not(:disabled) img { width: 3.8rem; height: 3.8rem; }
   .unit-card:hover:not(:disabled), .unit-card.hot { border-color: var(--hi); }
   .unit-card.on {
     position: relative; z-index: 1;
-    width: 6.6rem; padding: .45rem; font-size: var(--type-label);
+    min-width: 6.6rem; padding: .45rem .95rem;
   }
-  .unit-card.on img { width: 4.2rem; height: 4.2rem; }
+  .unit-card.on img { width: 4.8rem; height: 4.8rem; }
   .unit-card.aside { opacity: .35; }
 
   .divider { flex: 0 0 auto; align-self: stretch; width: 1px; margin: .2rem .35rem; background: color-mix(in srgb, var(--side) 55%, var(--rule)); }
-  /* An army that has acted keeps its colour and loses its miniature: the chip stays tinted so the
-     row still reads as one side, while the grey art says the turn is spent. */
+  /* An army that has acted keeps the card's dress and its side's edge, while the grey art says
+     the turn is spent. */
   .chit {
     pointer-events: auto;
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .1rem;
-    width: 3.2rem; padding: .15rem .1rem;
-    background: color-mix(in srgb, var(--side) 18%, transparent);
-    border: 1px solid color-mix(in srgb, var(--side) 35%, transparent); border-radius: 6px;
-    color: var(--ink-2);
-    text-shadow: 0 1px 2px var(--paper);
+    width: min-content; min-width: 3.4rem; padding: .15rem .3rem;
+    background: rgba(24, 22, 20, .92);
+    border: 1px solid var(--side); border-radius: 6px;
+    color: #b5ab9c;
   }
   .chit img { width: 2rem; height: 2rem; object-fit: contain; filter: grayscale(1); opacity: .7; }
   .chit .name { font-size: var(--type-label); line-height: var(--leading-heading); text-align: center; }
@@ -154,4 +174,5 @@
   @media (prefers-reduced-motion: reduce) {
     .unit-card, .unit-card img { transition: none; }
   }
+
 </style>

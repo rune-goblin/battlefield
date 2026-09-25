@@ -129,10 +129,10 @@
     box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
   }
   .grid-settings::backdrop { background: rgba(0, 0, 0, .35); }
-  .grid-settings h2 { margin: 0 0 .7rem; font-size: var(--type-body); }
+  .grid-settings h2 { margin: 0 0 .7rem; font-size: var(--type-1); }
   .grid-settings label {
     display: flex; align-items: center; gap: .5rem;
-    font-size: var(--type-small); color: var(--muted);
+    font-size: var(--type-body); color: var(--muted);
     margin-bottom: .6rem;
   }
   .grid-settings label span { color: var(--ink); min-width: 2.4em; }

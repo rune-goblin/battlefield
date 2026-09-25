@@ -40,7 +40,7 @@
     left: calc((100% + var(--inset-left, 0px) - var(--inset-right, 0px)) / 2);
     transform: translateX(-50%);
     display: flex; gap: .9rem; align-items: baseline; white-space: nowrap;
-    padding: .35rem .8rem; border-radius: 8px; font-size: var(--type-small);
+    padding: .35rem .8rem; border-radius: 8px; font-size: var(--type-body);
     background: color-mix(in srgb, var(--card) 72%, transparent);
     border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
     backdrop-filter: blur(3px);

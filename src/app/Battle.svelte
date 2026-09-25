@@ -114,6 +114,6 @@
 {#if c.ending}<EndBattleDialog close={() => (c.ending = false)} />{/if}
 
 <style>
-  .turn { padding: .05rem .45rem; border: 1px solid var(--rule); border-radius: 999px; font-size: var(--type-label); color: var(--muted); }
+  .turn { padding: .05rem .45rem; border: 1px solid var(--rule); border-radius: 999px; font-size: var(--type-small); color: var(--muted); }
   .turn.mine { border-color: var(--accent); color: var(--ink); }
 </style>

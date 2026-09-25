@@ -81,21 +81,21 @@
 
 <style>
   .topbar { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .9rem; padding: .3rem .8rem; }
-  h1 { flex: none; font-size: var(--type-body); }
+  h1 { flex: none; font-size: var(--type-1); }
   /* One line, and the first thing to give when the bar runs out of room — the panels and the
      board say the same things at more length. */
-  .status { min-width: 0; font-size: var(--type-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status { min-width: 0; font-size: var(--type-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tools { flex: 0 1 auto; max-width: 100%; margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .6rem; }
   .tools :global(button) { white-space: nowrap; }
   nav { display: flex; }
-  nav a { color: var(--muted); font-size: var(--type-label); margin-left: .7rem; }
+  nav a { color: var(--muted); font-size: var(--type-small); margin-left: .7rem; }
   nav a:hover { color: var(--ink); }
 
   /* The two styles share a border; the active style fills its segment. */
   .styles { display: flex; align-items: center; }
-  .style-label { margin-right: .4rem; font-size: var(--type-label); color: var(--muted); }
+  .style-label { margin-right: .4rem; font-size: var(--type-small); color: var(--muted); }
   .styles button {
-    padding: .15rem .5rem; font-size: var(--type-label); border-radius: 0;
+    padding: .15rem .5rem; font-size: var(--type-small); border-radius: 0;
     color: var(--muted); background: none;
   }
   .styles button:first-of-type { border-radius: 4px 0 0 4px; }

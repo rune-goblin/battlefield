@@ -134,7 +134,14 @@
 
   $effect(() => { if (canvas) canvas.title = hoverTitle ?? ''; });
 
-  $effect(() => { view?.setBoard(board); });
+  // Stages hand these in through `{...view.board}`, and reading any spread prop reruns the whole
+  // getter, so each one changes whenever anything on the board does — a card hover included.
+  // A derived only passes on a real change: the board by identity (a paint stroke clones it),
+  // the two appearances by content. Without this, every hover rebuilt the terrain textures.
+  const shownBoard = $derived(board);
+  const terrainKey = $derived(terrainAppearance ? JSON.stringify($state.snapshot(terrainAppearance)) : null);
+  const inkKey = $derived(inkMap ? JSON.stringify($state.snapshot(inkMap)) : null);
+  $effect(() => { view?.setBoard(shownBoard); });
   // Geometry changes need a fresh fit; painting and troop placement keep the player's zoom.
   const geometryKey = $derived(board ? `${board.grid}:${board.squares.length}` : null);
   $effect(() => {
@@ -151,12 +158,12 @@
   $effect(() => {
     // Read every setting here: Pixi retains plain state and cannot subscribe to nested
     // Svelte mutations. Give it a fresh snapshot for each texture, scale, or tree edit.
-    const appearance = terrainAppearance ? $state.snapshot(terrainAppearance) : null;
+    const appearance = terrainKey === null ? null : JSON.parse(terrainKey);
     const target = view;
     untrack(() => target?.setTerrainAppearance(appearance));
   });
   $effect(() => {
-    const appearance = inkMap ? $state.snapshot(inkMap) : null;
+    const appearance = inkKey === null ? null : JSON.parse(inkKey);
     const target = view;
     untrack(() => target?.setInkMap(appearance));
   });
