@@ -50,7 +50,7 @@
         "recovery"
       ],
       "reactions": [],
-      "conversion": "Paid two-action Recovery for self or one adjacent ally, Health mode. Omit Medicine DC tiers, dice, critical-failure damage, and healer-specific hourly immunity; use the catalogue limit."
+      "conversion": "Paid two-action Heal for self or one adjacent ally, Health mode. Omit Medicine DC tiers, dice, critical-failure damage, and healer-specific hourly immunity; use the catalogue limit."
     },
     {
       "id": "cavalry-charge",
@@ -90,7 +90,7 @@
         "fear"
       ],
       "reactions": [],
-      "conversion": "One-action Menace against one visible enemy within two hexes, resolved with a Will resistance check at the unit's normal ability DC. Omit Intimidation proficiency and ten-minute immunity."
+      "conversion": "One-action Fear against one visible enemy within two hexes, resolved with a Will resistance check at the unit's normal ability DC. Omit Intimidation proficiency and ten-minute immunity."
     },
     {
       "id": "dirty-fighting",
@@ -100,7 +100,7 @@
         "fear"
       ],
       "reactions": [],
-      "conversion": "A successful melee hit applies Menace. Omit separate frightened grades."
+      "conversion": "A successful melee hit applies Fear. Omit separate frightened grades."
     },
     {
       "id": "false-retreat",
@@ -120,7 +120,7 @@
         "expose"
       ],
       "reactions": [],
-      "conversion": "One-action Expose against an adjacent enemy, using a game attack check against Will. Omit Deception and Perception skills and per-attack save penalties."
+      "conversion": "One-action Weaken Defence against an adjacent enemy, using a game attack check against Will. Omit Deception and Perception skills and per-attack save penalties."
     },
     {
       "id": "raise-shields",
@@ -130,7 +130,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Use Shielding with the ordinary Guard activity and a shield requirement. Omit the extra physical-ranged bonus."
+      "conversion": "Use Guard with the ordinary Guard activity and a shield requirement. Omit the extra physical-ranged bonus."
     },
     {
       "id": "reactive-attack",
@@ -160,7 +160,7 @@
         "opening-move"
       ],
       "reactions": [],
-      "conversion": "Vanguard only when acting before all enemies. Omit Stealth initiative and the first-attack DC bonus. This replaces rather than adds to the existing Ambush deployment abstraction."
+      "conversion": "Opening Move only when acting before all enemies. Omit Stealth initiative and the first-attack DC bonus. This replaces rather than adds to the existing Ambush deployment abstraction."
     },
     {
       "id": "battlefield-adaptability",
@@ -171,7 +171,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Choose Pathfinder for ordinary ground or Shielding when assigning the card; grant one of them. Omit the round-by-round choice to keep one clear specialty."
+      "conversion": "Choose Terrain Passage for ordinary ground or Guard when assigning the card; grant one of them. Omit the round-by-round choice to keep one clear specialty."
     },
     {
       "id": "bloodied-but-unbroken",
@@ -181,7 +181,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Exploit: +1 Defence while at half Health or less. Omit Battle and save bonuses and level scaling."
+      "conversion": "Combat Bonus: +1 Defence while at half Health or less. Omit Battle and save bonuses and level scaling."
     },
     {
       "id": "combat-medics",
@@ -191,7 +191,7 @@
         "recovery"
       ],
       "reactions": [],
-      "conversion": "Grant the same paid Recovery activity as Battlefield Medicine, once. The grant and its child item must not create two healing allowances."
+      "conversion": "Grant the same paid Heal activity as Battlefield Medicine, once. The grant and its child item must not create two healing allowances."
     },
     {
       "id": "commanding-presence",
@@ -201,7 +201,7 @@
         "temporary-protection"
       ],
       "reactions": [],
-      "conversion": "At the start of one adjacent ally's activation, grant Vitality while the commander is active. Omit the 60-foot multi-target reach and level scaling; use the shared recipient limit."
+      "conversion": "At the start of one adjacent ally's activation, grant Damage Absorption while the commander is active. Omit the 60-foot multi-target reach and level scaling; use the shared recipient limit."
     },
     {
       "id": "foragers",
@@ -219,7 +219,7 @@
         "terrain-passage"
       ],
       "reactions": [],
-      "conversion": "Pathfinder: woods. Preserve the movement specialty; omit plant/fungus taxonomy."
+      "conversion": "Terrain Passage: woods. Preserve the movement specialty; omit plant/fungus taxonomy."
     },
     {
       "id": "form-a-phalanx",
@@ -229,7 +229,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Shielding through Guard; omit a separate formation state and PF2e save modifiers."
+      "conversion": "Guard through Guard; omit a separate formation state and PF2e save modifiers."
     },
     {
       "id": "frightening-foe",
@@ -239,7 +239,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Exploit: +1 on the Menace check granted by Demoralize. This requires Menace and grants no second frightening activity."
+      "conversion": "Combat Bonus: +1 on the Fear check granted by Demoralize. This requires Fear and grants no second frightening activity."
     },
     {
       "id": "hold-the-line",
@@ -249,7 +249,7 @@
         "resolve"
       ],
       "reactions": [],
-      "conversion": "Resolve: fear resistance. Omit the additional frightened-value reduction."
+      "conversion": "Resist Fear and Rout. Omit the additional frightened-value reduction."
     },
     {
       "id": "increased-ammunition",
@@ -267,7 +267,7 @@
         "resolve"
       ],
       "reactions": [],
-      "conversion": "Adjacent allies gain Resolve: fear resistance while the banner unit is active. Omit initiative and frightened-value reduction."
+      "conversion": "Adjacent allies gain Resist Fear and Rout while the banner unit is active. Omit initiative and frightened-value reduction."
     },
     {
       "id": "keen-eyed",
@@ -277,7 +277,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Exploit: +1 initiative. Omit detailed Seek and perception bonuses."
+      "conversion": "Combat Bonus: +1 initiative. Omit detailed Seek and perception bonuses."
     },
     {
       "id": "keep-up-the-pressure",
@@ -287,7 +287,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Exploit: +1 melee on a three-action attack, if that investment exists in the chosen game activity. Otherwise suggest Exploit on the first melee attack and require explicit assignment. Do not silently invent a three-action attack or extra Salvo."
+      "conversion": "Combat Bonus: +1 melee on a three-action attack, if that investment exists in the chosen game activity. Otherwise suggest Combat Bonus on the first melee attack and require explicit assignment. Do not silently invent a three-action attack or extra Salvo."
     },
     {
       "id": "no-escape",
@@ -307,7 +307,7 @@
         "resolve"
       ],
       "reactions": [],
-      "conversion": "Resolve: hold ground. Omit fleeing-to-slowed conversion. Never map this source to pursuit."
+      "conversion": "Hold Ground. Omit fleeing-to-slowed conversion. Never map this source to pursuit."
     },
     {
       "id": "opening-salvo",
@@ -317,7 +317,7 @@
         "opening-move"
       ],
       "reactions": [],
-      "conversion": "The display name is Reposition: Vanguard only when acting before all enemies. This grants movement, not an opening shot."
+      "conversion": "The display name is Reposition: Opening Move only when acting before all enemies. This grants movement, not an opening shot."
     },
     {
       "id": "overrun",
@@ -327,7 +327,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "The display name is Aggressive Mounts: Exploit melee against unmounted troops. Omit individual-size predicates, low-level defensive drawbacks, and level scaling. It grants no forced movement."
+      "conversion": "The display name is Aggressive Mounts: Combat Bonus melee against unmounted troops. Omit individual-size predicates, low-level defensive drawbacks, and level scaling. It grants no forced movement."
     },
     {
       "id": "practiced-gunners",
@@ -337,7 +337,7 @@
         "siege-crew"
       ],
       "reactions": [],
-      "conversion": "Siege Crew. Omit combined Aim/Launch and expert proficiency; merge with other crew training into one bonus."
+      "conversion": "Siege Accuracy. Omit combined Aim/Launch and expert proficiency; merge with other crew training into one bonus."
     },
     {
       "id": "practiced-loaders",
@@ -347,7 +347,7 @@
         "siege-crew"
       ],
       "reactions": [],
-      "conversion": "Siege Crew. Omit the load-action discount; merge with other crew training into one bonus."
+      "conversion": "Siege Accuracy. Omit the load-action discount; merge with other crew training into one bonus."
     },
     {
       "id": "revel-in-battle",
@@ -359,7 +359,7 @@
       "reactions": [
         "battle-recovery"
       ],
-      "conversion": "Future Battle Recovery after a critical melee result. Actual Health recovery remains distinct from temporary Vitality."
+      "conversion": "Future Battle Recovery after a critical melee result. Actual Health recovery remains distinct from temporary Damage Absorption."
     },
     {
       "id": "sea-legs",
@@ -379,7 +379,7 @@
       "reactions": [
         "block"
       ],
-      "conversion": "Grant Shielding while carrying shields; record future Block separately. Deduplicate the Raise Shields and Shield Block child items."
+      "conversion": "Grant Guard while carrying shields; record future Block separately. Deduplicate the Raise Shields and Shield Block child items."
     },
     {
       "id": "shield-wall",
@@ -389,7 +389,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Use Shielding through Guard. Omit a separate cover tier, Take Cover escalation, and hiding restrictions."
+      "conversion": "Use Guard through Guard. Omit a separate cover tier, Take Cover escalation, and hiding restrictions."
     },
     {
       "id": "siege-training",
@@ -399,7 +399,7 @@
         "siege-crew"
       ],
       "reactions": [],
-      "conversion": "Siege Crew. Omit proficiency ranks and source Launch DC formula."
+      "conversion": "Siege Accuracy. Omit proficiency ranks and source Launch DC formula."
     },
     {
       "id": "signal-the-advance",
@@ -419,7 +419,7 @@
         "temporary-protection"
       ],
       "reactions": [],
-      "conversion": "Two-action Vitality for one adjacent ally. Omit the 60-foot group effect and one-minute duration; it does not restore Health."
+      "conversion": "Two-action Damage Absorption for one adjacent ally. Omit the 60-foot group effect and one-minute duration; it does not restore Health."
     },
     {
       "id": "sure-stride",
@@ -429,7 +429,7 @@
         "terrain-passage"
       ],
       "reactions": [],
-      "conversion": "Pathfinder: rough ground. Omit separate rubble, sand, and debris classifications."
+      "conversion": "Terrain Passage: rough ground. Omit separate rubble, sand, and debris classifications."
     },
     {
       "id": "swift-recovery",
@@ -439,7 +439,7 @@
         "recovery"
       ],
       "reactions": [],
-      "conversion": "At activation start, condition-mode Recovery once per battle. Omit the DC 15 flat check. Explicit start timing is a restricted exception to the normal paid/rider Recovery deliveries."
+      "conversion": "At activation start, Clear Condition once per battle. Omit the DC 15 flat check. Explicit start timing is a restricted exception to the normal paid/rider Heal / Clear Condition deliveries."
     },
     {
       "id": "thunder-of-hooves",
@@ -450,7 +450,7 @@
         "expose"
       ],
       "reactions": [],
-      "conversion": "Cavalry Charge with Expose on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity."
+      "conversion": "Cavalry Charge with Weaken Defence on a critical melee hit. Omit the alternative mass Demoralize/Trip checks and separate Move activity."
     },
     {
       "id": "toughened-soldiers",
@@ -465,11 +465,10 @@
       "sourceHash": "928eabf39a163c5ae7359faa251f8b050f6026e9df717818e80e1dc34b718f10",
       "disposition": "abstracted",
       "abilities": [
-        "charge",
-        "sweep"
+        "charge"
       ],
       "reactions": [],
-      "conversion": "Cavalry Charge plus Sweep after a successful Charge. Omit movement through occupied troop spaces and attacks against every traversed creature."
+      "conversion": "Use Cavalry Charge against one target. Omit movement through occupied troop spaces and damage to additional units."
     },
     {
       "id": "unpredictable-movement",
@@ -479,7 +478,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Exploit: +1 Defence against ranged attacks. Omit the separate Salvo save bonus."
+      "conversion": "Combat Bonus: +1 Defence against ranged attacks. Omit the separate Salvo save bonus."
     },
     {
       "id": "volunteers",
@@ -515,7 +514,7 @@
         "terrain-passage"
       ],
       "reactions": [],
-      "conversion": "Pathfinder: water and swamp. Use actual imported swim capability; this ability grants none. Omit terrain-conditioned skill and Battle bonuses."
+      "conversion": "Terrain Passage: water and swamp. Use actual imported swim capability; this ability grants none. Omit terrain-conditioned skill and Battle bonuses."
     },
     {
       "id": "brave",
@@ -525,7 +524,7 @@
         "resolve"
       ],
       "reactions": [],
-      "conversion": "Resolve: fear resistance. Merge duplicate bravery bonuses."
+      "conversion": "Resist Fear and Rout. Merge duplicate bravery bonuses."
     },
     {
       "id": "brutal-assault",
@@ -535,7 +534,7 @@
         "fear"
       ],
       "reactions": [],
-      "conversion": "After melee damage, apply Menace if the target fails a Will resistance check. Use the unit's normal game ability DC; omit fixed DC 24 and fear grades."
+      "conversion": "After melee damage, apply Fear if the target fails a Will resistance check. Use the unit's normal game ability DC; omit fixed DC 24 and fear grades."
     },
     {
       "id": "burning-weaponry",
@@ -545,7 +544,7 @@
         "persistent-injury"
       ],
       "reactions": [],
-      "conversion": "Critical melee hit applies Lingering Harm with the fire tag. Omit source persistent damage dice."
+      "conversion": "Critical melee hit applies Delayed Damage with the fire tag. Omit source persistent damage dice."
     },
     {
       "id": "chorus-of-croaks",
@@ -555,7 +554,7 @@
         "fear"
       ],
       "reactions": [],
-      "conversion": "Adjacent hostile Menace aura. The registry version is passive; omit its separate Demoralize grant and fear-save penalty rather than creating three benefits."
+      "conversion": "Adjacent hostile Fear aura. The registry version is passive; omit its separate Demoralize grant and fear-save penalty rather than creating three benefits."
     },
     {
       "id": "explosive-defeat",
@@ -563,7 +562,7 @@
       "disposition": "defer",
       "abilities": [],
       "reactions": [],
-      "conversion": "Retain the death-explosion identity for a later death-trigger proposal. Do not approximate it with Sweep or add a custom one-creature callback now."
+      "conversion": "Retain the death-explosion identity for a later death-trigger proposal. The melee ability catalogue supplies no area-damage substitute."
     },
     {
       "id": "furious-charge",
@@ -583,7 +582,7 @@
         "snare"
       ],
       "reactions": [],
-      "conversion": "Two-action non-damaging Volley replacement: a successful game attack check applies Snare. This replaces the source slowed/action penalty and Escape DC with a movement restriction and one-action release."
+      "conversion": "Two-action non-damaging Volley replacement: a successful game attack check applies Immobilize. This replaces the source slowed/action penalty and Escape DC with a movement restriction and one-action release."
     },
     {
       "id": "primal-magic",
@@ -609,7 +608,7 @@
         "opening-move"
       ],
       "reactions": [],
-      "conversion": "Vanguard when deployed in water or swamp. Respect legal movement and finish outside contact. Omit adjacent-enemy deployment and first-round Battle bonus."
+      "conversion": "Opening Move when deployed in water or swamp. Respect legal movement and finish outside contact. Omit adjacent-enemy deployment and first-round Battle bonus."
     },
     {
       "id": "supernatural-attacks",
@@ -629,7 +628,7 @@
         "terrain-passage"
       ],
       "reactions": [],
-      "conversion": "Pathfinder: water and swamp. Omit the water-battle initiative bonus. The source does not grant water walking."
+      "conversion": "Terrain Passage: water and swamp. Omit the water-battle initiative bonus. The source does not grant water walking."
     },
     {
       "id": "wyvern-venom",
@@ -639,7 +638,7 @@
         "persistent-injury"
       ],
       "reactions": [],
-      "conversion": "Successful melee hit applies Lingering Harm with the poison tag. Omit the linked enfeebled penalty and separate poison stages; no extra save."
+      "conversion": "Successful melee hit applies Delayed Damage with the poison tag. Omit the linked enfeebled penalty and separate poison stages; no extra save."
     },
     {
       "id": "arrow-volley",
@@ -665,7 +664,7 @@
         "terrain-passage"
       ],
       "reactions": [],
-      "conversion": "Pathfinder: urban ground. Omit segment fitting through narrow streets."
+      "conversion": "Terrain Passage: urban ground. Omit segment fitting through narrow streets."
     },
     {
       "id": "clash-of-steel",
@@ -683,7 +682,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Using the melee attack grants self Shielding until the next activation. It still grants protection on a miss; omit the separate +1 PF2e AC value."
+      "conversion": "Using the melee attack grants self Guard until the next activation. It still grants protection on a miss; omit the separate +1 PF2e AC value."
     },
     {
       "id": "drilled-in-formations",
@@ -693,7 +692,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Assign Shielding as the unit's formation specialty. Omit switching among loose, column, and wedge formations; this is a deliberate selection, not an exact conversion of every formation."
+      "conversion": "Assign Guard as the unit's formation specialty. Omit switching among loose, column, and wedge formations; this is a deliberate selection, not an exact conversion of every formation."
     },
     {
       "id": "first-class-charge",
@@ -755,7 +754,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "After dealing melee damage, spend one action to grant one adjacent ally Exploit on its next attack before the source's next activation. Omit source range and +3 scaling."
+      "conversion": "After dealing melee damage, spend one action to grant one adjacent ally Combat Bonus on its next attack before the source's next activation. Omit source range and +3 scaling."
     },
     {
       "id": "lance-charge",
@@ -799,7 +798,7 @@
         "resolve"
       ],
       "reactions": [],
-      "conversion": "Resolve: hold ground, same as No Retreat. Omit the stronger source distance reduction and fleeing-to-slowed conversion."
+      "conversion": "Hold Ground, same as No Retreat. Omit the stronger source distance reduction and fleeing-to-slowed conversion."
     },
     {
       "id": "pack-hunt",
@@ -809,7 +808,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Exploit: +1 melee against an Exposed target. Substitute the existing Exposed state for source prone/clumsy interaction."
+      "conversion": "Combat Bonus: +1 melee against an Exposed target. Substitute the existing Exposed state for source prone/clumsy interaction."
     },
     {
       "id": "phalanx-charge",
@@ -820,7 +819,7 @@
         "expose"
       ],
       "reactions": [],
-      "conversion": "Cavalry Charge; Expose on a successful hit while Shielding was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry."
+      "conversion": "Cavalry Charge; Weaken Defence on a successful hit while Guard was active before the charge. Preserve the formation prerequisite as a game Guard requirement; omit straight-line PF2e segment geometry."
     },
     {
       "id": "rain-of-arrows",
@@ -838,7 +837,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Mark one enemy before battle; Exploit +1 melee against that quarry. This deliberately replaces detailed tracking Perception with a battlefield hunting specialty."
+      "conversion": "Mark one enemy before battle; Combat Bonus +1 melee against that quarry. This deliberately replaces detailed tracking Perception with a battlefield hunting specialty."
     },
     {
       "id": "shambling-onslaught",
@@ -888,7 +887,7 @@
         "terrain-passage"
       ],
       "reactions": [],
-      "conversion": "Pathfinder: all ordinary ground. Preserve barriers and hazards."
+      "conversion": "Terrain Passage: all ordinary ground. Preserve barriers and hazards."
     },
     {
       "id": "troop-spellcasting",
@@ -922,7 +921,7 @@
         "resolve"
       ],
       "reactions": [],
-      "conversion": "Adjacent allied Resolve: fear resistance. Omit the initiative bonus and source radius. Deduplicate Inspiring Banner."
+      "conversion": "Adjacent allied Resist Fear and Rout. Omit the initiative bonus and source radius. Deduplicate Inspiring Banner."
     },
     {
       "id": "idealist-aura-of-righteousness",
@@ -932,7 +931,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Adjacent allies gain Exploit on melee attacks against unholy targets. Omit the separate AC and flat damage bonuses; retain the unholy predicate rather than generalizing to undead."
+      "conversion": "Adjacent allies gain Combat Bonus on melee attacks against unholy targets. Omit the separate AC and flat damage bonuses; retain the unholy predicate rather than generalizing to undead."
     },
     {
       "id": "ruthless-no-quarter",
@@ -942,7 +941,7 @@
         "advantage"
       ],
       "reactions": [],
-      "conversion": "Adjacent allies gain Exploit on attacks while the commander is active. Omit the separate damage bonus and larger source radius."
+      "conversion": "Adjacent allies gain Combat Bonus on attacks while the commander is active. Omit the separate damage bonus and larger source radius."
     },
     {
       "id": "ruthless-despair",
@@ -952,7 +951,7 @@
         "fear"
       ],
       "reactions": [],
-      "conversion": "Adjacent hostile Menace aura. This intentionally replaces a campaign Demoralized floor with temporary tactical fear; it never writes campaign disorder or blocks campaign recovery. Preserve fear immunity."
+      "conversion": "Adjacent hostile Fear aura. This intentionally replaces a campaign Demoralized floor with temporary tactical fear; it never writes campaign disorder or blocks campaign recovery. Preserve fear immunity."
     },
     {
       "id": "practical-rally",
@@ -962,7 +961,7 @@
         "guard"
       ],
       "reactions": [],
-      "conversion": "Share Shielding with one adjacent ally while guarding. Omit the always-on group save bonus. This source is a protective aura, not the game's morale-restoring Rally activity."
+      "conversion": "Share Guard with one adjacent ally while guarding. Omit the always-on group save bonus. This source is a protective aura, not the game's morale-restoring Rally activity."
     },
     {
       "id": "practical-rigorous-discipline",
@@ -975,14 +974,14 @@
       "conversion": "Future Block only against an incoming physical critical hit. Omit the DC 17 flat check and critical-to-normal conversion; preserve this prerequisite even though shield equipment is unnecessary."
     }
   ],
-  "generatedRules": "ReignMaker generates Troop Defenses from HP thresholds outside the 97-entry registry. Classify it as baseline: use Battlefield\u2019s single hex and four-Health abstraction. Form Up and Troop Movement already appear in the registry. Omit segment loss, individual-target immunity, and formation resizing; preserve source HP and traits as evidence.",
+  "generatedRules": "ReignMaker generates Troop Defenses from HP thresholds outside the 97-entry registry. Classify it as baseline: use Battlefield’s single hex and four-Health abstraction. Form Up and Troop Movement already appear in the registry. Omit segment loss, individual-target immunity, and formation resizing; preserve source HP and traits as evidence.",
   "importFindings": [
     "ReignMaker is supplementary evidence. The broader saved review contains 200 source actors and 1,384 actions; Siphoning Grip and regeneration inform the catalogue even though the registry has no corresponding definition.",
     "Training copies system.slug to action items, but the creature ability builder copies name and mechanics without preserving that slug. Read mechanics and portable explicit assignments; actor names, item names, slugs, and UUIDs are recognition hints only.",
     "Doctrine grants include five effect items and one reaction action. Inspect both item types. Actor slugs use doctrine-ability- followed by the grant ID; the snapshot saves that value and the underlying definition.",
     "The actual doctrine code requires dominance for all six grants. The older doctrine reference document differs from current definitions; use the saved code and item text as evidence.",
     "Keep source action, passive, and reaction economy in the audit. A proposed abstraction may deliberately change a passive into a paid Guard effect, but must label that change. Signal the Advance requires recipient reactions despite being a paid source action.",
-    "Prepared Foundry statistics may already include rule-element bonuses. Deduplicate imported bonuses against prepared stats before applying Exploit, Resolve, or auras; never add a modifier just because its ability text survived.",
+    "Prepared Foundry statistics may already include rule-element bonuses. Deduplicate imported bonuses against prepared stats before applying Combat Bonus, Resist Fear and Rout, or auras; never add a modifier just because its ability text survived.",
     "Bundle children and parent tactics collapse to one assignment. Examples include Combat Medics/Battlefield Medicine, Shield Discipline/Raise Shields, and the three siege crew training abilities.",
     "Abstracted means a proposed shared game effect, not implemented support. Deferred entries retain an explicit review note; omitted and baseline entries add no new ability.",
     "Keep historical source text, exact hashes, and deliberate omissions. Persist selected catalogue IDs, trigger, local attack attachment, prerequisites, and flavor label separately from source identity."

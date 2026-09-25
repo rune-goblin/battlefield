@@ -1,5 +1,5 @@
 import { reachableActivities, soleLegalActivity } from './action-menu.js';
-import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt } from '../../engine/index.js';
+import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
 import type { BattleState, EngineState, Unit } from '../../engine/index.js';
@@ -34,9 +34,10 @@ export interface PickerShared extends BattleDeps {
 
 export function createPickerController(s: PickerShared) {
 
-  const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}`;
+  const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}:${offer.ability ?? ''}`;
 
   function styleFor(offer: ActionOffer): HighlightStyle {
+    if (offer.hostile) return 'attack';
     if (offer.spell) return TREE_TARGET[offer.spell] === 'enemy' ? 'attack' : 'deploy';
     if (offer.type === 'shoot' || offer.type === 'fight') return 'attack';
     return 'deploy';
@@ -88,6 +89,21 @@ export function createPickerController(s: PickerShared) {
     ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null)
     ?? pickerTargets.find((t) => t.id === activityPick?.target) ?? null);
 
+  const AIM_NOTICE = 'battle-aim';
+
+  /** Why the open picker cannot aim at `cell`, or null when a target covers it or the cell is the actor's own. */
+  function aimReason(cell: string): string | null {
+    if (!activityPick || !s.active || cell === notation(s.active.square)) return null;
+    if (activityPick.key === 'siege' && s.siegeEngine) {
+      // Preview from the occupant's side, as the offer does.
+      return siegeCellReason(s.b, { ...s.siegeEngine, side: s.active.side }, activityPick.index ?? 1, cell);
+    }
+    if (pickerService?.matches({ kind: 'hex', id: cell }).length) return null;
+    return sightBlock(s.b.board, s.active.square, parse(cell)) ?? 'Nothing here this action can target.';
+  }
+  const hoverReason = $derived(s.hoveredCell ? aimReason(s.hoveredCell) : null);
+  $effect(() => { if (!activityPick) s.notifications.dismiss(AIM_NOTICE); });
+
   /** `key` names the siege engine's picker, whose offer no verb on the ring holds. */
   function openActivityPicker(offer: ActionOffer, key = offerKey(offer)) {
     s.focus = 0;
@@ -125,6 +141,9 @@ export function createPickerController(s: PickerShared) {
   }
 
   function pickActivityCell(cell: string) {
+    const reason = aimReason(cell);
+    if (reason) s.notifications.show({ id: AIM_NOTICE, title: `Cannot target ${cell}`, message: reason, tone: 'error' });
+    else s.notifications.dismiss(AIM_NOTICE);
     if (!activityPick || !pickerActivity?.legal) return;
     if (activityPick.key === 'siege') {
       const matches = pickerService?.matches({ kind: 'hex', id: cell }) ?? [];
@@ -192,6 +211,9 @@ export function createPickerController(s: PickerShared) {
     ? `${targetingService.actor.id}:${offerKey(targetingService.offer)}:${targetingService.activity.index}:${activityPick?.selected.join('+') ?? ''}`
     : s.arming && s.active ? `${s.active.id}:${s.arming.key}` : null);
   const liveArrows = $derived.by<TargetArrow[]>(() => {
+    if (activityPick && s.active && s.hoveredCell && hoverReason) {
+      return [{ from: notation(s.active.square), to: s.hoveredCell, toCells: [s.hoveredCell], muted: true }];
+    }
     if (targetingService) {
       const selected = activityPick?.selected ?? [];
       const hovered = targetingService.arrows(selected, targetHover ?? blastHover, s.hoveredEdge ?? s.hoveredCell);
@@ -210,7 +232,7 @@ export function createPickerController(s: PickerShared) {
   let heldArrows = $state<{ context: string; arrows: TargetArrow[] } | null>(null);
   let resolvedArrows = $state<TargetArrow[]>([]);
   $effect(() => {
-    if (arrowContext && liveArrows.length) heldArrows = { context: arrowContext, arrows: liveArrows };
+    if (arrowContext && liveArrows.length && !liveArrows.some(a => a.muted)) heldArrows = { context: arrowContext, arrows: liveArrows };
     else if (!arrowContext) heldArrows = null;
   });
   // Keep the last valid aim while the pointer travels between the board and its picker.

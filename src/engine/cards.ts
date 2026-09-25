@@ -1,3 +1,4 @@
+import type { TroopAbility, AbilityReview } from './abilities.js';
 import { CELL_FEET } from './path.js';
 import { armourClass, areaDc, perceptionBonus, saveBonus, type Tier } from './tables.js';
 
@@ -10,10 +11,8 @@ export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
 // A troop's own Salvo attack never derives 'extreme' — that band belongs to siege engines.
 export type Reach = 'short' | 'medium' | 'long' | 'extreme';
 
-// Structural signals an importer reads straight off a statblock: recurring action names that
-// differentiate troops where the level tables do not. The vocabulary is closed and the importer
-// still writes all six, but the engine reads only `no-retreat` (section 2): every activity
-// costs the same for every unit, so nothing else has anything left to change.
+// Legacy structural metadata. New imports execute validated abilities. Old cards that carry
+// only the no-retreat signal migrate to Resolve's hold-ground mode.
 export type Signal = 'mounted' | 'melee-drill' | 'shielded' | 'formation' | 'magic-ward' | 'no-retreat';
 
 // Five of these change anything the engine plays: cavalry-charge is a charge's impact
@@ -62,6 +61,11 @@ export interface TroopSheet {
 }
 
 export interface UnitCard {
+  abilities?: TroopAbility[];
+  abilityReview?: AbilityReview[];
+  traits?: string[];
+  immuneFear?: boolean;
+  attackTags?: { melee: string[]; volley: string[]; spell?: string[] };
   name: string;
   sheet?: TroopSheet;
   level: number;

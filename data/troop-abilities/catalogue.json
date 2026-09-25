@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "status": "design-proposal",
-  "purpose": "Preserve unit flavor through a small assignable vocabulary. This is design data, not an executable rules schema.",
+  "status": "implemented-playtest",
+  "purpose": "Current shared ability catalogue. Portable TypeScript assignments supply executable parameters; the balance review records recommendations separately.",
   "abilities": [
     {
       "id": "recovery",
-      "name": "Recovery",
+      "name": "Heal / Clear Condition",
       "category": "Sustain",
       "effect": "Restore 1 Health, or clear one tactical condition. Choose the mode when assigning the ability.",
       "options": [
@@ -14,48 +14,48 @@
         "paid activity, attack rider, or once-per-battle activation-start condition clear"
       ],
       "limits": "Health recovery once per recipient per battle, up to battle-start tactical Health; condition recovery once per recipient per round. Never revive a destroyed unit or erase campaign wounds. An activation-start condition clear has a once-per-battle limit.",
-      "primitive": "Healing and condition clearing exist; generic assignment and limits need implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "temporary-protection",
-      "name": "Vitality",
+      "name": "Damage Absorption",
       "category": "Sustain",
       "effect": "Gain a buffer that absorbs the next 1 Health of damage. It expires at the start of the recipient's next activation.",
       "options": [
         "self or one adjacent ally",
         "on attack use, after damage, paid activity, or recipient activation start from an adjacent ally"
       ],
-      "limits": "One buffer per unit. Refresh instead of adding. Once per round per recipient; never restores Health or persists into campaign state.",
-      "primitive": "Requires temporary damage-buffer state."
+      "limits": "One buffer per recipient, at most one grant per round. Absorbs damage after existing damage caps. Never restores Health or persists into campaign state.",
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "regeneration",
       "name": "Regeneration",
       "category": "Sustain",
-      "effect": "At the start of each activation, restore 1 Health while alive and below the recovery ceiling.",
+      "effect": "At activation start, while below battle-start Health, attempt a Fortitude save against the DC for the unit’s own level. Success or critical success restores 1 Health; failure restores nothing.",
       "options": [
         "always active or a source environmental requirement",
         "source damage tags that suppress recovery"
       ],
-      "limits": "Once per round. A suppressing hit disables recovery through the end of the next activation. Never revive a destroyed unit. Use battle-start tactical Health as the ceiling; omit PF2e dying and segment-regrowth rules. This recurring recovery is separate from Recovery\u2019s once-per-battle allowance.",
-      "primitive": "Requires recurring recovery, damage-tag suppression, and a tactical recovery ceiling."
+      "limits": "One attempt per round, including failed saves. Losing Health to any Blast skips recovery at the next activation. Repeated hits refresh that interruption without adding skipped activations; misses and fully absorbed Blasts do not interrupt recovery. Source damage counters and environmental requirements still apply. Never revive a destroyed unit or heal above battle-start Health. This recurring recovery is separate from Heal’s once-per-battle allowance.",
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "persistent-injury",
-      "name": "Lingering Harm",
+      "name": "Delayed Damage",
       "category": "Offense",
-      "effect": "A qualifying hit applies the game's existing persistent damage effect once.",
+      "effect": "Apply 1 pending damage at the end of the target’s next activation. Multiple marks share one pending hit.",
       "options": [
         "melee or volley",
         "hit or critical hit",
         "fire, poison, bleed, or other source damage tag"
       ],
       "limits": "One pending persistent effect per recipient. Preserve the game's recovery and damage timing; omit PF2e affliction stages and repeated damage dice.",
-      "primitive": "Persistent damage exists through siege and magic; troop attachment needs implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "fear",
-      "name": "Menace",
+      "name": "Fear",
       "category": "Control",
       "effect": "Apply the game's frightened condition: -1 to rolls and Defence through the target's next activation.",
       "options": [
@@ -64,11 +64,11 @@
         "adjacent hostile aura"
       ],
       "limits": "One frightened condition. An aura sustains it only while adjacent and active. Fear immunity applies. This does not write campaign Demoralized or directly remove Morale.",
-      "primitive": "Frightened exists; generic riders and aura maintenance need implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "expose",
-      "name": "Expose",
+      "name": "Weaken Defence",
       "category": "Control",
       "effect": "The target suffers -2 Defence until it next acts.",
       "options": [
@@ -77,35 +77,35 @@
         "melee or volley"
       ],
       "limits": "Use existing exposure and cover rules. Refresh instead of adding; omit separate prone, clumsy, and off-guard tracks.",
-      "primitive": "Exposure exists; generic attachment needs implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "suppression",
       "name": "Suppression",
       "category": "Control",
-      "effect": "Apply the game's suppression penalty until the source next acts.",
+      "effect": "Apply -2 to rolls and Defence until the source next acts.",
       "options": [
         "non-damaging volley replacement",
         "critical-hit rider"
       ],
       "limits": "One suppression effect. Use the game's existing -2 penalty; omit graded enfeebled, stupefied, and sickened values. A replacement deals zero normal damage.",
-      "primitive": "Suppression exists as a Shoot option; generic riders and zero-damage delivery need implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "snare",
-      "name": "Snare",
+      "name": "Immobilize",
       "category": "Control",
-      "effect": "Root the target through its next activation. It can spend one action to clear this root.",
+      "effect": "Prevent movement through the target’s next activation. The target can still attack and can spend one action to break free.",
       "options": [
         "non-damaging volley replacement",
         "critical-hit melee rider"
       ],
       "limits": "One root. No carried targets, grapple stages, Escape DCs, or action-loss track. Do not add the pinning shooter's free shot.",
-      "primitive": "Root exists; the one-action release and generic attachment need implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "displace",
-      "name": "Shove",
+      "name": "Push / Pull",
       "category": "Control",
       "effect": "Move the target one legal hex away from or toward the source after a qualifying hit.",
       "options": [
@@ -114,11 +114,11 @@
         "hit or critical hit"
       ],
       "limits": "Never stack distance or force illegal occupancy. A blocked destination leaves the target in place; this ability adds no collision damage.",
-      "primitive": "Siege push and pull exist; troop attachment needs implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "guard",
-      "name": "Shielding",
+      "name": "Guard",
       "category": "Protection",
       "effect": "Use Guard, or share its +2 protection with one adjacent ally while guarding.",
       "options": [
@@ -127,13 +127,13 @@
         "on attack use until next activation"
       ],
       "limits": "One Guard benefit per recipient. Require shields only when the source does. An attached defensive rider never creates another action.",
-      "primitive": "Guard and Defend Allies exist; generic assignment and on-use riders need implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "resolve",
-      "name": "Resolve",
+      "name": "Resist Fear and Rout / Hold Ground",
       "category": "Protection",
-      "effect": "Gain +2 on checks to resist fear or rout. Ignore the first one-hex forced displacement each round.",
+      "effect": "Choose +2 on checks to resist fear or rout, ignore the first forced displacement each round, or both.",
       "options": [
         "fear resistance",
         "hold ground",
@@ -141,7 +141,7 @@
         "self or adjacent allied aura"
       ],
       "limits": "Choose the mode at assignment. It never grants pursuit, prevents defeat, or grants blanket Morale immunity. Duplicate bonuses do not add.",
-      "primitive": "Requires a shared predicate modifier and displacement prevention. Existing no-retreat pursuit is a different mechanic."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "charge",
@@ -153,11 +153,11 @@
         "optional once-per-battle restriction"
       ],
       "limits": "Preserve the game's Charge cost, route rules, and attack limit. Omit extra PF2e Strides and automatic knockdown.",
-      "primitive": "Cavalry-charge impact exists; generic assignment needs implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "terrain-passage",
-      "name": "Pathfinder",
+      "name": "Terrain Passage",
       "category": "Movement",
       "effect": "Ignore ordinary difficult terrain in one assigned terrain group.",
       "options": [
@@ -168,61 +168,44 @@
         "all ordinary ground when the source warrants it"
       ],
       "limits": "Never grants flight, swimming, water walking, wall passage, hazard immunity, or shared occupancy. Use a movement mode the unit already has.",
-      "primitive": "Movement modes exist; terrain-specific ability exceptions need implementation."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "opening-move",
-      "name": "Vanguard",
+      "name": "Opening Move",
       "category": "Movement",
-      "effect": "Before its first activation, make one free Move of up to its ordinary allowance.",
+      "effect": "In the first activation of the battle’s first round, make one free Move before other actions.",
       "options": [
         "unconditional",
         "only when acting before all enemies",
         "only when deployed in water or swamp"
       ],
-      "limits": "Once per battle. Respect legal paths and deployment boundaries; finish outside enemy contact. It grants no attack.",
-      "primitive": "Requires an opening-movement window. Existing Ambush deployment depth is an alternative abstraction, not this behavior."
+      "limits": "Once per battle. Respect legal paths; start and finish outside enemy contact. It grants no attack.",
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "advantage",
-      "name": "Exploit",
+      "name": "Combat Bonus",
       "category": "Offense",
-      "effect": "Gain +1 to one assigned check type while one concrete condition holds.",
+      "effect": "Gain +1 to the assigned attack, Defence, opening initiative comparison, or Fear save difficulty, subject to the assigned condition.",
       "options": [
-        "melee, volley, Defence, initiative, or a named granted ability check",
-        "target tag or condition",
-        "preferred terrain",
-        "first qualifying attack",
-        "self at half Health or less",
-        "one marked quarry",
-        "active adjacent commander",
-        "explicit parent-activity requirement"
+        "melee, volley, spell attack, Defence, opening initiative, or Fear activity save difficulty",
+        "a condition from the supported list, or always active",
+        "self or adjacent allied aura"
       ],
-      "limits": "One Exploit bonus per check. Select a predicate from the closed list; no free-form scripts. Adjacent command support may grant the same bonus to allies without stacking.",
-      "primitive": "Requires shared conditional modifiers and deduplication against imported prepared statistics."
-    },
-    {
-      "id": "sweep",
-      "name": "Sweep",
-      "category": "Offense",
-      "effect": "After a successful melee attack, deal 1 Health damage to one other enemy adjacent to the attacker.",
-      "options": [
-        "melee",
-        "requires Charge for trampling sources"
-      ],
-      "limits": "Once per activation. The secondary damage cannot trigger abilities, critical effects, or another Sweep. It grants no second attack roll.",
-      "primitive": "Requires a secondary-target rider; existing area attacks alone do not provide this behavior."
+      "limits": "One Combat Bonus bonus per check. Select a predicate from the closed list; no free-form scripts. Adjacent command support may grant the same bonus to allies without stacking.",
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     },
     {
       "id": "siege-crew",
-      "name": "Siege Crew",
+      "name": "Siege Accuracy",
       "category": "Support",
       "effect": "Gain +1 to the first attack check each activation with a siege engine this unit operates.",
       "options": [
         "operated siege engine only"
       ],
       "limits": "Siege Training, Practiced Gunners, and Practiced Loaders collapse to one benefit. Keep normal load costs and firing limits. No benefit when the unit lacks an engine.",
-      "primitive": "Requires an operator modifier. The source proficiency and action discounts are intentionally omitted."
+      "primitive": "Implemented by the shared troop ability interpreter; numerical values remain playtest values."
     }
   ],
   "reactionPatterns": [
@@ -257,7 +240,7 @@
     {
       "id": "counterplay",
       "name": "Counterplay",
-      "effect": "After successfully resisting rout, Expose the attacker.",
+      "effect": "After successfully resisting rout, apply Weaken Defence to the attacker.",
       "sourceExamples": [
         "false-retreat"
       ],
@@ -266,7 +249,7 @@
     {
       "id": "battle-recovery",
       "name": "Battle Recovery",
-      "effect": "After a critical melee result, invoke Recovery on self and spend its normal per-battle allowance.",
+      "effect": "After a critical melee result, Heal self and spend its normal per-battle allowance.",
       "sourceExamples": [
         "revel-in-battle"
       ],

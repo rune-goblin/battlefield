@@ -14,6 +14,7 @@ export const TERRAIN_FEET = Object.fromEntries(
 export const CLIMB_FEET = CELL_FEET;
 
 export interface MoveOpts {
+  terrainPassage?: SquareTerrain[];
   climber?: boolean;
   /** Feet of movement to spend. */
   budget: number;
@@ -59,7 +60,8 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
       price(rates.fly, { flying: true, swimming: false }),
       price(rates.swim, { flying: false, swimming: true }));
   }
-  const ground = TERRAIN_FEET[at(board, to).terrain];
+  const terrain = at(board, to).terrain;
+  const ground = Number.isFinite(TERRAIN_FEET[terrain]) && opts.terrainPassage?.includes(terrain) ? CELL_FEET : TERRAIN_FEET[terrain];
   const climb = Math.max(0, at(board, to).elevation - at(board, from).elevation);
   // Even ground is a question about the ground, not about the price, so it is asked ahead of
   // flight: a flier pays 1 a hex over forest and has still crossed forest.
@@ -87,7 +89,7 @@ export function stepFeet(board: Board, from: Square, to: Square, opts: StepOpts 
  */
 export function reachable(board: Board, start: Square, opts: MoveOpts): ReachMap {
   const g = gridOf(board);
-  const step: StepOpts = { climber: opts.climber, flying: opts.flying, swimming: opts.swimming, rates: opts.rates, surefooted: opts.surefooted, evenGround: opts.evenGround };
+  const step: StepOpts = { terrainPassage: opts.terrainPassage, climber: opts.climber, flying: opts.flying, swimming: opts.swimming, rates: opts.rates, surefooted: opts.surefooted, evenGround: opts.evenGround };
   const occupied = opts.occupied ?? new Set<string>();
   const startKey = notation(start);
   const reach: ReachMap = new Map([[startKey, { feet: 0, from: null }]]);

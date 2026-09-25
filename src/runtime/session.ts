@@ -1,3 +1,4 @@
+import { validatedAbilities, freshAbilityMemory } from '../engine/abilities.js';
 import {
   COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification, deriveStats, movementRates, speedOf, CELL_FEET,
   type BattleState, type Board, type BoardSize, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
@@ -9,7 +10,7 @@ import type { InteractionKind, InteractionRecord } from './interactions.js';
 export const SCHEMA_VERSION = 1;
 // proto: the rules document carries no version of its own, so the record dates them. Reserved
 // for review with the rest of the migration shape.
-export const RULES_VERSION = '2026-09-20';
+export const RULES_VERSION = '2026-09-24';
 
 export type LifecycleStage = 'setup' | 'deployment' | 'battle' | 'aftermath' | 'finalized';
 const LIFECYCLE_STAGES: LifecycleStage[] = ['setup', 'deployment', 'battle', 'aftermath', 'finalized'];
@@ -203,6 +204,9 @@ export function migrateMorale(battle: BattleState): BattleState {
     battle.night = Object.fromEntries(SIDES.map((side) => [side, rolled.filter((r) => sideOf(r.unit) === side)]));
   }
   for (const u of battle.units) {
+    u.abilities = validatedAbilities(u.abilities ?? (u.noRetreat ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : []));
+    u.noRetreat = false;
+    u.abilityState ??= freshAbilityMemory(u.wounds);
     delete (u as Unit & { quality?: number }).quality;
     u.disorder = Math.max(0, Math.min(ROUTED_AT, u.disorder));
     if (u.status === 'active' && u.disorder >= ROUTED_AT) {

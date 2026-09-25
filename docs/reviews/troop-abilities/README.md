@@ -1,16 +1,21 @@
 # Troop ability review
 
-Review date: 2026-09-23. This is a design proposal and source inventory. It enables no gameplay effects. [Current game rules](../../../public/rules.html) remain authoritative.
+The [balance and naming review](balance-review.md) covers all 16 templates, their interactions, and recommended changes. Names and descriptions reflect that review; balance mechanics retain their current playtest values.
 
-**Current design:** the [assignable catalogue](catalogue.md) defines 17 shared abilities that preserve key unit differences. It supersedes this inventory's detailed conversion proposals where they differ. The goal is selective abstraction; the source inventory does not create an obligation to reproduce every Pathfinder mechanic. The [ReignMaker mapping](reignmaker-mapping.md) supplements the broader creature review with 97 registry abilities and six doctrine grants.
+Review date: 2026-09-23. This document preserves the original source findings and broader proposals. The 16 shared abilities now execute in the game; see [implementation and portable assignments](implementation.md). [Current game rules](../../../public/rules.html#troop-abilities) remain authoritative.
 
-The imports preserve attack numbers and names, but discard most of the mechanics that make troops distinctive. Restore those mechanics through a shared ability catalogue, composable effects, and a separate reaction activity. Match the abilities a creature carries. Actor identity records provenance and never gates access to an ability. See the [reusable ability model](ability-model.md) for the revised design.
+**Current design:** the [assignable catalogue](catalogue.md) defines 16 shared abilities that preserve key unit differences. It supersedes this inventory's detailed conversion proposals where they differ. The goal is selective abstraction; the source inventory does not create an obligation to reproduce every Pathfinder mechanic. The [ReignMaker mapping](reignmaker-mapping.md) supplements the broader creature review with 97 registry abilities and six doctrine grants.
+
+The [complete troop classification](troop-classification.md) now applies that catalogue to all 193 selected troops and preserves seven source alternatives. It gives each source feature a disposition, proposes a small selection of defining abilities, and keeps extra candidates, unresolved mechanics, and reactions visible. Classify the known library now and recognize new or changed mechanics during import; these design records enable no runtime effects.
+
+The original imports preserved attack numbers and names but discarded most defining mechanics. The implementation restores selected mechanics through shared assignments while retaining the broader evidence below. Actor identity records provenance and never gates access to an ability. See the [reusable ability model](ability-model.md) for the design and the [implementation guide](implementation.md) for current behavior. Findings and implementation proposals below describe the pre-implementation review.
 
 ## Saved inventory
 
 | Artifact | Content |
 |---|---|
-| [Assignable catalogue](catalogue.md) | Seventeen shared abilities, source examples, deliberate simplifications, assignment standards, and seven separate future reaction patterns |
+| [Complete troop classification](troop-classification.md) | Proposed abilities for every library troop, intentional omissions, further candidates, and separate reaction decisions |
+| [Assignable catalogue](catalogue.md) | Sixteen shared abilities, source examples, deliberate simplifications, assignment standards, and seven separate future reaction patterns |
 | [ReignMaker mapping](reignmaker-mapping.md) | A disposition for every registry and doctrine ability, training grants, generated troop rules, and import findings |
 | [Reusable ability model](ability-model.md) | Shared categories, effect templates, and import matching that survives creature renaming and copying |
 | [Every troop and its proposed effects](inventory.md) | One section per source actor, including ordinary attacks, special activities, passive riders, and spell lists |

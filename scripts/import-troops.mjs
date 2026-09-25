@@ -1,7 +1,12 @@
+import { createServer } from 'vite';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { actionsOf, bandOf, casterOf, signalsOf } from './troop-signals.mjs';
 import { spellcastingOf } from '../src/adapters/pf2e/spellcasting.ts';
+
+const vite = await createServer({ configFile: false, server: { middlewareMode: true }, appType: 'custom', logLevel: 'error', optimizeDeps: { noDiscovery: true } });
+const { cardFromActor } = await vite.ssrLoadModule('/src/adapters/pf2e/troopCard.ts');
+await vite.close();
 
 const dir = new URL('../data/troops/', import.meta.url);
 const files = readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
@@ -22,6 +27,7 @@ function role(d) {
 const cards = files.map((f) => {
   const d = JSON.parse(readFileSync(join(dir.pathname, f), 'utf8'));
   const s = d.system;
+  const imported = cardFromActor(d);
   const battle = d.items.find((it) => it.name.includes('[Battle]'));
   const salvo = d.items.find((it) => it.name.includes('[Salvo]'));
   const battleDc = dc(battle?.system.description.value);
@@ -40,6 +46,7 @@ const cards = files.map((f) => {
     fear: false,
     caster: casterOf(d, actions),
     tradition,
+    abilities: imported.abilities, abilityReview: imported.abilityReview, traits: imported.traits, immuneFear: imported.immuneFear, attackTags: imported.attackTags,
     signals: signalsOf(actions),
     tactics: [],
     sheet: {
@@ -73,7 +80,7 @@ const cards = files.map((f) => {
 const body = cards.map((c) => {
   const o = c.overrides;
   const reach = o.reach ? `'${o.reach}'` : 'null';
-  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, caster: ${c.caster}, ${c.tradition ? `tradition: '${c.tradition}', ` : ''}signals: ${JSON.stringify(c.signals)}, tactics: [], sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
+  return `  { name: ${JSON.stringify(c.name)}, level: ${c.level}, role: '${c.role}', salvo: ${reach}, pace: ${c.pace}, fear: false, caster: ${c.caster}, ${c.tradition ? `tradition: '${c.tradition}', ` : ''}signals: ${JSON.stringify(c.signals)}, tactics: [], abilities: ${JSON.stringify(c.abilities)}, abilityReview: ${JSON.stringify(c.abilityReview)}, traits: ${JSON.stringify(c.traits)}, immuneFear: ${c.immuneFear}, attackTags: ${JSON.stringify(c.attackTags)}, sheet: ${JSON.stringify(c.sheet)}, overrides: { strike: ${o.strike}, volley: ${o.volley}, reach: ${reach}, defence: ${o.defence}, will: ${o.will}, perception: ${o.perception} } },`;
 }).join('\n');
 
 writeFileSync(new URL('../src/engine/combatants.ts', import.meta.url),

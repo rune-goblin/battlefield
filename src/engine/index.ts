@@ -18,6 +18,9 @@ export * from './connectivity.js';
 export * from './force.js';
 
 export * from './sight.js';
+export { siegeCellReason } from './siege-targets.js';
 export * from './terrain.js';
 
 export * from './walls.js';
+
+export * from './abilities.js';

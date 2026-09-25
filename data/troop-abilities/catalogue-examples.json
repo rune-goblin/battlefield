@@ -72,7 +72,7 @@
       "troop": "Deinonychus Pack",
       "sourceAbility": "Predator's Advantage",
       "ability": "advantage",
-      "conversion": "Melee against a target carrying pending bleed-tagged Lingering Harm. Omit the original Reflex modifier."
+      "conversion": "Melee against a target carrying pending bleed-tagged Delayed Damage. Omit the original Reflex modifier."
     }
   ]
 }

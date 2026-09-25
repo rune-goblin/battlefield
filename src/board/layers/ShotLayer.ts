@@ -59,7 +59,8 @@ export class ShotLayer {
       });
       if (!b) continue;
       const tone = arrow.tone ?? 'shoot';
-      const colour = tone === 'shoot' || tone === 'fight' ? this.theme.overlay.shot
+      const colour = arrow.muted ? this.theme.overlay.muted
+        : tone === 'shoot' || tone === 'fight' ? this.theme.overlay.shot
         : tone === 'rally' ? this.theme.token.ringFlash
           : tone === 'guard' ? this.theme.overlay.cast.defense
             : tone === 'cast' ? this.theme.overlay.cast.controlling : this.theme.overlay.cast[tone];

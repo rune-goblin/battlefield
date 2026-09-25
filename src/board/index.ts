@@ -68,7 +68,7 @@ export interface BoardView {
    * nowhere to go never lifts. Null lets every drag lift again. */
   setAnchored(id: string | null): void;
   /** Aiming arrows above the pieces, colored by action or spell. Accepts one target or a
-   * group; null clears them. An omitted tone retains the red shot arc. */
+   * group; null clears them. An omitted tone retains the red shot arc; a muted arrow is gray. */
   setShot(shot: TargetArrow | readonly TargetArrow[] | null): void;
   /** The cast being aimed: a swirling particle line from the caster's cell out to the
    * target's, coloured by tree. Null clears it. */

@@ -111,7 +111,7 @@ export class TargetingService {
 
   constructor(readonly state: BattleState, readonly actor: Unit, readonly offer: ActionOffer, readonly activity: ActivityOption) {
     this.icon = targetingIcon(offer);
-    this.style = offer.type === 'shoot' || offer.type === 'fight' || offer.spell === 'blast' || offer.spell === 'controlling' ? 'attack' : 'deploy';
+    this.style = offer.hostile || offer.type === 'shoot' || offer.type === 'fight' || offer.spell === 'blast' || offer.spell === 'controlling' ? 'attack' : 'deploy';
     const targets: ActivityTarget[] = activity.needsTarget ? activity.targets
       : [{ kind: 'unit', id: actor.id, label: actor.name }];
     this.choices = activity.legal ? targets.map((target) => this.describe(target)) : [];
@@ -175,7 +175,7 @@ export class TargetingService {
     const placement = this.offer.spell === 'movement' && this.activity.index >= 3;
     const effectCells = placement ? target.anchorCells : cells;
     return {
-      action: { type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? target.id : undefined },
+      action: { ability: this.offer.ability, type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? target.id : undefined },
       markers: this.offer.type === 'rally' ? cells.map((cell) => ({ ...target, id: `rally:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : this.markersFor(target),
       arrows: this.offer.type === 'rally' ? cells.map((cell) => ({ from: notation(this.actor.square), to: cell, tone: 'rally' })) : this.arrows([], target.id),
       effects: this.offer.spell ? effectCells.map((cell) => ({ cell, tree: this.offer.spell!, from: notation(this.actor.square) })) : [],

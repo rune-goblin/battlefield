@@ -26,6 +26,8 @@ export interface BoardTheme {
     /** The shot arc and the barred X — where colour on the board means danger rather than
      * terrain. */
     shot: number;
+    /** An aiming arc at something out of reach. */
+    muted: number;
     /** The cast line and its swirling glow motes, one hue per tree, while a spell is aimed. */
     cast: Record<Tree, number>;
   };
@@ -71,6 +73,7 @@ const LIGHT: BoardTheme = {
     hover: 0x1f1a17,
     selected: 0xb4611f,
     shot: 0xb4231b,
+    muted: 0x8a8580,
     cast: {
       blast: 0xd1481f,
       healing: 0x4f9e5c,
@@ -113,6 +116,7 @@ const DARK: BoardTheme = {
     hover: 0xe8e1d5,
     selected: 0xd98b6e,
     shot: 0xe0453a,
+    muted: 0x9a958f,
     cast: {
       blast: 0xff7a3d,
       healing: 0x6fd17a,

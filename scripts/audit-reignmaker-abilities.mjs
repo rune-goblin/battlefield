@@ -130,7 +130,7 @@ lines.push('', '## Common generated rules', '', review.generatedRules, '', '## I
   '[Source snapshot](../../../data/troop-abilities/reignmaker-sources.json) preserves the original definitions, doctrine grants, training ladder, and relevant import code. [Mapping data](../../../data/troop-abilities/reignmaker-mappings.json) pins each interpretation to its source definition hash. These hashes audit the review; they do not select abilities at runtime.', '');
 fs.writeFileSync(path.join(root, 'docs/reviews/troop-abilities/reignmaker-mapping.md'), lines.join('\n'));
 const catalogueDoc = path.join(root, 'docs/reviews/troop-abilities/catalogue.md');
-const table = ['| Category | Ability | Proposed game effect |', '|---|---|---|',
+const table = ['| Category | Ability | Current game effect |', '|---|---|---|',
   ...catalogue.abilities.map(a => `| ${a.category} | **${a.name}** (\`${a.id}\`) | ${esc(a.effect)} |`)];
 const doc = fs.readFileSync(catalogueDoc, 'utf8');
 if (!doc.includes('<!-- catalogue:start -->') || !doc.includes('<!-- catalogue:end -->')) throw new Error('Missing catalogue table markers');

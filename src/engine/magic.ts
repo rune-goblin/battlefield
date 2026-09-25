@@ -100,7 +100,7 @@ const ACTIVITIES: Record<Tree, [string, string][]> = {
 
 export const CAST_ACTIVITIES: Record<Tree, [CastActivity, CastActivity, CastActivity, CastActivity]> = Object.fromEntries(
   TREES.map((tree) => [tree, ACTIVITIES[tree].map(([label, detail], i) => (
-    { id: `${tree}-${i + 1}`, label, verb: 'casts', detail }
+    { id: `${tree}-${i + 1}`, label, verb: 'casts', detail: detail + (tree === 'blast' ? ' Health loss skips the target’s next regeneration attempt; misses and fully absorbed hits do not interrupt it.' : '') }
   ))]),
 ) as Record<Tree, [CastActivity, CastActivity, CastActivity, CastActivity]>;
 

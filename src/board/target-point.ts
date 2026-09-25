@@ -6,6 +6,8 @@ export interface TargetArrow {
   to: string;
   toCells?: string[];
   tone?: Tree | Verb;
+  /** Gray: the pointer is on something the action cannot reach. */
+  muted?: boolean;
 }
 
 /** Project a hex centre, an edge midpoint or a shared corner through the same board transform. */

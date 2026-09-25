@@ -52,14 +52,17 @@ export function sightCells(board: Board, from: Cell, to: Cell): Cell[] {
 
 export const isMountain = (board: Board, cell: Cell): boolean => at(board, cell).elevation >= 2;
 
-const forestsAlong = (board: Board, from: Cell, to: Cell): number =>
-  sightCells(board, from, to).filter(cell => at(board, cell).terrain === 'forest').length;
-
-export function hasSight(board: Board, from: Cell, to: Cell): boolean {
-  const a = at(board, from).elevation, b = at(board, to).elevation;
-  return !sightCells(board, from, to).some(cell => blocksSight(at(board, cell).elevation, a, b))
-    && forestsAlong(board, from, to) < FOREST_BLOCKS_AT;
+/** What blinds the line from `from` to `to`, in words, or null when the line is clear. */
+export function sightBlock(board: Board, from: Cell, to: Cell): string | null {
+  const a = at(board, from).elevation, b = at(board, to).elevation, cells = sightCells(board, from, to);
+  const high = cells.find(cell => blocksSight(at(board, cell).elevation, a, b));
+  if (high) return `${isMountain(board, high) ? 'A mountain' : 'High ground'} at ${notation(high)} blocks sight.`;
+  const forests = cells.filter(cell => at(board, cell).terrain === 'forest');
+  if (forests.length >= FOREST_BLOCKS_AT) return `Too much forest in the way: ${forests.map(notation).join(', ')}.`;
+  return null;
 }
+
+export const hasSight = (board: Board, from: Cell, to: Cell): boolean => !sightBlock(board, from, to);
 
 export const coverBetween = (board: Board, from: Cell, to: Cell): number =>
   TERRAIN[at(board, to).terrain].cover || sightCells(board, from, to).some(cell => TERRAIN[at(board, cell).terrain].cover) ? 1 : 0;

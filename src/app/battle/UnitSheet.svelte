@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
+  import { abilityDescription, abilitySummary, wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
     shootCeiling, shootFloor, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
     type BattleState, type Unit } from '../../engine/index.js';
 
@@ -21,6 +21,11 @@
       <strong>{fort.label}</strong><span>+{fort.cover}{fort.maxCover !== fort.cover ? `–${fort.maxCover}` : ''} ranged cover</span>
     </div>
   {/if}
+  {#if unit.abilities?.length}
+    <div class="movement-source" aria-label="Troop abilities">{#each unit.abilities as ability}<details><summary>{abilitySummary(ability)}</summary><p>{abilityDescription(ability)}</p></details>{/each}</div>
+  {/if}
+  {#if unit.abilityState?.buffer}<div class="caster">Damage Absorption: absorbs the next 1 damage</div>{/if}
+  {#if unit.abilityReview?.length}<details><summary>Source ability notes ({unit.abilityReview.length})</summary>{#each unit.abilityReview as note}<p><strong>{note.label}</strong>: {note.reason}</p>{/each}</details>{/if}
   <dl class="vitals">
     <div title="Maximum distance per Move; each step uses the fastest legal movement mode."><dt>Move</dt><dd>{movementSpeed(unit) / CELL_FEET} <small>hexes</small></dd></div>
     <div title="Current armor class, including conditions and terrain. Cover against a ranged attacker can add protection."><dt>AC</dt><dd>{defenceOf(battle, unit, null, false)}</dd></div>

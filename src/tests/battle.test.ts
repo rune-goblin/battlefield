@@ -1189,7 +1189,7 @@ describe('leaving contact', () => {
 });
 
 describe('no retreat', () => {
-  // Line Infantry carries the 'no-retreat' signal and walks 20 ft; the levy it holds walks 25.
+  // Legacy No Retreat imports retain their position through Resolve.
   const line: UnitCard = {
     name: 'Line', level: 6, role: 'infantry', signals: ['no-retreat'], tactics: [],
     sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false },
@@ -1203,16 +1203,18 @@ describe('no retreat', () => {
     return state;
   };
 
-  it('follows a Move it can reach, and deals no damage doing it', () => {
+  it('holds its own position when an enemy Moves away', () => {
     const s = act(chased(), { type: 'move', to: 'c1', unit: 'u0' }, scriptedRng([10]));
     expect(notation(unit(s, 'u0').square)).toBe('c1');
-    expect(notation(unit(s, 'u1').square)).toBe('c2');
+    expect(notation(unit(s, 'u1').square)).toBe('c3');
+    expect(unit(s, 'u1').abilities).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'resolve', mode: 'ground' })]));
     expect(unit(s, 'u0').wounds).toBe(0);
   });
 
-  it('follows a Step as well', () => {
+  it('does not turn No Retreat into a pursuit reaction', () => {
     const s = act(chased(), { type: 'step', to: 'c1', unit: 'u0' }, scriptedRng([]));
-    expect(notation(unit(s, 'u1').square)).toBe('c2');
+    expect(notation(unit(s, 'u1').square)).toBe('c3');
+    expect(unit(s, 'u1').abilities).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'resolve', mode: 'ground' })]));
   });
 });
 

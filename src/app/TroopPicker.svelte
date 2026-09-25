@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { deriveStats, type Side, type UnitCard } from '../engine/index.js';
+  import { abilityName, abilitySummary, deriveStats, type Side, type UnitCard } from '../engine/index.js';
   import { troopArtUrl } from '../board/index.js';
   import { allTroops, campaignTroops, type TroopEntry } from './troop-library.svelte.js';
 
@@ -148,6 +148,7 @@
                 <img src={r.entry.art ?? troopArtUrl(r.entry.name, card?.role ?? 'infantry')} alt="" loading="lazy" />
                 <span>
                   <span class="name">{r.entry.name}</span>
+                  {#if card?.abilities?.length}<span class="tags" title={card.abilities.map(abilitySummary).join('\n')}>{[...new Set(card.abilities.map(abilityName))].join(' · ')}</span>{/if}
                   {#if card?.tactics?.length || card?.caster}<span class="tags">{[...(card.tactics ?? []), ...(card.caster ? [`${card.tradition ?? ''} caster`.trim()] : [])].join(' · ')}</span>{/if}
                   {#if r.entry.problem ?? failed[r.entry.id]}<span class="tags bad">Cannot be fielded: {r.entry.problem ?? failed[r.entry.id]}</span>{/if}
                 </span>

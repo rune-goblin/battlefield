@@ -1,7 +1,7 @@
 import { at, gridOf, notation, parse, fortification } from './board.js';
 import { ENGINES } from './engines.js';
-import { hasSight } from './sight.js';
-import type { SiegeMode } from './siege-profiles.js';
+import { hasSight, sightBlock } from './sight.js';
+import { siegeModes, type SiegeMode } from './siege-profiles.js';
 import { BANDS, type ActivityTarget, type BattleState, type EngineState } from './types.js';
 
 /** Canonical targets are shared by the menu and command validation. A shape is one target. */
@@ -42,9 +42,29 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
   }
   const unique = [...new Set(groups.map(cells => cells.sort().join('+')))];
   return unique.filter(id => id.split('+').every(inRange)
-    && (mode.effect === 'rough' || mode.effect === 'web' || state.units.some(u => affected(u) && id.split('+').includes(notation(u.square))))).map(id => {
+    // Friendly fire hits allies caught in the area, but an area needs an enemy in it to be worth aiming at.
+    && (mode.effect === 'rough' || mode.effect === 'web' || state.units.some(u => u.side !== e.side && affected(u) && id.split('+').includes(notation(u.square))))).map(id => {
     const names = state.units.filter(u => affected(u) && id.split('+').includes(notation(u.square)))
       .map(u => `${u.name}${u.side === e.side ? ' (ally)' : ''}`);
     return { kind: 'cell', id, label: `${id.replaceAll('+', ' / ')}${names.length ? ` — ${names.join(', ')}` : ''}` };
   });
+}
+
+/** Why `cell` is no target for this mode: range, sight, then an empty hex. Null when some target covers it. */
+export function siegeCellReason(state: BattleState, e: EngineState, activity: number, cell: string): string | null {
+  const mode = siegeModes(e.name, ENGINES.find(card => card.name === e.name)?.kind ?? e.kind)[activity - 1];
+  if (siegeTargets(state, e, mode).some(t => (t.kind === 'wall' ? t.id.split('|') : t.kind === 'cell' ? t.id.split('+')
+    : state.units.filter(u => u.id === t.id).map(u => notation(u.square))).includes(cell))) return null;
+  const g = gridOf(state.board), kind = ENGINES.find(card => card.name === e.name)?.kind ?? e.kind;
+  const max = kind === 'ram' ? 1 : BANDS[state.board.grid][e.reach ?? 'medium'];
+  const min = mode.minimum ?? (kind === 'ram' ? 0 : 1), d = g.distance(e.square, parse(cell));
+  if (d < min) return min > 1 ? `Too close: the ${e.name} needs at least ${min} hexes.` : 'The engine cannot fire on its own hex.';
+  if (d > max) return `Out of range: ${cell} is ${d} hexes away and the ${e.name} reaches ${max}.`;
+  const blind = sightBlock(state.board, e.square, parse(cell));
+  if (blind) return blind;
+  if (mode.shape === 'wall') return 'No standing wall or gate here.';
+  const here = state.units.find(u => u.status === 'active' && notation(u.square) === cell);
+  if (!here) return 'No enemy here to hit.';
+  if (here.side === e.side) return `${here.name} is an ally. Aim the area where it catches an enemy.`;
+  return mode.shape === 'single' ? `${here.name} cannot be hit by this attack.` : `No ${mode.label} area covering ${cell} stays in range and sight.`;
 }

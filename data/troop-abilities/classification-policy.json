@@ -1,0 +1,803 @@
+{
+  "version": 1,
+  "status": "Reviewed design classification policy; not a runtime prose recognizer.",
+  "scope": "Applies to the saved source reviews. Family labels are human audit annotations, never actor-name matches. All assignments remain proposals.",
+  "rules": [
+    {
+      "families": [
+        "temporary-health"
+      ],
+      "abilities": [
+        "temporary-protection"
+      ],
+      "priority": 100,
+      "conversion": "On use of this melee attack, including a miss, grant Damage Absorption to self. Use the catalogue buffer and expiry; omit source HP and action scaling."
+    },
+    {
+      "families": [
+        "regeneration",
+        "fast-healing"
+      ],
+      "abilities": [
+        "regeneration"
+      ],
+      "priority": 100,
+      "conversion": "Use recurring Regeneration. Keep source damage suppressors and environmental requirements; omit source HP rate, dying rules, and segment restoration."
+    },
+    {
+      "families": [
+        "medicine"
+      ],
+      "abilities": [
+        "recovery"
+      ],
+      "priority": 85,
+      "conversion": "Grant the catalogue paid Heal activity to an adjacent eligible ally. Preserve recipient prerequisites; use the common healing ceiling and recipient limit."
+    },
+    {
+      "families": [
+        "condition-recovery"
+      ],
+      "abilities": [
+        "recovery"
+      ],
+      "priority": 85,
+      "conversion": "Grant once-per-battle activation-start Clear Condition. Omit the source flat check and retain the tactical-condition restriction."
+    },
+    {
+      "families": [
+        "last-stand-heal"
+      ],
+      "abilities": [
+        "recovery"
+      ],
+      "priority": 85,
+      "conversion": "Grant paid Heal only at the source low-Health threshold. Its recovery ceiling remains the lower source threshold, not the general battle-start ceiling; resolve that threshold before enabling.",
+      "decision": "Resolve the low-Health threshold and recovery ceiling on the four-Health track."
+    },
+    {
+      "families": [
+        "bleeding-hit",
+        "bleeding-feast",
+        "burning-critical",
+        "persistent-critical",
+        "rending-attack"
+      ],
+      "abilities": [
+        "persistent-injury"
+      ],
+      "priority": 95,
+      "conversion": "Apply Delayed Damage on the source hit or critical-hit result, attached only to the named attack. Preserve its damage tag. Use one pending damage event and omit damage dice and multi-target scaling."
+    },
+    {
+      "families": [
+        "bleeding-commitment",
+        "surround-bleed"
+      ],
+      "abilities": [
+        "persistent-injury"
+      ],
+      "priority": 90,
+      "conversion": "Apply bleed-tagged Delayed Damage only when the source attack investment or surrounding requirement holds. Retain that gate and resolve it against game activities before enabling.",
+      "decision": "Resolve the attack-investment or surrounding requirement against the chosen game activity."
+    },
+    {
+      "families": [
+        "bleed-and-trip"
+      ],
+      "abilities": [
+        "persistent-injury",
+        "expose"
+      ],
+      "priority": 95,
+      "conversion": "Apply bleed-tagged Delayed Damage on a hit and Weaken Defence on a critical hit. Both share this melee attack; omit original damage dice."
+    },
+    {
+      "families": [
+        "burning-splash"
+      ],
+      "abilities": [
+        "persistent-injury"
+      ],
+      "priority": 90,
+      "conversion": "Apply fire-tagged Delayed Damage to the hit target. Omit adjacent splash recipients explicitly; keep any friendly-fire drawback as a separate review obligation."
+    },
+    {
+      "families": [
+        "burning-breath"
+      ],
+      "abilities": [
+        "persistent-injury"
+      ],
+      "priority": 90,
+      "conversion": "Attach fire-tagged Delayed Damage to a successful breath hit. The source breath cost, limited availability, and cooldown need a local profile; this is not an unlimited Volley.",
+      "decision": "Bind a limited breath profile and its recharge before enabling the rider."
+    },
+    {
+      "families": [
+        "wyvern-poison"
+      ],
+      "abilities": [
+        "persistent-injury"
+      ],
+      "priority": 95,
+      "conversion": "Apply poison-tagged Delayed Damage on a successful melee hit with no extra save. Omit linked enfeebled while poison persists."
+    },
+    {
+      "families": [
+        "fear-activity",
+        "wordless-fear",
+        "war-shriek"
+      ],
+      "abilities": [
+        "fear"
+      ],
+      "priority": 80,
+      "conversion": "Grant the paid Fear activity. Preserve visibility and recipient eligibility; omit source target counts and graded fear. War Shriek loses its additional hold; wordless delivery retains its language exemption."
+    },
+    {
+      "families": [
+        "fear-presence",
+        "despair-aura"
+      ],
+      "abilities": [
+        "fear"
+      ],
+      "priority": 90,
+      "conversion": "Use adjacent hostile Fear. Preserve fear immunity and source eligibility; omit larger radii, graded fear, reaction locks, and action loss."
+    },
+    {
+      "families": [
+        "croaking-aura"
+      ],
+      "abilities": [
+        "fear"
+      ],
+      "priority": 85,
+      "conversion": "Use adjacent hostile Fear, with the source activation cost if present. Omit separate fear-save penalties and the additional Demoralize grant."
+    },
+    {
+      "families": [
+        "frightening-hit",
+        "terrifying-volley"
+      ],
+      "abilities": [
+        "fear"
+      ],
+      "priority": 95,
+      "conversion": "Apply Fear on a successful hit by the named melee or ranged attack. Omit graded frightened values; keep any sonic/hearing prerequisite."
+    },
+    {
+      "families": [
+        "fear-rider-save"
+      ],
+      "abilities": [
+        "fear"
+      ],
+      "priority": 95,
+      "conversion": "After the attached melee attack deals damage, resolve the separate Will gate for Fear. Use the normal game ability DC and omit source fear grades."
+    },
+    {
+      "families": [
+        "fear-vulnerability-aura"
+      ],
+      "abilities": [
+        "fear"
+      ],
+      "priority": 65,
+      "conversion": "Use adjacent hostile Fear while the source remaining-strength requirement holds. This replaces the emotion-save penalty and narrows it to fear.",
+      "decision": "Resolve the source remaining-strength threshold on the four-Health track."
+    },
+    {
+      "families": [
+        "hunting-trip",
+        "trip-hit",
+        "clumsy-hit",
+        "pain-strike"
+      ],
+      "abilities": [
+        "expose"
+      ],
+      "priority": 90,
+      "conversion": "Weaken Defence on a successful hit by this specific attack. Omit a follow-up Trip check and separate prone/clumsy values. Preserve an alternative attack as a separate local attachment."
+    },
+    {
+      "families": [
+        "trip-critical"
+      ],
+      "abilities": [
+        "expose"
+      ],
+      "priority": 90,
+      "conversion": "Weaken Defence on a critical hit by the named attack. Ordinary hits gain no rider."
+    },
+    {
+      "families": [
+        "feint",
+        "dirty-trick",
+        "advance-feint"
+      ],
+      "abilities": [
+        "expose"
+      ],
+      "priority": 75,
+      "conversion": "Grant a paid Weaken Defence activity. Omit skill ranks, the source extra movement, and attacker-only targeting of the bonus; Weaken Defence benefits every attacker until expiry."
+    },
+    {
+      "families": [
+        "critical-weakening"
+      ],
+      "abilities": [
+        "suppression"
+      ],
+      "priority": 95,
+      "conversion": "Apply Suppression on a critical hit by the source-eligible melee or Volley profile. This broadens the source physical-attack penalty to the existing game condition."
+    },
+    {
+      "families": [
+        "covering-fire"
+      ],
+      "abilities": [
+        "suppression"
+      ],
+      "priority": 85,
+      "conversion": "Grant a two-action non-damaging Volley replacement. On a successful game attack check, apply Suppression; omit graded speed penalties."
+    },
+    {
+      "families": [
+        "critical-grab",
+        "arresting-attack",
+        "grabbing-attack",
+        "vine-grab",
+        "free-grapple",
+        "paid-grapple"
+      ],
+      "abilities": [
+        "snare"
+      ],
+      "priority": 90,
+      "conversion": "Apply Immobilize on a critical hit by the linked melee attack. Collapse source hit/investment gates, paid or free follow-up checks, and restraint grades into this one rider. Omit carrying and use the one-action release."
+    },
+    {
+      "families": [
+        "net-volley",
+        "hampering-volley",
+        "larval-net"
+      ],
+      "abilities": [
+        "snare"
+      ],
+      "priority": 95,
+      "conversion": "Grant a two-action non-damaging Volley replacement; a successful game attack check applies Immobilize. Replace source movement/action penalties with root and a one-action release. Omit disease exposure."
+    },
+    {
+      "families": [
+        "hindering-volley",
+        "barbed-nets",
+        "slowing-slime"
+      ],
+      "abilities": [
+        "snare"
+      ],
+      "priority": 85,
+      "conversion": "Offer Immobilize as a non-damaging Volley replacement. Omit the source damage, graded slow/exposure, and barb damage on escape; keep the existing damage profile as the alternative."
+    },
+    {
+      "families": [
+        "push-hit"
+      ],
+      "abilities": [
+        "displace"
+      ],
+      "priority": 95,
+      "conversion": "After a successful hit by this ranged attack, push one legal hex away. No attacker follow movement or extra collision damage."
+    },
+    {
+      "families": [
+        "wind-displacement"
+      ],
+      "abilities": [
+        "displace",
+        "expose"
+      ],
+      "priority": 95,
+      "conversion": "Push one legal hex away on a hit and Weaken Defence on a critical hit. This narrows the source choice of displacement direction."
+    },
+    {
+      "families": [
+        "pushing-breath"
+      ],
+      "abilities": [
+        "displace"
+      ],
+      "priority": 90,
+      "conversion": "A successful breath hit pushes one legal hex. Retain the breath profile and recharge; do not grant an unlimited ranged rider.",
+      "decision": "Bind the limited breath profile and recharge before enabling."
+    },
+    {
+      "families": [
+        "guard",
+        "guard-reflex",
+        "shield-formation",
+        "shared-guard",
+        "ally-guard",
+        "living-shields",
+        "designated-ward"
+      ],
+      "abilities": [
+        "guard"
+      ],
+      "priority": 80,
+      "conversion": "Use Guard through the normal Guard activity. Share with one adjacent eligible ally only where the source supports it. Preserve shield/designated-ward requirements; omit extra save bonuses, cover grades, and separate retaliation."
+    },
+    {
+      "families": [
+        "formation-choice"
+      ],
+      "abilities": [
+        "guard"
+      ],
+      "priority": 60,
+      "conversion": "Choose Guard as the formation specialty. Omit switching among movement, wedge, and loose formations. Merge it with any existing Guard assignment."
+    },
+    {
+      "families": [
+        "defensive-attack"
+      ],
+      "abilities": [
+        "guard"
+      ],
+      "priority": 90,
+      "conversion": "Using this melee attack grants self Guard until next activation, even on a miss. Omit the original +1 AC value and merge with other Guard benefits."
+    },
+    {
+      "families": [
+        "adaptive-stance"
+      ],
+      "abilities": [
+        "guard"
+      ],
+      "priority": 65,
+      "conversion": "Select Guard as the default specialty. Terrain Passage for ordinary ground is an explicit alternative assignment; omit round-by-round stance switching."
+    },
+    {
+      "families": [
+        "scale-stance"
+      ],
+      "abilities": [
+        "guard"
+      ],
+      "priority": 65,
+      "conversion": "Use Guard through Guard. Omit the source area/splash weakness reduction and use the common expiry."
+    },
+    {
+      "families": [
+        "fear-discipline",
+        "fear-resistance",
+        "ranked-resolve",
+        "fear-recovery"
+      ],
+      "abilities": [
+        "resolve"
+      ],
+      "priority": 75,
+      "conversion": "Use Resist Fear and Rout. Replace source graded fear recovery, threshold-based save upgrades, and extra bonuses with the common conditional +2."
+    },
+    {
+      "families": [
+        "hold-ground"
+      ],
+      "abilities": [
+        "resolve"
+      ],
+      "priority": 80,
+      "conversion": "Use Hold Ground. Omit compelled-fleeing-to-slowed conversion; this never grants pursuit."
+    },
+    {
+      "families": [
+        "charge",
+        "charge-trip-critical",
+        "limited-charge",
+        "horn-charge",
+        "charge-fallen",
+        "howling-charge",
+        "lance-charge",
+        "leaping-charge",
+        "pounce",
+        "shadow-breaking-charge",
+        "draining-charge",
+        "stupefying-charge",
+        "water-charge"
+      ],
+      "abilities": [
+        "charge"
+      ],
+      "priority": 90,
+      "conversion": "Use Cavalry Charge with a legal existing movement mode and the normal Charge budget. Preserve limited uses and source prerequisites. Omit extra movement, leaping/altitude exceptions, deafening, draining, casting impairment, and free follow-up actions."
+    },
+    {
+      "families": [
+        "phalanx-charge"
+      ],
+      "abilities": [
+        "charge",
+        "expose"
+      ],
+      "priority": 95,
+      "conversion": "Use Cavalry Charge while the required phalanx/Guard stance is active; Weaken Defence on a successful hit. Omit source segment geometry and keep the common attack budget."
+    },
+    {
+      "families": [
+        "trample",
+        "trample-trip",
+        "trample-critical-trip",
+        "trample-trip-critical",
+        "overrun-route",
+        "breakthrough"
+      ],
+      "abilities": [
+        "charge"
+      ],
+      "priority": 95,
+      "conversion": "Use Cavalry Charge against one target. Keep source limited uses; omit shared-space routes, damage to additional units, and separate knockdown/push riders."
+    },
+    {
+      "families": [
+        "trample-bleed"
+      ],
+      "abilities": [
+        "charge",
+        "persistent-injury"
+      ],
+      "priority": 95,
+      "conversion": "Use Cavalry Charge with bleed-tagged Delayed Damage on a hit. Omit attacks against every crossed creature, knockdown, and prone-only graze effects."
+    },
+    {
+      "families": [
+        "thundering-move"
+      ],
+      "abilities": [
+        "charge",
+        "expose"
+      ],
+      "priority": 80,
+      "conversion": "Use Cavalry Charge with Weaken Defence on a critical melee hit. Omit the separate Move-and-Trip/Demoralize choice."
+    },
+    {
+      "families": [
+        "forest-movement"
+      ],
+      "abilities": [
+        "terrain-passage"
+      ],
+      "priority": 80,
+      "conversion": "Terrain Passage: woods. Omit greater-terrain upgrades and preserve barriers."
+    },
+    {
+      "families": [
+        "swamp-movement",
+        "terrain-specialist"
+      ],
+      "abilities": [
+        "terrain-passage"
+      ],
+      "priority": 80,
+      "conversion": "Terrain Passage: water and swamp. Retain actual imported movement modes; omit associated skill/attack bonuses. This grants no swim or water-walking mode."
+    },
+    {
+      "families": [
+        "urban-movement"
+      ],
+      "abilities": [
+        "terrain-passage"
+      ],
+      "priority": 80,
+      "conversion": "Terrain Passage: urban ground. Preserve walls and blocked edges."
+    },
+    {
+      "families": [
+        "terrain-movement",
+        "hellstrider"
+      ],
+      "abilities": [
+        "terrain-passage"
+      ],
+      "priority": 80,
+      "conversion": "Terrain Passage: ordinary ground. Omit hazard immunity and liquid-depth exceptions; retain legal movement modes and barriers."
+    },
+    {
+      "families": [
+        "ice-movement"
+      ],
+      "abilities": [
+        "terrain-passage"
+      ],
+      "priority": 80,
+      "conversion": "Terrain Passage: rough ground, limited to snow and ice. Omit slip checks; retain the source terrain restriction."
+    },
+    {
+      "families": [
+        "swamp-ambush"
+      ],
+      "abilities": [
+        "opening-move"
+      ],
+      "priority": 80,
+      "conversion": "Opening Move when deployed in water or swamp. Omit adjacent-enemy deployment and first-round damage bonuses; end the opening Move outside contact."
+    },
+    {
+      "families": [
+        "opening-attack"
+      ],
+      "abilities": [
+        "opening-move"
+      ],
+      "priority": 75,
+      "conversion": "Opening Move only when acting before all enemies. This deliberately replaces the first-attack bonus and Stealth initiative, and does not add to the existing Ambush deployment benefit."
+    },
+    {
+      "families": [
+        "prepared-ambush"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 65,
+      "conversion": "Combat Bonus: +1 initiative after the source pre-battle preparation. Preparation is an explicit prerequisite; omit skill substitution."
+    },
+    {
+      "families": [
+        "marked-quarry"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 65,
+      "conversion": "Combat Bonus: +1 melee against one quarry marked before battle. This deliberately replaces tracking Perception with a battlefield hunting specialty."
+    },
+    {
+      "families": [
+        "bleeding-prey"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 90,
+      "conversion": "Combat Bonus: +1 melee against a target with pending bleed-tagged Delayed Damage. Preserve the bleed cause; other persistent tags do not qualify."
+    },
+    {
+      "families": [
+        "prone-prey",
+        "sneak-damage"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 85,
+      "conversion": "Combat Bonus: +1 melee against an Exposed target. This deliberately collapses prone/off-guard causes into the game condition; avoid duplicate flanking bonuses."
+    },
+    {
+      "families": [
+        "cruelty-rider"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 80,
+      "conversion": "Combat Bonus: +1 melee against a target with Immobilize or Suppression. Deliberately use these two game conditions in place of the source physical-weakness/restraint list."
+    },
+    {
+      "families": [
+        "ranged-defence"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 75,
+      "conversion": "Combat Bonus: +1 Defence against ranged attacks. Omit the extra save bonus."
+    },
+    {
+      "families": [
+        "mounted-defence"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 75,
+      "conversion": "Combat Bonus: +1 Defence against unmounted targets. Omit the additional save bonus."
+    },
+    {
+      "families": [
+        "flight-defence"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 75,
+      "conversion": "Combat Bonus: +1 melee Defence against non-fliers while the unit can fly. Preserve flight as imported movement; omit the extra Battle-save benefit."
+    },
+    {
+      "families": [
+        "mounted-impact"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 80,
+      "conversion": "Combat Bonus: +1 melee against unmounted troops. Omit individual-size predicates, level scaling, and minor source defensive drawbacks explicitly."
+    },
+    {
+      "families": [
+        "giant-slayer",
+        "unholy-slayer",
+        "undead-salvo"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 85,
+      "conversion": "Combat Bonus: +1 on the named attack against the source giant, unholy, or undead predicate respectively. Preserve the actual target trait; omit bonus damage components."
+    },
+    {
+      "families": [
+        "protective-aura"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 80,
+      "conversion": "Adjacent allies gain Combat Bonus: +1 Defence against unholy enemies. Omit the source save bonus and larger radius; retain the unholy predicate."
+    },
+    {
+      "families": [
+        "terrain-prey"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 85,
+      "conversion": "Combat Bonus: +1 melee while the source target/terrain prerequisite holds. Retain ancestry, difficult-ground, and swimming eligibility rather than granting a flat bonus."
+    },
+    {
+      "families": [
+        "fear-expertise"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 55,
+      "conversion": "Combat Bonus: +1 on the unit’s granted Fear activity. This requires the fear activity; it creates no new attack or fear delivery.",
+      "requires": "fear"
+    },
+    {
+      "families": [
+        "pack-flanking"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 85,
+      "conversion": "Combat Bonus: +1 melee while at least two distinct allied units also threaten the target. Preserve the ally-count requirement; members inside this troop do not count as allies."
+    },
+    {
+      "families": [
+        "casting-rider"
+      ],
+      "abilities": [
+        "suppression"
+      ],
+      "priority": 90,
+      "conversion": "On a critical result from the source spell attack, apply Suppression. Deliberately broaden casting impairment to the shared game penalty; this does not affect ordinary weapon attacks."
+    },
+    {
+      "families": [
+        "sonic-casting"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 85,
+      "conversion": "Combat Bonus: +1 on a sonic spell attack check. Preserve the sonic spell predicate; omit original spell DC or damage scaling."
+    },
+    {
+      "families": [
+        "held-target-damage"
+      ],
+      "abilities": [
+        "advantage"
+      ],
+      "priority": 75,
+      "conversion": "Combat Bonus: +1 melee against a target held by this troop’s Immobilize. Replace the separate paid damage follow-up with pressure on the normal attack; no extra damage activity.",
+      "requires": "snare"
+    },
+    {
+      "families": [
+        "spite-buffer"
+      ],
+      "abilities": [
+        "temporary-protection"
+      ],
+      "priority": 95,
+      "conversion": "Damage Absorption when the linked curse actually removes Health. It grants no healing and never triggers merely on applying the curse.",
+      "decision": "The curse and its Health-removal event are outside the first catalogue. Bind that event before enabling; never substitute a generic melee-hit trigger."
+    },
+    {
+      "families": [
+        "threshold-growth-buffer"
+      ],
+      "abilities": [
+        "temporary-protection"
+      ],
+      "priority": 95,
+      "conversion": "Damage Absorption on the source troop-loss threshold. Omit terrain growth and repeated segment regrowth; keep each threshold single-use.",
+      "decision": "Choose a shared Health-threshold trigger and prevent buffer damage from triggering it. This delivery extends the current Damage Absorption trigger menu."
+    }
+  ],
+  "reactionRules": [
+    {
+      "families": [
+        "reaction-opportunity",
+        "reaction-strike",
+        "reaction-halt"
+      ],
+      "pattern": "retaliate",
+      "conversion": "Future Retaliate with this source trigger set. Omit extra sweep targets and critical interruption. Preserve source restrictions on vulnerable activities."
+    },
+    {
+      "families": [
+        "reaction-pursuit"
+      ],
+      "pattern": "pursue",
+      "conversion": "Future Pursue after a departing engaged enemy. Preserve legal movement modes."
+    },
+    {
+      "families": [
+        "reaction-block"
+      ],
+      "pattern": "block",
+      "conversion": "Future Block against physical damage while the source shield/protection prerequisite holds. Omit Hardness and shield damage."
+    },
+    {
+      "families": [
+        "reaction-healing"
+      ],
+      "pattern": "battle-recovery",
+      "conversion": "Future Battle Recovery after the source critical melee result; use the common Heal allowance."
+    },
+    {
+      "families": [
+        "reaction-fear"
+      ],
+      "pattern": "hold-nerve",
+      "conversion": "Future Hold Nerve while not routed. Omit the next-check bonus."
+    }
+  ],
+  "baselineFamilies": [
+    "troop-abstraction",
+    "base-damage",
+    "physical-choice",
+    "damage-choice",
+    "poison-damage",
+    "precision-damage",
+    "attack-material",
+    "spirit-harvest",
+    "living-bow",
+    "variable-volley",
+    "heavy-volley",
+    "range-choice",
+    "fast-volley",
+    "slow-attack",
+    "troop-casting",
+    "elevated-range",
+    "nonlethal"
+  ],
+  "omittedFamilies": [
+    "campaign-or-metadata",
+    "magic-saves",
+    "regrowth",
+    "shared-space",
+    "shared-space-hazard",
+    "cleave"
+  ],
+  "selection": "Select at most three distinct templates by declared signature priority; keep remaining alternatives visible. Merge duplicate template grants but retain each source delivery and prerequisite for review. Unsupported mechanics remain explicit decisions."
+}

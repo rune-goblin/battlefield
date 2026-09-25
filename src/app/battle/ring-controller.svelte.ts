@@ -130,7 +130,7 @@ export function createRingController(s: RingShared) {
       }
       // One slice per verb, so a caster's whole book sits behind Cast — the aim popup already
       // groups by verb and shows every spell that reaches whatever the player touches.
-      const label = key === 'cast' ? 'Cast' : offers[0]?.label ?? SLOT_LABEL[key];
+      const label = key === 'cast' ? (offers.some(o => o.ability) ? 'Abilities' : 'Cast') : offers[0]?.label ?? SLOT_LABEL[key];
       return {
         key, icon: ICON_FOR[type], label, type, style: SLOT_STYLE[key],
         legal: key === 'cast' ? offers.length > 0 : cells.length > 0,
@@ -254,10 +254,10 @@ export function createRingController(s: RingShared) {
 
   // Cast's own second ring: the tree picker, on the same spot the first ring just vacated.
   const castRadialItems = $derived((castPick ? castOffers() : []).map((o) => ({
-    key: o.spell as string, src: castIconUrl(o.spell!), label: o.label, legal: !offerReason(o), reason: offerReason(o),
+    key: o.ability ?? o.spell as string, src: o.spell ? castIconUrl(o.spell) : actionIconUrl('cast'), label: o.label, legal: !offerReason(o), reason: offerReason(o),
   })));
   const pickCastTree = (key: string) => {
-    const o = castPick && castOffers().find((x) => x.spell === key);
+    const o = castPick && castOffers().find((x) => (x.ability ?? x.spell) === key);
     if (o) chooseTree(o);
   };
 

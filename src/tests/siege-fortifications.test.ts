@@ -5,7 +5,7 @@ import {
   stepFeet, structuralDamage, unit, type BattleState, type UnitCard,
 } from '../engine/index.js';
 import { SIEGE_PROFILES, siegeDetail, siegeModes } from '../engine/siege-profiles.js';
-import { siegeTargets } from '../engine/siege-targets.js';
+import { siegeCellReason, siegeTargets } from '../engine/siege-targets.js';
 import { scriptedRng } from '../engine/rng.js';
 import { applyStroke } from '../services/MapPreparationService.js';
 import { TargetingService } from '../app/targeting.js';
@@ -291,6 +291,13 @@ describe('siege catalog and combat', () => {
       const after = fire(b, index, target.id);
       expect(after.board.siegeFields?.[0].cells).toEqual(name === 'Flame Bellows' ? ['h6'] : ['g6', 'h6']);
     }
+  });
+  it('offers no area that catches allies alone, and says why', () => {
+    const b = setup(), e = b.units[0].engines[0];
+    b.units[1].square = parse('k1'); e.reach = 'short';
+    expect(siegeTargets(b, e, siegeModes(e.name, e.kind)[0])).toEqual([]);
+    expect(siegeCellReason(b, e, 1, 'g7')).toContain('ally');
+    expect(siegeCellReason(b, e, 1, 'k1')).toContain('Out of range');
   });
   it('leaves empty ground available only for terrain-changing activities', () => {
     const b = setup(), e = b.units[0].engines[0];

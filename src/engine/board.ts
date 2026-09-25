@@ -24,7 +24,7 @@ export interface BoardSpec {
   seed: number;
 }
 
-export interface SquareState { terrain: SquareTerrain; elevation: number; bridgeTurns?: number; }
+export interface SquareState { abilityEnvironment?: ('fire' | 'metal' | 'underground')[]; terrain: SquareTerrain; elevation: number; bridgeTurns?: number; }
 
 /** Deck directions a bridge can take: three axes through a hex, two through a square. A
  * `bridgeTurns` of 0 is the axis the board infers from the banks, and each turn steps on by

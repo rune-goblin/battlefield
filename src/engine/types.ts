@@ -1,3 +1,4 @@
+import type { TroopAbility, AbilityReview, AbilityMemory } from './abilities.js';
 import type { Board, GridKind, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats, MovementRates, TroopSheet } from './cards.js';
 import type { CheckResult } from './check.js';
@@ -46,6 +47,12 @@ export interface EngineState {
 export type DefenceBuff = 'ward' | 'stoneskin' | 'aegis';
 
 export interface Unit {
+  abilities?: TroopAbility[];
+  abilityReview?: AbilityReview[];
+  abilityState?: AbilityMemory;
+  traits?: string[];
+  immuneFear?: boolean;
+  attackTags?: { melee: string[]; volley: string[]; spell?: string[] };
   id: string;
   name: string;
   side: Side;
@@ -60,8 +67,7 @@ export interface Unit {
   flying: boolean;
   movementRates?: MovementRates;
   sourceSpeed?: Pick<TroopSheet, 'speed' | 'otherSpeeds'>;
-  /** Read off the 'no-retreat' signal. Such a troop follows an enemy that moves away from it,
-   * one free Move, to re-establish contact — it is a hold on others, not on itself. */
+  /** Legacy save field. Migration converts this to Resolve and clears the flag. */
   noRetreat: boolean;
   /** Imported off a frightful presence and read by nothing: an aura's effect stays the
    * statblock's own. */
@@ -103,7 +109,7 @@ export interface Unit {
   /** One action fewer on its next activation. */
   stunned: boolean;
   /** Wrath's wound, waiting on the unit's own `finish`; `dc` is the Fortitude save's. */
-  persistent: { dc: number } | null;
+  persistent: { dc: number; tag?: string } | null;
   sureStrike: boolean;
   /** The unit's next hit leaves persistent damage on whoever takes it. */
   wrath: boolean;
@@ -131,6 +137,7 @@ export type HealingCondition = 'pinned' | 'rooted' | 'suppressed' | 'exposed' | 
 export interface HealingChoice { conditions: HealingCondition[]; extraHealth?: boolean }
 
 export interface ActivityAction extends Acts {
+  ability?: string;
   type: Verb;
   activity: ActivityIndex;
   target?: string;
@@ -210,6 +217,8 @@ export interface ActivityOption {
 }
 
 export interface ActionOffer {
+  ability?: string;
+  hostile?: boolean;
   type: Verb;
   spell: Tree | null;
   label: string;

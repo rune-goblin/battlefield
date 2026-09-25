@@ -1,3 +1,4 @@
+import { importAbilities, sourceAttackTags } from './abilities.js';
 import { MAX_WOUNDS, reachForFeet, type Reach, type Role, type Signal, type TroopSheet, type UnitCard } from '../../engine/index.js';
 import type { ImportBaseline } from '../../runtime/session.js';
 import { spellcastingOf } from './spellcasting.js';
@@ -5,11 +6,15 @@ import { spellcastingOf } from './spellcasting.js';
 /** The slice of a PF2e item this adapter reads. Structural, so a live embedded document, an
  * unprepared source object and a test fixture all satisfy it. */
 export interface TroopItem {
+  flags?: Record<string, unknown>;
   toObject?: () => TroopItem;
   name?: string;
   type?: string;
   statistic?: { check?: { mod?: number }; dc?: { value?: number } };
   system?: {
+    actionType?: { value?: string | null } | null;
+    actions?: { value?: number | null } | null;
+    rules?: unknown[];
     slug?: string | null;
     tradition?: { value?: string | null } | null;
     spelldc?: { value?: number; dc?: number } | null;
@@ -28,7 +33,9 @@ export interface TroopActor {
   name?: string;
   system?: {
     details?: { level?: { value?: number } };
+    traits?: { value?: string[] };
     attributes?: {
+      immunities?: { type: string }[];
       ac?: { value?: number };
       hp?: { max?: number; value?: number };
       speed?: { value?: number; otherSpeeds?: { type?: string; value?: number }[] | null };
@@ -133,6 +140,7 @@ function publishedAttacks(actions: TroopItem[]): Attacks | null {
 /** ReignMaker labels an army's two attacks `[Battle]` and `[Salvo]`; a published troop labels
  * neither, and its attacks are read off its actions. */
 function attacksOf(items: TroopItem[]): { attacks: Attacks | null; problems: string[] } {
+  items = items.filter(item => !item.system?.actionType?.value || item.system.actionType.value === 'action');
   const battle = named(items, '[Battle]');
   const salvo = named(items, '[Salvo]');
   if (!battle && !salvo) {
@@ -226,8 +234,14 @@ export function cardFromActor(actor: TroopActor): UnitCard {
   // Recompute on a temporary actor so suppressed circumstance modifiers can resume. Merely
   // subtracting the fort bonus would also remove cover/Guard that it previously superseded.
   const originalItems = itemsOf(actor);
-  if (actor.clone && originalItems.some(item => item.type === 'effect' && item.system?.slug === 'fortification')) {
-    actor = actor.clone({ items: originalItems
+  const originalAttacks = attacksOf(originalItems).attacks;
+  const imported = importAbilities(originalItems, originalAttacks ?? {});
+  if (actor.clone && (imported.matched.size || originalItems.some(item => item.type === 'effect' && item.system?.slug === 'fortification'))) {
+    actor = actor.clone({ items: originalItems.map((item, index) => {
+      const data = item.toObject?.() ?? item;
+      if (!imported.matched.has(index) || !data.system?.rules) return data;
+      return { ...data, system: { ...data.system, rules: data.system.rules.filter(r => !(r && typeof r === 'object' && 'key' in r && r.key === 'FlatModifier')) } };
+    })
       .filter(item => !(item.type === 'effect' && item.system?.slug === 'fortification'))
       .map(item => item.toObject?.() ?? item) }, { keepId: true, save: false });
   }
@@ -279,6 +293,10 @@ export function cardFromActor(actor: TroopActor): UnitCard {
 
   return {
     name: actor.name!,
+    abilities: imported.abilities, abilityReview: imported.abilityReview,
+    traits: system.traits?.value ?? [],
+    immuneFear: attributes.immunities?.some(i => ['fear', 'mental', 'emotion'].includes(i.type)) ?? false,
+    attackTags: { melee: sourceAttackTags(originalItems, battleName), volley: sourceAttackTags(originalItems, salvoName) },
     level: system.details!.level!.value!,
     role: roleOf(speed, flySpeed?.value ?? 0, signals),
     salvo: reach,

@@ -29,12 +29,12 @@
   </div>
 {/snippet}
 
-{#snippet pickerHead(label: string, treatment: 'cast' | 'rally' | 'shoot', tree: Tree | null = null)}
+{#snippet pickerHead(label: string, treatment: 'cast' | 'rally' | 'shoot', tree: Tree | null = null, ability = false)}
   <div class="picker-heading" class:cast-heading={treatment === 'cast'} class:rally-heading={treatment === 'rally'} class:shoot-heading={treatment === 'shoot'}>
     <span class="picker-emblem" aria-hidden="true">
       <img src={tree ? castIconUrl(tree) : actionIconUrl(treatment)} alt="" />
     </span>
-    <span class="picker-heading-text"><span class="picker-kicker">{treatment === 'cast' ? 'Cast' : treatment === 'rally' ? 'Command' : 'Ranged attack'}</span><strong>{label}</strong></span>
+    <span class="picker-heading-text"><span class="picker-kicker">{ability ? 'Ability' : treatment === 'cast' ? 'Cast' : treatment === 'rally' ? 'Command' : 'Ranged attack'}</span><strong>{label}</strong></span>
     <span class="picker-budget" title="Actions left this activation"><ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size="1.25rem" /></span>
   </div>
 {/snippet}
@@ -271,7 +271,7 @@
 {#if c.aim && c.aimGroup && c.active && !c.pending}
   <BoardPopup cell={c.aim.cell} close={c.cancelAction} appearance={c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally' ? c.aimGroup.offer.type : 'default'}>
     {#if c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally'}
-      {@render pickerHead(c.aim.label, c.aimGroup.offer.type, c.aimGroup.offer.spell)}
+      {@render pickerHead(c.aim.label, c.aimGroup.offer.type, c.aimGroup.offer.spell, !!c.aimGroup.offer.ability)}
     {:else}{@render popupHead(c.aim.label)}{/if}
     {#if c.aim.groups.length > 1}
     <div class="verb-row">
