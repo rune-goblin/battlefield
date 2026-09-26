@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  act, activation, availableActions, commitment, createBattle, meleePlans, parse, ROUTED_AT, select, unit, type UnitCard,
+  act, activation, availableActions, commitment, createBattle, meleePlans, parse, ROUTED_AT, select, unit, unitOutcome,
+  type UnitCard,
 } from '../engine/index.js';
 import { openBoard } from './helpers.js';
 
@@ -52,5 +53,16 @@ describe('move and melee', () => {
     const plan = meleePlans(s, unit(s, 'u0'), 'u1').find((p) => p.kind === 'charge')!;
     expect(() => act(s, { type: 'advance', unit: 'u0', target: 'u1', via: plan.via!, finish: 'charge', activity: 3 },
       { d20() { throw new Error('dice drawn'); } })).toThrow('invalid charge activity');
+  });
+});
+
+describe('unit outcome', () => {
+  it('counts a unit that left as routed, and one in camp as in camp', () => {
+    const s = battle();
+    const u = unit(s, 'u0');
+    expect(unitOutcome({ ...u, status: 'left' })).toBe('routed');
+    expect(unitOutcome({ ...u, status: 'camp' })).toBe('camp');
+    expect(unitOutcome({ ...u, disorder: ROUTED_AT })).toBe('routed');
+    expect(unitOutcome(u)).toBe('standing');
   });
 });

@@ -1,9 +1,10 @@
 export {
-  homeRank, unit, isRouted, isStanding, isSurvivor, activatable, activeUnit, unitAt, isEngaged,
+  homeRank, unit, isRouted, isStanding, isSurvivor, unitOutcome, unitStatusLabel, activatable, activeUnit, unitAt, isEngaged,
   engagedEnemies, rangeBetween, isOutflanked, garrisoned, GUARD_DEFENCE, rollBonus, roll, attackRoll,
   defenceOf, reachOf, willModifier, spellAttackModifier, spellDcFor, routDcFor, fortitudeModifier,
   escapeModifier,
 } from './state.js';
+export type { UnitOutcome } from './state.js';
 export {
   crewOf, enginesOf, engineSpeed, isFixedEngine, engineLoadCost, engineLoadSteps, engineLoadProgress,
   engineLoaded, engineLoading, siegeEngines,

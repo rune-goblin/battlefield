@@ -53,6 +53,21 @@ export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < ROU
 /** Troops in camp survive the day but never hold ground or take another activation today. */
 export const isSurvivor = (u: Unit) => (u.status === 'active' || u.status === 'camp') && u.disorder < ROUTED_AT;
 
+export type UnitOutcome = 'standing' | 'routed' | 'camp' | 'destroyed';
+
+/** A unit that left the field counts as routed: only a routed unit walks off its home edge, and
+ * a failed flee routs the unit it lets go. */
+export const unitOutcome = (u: Unit): UnitOutcome =>
+  u.status === 'destroyed' ? 'destroyed'
+    : u.status === 'left' || u.disorder >= ROUTED_AT ? 'routed'
+      : u.status === 'camp' ? 'camp' : 'standing';
+
+const OUTCOME_LABEL: Record<UnitOutcome, string> = {
+  standing: 'Standing', routed: 'Routed', camp: 'In camp', destroyed: 'Destroyed',
+};
+
+export const unitStatusLabel = (u: Unit): string => OUTCOME_LABEL[unitOutcome(u)];
+
 export const mayActivate = (state: BattleState, u: Unit) => u.side === state.pending && u.status === 'active' && !state.activated.includes(u.id);
 export const canActNow = (state: BattleState, u: Unit) => state.phase === 'battle' && isStanding(u) && mayActivate(state, u) && (!state.begun || state.active === u.id);
 
