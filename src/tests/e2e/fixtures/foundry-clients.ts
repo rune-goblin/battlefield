@@ -78,6 +78,14 @@ export async function ensurePlayer(gmPage: Page): Promise<JoinUser> {
 // `.notification` sets `pointer-events: all`, so hide the stack outright.
 const HIDE_NOTIFICATIONS = '#notifications { display: none !important; }';
 
+/** Reload a logged-in client, as a player refreshing the page does. */
+export async function reloadClient(page: Page): Promise<void> {
+  await page.reload();
+  await waitForGameReady(page);
+  await waitForModuleActive(page);
+  await page.addStyleTag({ content: HIDE_NOTIFICATIONS });
+}
+
 /** Every `console.error` and uncaught exception on the page, for a spec to assert empty. */
 export function collectErrors(page: Page): string[] {
   const errors: string[] = [];
