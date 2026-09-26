@@ -1,5 +1,5 @@
 import { reachableActivities, soleLegalActivity } from './action-menu.js';
-import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
+import { type HealingChoice, type ActionOffer, TREE_TARGET, type BoardObject, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
 import type { BattleState, EngineState, Unit } from '../../engine/index.js';
@@ -11,7 +11,7 @@ import type { BattleDeps } from './battle-controller.svelte.js';
 // Touching a board object opens the other popup: every activity that can act on *that*, which
 // is `offersAt`'s whole job. Grouped by verb, because the props are what the eye lands on —
 // a tile row across the top, then the chosen verb's three activities beneath it.
-export interface Aim { cell: string; target: TargetRef; label: string; groups: TargetOffer[]; group: number; index: number }
+export interface Aim { cell: string; target: BoardObject; label: string; groups: TargetOffer[]; group: number; index: number }
 
 export interface PickerShared extends BattleDeps {
   readonly active: Unit | null;
@@ -271,7 +271,7 @@ export function createPickerController(s: PickerShared) {
 
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
    * prop taken off the tray narrows it to that one verb. */
-  function aimAt(target: TargetRef, cell: string, label: string, only: Verb | null = null) {
+  function aimAt(target: BoardObject, cell: string, label: string, only: Verb | null = null) {
     s.focus = 0;
     if (!s.active) return;
     const all = offersAt(s.b, target, s.active.id);

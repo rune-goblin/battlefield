@@ -9,7 +9,7 @@ import {
 } from '../magic.js';
 import {
   BANDS, type ActionOffer, type Activation, type BattleState, type ActivityOption, type ActivityTarget,
-  type TargetOffer, type TargetRef, type Unit,
+  type TargetOffer, type BoardObject, type Unit,
 } from '../types.js';
 import { grid, dist, unit, isRouted, activeUnit, square, engagedEnemies } from './state.js';
 import { movementSpeed, moveReach, touching, stepTargets, standable, escapeOffer } from './movement.js';
@@ -314,7 +314,7 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
 // '+' (`d3+d4`, `u1+u2`). A touch on a cell resolves to `{kind:'unit'}` when something stands
 // there (`applyProp`), so a shape target is found by the touched unit's own square as well as
 // by a bare cell id; touching any one part finds the whole target.
-export function targetMatches(state: BattleState, t: ActivityTarget, ref: TargetRef): boolean {
+export function targetMatches(state: BattleState, t: ActivityTarget, ref: BoardObject): boolean {
   const parts = t.id.split('+');
   if (t.kind === ref.kind) return parts.includes(ref.id);
   if (t.kind !== 'cell' || ref.kind !== 'unit') return false;
@@ -322,7 +322,7 @@ export function targetMatches(state: BattleState, t: ActivityTarget, ref: Target
   return found !== undefined && parts.includes(notation(found.square));
 }
 
-export function offersAt(state: BattleState, target: TargetRef, unitId?: string): TargetOffer[] {
+export function offersAt(state: BattleState, target: BoardObject, unitId?: string): TargetOffer[] {
   const u = unitId ? state.units.find((x) => x.id === unitId) : activeUnit(state);
   if (!u) return [];
   const own = target.kind === 'unit' && target.id === u.id;

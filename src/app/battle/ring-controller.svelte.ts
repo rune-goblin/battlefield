@@ -1,5 +1,5 @@
 import { offerReason, actionReason } from './action-menu.js';
-import { engagedEnemies, isRouted, type Verb, type ActionOffer, notation, type TargetRef } from '../../engine/index.js';
+import { engagedEnemies, isRouted, type Verb, type ActionOffer, notation, type BoardObject } from '../../engine/index.js';
 import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon } from '../../board/art.js';
 import type { HighlightStyle } from '../../board/index.js';
 import { DRAG_NOTICE } from './drag-controller.svelte.js';
@@ -52,7 +52,7 @@ export interface RingShared extends BattleDeps {
 
   readonly aim: Aim | null;
   readonly targetCells: (target: ActivityTarget) => string[];
-  readonly aimAt: (target: TargetRef, cell: string, label: string, only?: Verb | null) => void;
+  readonly aimAt: (target: BoardObject, cell: string, label: string, only?: Verb | null) => void;
   readonly openActivityPicker: (offer: ActionOffer) => void;
   readonly openBlast: (level?: ActivityIndex | null) => void;
   readonly closeAim: () => void;
@@ -234,7 +234,7 @@ export function createRingController(s: RingShared) {
       return;
     }
     const u = s.b.units.find((x) => x.status === 'active' && notation(x.square) === cell);
-    const target: TargetRef = u ? { kind: 'unit', id: u.id } : { kind: 'cell', id: cell };
+    const target: BoardObject = u ? { kind: 'unit', id: u.id } : { kind: 'cell', id: cell };
     s.aimAt(target, cell, u?.name ?? cell, p.type);
   }
 

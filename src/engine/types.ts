@@ -199,7 +199,7 @@ export type TargetKind = 'cell' | 'unit' | 'wall';
 export interface ActivityTarget { kind: TargetKind; id: string; label: string }
 
 /** One board object an activity can be aimed at: a cell, a piece, or a wall. */
-export interface TargetRef { kind: TargetKind; id: string }
+export interface BoardObject { kind: 'cell' | 'unit' | 'wall'; id: string }
 
 /** What one offer can do to a given target: the offer, and only those of its activities that both
  * reach that target and are legal right now. See `offersAt`. */

@@ -1,6 +1,6 @@
 import {
   edgeCells, gridOf, notation, occupantTarget, unitTarget, type ActionOffer, type ActivityAction, type ActivityOption,
-  type ActivityTarget, type BattleState, type TargetRef, type Tree, type Unit,
+  type ActivityTarget, type BattleState, type BoardObject, type Tree, type Unit,
 } from '../engine/index.js';
 import type { TargetIcon } from '../board/art.js';
 import type { TargetArrow } from '../board/target-point.js';
@@ -154,7 +154,7 @@ export class TargetingService {
     });
   }
 
-  forRef(ref: TargetRef): TargetChoice[] {
+  forRef(ref: BoardObject): TargetChoice[] {
     if (ref.kind === 'wall') return this.matches({ kind: 'edge', id: ref.id });
     if (ref.kind === 'cell') return this.matches({ kind: 'hex', id: ref.id });
     return this.choices.filter((target) => target.kind === 'unit' && target.id.split('+').includes(ref.id)
