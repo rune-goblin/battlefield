@@ -2,7 +2,8 @@
   import { abilityName, abilitySummary, deriveStats, type Side, type UnitCard } from '../engine/index.js';
   import { troopArtUrl } from '../board/index.js';
   import { allTroops, campaignTroops, type TroopEntry } from './troop-library.svelte.js';
-  import { signed } from './presentation.js';
+  import { sideColour, signed } from './presentation.js';
+  import Modal from './Modal.svelte';
 
   interface Props {
     side: Side;
@@ -89,14 +90,10 @@
     if (sortKey === key) ascending = !ascending;
     else { sortKey = key; ascending = true; }
   }
-
-  function onKey(e: KeyboardEvent) { if (e.key === 'Escape') close(); }
 </script>
 
-<svelte:window onkeydown={onKey} />
-
-<div class="scrim" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) close(); }}>
-  <div class="picker" role="dialog" aria-modal="true" aria-label="Choose troops" style:--side={side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+<Modal title="Choose troops" layer="stage" width="64rem" bare tone={sideColour(side)} {close}>
+  <div class="picker" style:--side={sideColour(side)}>
     <header>
       <h2>Choose troops for the {side === 'attacker' ? 'attacking' : 'defending'} army</h2>
       <button class="primary" onclick={close}>Done</button>
@@ -171,15 +168,11 @@
       </table>
     </div>
   </div>
-</div>
+</Modal>
 
 <style>
-  .scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; background: rgba(0, 0, 0, .45); }
-  .picker {
-    width: min(64rem, 100%); max-height: 100%; display: flex; flex-direction: column; min-height: 0;
-    background: var(--paper); border: 1px solid var(--rule); border-top: 4px solid var(--side);
-    border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
-  }
+  /* Carries the side colour to the rows without adding a box inside the frame. */
+  .picker { display: contents; }
   header { display: flex; align-items: center; gap: 1rem; padding: .8rem 1rem .6rem; }
   header h2 { flex: 1; min-width: 0; margin: 0; border: 0; padding: 0; font-size: var(--type-2); line-height: var(--leading-compact); }
   header button { flex: none; }

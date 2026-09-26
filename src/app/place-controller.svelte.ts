@@ -3,7 +3,7 @@ import type { BoardEventOf, TokenModel } from '../board/index.js';
 import { autoCell, canHaul, cellsFor, deployableCells, engineUnder, isAmbush, pieceOf } from '../services/ArmyPreparationService.js';
 import type { CommandAccepted, PieceRef } from '../runtime/commands.js';
 import { COMMAND_NOTICE } from './command-notices.js';
-import { signed } from './presentation.js';
+import { setupTokens, signed } from './presentation.js';
 import type {
   addEmplacement, addUnit, autoPlacePiece, game, generateForce, placePiece, removeEmplacement, removeUnit,
   setEngineLoaded, setHauling, SetupEngine, SetupUnit, unplacePiece,
@@ -118,34 +118,7 @@ export function createPlaceController(deps: PlaceDeps, props: PlaceProps) {
   const invalidCell = $derived(selected && hoveredCell && !legalCells.has(hoveredCell) ? hoveredCell : null);
   const validCell = $derived(selected && hoveredCell && legalCells.has(hoveredCell) ? hoveredCell : null);
 
-  // An engine under a unit shows as that unit's badge.
-  const crewedSquares = $derived(new Set(visibleUnits.map((u) => u.square)));
-  const tokens = $derived.by<TokenModel[]>(() => [
-    ...visibleUnits.flatMap((u) => u.square ? [{
-      kind: 'unit' as const,
-      id: u.id,
-      side: u.side,
-      name: u.card.name,
-      role: u.card.role,
-      level: u.card.level,
-      cell: u.square,
-      wounds: 0,
-      disorder: 0,
-      engine: (engineUnder(game.setup, u) ?? u.engines[0])?.name ?? null,
-      verdict: null,
-      statuses: [],
-      pick: null,
-      ring: selected?.kind === 'unit' && selected.id === u.id ? 'selected' as const : null,
-    }] : []),
-    ...emplacements.flatMap((e) => e.square && !crewedSquares.has(e.square) ? [{
-      kind: 'engine' as const,
-      id: e.id,
-      side: e.side,
-      name: e.name,
-      cell: e.square,
-      ring: selected?.kind === 'engine' && selected.id === e.id ? 'selected' as const : null,
-    }] : []),
-  ]);
+  const tokens = $derived<TokenModel[]>(setupTokens(game.setup, { units: visibleUnits, selected }));
 
   // Derived, so the board's effects rerun when the cells change and at no other time.
   const highlights = $derived([

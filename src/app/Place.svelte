@@ -7,6 +7,8 @@
   import WizardRail from './WizardRail.svelte';
   import WizardSteps from './WizardSteps.svelte';
   import TroopPicker from './TroopPicker.svelte';
+  import Modal from './Modal.svelte';
+  import { ARMY_TITLE, sideColour } from './presentation.js';
   import * as store from './game.svelte.js';
   import { resetToExample } from './navigation.svelte.js';
   import type { PieceRef } from '../runtime/commands.js';
@@ -40,7 +42,7 @@
   }
 
   presentStage({
-    get leftTitle() { return c.siege ? 'Siege engines' : `${c.side === 'attacker' ? 'Attacking' : 'Defending'} army`; },
+    get leftTitle() { return c.siege ? 'Siege engines' : ARMY_TITLE[c.side]; },
     leftWidth: 26,
     get top() { return top; }, get rail() { return rail; }, get leftHead() { return steps; }, get modal() { return modal; }, get float() { return float; }, get left() { return left; },
     get board() { return c.board; },
@@ -112,16 +114,13 @@
   {#if c.haulEngine && c.haulUnit}
     {@const haulEngine = c.haulEngine}
     {@const haulUnit = c.haulUnit}
-    <div class="scrim" role="presentation">
-      <div class="ask" role="dialog" aria-modal="true" aria-label="Haul the engine" style:--side={haulUnit.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
-        <h2>{haulUnit.card.name} stands on the {haulEngine.name}</h2>
-        <p>The unit works the engine from this square. Hauling takes the engine along when the unit moves, at the slower of the two speeds.</p>
-        <div class="row">
-          <button class="primary" onclick={() => void c.answerHaul(true)}>Haul it</button>
-          <button onclick={() => void c.answerHaul(false)}>Work it in place</button>
-        </div>
-      </div>
-    </div>
+    <Modal title="{haulUnit.card.name} stands on the {haulEngine.name}" layer="stage" width="26rem" tone={sideColour(haulUnit.side)}>
+      <p>The unit works the engine from this square. Hauling takes the engine along when the unit moves, at the slower of the two speeds.</p>
+      {#snippet actions()}
+        <button class="primary" onclick={() => void c.answerHaul(true)}>Haul it</button>
+        <button onclick={() => void c.answerHaul(false)}>Work it in place</button>
+      {/snippet}
+    </Modal>
   {/if}
 {/snippet}
 
@@ -160,7 +159,7 @@
   {:else}
     <h3 class="listhead {c.side === 'attacker' ? 'side-att' : 'side-def'}">{c.side === 'attacker' ? 'Attackers' : 'Defenders'}</h3>
   {/if}
-  <div class="unitlist" style:--side={c.siege ? 'var(--muted)' : c.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
+  <div class="unitlist" style:--side={c.siege ? 'var(--muted)' : sideColour(c.side)}>
     {#each c.mine as u (u.id)}
       {@const p = { kind: 'unit' as const, id: u.id }}
       {@const under = c.workedEngine(u)}
@@ -289,12 +288,6 @@
   /* The longest engine name is wider than the dock, and a select sizes to its longest option. */
   .listhead { margin: .4rem 0 0; font-size: var(--type-body); }
   .card .row select { flex: 1 1 10rem; min-width: 0; }
-  .scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 2rem; background: rgba(0, 0, 0, .45); }
-  .ask {
-    width: min(26rem, 100%); padding: 1rem 1.1rem; background: var(--paper); border: 1px solid var(--rule);
-    border-top: 4px solid var(--side); border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
-  }
-  .ask h2 { margin: 0 0 .4rem; border: 0; padding: 0; font-size: var(--type-1); }
 
   /* The card. A piece off the board is a card still in hand: dashed edge, hatched paper. Put
      it down and the card goes solid, with its square stamped under the portrait. */

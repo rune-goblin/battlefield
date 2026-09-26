@@ -6,14 +6,15 @@
   import { setVfxTimeScale, type TokenModel } from '../board/index.js';
   import { generateBoard, TREE_LABEL, TREES, type Tree } from '../engine/index.js';
   import PixiBoard from './PixiBoard.svelte';
+  import { pieceToken } from './presentation.js';
 
   const CASTER = 'd3';
   const TARGET = 'd6';
   const FRAME = ['c3', 'e6'];
   const board = generateBoard({ base: 'plains', feature: 'none', construction: null, seed: 7 });
   const tokens: TokenModel[] = [
-    { kind: 'unit', id: 'caster', side: 'attacker', name: 'Apprentice Magician Clique', role: 'infantry', level: 5, cell: CASTER, wounds: 0, disorder: 0, engine: null, verdict: null, statuses: [], pick: null, ring: null },
-    { kind: 'unit', id: 'target', side: 'defender', name: 'Kobold Warriors', role: 'infantry', level: 3, cell: TARGET, wounds: 1, disorder: 0, engine: null, verdict: null, statuses: [], pick: null, ring: null },
+    pieceToken({ id: 'caster', side: 'attacker', name: 'Apprentice Magician Clique', role: 'infantry', level: 5 }, CASTER),
+    pieceToken({ id: 'target', side: 'defender', name: 'Kobold Warriors', role: 'infantry', level: 3 }, TARGET, { wounds: 1 }),
   ];
 
   const panes: Partial<Record<Tree, PixiBoard>> = $state({});

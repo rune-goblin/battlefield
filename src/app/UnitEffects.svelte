@@ -1,6 +1,7 @@
 <script lang="ts">
   import { statusIconUrl } from '../board/index.js';
   import type { StatusEffect } from './status-effects.js';
+  import { onEscape } from './keys.js';
 
   interface Props { unitName: string; effects: StatusEffect[] }
   let { unitName, effects }: Props = $props();
@@ -8,11 +9,9 @@
   let openStatus = $state<string | null>(null);
   const open = $derived(effects.find((e) => e.status === openStatus) ?? null);
   let missingArt = $state<Record<string, boolean>>({});
-
-  function onKey(e: KeyboardEvent) { if (e.key === 'Escape') openStatus = null; }
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={onEscape(() => (openStatus = null))} />
 
 {#if effects.length}
   <aside class="effects" aria-label="Conditions on {unitName}">
