@@ -20,10 +20,12 @@ could not answer. An item leaves this list when it is done or answered.
   push. The ability path must refuse rooted targets; update the Push / Pull row in
   `public/rules.html` to say so.
 - Ground connectivity (W2.3): one rule, stated in elevation terms, not feet. A map is connected
-  when a ground route runs from the attacker's deployment zone to the defender's, and no step on
+  when a walking route runs from the attacker's deployment zone to the defender's, and no step on
   it enters water or crosses a cliff (a change of two or more elevation levels) or a wall. The
   generator and the warning both use it. Describe it this way in code comments and in
-  `public/rules.html`; never as "30 ft".
+  `public/rules.html`; never as "30 ft". The rule concerns walking units only, because the
+  generator runs before armies exist: swimmers enter water, and fliers cross water, walls and
+  cliffs, as the movement rules already say. Movement rules stay as they are.
 
 ## Carried forward from W1
 
