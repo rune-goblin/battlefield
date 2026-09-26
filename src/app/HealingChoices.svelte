@@ -1,32 +1,26 @@
 <script lang="ts">
-  import { healableConditions, type Unit, type HealingChoice, type HealingCondition } from '../engine/index.js';
+  import type { Unit, HealingChoice } from '../engine/index.js';
+  import { chooseHealing, healingNote, healingRows } from './healing-choices.js';
   let { units, renewal, choices = $bindable({}) }: { units: Unit[]; renewal: boolean; choices?: Record<string, HealingChoice> } = $props();
-  const labels: Record<HealingCondition, string> = { pinned: 'Pinned', rooted: 'Rooted', suppressed: 'Suppressed', exposed: 'Exposed', frightened: 'Frightened', persistent: 'Persistent damage' };
-  function choose(unit: Unit, slot: number, value: string) {
-    const current = choices[unit.id] ?? { conditions: healableConditions(unit).slice(0, renewal ? 2 : 1) };
-    const selected = [...current.conditions];
-    if (value === 'health' || value === '') selected.splice(slot);
-    else { selected[slot] = value as HealingCondition; if (selected[1] === selected[0]) selected.splice(1); }
-    choices = { ...choices, [unit.id]: { conditions: selected, extraHealth: value === 'health' } };
+  const rows = $derived(healingRows(units, renewal, choices));
+  function choose(id: string, slot: number, value: string) {
+    const unit = units.find((u) => u.id === id);
+    if (unit) choices = chooseHealing(choices, unit, renewal, slot, value);
   }
 </script>
 <fieldset>
   <legend>Recovery priorities</legend>
-  <p>{renewal ? 'A success clears your first choice; a critical success also clears your second.' : 'On a critical success, clear a condition or restore 1 extra Health.'}</p>
-  {#each units as unit (unit.id)}
-    {@const eligible = healableConditions(unit)}
-    {@const selected = choices[unit.id]}
-    <label>{unit.name}
-      <select aria-label={`${unit.name} first recovery`} value={selected ? selected.extraHealth ? 'health' : selected.conditions[0] ?? '' : eligible[0] ?? (renewal ? '' : 'health')} onchange={event => choose(unit, 0, event.currentTarget.value)}>
-        {#each eligible as condition}<option value={condition}>{labels[condition]}</option>{/each}
-        {#if !renewal}<option value="health">Restore 1 extra Health</option>{:else}<option value="">Clear no condition</option>{/if}
+  <p>{healingNote(renewal)}</p>
+  {#each rows as row (row.id)}
+    <label>{row.name}
+      <select aria-label={`${row.name} first recovery`} value={row.first.value} onchange={event => choose(row.id, 0, event.currentTarget.value)}>
+        {#each row.first.options as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
       </select>
     </label>
-    {#if renewal && eligible.length > 1 && (selected ? selected.conditions.length > 0 : true)}
+    {#if row.second}
       <label>Second condition
-        <select aria-label={`${unit.name} second recovery`} value={selected ? selected.conditions[1] ?? '' : eligible[1]} onchange={event => choose(unit, 1, event.currentTarget.value)}>
-          {#each eligible.filter(c => c !== (selected?.conditions[0] ?? eligible[0])) as condition}<option value={condition}>{labels[condition]}</option>{/each}
-          <option value="">Clear no second condition</option>
+        <select aria-label={`${row.name} second recovery`} value={row.second.value} onchange={event => choose(row.id, 1, event.currentTarget.value)}>
+          {#each row.second.options as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
         </select>
       </label>
     {/if}
