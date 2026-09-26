@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { STATUSES, type Grid, type Point, type Status } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
-import type { StatusIcon } from '../art.js';
+import { statusIconUrl, type StatusIcon } from '../art.js';
 import { easeOutBack, easeOutCubic } from '../easing.js';
 import { STATUS_INTRO } from '../token/geometry.js';
 import type { BoardLayer, LayerContext } from './BoardLayer.js';
@@ -124,7 +124,9 @@ let iconLoad: Promise<void> | null = null;
 // One fetch for the lifetime of the page. A line that lands mid-load shows its words alone.
 function loadIcons(): void {
   iconLoad ??= Promise.all(ICONS.map(async (name) => {
-    icons.set(name, await PIXI.Assets.load<PIXI.Texture>(assetUrl(`art/condition-icons/${name}.webp`)));
+    const status = STATUSES.find((s) => s === name);
+    const url = status ? statusIconUrl(status) : assetUrl(`art/condition-icons/${name}.webp`);
+    icons.set(name, await PIXI.Assets.load<PIXI.Texture>(url));
   })).then(() => undefined, () => { iconLoad = null; });
 }
 
