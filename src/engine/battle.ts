@@ -467,6 +467,16 @@ function doGate(state: BattleState, u: Unit, action: GateAction): number {
   return 1;
 }
 
+// Hold Ground is asked last, so a push with nowhere to go does not spend it.
+function forcedStep(state: BattleState, from: Square, target: Unit, direction: 'push' | 'pull') {
+  if (target.guard?.holds || target.engines.some(e => e.hauling)) return;
+  const distance = dist(state, from, target.square);
+  const to = grid(state).neighbours(target.square).find(cell =>
+    (direction === 'pull' ? dist(state, from, cell) < distance : dist(state, from, cell) > distance)
+    && enterable(state, target.square, cell, groundFor(target)) && canEndOn(target, state.board, cell));
+  if (to && !holdsGround(state, target)) moveTo(state, target, to);
+}
+
 function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, mode: SiegeMode) {
   if (target.status !== 'active') return;
   switch (mode.effect) {
@@ -481,15 +491,9 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
       // A temporary flier over water lands after reaching safe ground.
       if (at(state.board, target.square).terrain !== 'water') target.flies = false;
       target.selfBuffs = []; break;
-    case 'push': case 'pull': {
-      if (target.guard?.holds || target.rooted || target.engines.some(x => x.hauling) || holdsGround(state, target)) break;
-      const distance = dist(state, e.square, target.square);
-      const to = grid(state).neighbours(target.square).find(c =>
-        (mode.effect === 'pull' ? dist(state, e.square, c) < distance : dist(state, e.square, c) > distance)
-        && enterable(state, target.square, c, groundFor(target)) && canEndOn(target, state.board, c));
-      if (to) moveTo(state, target, to);
+    case 'push': case 'pull':
+      if (!target.rooted) forcedStep(state, e.square, target, mode.effect);
       break;
-    }
   }
   if (mode.effect && mode.effect !== 'rough') log(state, target, `${target.name}: ${mode.label} applies ${mode.effect}.`);
 }
@@ -710,14 +714,7 @@ function abilityContext(state: BattleState, rng: Rng, source: Unit): AbilityCont
     },
     clear: target => endCondition(state, target),
     move: (target, to) => moveTo(state, target, to),
-    displace: (target, direction) => {
-      if (target.guard?.holds || target.engines.some(e => e.hauling)) return;
-      const distance = dist(state, source.square, target.square);
-      const to = grid(state).neighbours(target.square).find(cell => !unitAt(state, cell)
-        && (direction === 'pull' ? dist(state, source.square, cell) < distance : dist(state, source.square, cell) > distance)
-        && enterable(state, target.square, cell, groundFor(target)) && canEndOn(target, state.board, cell));
-      if (to && !holdsGround(state, target)) moveTo(state, target, to);
-    },
+    displace: (target, direction) => forcedStep(state, source.square, target, direction),
   };
 }
 
@@ -759,30 +756,47 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
     ? `${target.name}'s stoneskin caps the critical at 1 damage.`
     : `${target.name} has dug in: the critical lands as an ordinary hit.`);
   if (n <= 0) return 0;
-  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
-  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
-  log(state, target, `${target.name} takes ${n} damage from ${source} (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
+  const fell = landWound(state, target, n, `damage from ${source}`);
   if (attacker.wrath) {
     attacker.wrath = false;
     target.persistent = { dc: levelDc(attacker.level) };
     log(state, target, `${target.name} is marked by ${attacker.name}'s wrath: 1 damage at the end of its next activation.`);
   }
-  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); refreshAbilityAuras(state); return n; }
+  if (fell) { fall(state, target); return n; }
+  moraleSave(state, rng, target, { dc: levelDc(sourceLevel), shift: saveShift, pressed, label: 'Fortitude save against Morale loss', cause: 'damage taken' });
+  return n;
+}
+
+function landWound(state: BattleState, target: Unit, n: number, what: string): boolean {
+  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
+  const fell = target.wounds >= MAX_WOUNDS;
+  log(state, target, `${target.name} takes ${n} ${what} (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${fell ? ' — destroyed' : ''}.`);
+  return fell;
+}
+
+function fall(state: BattleState, target: Unit) {
+  target.status = 'destroyed';
+  abandonEngines(state, target);
+  clearAsShooter(state, target.id);
+  refreshAbilityAuras(state);
+}
+
+type MoraleSave = { dc: number; shift?: number; pressed?: boolean; label: string; cause: string };
+
+function moraleSave(state: BattleState, rng: Rng, target: Unit, { dc, shift = 0, pressed = false, label, cause }: MoraleSave) {
   if (target.stoneskin) {
     log(state, target, `${target.name}'s stoneskin prevents Morale loss.`);
-  } else {
-    const modifier = fortitudeModifier(target) + saveShift + (target.disorder >= ROUTED_AT - 1 ? resolveBonus(state, target) : 0);
-    const dc = levelDc(sourceLevel);
-    const twice = pressed ? rollTwice(rng, modifier, dc, false) : null;
-    const c = twice ?? roll(state, rng, target, modifier, dc);
-    if (pressed) {
-      target.inspired = false;
-      log(state, target, `${target.name} resists Press: rolls ${twice!.rolls.join(' and ')}, keeps the worse.`);
-    }
-    log(state, target, rollLine(target.name, 'Fortitude save against Morale loss', c), c, undefined, { unit: target.id, reads: 'brace' });
-    if (!succeeded(c.degree)) addDisorder(state, target, 1, 'damage taken');
+    return;
   }
-  return n;
+  const modifier = fortitudeModifier(target) + shift + (target.disorder >= ROUTED_AT - 1 ? resolveBonus(state, target) : 0);
+  const twice = pressed ? rollTwice(rng, modifier, dc, false) : null;
+  const c = twice ?? roll(state, rng, target, modifier, dc);
+  if (pressed) {
+    target.inspired = false;
+    log(state, target, `${target.name} resists Press: rolls ${twice!.rolls.join(' and ')}, keeps the worse.`);
+  }
+  log(state, target, rollLine(target.name, label, c), c, undefined, { unit: target.id, reads: 'brace' });
+  if (!succeeded(c.degree)) addDisorder(state, target, 1, cause);
 }
 
 function abandonEngines(state: BattleState, u: Unit) {
@@ -1075,6 +1089,15 @@ const touching = (state: BattleState, sq: Square, e: Unit) =>
  * unit's Speed at the ordinary terrain prices. */
 const CHARGE_ACTIONS = 1;
 const CHARGE_SPEEDS = 2;
+/** The Charge table offers a Strike or a Press; an Overrun comes only through impact. */
+export const CHARGE_ACTIVITIES: readonly ActivityIndex[] = [1, 2];
+
+/** `charged` marks any earlier Charge, so a `once` ability gives impact to the first alone. */
+export function chargeImpact(u: Unit): boolean {
+  if (u.tactics.includes('cavalry-charge')) return true;
+  const ability = unitAbilities(u).find(a => a.kind === 'charge');
+  return !!ability && (!ability.once || !u.abilityState?.charged);
+}
 /** A charge that ends a short range from where it began has built momentum: +2 on the attack. */
 const runUp = (state: BattleState, from: Square, landing: Square) =>
   dist(state, from, landing) >= BANDS[state.board.grid].short;
@@ -1825,6 +1848,29 @@ function translocate(state: BattleState, u: Unit, label: string, index: Activity
 
 }
 
+/** One target's Will save against a Controlling spell and its result. Terror runs this once per
+ * target; its failure costs Morale alone, since only Stun and Hold carry a further effect. */
+function controlOne(state: BattleState, rng: Rng, u: Unit, target: Unit, index: ActivityIndex, label: string, dcBonus: number, tag?: LogTag) {
+  const c = roll(state, rng, target, willModifier(target) + resolveBonus(state, target), controllingDc(u) + dcBonus);
+  log(state, target, rollLine(target.name, `Will save against ${possessive(u.name)} ${label}`, c), c, tag);
+  if (c.degree === 'critical-success') return;
+  if (c.degree === 'success') {
+    if (target.immuneFear) return;
+    target.frightened = true;
+    log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until the end of its next activation.`);
+    return;
+  }
+  addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${label}`);
+  if (index === 2 || index === 3) {
+    target.stunned = true;
+    log(state, target, `${target.name} is stunned: one action fewer on its next activation.`);
+  }
+  if (index === 3) {
+    target.rooted = 1;
+    log(state, target, `${target.name} is held: rooted on its next activation.`);
+  }
+}
+
 /**
  * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
  * and its own effect; `index` is the spell tier, independent of its action price.
@@ -1842,12 +1888,9 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     const targets = action.target!.split('+').map(id => unit(state, id));
     log(state, u, `${u.name} casts ${label} on ${targets.map(t => t.name).join(', ')}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: targets.map(t => t.id) });
     for (const target of targets) {
-      if (tree === 'controlling') {
-        const c = roll(state, rng, target, willModifier(target) + resolveBonus(state, target), controllingDc(u));
-        log(state, target, rollLine(target.name, `Will save against ${label}`, c), c);
-        if (c.degree === 'success') target.frightened = true;
-        else if (c.degree !== 'critical-success') addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, label);
-      } else if (tree === 'offense') target.sureStrike = true;
+      // A spell's total cost cannot exceed three actions, so the three-action Terror takes no focus.
+      if (tree === 'controlling') controlOne(state, rng, u, target, index, label, 0);
+      else if (tree === 'offense') target.sureStrike = true;
       else if (tree === 'defense') {
         target.stoneskin = true;
         if (target.id === u.id && !target.selfBuffs.includes('stoneskin')) target.selfBuffs.push('stoneskin');
@@ -1877,27 +1920,9 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     case 'controlling': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      const activity = castActivityOf('controlling', index);
-      const c = roll(state, rng, target, willModifier(target) + resolveBonus(state, target), controllingDc(u) + ACTION_BONUS * (action.focus ?? 0));
       // Controlling announces itself through the target's own save, so the tag rides there.
-      log(state, target, rollLine(target.name, `Will save against ${possessive(u.name)} ${activity.label}`, c), c,
+      controlOne(state, rng, u, target, index, castActivityOf('controlling', index).label, ACTION_BONUS * (action.focus ?? 0),
         { kind: 'spell', caster: u.id, tree, activity: index, targets: [target.id] });
-      if (c.degree === 'critical-success') break;
-      if (c.degree === 'success') {
-        if (target.immuneFear) break;
-        target.frightened = true;
-        log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until the end of its next activation.`);
-        break;
-      }
-      addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${activity.label}`);
-      if (index >= 2) {
-        target.stunned = true;
-        log(state, target, `${target.name} is stunned: one action fewer on its next activation.`);
-      }
-      if (index >= 3) {
-        target.rooted = 1;
-        log(state, target, `${target.name} is held: rooted on its next activation.`);
-      }
       break;
     }
     case 'offense': {
@@ -2097,17 +2122,8 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
   if (target.status !== 'active') return;
   const n = absorbAbilityDamage(state, target, reduceWounds(target, 1), tag ? [tag] : [], abilityLog(state));
   if (n <= 0) return;
-  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
-  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
-  log(state, target, `${target.name} takes ${n} persistent damage (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
-  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return; }
-  if (target.stoneskin) {
-    log(state, target, `${target.name}'s stoneskin prevents Morale loss.`);
-    return;
-  }
-  const c = roll(state, rng, target, fortitudeModifier(target) + (target.disorder >= ROUTED_AT - 1 ? resolveBonus(state, target) : 0), dc);
-  log(state, target, rollLine(target.name, 'Fortitude save against Morale loss from persistent damage', c), c, undefined, { unit: target.id, reads: 'brace' });
-  if (!succeeded(c.degree)) addDisorder(state, target, 1, 'persistent damage');
+  if (landWound(state, target, n, 'persistent damage')) { fall(state, target); return; }
+  moraleSave(state, rng, target, { dc, label: 'Fortitude save against Morale loss from persistent damage', cause: 'persistent damage' });
 }
 
 // What was laid on the unit's next activation is spent by this one and cleared at the end.
@@ -2297,15 +2313,14 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const option = approach(state, u, foe, action.waypoints);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
   const wanted = action.activity ?? 1;
-  if (![1, 2, 3].includes(wanted)) throw new Error('invalid charge activity');
+  if (!CHARGE_ACTIVITIES.includes(wanted)) throw new Error('invalid charge activity');
   const focus = validateFocus(action);
   const cost = CHARGE_ACTIONS + wanted + focus;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
   const bonus = option.runUp ? ACTION_BONUS : 0;
   // Read from the hex the charge starts in, whatever hex it ends on.
   const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
-  const chargeAbility = unitAbilities(u).find(a => a.kind === 'charge');
-  const impact = u.tactics.includes('cavalry-charge') || !!chargeAbility && (!chargeAbility.once || !u.abilityState?.charged);
+  const impact = chargeImpact(u);
   abilityMemory(u).charged = true;
   moveTo(state, u, parse(option.cell));
   const carried = [

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  act, availableActions, createBattle, endActivation, defenceOf, moveReach, strikeModifier,
-  parse, notation, scriptedRng, COMBATANTS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState,
+  act, availableActions, chargeImpact, createBattle, endActivation, defenceOf, moveReach, strikeModifier,
+  parse, notation, scriptedRng, COMBATANTS, MAX_WOUNDS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState,
 } from '../engine/index.js';
 import { importAbilities, sourceAttackTags } from '../adapters/pf2e/abilities.js';
 import { cardFromActor, type TroopActor } from '../adapters/pf2e/troopCard.js';
@@ -276,6 +276,25 @@ describe('troop ability resolution', () => {
     expect(s.units[1].abilityState?.auraFear).toBe(false);
   });
 
+  it('a fear-aura source felled by persistent damage lifts its aura before the next dusk save', () => {
+    let s = createBattle({ board: openBoard(), roundsPerDay: 1, units: [
+      { card: card([ability('fear', { delivery: 'aura' })]), side: 'attacker', square: 'c2' },
+      { card: card(), side: 'defender', square: 'c7' },
+      { card: card(), side: 'attacker', square: 'g2' },
+    ] });
+    s.units[1].square = parse('c3');
+    refreshAbilityAuras(s);
+    expect(s.units[1].abilityState?.auraFear).toBe(true);
+    s = endActivation(endActivation(s, rng), rng);
+    s.units[0].wounds = MAX_WOUNDS - 1;
+    s.units[0].persistent = { dc: 15 };
+    s.units[1].persistent = { dc: 15 };
+    s = endActivation(s, rng);
+    expect(s.units[0].status).toBe('destroyed');
+    expect(s.units[1].abilityState?.auraFear).toBe(false);
+    expect(s.log.find(e => e.unit === 'u1' && e.text.includes('Fortitude save'))?.check?.modifier).toBe(15);
+  });
+
   it('applies Expose only at the declared result threshold', () => {
     const s = battle([ability('expose', { delivery: 'attack', attack: 'melee', trigger: 'critical' })]);
     expect(fight(s).units[1].exposed).toBe(false);
@@ -325,6 +344,20 @@ describe('troop ability resolution', () => {
     const result = act(s, { type: 'charge', activity: 1, unit: 'u0', target: 'u1' }, rng);
     expect(result.log.some(e => e.text.includes('impact forces two Fortitude'))).toBe(true);
     expect(result.units[0].attacked).toBe(true);
+  });
+
+  it('rejects a Charge that ends in an Overrun, even with four actions', () => {
+    const s = battle([ability('charge')]); s.units[1].square = parse('c5'); s.units[0].actions = 4;
+    expect(() => act(s, { type: 'charge', activity: 3, unit: 'u0', target: 'u1' }, rng)).toThrow('invalid charge activity');
+  });
+
+  it('spends a once-per-battle Cavalry Charge on the first Charge', () => {
+    const passive = battle([ability('charge')]).units[0];
+    const once = battle([ability('charge', { once: 'battle' })]).units[0];
+    expect(chargeImpact(passive)).toBe(true);
+    expect(chargeImpact(once)).toBe(true);
+    once.abilityState!.charged = true;
+    expect(chargeImpact(once)).toBe(false);
   });
 
   it('entering a Menace aura affects the attack within the same Charge', () => {
