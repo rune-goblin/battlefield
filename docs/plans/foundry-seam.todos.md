@@ -64,9 +64,10 @@ controllers.
 
 ## 5. Battle sites, from the 2026-09-20 multi-battle change
 
-- Battles show on the kingdom map during the pick alone, as hover text. A standing marker on
-  every battle hex needs a ReignMaker API (`setBattleMarkers(hexIds)` or an overlay); its
-  `existingHexes` option pre-selects hexes and cannot serve.
+- The battle markers ride ReignMaker's Fortifications toggle through its `setBattleMarkers`
+  (built 2026-09-26, uncommitted in pf2e-reignmaker). Never seen on a live map: check the
+  swords' size, the top-left offset on a fortified hex, and that a player sees no marker in a
+  hex hidden to them.
 - No UI removes a planned battle. `api.removeBattle(site)` exists for a macro; a list of
   battles in the app's top bar could offer Open and Remove.
 - The `sites` setting holds every parked record in one string and has no cap.

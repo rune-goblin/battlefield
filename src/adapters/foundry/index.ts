@@ -10,6 +10,7 @@ import { STORED_NAMES } from '../../runtime/ports.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
 import { pickBattleSite, registerBattleSitePicker, reignMakerActive } from './battleSitePicker.js';
+import { syncBattleMarkers } from './battleMarkers.js';
 import type { BattlefieldModuleApi } from './moduleApi.js';
 import { foundryChatPoster } from './chat.js';
 import { foundryDice } from './foundryDice.js';
@@ -69,6 +70,8 @@ const recovery = createStoreRecovery({
   },
 });
 
+const markBattles = syncBattleMarkers(() => (hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
+
 Hooks.once('init', () => {
   blockPageZoom();
   // Core's Escape closes every open window, the battle's included, and opens the main menu when
@@ -105,7 +108,7 @@ Hooks.once('init', () => {
   registerFoundrySettings(
     (raw) => sessionWatcher.handleChange(raw),
     (raw) => { tableCall.handleChange(raw); tableChanged(); },
-    (record) => recovery.recheck(record),
+    (record) => { recovery.recheck(record); if (record !== 'archive') markBattles(); },
   );
   // Registered here, before `ready`, because Foundry replays the socket events it buffered
   // during startup. The host's readiness gate is what holds them until it can answer.
@@ -147,6 +150,7 @@ Hooks.once('ready', () => {
   followArt();
   // A world with no saved session delivers no record, and this seeds the same first reading.
   tableCall.handleSession();
+  markBattles();
   host?.refresh().catch(reportFailure);
 });
 
