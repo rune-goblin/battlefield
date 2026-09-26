@@ -1,5 +1,5 @@
 import { offerReason, actionReason } from './action-menu.js';
-import { engagedEnemies, isRouted, type Verb, type ActionOffer, notation, type BoardObject } from '../../engine/index.js';
+import { type Verb, type ActionOffer, notation, type BoardObject } from '../../engine/index.js';
 import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon } from '../../board/art.js';
 import type { HighlightStyle } from '../../board/index.js';
 import { DRAG_NOTICE } from './drag-controller.svelte.js';
@@ -93,7 +93,7 @@ export function createRingController(s: RingShared) {
 
   const props = $derived.by<Prop[]>(() => {
     if (!s.active || !s.act) return [];
-    const active = s.active;
+    const { verbs, steps } = s.act;
     const byType = new Map<Verb, ActionOffer[]>();
     for (const offer of s.act.offers) {
       const list = byType.get(offer.type);
@@ -103,43 +103,27 @@ export function createRingController(s: RingShared) {
     // Charge shares the melee slice with Fight. Charging is how a unit out of contact reaches
     // the fight the slice already holds, so one direction means "hit them" either way.
     const charges = [...s.meleeOptions].filter(([, plans]) => plans.length).map(([id]) => s.cellOf(id)).filter((x): x is string => x !== null);
-    const steps = s.act.steps;
 
     return SLOTS.map((key): Prop => {
+      const verb = verbs[key === 'melee' ? 'fight' : key];
+      const answer = { legal: verb.legal, reason: verb.reason ? actionReason(verb.reason) : undefined };
       if (key === 'step') {
-        return {
-          key, icon: 'step', label: 'Step', type: null, style: 'move',
-          legal: steps.length > 0,
-          reason: !active.actions ? 'No actions left' : active.rooted > 0 ? 'Rooted' : active.pinnedBy ? 'Pinned: Move to get away' : 'No open hex beside you',
-          cells: steps,
-          edges: [],
-        };
+        return { key, icon: 'step', label: 'Step', type: null, style: 'move', ...answer, cells: steps, edges: [] };
       }
       const type: Verb = key === 'melee' ? 'fight' : key;
       const offers = byType.get(type) ?? [];
       const cells = [...new Set([...offers.flatMap(offerCells), ...(key === 'melee' ? charges : [])])];
       if (key === 'melee' && !offers.length) {
-        return {
-          key, icon: 'attack', label: 'Melee', type: null, style: 'attack',
-          legal: charges.length > 0,
-          reason: isRouted(active) ? 'Routed: move or step' : active.attacked ? 'Already attacked this activation' : !active.actions ? 'No actions left' : active.stats.strike === null ? 'No melee attack' : 'No target in range',
-          cells: charges,
-          edges: [],
-        };
+        return { key, icon: 'attack', label: 'Melee', type: null, style: 'attack', ...answer, cells: charges, edges: [] };
       }
       // One slice per verb, so a caster's whole book sits behind Cast — the aim popup already
       // groups by verb and shows every spell that reaches whatever the player touches.
       const label = key === 'cast' ? (offers.some(o => o.ability) ? 'Abilities' : 'Cast') : offers[0]?.label ?? SLOT_LABEL[key];
       return {
         key, icon: ICON_FOR[type], label, type, style: SLOT_STYLE[key],
-        legal: key === 'cast' ? offers.length > 0 : cells.length > 0,
-        reason: offers.length ? offerReason(offers[0])
-          : isRouted(active) ? 'Routed: move or step'
-          : !active.actions ? 'No actions left'
-          : key === 'cast' ? 'No spells available'
-          : key === 'shoot' && engagedEnemies(s.b, active).length ? 'Engaged in melee'
-          : key === 'shoot' && active.stats.volley === null ? 'No ranged attack'
-          : 'No target in range',
+        reason: answer.reason,
+        // Cast opens the tree ring, where a blocked tree shows its own reason.
+        legal: key === 'cast' ? offers.length > 0 : answer.legal,
         cells,
         edges: [...new Set(offers.flatMap(offerEdges))],
       };

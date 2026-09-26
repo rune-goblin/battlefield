@@ -1,4 +1,4 @@
-import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, CHARGE_ACTIVITIES, chargeImpact, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
+import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, type MeleeFinish, meleeFinishes, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
 import type { BoardEventOf, HighlightStyle } from '../../board/index.js';
 import type { Activation, BattleState, BoardObject, Verb } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
@@ -68,10 +68,11 @@ export function createDragController(s: DragShared) {
   let waypoints = $state.raw<string[]>([]);
   // The waypoints the open melee choice was dropped with, kept after the drag that set them.
   let meleeVia = $state.raw<string[]>([]);
-  const meleeOptions = $derived.by(() => {
+  const meleeOptions = $derived.by<Map<string, MeleePlan[]>>(() => {
     const active = s.active;
-    return new Map(active ? s.b.units.filter(u => u.status === 'active' && u.side !== active.side)
-      .map(u => [u.id, meleePlans(s.b, active, u.id, meleeVia)] as const) : []);
+    if (!meleeVia.length || !active) return s.act?.melee ?? new Map();
+    return new Map(s.b.units.filter(u => u.status === 'active' && u.side !== active.side)
+      .map(u => [u.id, meleePlans(s.b, active, u.id, meleeVia)] as const));
   });
   const plansFor = (id: string) => waypoints.length && s.active ? meleePlans(s.b, s.active, id, waypoints) : meleeOptions.get(id) ?? [];
   const movesVia = $derived(s.active && waypoints.length ? moveReach(s.b, s.active, waypoints) : s.act?.moves ?? new Map());
@@ -127,11 +128,18 @@ export function createDragController(s: DragShared) {
     return s.b.units.find((u) => u.status === 'active' && u.side !== a.side && notation(u.square) === cell);
   }
 
+  /** The Fight activities a melee row may end in, each priced whole. */
+  const finishesOf = (kind: 'fight' | 'charge', moveActions: number): MeleeFinish[] =>
+    s.active ? meleeFinishes(s.active, kind, moveActions) : [];
+  const finishesFor = (row: ChargePreview | AdvancePreview): MeleeFinish[] =>
+    row.kind === 'charge' ? finishesOf('charge', 0) : finishesOf(row.plan.kind, row.plan.moveActions);
+  const cheapest = (finishes: MeleeFinish[]) => finishes[0]?.cost ?? 0;
+
   const chargeRow = (c: ChargeOption, via: string[] = waypoints): ChargePreview =>
-    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: c.actions + 1, runUp: c.runUp, path: chargePath(s.b, s.active!, c.unit, via) });
+    ({ kind: 'charge', cell: c.cell, enemy: c.unit, feet: c.feet, actions: cheapest(finishesOf('charge', 0)), runUp: c.runUp, path: chargePath(s.b, s.active!, c.unit, via) });
 
   const advanceRow = (plan: MeleePlan): AdvancePreview => ({ kind: 'advance', plan, cell: plan.cell,
-    enemy: plan.target, feet: plan.feet, actions: plan.moveActions + (plan.kind === 'charge' ? 2 : 1), path: [...plan.movePath, ...plan.attackPath.slice(1)] });
+    enemy: plan.target, feet: plan.feet, actions: cheapest(finishesOf(plan.kind, plan.moveActions)), path: [...plan.movePath, ...plan.attackPath.slice(1)] });
 
   function openMelee(id: string, via: string[] = []) {
     pending = null; s.closeAim(); s.focus = 0;
@@ -313,24 +321,25 @@ export function createDragController(s: DragShared) {
   const rowDetail = (row: Preview) =>
     row.kind === 'flee' ? `${row.moveActions ? `${actions(row.moveActions)} to move + ` : ''}1 action to flee · morale DC ${row.dc}`
       : row.kind === 'charge' ? `${actions(row.actions)}, melee included`
-      : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + ${row.plan.kind === 'charge' ? '2 to charge' : '1 to attack'}`
+      : row.kind === 'advance' ? `${actions(row.plan.moveActions)} to move + ${row.actions - row.plan.moveActions} to ${row.plan.kind === 'charge' ? 'charge' : 'attack'}`
       : row.kind === 'step' ? '1 action · no roll'
         : s.act?.escape ? `${actionCost(row.actions)} · Reflex ${signed(s.act.escape.modifier)} vs DC ${s.act.escape.dc} to get away`
           : actionCost(row.actions);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' || row.kind === 'advance' ? row.enemy : row.cell}`;
 
-  // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
-  const ACTIVITIES: ActivityIndex[] = [1, 2, 3];
-  const CHARGES = $derived(s.active && chargeImpact(s.active)
-    ? ['Charge and Press', 'Charge and Overrun'] : ['Charge', 'Charge and Press']);
+  // A melee takes the Strike unless told otherwise.
   const chargeActivity = $derived(pending?.activity ?? 1);
-  // `c.actions` already counts one action for the melee; the activity's own price replaces it.
-  const chargeCost = (c: ChargePreview | AdvancePreview, activity: ActivityIndex) => c.actions - 1 + activity;
+  const chosenFinish = (row: ChargePreview | AdvancePreview): MeleeFinish | undefined => {
+    const finishes = finishesFor(row);
+    return finishes.find((f) => f.activity === chargeActivity) ?? finishes[0];
+  };
+  /** The chosen finish's own actions and the commitment, without the move before it. */
+  const finishActions = (row: AdvancePreview) => (chosenFinish(row)?.cost ?? 0) - row.plan.moveActions + s.focus;
 
   /** What each reading of a drop actually costs. */
   const dropCost = (row: Preview): number =>
     row.kind === 'move' || row.kind === 'flee' ? row.actions
-      : row.kind === 'charge' || row.kind === 'advance' ? chargeCost(row, chargeActivity) + s.focus
+      : row.kind === 'charge' || row.kind === 'advance' ? (chosenFinish(row)?.cost ?? 0) + s.focus
         : 1;
 
   const shownWaypoints = $derived(waypoints.length ? waypoints : pending?.waypoints.length ? pending.waypoints : meleeTarget ? meleeVia : []);
@@ -462,11 +471,10 @@ export function createDragController(s: DragShared) {
     get rowLabel() { return rowLabel; },
     get rowDetail() { return rowDetail; },
     get rowKey() { return rowKey; },
-    get ACTIVITIES() { return ACTIVITIES; },
-    get CHARGES() { return CHARGES; },
-    get CHARGE_ACTIVITIES() { return CHARGE_ACTIVITIES; },
     get chargeActivity() { return chargeActivity; },
-    get chargeCost() { return chargeCost; },
+    get finishesFor() { return finishesFor; },
+    get chosenFinish() { return chosenFinish; },
+    get finishActions() { return finishActions; },
     get dragBand() { return dragBand; },
     get moveBands() { return moveBands; },
     get holders() { return holders; },

@@ -2,7 +2,10 @@ import { fromStore } from 'svelte/store';
 import { commandReporter, COMMAND_NOTICE } from '../command-notices.js';
 import { createScope } from '../scope.js';
 import { tick } from 'svelte';
-import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked, wallName, edgeCells, type TargetRef } from '../../engine/index.js';
+import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, unitOutcome, positionNotes, wallName, edgeCells, type TargetRef,
+  gateReason, siegeReason, wallsFor, fortification, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, haulingSpeed, CELL_FEET, levelDc } from '../../engine/index.js';
+import { offerReason } from './action-menu.js';
+import { statusEffectsOf } from '../status-effects.js';
 import { withinApp } from '../app-root.js';
 import type { HighlightStyle, TokenPick, TokenModel, UnitTokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
 import { createDragController, DRAG_NOTICE } from './drag-controller.svelte.js';
@@ -110,6 +113,20 @@ export function createBattleController(deps: BattleDeps) {
   let gateOpen = $state(false);
   let gateBusy = $state(false);
   const nearbyGates = $derived(active ? Object.entries(b.board.walls).filter(([key, w]) => w.gate && w.remaining > 0 && edgeCells(key).includes(notation(active.square))) : []);
+  const gates = $derived.by(() => {
+    if (!active) return [];
+    const walls = wallsFor(b.board);
+    const here = notation(active.square);
+    return nearbyGates.map(([key, wall]) => {
+      const fort = fortification(wall.tier);
+      const inside = walls.insideOf(key);
+      return {
+        key, open: !!wall.gate?.open, name: wallName(key),
+        detail: `${wallName(key)} · ${fort.name} · ${wall.remaining}/${wall.boxes} · hardness ${fort.hardness} · interior ${inside}`,
+        reason: gateReason(b, active, key), interior: inside === here,
+      };
+    });
+  });
   async function operateGate(edge: string) {
     if (!active || gateBusy || !requireTurn()) return;
     gateBusy = true;
@@ -123,6 +140,25 @@ export function createBattleController(deps: BattleDeps) {
   const siegeEquipment = $derived(active ? siegeEngines(b, active) : []);
   const siegeEngine = $derived(siegeSelected ? siegeEquipment.find(e => e.id === siegeSelected) ?? null : siegeEquipment[0] ?? null);
   const siegeOffer = $derived(active && siegeEngine ? siegeAttackOffer(b, active, siegeEngine) : null);
+
+  /** The selected engine's popup, each operation with its refusal. */
+  const siegePanel = $derived.by(() => {
+    if (!active || !siegeEngine) return null;
+    const e = siegeEngine;
+    const steps = engineLoadSteps(e);
+    return {
+      isRam: engineKind(e) === 'ram',
+      fixed: engineSpeed(e) === 0,
+      loadingLabel: engineLoading(e).label,
+      loads: steps > 0,
+      loadReason: siegeReason(b, active, e, 'load'),
+      loadRemaining: steps - engineLoadProgress(e),
+      attackReason: siegeReason(b, active, e, 'attack') ?? (siegeOffer ? offerReason(siegeOffer) ?? null : 'No target in range'),
+      haulReason: siegeReason(b, active, e, 'haul'),
+      haulHexes: haulingSpeed(active, e, true) / CELL_FEET,
+      releaseHexes: haulingSpeed(active, e, false) / CELL_FEET,
+    };
+  });
 
   async function openSiege(id?: string) {
     if (!requireTurn()) return;
@@ -463,32 +499,13 @@ export function createBattleController(deps: BattleDeps) {
     if (centre) deps.board()?.centerOn(notation(u.square));
   }
 
-  const status = (u: Unit) => [
-    isRouted(u) ? 'routed' : '',
-    isMountain(b.board, u.square) ? 'mountain +1 Defence' : '',
-    TERRAIN_NOTE[at(b.board, u.square).terrain],
-    u.engines.some(e => e.hauling) ? `hauling ${u.engines.find(e => e.hauling)!.name}` : '',
-    at(b.board, u.square).elevation > 0 ? 'attacks +1 and shots +1 hex a level downhill' : '',
-    u.guard ? `guarded +${u.guard.defence} Defence` : '',
-    u.rooted ? 'rooted' : '',
-    u.exposed ? 'exposed' : '',
-    u.inspired ? 'inspired' : '',
-    u.suppressedBy ? 'suppressed' : '',
-    u.pinnedBy ? 'pinned' : '',
-    u.frightened ? 'frightened' : '',
-    u.stunned ? 'stunned' : '',
-    u.persistent ? 'bleeding' : '',
-    u.sureStrike ? 'sure strike' : '',
-    u.wrath ? 'wrath' : '',
-    u.haste ? 'hasted' : '',
-    u.ward ? 'warded' : '',
-    u.stoneskin ? 'stoneskin' : '',
-    u.aegis ? 'aegis' : '',
-    u.movementBonus ? `burst of speed +${u.movementBonus / 10} movement` : '',
-    u.sureFooting ? 'sure footing' : '',
-    u.flies ? 'flying' : '',
-    b.phase === 'battle' && isOutflanked(b, u) ? 'outflanked' : '',
-  ].filter(Boolean).join(' · ');
+  const activeRouted = $derived(active ? unitOutcome(active) === 'routed' : false);
+  // The conditions take the board's own short words; the effects strip carries their full text.
+  const statusLine = $derived(active ? [
+    activeRouted ? 'Routed' : '',
+    ...positionNotes(b, active),
+    ...statusEffectsOf(active, b).map((e) => e.label),
+  ].filter(Boolean).join(' · ') : '');
 
   const spec = $derived(`${b.board.spec.base}${b.board.spec.feature && b.board.spec.feature !== 'none' ? ' · ' + b.board.spec.feature : ''}`);
 
@@ -521,6 +538,7 @@ export function createBattleController(deps: BattleDeps) {
     get gateBusy() { return gateBusy; },
     set gateOpen(next) { gateOpen = next; },
     get nearbyGates() { return nearbyGates; },
+    get gates() { return gates; },
     get operateGate() { return operateGate; },
     get siegeOpen() { return siegeOpen; },
     get siegeSelected() { return siegeSelected; },
@@ -529,6 +547,7 @@ export function createBattleController(deps: BattleDeps) {
     get siegeEquipment() { return siegeEquipment; },
     get siegeEngine() { return siegeEngine; },
     get siegeOffer() { return siegeOffer; },
+    get siegePanel() { return siegePanel; },
     get openSiege() { return openSiege; },
     get operateSiege() { return operateSiege; },
     get locked() { return locked; },
@@ -572,6 +591,10 @@ export function createBattleController(deps: BattleDeps) {
     get healingRecipients() { return picker.healingRecipients; },
     get pickerOffer() { return picker.pickerOffer; },
     get pickerActivity() { return picker.pickerActivity; },
+    get pickerCommitment() { return picker.pickerCommitment; },
+    get pickerHint() { return picker.pickerHint; },
+    get blastCommitment() { return picker.blastCommitment; },
+    get aimCommitment() { return picker.aimCommitment; },
     get pickerService() { return picker.pickerService; },
     get pickerCandidates() { return picker.pickerCandidates; },
     get choosePickerActivity() { return picker.choosePickerActivity; },
@@ -600,11 +623,10 @@ export function createBattleController(deps: BattleDeps) {
     get rowLabel() { return dragging.rowLabel; },
     get rowDetail() { return dragging.rowDetail; },
     get rowKey() { return dragging.rowKey; },
-    get ACTIVITIES() { return dragging.ACTIVITIES; },
-    get CHARGES() { return dragging.CHARGES; },
-    get CHARGE_ACTIVITIES() { return dragging.CHARGE_ACTIVITIES; },
     get chargeActivity() { return dragging.chargeActivity; },
-    get chargeCost() { return dragging.chargeCost; },
+    get finishesFor() { return dragging.finishesFor; },
+    get chosenFinish() { return dragging.chosenFinish; },
+    get finishActions() { return dragging.finishActions; },
     get dropCost() { return dragging.dropCost; },
     get cost() { return cost; },
     get actionsLeft() { return actionsLeft; },
@@ -625,7 +647,10 @@ export function createBattleController(deps: BattleDeps) {
     onWindowPointerDown,
     get onWindowClick() { return dragging.onWindowClick; },
     get pickUnit() { return pickUnit; },
-    get status() { return status; },
+    get statusLine() { return statusLine; },
+    get activeRouted() { return activeRouted; },
+    get activeDc() { return active ? levelDc(active.level) : 0; },
+    get engagedCount() { return dragging.holders.length; },
     get spec() { return spec; },
     get ending() { return ending; },
     set ending(next) { ending = next; },
