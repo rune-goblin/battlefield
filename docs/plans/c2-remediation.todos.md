@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W5 — Engine types: W5.1–W5.2
 - W6 — Engine answers, thin views: W6.1–W6.3
 - W7 — Runtime and services: W7.1–W7.7
 - W8 — App structure: W8.1–W8.4
@@ -55,12 +54,17 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Carried forward from W4
 
-- W5.1: `src/engine/siege-engines.ts:7` still says `engineKind` covers "older saves whose own
-  field may be stale". Saved engines are upgraded at load now, so the comment is stale.
 - `docs/pixi-board.md:99` names "`battle/combat.ts`'s Pace step" as the caller of `beyond`. The
   caller is `giveGround` in `combat.ts`; the Pace step wording predates W4.
 - `src/tests/morale.test.ts` and `src/tests/targeting.test.ts` each import from
   `'../engine/index.js'` twice; merge the imports.
+
+## Carried forward from W5
+
+- W6.1 keeps the `healableConditions` export W5.1 added. W6.3 moves `HealingChoices.svelte`'s call
+  to it behind the report and healing controller.
+- `Unit.flies`: nothing in `src` outside tests sets it to `true`. It looks like dead state; decide
+  whether to delete it.
 
 ## Unreadable save recovery (W10.1)
 

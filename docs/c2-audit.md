@@ -52,10 +52,12 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W4.1 replaced `battle.ts` with eleven modules in `src/engine/battle/`: setup, state, turn, movement, manoeuvres, combat, wounds, siege, emplacements, targeting and spells, none over 340 lines. `battle/index.ts` re-exports exactly the 83 names `battle.ts` exported, so helpers shared between the modules stay off the engine barrel, and the engine has no import cycles. Callers changed only import paths: eleven tests and one comment in `docs/pixi-board.md`.
 
-### M2. Conditions are flat fields enumerated by hand in 8 places — Shotgun Surgery / Primitive Obsession `[cross-cutting]`
+### M2. Conditions are flat fields enumerated by hand in 8 places — Shotgun Surgery / Primitive Obsession `[cross-cutting]` `[done]`
 - **Where:** `src/engine/types.ts:96-130` (about 18 fields on `Unit`); re-listed at `battle.ts:115-120`, `:479-483`, `:1749-1783`, `:2131-2141`, `:2205`, `aftermath.ts:135-159`, `status.ts:19-38`, `ability-effects.ts:225`.
 - **Why it matters:** A new condition needs 8 or more coordinated edits plus 3 in the app; missing one leaves a condition that never clears.
 - **Direction:** One condition record with per-condition lifetime metadata; derive the reset, nullify, heal and status lists from it.
+
+**Resolution (2026-09-26):** W5.1 gathered Unit's 19 condition fields into a `Conditions` interface that `Unit` extends, so the saved shape and schema 2 stay as they were. `CONDITIONS` in `src/engine/conditions.ts` gives each field its fresh value, lapse, magical flag, status and heal text, and a missing entry fails the type check. Battle creation, the night reset, begin, finish, the shooter clear, the nullify hit, `endCondition`, recovery, healing validation, the status list and `HealingChoices.svelte` read the record, and `HealingCondition` derives from it. Log lines and clear order are unchanged, and a test pins the heal order. The app's hand-written `status()` list belongs to M3 and W6.
 
 ### M3. App controllers re-derive what the engine decides — Once And Only Once `[cross-cutting]` `[partial]`
 - **Where:** `src/app/battle/ring-controller.svelte.ts:110,126,138-143`; `drag-controller.svelte.ts:326-331,378-387`; `battle-controller.svelte.ts:466-491`.
@@ -97,10 +99,12 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W4.2 moved the save repairs out of the rules. `engine/legacy.ts` upgrades saved battles and cards: legacy engine rates, the Wolf Fang case, load-count rescaling, the no-retreat card fallback and the missing engine IDs. The engine's reads carry no save shims. `runtime/migrate.ts` steps a schema-1 record to schema 2 once at load, and `SCHEMA_VERSION` is 2. Only schema-1 records run the catalogue backfill, so a future catalogue change needs its own step. `reviveSession` accepts every schema from 1 to the current one, so the bump leaves browser saves readable, and a test loads a schema-1 browser save. Two effects reach players: an old save whose engine owner was never updated logs one "takes the X" line when it loads, and a module-API `createBattle` card with the `no-retreat` signal and no `abilities` no longer gains Hold Ground.
 
-### M9. Target IDs are encoded as strings — Stringly Typed `[cross-cutting]`
+### M9. Target IDs are encoded as strings — Stringly Typed `[cross-cutting]` `[done]`
 - **Where:** 28 `'+'` split/join sites across 8 files and 16 `'|'` sites across 9; `battle.ts:1988` tells a wall from a unit with `includes('|')`.
 - **What:** `ActivityAction.target: string` discards `ActivityTarget.kind`, and the encoding has spread into `app/targeting.ts`, the picker and the board.
 - **Direction:** Carry a typed `TargetRef` in actions and parse only at the UI edge.
+
+**Resolution (2026-09-26):** W5.2 gave actions a typed `TargetRef` (unit, cell, edge, transfer), and `checkedTarget` refuses a value that is not one. Edge keys parse in one place, `edgeCells` in `grid.ts`, and the touched board object is typed `BoardObject`, so nothing tells a wall from a unit by `'|'`. Targeting hits carry corner cells as an array, `TargetingService.arrows` takes the hovered edge as its own parameter, and `docs/adapter-contract.md` states the typed target. The `'+'` joins left in `engine/targets.ts`, `targeting.ts` and the picker build keys for display and deduplication; none is parsed back. Actions are never saved, so no migration was needed.
 
 ### M10. Browser and Foundry archives are copy-pasted — Copy-and-Paste Programming `[cross-cutting]` `[done]`
 - **Where:** `src/adapters/browser/localArchive.ts` and `src/adapters/foundry/worldArchive.ts`
