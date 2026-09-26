@@ -34,8 +34,8 @@ export class TokenLayer {
   private readonly dragProp = new PIXI.Sprite();
   private dragPropIcon: ActionIcon | null = null;
 
-  // Wave 5 needs every token ticked regardless of drag state: a move tween or a free-strike
-  // flash can be running on some other token while one is being dragged.
+  // Every token ticks regardless of drag state: a move tween or a free-strike flash can be
+  // running on some other token while one is being dragged.
   private readonly tick = (): void => {
     for (const token of this.cache.values()) token.tick();
   };
@@ -215,6 +215,7 @@ export class TokenLayer {
         this.dragProp.scale.set((this.size * DRAG_PROP_RATIO) / Math.max(texture.width, texture.height, 1));
         this.dragProp.visible = true;
       })
+      // proto: a missing verdict icon leaves the drag prop blank; no error UI.
       .catch(() => {});
   }
 

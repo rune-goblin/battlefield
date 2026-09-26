@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { wallsFor, at, gridOf, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
+import { wallsFor, at, barrierBetween, gridOf, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { mix, shade } from './color.js';
 import { GATE_HALF_OPENING, gateHandles, gateLeaves } from '../gate-geometry.js';
@@ -386,7 +386,7 @@ export class EdgeLayer {
       g.lineStyle(1, field.kind === 'web' ? 0xc5d7dd : 0x946d3c, 0.8);
       g.beginFill(field.kind === 'web' ? 0xc5d7dd : 0x946d3c, 0.13).drawPolygon(grid.vertices(sq, size).flatMap(p => [p.x, p.y])).endFill();
       for (const vertex of grid.vertices(sq, size)) g.moveTo(c.x, c.y).lineTo(vertex.x, vertex.y);
-      const label = new PIXI.Text(`${field.kind === 'web' ? 'WEB' : 'DEBRIS'} · R${field.expires}`, { fontFamily: 'sans-serif', fontSize: Math.max(9, size * 0.10), fill: theme.ink });
+      const label = new PIXI.Text(`${field.kind === 'web' ? 'Web' : 'Debris'} · R${field.expires}`, { fontFamily: 'sans-serif', fontSize: Math.max(9, size * 0.10), fill: theme.ink });
       label.anchor.set(0.5); label.position.set(c.x, c.y + size * 0.3);
       this.container.addChild(label);
     }
@@ -464,7 +464,7 @@ export class EdgeLayer {
         const key = grid.edgeKey(sq, n);
         if (seen.has(key)) continue;
         seen.add(key);
-        if (Math.abs(at(board, sq).elevation - at(board, n).elevation) < 2) continue;
+        if (barrierBetween(board, sq, n)?.kind !== 'cliff') continue;
         const lower = at(board, sq).elevation < at(board, n).elevation ? sq : n;
         const [p, q] = grid.edgeSegment(sq, n, size);
         drawCliff(g, p, q, grid.center(lower, size), colours, size);

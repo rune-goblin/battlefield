@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { at, gridOf, type Board, type Grid, type Point, type Side, type Tree } from '../engine/index.js';
+import { connectedCells } from './terrain-regions.js';
 import { BoardApp } from './BoardApp.js';
 import { BoardContainer } from './BoardContainer.js';
 import { brushColour, type Brush } from './brush.js';
@@ -25,15 +26,12 @@ import type { TokenModel } from './Token.js';
 import { currentTheme, type BoardTheme, type HighlightStyle } from './theme.js';
 
 export type { HighlightStyle } from './theme.js';
-export type { GridSettings, GridUpdate } from './layers/GridLayer.js';
-export { DEFAULT_GRID_SETTINGS } from './layers/GridLayer.js';
+export type { GridUpdate } from './layers/GridLayer.js';
 export type { ElevationLines, MapLine } from './map-lines.js';
 export type { InkMapAppearance } from './layers/InkLayer.js';
 export type { Brush } from './brush.js';
-export type { BoardEvent, BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
-export type { TokenPlacement } from './hit.js';
-export type { EngineTokenModel, TokenModel, TokenPick, TokenRing, UnitTokenModel } from './Token.js';
-export { drawSelection, SELECTION, selectionCss } from './selection.js';
+export type { BoardEventOf, BoardEventType, BoardMode } from './Interaction.js';
+export type { EngineTokenModel, TokenModel, TokenPick, UnitTokenModel } from './Token.js';
 
 // Empty board left around the grid on every side, in cell pitches. It is what a pan grabs:
 // without it the outermost cells sit against the viewport edge with nothing beside them to
@@ -138,8 +136,8 @@ export interface BoardView {
 
 export interface MountBoardOptions {
   /** Where `BoardContainer` attaches, and the container `Interaction` pans/zooms. `BoardApp`
-   * passes its own pan/zoom container here; the Wave 6 Foundry-mount prototype passes a
-   * container it owns inside a stand-in "primary" container it does not. */
+   * passes its own pan/zoom container here; `dev/foundry-mount` passes a container it owns
+   * inside a stand-in "primary" container it does not. */
   parent: PIXI.Container;
   /** Receives the pointer/keyboard listeners `Interaction` adds and removes. This code never
    * creates it — `BoardApp` passes the canvas it made, a host passes its own. */
@@ -161,9 +159,9 @@ export interface MountBoardOptions {
 /**
  * Wires a `BoardContainer` and its layer stack into a `PIXI.Container` someone else owns, and
  * drives it with `Interaction` — no `PIXI.Application`, canvas creation, or resize handling of
- * its own. This is the seam `createBoardView` builds on below, and the one the Wave 6
- * Foundry-mount prototype (`dev/foundry-mount/`) calls directly to prove the board can be
- * driven without also constructing a second `PIXI.Application`. See `docs/pixi-board.md`.
+ * its own. This is the seam `createBoardView` builds on below, and the one `dev/foundry-mount`
+ * calls directly to prove the board can be driven without also constructing a second
+ * `PIXI.Application`. See `docs/pixi-board.md`.
  */
 export function mountBoardView(opts: MountBoardOptions): BoardView {
   const boardContainer = new BoardContainer();
@@ -329,21 +327,14 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   /** Shift-click fill: the connected run of cells sharing the clicked cell's terrain. */
   function region(key: string): string[] {
     if (!currentBoard || !geometry) return [key];
+    const board = currentBoard;
     const { grid } = geometry;
     const start = grid.parse(key);
     if (!grid.inBounds(start)) return [];
-    const terrain = at(currentBoard, start).terrain;
-    const seen = new Set([key]);
-    const queue = [start];
-    while (queue.length) {
-      for (const n of grid.neighbours(queue.pop()!)) {
-        const nKey = grid.key(n);
-        if (seen.has(nKey) || at(currentBoard, n).terrain !== terrain) continue;
-        seen.add(nKey);
-        queue.push(n);
-      }
-    }
-    return [...seen];
+    const terrain = at(board, start).terrain;
+    const same = grid.cells().filter((c) => at(board, c).terrain === terrain);
+    const patch = connectedCells(grid, same).find((p) => p.some((c) => grid.key(c) === key));
+    return (patch ?? [start]).map((c) => grid.key(c));
   }
 
   let anchoredId: string | null = null;
@@ -627,18 +618,11 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
   };
 }
 
-export { BoardApp } from './BoardApp.js';
-export { BoardContainer } from './BoardContainer.js';
-export { setAssetBase } from './asset-base.js';
 export { setVfxTimeScale } from './layers/EffectLayer.js';
 export type { FallenModel } from './layers/FallenLayer.js';
-export type { BoardCombatText, CombatTextIcon, CombatTextPart, CombatTextTone } from './layers/CombatTextLayer.js';
-// proto: the only non-BoardView surface Svelte touches — a pure path-builder (no PIXI, no
-// DOM) that Token.ts also calls for the same art. Re-deriving the asset-base prefixing here
-// would just duplicate it; see "Wave 2 notes" in the todos.
-export { targetIconUrl, type TargetIcon, actionIconUrl, bannerSvg, castIconUrl, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
-export { BRUSH_TERRAINS, brushColour, eraseForm, isEdgeBrush, sameBrush } from './brush.js';
-export { EDGE_BAND, edgeCandidates, hitTest, nearestEdge } from './hit.js';
-export { currentTheme, darkTheme, HIGHLIGHT_STYLES, lightTheme, prefersDark, type BoardTheme } from './theme.js';
+export type { BoardCombatText } from './layers/CombatTextLayer.js';
+export { targetIconUrl, type TargetIcon, actionIconUrl, bannerSvg, castIconUrl, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon } from './art.js';
+export { BRUSH_TERRAINS, sameBrush } from './brush.js';
+export { currentTheme, HIGHLIGHT_STYLES, type BoardTheme } from './theme.js';
 
 export type { TargetArrow } from './target-point.js';

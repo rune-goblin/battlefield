@@ -55,6 +55,7 @@ export class FallenLayer {
     this.ticker.add(this.tick);
     PIXI.Assets.load<PIXI.Texture>(assetUrl('art/condition-icons/dead.webp'))
       .then((texture) => { this.texture = texture; this.render(); })
+      // proto: a missing dead icon leaves a fallen mark with no texture; no error UI.
       .catch(() => {});
   }
 

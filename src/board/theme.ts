@@ -49,8 +49,8 @@ export interface BoardTheme {
 // terrain (its hex vocabulary is plains/forest/hills/mountains/swamp/marsh/water/desert/
 // tundra/ruins/cave/wasteland, ours is open/forest/swamp/shallows/water/settlement), so
 // those three and both light/dark variants are retuned to match Board.svelte's existing
-// app.css palette, since Wave 0 puts the Pixi board next to the DOM board for comparison.
-// Alpha is dropped: Wave 2 wants opaque cell fills, unlike Reignmaker's translucent overlay.
+// app.css palette. Alpha is dropped: cell fills are opaque, unlike Reignmaker's translucent
+// overlay.
 const LIGHT: BoardTheme = {
   mode: 'light',
   background: 0xf8f4ec,

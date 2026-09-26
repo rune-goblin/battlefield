@@ -29,8 +29,8 @@ export function elevationFillAlpha(level: number): number {
 }
 
 /** The in-cell elevation numeral: `fill` over a
- * `halo` stroke, so the digit holds up against any ground under it — rather than MapTextUtils'
- * drop-shadow presets, which assume a light-on-dark banner. Both maps draw the same mark, each
+ * `halo` stroke, so the digit holds up against any ground under it, rather than a drop-shadow,
+ * which assumes a light-on-dark banner. Both maps draw the same mark, each
  * out of its own two colours: the theme's ink on its paper, or the pencil on the page. */
 export function elevationLabelStyle(fill: number, halo: number, size: number): Partial<PIXI.ITextStyle> {
   return {

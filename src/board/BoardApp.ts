@@ -12,7 +12,7 @@ export interface BoardAppOptions {
 export class BoardApp {
   readonly app: PIXI.Application;
   private readonly viewportContainer = new PIXI.Container();
-  private themeValue: BoardTheme;
+  private readonly themeValue: BoardTheme;
 
   constructor({ canvas, container, theme }: BoardAppOptions) {
     this.themeValue = theme ?? currentTheme();
@@ -44,11 +44,6 @@ export class BoardApp {
   // container and every layer inherits the transform. `Interaction` is its only writer.
   get viewport(): PIXI.Container {
     return this.viewportContainer;
-  }
-
-  setTheme(theme: BoardTheme): void {
-    this.themeValue = theme;
-    this.app.renderer.background.color = theme.canvas;
   }
 
   resize(): void {
