@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, endActivation, moveReach, unit } from '../engine/index.js';
+import { act, availableActions, createBattle, endActivation, moveReach, unit, type ActivityAction } from '../engine/index.js';
 import { gridOf, notation, parse } from '../engine/board.js';
 import type { UnitCard } from '../engine/cards.js';
 import { CAST_ACTIVITIES } from '../engine/magic.js';
@@ -14,10 +14,11 @@ const setup = () => createBattle({ board: openBoard(), units: [
   { card: ally, side: 'defender', square: 'i8' },
 ] });
 const burst = (state = setup(), target = 'u1') => act(state,
-  { type: 'cast', spell: 'movement', activity: 1, target, unit: 'u0' },
+  { type: 'cast', spell: 'movement', activity: 1, target: { kind: 'unit', ids: [target] }, unit: 'u0' },
   { d20: () => { throw new Error('Burst of speed must not roll'); } });
 const placements = (state: ReturnType<typeof setup>) => availableActions(state, 'u0')
-  .find(o => o.type === 'cast' && o.spell === 'movement')!.activities[2].targets.map(t => t.id);
+  .find(o => o.type === 'cast' && o.spell === 'movement')!.activities[2].targets.flatMap(t => t.kind === 'transfer' ? t.moves : []);
+const translocate = (to: string): ActivityAction => ({ type: 'cast', spell: 'movement', activity: 3, target: { kind: 'transfer', moves: [{ unit: 'u1', to }] }, unit: 'u0' });
 
 describe('Movement cast progression', () => {
   it('offers Burst of speed, Sure footing, and Translocate in order', () => {
@@ -68,7 +69,7 @@ describe('Movement cast progression', () => {
   });
 
   it('puts the terrain benefit at two actions without granting flight', () => {
-    const s = act(setup(), { type: 'cast', spell: 'movement', activity: 2, target: 'u1', unit: 'u0' }, scriptedRng([]));
+    const s = act(setup(), { type: 'cast', spell: 'movement', activity: 2, target: { kind: 'unit', ids: ['u1'] }, unit: 'u0' }, scriptedRng([]));
     expect(unit(s, 'u0').actions).toBe(1);
     expect(unit(s, 'u1').sureFooting).toBe(true);
     expect(unit(s, 'u1').flies).toBe(false);
@@ -80,12 +81,12 @@ describe('Movement cast progression', () => {
     unit(s, 'u0').speed = 80;
     unit(s, 'u1').speed = speed;
     const targets = placements(s);
-    expect(targets).toContain('d2+d6');
-    expect(targets).not.toContain('d2+d7');
-    const moved = act(s, { type: 'cast', spell: 'movement', activity: 3, target: 'd2+d6', unit: 'u0' }, scriptedRng([]));
+    expect(targets).toContainEqual({ unit: 'u1', to: 'd6' });
+    expect(targets).not.toContainEqual({ unit: 'u1', to: 'd7' });
+    const moved = act(s, translocate('d6'), scriptedRng([]));
     expect(unit(moved, 'u1').square).toEqual(parse('d6'));
     expect(unit(moved, 'u1').actions).toBe(3);
-    expect(() => act(s, { type: 'cast', spell: 'movement', activity: 3, target: 'd2+d7', unit: 'u0' }, scriptedRng([]))).toThrow();
+    expect(() => act(s, translocate('d7'), scriptedRng([]))).toThrow();
   });
 
   it('uses hex distance and keeps the ally within the caster’s short range', () => {
@@ -93,26 +94,26 @@ describe('Movement cast progression', () => {
     s.board = openBoard('hex');
     const g = gridOf(s.board);
     const origin = unit(s, 'u1').square;
-    const targets = placements(s).filter(t => t.startsWith('d2+'));
+    const targets = placements(s).filter(m => m.unit === 'u1');
     expect(targets.length).toBeGreaterThan(0);
-    expect(Math.max(...targets.map(t => g.distance(origin, parse(t.split('+')[1]))))).toBe(4);
+    expect(Math.max(...targets.map(m => g.distance(origin, parse(m.to))))).toBe(4);
     const beyond = g.cells().find(sq => g.distance(origin, sq) === 5)!;
-    expect(targets).not.toContain(`d2+${notation(beyond)}`);
+    expect(targets).not.toContainEqual({ unit: 'u1', to: notation(beyond) });
     unit(s, 'u1').square = parse('h5');
-    expect(placements(s).some(t => t.startsWith('h5+'))).toBe(false);
+    expect(placements(s).some(m => m.unit === 'u1')).toBe(false);
   });
 
   it('crosses obstacles while requiring an empty landing the ally can occupy', () => {
     const s = setup();
     s.board.squares[5][3].terrain = 'water';
-    expect(placements(s)).not.toContain('d2+d6');
-    expect(placements(s)).not.toContain('d2+c2');
+    expect(placements(s)).not.toContainEqual({ unit: 'u1', to: 'd6' });
+    expect(placements(s)).not.toContainEqual({ unit: 'u1', to: 'c2' });
     unit(s, 'u1').flying = true;
-    expect(placements(s)).toContain('d2+d6');
+    expect(placements(s)).toContainEqual({ unit: 'u1', to: 'd6' });
     unit(s, 'u1').flying = false;
     s.board.squares[5][3].terrain = 'open';
     s.board.squares[3][3].terrain = 'water';
     s.board.squares[4][3].elevation = 3;
-    expect(placements(s)).toContain('d2+d6');
+    expect(placements(s)).toContainEqual({ unit: 'u1', to: 'd6' });
   });
 });

@@ -1,8 +1,8 @@
-import { at, gridOf, notation, parse, fortification } from './board.js';
+import { at, edgeCells, gridOf, notation, parse, fortification } from './board.js';
 import { engineKind } from './siege-engines.js';
 import { hasSight, sightBlock } from './sight.js';
 import { siegeModes, type SiegeMode } from './siege-profiles.js';
-import { cellTarget, unitTarget, wallName, wallTarget } from './targets.js';
+import { cellTarget, targetCells, targetKey, unitTarget, wallName, wallTarget } from './targets.js';
 import { BANDS, type ActivityTarget, type BattleState, type EngineState } from './types.js';
 
 /** Canonical targets are shared by the menu and command validation. A shape is one target. */
@@ -15,7 +15,7 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
     return d >= (mode.minimum ?? (kind === 'ram' ? 0 : 1)) && d <= max && hasSight(state.board, e.square, sq);
   };
   if (mode.shape === 'wall') return Object.entries(state.board.walls)
-    .filter(([key, w]) => w.remaining > 0 && key.split('|').some(id => inRange(id) && (kind !== 'ram' || id === notation(e.square))))
+    .filter(([key, w]) => w.remaining > 0 && edgeCells(key).some(id => inRange(id) && (kind !== 'ram' || id === notation(e.square))))
     .map(([id, w]) => wallTarget(id, `${w.gate ? 'Gate' : 'Wall'} ${wallName(id)} · ${w.remaining}/${w.boxes} · hardness ${fortification(w.tier).hardness}`));
   const affected = (u: BattleState['units'][number]) => u.status === 'active'
     && (!mode.groundOnly || (!u.flying && !u.flies))
@@ -41,21 +41,24 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
       if (g.distance(outer[i], outer[j]) === 1) groups.push([first, outer[i], outer[j]].map(notation));
     }
   }
-  const unique = [...new Set(groups.map(cells => cells.sort().join('+')))];
-  return unique.filter(id => id.split('+').every(inRange)
+  const unique = new Map<string, string[]>();
+  for (const cells of groups) {
+    const key = targetKey({ kind: 'cell', cells });
+    if (!unique.has(key)) unique.set(key, [...cells].sort());
+  }
+  return [...unique.values()].filter(cells => cells.every(inRange)
     // Friendly fire hits allies caught in the area, but an area needs an enemy in it to be worth aiming at.
-    && (mode.effect === 'rough' || mode.effect === 'web' || state.units.some(u => u.side !== e.side && affected(u) && id.split('+').includes(notation(u.square))))).map(id => {
-    const names = state.units.filter(u => affected(u) && id.split('+').includes(notation(u.square)))
+    && (mode.effect === 'rough' || mode.effect === 'web' || state.units.some(u => u.side !== e.side && affected(u) && cells.includes(notation(u.square))))).map(cells => {
+    const names = state.units.filter(u => affected(u) && cells.includes(notation(u.square)))
       .map(u => `${u.name}${u.side === e.side ? ' (ally)' : ''}`);
-    return cellTarget(id, `${id.replaceAll('+', ' / ')}${names.length ? ` — ${names.join(', ')}` : ''}`);
+    return cellTarget(cells, `${cells.join(' / ')}${names.length ? ` — ${names.join(', ')}` : ''}`);
   });
 }
 
 /** Why `cell` is no target for this mode: range, sight, then an empty hex. Null when some target covers it. */
 export function siegeCellReason(state: BattleState, e: EngineState, activity: number, cell: string): string | null {
   const mode = siegeModes(e.name, engineKind(e))[activity - 1];
-  if (siegeTargets(state, e, mode).some(t => (t.kind === 'wall' ? t.id.split('|') : t.kind === 'cell' ? t.id.split('+')
-    : state.units.filter(u => u.id === t.id).map(u => notation(u.square))).includes(cell))) return null;
+  if (siegeTargets(state, e, mode).some(t => targetCells(state, t).includes(cell))) return null;
   const g = gridOf(state.board), kind = engineKind(e);
   const max = kind === 'ram' ? 1 : BANDS[e.reach ?? 'medium'];
   const min = mode.minimum ?? (kind === 'ram' ? 0 : 1), d = g.distance(e.square, parse(cell));

@@ -143,7 +143,7 @@
       {/key}
       {/if}
       {#if c.pickerOffer.spell === 'healing' && c.activityPick.target}
-        <HealingChoices units={c.b.units.filter(u => c.activityPick?.target?.split('+').includes(u.id))} renewal={c.pickerActivity.index === 4} bind:choices={c.healingChoices} />
+        <HealingChoices units={c.healingRecipients} renewal={c.pickerActivity.index === 4} bind:choices={c.healingChoices} />
       {/if}
       {#if c.activityPick.selected.length}<button onclick={c.resetPickerTargets}>Reset targets</button>{/if}
     {:else}

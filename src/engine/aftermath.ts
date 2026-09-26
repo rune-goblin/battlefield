@@ -2,6 +2,7 @@ import { gridOf, notation, parse } from './board.js';
 import { canDeploy, crewOf, isStanding, isSurvivor, unit } from './battle/index.js';
 import { check, rollLine, successes } from './check.js';
 import { clone } from './clone.js';
+import { freshConditions } from './conditions.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
 import { ACTIONS_PER_ACTIVATION, SIDES, opponent, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
@@ -136,25 +137,7 @@ function clearCombatEffects(u: Unit) {
   u.attacked = false;
   u.feet = 0;
   u.castTrees = [];
-  u.guard = null;
-  u.rooted = 0;
-  u.exposed = false;
-  u.inspired = false;
-  u.suppressedBy = null;
-  u.pinnedBy = null;
-  u.frightened = false;
-  u.stunned = false;
-  u.persistent = null;
-  u.sureStrike = false;
-  u.wrath = false;
-  u.haste = 0;
-  u.ward = false;
-  u.stoneskin = false;
-  u.aegis = null;
-  u.selfBuffs = [];
-  u.movementBonus = 0;
-  u.sureFooting = false;
-  u.flies = false;
+  Object.assign(u, freshConditions());
 }
 
 /** Emplacements retain their position and owner; mobile survivors redeploy at home. */

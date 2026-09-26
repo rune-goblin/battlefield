@@ -43,7 +43,7 @@ describe('siege engines', () => {
     expect(siege.activities.map(r => r.label)).toEqual(['Bombard', 'Crushing shot', 'Breach wall']);
     expect(siege.activities.map(r => r.cost)).toEqual([1, 2, 2]);
     expect(offer(s0, 'shoot')).toBeUndefined();
-    const s1 = act(s0, { type: 'siege', engine: e.id, operation: 'attack', unit: u.id, activity: 2, target: 'u1' }, scriptedRng([10]));
+    const s1 = act(s0, { type: 'siege', engine: e.id, operation: 'attack', unit: u.id, activity: 2, target: { kind: 'unit', ids: ['u1'] } }, scriptedRng([10]));
     expect(unit(s1, 'u1').wounds).toBe(2);
     expect(unit(s1, 'u0').engines[0].fired).toBe(true);
     expect(siegeAttackOffer(s1, unit(s1, u.id), unit(s1, u.id).engines[0])).toBeNull();
@@ -54,7 +54,7 @@ describe('siege engines', () => {
     expect(siegeAttackOffer(s0, u, e)!.activities[0].targets).toEqual([]);
     u.square = parse('c6'); e.square = parse('c6');
     const key = edgeKey(parse('c6'), parse('c7'));
-    const s1 = act(s0, { type: 'siege', engine: e.id, operation: 'attack', unit: u.id, activity: 1, target: key }, scriptedRng([10]));
+    const s1 = act(s0, { type: 'siege', engine: e.id, operation: 'attack', unit: u.id, activity: 1, target: { kind: 'wall', edge: key } }, scriptedRng([10]));
     expect(s1.log.find(e => e.check)!.check!.modifier).toBe(e.launch);
     expect(s1.board.walls[key].remaining).toBe(1);
   });
@@ -62,7 +62,7 @@ describe('siege engines', () => {
   it('breaches a wall from range through the siege menu', () => {
     const s0 = battle(['Catapult'], 1), e = unit(s0, 'u0').engines[0];
     const key = edgeKey(parse('c6'), parse('c7'));
-    const s1 = act(s0, { type: 'siege', engine: e.id, operation: 'attack', unit: 'u0', activity: 3, target: key }, scriptedRng([20]));
+    const s1 = act(s0, { type: 'siege', engine: e.id, operation: 'attack', unit: 'u0', activity: 3, target: { kind: 'wall', edge: key } }, scriptedRng([20]));
     expect(s1.board.walls[key].remaining).toBe(0);
   });
 
@@ -139,7 +139,7 @@ describe('siege operations', () => {
     const e = unit(s, 'u0').engines[1];
     const shot = siegeAttackOffer(s, unit(s, 'u0'), e)!;
     expect(shot.activities[1].targets.some(t => t.id === 'u1')).toBe(true);
-    const next = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 2, target: 'u1' }, rng());
+    const next = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 2, target: { kind: 'unit', ids: ['u1'] } }, rng());
     expect(unit(next, 'u0').engines.map(e => e.loaded)).toEqual([1, 0]);
     expect(next.log.find(e => e.check)?.check?.modifier).toBe(engine('Catapult').launch);
     expect(unit(s, 'u0').engines[1].loaded).toBe(1);
@@ -150,7 +150,7 @@ describe('siege operations', () => {
     const id = unit(s, 'u0').engines[0].id;
     unit(s, 'u0').engines[0].loaded = 0;
     unit(s, 'u0').stats.volley = 20;
-    expect(() => act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'attack', target: 'u1' }, rng())).toThrow('Load');
+    expect(() => act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'attack', target: { kind: 'unit', ids: ['u1'] } }, rng())).toThrow('Load');
     s = act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'load' }, rng());
     expect(unit(s, 'u0').actions).toBe(2);
     expect(engineLoaded(unit(s, 'u0').engines[0])).toBe(true);
@@ -245,7 +245,7 @@ describe('siege operations', () => {
     u.square = parse('c6'); e.square = parse('c6');
     expect(siegeAttackOffer(s, u, e)?.activities[0].targets.every(t => t.kind === 'wall')).toBe(true);
     expect(siegeReason(s, u, e, 'load')).toContain('no reload');
-    const next = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', target: edgeKey(parse('c6'), parse('c7')) }, rng());
+    const next = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', target: { kind: 'wall', edge: edgeKey(parse('c6'), parse('c7')) } }, rng());
     expect(unit(next, 'u0').engines[0].fired).toBe(true);
   });
 });

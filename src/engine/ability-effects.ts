@@ -1,6 +1,7 @@
 import { at, barrierBetween, gridOf, notation, type Square } from './board.js';
 import { abilityName, abilityDescription, freshAbilityMemory, type AbilityMark, type AbilityOutcome, type TroopAbility, type AttackKind, type AbilityEnvironment } from './abilities.js';
 import { cellTarget, unitTarget } from './targets.js';
+import { healableConditions } from './conditions.js';
 import type { ActionOffer, ActivityTarget, BattleState, Unit } from './types.js';
 import type { Degree } from './check.js';
 import { levelDc } from './tables.js';
@@ -222,7 +223,7 @@ export function abilityOffers(s: BattleState, u: Unit, opening: () => string[], 
       && !(a.kind === 'temporary-protection' && t.abilityState?.vitalityRound === roundKey(s))
       && !(a.kind === 'guard' && t.id === u.id)
       && !(a.kind === 'recovery' && a.mode === 'condition' && (t.abilityState?.conditionRound === roundKey(s)
-        || !(t.pinnedBy || t.rooted || t.suppressedBy || t.exposed || t.frightened || t.persistent)))
+        || !healableConditions(t).length))
       && !(a.kind === 'recovery' && a.mode !== 'condition' && (t.abilityState?.healed || t.wounds <= (t.abilityState?.initialWounds ?? 0))))
       .map(unitTarget);
     const reason = (!release && u.disorder >= 3 ? 'Routed' : null) ?? activityAvailable(s, u, a)

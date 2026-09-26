@@ -2,19 +2,21 @@ import { abilityMemory, hasAbility } from '../ability-effects.js';
 import { wallsFor } from '../walls.js';
 import { at, notation, structuralDamage, fortification } from '../board.js';
 import { CELL_FEET } from '../path.js';
+import { MAGICAL_CONDITIONS, resetConditions } from '../conditions.js';
 import { rollLine, succeeded } from '../check.js';
 import type { ActivityIndex } from '../ladders.js';
 import type { Rng } from '../rng.js';
 import { siegeModes, siegeDetail, type SiegeMode } from '../siege-profiles.js';
 import { siegeTargets } from '../siege-targets.js';
+import { targetCells, targetKey } from '../targets.js';
 import { engineKind } from '../siege-engines.js';
 import { levelDc } from '../tables.js';
 import {
   ACTION_BONUS, type GateAction, type SiegeAction, type ActionOffer, type BattleState, type EngineState,
-  type Unit,
+  type TargetRef, type Unit,
 } from '../types.js';
 import {
-  dist, unit, isStanding, canActNow, engagedEnemies, rollBonus, attackRoll, defenceOf, log, attackOn,
+  dist, checkedTarget, isStanding, canActNow, engagedEnemies, rollBonus, attackRoll, defenceOf, log, attackOn,
 } from './state.js';
 import {
   crewOf, refreshEmplacements, engineCard, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoaded,
@@ -89,12 +91,12 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
     case 'stun': target.stunned = true; break;
     case 'expose': target.exposed = true; break;
     case 'sicken': addDisorder(state, target, 1, mode.label); break;
-    case 'nullify':
-      target.ward = false; target.stoneskin = false; target.aegis = null; target.sureStrike = false;
-      target.wrath = false; target.haste = 0; target.movementBonus = 0; target.sureFooting = false;
+    case 'nullify': {
       // A temporary flier over water lands after reaching safe ground.
-      if (at(state.board, target.square).terrain !== 'water') target.flies = false;
-      target.selfBuffs = []; break;
+      const overWater = at(state.board, target.square).terrain === 'water';
+      resetConditions(target, MAGICAL_CONDITIONS.filter((key) => !(key === 'flies' && overWater)));
+      break;
+    }
     case 'push': case 'pull':
       forcedStep(state, e.square, target, mode.effect);
       break;
@@ -102,7 +104,7 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
   if (mode.effect && mode.effect !== 'rough') log(state, target, `${target.name}: ${mode.label} applies ${mode.effect}.`);
 }
 
-function resolveSiege(state: BattleState, rng: Rng, u: Unit, e: EngineState, mode: SiegeMode, targetId: string, focus: number) {
+function resolveSiege(state: BattleState, rng: Rng, u: Unit, e: EngineState, mode: SiegeMode, ref: TargetRef, focus: number) {
   const crewBonus = hasAbility(u, 'siege-crew') && !u.abilityState?.crewUsed ? 1 : 0;
   const modifier = e.launch - u.disorder + rollBonus(u) + focus * ACTION_BONUS + crewBonus;
   abilityMemory(u).crewUsed = true;
@@ -110,15 +112,15 @@ function resolveSiege(state: BattleState, rng: Rng, u: Unit, e: EngineState, mod
   e.fired = true;
   if (engineLoadSteps(e)) e.loaded = 0;
   u.attacked = true;
-  if (mode.shape === 'wall') {
-    const wall = state.board.walls[targetId];
+  if (ref.kind === 'wall') {
+    const wall = state.board.walls[ref.edge];
     const c = attackRoll(state, rng, u, null, modifier, wallDc(state, wall));
     const damage = succeeded(c.degree) ? structuralDamage(wall, mode.damage + (c.degree === 'critical-success' ? 1 : 0), mode.penetration) : 0;
     wall.remaining = Math.max(0, wall.remaining - damage);
-    log(state, u, `${rollLine(u.name, `${e.name} ${mode.label} against the wall ${targetId}`, c, 'attack')} ${damage} structural damage after hardness ${fortification(wall.tier).hardness}. ${wall.remaining ? `${wall.remaining}/${wall.boxes} remains.` : 'Breached.'}`, c);
+    log(state, u, `${rollLine(u.name, `${e.name} ${mode.label} against the wall ${ref.edge}`, c, 'attack')} ${damage} structural damage after hardness ${fortification(wall.tier).hardness}. ${wall.remaining ? `${wall.remaining}/${wall.boxes} remains.` : 'Breached.'}`, c);
     return;
   }
-  const cells = mode.shape === 'single' ? [notation(unit(state, targetId).square)] : targetId.split('+');
+  const cells = targetCells(state, ref);
   if (mode.effect === 'rough' || mode.effect === 'web') {
     state.board.siegeFields ??= [];
     state.board.siegeFields.push({ cells, kind: mode.effect, expires: state.round + 1 });
@@ -173,13 +175,15 @@ export function doSiege(state: BattleState, rng: Rng, u: Unit, action: SiegeActi
       const offer = siegeAttackOffer(state, u, e);
       const activity = action.activity ?? 1;
       const option = offer?.activities.find(x => x.index === activity);
-      if (!option?.legal || !option.targets.some(t => t.id === action.target)) throw new Error('Choose an available siege attack and target.');
+      const target = checkedTarget(action.target);
+      const key = target ? targetKey(target) : null;
+      if (!target || !option?.legal || !option.targets.some(t => t.id === key)) throw new Error('Choose an available siege attack and target.');
       const mode = siegeModes(e.name, engineKind(e))[activity - 1];
       const focus = action.focus ?? 0;
       if (!Number.isInteger(focus) || focus < 0 || focus > 2) throw new Error('Commit zero, one, or two extra actions.');
       const cost = mode.cost + focus;
       if (cost > u.actions) throw new Error('Not enough actions for this siege attack.');
-      resolveSiege(state, rng, u, e, mode, action.target!, focus);
+      resolveSiege(state, rng, u, e, mode, target, focus);
       return cost;
     }
     default: throw new Error('Unknown siege action.');

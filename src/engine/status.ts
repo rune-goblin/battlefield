@@ -1,4 +1,5 @@
 import { wallsFor } from './walls.js';
+import { CONDITIONS } from './conditions.js';
 import type { Board } from './board.js';
 import type { Unit } from './types.js';
 
@@ -14,28 +15,10 @@ export const STATUSES = [
 
 export type Status = typeof STATUSES[number];
 
-// Each reads the value that holds the status, so a second shooter's pin on a piece already
-// pinned counts as a change.
-const HOLDS: Record<Status, (u: Unit, board?: Board) => unknown> = {
+const HOLDS = {
   fortified: (u, board) => u.status === 'active' && board ? wallsFor(board).fortifiedAt(u.square)?.regions.join('|') : null,
-  guard: (u) => u.guard !== null,
-  pinned: (u) => u.pinnedBy,
-  rooted: (u) => u.rooted > 0,
-  suppressed: (u) => u.suppressedBy,
-  stunned: (u) => u.stunned,
-  frightened: (u) => u.frightened,
-  exposed: (u) => u.exposed,
-  persistent: (u) => u.persistent !== null,
-  aegis: (u) => u.aegis !== null,
-  warded: (u) => u.ward,
-  stoneskin: (u) => u.stoneskin,
-  'sure-strike': (u) => u.sureStrike,
-  wrath: (u) => u.wrath,
-  hasted: (u) => u.haste > 0,
-  'sure-footing': (u) => u.sureFooting,
-  'burst-of-speed': (u) => (u.movementBonus ?? 0) > 0,
-  inspired: (u) => u.inspired,
-};
+} as Record<Status, (u: Unit, board?: Board) => unknown>;
+for (const spec of Object.values(CONDITIONS)) if ('status' in spec) HOLDS[spec.status] = spec.holds;
 
 export const statusesOf = (u: Unit, board?: Board): Status[] => STATUSES.filter((status) => HOLDS[status](u, board));
 

@@ -28,7 +28,8 @@ describe('complete melee routes', () => {
     const plan = meleePlans(b, u, target.id).find(p => p.kind === kind)!;
     const combined = act(b, { type: 'advance', unit: u.id, target: target.id, via: plan.via!, finish: kind }, scriptedRng([15, 15]));
     const moved = act(b, { type: 'move', unit: u.id, to: plan.via! }, scriptedRng([]));
-    const separate = act(moved, { type: kind, unit: u.id, target: target.id, activity: 1 }, scriptedRng([15, 15]));
+    const separate = act(moved, kind === 'fight' ? { type: kind, unit: u.id, target: { kind: 'unit', ids: [target.id] }, activity: 1 }
+      : { type: kind, unit: u.id, target: target.id, activity: 1 }, scriptedRng([15, 15]));
     expect(combined).toEqual(separate);
     expect(notation(b.units[0].square)).toBe('e2');
   });

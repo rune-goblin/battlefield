@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import type { Grid, Side } from '../../engine/index.js';
+import { edgeCells, type Grid, type Side } from '../../engine/index.js';
 import { actionIconUrl } from '../art.js';
 import type { BoardTheme, HighlightStyle } from '../theme.js';
 
@@ -197,7 +197,7 @@ export class OverlayLayer {
   }
 
   private strokeEdge(g: PIXI.Graphics, key: string, colour: number, alpha: number, width: number): void {
-    const [aKey, bKey] = key.split('|');
+    const [aKey, bKey] = edgeCells(key);
     const a = this.grid!.parse(aKey);
     const b = this.grid!.parse(bKey);
     if (!this.grid!.inBounds(a) || !this.grid!.inBounds(b)) return;

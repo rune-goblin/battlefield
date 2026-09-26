@@ -1,4 +1,5 @@
 import { abilityMemory, resolveBonus, refreshAbilityAuras, absorbAbilityDamage } from '../ability-effects.js';
+import { HEALABLE, resetConditions } from '../conditions.js';
 import type { HealingCondition } from '../types.js';
 import { rollTwice, rollLine, succeeded } from '../check.js';
 import type { Rng } from '../rng.js';
@@ -96,39 +97,16 @@ export function inspire(state: BattleState, u: Unit) {
   log(state, u, `${u.name} is inspired: +2 to its next roll.`);
 }
 
-/** The critical's "one more thing": end the first condition present, pinned through persistent
- * damage — an order this wave fixes, since rules.html lists the six in prose, not by priority. */
+/** The critical's "one more thing": end the first condition present that `choice` allows. The
+ * rules name the six without a priority, so a heal takes them in `CONDITIONS` order, pinned
+ * through persistent damage. */
 export function endCondition(state: BattleState, target: Unit, choice?: HealingCondition): boolean {
-  if (target.pinnedBy && (!choice || choice === 'pinned')) {
-    const pinner = state.units.find((e) => e.id === target.pinnedBy);
-    target.pinnedBy = null;
-    log(state, target, `${target.name} is healed clear of ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
-    return true;
-  }
-  if (target.rooted > 0 && (!choice || choice === 'rooted')) {
-    target.rooted = 0;
-    abilityMemory(target).snare = false;
-    log(state, target, `${target.name} is healed clear of root.`);
-    return true;
-  }
-  if (target.suppressedBy && (!choice || choice === 'suppressed')) {
-    target.suppressedBy = null;
-    log(state, target, `${target.name} is healed clear of suppression.`);
-    return true;
-  }
-  if (target.exposed && (!choice || choice === 'exposed')) {
-    target.exposed = false;
-    log(state, target, `${target.name} is healed clear of exposure.`);
-    return true;
-  }
-  if (target.frightened && (!choice || choice === 'frightened')) {
-    target.frightened = false;
-    log(state, target, `${target.name} is healed clear of fright.`);
-    return true;
-  }
-  if (target.persistent && (!choice || choice === 'persistent')) {
-    target.persistent = null;
-    log(state, target, `${target.name} recovers from persistent damage.`);
+  for (const { key, status, holds, text } of HEALABLE) {
+    if (!holds(target) || (choice && choice !== status)) continue;
+    const line = text(target, state);
+    resetConditions(target, [key]);
+    if (key === 'rooted') abilityMemory(target).snare = false;
+    log(state, target, line);
     return true;
   }
   return false;

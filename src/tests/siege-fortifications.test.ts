@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   act, createBattle, defenceOf, endActivation, engineLoaded, engineLoadCost, engineLoadProgress, engineLoading, ENGINES,
   gateReason, generateBoard, gridOf, makeWall, notation, parse, siegeAttackOffer, siegeReason,
-  stepFeet, structuralDamage, unit, type BattleState, type UnitCard,
+  refOf, stepFeet, structuralDamage, unit, type BattleState, type TargetRef, type UnitCard,
 } from '../engine/index.js';
 import { upgradeEngine } from '../engine/legacy.js';
 import { SIEGE_PROFILES, siegeDetail, siegeModes } from '../engine/siege-profiles.js';
@@ -25,8 +25,10 @@ function setup(name = 'Catapult'): BattleState {
   b.pending = 'attacker'; b.active = 'u0'; b.begun = false;
   return b;
 }
-const fire = (b: BattleState, activity: 1 | 2 | 3, target: string, focus = 0) => act(b,
-  { type: 'siege', unit: 'u0', engine: b.units[0].engines[0].id, operation: 'attack', activity, target, focus }, scriptedRng([20, 20, 20, 20]));
+/** A string names one unit. */
+const fire = (b: BattleState, activity: 1 | 2 | 3, target: TargetRef | string, focus = 0) => act(b,
+  { type: 'siege', unit: 'u0', engine: b.units[0].engines[0].id, operation: 'attack', activity, focus,
+    target: typeof target === 'string' ? { kind: 'unit', ids: [target] } : refOf(target) }, scriptedRng([20, 20, 20, 20]));
 
 describe('siege catalog and combat', () => {
   it('covers every source actor and imports bounded loading costs', () => {
@@ -48,7 +50,7 @@ describe('siege catalog and combat', () => {
       const targets = siegeTargets(b, e, mode);
       const target = targets.find(t => t.id.includes('g6')) ?? targets[0];
       expect(target, `${name}: ${mode.label}`).toBeDefined();
-      const after = fire(b, (i + 1) as 1 | 2 | 3, target.id);
+      const after = fire(b, (i + 1) as 1 | 2 | 3, target);
       expect(after.units[0].engines[0].fired).toBe(true);
       expect(b.units[0].engines[0].fired).toBe(false);
       expect(after.log.some(l => l.text.includes(mode.label))).toBe(true);
@@ -97,7 +99,7 @@ describe('siege catalog and combat', () => {
     b.units[1].stats.defence = e.launch + 10;
     const cell = notation(b.units[1].square);
     const target = siegeTargets(b, e, mode).find(t => t.kind === 'unit' ? t.id === 'u1' : t.id.split('+').includes(cell))!;
-    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity, target: target.id }, scriptedRng([10, 20, 20, 20]));
+    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity, target: refOf(target) }, scriptedRng([10, 20, 20, 20]));
     expect(after.units[1].wounds).toBe(damage);
     if (effect === 'snare' || effect === 'web') expect(after.units[1].rooted).toBe(1);
     if (effect === 'stun') expect(after.units[1].stunned).toBe(true);
@@ -112,20 +114,20 @@ describe('siege catalog and combat', () => {
     const service = new TargetingService(b, u, offer, offer.activities[0]);
     expect(service.preview(target.id)?.cells).toHaveLength(3);
     expect(service.choices.find(t => t.id === target.id)?.geometry).toBe('corner');
-    const after = fire(b, 1, target.id);
+    const after = fire(b, 1, target);
     expect(after.units[1].wounds).toBe(2);
     expect(after.units[2].wounds).toBe(2);
   });
   it('caps heavy hits under stoneskin and keeps a troop volley separate', () => {
     const b = setup('Heavy Ballista'); b.units[1].stoneskin = true;
     expect(fire(b, 1, 'u1').units[1].wounds).toBe(1);
-    const volley = act(b, { type: 'shoot', unit: 'u0', activity: 1, target: 'u1' }, scriptedRng([20]));
+    const volley = act(b, { type: 'shoot', unit: 'u0', activity: 1, target: { kind: 'unit', ids: ['u1'] } }, scriptedRng([20]));
     expect(volley.units[0].engines[0].fired).toBe(false);
     expect(engineLoaded(volley.units[0].engines[0])).toBe(true);
   });
   it('rejects malformed shapes, extra commitment, and lobs inside their minimum range', () => {
     const b = setup();
-    expect(() => fire(b, 1, 'a1+b1+c1')).toThrow('target');
+    expect(() => fire(b, 1, { kind: 'cell', cells: ['a1', 'b1', 'c1'] })).toThrow('target');
     expect(() => fire(b, 2, 'u1', 2)).toThrow('actions');
     expect(() => fire(b, 2, 'u1', -1)).toThrow('Commit');
     const lob = setup('Trebuchet'); lob.units[1].square = parse('e6');
@@ -155,7 +157,7 @@ describe('siege catalog and combat', () => {
     expect(option.legal).toBe(true);
     const target = option.targets.find(t => t.kind === 'unit' ? t.id === 'u1' : t.id.split('+').includes('e6'))!;
     expect(target).toBeDefined();
-    b = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 1, target: target.id }, scriptedRng([20, 20, 20, 20]));
+    b = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 1, target: refOf(target) }, scriptedRng([20, 20, 20, 20]));
     expect(b.units[1].wounds).toBe(name === 'Kickback Spring' ? 2 : 3);
     expect(b.activated).toContain('u0');
     expect((emplaced ? b.engines[0] : b.units[0].engines[0]).fired).toBe(true);
@@ -182,7 +184,7 @@ describe('siege catalog and combat', () => {
     let b = setup('Ballista');
     const engine = b.units[0].engines[0].id;
     const load = () => { b = act(b, { type: 'siege', unit: 'u0', engine, operation: 'load' }, scriptedRng([])); };
-    const shoot = () => { b = act(b, { type: 'siege', unit: 'u0', engine, operation: 'attack', activity: 1, target: 'u1' }, scriptedRng([1])); };
+    const shoot = () => { b = act(b, { type: 'siege', unit: 'u0', engine, operation: 'attack', activity: 1, target: { kind: 'unit', ids: ['u1'] } }, scriptedRng([1])); };
     if (order === 'load first') {
       b.units[0].engines[0].loaded = 0;
       load();
@@ -247,7 +249,7 @@ describe('siege catalog and combat', () => {
       const b = setup(name), e = b.units[0].engines[0];
       b.units[1].stoneskin = true; b.units[1].haste = 2; b.units[1].sureStrike = true;
       const target = siegeTargets(b, e, siegeModes(name, e.kind)[0]).find(t => t.id.split('+').includes('g6'))!;
-      const after = fire(b, 1, target.id), t = after.units[1];
+      const after = fire(b, 1, target), t = after.units[1];
       if (name === 'Marking Powder Cannon') { expect(t.wounds).toBe(0); expect(t.exposed).toBe(true); }
       else { expect(t.stoneskin).toBe(false); expect(t.haste).toBe(0); expect(t.sureStrike).toBe(false); }
     }
@@ -259,7 +261,7 @@ describe('siege catalog and combat', () => {
     expect(fire(b, 2, 'u1').units[1].square).toEqual(parse('g6'));
     const push = setup('Kickback Spring'); push.units[1].square = parse('f6');
     const e = push.units[0].engines[0], target = siegeTargets(push, e, siegeModes(e.name, e.kind)[0])[0];
-    const next = fire(push, 1, target.id);
+    const next = fire(push, 1, target);
     expect(next.units[1].wounds).toBe(2);
     expect(gridOf(push.board).distance(e.square, next.units[1].square)).toBe(3);
   });
@@ -273,7 +275,7 @@ describe('siege catalog and combat', () => {
     b.units[1].square = parse('f6');
     const e = b.units[0].engines[0], mode = siegeModes(e.name, e.kind)[0];
     const target = siegeTargets(b, e, mode).find(t => t.id.split('+').includes('f6'))!;
-    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 1, target: target.id }, scriptedRng([roll, 20, 20, 20]));
+    const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'attack', activity: 1, target: refOf(target) }, scriptedRng([roll, 20, 20, 20]));
     expect(after.units[1].wounds).toBe(damage);
     expect(gridOf(b.board).distance(e.square, after.units[1].square)).toBe(distance);
     expect(siegeDetail(mode)).toContain('1/2 damage on hit/critical');
@@ -286,7 +288,7 @@ describe('siege catalog and combat', () => {
     b.units[1].rooted = 1;
     const e = b.units[0].engines[0];
     const target = siegeTargets(b, e, siegeModes(e.name, e.kind)[0]).find(t => t.id.split('+').includes('f6'))!;
-    const after = fire(b, 1, target.id);
+    const after = fire(b, 1, target);
     expect(after.units[1].wounds).toBe(2);
     expect(notation(after.units[1].square)).toBe('f6');
   });
@@ -299,7 +301,7 @@ describe('siege catalog and combat', () => {
         if (grid.distance(e.square, n) > grid.distance(e.square, f6)) b.board.walls[grid.edgeKey(n, f6)] = makeWall(3);
       }
       const target = siegeTargets(b, e, siegeModes(e.name, e.kind)[0]).find(t => t.id.split('+').includes('f6'))!;
-      return fire(b, 1, target.id).units[1];
+      return fire(b, 1, target).units[1];
     };
     const held = pushed(false);
     expect(notation(held.square)).toBe('f6');
@@ -313,7 +315,7 @@ describe('siege catalog and combat', () => {
       const b = setup(name), e = b.units[0].engines[0], index = name === 'Flame Bellows' ? 1 : 2;
       const target = siegeTargets(b, e, siegeModes(e.name, e.kind)[index - 1])[0];
       b.board.siegeFields = [{ cells: ['g6', 'h6'], kind: 'web', expires: 2 }];
-      const after = fire(b, index, target.id);
+      const after = fire(b, index, target);
       expect(after.board.siegeFields?.[0].cells).toEqual(name === 'Flame Bellows' ? ['h6'] : ['g6', 'h6']);
     }
   });
@@ -334,7 +336,7 @@ describe('siege catalog and combat', () => {
     const burning = setup('Glacial Zephyr');
     const e = burning.units[0].engines[0], target = siegeTargets(burning, e, siegeModes(e.name, e.kind)[1])[0];
     const hitCells = target.id.split('+'); burning.units[1].square = parse(hitCells.at(-1)!);
-    const burned = fire(burning, 2, target.id);
+    const burned = fire(burning, 2, target);
     expect(burned.units[1].persistent).not.toBeNull();
     const paste = setup('Blob Paste Propulsor');
     let after = fire(paste, 1, 'u1'); expect(after.units[1].rooted).toBe(1);
@@ -404,7 +406,7 @@ describe('fortifications and gates', () => {
     let b = setup('Web Launcher'); const e = b.units[0].engines[0];
     const target = siegeTargets(b, e, siegeModes(e.name, e.kind)[0]).find(t => t.id.includes('g6') && t.id.includes('g7'))!;
     b.board.walls['g6|g7'] = makeWall(3);
-    b = fire(b, 1, target.id);
+    b = fire(b, 1, target);
     expect(stepFeet(b.board, parse('g6'), parse('g7'), { climber: true })).toBe(20);
     expect(stepFeet(b.board, parse('g6'), parse('g7'))).toBe(Infinity);
     expect(JSON.parse(JSON.stringify(b)).board.siegeFields).toEqual(b.board.siegeFields);

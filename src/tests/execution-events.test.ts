@@ -51,7 +51,7 @@ describe('execution events', () => {
   });
 
   it('records both faces a Sure Strike throws', async () => {
-    const strike = { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } as const;
+    const strike = { type: 'fight' as const, activity: 1 as const, target: { kind: 'unit' as const, ids: ['u1'] }, unit: 'u0' };
     const plain = runtimeOn(battleSession('c3'), scriptedRng([7]));
     await plain.submit({ type: 'action.resolve', action: strike });
 
@@ -70,7 +70,7 @@ describe('execution events', () => {
     // A 19 hits, and the Kobolds roll a 10 to brace against the wound.
     const runtime = runtimeOn(battleSession('c3'), scriptedRng([19, 10]));
 
-    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
+    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: { kind: 'unit', ids: ['u1'] }, unit: 'u0' } });
 
     const checks = runtime.session.lastCommit!.events.filter((e) => e.type === 'checkResolved');
     expect(checks.map((e) => [e.unit, e.lands])).toEqual([
@@ -83,7 +83,7 @@ describe('execution events', () => {
     // A 2 misses, so the attacker rolls a 10 against the repulse.
     const runtime = runtimeOn(battleSession('c3'), scriptedRng([1, 10]));
 
-    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
+    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: { kind: 'unit', ids: ['u1'] }, unit: 'u0' } });
 
     const checks = runtime.session.lastCommit!.events.filter((e) => e.type === 'checkResolved');
     expect(checks.map((e) => [e.unit, e.lands])).toEqual([
@@ -107,7 +107,7 @@ describe('execution events', () => {
     // A natural 1 misses critically and exposes the attacker; the 10 is its repulse save.
     const runtime = runtimeOn(battleSession('c3'), scriptedRng([1, 10]));
 
-    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' } });
+    await runtime.submit({ type: 'action.resolve', action: { type: 'fight', activity: 1, target: { kind: 'unit', ids: ['u1'] }, unit: 'u0' } });
 
     expect(runtime.session.lastCommit!.events.filter((e) => e.type === 'conditionGained')).toMatchObject([
       { unit: 'u0', condition: 'exposed' },

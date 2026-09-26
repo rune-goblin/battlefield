@@ -1,4 +1,4 @@
-import { edgeKey, gridFor, notation, parse, SIZE, FILES, type Grid, type GridKind, type Square } from './grid.js';
+import { edgeCells, edgeKey, gridFor, notation, parse, SIZE, FILES, type Grid, type GridKind, type Square } from './grid.js';
 import { seededRandom, type Random } from './rng.js';
 
 export * from './grid.js';
@@ -334,7 +334,7 @@ function layFort(board: Board, rnd: Random, tier: number): void {
     .filter(n => n.rank === sq.rank && !inside.has(notation(n)))
     .map(n => edgeKey(sq, n)));
   const edges = [...front, ...flanks].slice(0, budget);
-  for (const key of edges) board.walls[key] = makeWall(tier, key.split('|').find(id => inside.has(id)));
+  for (const key of edges) board.walls[key] = makeWall(tier, edgeCells(key).find(id => inside.has(id)));
   if (front[0] && board.walls[front[0]]) board.walls[front[0]].gate = { open: false };
 }
 

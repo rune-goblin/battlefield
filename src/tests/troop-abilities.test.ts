@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   act, availableActions, chargeImpact, createBattle, endActivation, defenceOf, moveReach, strikeModifier,
-  parse, notation, scriptedRng, COMBATANTS, MAX_WOUNDS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState,
+  parse, notation, scriptedRng, COMBATANTS, MAX_WOUNDS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState, type TargetRef,
 } from '../engine/index.js';
 import { importAbilities, sourceAttackTags } from '../adapters/pf2e/abilities.js';
 import { cardFromActor, type TroopActor } from '../adapters/pf2e/troopCard.js';
@@ -30,9 +30,10 @@ function battle(ours: TroopAbility[] = [], theirs: TroopAbility[] = [], extra: P
   s.units[1].square = parse('c3');
   return s;
 }
-const fight = (s: BattleState, rolls = [10, 20]) => act(s, { type: 'fight', activity: 1, unit: 'u0', target: 'u1' }, scriptedRng(rolls));
-const special = (s: BattleState, key: string, target?: string, who = 'u0', rolls = [1]) =>
+const fight = (s: BattleState, rolls = [10, 20]) => act(s, { type: 'fight', activity: 1, unit: 'u0', target: { kind: 'unit', ids: ['u1'] } }, scriptedRng(rolls));
+const special = (s: BattleState, key: string, target?: TargetRef, who = 'u0', rolls = [1]) =>
   act(s, { type: 'cast', activity: 1, unit: who, ability: key, target }, scriptedRng(rolls));
+const one = (id: string): TargetRef => ({ kind: 'unit', ids: [id] });
 
 describe('troop ability presentation', () => {
   it('keeps the current catalogue and runtime names aligned', () => {
@@ -108,7 +109,7 @@ describe('Blast interrupts regeneration', () => {
     return s;
   }
   const missile = (s: BattleState, unit = 'u0', rolls = [10, 20]) =>
-    act(s, { type: 'cast', spell: 'blast', activity: 1, unit, target: 'u2' }, scriptedRng(rolls));
+    act(s, { type: 'cast', spell: 'blast', activity: 1, unit, target: { kind: 'unit', ids: ['u2'] } }, scriptedRng(rolls));
 
   it.each(['miss', 'absorbed'])('%s Blast leaves regeneration available, even with source spell tags', outcome => {
     const s = field();
@@ -124,7 +125,7 @@ describe('Blast interrupts regeneration', () => {
     const s = field();
     if (outcome === 'miss') s.units[3].stats.defence = 30;
     if (outcome === 'absorbed') s.units[3].abilityState!.buffer = 1;
-    const next = act(s, { type: 'cast', spell: 'blast', activity: 2, unit: 'u0', target: 'c3+c4' }, scriptedRng([10, 20, 20]));
+    const next = act(s, { type: 'cast', spell: 'blast', activity: 2, unit: 'u0', target: { kind: 'cell', cells: ['c3', 'c4'] } }, scriptedRng([10, 20, 20]));
     expect(next.units[2].wounds).toBe(1);
     expect(next.units[2].abilityState!.blockedThrough).toBe(1);
     expect(next.units[3].wounds).toBe(outcome === 'normal' ? 1 : 0);
@@ -175,7 +176,7 @@ describe('troop ability resolution', () => {
     expect(s.units[0].abilityState?.buffer).toBe(1);
     expect(s.units[0].wounds).toBe(0);
     s = JSON.parse(JSON.stringify(endActivation(s, rng)));
-    s = act(s, { type: 'fight', activity: 1, unit: 'u1', target: 'u0' }, rng);
+    s = act(s, { type: 'fight', activity: 1, unit: 'u1', target: { kind: 'unit', ids: ['u0'] } }, rng);
     expect(s.units[0].abilityState?.buffer).toBe(0);
     expect(s.units[0].wounds).toBe(1);
   });
@@ -183,11 +184,11 @@ describe('troop ability resolution', () => {
   it('Recovery restores real Health once and respects pre-existing wounds', () => {
     let s = battle([ability('recovery', { delivery: 'activity', mode: 'health', cost: 2 })], [], { wounds: 1 });
     s.units[0].wounds = 3;
-    s = special(s, 'recovery', 'u0');
+    s = special(s, 'recovery', one('u0'));
     expect(s.units[0].wounds).toBe(2);
     expect(s.units[0].abilityState?.healed).toBe(true);
     expect(s.units[0].abilityState?.buffer).toBe(0);
-    expect(() => special(s, 'recovery', 'u0')).toThrow();
+    expect(() => special(s, 'recovery', one('u0'))).toThrow();
   });
 
   it('regeneration is recurring, and fire suppresses exactly the next activation', () => {
@@ -197,7 +198,7 @@ describe('troop ability resolution', () => {
     s = act(s, { type: 'guard', activity: 1, unit: 'u0' }, rng);
     expect(s.units[0].wounds).toBe(1);
     s = endActivation(s, rng);
-    s = act(s, { type: 'fight', activity: 1, unit: 'u1', target: 'u0' }, scriptedRng([10, 20]));
+    s = act(s, { type: 'fight', activity: 1, unit: 'u1', target: { kind: 'unit', ids: ['u0'] } }, scriptedRng([10, 20]));
     expect(s.units[0].wounds).toBe(2);
     s = endActivation(s, rng);
     s = act(s, { type: 'guard', activity: 1, unit: 'u0' }, rng);
@@ -264,7 +265,7 @@ describe('troop ability resolution', () => {
 
   it('Menace is temporary and respects immunity; its aura clears when adjacency ends', () => {
     let s = battle([ability('fear', { delivery: 'activity', cost: 1 })]);
-    s = special(s, 'fear', 'u1');
+    s = special(s, 'fear', one('u1'));
     expect(s.units[1].frightened).toBe(true);
     expect(s.units[1].disorder).toBe(0);
     s = endActivation(endActivation(s, rng), rng);
@@ -306,10 +307,10 @@ describe('troop ability resolution', () => {
   it.each(['snare', 'suppression'] as const)('%s replaces Volley damage and consumes the attack', kind => {
     let s = battle([ability(kind, { delivery: 'activity', cost: 2 })]);
     s.units[1].square = parse('c4');
-    s = special(s, kind, 'u1', 'u0', [20]);
+    s = special(s, kind, one('u1'), 'u0', [20]);
     expect(s.units[1].wounds).toBe(0);
     expect(s.units[0].attacked).toBe(true);
-    expect(() => act(s, { type: 'shoot', activity: 1, unit: 'u0', target: 'u1' }, rng)).toThrow(/already attacked/);
+    expect(() => act(s, { type: 'shoot', activity: 1, unit: 'u0', target: { kind: 'unit', ids: ['u1'] } }, rng)).toThrow(/already attacked/);
     if (kind === 'snare') {
       expect(s.units[1].rooted).toBe(1);
       s = endActivation(s, rng);
@@ -395,7 +396,7 @@ describe('troop ability resolution', () => {
     const s = battle([ability('guard', { delivery: 'activity', recipient: 'ally', cost: 1 })]);
     const ally = structuredClone(s.units[0]); ally.id = 'u2'; ally.square = parse('d2'); ally.abilities = [];
     s.units.push(ally); s.order.push('u2'); s.pending = 'attacker';
-    const result = special(s, 'guard', 'u2');
+    const result = special(s, 'guard', one('u2'));
     expect(defenceOf(result, result.units[2], null, false)).toBe(22);
     result.units[2].guard = { defence: 2, cap: false, holds: false };
     expect(defenceOf(result, result.units[2], null, false)).toBe(22);
@@ -419,7 +420,7 @@ describe('troop ability resolution', () => {
     s = act(s, action, rng);
     expect(s.units[0].actions).toBe(3);
     expect(notation(s.units[0].square)).toBe('d2');
-    expect(() => special(s, 'opening-move', 'e2')).toThrow();
+    expect(() => special(s, 'opening-move', { kind: 'cell', cells: ['e2'] })).toThrow();
   });
 
   it('Exploit checks the target predicate and caps duplicate bonuses', () => {
@@ -456,7 +457,7 @@ describe('troop ability resolution', () => {
       { card: card(), side: 'defender', square: 'c7' },
     ] });
     s.units[1].square = parse('c5');
-    const result = act(s, { type: 'siege', unit: 'u0', engine: s.units[0].engines[0].id, operation: 'attack', activity: 1, target: 'u1' }, scriptedRng([10, 20]));
+    const result = act(s, { type: 'siege', unit: 'u0', engine: s.units[0].engines[0].id, operation: 'attack', activity: 1, target: { kind: 'unit', ids: ['u1'] } }, scriptedRng([10, 20]));
     expect(result.log.find(e => e.lands?.reads === 'attack')?.check?.modifier).toBe(21);
     expect(result.units[0].engines[0].loaded).toBe(0);
   });

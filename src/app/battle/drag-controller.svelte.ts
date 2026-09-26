@@ -1,6 +1,6 @@
 import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, CHARGE_ACTIVITIES, chargeImpact, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
 import type { BoardEventOf, HighlightStyle } from '../../board/index.js';
-import type { Activation, BattleState, TargetRef, Verb } from '../../engine/index.js';
+import type { Activation, BattleState, BoardObject, Verb } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
 import type { CommandResult } from '../../runtime/commands.js';
 import type { LocalScope } from '../scope.js';
@@ -53,7 +53,7 @@ export interface DragShared extends BattleDeps {
   readonly aim: Aim | null;
   readonly closeAim: () => void;
   focus: number;
-  readonly aimAt: (target: TargetRef, cell: string, label: string, only?: Verb | null) => void;
+  readonly aimAt: (target: BoardObject, cell: string, label: string, only?: Verb | null) => void;
   readonly disarm: () => void;
   readonly requireTurn: () => boolean;
   readonly turnScope: LocalScope;

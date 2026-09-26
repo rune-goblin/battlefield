@@ -1,5 +1,5 @@
 import {
-  BRIDGE_AXES, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
+  BRIDGE_AXES, edgeCells, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
 import type { BattleSession } from '../runtime/session.js';
@@ -35,7 +35,7 @@ function paintCell(board: Board, key: string, brush: PaintBrush): void {
 }
 
 function paintEdge(board: Board, key: string, brush: PaintBrush): void {
-  const ends = key.split('|').sort((a, b) => parse(b).rank - parse(a).rank || parse(b).file - parse(a).file);
+  const ends = edgeCells(key).sort((a, b) => parse(b).rank - parse(a).rank || parse(b).file - parse(a).file);
   if (brush.kind === 'wall') board.walls[key] = makeWall(brush.tier, ends[0]);
   else if (brush.kind === 'gate') {
     const w = board.walls[key];

@@ -25,6 +25,11 @@ export function edgeKey(a: Cell, b: Cell): string {
   return `${x}|${y}`;
 }
 
+export function edgeCells(key: string): [string, string] {
+  const [a, b] = key.split('|');
+  return [a, b];
+}
+
 export function allSquares(dimension = SIZE): Cell[] {
   const out: Cell[] = [];
   for (let rank = 0; rank < dimension; rank++) for (let file = 0; file < dimension; file++) out.push({ file, rank });

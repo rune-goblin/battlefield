@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TargetingService, targetAnchor } from '../app/targeting.js';
-import { act, availableActions, createBattle, unit } from '../engine/index.js';
+import { act, availableActions, createBattle, refOf, unit } from '../engine/index.js';
 import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { ActivityIndex, Tree, Verb } from '../engine/index.js';
@@ -35,9 +35,9 @@ describe('targeting service', () => {
     const choice = candidates[1];
     expect(choice.geometry).toBe('corner');
     expect(choice.icon).toBe('cast:blast');
-    expect(targeting.matches({ kind: 'corner', id: choice.id })).toEqual([choice]);
+    expect(targeting.matches({ kind: 'corner', cells: choice.cells })).toEqual([choice]);
     const resolution = targeting.resolve(choice.id)!;
-    expect(resolution.action.target).toBe(choice.id);
+    expect(resolution.action.target).toEqual(refOf(choice));
     expect(resolution.effects.map((effect) => effect.cell)).toEqual(choice.cells);
     const point = targetAnchor(choice.anchorCells, (cell) => hexGrid.center(parse(cell), 100))!;
     expect(choice.cells.every((cell) => hexGrid.vertices(parse(cell), 100).some((v) => Math.hypot(v.x - point.x, v.y - point.y) < .001))).toBe(true);
@@ -50,15 +50,15 @@ describe('targeting service', () => {
     const targeting = service('fight', 1);
     expect(targeting.matches({ kind: 'hex', id: 'e3' })).toEqual([]);
     expect(targeting.matches({ kind: 'edge', id: 'f3|e3' })).toHaveLength(1);
-    expect(targeting.resolve(edge)!.action.target).toBe(edge);
+    expect(targeting.resolve(edge)!.action.target).toEqual({ kind: 'wall', edge });
     expect(targeting.choices[0].anchorCells).toEqual(['e3', 'f3']);
-    expect(targeting.arrows([], null, 'f3|e3')).toEqual(targeting.arrows([], edge));
+    expect(targeting.arrows([], null, null, 'f3|e3')).toEqual(targeting.arrows([], edge));
   });
 
   it('places Translocate at the selected destination and applies its effect there', () => {
     const { state, service } = fixture();
     const targeting = service('cast', 3, 'movement');
-    const choice = targeting.choices.find((target) => target.id === 'd3+d4')!;
+    const choice = targeting.choices.find((target) => target.kind === 'transfer' && target.moves[0].unit === 'u1' && target.moves[0].to === 'd4')!;
     expect(choice.geometry).toBe('hex');
     expect(choice.anchorCells).toEqual(['d4']);
     expect(targeting.matches({ kind: 'hex', id: 'd3' }).length).toBeGreaterThan(1);
@@ -74,7 +74,7 @@ describe('targeting service', () => {
     const targeting = service('rally', 2);
     expect(targeting.resolve('u2')).toBeNull();
     const resolution = targeting.resolve('u1')!;
-    expect(resolution.action).toMatchObject({ type: 'rally', activity: 2, target: 'u1' });
+    expect(resolution.action).toMatchObject({ type: 'rally', activity: 2, target: { kind: 'unit', ids: ['u1'] } });
     expect(resolution.markers.map((marker) => marker.anchorCells[0])).toEqual(['e3', 'd3']);
     expect(resolution.markers.every((marker) => marker.icon === 'rally')).toBe(true);
     expect(resolution.effects).toEqual([]);
@@ -107,7 +107,7 @@ describe('targeting service', () => {
     const source = targeting.pickCell('d3')!;
     expect(source.target).toBeNull();
     expect(targeting.surface(source.selected).some((marker) => marker.anchorCells[0] === 'd4')).toBe(true);
-    expect(targeting.pickCell('d4', source.selected)!.target!.id).toBe('d3+d4');
+    expect(targeting.pickCell('d4', source.selected)!.target).toMatchObject({ kind: 'transfer', moves: [{ unit: 'u1', to: 'd4' }] });
   });
 
   it('exposes board targets and the matching icon for every available spell activity', () => {
@@ -125,7 +125,7 @@ describe('targeting service', () => {
         expect(targeting.surface().every((marker) => marker.icon === `cast:${tree}`)).toBe(true);
         const target = targeting.choices[0];
         const resolution = targeting.resolve(target.id)!;
-        expect(resolution.action).toMatchObject({ type: 'cast', spell: tree, activity: index, target: target.id });
+        expect(resolution.action).toMatchObject({ type: 'cast', spell: tree, activity: index, target: refOf(target) });
         expect(resolution.effects.every((effect) => effect.tree === tree)).toBe(true);
         expect(resolution.arrows.length).toBeGreaterThan(0);
         expect(resolution.arrows.every((arrow) => arrow.tone === tree)).toBe(true);

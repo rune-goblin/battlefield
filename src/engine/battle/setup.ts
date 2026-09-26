@@ -4,6 +4,7 @@ import { at, deployRanks, gridOf, parse, sameCell, type Board, type Square } fro
 import { cardTraits, deriveStats, speedOf, movementRates, type SiegeEngineCard, type UnitCard } from '../cards.js';
 import { treesFor } from '../ladders.js';
 import { clone } from '../clone.js';
+import { freshConditions } from '../conditions.js';
 import {
   ACTIONS_PER_ACTIVATION, LAST_ROUND, ROUTED_AT, type BattleState, type EngineState, type Side, type Unit,
 } from '../types.js';
@@ -80,11 +81,7 @@ export function createBattle(setup: BattleSetup): BattleState {
       engines: (d.engines ?? []).map((e, slot) =>
         engineState(e.card, e.id ?? positionalAttachedId(id, slot), d.side, sq, false)),
       square: sq, wounds: d.card.wounds ?? 0, disorder: Math.max(0, Math.min(ROUTED_AT, d.card.disorder ?? 0)), status: 'active' as const,
-      guard: null, rooted: 0, exposed: false, inspired: false,
-      suppressedBy: null, pinnedBy: null, frightened: false, stunned: false, persistent: null,
-      sureStrike: false, wrath: false, haste: 0,
-      ward: false, stoneskin: false, aegis: null, selfBuffs: [],
-      movementBonus: 0, sureFooting: false, flies: false,
+      ...freshConditions(),
     };
   });
   const engineSquares = new Set<string>();

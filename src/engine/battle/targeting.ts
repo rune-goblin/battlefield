@@ -1,15 +1,15 @@
 import { abilityOffers } from '../ability-effects.js';
-import { groupTarget, moveTarget, pairTarget, unitTarget, wallTarget } from '../targets.js';
+import { cellTarget, groupTarget, moveTarget, pairTarget, targetCells, unitTarget, wallTarget } from '../targets.js';
 import { hasSight } from '../sight.js';
 import { TERRAIN } from '../terrain.js';
-import { notation, parse, sameCell, type Square } from '../board.js';
+import { edgeCells, notation, parse, sameCell, type Square } from '../board.js';
 import { VERBS, activityOf, type ActivityIndex, type Verb } from '../ladders.js';
 import {
   castActivityOf, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from '../magic.js';
 import {
   BANDS, type ActionOffer, type Activation, type BattleState, type ActivityOption, type ActivityTarget,
-  type TargetOffer, type TargetRef, type Unit,
+  type TargetOffer, type BoardObject, type Unit,
 } from '../types.js';
 import { grid, dist, unit, isRouted, activeUnit, square, engagedEnemies } from './state.js';
 import { movementSpeed, moveReach, touching, stepTargets, standable, escapeOffer } from './movement.js';
@@ -25,7 +25,7 @@ export function specialOffers(state: BattleState, u: Unit): ActionOffer[] {
 }
 
 const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filter(([, w]) => w.remaining > 0).map(([k]) => k);
-const wallCells = (key: string) => key.split('|').map(parse);
+const wallCells = (key: string) => edgeCells(key).map(parse);
 const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameCell(c, u.square));
 
 interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
@@ -38,9 +38,8 @@ export function castCeiling(state: BattleState, tree: Tree): number {
   return band === 'engaged' ? 1 : BANDS[band];
 }
 
-// proto: a shape is offered as one target, its hexes joined by '+', so the aim popup needs no
-// multi-select. `blast` splits it again at resolution.
-const shapeId = (shape: Square[]) => shape.map(notation).sort().join('+');
+const shapeCells = (shape: Square[]) => shape.map(notation).sort();
+const shapeKey = (shape: Square[]) => shapeCells(shape).join('+');
 
 export const enemiesIn = (state: BattleState, u: Unit, shape: Square[]) => state.units.filter(
   (e) => e.side !== u.side && e.status === 'active' && shape.some((c) => sameCell(c, e.square)),
@@ -73,7 +72,7 @@ function burstShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
     if (dist(state, u.square, c) > ceiling) continue;
     for (const shape of g.corners(c)) {
       if (shape.some((x) => dist(state, u.square, x) > ceiling)) continue;
-      const key = shapeId(shape);
+      const key = shapeKey(shape);
       if (seen.has(key)) continue;
       seen.add(key);
       out.push(shape);
@@ -91,7 +90,7 @@ function stormShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
   for (let size = 1; size <= 4; size++) {
     const next: Square[][] = [];
     for (const shape of frontier) {
-      const key = shapeId(shape);
+      const key = shapeKey(shape);
       if (seen.has(key)) continue;
       seen.add(key);
       const hit = enemiesIn(state, u, shape).map(e => e.id).sort().join('+');
@@ -117,7 +116,7 @@ function blastTargets(state: BattleState, u: Unit, index: ActivityIndex, ceiling
     .filter(shape => shape.every(cell => hasSight(state.board, u.square, cell)))
     .map((shape) => ({ shape, caught: enemiesIn(state, u, shape) }))
     .filter(({ caught }) => caught.length > 0)
-    .map(({ shape, caught }) => ({ kind: 'cell' as const, id: shapeId(shape), label: caught.map((e) => e.name).join(', ') }));
+    .map(({ shape, caught }) => cellTarget(shapeCells(shape), caught.map((e) => e.name).join(', ')));
 }
 
 const healPool = (state: BattleState, u: Unit): Unit[] => [
@@ -152,12 +151,9 @@ function healTargets(state: BattleState, u: Unit, index: ActivityIndex): Activit
   const need = (t: Unit) => t.disorder + t.wounds;
   return groupsUpTo(healPool(state, u).filter(t => hasSight(state.board, u.square, t.square)), index === 4 ? 1 : index)
     .sort((a, b) => b.reduce((n, t) => n + need(t), 0) - a.reduce((n, t) => n + need(t), 0))
-    .map((group) => ({ kind: 'unit' as const, id: group.map((t) => t.id).sort().join('+'), label: group.map((t) => t.name).join(', ') }));
+    .map(groupTarget);
 }
 
-// proto: the pair is one target, the ally's own hex and the hex it lands on joined by '+', so
-// the aim popup needs no second pick — the same shape a Blast's Line uses. Touching either hex
-// finds it, and touching one that several pairs share lands on the first of them.
 /** Translocate offers empty destinations up to four hexes from each ally. */
 function translocateTargets(state: BattleState, allies: Unit[]): ActivityTarget[] {
   const g = grid(state);
@@ -310,19 +306,19 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
  * target of its own (Guard, and Rally's own unit) belongs to the acting unit's own piece,
  * which is where its popup opens.
  */
-// proto: Line, Burst, Heal and Restore arrive as one target holding several parts joined by
-// '+' (`d3+d4`, `u1+u2`). A touch on a cell resolves to `{kind:'unit'}` when something stands
-// there (`applyProp`), so a shape target is found by the touched unit's own square as well as
-// by a bare cell id; touching any one part finds the whole target.
-export function targetMatches(state: BattleState, t: ActivityTarget, ref: TargetRef): boolean {
-  const parts = t.id.split('+');
-  if (t.kind === ref.kind) return parts.includes(ref.id);
-  if (t.kind !== 'cell' || ref.kind !== 'unit') return false;
-  const found = state.units.find((x) => x.id === ref.id);
-  return found !== undefined && parts.includes(notation(found.square));
+// A touch on a cell resolves to `{kind:'unit'}` when something stands there (`applyProp`), so a
+// shape or a transfer is found by the touched unit's own square as well as by a bare cell;
+// touching any one part finds the whole target.
+export function targetMatches(state: BattleState, t: ActivityTarget, obj: BoardObject): boolean {
+  if (t.kind === 'wall' || obj.kind === 'wall') return t.kind === 'wall' && obj.kind === 'wall' && t.edge === obj.id;
+  if (t.kind === 'unit') return obj.kind === 'unit' && t.ids.includes(obj.id);
+  const cells = targetCells(state, t);
+  if (obj.kind === 'cell') return cells.includes(obj.id);
+  const found = state.units.find((x) => x.id === obj.id);
+  return found !== undefined && cells.includes(notation(found.square));
 }
 
-export function offersAt(state: BattleState, target: TargetRef, unitId?: string): TargetOffer[] {
+export function offersAt(state: BattleState, target: BoardObject, unitId?: string): TargetOffer[] {
   const u = unitId ? state.units.find((x) => x.id === unitId) : activeUnit(state);
   if (!u) return [];
   const own = target.kind === 'unit' && target.id === u.id;
