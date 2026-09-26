@@ -1,7 +1,7 @@
 <script lang="ts">
   import { FORTIFICATIONS } from '../engine/board.js';
   import { canContinueBattle, deploymentCells, FEATURES, hasRecovered, HEX_TERRAINS, isStanding, isSurvivor, MAX_WOUNDS, nextDayBattlefield,
-    nightResolved, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
+    nightResolved, opponent, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
     type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
   import type { TokenModel } from '../board/index.js';
   import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, saveBattle, startNextDay } from './game.svelte.js';
@@ -98,7 +98,7 @@
   const outcome = (r: NightRecovery) => r.recovered === 0 ? `fails to recover` : `recovers ${r.recovered} ${r.activity === 'rally' ? 'morale' : 'health'}`;
   const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'camp' ? 'In camp' : u.status === 'left' ? 'Left the field' : 'Standing';
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
-    : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' ? `The ${b.winner === 'attacker' ? 'defender' : 'attacker'} surrenders.`
+    : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' && b.winner !== null && b.winner !== 'draw' ? `The ${opponent(b.winner)} surrenders.`
     : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);
   const survivorsOf = (side: Side) => survivors.filter((u) => u.side === side);
   const placementOf = (side: Side): Record<string, string> =>
@@ -253,7 +253,7 @@
         <div class="armies">
           {#each SIDES as side (side)}
             {@const army = b.units.filter((u) => u.side === side)}
-            {@const opponent = side === 'attacker' ? 'defender' : 'attacker'}
+            {@const foe = opponent(side)}
             <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} report`}>
               <div class="army-heading">
                 <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
@@ -277,9 +277,9 @@
                     {/each}
                   </div>
                   <p class="decision-description">{dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.description ?? 'Choose whether to negotiate, leave, or stay.'}</p>
-                  {#if b.dayOrders?.choices[opponent] === 'surrender'}
+                  {#if b.dayOrders?.choices[foe] === 'surrender'}
                     <div class="surrender-response" role="group" aria-label={`${side} response to surrender`}>
-                      <p>The {opponent} proposes surrender.</p>
+                      <p>The {foe} proposes surrender.</p>
                       <div class="day-options">
                         <button disabled={!mine(side)} onclick={() => void attempt(respondToSurrender(side, true))}>Accept surrender</button>
                         <button disabled={!mine(side)} onclick={() => void attempt(respondToSurrender(side, false))}>Reject proposal</button>
