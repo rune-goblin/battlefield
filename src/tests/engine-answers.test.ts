@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { activation, availableActions, commitment, createBattle, parse, ROUTED_AT, unit, type UnitCard } from '../engine/index.js';
+import {
+  act, activation, availableActions, commitment, createBattle, meleePlans, parse, ROUTED_AT, select, unit, type UnitCard,
+} from '../engine/index.js';
 import { openBoard } from './helpers.js';
 
 const troop: UnitCard = { name: 'Troop', level: 6, role: 'infantry', salvo: 'medium', tactics: [], overrides: { strike: 11, volley: 11, defence: 24, will: 13, fortitude: 15 } };
@@ -36,5 +38,19 @@ describe('commitment', () => {
     const offer = availableActions(s, 'u0').find((o) => o.spell === 'controlling')!;
     expect(commitment(u, offer, offer.activities[3])).toBeNull();
     expect(commitment(u, offer, offer.activities[1])).toEqual({ base: 2, available: 3 });
+  });
+});
+
+describe('move and melee', () => {
+  it('refuses a move and charge that ends in an Overrun before the move begins', () => {
+    const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
+    const b = createBattle({ board: openBoard(), units: [
+      { card: cavalry, side: 'attacker', square: 'e2' }, { card: cavalry, side: 'defender', square: 'e7' },
+    ] });
+    b.pending = 'attacker'; unit(b, 'u0').speed = 20; unit(b, 'u1').square = parse('e8');
+    const s = select(b, 'u0');
+    const plan = meleePlans(s, unit(s, 'u0'), 'u1').find((p) => p.kind === 'charge')!;
+    expect(() => act(s, { type: 'advance', unit: 'u0', target: 'u1', via: plan.via!, finish: 'charge', activity: 3 },
+      { d20() { throw new Error('dice drawn'); } })).toThrow('invalid charge activity');
   });
 });

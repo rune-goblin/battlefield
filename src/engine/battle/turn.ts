@@ -20,7 +20,7 @@ import { refreshEmplacements } from './emplacements.js';
 import { addDisorder, clearDisorder, inspire, landPersistent } from './wounds.js';
 import { canShootTarget, abilityContext, melee, shootAt, attackWall } from './combat.js';
 import { doGate, doSiege, seizeEmplacements, captureEngines } from './siege.js';
-import { meleePlans, doFlee, doStep, doStride, doCharge } from './manoeuvres.js';
+import { meleeFinishes, meleePlans, doFlee, doStep, doStride, doCharge } from './manoeuvres.js';
 import { specialOffers, availableActions } from './targeting.js';
 import { doCastAction } from './spells.js';
 
@@ -237,9 +237,9 @@ function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction)
     ? { type: 'charge', unit: u.id, target: action.target, activity, focus: action.focus, ...(run.length ? { waypoints: run } : {}) }
     : { type: 'fight', unit: u.id, target: { kind: 'unit', ids: [action.target] }, activity, focus: action.focus };
   const focus = validateFocus(attack);
-  if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
-    throw new Error('The move and chosen attack exceed the available actions.');
-  }
+  const finish = meleeFinishes(u, action.finish, plan.moveActions).find((f) => f.activity === activity);
+  if (!finish && action.finish === 'charge') throw new Error('invalid charge activity');
+  if (!finish || finish.cost + focus > u.actions) throw new Error('The move and chosen attack exceed the available actions.');
   const movement = doStride(state, rng, u, { type: 'move', unit: u.id, to: plan.via, waypoints: waypoints.slice(0, plan.split) });
   // Reserve the movement cost before validating the melee. The caller subtracts the total
   // once and ends the activation once; an exception discards this entire cloned state.

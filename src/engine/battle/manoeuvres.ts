@@ -32,6 +32,18 @@ export function chargeImpact(u: Unit): boolean {
   const ability = unitAbilities(u).find(a => a.kind === 'charge');
   return !!ability && (!ability.once || !u.abilityState?.charged);
 }
+export interface MeleeFinish { activity: ActivityIndex; label: string; cost: number; legal: boolean }
+
+/** The Fight activities a melee may end in, each priced whole: the move before it, a charge's
+ * run, and the activity. Impact shifts a charge's labels up a step at the same cost. */
+export function meleeFinishes(u: Unit, kind: 'fight' | 'charge', moveActions = 0): MeleeFinish[] {
+  const finish = (activity: ActivityIndex, label: string, cost: number): MeleeFinish =>
+    ({ activity, label, cost, legal: cost <= u.actions });
+  if (kind === 'fight') return ([1, 2, 3] as const).map((i) => finish(i, activityOf('fight', i).label, moveActions + i));
+  const labels = chargeImpact(u) ? ['Charge and Press', 'Charge and Overrun'] : ['Charge', 'Charge and Press'];
+  return CHARGE_ACTIVITIES.map((i, n) => finish(i, labels[n], moveActions + CHARGE_ACTIONS + i));
+}
+
 /** A charge that ends a short range from where it began has built momentum: +2 on the attack. */
 const runUp = (state: BattleState, from: Square, landing: Square) =>
   dist(state, from, landing) >= BANDS.short;

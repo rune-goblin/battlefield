@@ -20,9 +20,10 @@ export {
 export type { MeleeOpts } from './combat.js';
 export { siegeReason, siegeAttackOffer, gateReason } from './siege.js';
 export {
-  CHARGE_ACTIVITIES, chargeImpact, chargePath, chargeTargets, meleePlans, dragBlockReason, fleePlan,
+  CHARGE_ACTIVITIES, chargeImpact, chargePath, chargeTargets, meleeFinishes, meleePlans, dragBlockReason, fleePlan,
   fleeBlockReason,
 } from './manoeuvres.js';
+export type { MeleeFinish } from './manoeuvres.js';
 export {
   castCeiling, availableActions, activation, offerRefusal, commitment, targetMatches, offersAt,
 } from './targeting.js';
