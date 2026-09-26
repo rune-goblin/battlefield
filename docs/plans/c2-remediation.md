@@ -117,6 +117,8 @@ One stage.
 | Task | Lane | Findings | Files | Model | Agent |
 | --- | --- | --- | --- | --- | --- |
 | W3.1 `opponent` and one `SIDES` | A | m4 (sides) | every site of the side flip and `SIDES` outside `src/board` | Sonnet | recipe-sweeper |
+| W3.3 Rooted resists ability push | A | C2 (rooted) | `src/engine/**`, `public/rules.html`, engine tests | Sonnet | wave-executor |
+| W3.4 One connectivity rule, if W2.3 did not land | A | m7 | `src/engine/{board,connectivity}.ts`, `src/app/ConnectionWarning.svelte`, `public/rules.html` | Opus | wave-executor |
 | W3.2 Hash, PRNG, colour and easing helpers | B | m3 | `src/engine/rng.ts`, `src/board/**`, `src/app/LchColour.svelte` | Sonnet | wave-executor |
 
 ### W4 — Engine structure and the migration seam

@@ -14,13 +14,16 @@ could not answer. An item leaves this list when it is done or answered.
 - W8 — App structure: W8.1–W8.4
 - W9 — Board structure: W9.1–W9.2
 
-## Questions for the overseer to settle from the rules page, or to raise here
+## Answered by the user (2026-09-26)
 
-- Push and pull: does a rooted target resist a troop-ability push or pull? The rules page says
-  siege forced movement respects roots, and the troop-ability Push / Pull row says only "one legal
-  hex". The ability path keeps today's answer, no; the siege path refuses rooted targets.
-- Ground connectivity: which rule holds — the generator's (from rank 0, water and cliffs block)
-  or the warning's (between deploy zones, any step over 30 ft blocks, walls included)?
+- Push and pull: a rooted target resists a troop-ability push or pull, as it resists a siege
+  push. The ability path must refuse rooted targets; update the Push / Pull row in
+  `public/rules.html` to say so.
+- Ground connectivity (W2.3): one rule, stated in elevation terms, not feet. A map is connected
+  when a ground route runs from the attacker's deployment zone to the defender's, and no step on
+  it enters water or crosses a cliff (a change of two or more elevation levels) or a wall. The
+  generator and the warning both use it. Describe it this way in code comments and in
+  `public/rules.html`; never as "30 ft".
 
 ## Carried forward from W1
 

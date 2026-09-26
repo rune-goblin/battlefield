@@ -49,7 +49,11 @@ const WAVES = {
     { lane: 'D', tasks: [t('W2.6', 'Foundry adapter duplication', 'foundry nits', 'src/adapters/{foundry,reignmaker}/*', 'sonnet', 'exec')] },
   ]] },
   W3: { title: 'Shared primitives', stages: [[
-    { lane: 'A', tasks: [t('W3.1', 'opponent and one SIDES', 'm4 (sides half; branded IDs deferred)', 'every side-flip and SIDES site outside src/board', 'sonnet', 'sweep')] },
+    { lane: 'A', tasks: [
+      t('W3.1', 'opponent and one SIDES', 'm4 (sides half; branded IDs deferred)', 'every side-flip and SIDES site outside src/board', 'sonnet', 'sweep'),
+      t('W3.3', 'Rooted resists ability push', 'C2 (rooted push/pull, answered by the user in the todos file)', 'src/engine/**, public/rules.html, engine tests', 'sonnet', 'exec'),
+      t('W3.4', 'One connectivity rule, if W2.3 did not land', 'm7 (rule answered by the user in the todos file; skip if the audit already marks m7 done)', 'src/engine/{board,connectivity}.ts, src/app/ConnectionWarning.svelte, public/rules.html', 'opus', 'exec'),
+    ] },
     { lane: 'B', tasks: [t('W3.2', 'Hash, PRNG, colour and easing helpers', 'm3', 'src/engine/rng.ts, src/board/**, src/app/LchColour.svelte', 'sonnet', 'exec')] },
   ]] },
   W4: { title: 'Engine structure and the migration seam', stages: [[
