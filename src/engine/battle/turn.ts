@@ -1,7 +1,7 @@
 import { abilityMemory, unitAbilities, refreshAbilityAuras, startAbilities, performAbility } from '../ability-effects.js';
 import { parse } from '../board.js';
 import { rollLine } from '../check.js';
-import { activityOf, type Activity } from '../ladders.js';
+import { activityOf, CAST_COMMITMENT, type Activity } from '../ladders.js';
 import type { Rng } from '../rng.js';
 import { clone } from '../clone.js';
 import { targetKey } from '../targets.js';
@@ -220,7 +220,7 @@ function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityActio
   }
   const focus = validateFocus(action);
   const price = opt.cost! + focus;
-  if (price > u.actions || (action.type === 'cast' && price > 3)) throw new Error(`${opt.label} needs ${price} actions; commitment is at most three`);
+  if (price > u.actions || (action.type === 'cast' && price > CAST_COMMITMENT)) throw new Error(`${opt.label} needs ${price} actions; commitment is at most three`);
   if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}${focus ? ` (+${focus * ACTION_BONUS} ${action.spell === 'controlling' ? 'spell DC' : 'on the roll'})` : ''}.`);
   if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.activity, action);
   else perform(state, rng, u, activityOf(offer.type, action.activity), action);

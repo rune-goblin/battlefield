@@ -23,7 +23,9 @@ export {
   CHARGE_ACTIVITIES, chargeImpact, chargePath, chargeTargets, meleePlans, dragBlockReason, fleePlan,
   fleeBlockReason,
 } from './manoeuvres.js';
-export { castCeiling, availableActions, activation, offerRefusal, targetMatches, offersAt } from './targeting.js';
+export {
+  castCeiling, availableActions, activation, offerRefusal, commitment, targetMatches, offersAt,
+} from './targeting.js';
 export { canDeploy, canEmplace, createBattle } from './setup.js';
 export type { AttachedEngine, Deployment, Emplacement, BattleSetup } from './setup.js';
 export { select, deselect, endActivation, act } from './turn.js';

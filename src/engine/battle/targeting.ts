@@ -3,7 +3,7 @@ import { cellTarget, groupTarget, moveTarget, pairTarget, targetCells, unitTarge
 import { hasSight } from '../sight.js';
 import { TERRAIN } from '../terrain.js';
 import { edgeCells, notation, parse, sameCell, type Square } from '../board.js';
-import { VERBS, activityOf, type ActivityIndex, type Verb } from '../ladders.js';
+import { CAST_COMMITMENT, VERBS, activityOf, canFocus, type ActivityIndex, type Verb } from '../ladders.js';
 import {
   castActivityOf, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from '../magic.js';
@@ -292,6 +292,15 @@ export function offerRefusal(offer: ActionOffer): string | null {
   const reachable = offer.activities.filter((o) => o.cost !== null);
   if (reachable.some((o) => o.legal)) return null;
   return reachable[0]?.reason ?? 'no target';
+}
+
+/** The extra actions an activity may commit: counted up from its own price, to what the unit
+ * has, and never past three in all for a cast. Null when it takes no commitment. */
+export function commitment(u: Unit, offer: ActionOffer, option: ActivityOption): { base: number; available: number } | null {
+  if (!canFocus(offer.type, offer.spell)) return null;
+  const base = option.cost ?? option.index;
+  if (offer.type === 'cast' && base >= CAST_COMMITMENT) return null;
+  return { base, available: offer.type === 'cast' ? Math.min(CAST_COMMITMENT, u.actions) : u.actions };
 }
 
 const LEGAL: VerbAnswer = { legal: true, reason: null };
