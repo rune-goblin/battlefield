@@ -1,4 +1,4 @@
-import type { BattleState, Side } from '../../engine/index.js';
+import { SIDES, type BattleState } from '../../engine/index.js';
 import type { SideControl } from '../../runtime/control.js';
 
 export type EndingPhase = 'playing' | 'waiting' | 'announcement' | 'report';
@@ -60,9 +60,8 @@ export function battleOutcome(
 ): string {
   if (battle.winner === 'draw') return 'Draw';
   if (!battle.winner) return battle.endedBy === 'dusk' ? 'Day complete' : 'Battle complete';
-  const sides: Side[] = ['attacker', 'defender'];
-  const playerSides = sides.filter(side => control.seats[side].some(id => id !== gmId));
-  const viewerSides = sides.filter(side => control.seats[side].includes(viewerId));
+  const playerSides = SIDES.filter(side => control.seats[side].some(id => id !== gmId));
+  const viewerSides = SIDES.filter(side => control.seats[side].includes(viewerId));
   const perspective = playerSides.length === 1 ? playerSides[0] : viewerSides.length === 1 ? viewerSides[0] : null;
   if (perspective) return battle.winner === perspective ? 'Victory' : 'Defeat';
   return battle.winner === 'attacker' ? 'Attackers win' : 'Defenders win';

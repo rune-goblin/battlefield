@@ -326,6 +326,15 @@ describe('troop ability resolution', () => {
     expect(held.units[1].abilityState?.shovedRound).toBe('1:1');
   });
 
+  it('a rooted target resists Shove and keeps Hold Ground unspent', () => {
+    const shove = ability('displace', { delivery: 'attack', attack: 'melee', trigger: 'hit', direction: 'push' });
+    const s = battle([shove], [ability('resolve', { mode: 'ground' })]);
+    s.units[1].rooted = 1;
+    const result = fight(s);
+    expect(notation(result.units[1].square)).toBe('c3');
+    expect(result.units[1].abilityState?.shovedRound).toBe('');
+  });
+
   it('Resolve helps resist routing from pending damage', () => {
     const s = battle([ability('resolve', { mode: 'fear' })]);
     s.units[0].disorder = 2;

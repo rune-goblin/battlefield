@@ -1,4 +1,4 @@
-import { HEX_TERRAINS, type BoardSpec, type HexTerrain, type Side, type UnitCard } from '../../engine/index.js';
+import { HEX_TERRAINS, opponent, type BoardSpec, type HexTerrain, type Side, type UnitCard } from '../../engine/index.js';
 import type { BattleRequest, BattleRequestUnit, UnitSource } from '../../runtime/campaign.js';
 import { PLAYER_KINGDOM, type KingdomArmy } from './kingdomArmies.js';
 
@@ -70,7 +70,7 @@ export function requestFromSite(site: BattleSite, read: ArmyReader, seed: number
     request: {
       board: specFromSite(site, seed),
       units,
-      gmSide: playerSide === null ? 'both' : playerSide === 'attacker' ? 'defender' : 'attacker',
+      gmSide: playerSide === null ? 'both' : opponent(playerSide),
     },
     skipped,
   };

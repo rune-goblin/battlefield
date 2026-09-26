@@ -1,4 +1,4 @@
-import type { Side } from '../engine/index.js';
+import { opponent, type Side } from '../engine/index.js';
 import type { PresencePort } from './ports.js';
 
 /**
@@ -27,8 +27,6 @@ export type ControlAssignment = Pick<SideControl, 'mode' | 'gmSide' | 'seats'>;
 
 // proto: one browser user plays both sides and is the GM. Wave 4.4 reads the world's users.
 export const HOT_SEAT_USER = 'local';
-
-const otherSide = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 
 export const freshControl = (gmSide: GmSide = 'attacker'): SideControl =>
   ({ mode: 'auto', gmSide, seats: { attacker: [], defender: [] }, next: { attacker: 0, defender: 0 } });
@@ -87,7 +85,7 @@ export function seatUsers(control: SideControl, presence: PresencePort): SideCon
   if (control.gmSide === 'both') return { ...control, seats: { attacker: [gm], defender: [gm] } };
   const seats: Record<Side, string[]> = { attacker: [], defender: [] };
   seats[control.gmSide] = [gm];
-  seats[otherSide(control.gmSide)] = presence.users().filter((u) => u !== gm);
+  seats[opponent(control.gmSide)] = presence.users().filter((u) => u !== gm);
   return { ...control, seats };
 }
 

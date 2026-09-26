@@ -7,6 +7,7 @@ import type { CastActivityIndex, Tree } from './magic.js';
 
 export type Side = 'attacker' | 'defender';
 export const SIDES: Side[] = ['attacker', 'defender'];
+export const opponent = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 export const LAST_ROUND = 6;
 export const MAX_WOUNDS = 4;
 /** PF2e's economy, unchanged: Move, Move, Move, or Move, Shoot, Guard. */

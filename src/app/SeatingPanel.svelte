@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Side } from '../engine/index.js';
+  import { opponent, SIDES, type Side } from '../engine/index.js';
   import type { ControlAssignment, GmSide } from '../runtime/control.js';
   import { commandReporter } from './command-notices.js';
   import { assignSeating, game, reassignTurn, tableUsers } from './game.svelte.js';
@@ -15,7 +15,6 @@
   const named = (id: string): string => users.find((u) => u.id === id)?.name ?? id;
   const away = (id: string): boolean => users.some((u) => u.id === id && !u.online);
 
-  const SIDES: Side[] = ['attacker', 'defender'];
   const GM_SIDES: GmSide[] = ['attacker', 'defender', 'both'];
   // proto: the seat wording is reserved for review with the rest of the player-facing text.
   const GM_PLAYS: Record<GmSide, string> = {
@@ -36,14 +35,13 @@
     mode: control.mode, gmSide: control.gmSide, seats: seatsNow(), ...next,
   }));
 
-  const other = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 
   /** One user sits on one side at a time, so seating them here takes them off the other. */
   function seat(side: Side, userId: string) {
     if (!userId) return;
     const seats = seatsNow();
     seats[side] = [...seats[side], userId];
-    seats[other(side)] = seats[other(side)].filter((u) => u !== userId);
+    seats[opponent(side)] = seats[opponent(side)].filter((u) => u !== userId);
     return send({ mode: 'manual', seats });
   }
 

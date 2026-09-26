@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SIDES, type Side } from '../engine/index.js';
+  import { opponent, SIDES, type Side } from '../engine/index.js';
   import { gameMap } from './map-style.svelte.js';
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
@@ -14,7 +14,6 @@
   const board = $derived(game.setup.board!);
 
   const SIDE_TITLE: Record<Side, string> = { attacker: 'Attacking army', defender: 'Defending army' };
-  const other = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 
   // proto: the wording for a unit nobody imported is reserved for review.
   const UNBANNERED = 'Added by hand';
@@ -82,8 +81,8 @@
               <span class="name">{u.card.name}</span>
               <span class="meta">L{u.card.level} {u.card.role}</span>
               {#if viewer.isGm}
-                <button class="move" onclick={() => void run(setUnitSide(u.id, other(army.side)))}
-                  title="Move to the {SIDE_TITLE[other(army.side)].toLowerCase()}">
+                <button class="move" onclick={() => void run(setUnitSide(u.id, opponent(army.side)))}
+                  title="Move to the {SIDE_TITLE[opponent(army.side)].toLowerCase()}">
                   {army.side === 'attacker' ? '↓' : '↑'}
                 </button>
               {/if}
