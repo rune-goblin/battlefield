@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, endActivation, isRouted, isStanding, unit } from '../engine/index.js';
-import { COMBATANTS, OFFICIAL, ROSTER, ENGINES, ROUTED_AT, parse, type UnitCard } from '../engine/index.js';
+import {
+  act, availableActions, createBattle, endActivation, isRouted, isStanding, unit,
+  COMBATANTS, OFFICIAL, ROSTER, ENGINES, ROUTED_AT, parse, type UnitCard,
+} from '../engine/index.js';
 import { upgradeBattle } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';

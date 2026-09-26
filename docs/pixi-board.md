@@ -87,7 +87,7 @@ interface Grid {
   edgeKey(a: Cell, b: Cell): string;        // sorted pair, e.g. 'e4|e5'
   rank(c: Cell): number;
   homeward(c: Cell, side: 'attacker' | 'defender'): Cell[];
-  beyond(from: Cell, through: Cell): Cell | null;   // Pace's second square/cell
+  beyond(from: Cell, through: Cell): Cell | null;   // next cell along the line from→through
   center(c: Cell, size: number): Point;
   vertices(c: Cell, size: number): Point[];
   fromPoint(p: Point, size: number): Cell | null;
@@ -97,7 +97,7 @@ interface Grid {
 ```
 
 `beyond` is the one addition against the plan's sketch: it wasn't listed, but `battle/combat.ts`'s
-Pace step and `Interaction`'s stroke-direction logic both need "the cell one step past this
+Overrun push (`giveGround`) and `siege-targets.ts`'s line-shaped target areas both need "the cell one step past this
 one, continuing the same line," which is a reflection on square and a cube-direction step on
 hex — different enough per grid that it earns its own method rather than being reimplemented
 at each call site.
