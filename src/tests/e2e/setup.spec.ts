@@ -60,6 +60,15 @@ test.describe('The setup wizard on two clients', () => {
     await expect(armyCard(gm, 'Attacking army')).toBeVisible();
     await shot(gmPage, 'W8-summary');
 
+    await gm.getByRole('button', { name: 'Grid settings' }).click();
+    const grid = gm.locator('dialog.grid-settings');
+    await expect(grid).toBeVisible();
+    await shot(gmPage, 'W8-grid-settings');
+    await gmPage.keyboard.press('Escape');
+    await expect(grid).toBeHidden();
+    await gmPage.waitForTimeout(1_000);
+    await expect(gm, 'Escape in the grid settings closed the window').toBeVisible();
+
     for (const [label, name] of [['Seating', 'W8-seating'], ['Save / Load', 'W8-save-load']] as const) {
       const pop = popover(gm, label);
       const toggle = pop.getByRole('button', { name: label, exact: true });

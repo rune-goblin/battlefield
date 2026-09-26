@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 
 import { activation, notation, ROUTED_AT } from '../../engine/index';
 import { beginBattle, closeWindow, endAnyBattle, goToStep, openFromSceneControl, railOf, shot } from './fixtures/battle-window';
-import { battleOn, cellOf, drag, screenOf, settle, shotAround } from './fixtures/board';
+import { battleOn, cellOf, screenOf, settle, shotAround } from './fixtures/board';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 const SAVE_NAME = 'e2e routed';
@@ -38,7 +38,14 @@ test.describe('The board in a Foundry battle', () => {
       expect(activation(picked, unit)!.moves.has(catapult), `Line Infantry cannot reach the Catapult on ${catapult}`).toBe(true);
       await settle(gmPage, from);
 
-      await drag(gmPage, await screenOf(gmPage, from), await screenOf(gmPage, catapult));
+      const start = await screenOf(gmPage, from);
+      const end = await screenOf(gmPage, catapult);
+      await gmPage.mouse.move(start.x, start.y);
+      await gmPage.mouse.down();
+      await gmPage.mouse.move(end.x, end.y, { steps: 12 });
+      await expect(gm.locator('.drag-hud')).toBeVisible();
+      await shot(gmPage, 'W8-drag-hud');
+      await gmPage.mouse.up();
       await gm.locator('.popup-foot .primary').click();
       await expect.poll(async () => cellOf(await battleOn(gmPage), unit)).toBe(catapult);
       // The reel card overlays the board's corner; picking the unit again centres the board on it.
@@ -54,8 +61,18 @@ test.describe('The board in a Foundry battle', () => {
       await gmPage.mouse.click(centre.x - CHIP_REACH * pitch, centre.y - CHIP_REACH * pitch);
       await expect(gm.locator('.siege-heading strong')).toHaveText('Catapult');
       await shot(gmPage, 'W9-engine-chip-hit');
-      await gmPage.keyboard.press('Escape');
-      await expect(gm.locator('.siege-heading')).toBeHidden();
+
+      await gm.locator('.popup-row', { hasText: 'Choose an attack behavior and target' }).click();
+      await expect(gm.locator('.picker-emblem img')).toBeVisible();
+      const activity = gm.locator('.activity-row:not(.on)').first();
+      await activity.hover();
+      await expect(activity.locator('.activity-tooltip')).toBeVisible();
+      await shot(gmPage, 'W8-activity-choices');
+      // One Escape, one step back: the picker returns to the siege panel, and that closes next.
+      for (const open of [gm.locator('.activity-options'), gm.locator('.siege-heading')]) {
+        await gmPage.keyboard.press('Escape');
+        await expect(open).toBeHidden();
+      }
 
       // The piece's own body, clear of the chip, is the unit's ring.
       await gmPage.mouse.click(centre.x + 0.15 * pitch, centre.y + 0.15 * pitch);
@@ -90,6 +107,8 @@ test.describe('The board in a Foundry battle', () => {
       await gmPage.mouse.move(at.x, at.y);
       await expect(gm.locator('canvas[aria-label="Battle board"]')).toHaveAttribute('title', /Morale 0\/3 — routed/);
       await shotAround(gmPage, kobolds, pitch, 'W9-routed');
+      const cavalry = await battleOn(gmPage).then((b) => cellOf(b, b.units.find((u) => u.name === 'Heavy Cavalry')!.id));
+      await shotAround(gmPage, cavalry, pitch, 'W9-flag-status-bars');
       await shot(gmPage, 'W9-board');
 
       await gm.getByRole('button', { name: 'End battle', exact: true }).first().click();
