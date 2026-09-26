@@ -91,53 +91,8 @@ export type CommandType = BattleCommand['type'];
 
 /** Which side of the line a command stands on: `setup` prepares the board and the forces
  * before a battle exists, `battle` acts on the one under way, `any` crosses it. The executor
- * gates every command on this table and `session.battle`. */
+ * gates every command on its descriptor's stage and `session.battle`. */
 export type CommandStage = 'setup' | 'battle' | 'any';
-
-export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
-  'activation.select': 'battle',
-  'activation.deselect': 'battle',
-  'action.resolve': 'battle',
-  'activation.end': 'battle',
-  'setup.generate': 'setup',
-  'setup.rerollSeed': 'setup',
-  'setup.editSpec': 'setup',
-  'setup.setRoundsPerDay': 'setup',
-  'setup.paint': 'setup',
-  'army.addUnit': 'setup',
-  'army.removeUnit': 'setup',
-  'army.setSide': 'setup',
-  'army.swapSides': 'setup',
-  'army.addEmplacement': 'setup',
-  'army.removeEmplacement': 'setup',
-  'army.setHauling': 'setup',
-  'army.setEngineLoaded': 'setup',
-  'army.place': 'setup',
-  'army.unplace': 'setup',
-  'army.autoPlace': 'setup',
-  'army.generateForce': 'setup',
-  'army.declareReady': 'setup',
-  'continuation.declareRecovery': 'battle',
-  'continuation.declareDayOrder': 'battle',
-  'continuation.confirmDayOrders': 'battle',
-  'continuation.answerSurrender': 'battle',
-  'continuation.chooseBattlefield': 'battle',
-  'continuation.declareDeployment': 'battle',
-  'continuation.startNextDay': 'battle',
-  'battle.start': 'setup',
-  'battle.returnToSetup': 'battle',
-  'battle.reset': 'setup',
-  'battle.finalize': 'battle',
-  'outcome.begin': 'battle',
-  'outcome.markTarget': 'battle',
-  'outcome.abandon': 'battle',
-  'control.assign': 'any',
-  'turn.reassign': 'battle',
-  'session.undo': 'any',
-  'session.load': 'any',
-  'session.install': 'any',
-  'session.moveTo': 'any',
-};
 
 export interface CommandEnvelope {
   battleId: string;

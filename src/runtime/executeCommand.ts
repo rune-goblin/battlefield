@@ -1,17 +1,12 @@
 import type { BattleState } from '../engine/index.js';
-import type { ActionResolutionService } from '../services/ActionResolutionService.js';
-import type { ArmyPreparationService } from '../services/ArmyPreparationService.js';
-import type { BattleContinuationService } from '../services/BattleContinuationService.js';
-import type { BattleManager } from '../services/BattleManager.js';
-import type { MapPreparationService } from '../services/MapPreparationService.js';
-import { abandonWriteback, beginWriteback, markWritebackTarget } from '../services/OutcomeApplicationService.js';
 import { pruneSources, sessionAtSite, sessionFromRequest, type BattleRequest } from './campaign.js';
-import { COMMAND_STAGE, newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
+import { COMMANDS, descriptorOf, type CommandContext, type HistoryEffect, type Services } from './commandTable.js';
+import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import { openTurn, seatUsers } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
 import { clearObsolete, dropInteraction } from './interactions.js';
-import { assignSeats, reassignTurn, refuseCommand } from './policy.js';
+import { refuseCommand } from './policy.js';
 import { memorySites } from './memorySites.js';
 import type { BattleArchive, BattleSites, PresencePort, SessionRepository } from './ports.js';
 import { migrateSession } from './migrate.js';
@@ -19,118 +14,9 @@ import { writebackRunning, type BattleSession, type BattleSetupDraft } from './s
 import type { Side } from '../engine/index.js';
 
 /** How far undo walks back, the depth the prototype's store kept. */
-const HISTORY_LIMIT = 30;
+const UNDO_DEPTH = 30;
 /** A command ID found among these is answered with success rather than run again. */
 const RECENT_COMMAND_IDS = 20;
-
-/** What a command does to the undo history. `push` records what it replaced; `clear` is a
- * boundary undo cannot cross, as the prototype's store held them. Selection is not an
- * activation, and a generated or reworded board was never undoable — only a paint stroke was.
- * `session.undo` is absent: it consumes the history rather than adding to it. */
-const HISTORY: Record<Exclude<CommandType, 'session.undo' | 'session.load' | 'session.install' | 'session.moveTo'>, 'push' | 'keep' | 'clear'> = {
-  'activation.select': 'keep',
-  'activation.deselect': 'keep',
-  'action.resolve': 'push',
-  'activation.end': 'push',
-  'setup.generate': 'keep',
-  'setup.rerollSeed': 'keep',
-  'setup.editSpec': 'keep',
-  'setup.setRoundsPerDay': 'keep',
-  'setup.paint': 'push',
-  'army.addUnit': 'keep',
-  'army.removeUnit': 'keep',
-  'army.setSide': 'keep',
-  'army.swapSides': 'keep',
-  'army.addEmplacement': 'keep',
-  'army.removeEmplacement': 'keep',
-  'army.setHauling': 'keep',
-  'army.setEngineLoaded': 'keep',
-  'army.place': 'keep',
-  'army.unplace': 'keep',
-  'army.autoPlace': 'keep',
-  'army.generateForce': 'keep',
-  'army.declareReady': 'keep',
-  'continuation.declareRecovery': 'clear',
-  'continuation.declareDayOrder': 'keep',
-  'continuation.confirmDayOrders': 'clear',
-  'continuation.answerSurrender': 'clear',
-  'continuation.chooseBattlefield': 'keep',
-  'continuation.declareDeployment': 'keep',
-  'continuation.startNextDay': 'clear',
-  'battle.start': 'clear',
-  'battle.returnToSetup': 'clear',
-  'battle.reset': 'clear',
-  'battle.finalize': 'clear',
-  // The campaign holds part of this result the moment the first target lands, so undo closes
-  // at the start of the writeback rather than at its end.
-  'outcome.begin': 'clear',
-  'outcome.markTarget': 'keep',
-  'outcome.abandon': 'keep',
-  'control.assign': 'keep',
-  'turn.reassign': 'keep',
-};
-
-export interface Services {
-  actions: ActionResolutionService;
-  map: MapPreparationService;
-  army: ArmyPreparationService;
-  continuation: BattleContinuationService;
-  manager: BattleManager;
-}
-
-/** What a finalized record still answers: leaving the battle, or replacing it outright. */
-const AFTER_FINAL: CommandType[] = ['battle.returnToSetup', 'session.load', 'session.install', 'session.moveTo'];
-
-/** What a record answers while the campaign writeback is under way. Undo and loading are shut
- * out: part of the result already sits in the campaign, and rewinding the battle behind it
- * would leave the two disagreeing. */
-const DURING_WRITEBACK: CommandType[] = ['outcome.markTarget', 'outcome.abandon'];
-
-function applyCommand(
-  session: BattleSession, command: Exclude<BattleCommand, { type: 'session.undo' | 'session.load' | 'session.install' | 'session.moveTo' }>,
-  { actions, map, army, continuation, manager }: Services, presence: PresencePort, userId: string,
-): BattleSession {
-  switch (command.type) {
-    case 'control.assign': return assignSeats(session, command.control, presence);
-    case 'turn.reassign': return reassignTurn(session, command.userId, presence);
-    case 'activation.select': return actions.select(session, command.unitId);
-    case 'activation.deselect': return actions.deselect(session);
-    case 'action.resolve': return actions.act(session, command.action);
-    case 'activation.end': return actions.endActivation(session, command.unitId);
-    case 'setup.generate': return map.generate(session);
-    case 'setup.rerollSeed': return map.rerollSeed(session);
-    case 'setup.editSpec': return map.editSpec(session, command.spec);
-    case 'setup.setRoundsPerDay': return map.setRoundsPerDay(session, command.roundsPerDay);
-    case 'setup.paint': return manager.paint(session, command.stroke);
-    case 'army.addUnit': return army.addUnit(session, command.side, command.card);
-    case 'army.removeUnit': return army.removeUnit(session, command.unitId);
-    case 'army.setSide': return army.setSide(session, command.unitId, command.side);
-    case 'army.swapSides': return army.swapSides(session);
-    case 'army.addEmplacement': return army.addEmplacement(session, command.side, command.engine);
-    case 'army.removeEmplacement': return army.removeEmplacement(session, command.emplacementId);
-    case 'army.setHauling': return army.setHauling(session, command.emplacementId, command.hauling);
-    case 'army.setEngineLoaded': return army.setEngineLoaded(session, command.emplacementId, command.loaded);
-    case 'army.place': return army.place(session, command.piece, command.square);
-    case 'army.unplace': return army.unplace(session, command.piece);
-    case 'army.autoPlace': return army.autoPlace(session, command.piece);
-    case 'army.generateForce': return army.generateForce(session, command.side, command.seed);
-    case 'army.declareReady': return army.declareReady(session, command.side, command.ready, userId);
-    case 'continuation.declareRecovery': return continuation.declareRecovery(session, command.side, command.choices, userId);
-    case 'continuation.declareDayOrder': return continuation.declareDayOrder(session, command.side, command.order);
-    case 'continuation.confirmDayOrders': return continuation.confirmDayOrders(session);
-    case 'continuation.answerSurrender': return continuation.answerSurrender(session, command.side, command.accept, userId);
-    case 'continuation.chooseBattlefield': return continuation.chooseBattlefield(session, command.spec);
-    case 'continuation.declareDeployment': return continuation.declareDeployment(session, command.side, command.positions, userId);
-    case 'continuation.startNextDay': return manager.startNextDay(session);
-    case 'battle.start': return manager.start(session);
-    case 'battle.returnToSetup': return manager.returnToSetup(session);
-    case 'battle.reset': return manager.reset(session);
-    case 'battle.finalize': return manager.finalize(session);
-    case 'outcome.begin': return beginWriteback(session, command.operationId, command.via);
-    case 'outcome.markTarget': return markWritebackTarget(session, command.unitId, command.status, command.problem);
-    case 'outcome.abandon': return abandonWriteback(session);
-  }
-}
 
 export interface ExecutorOptions extends Services {
   repository: SessionRepository;
@@ -151,9 +37,9 @@ type SessionEdit = (session: BattleSession) => BattleSession;
 type EventSource = (previous: BattleSession, next: BattleSession) => BattleEventBody[];
 
 interface Persistence {
+  /** Whose descriptor names what the commit does to the undo history. */
+  type: CommandType;
   edit: SessionEdit;
-  /** Run once the write is durable, with the record the commit replaced. */
-  record?: (previous: BattleSession) => void;
   describe?: EventSource;
   /** Undo restores the turn its own snapshot holds; every other commit opens one afresh. */
   seat?: boolean;
@@ -201,14 +87,6 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
   const reject = (commandId: string, reason: RejectionReason, message: string): CommandResult =>
     ({ ok: false, commandId, revision: session.revision, reason, message });
 
-  /** The two commands that resolve rules carry events. A setup or lifecycle command replaces
-   * whole boards and forces, which a client adopts rather than plays. */
-  function eventsOf(command: BattleCommand, previous: BattleSession, next: BattleSession): BattleEventBody[] {
-    if (command.type === 'action.resolve') return services.actions.events(previous, next, command.action);
-    if (command.type === 'activation.end') return services.actions.events(previous, next);
-    return [];
-  }
-
   /** Name the turn holder in the commit that opened the activation, and move that side's
    * pointer with it. A record with no battle running holds no turn. */
   function seatTurn(previous: BattleSession, next: BattleSession): BattleSession {
@@ -232,10 +110,26 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     };
   }
 
-  /** Resolve, save, then publish. `record` runs once the write is durable. */
+  /** What a commit does to the undo history, applied once the write is durable. */
+  function remember(effect: HistoryEffect, previous: BattleSession): void {
+    switch (effect) {
+      case 'keep': return;
+      case 'pop': history = history.slice(0, -1); return;
+      case 'clear': history = []; return;
+      case 'push': {
+        const turn = previous.turn;
+        const next = previous.control.next;
+        history = [...history.slice(1 - UNDO_DEPTH), previous.battle
+          ? { kind: 'battle', battle: previous.battle, turn, next }
+          : { kind: 'setup', setup: previous.setup, turn, next }];
+      }
+    }
+  }
+
+  /** Resolve, save, then publish. The history moves once the write is durable. */
   async function persist(
     commandId: string, userId: string,
-    { edit, record = () => {}, describe = () => [], seat = true }: Persistence,
+    { type, edit, describe = () => [], seat = true }: Persistence,
   ): Promise<CommandResult> {
     const previous = session;
     let next: BattleSession;
@@ -257,7 +151,7 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     }
 
     session = next;
-    record(previous);
+    remember(COMMANDS[type].history, previous);
     for (const listener of [...listeners]) listener(session);
     return { ok: true, commandId, revision: session.revision };
   }
@@ -268,22 +162,23 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     // so answer it with the revision that holds it rather than running the command twice.
     if (session.recentCommandIds.includes(commandId)) return Promise.resolve({ ok: true, commandId, revision: session.revision });
     // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
-    if (!Object.hasOwn(COMMAND_STAGE, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
+    if (!Object.hasOwn(COMMANDS, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
     // proto: the wording of a stale-revision refusal is reserved for review with the rest of
     // the turn and seat text. The revision travels with it so the client can refresh and ask.
     if (expectedRevision !== session.revision) {
       return Promise.resolve(reject(commandId, 'revision', `the battle has moved on to revision ${session.revision}`));
     }
-    const stage = COMMAND_STAGE[command.type];
+    const descriptor = descriptorOf(command);
+    const stage = descriptor.stage;
     if (stage === 'setup' && session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
     if (stage === 'battle' && !session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
     // A finalized battle has been reported to the campaign. Only leaving it, or replacing it
     // outright with a loaded save, reopens the record.
-    if (session.stage === 'finalized' && !AFTER_FINAL.includes(command.type)) {
+    if (session.stage === 'finalized' && !descriptor.afterFinal) {
       return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
     }
     // proto: the wording is reserved for review with the rest of the player-facing text.
-    if (writebackRunning(session) && !DURING_WRITEBACK.includes(command.type)) {
+    if (writebackRunning(session) && !descriptor.duringWriteback) {
       return Promise.resolve(reject(commandId, 'stage', 'the campaign outcome is being applied'));
     }
     const refusal = refuseCommand(session, command, userId, presence);
@@ -293,25 +188,17 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     if (command.type === 'session.install') return install(commandId, command.battleId, command.request, userId);
     if (command.type === 'session.moveTo') return moveTo(commandId, command, userId);
 
+    const ctx: CommandContext = { services, presence, userId };
     return persist(commandId, userId, {
+      type: command.type,
       edit: (current) => {
-        const next = applyCommand(current, command, services, presence, userId);
+        const next = descriptor.run!(current, command, ctx);
         // A board or a force that changed after an army called itself ready needs that word
         // again: the other army agreed to fight what was on the table a moment ago.
-        return COMMAND_STAGE[command.type] === 'setup' && command.type !== 'army.declareReady'
+        return descriptor.stage === 'setup' && command.type !== 'army.declareReady'
           ? dropInteraction(next, 'army.readiness') : next;
       },
-      record: (previous) => {
-        const effect = HISTORY[command.type];
-        if (effect === 'clear') history = [];
-        if (effect !== 'push') return;
-        const turn = previous.turn;
-        const next = previous.control.next;
-        history = [...history.slice(1 - HISTORY_LIMIT), previous.battle
-          ? { kind: 'battle', battle: previous.battle, turn, next }
-          : { kind: 'setup', setup: previous.setup, turn, next }];
-      },
-      describe: (previous, next) => eventsOf(command, previous, next),
+      describe: (previous, next) => descriptor.events?.(previous, next, command, ctx) ?? [],
     });
   }
 
@@ -319,13 +206,13 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     const previous = history.at(-1);
     if (!previous) return Promise.resolve(reject(commandId, 'stage', 'nothing to undo'));
     return persist(commandId, userId, {
+      type: 'session.undo',
       edit: (current) => ({
         ...current,
         ...(previous.kind === 'battle' ? { battle: previous.battle } : { setup: previous.setup }),
         turn: previous.turn,
         control: { ...current.control, next: previous.next },
       }),
-      record: () => { history = history.slice(0, -1); },
       seat: false,
     });
   }
@@ -341,6 +228,7 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
       return reject(commandId, 'storage', failure(error));
     }
     return persist(commandId, userId, {
+      type: 'session.load',
       edit: (current) => {
         const migrated = migrateSession(raw);
         if (!migrated) throw new Error(`${slot} is not a battlefield save`);
@@ -351,7 +239,6 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
           control: seatUsers(migrated.control, presence), turn: null,
         };
       },
-      record: () => { history = []; },
     });
   }
 
@@ -366,12 +253,12 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
       return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
     }
     return persist(commandId, userId, {
+      type: 'session.install',
       edit: (current) => {
         const built = sessionFromRequest(request, battleId);
         // The imported seating knows no users; the table's own seats it, as a load does.
         return { ...built, revision: current.revision, control: seatUsers(built.control, presence) };
       },
-      record: () => { history = []; },
     });
   }
 
@@ -394,6 +281,7 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
       return reject(commandId, 'storage', failure(error));
     }
     return persist(commandId, userId, {
+      type: 'session.moveTo',
       edit: (current) => {
         const parked = raw === null ? null : migrateSession(raw);
         if (raw !== null && !parked) throw new Error(`the battle parked at ${site} cannot be read`);
@@ -404,7 +292,6 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
           control: seatUsers(opened.control, presence), turn: null,
         };
       },
-      record: () => { history = []; },
     });
   }
 

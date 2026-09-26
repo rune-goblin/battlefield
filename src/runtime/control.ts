@@ -1,5 +1,6 @@
 import { opponent, type Side } from '../engine/index.js';
 import type { PresencePort } from './ports.js';
+import type { BattleSession } from './session.js';
 
 /**
  * Who plays each side. `auto`, the default, gives the GM one side and every other user at the
@@ -94,6 +95,20 @@ export function seatUsers(control: SideControl, presence: PresencePort): SideCon
 export const assignControl = (
   control: SideControl, assignment: ControlAssignment, presence: PresencePort,
 ): SideControl => seatUsers({ ...assignment, next: control.next }, presence);
+
+export const assignSeats = (
+  session: BattleSession, assignment: ControlAssignment, presence: PresencePort,
+): BattleSession => ({ ...session, control: assignControl(session.control, assignment, presence) });
+
+/** Hand the open turn to another seat on the side that is pending. */
+export function reassignTurn(session: BattleSession, userId: string, presence: PresencePort): BattleSession {
+  const battle = session.battle;
+  if (!battle || battle.phase !== 'battle') throw new Error('no turn is open');
+  if (userId !== presence.gmUserId() && !seatedOn(session.control, battle.pending, userId)) {
+    throw new Error(`${userId} holds no seat on the ${battle.pending} side`);
+  }
+  return { ...session, turn: userId };
+}
 
 const sameOrder = (a: string[], b: string[]): boolean =>
   a.length === b.length && a.every((user, index) => user === b[index]);
