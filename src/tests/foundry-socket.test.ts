@@ -126,7 +126,7 @@ interface Client { host: BattlefieldHost; status: string[] }
 
 function clientOn(
   userId: string, bus: ReturnType<typeof fakeBus>, world: ReturnType<typeof fakeWorld>, table: FakeTable,
-  chat?: ChatPoster,
+  chat?: ChatPoster, onError?: (error: unknown) => void,
 ): Client {
   const channel = bus.connect(userId);
   const status: string[] = [];
@@ -139,6 +139,7 @@ function clientOn(
     dice: scriptedRng([10]),
     chat,
     onAuthority: (report) => status.push(authorityStatus(report)),
+    onError,
   });
   channel.on((message) => host.handleMessage(message));
   return { host, status };
@@ -146,13 +147,13 @@ function clientOn(
 
 function table3(
   world = fakeWorld(), table: FakeTable = { primaryGm: PRIMARY, active: [PRIMARY, SECOND_GM, PLAYER] },
-  chat?: ChatPoster,
+  chat?: ChatPoster, onError?: (error: unknown) => void,
 ) {
   const bus = fakeBus();
   const clients = {
-    primary: clientOn(PRIMARY, bus, world, table, chat),
-    second: clientOn(SECOND_GM, bus, world, table, chat),
-    player: clientOn(PLAYER, bus, world, table, chat),
+    primary: clientOn(PRIMARY, bus, world, table, chat, onError),
+    second: clientOn(SECOND_GM, bus, world, table, chat, onError),
+    player: clientOn(PLAYER, bus, world, table, chat, onError),
   };
   world.publish();
   const ready = Promise.all(Object.values(clients).map((c) => c.host.refresh()));
@@ -227,6 +228,22 @@ describe('the socket transport and the primary GM', () => {
 
     expect(await pending).toMatchObject({ ok: true });
     expect(world.saves).toBe(1);
+  });
+
+  it('answers every request with an error when the primary cannot load the battle', async () => {
+    const failure = new Error('unreadable save');
+    const world = fakeWorld();
+    world.repository.load = () => Promise.reject(failure);
+    const errors: unknown[] = [];
+    const t = table3(world, undefined, undefined, (error) => { errors.push(error); });
+
+    await expect(t.ready).resolves.toBeDefined();
+    expect(errors).toEqual([failure]);
+    expect(t.primary.host.runtime).toBeNull();
+
+    expect(await t.second.host.submit(select)).toMatchObject({ ok: false, reason: 'storage' });
+    expect(await t.primary.host.submit(select)).toMatchObject({ ok: false, reason: 'storage' });
+    expect(t.bus.sent.map((m) => m.kind)).toEqual(['request', 'error']);
   });
 
   it('refuses a command while no GM is at the table', async () => {

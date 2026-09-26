@@ -78,6 +78,7 @@ CLAUDE.md asks for less than this in prototype mode. The wider gate applies to e
 - **Branded IDs deferred.** The branded-ID half of m4 is deferred. It touches almost every file for little gain in prototype mode. The `opponent` and `SIDES` half lands in W3.
 - **One easing curve.** The easing merge in m3 keeps `Token.ts`'s cubic curve, because the comments say a death plays the same way as a status.
 - **`game` keeps its name.** The app store named `game` (tsconfig nit) stays. A per-adapter tsconfig already stops a leaked Foundry global from compiling.
+- **The per-adapter tsconfig exists.** W7.7 added it: `tsconfig.json` loads no Foundry types, and `tsconfig.foundry.json` checks the Foundry, pf2e and ReignMaker adapters and the tests that import them.
 
 ## Waves
 

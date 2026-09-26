@@ -4,5 +4,6 @@
     "verbatimModuleSyntax": false,
     "types": ["@playwright/test", "node"]
   },
-  "include": ["**/*.ts", "../../adapters/foundry/module-id.ts"]
+  "include": ["**/*.ts", "../../adapters/foundry/module-id.ts"],
+  "exclude": []
 }

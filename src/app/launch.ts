@@ -1,11 +1,12 @@
 import { SESSION_KEY } from '../adapters/browser/localRepository.js';
 import { freshSession } from '../runtime/session.js';
 
-// The landing page's choice arrives as `?new` or `?example`. It has to land in storage before
-// `game.svelte.ts` reads the session at import, so `main.ts` imports this module first.
-const params = new URLSearchParams(location.search);
-const blank = params.has('new');
-if (blank || params.has('example')) {
+/** Store the landing page's choice, which arrives as `?new` or `?example`. `main.ts` calls this
+ * before the browser's client reads the saved session. */
+export function applyLaunchChoice(): void {
+  const params = new URLSearchParams(location.search);
+  const blank = params.has('new');
+  if (!blank && !params.has('example')) return;
   const session = freshSession();
   // proto: a new battle is the example with both armies emptied.
   if (blank) session.setup.units = [];

@@ -1,7 +1,4 @@
 import type { BoardSpec, DayOrder, RecoveryChoice, Side, UnitCard } from '../engine/index.js';
-import { createLocalArchive } from '../adapters/browser/localArchive.js';
-import { createLocalRepository, loadSessionSync } from '../adapters/browser/localRepository.js';
-import { createRuntime } from '../runtime/createRuntime.js';
 import type { StoreClient, TableSummons } from './client.js';
 import { createPresentation } from './presentation.js';
 import { createSetupCopy } from './setup-copy.js';
@@ -10,27 +7,36 @@ import { newCommandId, type BattleCommand, type CommandResult, type PaintStroke,
 import type { HistorySnapshot } from '../runtime/executeCommand.js';
 import { submissionOf } from '../runtime/interactions.js';
 import type { ControlAssignment } from '../runtime/control.js';
-import type { ArchiveEntry, TableUser } from '../runtime/ports.js';
-import type { BattleSession, BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
+import type { ArchiveEntry, BattleArchive, TableUser } from '../runtime/ports.js';
+import { freshSession, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
 
 export type Setup = BattleSetupDraft;
 export type { SetupEngine, SetupUnit };
 export type { ArchiveEntry };
 
-const localArchive = createLocalArchive();
-// proto: the browser's runtime is built on every host, and a Foundry client replaces it through
-// `bindClient` before its window opens.
-const local = createRuntime({ repository: createLocalRepository(), archive: localArchive, session: loadSessionSync() });
-let runtime = $state.raw<StoreClient>({
-  get session() { return local.session; },
-  get history() { return local.history; },
-  userId: local.userId,
-  gmUserId: () => local.gmUserId(),
-  tableUsers: () => local.tableUsers(),
-  submit: (command) => local.submit(command),
-  subscribe: (listener) => local.subscribe(listener),
-  archive: localArchive,
-});
+// proto: placeholder wording, for a command sent before the entry binds a client.
+const NOT_READY = 'the table is not ready';
+const refuseArchive = (): Promise<never> => Promise.reject(new Error(NOT_READY));
+const unboundArchive: BattleArchive = {
+  list: refuseArchive, save: refuseArchive, load: refuseArchive,
+  remove: refuseArchive, export: refuseArchive, import: refuseArchive,
+};
+
+/** The store's client until an entry binds a real one: a fresh record that refuses every
+ * command, so importing the store reads no storage and builds no runtime. */
+const unbound: StoreClient = {
+  session: freshSession(),
+  history: [],
+  userId: '',
+  gmUserId: () => '',
+  tableUsers: () => [],
+  submit: () => Promise.resolve({
+    ok: false, commandId: newCommandId(), revision: unbound.session.revision, reason: 'battle', message: NOT_READY,
+  }),
+  subscribe: () => () => {},
+  archive: unboundArchive,
+};
+let runtime = $state.raw<StoreClient>(unbound);
 
 /** What every view reads. The committed record lands here and nothing else writes it; a view
  * that wants a change submits a command and waits for the record that comes back. */
@@ -38,16 +44,16 @@ const copySetup = createSetupCopy();
 export const game = $state({
   // A copy of the committed draft, kept so a view that reads it cannot reach the executor's
   // own record. Every command's result lands here through `adoptSetup`.
-  setup: copySetup(runtime.session.setup),
-  battle: runtime.session.battle,
-  battleId: runtime.session.battleId,
+  setup: copySetup(unbound.session.setup),
+  battle: unbound.session.battle,
+  battleId: unbound.session.battleId,
   history: [] as HistorySnapshot[],
   /** The shared decisions this stage is waiting on. A panel reads its side's submission here
    * rather than holding one of its own. */
-  interactions: runtime.session.interactions,
+  interactions: unbound.session.interactions,
   /** Whose activation is open, for every client to show. */
-  turn: runtime.session.turn,
-  control: runtime.session.control,
+  turn: unbound.session.turn,
+  control: unbound.session.control,
 });
 
 function adoptSetup(committed: BattleSetupDraft): void {
@@ -58,7 +64,7 @@ function adoptSetup(committed: BattleSetupDraft): void {
 /** What the board plays after each commit. It observes the record before the store adopts it: a
  * token spends its route on the move the new positions trigger, so the route has to be on the
  * board before the tokens are. */
-export const presentation = createPresentation(runtime.session);
+export const presentation = createPresentation(unbound.session);
 
 const recordListeners = new Set<() => void>();
 /** Called after the store adopts a record, whoever's command made it. */
@@ -79,10 +85,10 @@ const follow = (client: StoreClient) => client.subscribe((session) => {
   presentation.observe(session);
   adopt(session);
 });
-let unfollow = follow(runtime);
+let unfollow = follow(unbound);
 
-/** Hand the store to another client. The host adapter calls this once, before its window
- * mounts; the record the new client holds replaces the local one outright. */
+/** Hand the store its client. Each entry calls this once, before its window mounts; the record
+ * the client holds replaces the placeholder's outright. */
 export function bindClient(client: StoreClient): void {
   unfollow();
   runtime = client;
@@ -251,5 +257,5 @@ export const removeSave = (slot: string): Promise<void> => runtime.archive.remov
 export const exportSave = (slot: string): Promise<string> => runtime.archive.export(slot);
 export const importSave = (data: string): Promise<ArchiveEntry> => runtime.archive.import(data);
 
-// Module-level $state is seeded once from the saved session; a hot patch would keep the old game.
+// A hot patch would rebuild the store on the placeholder, and only the entry binds a client.
 if (import.meta.hot) import.meta.hot.accept(() => import.meta.hot!.invalidate());
