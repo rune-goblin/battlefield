@@ -1,5 +1,5 @@
 import { reachableActivities, soleLegalActivity } from './action-menu.js';
-import { type HealingChoice, type ActionOffer, TREE_TARGET, type BoardObject, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
+import { type HealingChoice, type ActionOffer, TREE_TARGET, type BoardObject, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
 import type { BattleState, EngineState, Unit } from '../../engine/index.js';
@@ -28,7 +28,7 @@ export interface PickerShared extends BattleDeps {
   readonly clearHover: () => void;
   readonly requireTurn: () => boolean;
   readonly siegeEngine: EngineState | null;
-  readonly fireSiege: (activity: ActivityIndex, target: string, commitment: number) => Promise<void>;
+  readonly fireSiege: (activity: ActivityIndex, target: TargetRef, commitment: number) => Promise<void>;
   readonly run: (pending: Promise<CommandResult>) => Promise<CommandResult>;
 }
 
@@ -55,8 +55,6 @@ export function createPickerController(s: PickerShared) {
       && (o.targets.some((x) => targetMatches(s.b, x, t)) || (own && !o.needsTarget)));
   });
   const aimed = $derived(aimActivities[aim?.index ?? -1] ?? null);
-  // A Blast's Line and Burst, and a Heal or Restore's set, arrive as one target holding two or
-  // three parts joined by '+' — a unit-kind id needs the same split a cell-kind id already gets.
   const targetCells = (target: ActivityTarget): string[] => cellsForTarget(s.b, target);
   let blastOpen = $state(false);
   let blastLevel = $state<ActivityIndex | null>(null);
@@ -88,6 +86,10 @@ export function createPickerController(s: PickerShared) {
   const pickerPreview = $derived(pickerTargets.find((t) => t.id === targetHover)
     ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null)
     ?? pickerTargets.find((t) => t.id === activityPick?.target) ?? null);
+  const healingRecipients = $derived.by<Unit[]>(() => {
+    const choice = pickerTargets.find((t) => t.id === activityPick?.target);
+    return choice?.kind === 'unit' ? s.b.units.filter((u) => choice.ids.includes(u.id)) : [];
+  });
 
   const AIM_NOTICE = 'battle-aim';
 
@@ -259,13 +261,13 @@ export function createPickerController(s: PickerShared) {
   }
   const aimStyle = $derived<HighlightStyle>(aimGroup ? styleFor(aimGroup.offer) : 'attack');
 
-  async function performActivity(offer: ActionOffer, opt: ActivityOption, target?: string) {
+  async function performActivity(offer: ActionOffer, opt: ActivityOption, targetId?: string) {
     if (!s.active || !s.requireTurn()) return;
-    const resolution = new TargetingService(s.b, s.active, offer, opt).resolve(target);
+    const resolution = new TargetingService(s.b, s.active, offer, opt).resolve(targetId);
     if (!resolution) return;
     const commitment = canFocus(offer.type, offer.spell) ? s.focus : 0;
     if (activityPick?.key === 'siege' && s.siegeEngine) {
-      if (target) await s.fireSiege(opt.index, target, commitment);
+      if (resolution.action.target) await s.fireSiege(opt.index, resolution.action.target, commitment);
     } else await s.run(s.takeAction({ ...resolution.action, focus: commitment, ...(offer.spell === 'healing' ? { healingChoices: structuredClone($state.snapshot(healingChoices)) } : {}) }));
   }
 
@@ -373,6 +375,7 @@ export function createPickerController(s: PickerShared) {
   return {
     get healingChoices() { return healingChoices; },
     set healingChoices(value: Record<string, HealingChoice>) { healingChoices = value; },
+    get healingRecipients() { return healingRecipients; },
     clear, closeAim, closePicker, stepBack, resetPickerTargets, chooseBlastTarget, showAllBlastTargets, showResolved, stepAimRow, stepAimVerb,
     get openActivityPicker() { return openActivityPicker; },
     get activityPick() { return activityPick; },

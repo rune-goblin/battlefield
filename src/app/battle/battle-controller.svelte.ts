@@ -2,7 +2,7 @@ import { fromStore } from 'svelte/store';
 import { commandReporter, COMMAND_NOTICE } from '../command-notices.js';
 import { createScope } from '../scope.js';
 import { tick } from 'svelte';
-import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked, wallName, edgeCells } from '../../engine/index.js';
+import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, isRouted, isMountain, TERRAIN_NOTE, at, isOutflanked, wallName, edgeCells, type TargetRef } from '../../engine/index.js';
 import { withinApp } from '../app-root.js';
 import type { HighlightStyle, TokenPick, TokenModel, UnitTokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
 import { createDragController, DRAG_NOTICE } from './drag-controller.svelte.js';
@@ -70,7 +70,7 @@ export function createBattleController(deps: BattleDeps) {
     clearHover: () => { hoveredCell = null; hoveredEdge = null; },
     openGates: () => { cancelAction(); gateOpen = true; },
     openSiege: (id?: string) => openSiege(id),
-    fireSiege: (activity: NonNullable<SiegeAction['activity']>, target: string, commitment: number) => fireSiege(activity, target, commitment),
+    fireSiege: (activity: NonNullable<SiegeAction['activity']>, target: TargetRef, commitment: number) => fireSiege(activity, target, commitment),
 
     get pending() { return dragging.pending; },
     get meleeOptions() { return dragging.meleeOptions; },
@@ -153,7 +153,7 @@ export function createBattleController(deps: BattleDeps) {
     } finally { siegeBusy = false; }
   }
 
-  async function fireSiege(activity: NonNullable<SiegeAction['activity']>, target: string, commitment: number) {
+  async function fireSiege(activity: NonNullable<SiegeAction['activity']>, target: TargetRef, commitment: number) {
     if (!active || !siegeEngine || siegeBusy || !requireTurn()) return;
     const engine = siegeEngine.id, unit = active.id, turn = activationKey;
     siegeBusy = true;
@@ -569,6 +569,7 @@ export function createBattleController(deps: BattleDeps) {
     get activityPick() { return picker.activityPick; },
     get healingChoices() { return picker.healingChoices; },
     set healingChoices(value) { picker.healingChoices = value; },
+    get healingRecipients() { return picker.healingRecipients; },
     get pickerOffer() { return picker.pickerOffer; },
     get pickerActivity() { return picker.pickerActivity; },
     get pickerService() { return picker.pickerService; },

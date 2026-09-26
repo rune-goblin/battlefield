@@ -1,6 +1,6 @@
 import {
-  edgeCells, gridOf, notation, occupantTarget, unitTarget, type ActionOffer, type ActivityAction, type ActivityOption,
-  type ActivityTarget, type BattleState, type BoardObject, type Tree, type Unit,
+  edgeCells, gridOf, notation, occupantTarget, refOf, targetCells, unitTarget, type ActionOffer, type ActivityAction,
+  type ActivityOption, type ActivityTarget, type BattleState, type BoardObject, type Tree, type Unit,
 } from '../engine/index.js';
 import type { TargetIcon } from '../board/art.js';
 import type { TargetArrow } from '../board/target-point.js';
@@ -15,8 +15,9 @@ export interface TargetMarker {
   icon: TargetIcon;
   selected?: boolean;
 }
-export interface TargetChoice extends ActivityTarget, TargetMarker {}
-export interface TargetingHit { kind: 'hex' | 'edge' | 'corner' | 'target'; id: string }
+export type TargetChoice = ActivityTarget & TargetMarker;
+export type TargetingHit =
+  | { kind: 'hex'; id: string } | { kind: 'edge'; id: string } | { kind: 'target'; id: string } | { kind: 'corner'; cells: string[] };
 export interface TargetResolution {
   action: ActivityAction;
   markers: TargetMarker[];
@@ -31,14 +32,7 @@ const sameCells = (a: readonly string[], b: readonly string[]): boolean => {
 
 export const targetText = (target: { label: string }, cells: string[]): string => `${target.label} · ${cells.join(' + ')}`;
 
-export function cellsForTarget(state: BattleState, target: ActivityTarget): string[] {
-  if (target.kind === 'wall') return edgeCells(target.id);
-  if (target.kind === 'cell') return target.id.split('+');
-  return target.id.split('+').flatMap((id) => {
-    const u = state.units.find((unit) => unit.id === id && unit.status === 'active');
-    return u ? [notation(u.square)] : [];
-  });
-}
+export const cellsForTarget = targetCells;
 
 export const targetingIcon = (offer: Pick<ActionOffer, 'type' | 'spell'>): TargetIcon =>
   offer.spell ? `cast:${offer.spell}`
@@ -130,10 +124,10 @@ export class TargetingService {
   }
 
   private describe(target: ActivityTarget): TargetChoice {
-    const cells = cellsForTarget(this.state, target);
+    const cells = targetCells(this.state, target);
     const placement = this.offer.spell === 'movement' && this.activity.index >= 3;
     const siegeArea = this.activity.activity.startsWith('siege-') && target.kind === 'cell' && cells.length > 1;
-    const corner = siegeArea && gridOf(this.state.board).corners(gridOf(this.state.board).parse(cells[0])).some(cs => cs.map(notation).sort().join('+') === cells.slice().sort().join('+'));
+    const corner = siegeArea && gridOf(this.state.board).corners(gridOf(this.state.board).parse(cells[0])).some(cs => sameCells(cs.map(notation), cells));
     const geometry: TargetGeometry = siegeArea ? (corner ? 'corner' : 'hex') : target.kind === 'wall' ? 'edge'
       : this.offer.spell === 'blast' && this.activity.index === 3 ? 'corner'
         : this.offer.spell === 'blast' && this.activity.index === 2 ? 'edge'
@@ -149,16 +143,15 @@ export class TargetingService {
       if (hit.kind === 'target') return target.id === hit.id;
       if (hit.kind === 'hex') return target.kind !== 'wall' && target.cells.includes(hit.id);
       if (hit.kind === 'edge') return target.geometry === 'edge' && sameCells(target.anchorCells, edgeCells(hit.id));
-      return target.geometry === 'corner'
-        && target.anchorCells.slice().sort().join('+') === hit.id.split('+').sort().join('+');
+      return target.geometry === 'corner' && sameCells(target.anchorCells, hit.cells);
     });
   }
 
-  forRef(ref: BoardObject): TargetChoice[] {
-    if (ref.kind === 'wall') return this.matches({ kind: 'edge', id: ref.id });
-    if (ref.kind === 'cell') return this.matches({ kind: 'hex', id: ref.id });
-    return this.choices.filter((target) => target.kind === 'unit' && target.id.split('+').includes(ref.id)
-      || target.kind === 'cell' && target.cells.some((cell) => this.state.units.some((u) => u.id === ref.id && notation(u.square) === cell)));
+  forRef(obj: BoardObject): TargetChoice[] {
+    if (obj.kind === 'wall') return this.matches({ kind: 'edge', id: obj.id });
+    if (obj.kind === 'cell') return this.matches({ kind: 'hex', id: obj.id });
+    return this.choices.filter((target) => target.kind === 'unit' ? target.ids.includes(obj.id)
+      : target.kind !== 'wall' && target.cells.some((cell) => this.state.units.some((u) => u.id === obj.id && notation(u.square) === cell)));
   }
 
   preview(id: string | null) {
@@ -185,7 +178,7 @@ export class TargetingService {
     const placement = this.offer.spell === 'movement' && this.activity.index >= 3;
     const effectCells = placement ? target.anchorCells : cells;
     return {
-      action: { ability: this.offer.ability, type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? target.id : undefined },
+      action: { ability: this.offer.ability, type: this.offer.type, unit: this.actor.id, activity: this.activity.index, spell: this.offer.spell ?? undefined, target: this.activity.needsTarget ? refOf(target) : undefined },
       markers: this.offer.type === 'rally' ? cells.map((cell) => ({ ...target, id: `rally:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : this.markersFor(target),
       arrows: this.offer.type === 'rally' ? cells.map((cell) => ({ from: notation(this.actor.square), to: cell, tone: 'rally' })) : this.arrows([], target.id),
       effects: this.offer.spell ? effectCells.map((cell) => ({ cell, tree: this.offer.spell!, from: notation(this.actor.square) })) : [],

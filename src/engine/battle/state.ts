@@ -9,9 +9,10 @@ import { canFocus } from '../ladders.js';
 import { SHOOTER_CONDITIONS, resetConditions } from '../conditions.js';
 import type { Rng } from '../rng.js';
 import { levelDc } from '../tables.js';
+import { isTargetRef } from '../targets.js';
 import {
   ACTION_BONUS, BANDS, REACH_RANK, ROUTED_AT, opponent, type BattleState, type ChargeAction, type Range,
-  type ActivityAction, type Side, type Unit, type LogTag, type CheckLanding,
+  type ActivityAction, type Side, type TargetRef, type Unit, type LogTag, type CheckLanding,
 } from '../types.js';
 
 export const homeRank = (s: Side, dimension = SIZE) => (s === 'attacker' ? 0 : dimension - 1);
@@ -24,6 +25,26 @@ export const unit = (state: BattleState, id: string): Unit => {
   if (!u) throw new Error(`no unit ${id}`);
   return u;
 };
+
+/** A command's target, or undefined when it names none. A client older than typed targets sends a
+ * string, which is refused here rather than failing later on a missing field. */
+export function checkedTarget(target: unknown): TargetRef | undefined {
+  if (target == null) return undefined;
+  if (!isTargetRef(target)) throw new Error('This target is no longer understood. Choose the target again.');
+  return target;
+}
+
+/** The one unit a target names, for the activities that name a single unit. */
+export function soleUnit(state: BattleState, ref: TargetRef | undefined): Unit {
+  if (ref?.kind !== 'unit' || ref.ids.length !== 1) throw new Error('This activity names one unit as its target.');
+  return unit(state, ref.ids[0]);
+}
+
+/** Every unit a group target names, in the order it names them. */
+export function targetUnits(state: BattleState, ref: TargetRef | undefined): Unit[] {
+  if (ref?.kind !== 'unit') throw new Error('This activity names units as its target.');
+  return ref.ids.map((id) => unit(state, id));
+}
 
 /** Zero Morale routes the unit; any remaining Morale still counts as standing. */
 export const isRouted = (u: Unit) => u.status === 'active' && u.disorder >= ROUTED_AT;

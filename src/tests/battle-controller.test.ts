@@ -4,7 +4,7 @@ import { reachableActivities } from '../app/battle/action-menu.js';
 import { describe, expect, it, vi } from 'vitest';
 import { createBattleController, type BattleDeps } from '../app/battle/battle-controller.svelte.js';
 import { createNotificationService } from '../app/notifications.js';
-import { act, activation, createBattle, engineLoaded, ENGINES, notation, parse, select, type BattleState, type UnitCard } from '../engine/index.js';
+import { act, activation, createBattle, engineLoaded, ENGINES, notation, parse, refOf, select, type BattleState, type UnitCard } from '../engine/index.js';
 import { upgradeBattle } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
@@ -261,7 +261,7 @@ describe('siege targeting', () => {
     c.confirmPicker();
     expect(takeAction).toHaveBeenCalledWith(expect.objectContaining({
       type: 'siege', operation: 'attack', engine: b.units[0].engines[0].id,
-      unit: b.units[0].id, activity: 1, target: target.id,
+      unit: b.units[0].id, activity: 1, target: refOf(target),
     }));
     dispose();
   });

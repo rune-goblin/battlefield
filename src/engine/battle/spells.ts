@@ -9,7 +9,7 @@ import type { Rng } from '../rng.js';
 import { levelDc } from '../tables.js';
 import { ACTION_BONUS, type BattleState, type ActivityAction, type Unit, type LogTag } from '../types.js';
 import {
-  dist, unit, unitAt, engagedEnemies, roll, defenceOf, willModifier, spellAttackModifier, spellDcFor,
+  dist, unit, soleUnit, targetUnits, engagedEnemies, roll, defenceOf, willModifier, spellAttackModifier, spellDcFor,
   healingModifier, controllingDc, log, attackOn,
 } from './state.js';
 import { moveTo } from './movement.js';
@@ -25,12 +25,17 @@ export function doCastAction(state: BattleState, rng: Rng, u: Unit, tree: Tree, 
 
 /** The one unit an ally tree or a Controlling cast lands on, or null when it is out of range. */
 function castTarget(state: BattleState, u: Unit, tree: Tree, action: ActivityAction): Unit | null {
-  const target = action.target ? unit(state, action.target) : u;
+  const target = action.target ? soleUnit(state, action.target) : u;
   if (target.id !== u.id && dist(state, target.square, u.square) > castCeiling(state, tree)) {
     log(state, u, `${u.name}'s ${TREE_LABEL[tree]} cannot carry to ${target.name}.`);
     return null;
   }
   return target;
+}
+
+function shapeOf(action: ActivityAction) {
+  if (action.target?.kind !== 'cell') throw new Error('A Blast shape names its hexes.');
+  return action.target.cells.map(parse);
 }
 
 /**
@@ -40,7 +45,7 @@ function castTarget(state: BattleState, u: Unit, tree: Tree, action: ActivityAct
  */
 function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, action: ActivityAction) {
   const activity = castActivityOf('blast', index);
-  const shape = index === 1 ? [unit(state, action.target!).square] : action.target!.split('+').map(parse);
+  const shape = index === 1 ? [soleUnit(state, action.target).square] : shapeOf(action);
   const caught = enemiesIn(state, u, shape);
   u.attacked = true;
   for (const target of caught) attackAbilities(state, u, target, 'spell', 'use', null, 0, false, !!u.guard, abilityContext(state, rng, u));
@@ -107,9 +112,10 @@ function renewOne(state: BattleState, target: Unit, degree: Degree, choice?: Hea
  * between, and the leap is none of its own actions. No check, and no free strike from anything
  * it was in contact with. */
 function translocate(state: BattleState, u: Unit, label: string, index: ActivityIndex, action: ActivityAction) {
-  const [home, landing] = (action.target ?? '').split('+');
-  const ally = unitAt(state, parse(home));
-  if (!ally || !landing) { log(state, u, `${u.name}'s ${label} finds nobody to move.`); return; }
+  const move = action.target?.kind === 'transfer' ? action.target.moves[0] : undefined;
+  const ally = move && state.units.find((x) => x.id === move.unit && x.status === 'active');
+  if (!move || !ally) { log(state, u, `${u.name}'s ${label} finds nobody to move.`); return; }
+  const landing = move.to;
   const held = engagedEnemies(state, ally).length > 0;
   log(state, u, `${u.name} casts ${label} on ${ally.name}.`, undefined,
     { kind: 'spell', caster: u.id, tree: 'movement', activity: index, targets: [ally.id] });
@@ -150,13 +156,13 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
   if (index === 4 && tree !== 'blast' && tree !== 'healing') {
     const label = castActivityOf(tree, index).label;
     if (tree === 'movement') {
-      const parts = action.target!.split('+');
-      const transfers = Array.from({ length: parts.length / 2 }, (_, i) => ({ ally: unitAt(state, parse(parts[i * 2]))!, landing: parse(parts[i * 2 + 1]) }));
+      const moves = action.target?.kind === 'transfer' ? action.target.moves : [];
+      const transfers = moves.map(({ unit: id, to }) => ({ ally: unit(state, id), landing: parse(to) }));
       log(state, u, `${u.name} casts ${label}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: transfers.map(t => t.ally.id) });
       for (const { ally, landing } of transfers) { moveTo(state, ally, landing, false); log(state, ally, `${ally.name} is set down on ${notation(landing)}.`); }
       return;
     }
-    const targets = action.target!.split('+').map(id => unit(state, id));
+    const targets = targetUnits(state, action.target);
     log(state, u, `${u.name} casts ${label} on ${targets.map(t => t.name).join(', ')}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: targets.map(t => t.id) });
     for (const target of targets) {
       // A spell's total cost cannot exceed three actions, so the three-action Terror takes no focus.
@@ -174,7 +180,7 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
       blast(state, rng, u, index, action);
       break;
     case 'healing': {
-      const targets = action.target!.split('+').map((id) => unit(state, id));
+      const targets = targetUnits(state, action.target);
       const activity = castActivityOf('healing', index);
       log(state, u, `${u.name} casts ${activity.label} on ${targets.map((t) => t.name).join(', ')}.`, undefined,
         { kind: 'spell', caster: u.id, tree, activity: index, targets: targets.map((t) => t.id) });

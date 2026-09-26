@@ -55,7 +55,7 @@ describe('three-pip morale', () => {
     unit(battle, 'u0').disorder = 2;
     unit(battle, 'u2').disorder = 2;
     unit(battle, 'u2').square = parse('c4');
-    const next = act(battle, { type: 'cast', unit: 'u0', spell: 'controlling', activity: 1, target: 'u2' }, scriptedRng([1]));
+    const next = act(battle, { type: 'cast', unit: 'u0', spell: 'controlling', activity: 1, target: { kind: 'unit', ids: ['u2'] } }, scriptedRng([1]));
     expect(unit(next, 'u2').disorder).toBe(3);
     expect(isRouted(unit(next, 'u2'))).toBe(true);
     expect(next.log.some(e => e.text.includes('loses 1 Morale (Morale 0/3') && e.text.includes('routed'))).toBe(true);
@@ -64,7 +64,7 @@ describe('three-pip morale', () => {
   it('restores ordinary actions when an ally clears the third pip', () => {
     const battle = setup();
     unit(battle, 'u1').disorder = 3;
-    const next = act(battle, { type: 'rally', unit: 'u0', activity: 2, target: 'u1' }, scriptedRng([10]));
+    const next = act(battle, { type: 'rally', unit: 'u0', activity: 2, target: { kind: 'unit', ids: ['u1'] } }, scriptedRng([10]));
     expect(unit(next, 'u1').disorder).toBe(2);
     expect(next.log.some(e => e.unit === 'u1' && e.text.includes('restores 1 Morale (Morale 1/3'))).toBe(true);
     expect(isStanding(unit(next, 'u1'))).toBe(true);

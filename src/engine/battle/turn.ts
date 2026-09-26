@@ -4,6 +4,7 @@ import { rollLine } from '../check.js';
 import { activityOf, type Activity } from '../ladders.js';
 import type { Rng } from '../rng.js';
 import { clone } from '../clone.js';
+import { targetKey } from '../targets.js';
 import {
   AFTER_ACTED_CONDITIONS, BEGIN_CONDITIONS, COUNTDOWN_CONDITIONS, FINISH_CONDITIONS, HEALING_CONDITIONS, resetConditions,
 } from '../conditions.js';
@@ -12,7 +13,7 @@ import {
   type AdvanceAction, type ActivityAction, type Side, type Unit,
 } from '../types.js';
 import {
-  dist, unit, isStanding, mayActivate, nextSide, activeUnit, isEngaged, rollBonus, roll, willModifier,
+  dist, unit, soleUnit, checkedTarget, isStanding, mayActivate, nextSide, activeUnit, isEngaged, rollBonus, roll, willModifier,
   routDcFor, log, clearAsShooter, validateFocus,
 } from './state.js';
 import { refreshEmplacements } from './emplacements.js';
@@ -46,19 +47,19 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
   const focusBonus = ACTION_BONUS * (action.focus ?? 0);
   switch (activity.type) {
     case 'shoot': {
-      const target = unit(state, action.target!);
+      const target = soleUnit(state, action.target);
       if (!canShootTarget(state, u, target)) { log(state, u, `${u.name}'s shot cannot reach ${target.name} from this range or sight line.`); break; }
       shootAt(state, rng, u, target, activity, focusBonus);
       break;
     }
     case 'fight': {
-      if (action.target && action.target.includes('|')) {
+      if (action.target?.kind === 'wall') {
         u.attacked = true;
         const bonus = (u.stats.strike ?? 0) - u.disorder + rollBonus(u);
-        attackWall(state, rng, u, action.target, bonus + focusBonus, 'Strike');
+        attackWall(state, rng, u, action.target.edge, bonus + focusBonus, 'Strike');
         break;
       }
-      const target = unit(state, action.target!);
+      const target = soleUnit(state, action.target);
       if (!isEngaged(state, u, target)) { log(state, u, `${u.name} is not in contact with ${target.name}.`); break; }
       melee(state, rng, u, target, activity, { bonus: focusBonus });
       break;
@@ -85,7 +86,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
       const eff = activity.rally!;
       const reached: Unit[] = [u];
       if (eff.scope === 'adjacent') {
-        reached.push(unit(state, action.target!));
+        reached.push(soleUnit(state, action.target));
       } else if (eff.scope === 'nearby') {
         reached.push(...alliesWithin(state, u, BANDS.short));
       }
@@ -190,24 +191,26 @@ export function endActivation(input: BattleState, rng: Rng, unitId?: string): Ba
 }
 
 function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityAction): number {
+  const ref = checkedTarget(action.target);
+  const key = ref ? targetKey(ref) : null;
   if (action.ability) {
     if (action.type !== 'cast' || action.spell || action.activity !== 1 || action.focus) throw new Error('Invalid ability action');
     const option = specialOffers(state, u).find(o => o.ability === action.ability)?.activities[0];
-    if (!option?.legal || (option.needsTarget && !option.targets.some(t => t.id === action.target))) throw new Error(option?.reason ?? 'Invalid ability target');
-    const target = state.units.find(t => t.id === action.target) ?? null;
-    performAbility(state, u, action.ability, target, !target && action.target ? parse(action.target) : null, abilityContext(state, rng, u));
+    if (!option?.legal || (option.needsTarget && !option.targets.some(t => t.id === key))) throw new Error(option?.reason ?? 'Invalid ability target');
+    const target = ref?.kind === 'unit' ? state.units.find(t => t.id === ref.ids[0]) ?? null : null;
+    performAbility(state, u, action.ability, target, ref?.kind === 'cell' ? parse(ref.cells[0]) : null, abilityContext(state, rng, u));
     return option.cost!;
   }
   const offer = availableActions(state, u.id).find((o) => o.type === action.type && o.spell === (action.spell ?? null));
   if (!offer) throw new Error(`${action.type} is not available to ${u.name}`);
   const opt = offer.activities[action.activity - 1];
   if (!opt || !opt.legal) throw new Error(`${offer.label} ${action.activity} is not available to ${u.name}${opt?.reason ? ` — ${opt.reason}` : ''}`);
-  if (opt.needsTarget && !opt.targets.some((t) => t.id === action.target)) {
-    throw new Error(`${action.target ?? 'nothing'} is not a target for ${opt.label}`);
+  if (opt.needsTarget && !opt.targets.some((t) => t.id === key)) {
+    throw new Error(`${key ?? 'nothing'} is not a target for ${opt.label}`);
   }
   if (action.healingChoices) {
     if (action.type !== 'cast' || action.spell !== 'healing') throw new Error('recovery choices require Healing');
-    const recipients = action.target!.split('+');
+    const recipients = ref?.kind === 'unit' ? ref.ids : [];
     for (const [id, choice] of Object.entries(action.healingChoices)) {
       if (!recipients.includes(id) || !Array.isArray(choice.conditions) || choice.conditions.length > 2
         || new Set(choice.conditions).size !== choice.conditions.length
@@ -232,7 +235,7 @@ function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction)
   const run = waypoints.slice(plan.split);
   const attack: ChargeAction | ActivityAction = action.finish === 'charge'
     ? { type: 'charge', unit: u.id, target: action.target, activity, focus: action.focus, ...(run.length ? { waypoints: run } : {}) }
-    : { type: 'fight', unit: u.id, target: action.target, activity, focus: action.focus };
+    : { type: 'fight', unit: u.id, target: { kind: 'unit', ids: [action.target] }, activity, focus: action.focus };
   const focus = validateFocus(attack);
   if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
     throw new Error('The move and chosen attack exceed the available actions.');

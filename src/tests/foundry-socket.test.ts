@@ -328,7 +328,7 @@ describe('the primary GM\'s chat publisher', () => {
     await t.ready;
 
     const result = await t.primary.host.submit({
-      type: 'action.resolve', action: { type: 'fight', activity: 1, target: 'u1', unit: 'u0' },
+      type: 'action.resolve', action: { type: 'fight', activity: 1, target: { kind: 'unit', ids: ['u1'] }, unit: 'u0' },
     });
 
     expect(result.ok).toBe(true);

@@ -143,7 +143,7 @@ export interface ActivityAction extends Acts {
   ability?: string;
   type: Verb;
   activity: ActivityIndex;
-  target?: string;
+  target?: TargetRef;
   spell?: Tree;
   /** Recipient recovery priorities, resolved according to the roll’s degree. */
   healingChoices?: Record<string, HealingChoice>;
@@ -186,7 +186,7 @@ export interface SiegeAction extends Acts {
   engine: string;
   operation: 'load' | 'haul' | 'release' | 'attack';
   activity?: ActivityIndex;
-  target?: string;
+  target?: TargetRef;
   focus?: number;
 }
 
@@ -194,9 +194,18 @@ export interface GateAction extends Acts { type: 'gate'; edge: string; open: boo
 
 export type Action = GateAction | SiegeAction | ActivityAction | MoveAction | StepAction | ChargeAction | AdvanceAction | FleeAction;
 
-export type TargetKind = 'cell' | 'unit' | 'wall';
+/** What an activity or a siege attack is aimed at. A `unit` target names one unit or a group, a
+ * `cell` target one hex or a shape, and a `transfer` each ally a Movement spell sets down and where. */
+export type TargetRef =
+  | { kind: 'unit'; ids: string[] }
+  | { kind: 'cell'; cells: string[] }
+  | { kind: 'wall'; edge: string }
+  | { kind: 'transfer'; moves: { unit: string; to: string }[] };
 
-export interface ActivityTarget { kind: TargetKind; id: string; label: string }
+export type TargetKind = TargetRef['kind'];
+
+/** An offered target. `id` is its `targetKey`: compared, never parsed. */
+export type ActivityTarget = TargetRef & { id: string; label: string };
 
 /** One board object an activity can be aimed at: a cell, a piece, or a wall. */
 export interface BoardObject { kind: 'cell' | 'unit' | 'wall'; id: string }

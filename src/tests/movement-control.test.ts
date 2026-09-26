@@ -46,7 +46,7 @@ describe('wounds record survival without reducing performance', () => {
     u.engines.push({id:'eq-bellows',name:'Ballista',kind:'artillery',launch:14,reach:'short',fired:false,emplaced:false,status:'crewed',square:u.square,side:u.side});
     const modifier = (wounds: number) => {
       u.wounds = wounds;
-      return act(select(b, u.id), type === 'siege' ? {type,unit:u.id,activity:2,target:wall,engine:'eq-bellows',operation:'attack'} : {type,unit:u.id,activity:1,target:wall}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;
+      return act(select(b, u.id), type === 'siege' ? {type,unit:u.id,activity:2,target:{kind:'wall',edge:wall},engine:'eq-bellows',operation:'attack'} : {type,unit:u.id,activity:1,target:{kind:'wall',edge:wall}}, scriptedRng([10])).log.find(entry => entry.check)!.check!.modifier;
     };
     expect(modifier(3)).toBe(modifier(0));
   });

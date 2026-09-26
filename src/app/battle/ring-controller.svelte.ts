@@ -80,7 +80,7 @@ export function createRingController(s: RingShared) {
   };
 
   const offerEdges = (offer: ActionOffer): string[] =>
-    offer.activities.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.id);
+    offer.activities.filter((r) => r.legal).flatMap((r) => r.targets).filter((t) => t.kind === 'wall').map((t) => t.edge);
 
   /** Where an offer can land, with the unit's own square first when an activity needs no target. */
   function offerCells(offer: ActionOffer): string[] {
