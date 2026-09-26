@@ -1,4 +1,4 @@
-import type { ActionOffer, ActivityOption } from '../../engine/index.js';
+import { offerRefusal, type ActionOffer, type ActivityOption } from '../../engine/index.js';
 
 /** Keep temporary restrictions visible; omit tiers the unit cannot learn. */
 export const reachableActivities = (options: ActivityOption[]): ActivityOption[] =>
@@ -16,7 +16,6 @@ export function actionReason(reason: string | null): string {
 }
 
 export function offerReason(offer: ActionOffer): string | undefined {
-  const options = reachableActivities(offer.activities);
-  if (options.some(option => option.legal)) return undefined;
-  return actionReason(options[0]?.reason ?? null);
+  const r = offerRefusal(offer);
+  return r ? actionReason(r) : undefined;
 }
