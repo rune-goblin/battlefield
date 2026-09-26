@@ -467,6 +467,16 @@ function doGate(state: BattleState, u: Unit, action: GateAction): number {
   return 1;
 }
 
+// Hold Ground is asked last, so a push with nowhere to go does not spend it.
+function forcedStep(state: BattleState, from: Square, target: Unit, direction: 'push' | 'pull') {
+  if (target.guard?.holds || target.engines.some(e => e.hauling)) return;
+  const distance = dist(state, from, target.square);
+  const to = grid(state).neighbours(target.square).find(cell =>
+    (direction === 'pull' ? dist(state, from, cell) < distance : dist(state, from, cell) > distance)
+    && enterable(state, target.square, cell, groundFor(target)) && canEndOn(target, state.board, cell));
+  if (to && !holdsGround(state, target)) moveTo(state, target, to);
+}
+
 function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, mode: SiegeMode) {
   if (target.status !== 'active') return;
   switch (mode.effect) {
@@ -481,15 +491,9 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
       // A temporary flier over water lands after reaching safe ground.
       if (at(state.board, target.square).terrain !== 'water') target.flies = false;
       target.selfBuffs = []; break;
-    case 'push': case 'pull': {
-      if (target.guard?.holds || target.rooted || target.engines.some(x => x.hauling) || holdsGround(state, target)) break;
-      const distance = dist(state, e.square, target.square);
-      const to = grid(state).neighbours(target.square).find(c =>
-        (mode.effect === 'pull' ? dist(state, e.square, c) < distance : dist(state, e.square, c) > distance)
-        && enterable(state, target.square, c, groundFor(target)) && canEndOn(target, state.board, c));
-      if (to) moveTo(state, target, to);
+    case 'push': case 'pull':
+      if (!target.rooted) forcedStep(state, e.square, target, mode.effect);
       break;
-    }
   }
   if (mode.effect && mode.effect !== 'rough') log(state, target, `${target.name}: ${mode.label} applies ${mode.effect}.`);
 }
@@ -710,14 +714,7 @@ function abilityContext(state: BattleState, rng: Rng, source: Unit): AbilityCont
     },
     clear: target => endCondition(state, target),
     move: (target, to) => moveTo(state, target, to),
-    displace: (target, direction) => {
-      if (target.guard?.holds || target.engines.some(e => e.hauling)) return;
-      const distance = dist(state, source.square, target.square);
-      const to = grid(state).neighbours(target.square).find(cell => !unitAt(state, cell)
-        && (direction === 'pull' ? dist(state, source.square, cell) < distance : dist(state, source.square, cell) > distance)
-        && enterable(state, target.square, cell, groundFor(target)) && canEndOn(target, state.board, cell));
-      if (to && !holdsGround(state, target)) moveTo(state, target, to);
-    },
+    displace: (target, direction) => forcedStep(state, source.square, target, direction),
   };
 }
 

@@ -283,6 +283,24 @@ describe('siege catalog and combat', () => {
     expect(after.units[1].wounds).toBe(2);
     expect(notation(after.units[1].square)).toBe('f6');
   });
+  it('a push with no legal hex behind the target leaves Hold Ground unspent', () => {
+    const pushed = (blocked: boolean) => {
+      const b = setup('Kickback Spring'), grid = gridOf(b.board), f6 = parse('f6'), e = b.units[0].engines[0];
+      b.units[1].square = f6;
+      b.units[1].abilities = [{ version: 1, kind: 'resolve', key: 'no-retreat', label: 'No Retreat', delivery: 'passive', mode: 'ground' }];
+      if (blocked) for (const n of grid.neighbours(f6)) {
+        if (grid.distance(e.square, n) > grid.distance(e.square, f6)) b.board.walls[grid.edgeKey(n, f6)] = makeWall(3);
+      }
+      const target = siegeTargets(b, e, siegeModes(e.name, e.kind)[0]).find(t => t.id.split('+').includes('f6'))!;
+      return fire(b, 1, target.id).units[1];
+    };
+    const held = pushed(false);
+    expect(notation(held.square)).toBe('f6');
+    expect(held.abilityState?.shovedRound).toBe('1:1');
+    const blocked = pushed(true);
+    expect(notation(blocked.square)).toBe('f6');
+    expect(blocked.abilityState?.shovedRound).toBe('');
+  });
   it('clears only the web cells reached by fire and preserves webs under cold', () => {
     for (const name of ['Flame Bellows', 'Glacial Zephyr']) {
       const b = setup(name), e = b.units[0].engines[0], index = name === 'Flame Bellows' ? 1 : 2;
