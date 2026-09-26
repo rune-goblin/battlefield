@@ -22,7 +22,7 @@
     <ActionBudget remaining={c.actionsLeft} bonus={c.active.haste > 0 ? 1 : 0} />
     <span class="muted">{c.actionsLeft} left</span>
   </div>
-  <UnitSheet battle={c.b} unit={c.active} />
+  {#if c.sheet}<UnitSheet sheet={c.sheet} />{/if}
 
   {#if c.siegeEquipment.length || interiorGates.length}
     <div class="equipment-controls" aria-label="Equipment and gates">
