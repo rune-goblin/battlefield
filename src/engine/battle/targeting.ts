@@ -3,18 +3,18 @@ import { cellTarget, groupTarget, moveTarget, pairTarget, targetCells, unitTarge
 import { hasSight } from '../sight.js';
 import { TERRAIN } from '../terrain.js';
 import { edgeCells, notation, parse, sameCell, type Square } from '../board.js';
-import { VERBS, activityOf, type ActivityIndex, type Verb } from '../ladders.js';
+import { CAST_COMMITMENT, VERBS, activityOf, canFocus, type ActivityIndex, type Verb } from '../ladders.js';
 import {
-  castActivityOf, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
+  castActivityOf, healSlots, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from '../magic.js';
 import {
-  BANDS, type ActionOffer, type Activation, type BattleState, type ActivityOption, type ActivityTarget,
-  type TargetOffer, type BoardObject, type Unit,
+  BANDS, type ActionOffer, type Activation, type ActivationVerb, type BattleState, type ActivityOption, type ActivityTarget,
+  type MeleePlan, type TargetOffer, type BoardObject, type Unit, type VerbAnswer,
 } from '../types.js';
 import { grid, dist, unit, isRouted, activeUnit, square, engagedEnemies } from './state.js';
 import { movementSpeed, moveReach, touching, stepTargets, standable, escapeOffer } from './movement.js';
 import { canShoot, canShootTarget } from './combat.js';
-import { chargeTargets } from './manoeuvres.js';
+import { chargeTargets, meleePlans } from './manoeuvres.js';
 
 export function specialOffers(state: BattleState, u: Unit): ActionOffer[] {
   return abilityOffers(state, u, () => {
@@ -149,7 +149,7 @@ function connected(state: BattleState, cells: Square[]): boolean {
  * the group that most wants it. */
 function healTargets(state: BattleState, u: Unit, index: ActivityIndex): ActivityTarget[] {
   const need = (t: Unit) => t.disorder + t.wounds;
-  return groupsUpTo(healPool(state, u).filter(t => hasSight(state.board, u.square, t.square)), index === 4 ? 1 : index)
+  return groupsUpTo(healPool(state, u).filter(t => hasSight(state.board, u.square, t.square)), healSlots(index).recipients)
     .sort((a, b) => b.reduce((n, t) => n + need(t), 0) - a.reduce((n, t) => n + need(t), 0))
     .map(groupTarget);
 }
@@ -286,17 +286,79 @@ export function availableActions(state: BattleState, unitId?: string): ActionOff
   return offers;
 }
 
+/** Why an offer refuses, or null when one of its activities is legal. A tier above the unit's
+ * level or tradition never gives the reason, since no play of this activation unlocks it. */
+export function offerRefusal(offer: ActionOffer): string | null {
+  const reachable = offer.activities.filter((o) => o.cost !== null);
+  if (reachable.some((o) => o.legal)) return null;
+  return reachable[0]?.reason ?? 'no target';
+}
+
+/** The extra actions an activity may commit: counted up from its own price, to what the unit
+ * has, and never past three in all for a cast. Null when it takes no commitment. */
+export function commitment(u: Unit, offer: ActionOffer, option: ActivityOption): { base: number; available: number } | null {
+  if (!canFocus(offer.type, offer.spell)) return null;
+  const base = option.cost ?? option.index;
+  if (offer.type === 'cast' && base >= CAST_COMMITMENT) return null;
+  return { base, available: offer.type === 'cast' ? Math.min(CAST_COMMITMENT, u.actions) : u.actions };
+}
+
+const LEGAL: VerbAnswer = { legal: true, reason: null };
+const refuse = (reason: string): VerbAnswer => ({ legal: false, reason });
+
+function verbAnswers(state: BattleState, u: Unit, offers: ActionOffer[], steps: string[], melee: Map<string, MeleePlan[]>): Record<ActivationVerb, VerbAnswer> {
+  const routed = isRouted(u);
+  const ofType = (type: Verb) => offers.filter((o) => o.type === type);
+  const anyLegal = (list: ActionOffer[]) => list.some((o) => o.activities.some((a) => a.legal));
+  function offered(type: Exclude<Verb, 'fight'>): VerbAnswer {
+    const list = ofType(type);
+    if (anyLegal(list)) return LEGAL;
+    if (list.length) return refuse(offerRefusal(list[0])!);
+    return refuse(routed ? 'routed: move or step'
+      : !u.actions ? 'no actions left'
+      : type === 'cast' ? 'no spells available'
+      : type === 'shoot' && engagedEnemies(state, u).length ? 'engaged in melee'
+      : type === 'shoot' && u.stats.volley === null ? 'no ranged attack'
+      : 'no target in range');
+  }
+  const fights = ofType('fight');
+  const fight = anyLegal(fights) || melee.size > 0 ? LEGAL
+    : fights.length ? refuse(offerRefusal(fights[0])!)
+    : refuse(routed ? 'routed: move or step'
+      : u.attacked ? 'already attacked this activation'
+      : !u.actions ? 'no actions left'
+      : u.stats.strike === null ? 'no melee attack'
+      : 'no target in range');
+  const step = steps.length ? LEGAL
+    : refuse(!u.actions ? 'no actions left'
+      : u.rooted > 0 ? 'rooted'
+      : u.pinnedBy ? 'pinned: Move to get away'
+      : movementSpeed(u) === 0 ? 'zero Speed'
+      : 'no open hex beside you');
+  return { fight, shoot: offered('shoot'), cast: offered('cast'), step, rally: offered('rally'), guard: offered('guard') };
+}
+
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */
 export function activation(state: BattleState, unitId?: string): Activation | null {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return null;
+  const offers = availableActions(state, u.id);
+  const steps = stepTargets(state, u);
+  const melee = new Map<string, MeleePlan[]>();
+  for (const e of state.units) {
+    if (e.side === u.side || e.status !== 'active') continue;
+    const plans = meleePlans(state, u, e.id);
+    if (plans.length) melee.set(e.id, plans);
+  }
   return {
     unit: u.id, actions: u.actions, attacked: u.attacked, feet: u.feet, speed: movementSpeed(u),
-    offers: availableActions(state, u.id),
+    offers,
     escape: escapeOffer(state, u),
-    steps: stepTargets(state, u),
+    steps,
     moves: moveReach(state, u),
     charges: chargeTargets(state, u),
+    melee,
+    verbs: verbAnswers(state, u, offers, steps, melee),
   };
 }
 

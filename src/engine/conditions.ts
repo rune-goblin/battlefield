@@ -26,7 +26,7 @@ type Shown = {
    * counts as a change. */
   holds: (u: Unit) => unknown;
   /** A heal may clear it; `text` is read before the field resets. */
-  heal?: { text: (u: Unit, state: BattleState) => string };
+  heal?: { label: string; text: (u: Unit, state: BattleState) => string };
 };
 type Unshown = { status?: undefined; holds?: undefined; heal?: undefined };
 
@@ -47,30 +47,30 @@ export const CONDITIONS = {
   guard: { fresh: () => null, lapse: 'begin', status: 'guard', holds: (u) => u.guard !== null },
   pinnedBy: {
     fresh: () => null, lapse: 'shooter', status: 'pinned', holds: (u) => u.pinnedBy,
-    heal: { text: (u, state) => {
+    heal: { label: 'Pinned', text: (u, state) => {
       const pinner = state.units.find((e) => e.id === u.pinnedBy);
       return `${u.name} is healed clear of ${pinner ? `${pinner.name}'s` : 'the'} pin.`;
     } },
   },
   rooted: {
     fresh: () => 0, lapse: 'countdown', status: 'rooted', holds: (u) => u.rooted > 0,
-    heal: { text: (u) => `${u.name} is healed clear of root.` },
+    heal: { label: 'Rooted', text: (u) => `${u.name} is healed clear of root.` },
   },
   suppressedBy: {
     fresh: () => null, lapse: 'shooter', status: 'suppressed', holds: (u) => u.suppressedBy,
-    heal: { text: (u) => `${u.name} is healed clear of suppression.` },
+    heal: { label: 'Suppressed', text: (u) => `${u.name} is healed clear of suppression.` },
   },
   exposed: {
     fresh: () => false, lapse: 'begin', status: 'exposed', holds: (u) => u.exposed,
-    heal: { text: (u) => `${u.name} is healed clear of exposure.` },
+    heal: { label: 'Exposed', text: (u) => `${u.name} is healed clear of exposure.` },
   },
   frightened: {
     fresh: () => false, lapse: 'finish', status: 'frightened', holds: (u) => u.frightened,
-    heal: { text: (u) => `${u.name} is healed clear of fright.` },
+    heal: { label: 'Frightened', text: (u) => `${u.name} is healed clear of fright.` },
   },
   persistent: {
     fresh: () => null, lapse: 'finish', status: 'persistent', holds: (u) => u.persistent !== null,
-    heal: { text: (u) => `${u.name} recovers from persistent damage.` },
+    heal: { label: 'Persistent damage', text: (u) => `${u.name} recovers from persistent damage.` },
   },
   stunned: { fresh: () => false, lapse: 'begin', status: 'stunned', holds: (u) => u.stunned },
   inspired: { fresh: () => false, lapse: 'finish', status: 'inspired', holds: (u) => u.inspired },
@@ -117,10 +117,15 @@ export function freshConditions(): Conditions {
 /** The entries a heal may clear, in the order it clears them. */
 export const HEALABLE = KEYS.flatMap((key) => {
   const spec = SPECS[key];
-  return spec.heal ? [{ key, status: spec.status as HealingCondition, holds: spec.holds, text: spec.heal.text }] : [];
+  return spec.heal
+    ? [{ key, status: spec.status as HealingCondition, label: spec.heal.label, holds: spec.holds, text: spec.heal.text }]
+    : [];
 });
 
 export const HEALING_CONDITIONS: readonly HealingCondition[] = HEALABLE.map((h) => h.status);
+
+export const HEALING_LABEL = Object.fromEntries(HEALABLE.map((h) => [h.status, h.label])) as
+  Record<HealingCondition, string>;
 
 export const healableConditions = (u: Unit): HealingCondition[] =>
   HEALABLE.filter((h) => h.holds(u)).map((h) => h.status);

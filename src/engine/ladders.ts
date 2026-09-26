@@ -91,6 +91,9 @@ export function treesFor(card: UnitCard): Tree[] {
   return [...out];
 }
 
+/** A cast's price and its commitment together spend at most this many actions. */
+export const CAST_COMMITMENT = 3;
+
 /** Commitment improves the activity's own roll or Controlling DC, never its scope. */
 export function canFocus(type: Verb | 'charge', spell?: Tree | null): boolean {
   return type === 'charge' || type === 'fight' || type === 'shoot' || type === 'rally'

@@ -77,7 +77,10 @@ export function strikeModifier(state: BattleState, u: Unit, target: Unit): numbe
   return m;
 }
 
-export function shootModifier(state: BattleState, u: Unit, target: Unit): number {
+/** With no target, the part a unit sheet shows: range, height, exploits and firing into a melee
+ * each need a target to read. */
+export function shootModifier(state: BattleState, u: Unit, target?: Unit): number {
+  if (!target) return (u.stats.volley ?? 0) + rollBonus(u) - u.disorder + (garrisoned(state, u) ? 1 : 0);
   let m = (u.stats.volley ?? 0) + rollBonus(u) + exploitBonus(state, u, target, 'volley');
   m -= shotRangePenalty(state, u, target.square);
   m -= u.disorder;

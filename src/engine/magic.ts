@@ -43,6 +43,13 @@ export const spellCeiling = (tradition: Tradition, level: number, tree: Tree): C
   PROGRESSION[TRADITION_CAP[tradition][tree]][casterTier(level) - 1];
 export const spellCost = (tier: CastActivityIndex): number => Math.min(tier, 3);
 
+export interface HealSlots { recipients: number; conditions: 1 | 2; extraHealth: boolean }
+
+/** Soothe, Heal and Restore reach one unit per tier and clear one condition or restore 1 extra
+ * Health on a critical; Renewal reaches one unit and clears up to two conditions. */
+export const healSlots = (index: CastActivityIndex): HealSlots =>
+  index === 4 ? { recipients: 1, conditions: 2, extraHealth: false } : { recipients: index, conditions: 1, extraHealth: true };
+
 export const TRADITIONS: Tradition[] = ['arcane', 'divine', 'occult', 'primal'];
 
 /** Every tree a tradition may cast at all. `ladders.ts`'s own `treesFor` wraps this for a whole

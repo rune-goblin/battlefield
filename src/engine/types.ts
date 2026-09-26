@@ -297,6 +297,12 @@ export interface MeleePlan {
   split: number;
 }
 
+/** The six verbs an activation answers for. Melee counts under `fight`, charges included. */
+export type ActivationVerb = 'fight' | 'shoot' | 'cast' | 'step' | 'rally' | 'guard';
+
+/** `reason` is lowercase and null when the verb is legal. */
+export interface VerbAnswer { legal: boolean; reason: string | null }
+
 /** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */
 export interface Activation {
   unit: string;
@@ -314,6 +320,9 @@ export interface Activation {
   steps: string[];
   moves: Map<string, MoveReach>;
   charges: ChargeOption[];
+  /** Each enemy some melee reaches without waypoints, with its plans. */
+  melee: Map<string, MeleePlan[]>;
+  verbs: Record<ActivationVerb, VerbAnswer>;
 }
 
 // proto: the tag names are reserved for review with the list of execution events.

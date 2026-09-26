@@ -1,9 +1,10 @@
 import { abilityMemory, unitAbilities, refreshAbilityAuras, startAbilities, performAbility } from '../ability-effects.js';
 import { parse } from '../board.js';
 import { rollLine } from '../check.js';
-import { activityOf, type Activity } from '../ladders.js';
+import { activityOf, CAST_COMMITMENT, type Activity } from '../ladders.js';
 import type { Rng } from '../rng.js';
 import { clone } from '../clone.js';
+import { healSlots } from '../magic.js';
 import { targetKey } from '../targets.js';
 import {
   AFTER_ACTED_CONDITIONS, BEGIN_CONDITIONS, COUNTDOWN_CONDITIONS, FINISH_CONDITIONS, HEALING_CONDITIONS, resetConditions,
@@ -20,7 +21,7 @@ import { refreshEmplacements } from './emplacements.js';
 import { addDisorder, clearDisorder, inspire, landPersistent } from './wounds.js';
 import { canShootTarget, abilityContext, melee, shootAt, attackWall } from './combat.js';
 import { doGate, doSiege, seizeEmplacements, captureEngines } from './siege.js';
-import { meleePlans, doFlee, doStep, doStride, doCharge } from './manoeuvres.js';
+import { meleeFinishes, meleePlans, doFlee, doStep, doStride, doCharge } from './manoeuvres.js';
 import { specialOffers, availableActions } from './targeting.js';
 import { doCastAction } from './spells.js';
 
@@ -215,12 +216,12 @@ function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityActio
       if (!recipients.includes(id) || !Array.isArray(choice.conditions) || choice.conditions.length > 2
         || new Set(choice.conditions).size !== choice.conditions.length
         || choice.conditions.some(c => !HEALING_CONDITIONS.includes(c))
-        || (action.activity === 4 && choice.extraHealth)) throw new Error('invalid recovery choices');
+        || (!healSlots(action.activity).extraHealth && choice.extraHealth)) throw new Error('invalid recovery choices');
     }
   }
   const focus = validateFocus(action);
   const price = opt.cost! + focus;
-  if (price > u.actions || (action.type === 'cast' && price > 3)) throw new Error(`${opt.label} needs ${price} actions; commitment is at most three`);
+  if (price > u.actions || (action.type === 'cast' && price > CAST_COMMITMENT)) throw new Error(`${opt.label} needs ${price} actions; commitment is at most three`);
   if (price > 1) log(state, u, `${u.name} commits ${price} actions to ${opt.label}${focus ? ` (+${focus * ACTION_BONUS} ${action.spell === 'controlling' ? 'spell DC' : 'on the roll'})` : ''}.`);
   if (offer.type === 'cast') doCastAction(state, rng, u, offer.spell!, action.activity, action);
   else perform(state, rng, u, activityOf(offer.type, action.activity), action);
@@ -237,9 +238,9 @@ function doAdvance(state: BattleState, rng: Rng, u: Unit, action: AdvanceAction)
     ? { type: 'charge', unit: u.id, target: action.target, activity, focus: action.focus, ...(run.length ? { waypoints: run } : {}) }
     : { type: 'fight', unit: u.id, target: { kind: 'unit', ids: [action.target] }, activity, focus: action.focus };
   const focus = validateFocus(attack);
-  if (![1, 2, 3].includes(activity) || plan.moveActions + activity + focus > u.actions) {
-    throw new Error('The move and chosen attack exceed the available actions.');
-  }
+  const finish = meleeFinishes(u, action.finish, plan.moveActions).find((f) => f.activity === activity);
+  if (!finish && action.finish === 'charge') throw new Error('invalid charge activity');
+  if (!finish || finish.cost + focus > u.actions) throw new Error('The move and chosen attack exceed the available actions.');
   const movement = doStride(state, rng, u, { type: 'move', unit: u.id, to: plan.via, waypoints: waypoints.slice(0, plan.split) });
   // Reserve the movement cost before validating the melee. The caller subtracts the total
   // once and ends the activation once; an exception discards this entire cloned state.

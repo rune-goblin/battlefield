@@ -1,17 +1,25 @@
 import { unitAbilities, holdsGround, refreshAbilityAuras } from '../ability-effects.js';
 import { at, barrierBetween, deployRanks, notation, parse, type Board, type Square } from '../board.js';
 import { CELL_FEET, reachableVia, routedPath, stepFeet, type Routed, type StepOpts } from '../path.js';
-import type { BattleState, EscapeOffer, MoveReach, PathStep, Unit } from '../types.js';
+import type { BattleState, EngineState, EscapeOffer, MoveReach, PathStep, Unit } from '../types.js';
 import {
   homeRank, grid, dist, isRouted, unitAt, engagedEnemies, log, clearAsShooter, escapeModifier,
 } from './state.js';
 import { enginesOf, engineSpeed } from './emplacements.js';
 
-export const movementSpeed = (u: Unit): number => {
-  const hauled = u.engines.filter(e => e.hauling && e.status === 'crewed');
-  return Math.min(u.speed, ...(hauled.length && u.movementRates ? [u.movementRates.land] : []),
+const hauls = (e: EngineState) => e.hauling && e.status === 'crewed';
+
+const speedHauling = (u: Unit, hauled: EngineState[]): number =>
+  Math.min(u.speed, ...(hauled.length && u.movementRates ? [u.movementRates.land] : []),
     ...hauled.map(e => engineSpeed(e) ?? u.speed));
-};
+
+export const movementSpeed = (u: Unit): number => speedHauling(u, u.engines.filter(hauls));
+
+/** Feet per Move with `e` attached (`hauling`) or released, the unit's other engines as they are. */
+export function haulingSpeed(u: Unit, e: EngineState, hauling: boolean): number {
+  const others = u.engines.filter((x) => x.id !== e.id && hauls(x));
+  return speedHauling(u, hauling && e.status === 'crewed' ? [...others, e] : others);
+}
 
 // Hold Ground is asked last, so a push with nowhere to go does not spend it.
 export function forcedStep(state: BattleState, from: Square, target: Unit, direction: 'push' | 'pull') {

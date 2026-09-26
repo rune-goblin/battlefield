@@ -5,7 +5,10 @@ import { clone } from './clone.js';
 import { freshConditions } from './conditions.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
-import { ACTIONS_PER_ACTIVATION, SIDES, opponent, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
+import {
+  ACTIONS_PER_ACTIVATION, SIDES, opponent, type BattleState, type DayOrder, type NightRecovery, type RecoveryActivity,
+  type RecoveryChoice, type Side, type Unit,
+} from './types.js';
 
 export function canContinueBattle(state: BattleState): boolean {
   return state.phase === 'ended' && state.endedBy === 'dusk'
@@ -82,6 +85,21 @@ export function answerSurrender(input: BattleState, responder: Side, accept: boo
 
 export const recoveryPenalty = (count: number): number => 2 * Math.max(0, count - 1);
 
+export interface RecoveryTerms { save: 'Will' | 'Fortitude'; bonus: number; missingMorale: number; penalty: number; total: number }
+
+/** The night roll's modifier term by term: the save, less missing Morale and the army's penalty
+ * for everyone recovering tonight. */
+export function recoveryModifier(u: Unit, activity: RecoveryActivity, participants: number): RecoveryTerms {
+  const rally = activity === 'rally';
+  const bonus = rally ? u.stats.will : u.stats.fortitude;
+  const penalty = recoveryPenalty(participants);
+  return { save: rally ? 'Will' : 'Fortitude', bonus, missingMorale: u.disorder, penalty, total: bonus - u.disorder - penalty };
+}
+
+/** A unit may choose only a statistic below its maximum. */
+export const canRecover = (u: Unit, activity: RecoveryActivity): boolean =>
+  isSurvivor(u) && (activity === 'rally' ? u.disorder : u.wounds) > 0;
+
 export function recoveryDc(state: BattleState, choice: RecoveryChoice): number {
   const u = unit(state, choice.unit);
   return levelDc(choice.activity === 'treat' ? u.level : Math.max(...state.units
@@ -102,7 +120,7 @@ export function recoverAtNight(input: BattleState, side: Side, choices: Recovery
     if (!isSurvivor(u)) throw new Error('only standing units or survivors in camp can recover overnight');
     if (seen.has(u.id)) throw new Error('a unit may attempt recovery only once per night');
     if (choice.activity !== 'rally' && choice.activity !== 'treat') throw new Error('unknown recovery activity');
-    if ((choice.activity === 'rally' ? u.disorder : u.wounds) <= 0) throw new Error('the unit has nothing to recover');
+    if (!canRecover(u, choice.activity)) throw new Error('the unit has nothing to recover');
     seen.add(u.id);
   }
   const state = clone(input);
@@ -119,8 +137,7 @@ export function recoverAtNight(input: BattleState, side: Side, choices: Recovery
   }
   for (const choice of choices) {
     const u = unit(state, choice.unit);
-    const modifier = (choice.activity === 'rally' ? u.stats.will : u.stats.fortitude) - u.disorder - penalty;
-    const result = check(rng, modifier, recoveryDc(input, choice));
+    const result = check(rng, recoveryModifier(u, choice.activity, choices.length).total, recoveryDc(input, choice));
     const amount = successes(result.degree);
     const field = choice.activity === 'rally' ? 'disorder' : 'wounds';
     const recovered = Math.min(u[field], amount);
