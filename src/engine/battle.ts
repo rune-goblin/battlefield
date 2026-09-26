@@ -759,30 +759,47 @@ function applyWounds(state: BattleState, rng: Rng, target: Unit, raw: number, so
     ? `${target.name}'s stoneskin caps the critical at 1 damage.`
     : `${target.name} has dug in: the critical lands as an ordinary hit.`);
   if (n <= 0) return 0;
-  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
-  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
-  log(state, target, `${target.name} takes ${n} damage from ${source} (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
+  const fell = landWound(state, target, n, `damage from ${source}`);
   if (attacker.wrath) {
     attacker.wrath = false;
     target.persistent = { dc: levelDc(attacker.level) };
     log(state, target, `${target.name} is marked by ${attacker.name}'s wrath: 1 damage at the end of its next activation.`);
   }
-  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); refreshAbilityAuras(state); return n; }
+  if (fell) { fall(state, target); return n; }
+  moraleSave(state, rng, target, { dc: levelDc(sourceLevel), shift: saveShift, pressed, label: 'Fortitude save against Morale loss', cause: 'damage taken' });
+  return n;
+}
+
+function landWound(state: BattleState, target: Unit, n: number, what: string): boolean {
+  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
+  const fell = target.wounds >= MAX_WOUNDS;
+  log(state, target, `${target.name} takes ${n} ${what} (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${fell ? ' — destroyed' : ''}.`);
+  return fell;
+}
+
+function fall(state: BattleState, target: Unit) {
+  target.status = 'destroyed';
+  abandonEngines(state, target);
+  clearAsShooter(state, target.id);
+  refreshAbilityAuras(state);
+}
+
+type MoraleSave = { dc: number; shift?: number; pressed?: boolean; label: string; cause: string };
+
+function moraleSave(state: BattleState, rng: Rng, target: Unit, { dc, shift = 0, pressed = false, label, cause }: MoraleSave) {
   if (target.stoneskin) {
     log(state, target, `${target.name}'s stoneskin prevents Morale loss.`);
-  } else {
-    const modifier = fortitudeModifier(target) + saveShift + (target.disorder >= ROUTED_AT - 1 ? resolveBonus(state, target) : 0);
-    const dc = levelDc(sourceLevel);
-    const twice = pressed ? rollTwice(rng, modifier, dc, false) : null;
-    const c = twice ?? roll(state, rng, target, modifier, dc);
-    if (pressed) {
-      target.inspired = false;
-      log(state, target, `${target.name} resists Press: rolls ${twice!.rolls.join(' and ')}, keeps the worse.`);
-    }
-    log(state, target, rollLine(target.name, 'Fortitude save against Morale loss', c), c, undefined, { unit: target.id, reads: 'brace' });
-    if (!succeeded(c.degree)) addDisorder(state, target, 1, 'damage taken');
+    return;
   }
-  return n;
+  const modifier = fortitudeModifier(target) + shift + (target.disorder >= ROUTED_AT - 1 ? resolveBonus(state, target) : 0);
+  const twice = pressed ? rollTwice(rng, modifier, dc, false) : null;
+  const c = twice ?? roll(state, rng, target, modifier, dc);
+  if (pressed) {
+    target.inspired = false;
+    log(state, target, `${target.name} resists Press: rolls ${twice!.rolls.join(' and ')}, keeps the worse.`);
+  }
+  log(state, target, rollLine(target.name, label, c), c, undefined, { unit: target.id, reads: 'brace' });
+  if (!succeeded(c.degree)) addDisorder(state, target, 1, cause);
 }
 
 function abandonEngines(state: BattleState, u: Unit) {
@@ -2099,17 +2116,8 @@ function landPersistent(state: BattleState, rng: Rng, target: Unit) {
   if (target.status !== 'active') return;
   const n = absorbAbilityDamage(state, target, reduceWounds(target, 1), tag ? [tag] : [], abilityLog(state));
   if (n <= 0) return;
-  target.wounds = Math.min(MAX_WOUNDS, target.wounds + n);
-  const mark = target.wounds >= MAX_WOUNDS ? 'destroyed' : '';
-  log(state, target, `${target.name} takes ${n} persistent damage (Health ${MAX_WOUNDS - target.wounds}/${MAX_WOUNDS})${mark ? ` — ${mark}` : ''}.`);
-  if (target.wounds >= MAX_WOUNDS) { target.status = 'destroyed'; abandonEngines(state, target); clearAsShooter(state, target.id); return; }
-  if (target.stoneskin) {
-    log(state, target, `${target.name}'s stoneskin prevents Morale loss.`);
-    return;
-  }
-  const c = roll(state, rng, target, fortitudeModifier(target) + (target.disorder >= ROUTED_AT - 1 ? resolveBonus(state, target) : 0), dc);
-  log(state, target, rollLine(target.name, 'Fortitude save against Morale loss from persistent damage', c), c, undefined, { unit: target.id, reads: 'brace' });
-  if (!succeeded(c.degree)) addDisorder(state, target, 1, 'persistent damage');
+  if (landWound(state, target, n, 'persistent damage')) { fall(state, target); return; }
+  moraleSave(state, rng, target, { dc, label: 'Fortitude save against Morale loss from persistent damage', cause: 'persistent damage' });
 }
 
 // What was laid on the unit's next activation is spent by this one and cleared at the end.

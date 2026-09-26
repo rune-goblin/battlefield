@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   act, availableActions, createBattle, endActivation, defenceOf, moveReach, strikeModifier,
-  parse, notation, scriptedRng, COMBATANTS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState,
+  parse, notation, scriptedRng, COMBATANTS, MAX_WOUNDS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState,
 } from '../engine/index.js';
 import { importAbilities, sourceAttackTags } from '../adapters/pf2e/abilities.js';
 import { cardFromActor, type TroopActor } from '../adapters/pf2e/troopCard.js';
@@ -274,6 +274,25 @@ describe('troop ability resolution', () => {
     expect(s.units[1].abilityState?.auraFear).toBe(false);
     s.units[1].immuneFear = false; s.units[1].square = parse('g7'); refreshAbilityAuras(s);
     expect(s.units[1].abilityState?.auraFear).toBe(false);
+  });
+
+  it('a fear-aura source felled by persistent damage lifts its aura before the next dusk save', () => {
+    let s = createBattle({ board: openBoard(), roundsPerDay: 1, units: [
+      { card: card([ability('fear', { delivery: 'aura' })]), side: 'attacker', square: 'c2' },
+      { card: card(), side: 'defender', square: 'c7' },
+      { card: card(), side: 'attacker', square: 'g2' },
+    ] });
+    s.units[1].square = parse('c3');
+    refreshAbilityAuras(s);
+    expect(s.units[1].abilityState?.auraFear).toBe(true);
+    s = endActivation(endActivation(s, rng), rng);
+    s.units[0].wounds = MAX_WOUNDS - 1;
+    s.units[0].persistent = { dc: 15 };
+    s.units[1].persistent = { dc: 15 };
+    s = endActivation(s, rng);
+    expect(s.units[0].status).toBe('destroyed');
+    expect(s.units[1].abilityState?.auraFear).toBe(false);
+    expect(s.log.find(e => e.unit === 'u1' && e.text.includes('Fortitude save'))?.check?.modifier).toBe(15);
   });
 
   it('applies Expose only at the declared result threshold', () => {
