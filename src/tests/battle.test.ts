@@ -9,8 +9,7 @@ import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import { upgradeCard } from '../engine/legacy.js';
-import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS, ROUTED_AT } from '../engine/types.js';
-import type { ActionOffer, BattleState, Side } from '../engine/types.js';
+import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS, ROUTED_AT, type ActionOffer, type BattleState, type Side } from '../engine/types.js';
 import { activityOf, type ActivityIndex, type Verb } from '../engine/ladders.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
@@ -1061,10 +1060,10 @@ describe('a Fight is one roll', () => {
   });
 
   it("a miss repulses the attacker: a Will save against the target's level DC, or 1 disorder", () => {
-    const shaken = fight([2, 1]);
-    expect(unit(shaken, 'u2').wounds).toBe(0);
-    expect(unit(shaken, 'u0').disorder).toBe(1);
-    expect(said(shaken, 'repulsed')).toBe(true);
+    const disordered = fight([2, 1]);
+    expect(unit(disordered, 'u2').wounds).toBe(0);
+    expect(unit(disordered, 'u0').disorder).toBe(1);
+    expect(said(disordered, 'repulsed')).toBe(true);
     const held = fight([2, 2]);
     expect(unit(held, 'u0').disorder).toBe(0);
     // The target never strikes back: its answer waits for its own activation.
@@ -1118,9 +1117,9 @@ describe('leaving contact', () => {
       { unit: 'u2', name: 'Kobolds', dc: 17, pinning: false },
       { unit: 'u3', name: 'Trolls', dc: 23, pinning: false },
     ]);
-    const shaken = held();
-    unit(shaken, 'u0').disorder = 2;
-    expect(activation(shaken, 'u0')!.escape!.modifier).toBe(12);
+    const disordered = held();
+    unit(disordered, 'u0').disorder = 2;
+    expect(activation(disordered, 'u0')!.escape!.modifier).toBe(12);
   });
 
   it('moves on a success, stays on a failure, and draws a free strike only on a critical failure', () => {
@@ -1315,9 +1314,9 @@ describe('disorder', () => {
   it('a routed unit leaves the field at its own edge; a unit at two disorder stays', () => {
     const { state } = battle([]);
     place(state, 'u2', 'c8');
-    const shaken = structuredClone(state);
-    unit(shaken, 'u2').disorder = 2;
-    expect(unit(act(burn(shaken, 'u0'), { type: 'move', to: 'c9', unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
+    const disordered = structuredClone(state);
+    unit(disordered, 'u2').disorder = 2;
+    expect(unit(act(burn(disordered, 'u0'), { type: 'move', to: 'c9', unit: 'u2' }, scriptedRng([10])), 'u2').status).toBe('active');
 
     unit(state, 'u2').disorder = ROUTED_AT;
     const s = act(burn(state, 'u0'), { type: 'step', to: 'c9', unit: 'u2' }, scriptedRng([10]));

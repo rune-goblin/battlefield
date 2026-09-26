@@ -45,7 +45,7 @@ describe('hex grid', () => {
     expect(hexGrid.distance(parse('c2'), parse('b3'))).toBe(2);
     expect(hexGrid.distance(parse('c1'), parse('e4'))).toBe(4);
   });
-  it('continues a Pace step in the same cube direction', () => {
+  it('continues a line one cell past in the same cube direction', () => {
     expect(hexGrid.beyond(parse('c1'), parse('c2'))).toEqual(parse('d3'));
     expect(hexGrid.beyond(parse('e2'), parse('e3'))).toEqual(parse('d4'));
     expect(hexGrid.beyond(parse('e2'), parse('f2'))).toEqual(parse('g2'));

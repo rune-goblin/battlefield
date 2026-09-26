@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { TargetingService, targetAnchor } from '../app/targeting.js';
-import { act, availableActions, createBattle, refOf, unit } from '../engine/index.js';
+import {
+  act, availableActions, createBattle, refOf, unit, type ActivityIndex, type Tree, type Verb,
+} from '../engine/index.js';
 import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
 import { scriptedRng } from '../engine/rng.js';
-import type { ActivityIndex, Tree, Verb } from '../engine/index.js';
 import { openBoard } from './helpers.js';
 
 function fixture() {

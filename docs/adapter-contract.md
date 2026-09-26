@@ -49,7 +49,7 @@ After `phase === 'ended'`, each `Unit` carries `wounds`, `disorder`, `status` (`
 
 ## Randomness
 
-Every roll goes through `Rng.d20()`. Pass `seededRng` for replays and tests, `randomRng` for play, or a wrapper around a VTT's dice roller.
+Every roll goes through `Rng.d20()`. Pass `scriptedRng` for tests, `randomRng` for play, or a wrapper around a VTT's dice roller.
 
 
 ## Targeting UI
