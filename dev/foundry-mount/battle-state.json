@@ -323,8 +323,12 @@
       "level": 2,
       "cell": "b2",
       "wounds": 0,
-      "shaken": 0,
+      "disorder": 0,
       "engine": null,
+      "routed": false,
+      "verdict": null,
+      "statuses": [],
+      "pick": null,
       "ring": "active"
     },
     {
@@ -336,8 +340,12 @@
       "level": 3,
       "cell": "c2",
       "wounds": 1,
-      "shaken": 0,
+      "disorder": 0,
       "engine": "Door Ram",
+      "routed": false,
+      "verdict": null,
+      "statuses": [],
+      "pick": null,
       "ring": null
     },
     {
@@ -349,8 +357,12 @@
       "level": 2,
       "cell": "f7",
       "wounds": 2,
-      "shaken": 1,
+      "disorder": 1,
       "engine": null,
+      "routed": false,
+      "verdict": null,
+      "statuses": [],
+      "pick": null,
       "ring": "selected"
     },
     {
@@ -362,8 +374,12 @@
       "level": 3,
       "cell": "g7",
       "wounds": 0,
-      "shaken": 0,
+      "disorder": 0,
       "engine": null,
+      "routed": false,
+      "verdict": null,
+      "statuses": [],
+      "pick": null,
       "ring": "highlighted"
     },
     {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { notation, type Board } from '../../src/engine/index.js';
+  import { isRouted, notation, type Board } from '../../src/engine/index.js';
   import type { EngineTokenModel, TokenModel, TokenPick, UnitTokenModel } from '../../src/board/index.js';
   import PixiBoard from '../../src/app/PixiBoard.svelte';
   import { commandReporter } from '../../src/app/command-notices.js';
@@ -56,9 +56,9 @@
   const tokens = $derived.by<TokenModel[]>(() => (battle ? [
     ...battle.units.filter((u) => u.status === 'active').map((u): UnitTokenModel => ({
       kind: 'unit', id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
-      cell: notation(u.square), wounds: u.wounds, disorder: u.disorder,
+      cell: notation(u.square), wounds: u.wounds, disorder: u.disorder, routed: isRouted(u),
       engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null,
-      prop: null, pick: pickOn(u), ring: battle.active === u.id ? 'active' : null,
+      verdict: null, statuses: [], pick: pickOn(u), ring: battle.active === u.id ? 'active' : null,
     })),
     ...battle.engines.map((e): EngineTokenModel =>
       ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
