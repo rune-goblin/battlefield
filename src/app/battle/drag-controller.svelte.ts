@@ -1,4 +1,4 @@
-import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
+import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, CHARGE_ACTIVITIES, chargeImpact, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
 import type { BoardEventOf, HighlightStyle } from '../../board/index.js';
 import type { Activation, BattleState, TargetRef, Verb } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
@@ -321,10 +321,7 @@ export function createDragController(s: DragShared) {
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.
   const ACTIVITIES: ActivityIndex[] = [1, 2, 3];
-  // A charge adds an action to its Fight, so only the first two fit an activation. Cavalry
-  // charge with impact: each lands one step harder at the same price.
-  const CHARGE_ACTIVITIES: ActivityIndex[] = [1, 2];
-  const CHARGES = $derived(s.active?.tactics.includes('cavalry-charge')
+  const CHARGES = $derived(s.active && chargeImpact(s.active)
     ? ['Charge and Press', 'Charge and Overrun'] : ['Charge', 'Charge and Press']);
   const chargeActivity = $derived(pending?.activity ?? 1);
   // `c.actions` already counts one action for the melee; the activity's own price replaces it.

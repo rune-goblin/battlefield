@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  act, availableActions, createBattle, endActivation, defenceOf, moveReach, strikeModifier,
+  act, availableActions, chargeImpact, createBattle, endActivation, defenceOf, moveReach, strikeModifier,
   parse, notation, scriptedRng, COMBATANTS, MAX_WOUNDS, OFFICIAL, type UnitCard, type TroopAbility, type BattleState,
 } from '../engine/index.js';
 import { importAbilities, sourceAttackTags } from '../adapters/pf2e/abilities.js';
@@ -344,6 +344,20 @@ describe('troop ability resolution', () => {
     const result = act(s, { type: 'charge', activity: 1, unit: 'u0', target: 'u1' }, rng);
     expect(result.log.some(e => e.text.includes('impact forces two Fortitude'))).toBe(true);
     expect(result.units[0].attacked).toBe(true);
+  });
+
+  it('rejects a Charge that ends in an Overrun, even with four actions', () => {
+    const s = battle([ability('charge')]); s.units[1].square = parse('c5'); s.units[0].actions = 4;
+    expect(() => act(s, { type: 'charge', activity: 3, unit: 'u0', target: 'u1' }, rng)).toThrow('invalid charge activity');
+  });
+
+  it('spends a once-per-battle Cavalry Charge on the first Charge', () => {
+    const passive = battle([ability('charge')]).units[0];
+    const once = battle([ability('charge', { once: 'battle' })]).units[0];
+    expect(chargeImpact(passive)).toBe(true);
+    expect(chargeImpact(once)).toBe(true);
+    once.abilityState!.charged = true;
+    expect(chargeImpact(once)).toBe(false);
   });
 
   it('entering a Menace aura affects the attack within the same Charge', () => {

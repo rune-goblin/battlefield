@@ -1089,6 +1089,15 @@ const touching = (state: BattleState, sq: Square, e: Unit) =>
  * unit's Speed at the ordinary terrain prices. */
 const CHARGE_ACTIONS = 1;
 const CHARGE_SPEEDS = 2;
+/** The Charge table offers a Strike or a Press; an Overrun comes only through impact. */
+export const CHARGE_ACTIVITIES: readonly ActivityIndex[] = [1, 2];
+
+/** `charged` marks any earlier Charge, so a `once` ability gives impact to the first alone. */
+export function chargeImpact(u: Unit): boolean {
+  if (u.tactics.includes('cavalry-charge')) return true;
+  const ability = unitAbilities(u).find(a => a.kind === 'charge');
+  return !!ability && (!ability.once || !u.abilityState?.charged);
+}
 /** A charge that ends a short range from where it began has built momentum: +2 on the attack. */
 const runUp = (state: BattleState, from: Square, landing: Square) =>
   dist(state, from, landing) >= BANDS[state.board.grid].short;
@@ -2304,15 +2313,14 @@ function doCharge(state: BattleState, rng: Rng, u: Unit, action: ChargeAction): 
   const option = approach(state, u, foe, action.waypoints);
   if (!option) throw new Error(`${u.name} cannot reach ${foe.name}`);
   const wanted = action.activity ?? 1;
-  if (![1, 2, 3].includes(wanted)) throw new Error('invalid charge activity');
+  if (!CHARGE_ACTIVITIES.includes(wanted)) throw new Error('invalid charge activity');
   const focus = validateFocus(action);
   const cost = CHARGE_ACTIONS + wanted + focus;
   if (cost > u.actions) throw new Error(`${u.name} has too few actions to charge ${foe.name}`);
   const bonus = option.runUp ? ACTION_BONUS : 0;
   // Read from the hex the charge starts in, whatever hex it ends on.
   const saveShift = elevation(state, u) > at(state.board, foe.square).elevation ? -ACTION_BONUS : 0;
-  const chargeAbility = unitAbilities(u).find(a => a.kind === 'charge');
-  const impact = u.tactics.includes('cavalry-charge') || !!chargeAbility && (!chargeAbility.once || !u.abilityState?.charged);
+  const impact = chargeImpact(u);
   abilityMemory(u).charged = true;
   moveTo(state, u, parse(option.cell));
   const carried = [
