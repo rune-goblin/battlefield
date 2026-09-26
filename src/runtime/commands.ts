@@ -47,7 +47,8 @@ export type BattleCommand =
   | { type: 'army.autoPlace'; piece: PieceRef }
   /** The seed rides along so the authority's draw is reproducible from the envelope. */
   | { type: 'army.generateForce'; side: Side; seed?: number }
-  /** One army calls itself deployed, or takes that word back. The battle starts once both have. */
+  /** One army calls itself deployed, or takes that word back, for the GM's information; the GM's
+   * `battle.start` gives both armies' word. */
   | { type: 'army.declareReady'; side: Side; ready: boolean }
   | { type: 'continuation.declareRecovery'; side: Side; choices: RecoveryChoice[] }
   | { type: 'continuation.declareDayOrder'; side: Side; order: DayOrder }
@@ -91,53 +92,8 @@ export type CommandType = BattleCommand['type'];
 
 /** Which side of the line a command stands on: `setup` prepares the board and the forces
  * before a battle exists, `battle` acts on the one under way, `any` crosses it. The executor
- * gates every command on this table and `session.battle`. */
+ * gates every command on its descriptor's stage and `session.battle`. */
 export type CommandStage = 'setup' | 'battle' | 'any';
-
-export const COMMAND_STAGE: Record<CommandType, CommandStage> = {
-  'activation.select': 'battle',
-  'activation.deselect': 'battle',
-  'action.resolve': 'battle',
-  'activation.end': 'battle',
-  'setup.generate': 'setup',
-  'setup.rerollSeed': 'setup',
-  'setup.editSpec': 'setup',
-  'setup.setRoundsPerDay': 'setup',
-  'setup.paint': 'setup',
-  'army.addUnit': 'setup',
-  'army.removeUnit': 'setup',
-  'army.setSide': 'setup',
-  'army.swapSides': 'setup',
-  'army.addEmplacement': 'setup',
-  'army.removeEmplacement': 'setup',
-  'army.setHauling': 'setup',
-  'army.setEngineLoaded': 'setup',
-  'army.place': 'setup',
-  'army.unplace': 'setup',
-  'army.autoPlace': 'setup',
-  'army.generateForce': 'setup',
-  'army.declareReady': 'setup',
-  'continuation.declareRecovery': 'battle',
-  'continuation.declareDayOrder': 'battle',
-  'continuation.confirmDayOrders': 'battle',
-  'continuation.answerSurrender': 'battle',
-  'continuation.chooseBattlefield': 'battle',
-  'continuation.declareDeployment': 'battle',
-  'continuation.startNextDay': 'battle',
-  'battle.start': 'setup',
-  'battle.returnToSetup': 'battle',
-  'battle.reset': 'setup',
-  'battle.finalize': 'battle',
-  'outcome.begin': 'battle',
-  'outcome.markTarget': 'battle',
-  'outcome.abandon': 'battle',
-  'control.assign': 'any',
-  'turn.reassign': 'battle',
-  'session.undo': 'any',
-  'session.load': 'any',
-  'session.install': 'any',
-  'session.moveTo': 'any',
-};
 
 export interface CommandEnvelope {
   battleId: string;
@@ -157,7 +113,15 @@ export interface CommandEnvelope {
  * and the client waits for the next record or resends the same command ID. */
 export type RejectionReason = 'battle' | 'stage' | 'revision' | 'permission' | 'unsupported' | 'engine' | 'storage' | 'timeout';
 
-export interface CommandAccepted { ok: true; commandId: string; revision: number }
+export interface CommandAccepted {
+  ok: true;
+  commandId: string;
+  revision: number;
+  /** The pieces the commit put into the setup, units first and then engines, in record order.
+   * Only a command that creates pieces reports them. A resent command is answered without
+   * running again and carries none, so a caller must fall back when this is absent. */
+  added?: PieceRef[];
+}
 export interface CommandRejected {
   ok: false;
   commandId: string;

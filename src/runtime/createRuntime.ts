@@ -5,15 +5,15 @@ import { createBattleContinuationService } from '../services/BattleContinuationS
 import { createBattleManager } from '../services/BattleManager.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
 import {
-  createOutcomeApplicationService,
+  abandonWriteback, beginWriteback, createOutcomeApplicationService, markWritebackTarget,
   type ActorWritebackPort, type BattleOutcome, type CampaignOutcomePort, type WritebackReport,
 } from '../services/OutcomeApplicationService.js';
 import type { BattleCommand, CommandEnvelope, CommandResult } from './commands.js';
 import { recordDice } from './dice.js';
 import { createExecutor, type HistorySnapshot } from './executeCommand.js';
 import { hotSeatPolicy, type SeatPolicy } from './policy.js';
-import type { BattleArchive, BattleSites, DicePort, SessionRepository, TableUser } from './ports.js';
-import type { BattleSession } from './session.js';
+import type { BattleArchive, BattleSites, DicePort, MintPort, SessionRepository, TableUser } from './ports.js';
+import { randomMint, type BattleSession } from './session.js';
 
 export interface RuntimeOptions {
   repository: SessionRepository;
@@ -23,12 +23,15 @@ export interface RuntimeOptions {
    * runtime is built around a session rather than loading one. */
   session: BattleSession;
   dice?: DicePort;
+  mint?: MintPort;
   /** Who this client acts as, and the table it acts at. The browser plays hot seat. */
   policy?: SeatPolicy;
   /** The campaign module that applies the final outcome. Absent hands the work to `actors`. */
   campaign?: CampaignOutcomePort | null;
   /** Troop actors, for the writeback a campaign module is not there to do. */
   actors?: ActorWritebackPort | null;
+  /** Where a subscriber's throw goes. The commit it followed stands. */
+  onListenerError?: (error: unknown) => void;
 }
 
 export interface Runtime {
@@ -57,7 +60,8 @@ export interface Runtime {
 
 /** The one place that wires the services, the ports, and the executor together. */
 export function createRuntime({
-  repository, archive, sites, session, dice = randomRng, policy = hotSeatPolicy(), campaign = null, actors = null,
+  repository, archive, sites, session, dice = randomRng, mint = randomMint, policy = hotSeatPolicy(), campaign = null,
+  actors = null, onListenerError,
 }: RuntimeOptions): Runtime {
   // Every service rolls through the recorder, so a commit holds the faces its own rules read.
   const recorder = recordDice(dice);
@@ -68,11 +72,13 @@ export function createRuntime({
     session,
     dice: recorder,
     presence: policy.presence,
+    onListenerError,
     actions: createActionResolutionService({ dice: recorder }),
-    map: createMapPreparationService(),
-    army: createArmyPreparationService(),
-    continuation: createBattleContinuationService({ dice: recorder }),
-    manager: createBattleManager(),
+    map: createMapPreparationService({ mint }),
+    army: createArmyPreparationService({ mint }),
+    continuation: createBattleContinuationService({ dice: recorder, mint }),
+    manager: createBattleManager({ mint }),
+    outcome: { begin: beginWriteback, markTarget: markWritebackTarget, abandon: abandonWriteback },
   });
   const outcomes = createOutcomeApplicationService({ campaign, actors });
 

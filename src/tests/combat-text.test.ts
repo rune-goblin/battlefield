@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCombatTextService, type CombatTextLine } from '../services/CombatTextService.js';
+import { createCombatTextService, type CombatTextLine } from '../app/combat-text.js';
 
 const line = (unit: string, text: string): CombatTextLine => ({ unit, cell: 'c3', parts: [{ text, tone: 'good' }] });
 const texts = (lines: CombatTextLine[]) => lines.map((l) => `${l.unit}:${l.parts[0].text}`);

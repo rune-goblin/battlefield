@@ -4,8 +4,9 @@ import {
 } from '../engine/index.js';
 import type { BattleCommand, CommandResult, RejectionReason } from './commands.js';
 import { freshControl, isGmSide, type GmSide } from './control.js';
+import type { MintPort } from './ports.js';
 import {
-  freshSession, newBattleId, newEquipmentId, newUnitId,
+  freshSession, randomMint,
   type BattleSession, type ImportBaseline, type SetupUnit, type SourceBinding,
 } from './session.js';
 
@@ -168,26 +169,28 @@ export function battleRequestProblems(request: unknown): string[] {
  * off the board with an ID of its own, and the source bindings beside the record rather than
  * inside the rules model. A malformed request throws, so the commit path refuses it.
  */
-export function sessionFromRequest(request: BattleRequest, battleId = newBattleId()): BattleSession {
+export function sessionFromRequest(
+  request: BattleRequest, battleId?: string, mint: MintPort = randomMint,
+): BattleSession {
   const problems = battleRequestProblems(request);
   if (problems.length) throw new Error(problems.join('; '));
   const units: SetupUnit[] = [];
   const sources: SourceBinding[] = [];
   for (const entry of request.units) {
-    const id = newUnitId();
+    const id = mint.id('unit');
     units.push({
       id,
       card: structuredClone(entry.card),
       side: entry.side,
       square: null,
-      engines: (entry.equipment ?? []).map((name) => ({ id: newEquipmentId(), name })),
+      engines: (entry.equipment ?? []).map((name) => ({ id: mint.id('eq'), name })),
       ...(entry.faction === undefined ? {} : { faction: entry.faction }),
     });
     if (entry.source) sources.push({ unitId: id, ...structuredClone(entry.source) });
   }
   const spec = structuredClone(request.board);
   return {
-    ...freshSession(battleId),
+    ...freshSession(battleId, mint),
     // An imported battle opens on a real table rather than the browser's hot seat: the GM takes
     // one army and every other user takes the other, which the host seats as it installs this.
     control: freshControl(request.gmSide ?? 'defender'),
@@ -198,7 +201,7 @@ export function sessionFromRequest(request: BattleRequest, battleId = newBattleI
       board: generateBoard(spec),
       units,
       emplacements: (request.emplacements ?? []).map((e) => ({
-        id: newEquipmentId(), name: e.engine, side: e.side, square: null,
+        id: mint.id('eq'), name: e.engine, side: e.side, square: null,
       })),
       ...(request.roundsPerDay === undefined ? {} : { roundsPerDay: request.roundsPerDay }),
     },
@@ -208,15 +211,17 @@ export function sessionFromRequest(request: BattleRequest, battleId = newBattleI
 
 /** A site's first record. A request arrives as `sessionFromRequest` builds it; bare ground
  * arrives as an empty draft on a board drawn from the spec. */
-export function sessionAtSite(site: string, opening: SiteOpening, battleId = newBattleId()): BattleSession {
+export function sessionAtSite(
+  site: string, opening: SiteOpening, battleId?: string, mint: MintPort = randomMint,
+): BattleSession {
   if (!named(site)) throw new Error('the site has no name');
   if (!opening || typeof opening !== 'object') throw new Error('the site has nothing to open on');
-  if ('request' in opening) return { ...sessionFromRequest(opening.request, battleId), site };
+  if ('request' in opening) return { ...sessionFromRequest(opening.request, battleId, mint), site };
   const problems = boardProblems(opening.board);
   if (problems.length) throw new Error(problems.join('; '));
   const spec = structuredClone(opening.board);
   return {
-    ...freshSession(battleId),
+    ...freshSession(battleId, mint),
     site,
     control: freshControl('defender'),
     setup: { spec, board: generateBoard(spec), units: [], emplacements: [] },
@@ -245,7 +250,7 @@ export async function createBattleThrough(
 ): Promise<CreateBattleResult> {
   const problems = battleRequestProblems(request);
   if (problems.length) return { ok: false, reason: 'invalid', message: problems.join('; '), problems };
-  const battleId = newBattleId();
+  const battleId = randomMint.id('battle');
   const result = await submit({ type: 'session.install', battleId, request });
   return result.ok
     ? { ok: true, battleId, revision: result.revision }
@@ -263,7 +268,7 @@ export async function moveToSiteThrough(
 ): Promise<MoveToSiteResult> {
   const problems = 'request' in opening ? battleRequestProblems(opening.request) : boardProblems(opening.board);
   if (problems.length) return { ok: false, reason: 'invalid', message: problems.join('; '), problems };
-  const result = await submit({ type: 'session.moveTo', site, battleId: newBattleId(), opening });
+  const result = await submit({ type: 'session.moveTo', site, battleId: randomMint.id('battle'), opening });
   return result.ok
     ? { ok: true, revision: result.revision }
     : { ok: false, reason: result.reason, message: result.message, problems: [] };

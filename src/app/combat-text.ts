@@ -1,17 +1,4 @@
-import type { Status } from '../engine/index.js';
-
-export type CombatTextTone = 'good' | 'bad' | 'warn';
-/** A bar's icon follows its number; any other leads its word. A status icon hands the word to
- * the token's own slot, and a `dead` icon to the mark the piece leaves on the ground. */
-export type CombatTextIcon = 'wounds' | 'morale' | 'routed' | 'dead' | Status;
-
-export interface CombatTextPart {
-  text: string;
-  tone: CombatTextTone;
-  icon?: CombatTextIcon;
-  /** Drawn larger: the one word that settles the whole action. */
-  loud?: boolean;
-}
+import type { CombatTextPart } from '../board/index.js';
 
 /** One line over one piece: a word, or every bar a blow moved, side by side. `cell` places the
  * line when the board no longer holds the piece. */

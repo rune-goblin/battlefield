@@ -1,17 +1,11 @@
 import {
-  BRIDGE_AXES, edgeCells, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
+  BRIDGE_AXES, edgeCells, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
-import type { BattleSession } from '../runtime/session.js';
-import { randomSeed, type BattleSetupDraft } from '../runtime/session.js';
+import type { MintPort } from '../runtime/ports.js';
+import type { MapPreparationService } from '../runtime/servicePorts.js';
+import type { BattleSetupDraft } from '../runtime/session.js';
 import { withSetup } from './session-helpers.js';
-
-export interface MapPreparationService {
-  generate(session: BattleSession): BattleSession;
-  rerollSeed(session: BattleSession): BattleSession;
-  editSpec(session: BattleSession, spec: Partial<BoardSpec>): BattleSession;
-  setRoundsPerDay(session: BattleSession, roundsPerDay: number): BattleSession;
-}
 
 function paintCell(board: Board, key: string, brush: PaintBrush): void {
   const sq = parse(key);
@@ -86,12 +80,12 @@ function generateFrom(setup: BattleSetupDraft): BattleSetupDraft {
   return clearUndeployable(generateBoard(setup.spec), setup);
 }
 
-export function createMapPreparationService(): MapPreparationService {
+export function createMapPreparationService({ mint }: { mint: MintPort }): MapPreparationService {
   return {
     generate: (session) => withSetup(session, generateFrom(session.setup)),
 
     rerollSeed: (session) => withSetup(session, generateFrom({
-      ...session.setup, spec: { ...session.setup.spec, seed: randomSeed() },
+      ...session.setup, spec: { ...session.setup.spec, seed: mint.seed() },
     })),
 
     editSpec: (session, spec) => withSetup(session, { ...session.setup, spec: { ...session.setup.spec, ...spec } }),

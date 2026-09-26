@@ -1,4 +1,4 @@
-import type { CombatTextIcon, CombatTextPart } from '../services/CombatTextService.js';
+import type { CombatTextIcon, CombatTextPart } from '../board/index.js';
 import type { CheckLanding, Degree, Status } from '../engine/index.js';
 import { signed } from './presentation.js';
 

@@ -3,33 +3,16 @@ import {
   startNextDay as beginNextDay,
   type BattleState,
 } from '../engine/index.js';
-import type { PaintStroke } from '../runtime/commands.js';
+import { sessionAtSite, sessionFromRequest } from '../runtime/campaign.js';
+import { seatUsers } from '../runtime/control.js';
 import { submissionOf } from '../runtime/interactions.js';
+import { migrateSession } from '../runtime/migrate.js';
+import type { MintPort } from '../runtime/ports.js';
+import type { BattleManager } from '../runtime/servicePorts.js';
 import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
-import { battleOf } from './session-helpers.js';
-
-/**
- * The lifecycle transitions. Each one either moves the session from one stage to the next or
- * draws on more than one service, and each commits once, so undo restores all of its parts
- * together.
- */
-export interface BattleManager {
-  /** Deploy the prepared setup and open the first day. */
-  start(session: BattleSession): BattleSession;
-  /** Drop the battle under way and reopen the setup draft that made it. */
-  returnToSetup(session: BattleSession): BattleSession;
-  /** Throw the draft away and start from the example force. */
-  reset(session: BattleSession): BattleSession;
-  /** Both sides' collected placements, validated against the coming field, then the engine's
-   * next-day transition. */
-  startNextDay(session: BattleSession): BattleSession;
-  /** Close a battle that has ended for good. The campaign outcome is prepared from here. */
-  finalize(session: BattleSession): BattleSession;
-  /** A terrain edit and the placements it invalidates, as one change. */
-  paint(session: BattleSession, stroke: PaintStroke): BattleSession;
-}
+import { battleOf, withSetup } from './session-helpers.js';
 
 /** The decisions belong to the stage and the day that asked for them; a transition that ends
  * one drops them all, rather than leaving the next stage an answer to an older question. */
@@ -41,10 +24,6 @@ function battleFrom(session: BattleSession): BattleState {
   if (!board) throw new Error('generate a board first');
   for (const side of SIDES) {
     if (!sideReady(setup, side)) throw new Error(`the ${side} has a piece still off the board`);
-    // proto: the wording is reserved for review with the rest of the player-facing text.
-    if (submissionOf(session.interactions, 'army.readiness', side) !== true) {
-      throw new Error(`the ${side} has not called itself ready`);
-    }
   }
   return createBattle({
     board,
@@ -65,7 +44,7 @@ function battleFrom(session: BattleSession): BattleState {
   });
 }
 
-export function createBattleManager(): BattleManager {
+export function createBattleManager({ mint }: { mint: MintPort }): BattleManager {
   return {
     start: (session) => ({
       ...session, ...cleared(), stage: 'battle', battle: battleFrom(session),
@@ -77,7 +56,7 @@ export function createBattleManager(): BattleManager {
 
     // The example force is no campaign's battle, so it leaves the site it was reset on.
     reset: (session) => ({
-      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(), battle: null, writeback: null, site: null,
+      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(mint), battle: null, writeback: null, site: null,
     }),
 
     startNextDay: (session) => {
@@ -108,7 +87,52 @@ export function createBattleManager(): BattleManager {
     paint: (session, stroke) => {
       const board = session.setup.board;
       if (!board) throw new Error('no board to paint');
-      return { ...session, setup: clearWaterPlacements(applyStroke(board, stroke), session.setup) };
+      return withSetup(session, clearWaterPlacements(applyStroke(board, stroke), session.setup));
+    },
+
+    load: (session, raw, slot, presence) => {
+      const migrated = migrateSession(raw, undefined, mint);
+      if (!migrated) throw new Error(`${slot} is not a battlefield save`);
+      return {
+        ...migrated, revision: session.revision, interactions: [], recentCommandIds: [],
+        // A save carried from another table names users this one may not have; the seating
+        // is refitted here and the turn opens again under it.
+        control: seatUsers(migrated.control, presence), turn: null,
+      };
+    },
+
+    // proto: a battle under way is never overwritten — one battle at a time, and the GM leaves
+    // this one before the next import lands. Reserved with the rest of the import defaults.
+    installRefusal: (session) => (session.battle && session.stage !== 'finalized' ? 'a battle is already under way' : null),
+
+    install: (session, battleId, request, presence) => {
+      const built = sessionFromRequest(request, battleId, mint);
+      // The imported seating knows no users; the table's own seats it, as a load does.
+      return { ...built, revision: session.revision, control: seatUsers(built.control, presence) };
+    },
+
+    moveToRefusal: (session, site) => {
+      if (session.site === site) return 'that battle is already open';
+      if (session.site === null && session.battle && session.stage !== 'finalized') {
+        return 'a battle on no site is under way; save or end it first';
+      }
+      return null;
+    },
+
+    departure: (session) => {
+      if (session.site === null) return null;
+      return session.stage === 'finalized' ? 'remove' : 'park';
+    },
+
+    moveTo: (session, raw, { site, battleId, opening }, presence) => {
+      const parked = raw === null ? null : migrateSession(raw, undefined, mint);
+      if (raw !== null && !parked) throw new Error(`the battle parked at ${site} cannot be read`);
+      const opened = parked ?? sessionAtSite(site, opening, battleId, mint);
+      return {
+        // The same table comes back to it, so the answers it was waiting on still stand.
+        ...opened, site, revision: session.revision, recentCommandIds: [],
+        control: seatUsers(opened.control, presence), turn: null,
+      };
     },
   };
 }

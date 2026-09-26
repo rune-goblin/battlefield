@@ -71,4 +71,15 @@ describe('deployment navigation', () => {
     back();
     expect(nav.stage).toBe('defenders');
   });
+
+  it('begins the battle with a single startBattle call and no readiness declaration', async () => {
+    const { beginBattle } = await import('../app/navigation.svelte.js');
+    const { startBattle, declareReady } = await import('../app/game.svelte.js');
+    vi.mocked(startBattle).mockResolvedValue({ ok: true, commandId: 'cmd-1', revision: 1 });
+
+    await beginBattle();
+
+    expect(startBattle).toHaveBeenCalledTimes(1);
+    expect(declareReady).not.toHaveBeenCalled();
+  });
 });

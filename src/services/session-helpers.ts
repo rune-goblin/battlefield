@@ -1,4 +1,5 @@
 import type { BattleState } from '../engine/index.js';
+import { dropInteraction } from '../runtime/interactions.js';
 import type { BattleSession, BattleSetupDraft, SetupEngine } from '../runtime/session.js';
 
 export function battleOf(session: BattleSession): BattleState {
@@ -20,5 +21,7 @@ export function settleHauling(setup: BattleSetupDraft): BattleSetupDraft {
   return emplacements.every((e, i) => e === setup.emplacements[i]) ? setup : { ...setup, emplacements };
 }
 
+/** Every setup edit passes through here, and each one takes back both armies' readiness: the
+ * other army agreed to the table as it stood, so a changed board or force needs that word again. */
 export const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession =>
-  ({ ...session, setup: settleHauling(setup) });
+  dropInteraction({ ...session, setup: settleHauling(setup) }, 'army.readiness');

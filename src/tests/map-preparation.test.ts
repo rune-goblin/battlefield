@@ -3,7 +3,7 @@ import { canEmplace, generateBoard, gridOf, notation, type UnitCard } from '../e
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { PaintStroke } from '../runtime/commands.js';
 import type { SessionRepository } from '../runtime/ports.js';
-import { freshSession, type BattleSession } from '../runtime/session.js';
+import { freshSession, randomMint, type BattleSession } from '../runtime/session.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
@@ -93,7 +93,7 @@ describe('map preparation', () => {
       },
     };
 
-    const result = createMapPreparationService().generate(session);
+    const result = createMapPreparationService({ mint: randomMint }).generate(session);
 
     expect(result.setup.emplacements[0].hauled).toBe(false);
   });
