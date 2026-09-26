@@ -86,11 +86,15 @@ export async function reloadClient(page: Page): Promise<void> {
   await page.addStyleTag({ content: HIDE_NOTIFICATIONS });
 }
 
-/** Every `console.error` and uncaught exception on the page, for a spec to assert empty. */
+/** Every `console.error`, uncaught exception and failed request for one of this module's own
+ * files on the page, for a spec to assert empty. A missing texture fails quietly in PIXI. */
 export function collectErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
   page.on('pageerror', (err) => { errors.push(err.message); });
+  page.on('response', (res) => {
+    if (res.status() >= 400 && res.url().includes(`/modules/${MODULE_ID}/`)) errors.push(`${res.status()} ${res.url()}`);
+  });
   return errors;
 }
 
