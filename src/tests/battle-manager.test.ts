@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { engineLoaded, type UnitCard } from '../engine/index.js';
+import { createBattle, engineLoaded, type UnitCard } from '../engine/index.js';
+import type { BattleRequest } from '../runtime/campaign.js';
+import type { BattleCommand } from '../runtime/commands.js';
+import { freshControl } from '../runtime/control.js';
 import { createRuntime, type Runtime } from '../runtime/createRuntime.js';
-import type { SessionRepository } from '../runtime/ports.js';
+import { submitTo } from '../runtime/interactions.js';
+import type { PresencePort, SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession, type BattleSetupDraft } from '../runtime/session.js';
+import { createBattleManager } from '../services/BattleManager.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
@@ -154,5 +159,98 @@ describe('the battle manager', () => {
     expect(await ended.submit({ type: 'session.undo' })).toMatchObject({ ok: false, reason: 'stage' });
     expect(await ended.submit({ type: 'battle.returnToSetup' })).toMatchObject({ ok: true });
     expect(ended.session.stage).toBe('setup');
+  });
+});
+
+describe('the lifecycle transitions', () => {
+  const manager = createBattleManager();
+  const presence: PresencePort = {
+    online: () => true, gmUserId: () => 'gm', users: () => ['gm', 'p1'], displayName: (id) => id,
+  };
+  const table = (): BattleSession => ({ ...freshSession(), revision: 7 });
+  const saved = (record: BattleSession): unknown => JSON.parse(JSON.stringify(record));
+  const request: BattleRequest = {
+    board: { base: 'plains', size: 9, feature: 'none', seed: 1 },
+    units: [{ card: infantry, side: 'attacker' }, { card: kobolds, side: 'defender' }],
+  };
+  const fought = (): BattleSession => ({
+    ...freshSession(), stage: 'battle',
+    battle: createBattle({
+      board: openBoard(),
+      units: [{ card: infantry, side: 'attacker', square: 'c2' }, { card: kobolds, side: 'defender', square: 'c7' }],
+    }),
+  });
+  const moveTo = (site: string): Extract<BattleCommand, { type: 'session.moveTo' }> => ({
+    type: 'session.moveTo', site, battleId: `battle-${site}`, opening: { board: request.board },
+  });
+
+  it('loads a save at the table\'s revision and seating, with nothing pending', () => {
+    const record: BattleSession = {
+      ...submitTo(freshSession(), 'army.readiness', 'attacker', true, 'someone'),
+      revision: 42, control: freshControl('defender'), turn: 'someone', recentCommandIds: ['cmd-old'],
+    };
+
+    const loaded = manager.load(table(), saved(record), 'slot-1', presence);
+
+    expect(loaded).toMatchObject({
+      battleId: record.battleId, revision: 7, interactions: [], recentCommandIds: [], turn: null,
+    });
+    expect(loaded.control.seats).toEqual({ attacker: ['p1'], defender: ['gm'] });
+  });
+
+  it('refuses to load a slot that holds no battlefield save', () => {
+    expect(() => manager.load(table(), { nonsense: true }, 'slot-9', presence)).toThrow('slot-9 is not a battlefield save');
+  });
+
+  it('installs a campaign battle over a draft or a finalized battle and never over one under way', () => {
+    expect(manager.installRefusal(table())).toBeNull();
+    expect(manager.installRefusal({ ...fought(), stage: 'finalized' })).toBeNull();
+    expect(manager.installRefusal(fought())).toBe('a battle is already under way');
+  });
+
+  it('installs the requested battle under its own ID, seated at this table', () => {
+    const installed = manager.install(table(), 'battle-1', request, presence);
+
+    expect(installed).toMatchObject({ battleId: 'battle-1', revision: 7, stage: 'setup' });
+    expect(installed.setup.units.map((u) => u.card.name)).toEqual(['Infantry', 'Kobolds']);
+    expect(installed.control.seats).toEqual({ attacker: ['p1'], defender: ['gm'] });
+  });
+
+  it('refuses the site already open and a battle under way on no site', () => {
+    expect(manager.moveToRefusal({ ...table(), site: 'a' }, 'a')).toBe('that battle is already open');
+    expect(manager.moveToRefusal(fought(), 'a')).toBe('a battle on no site is under way; save or end it first');
+    expect(manager.moveToRefusal({ ...fought(), stage: 'finalized' }, 'a')).toBeNull();
+    expect(manager.moveToRefusal({ ...fought(), site: 'b' }, 'a')).toBeNull();
+  });
+
+  it('takes a finalized battle off the map, parks a live one and leaves a record on no site alone', () => {
+    expect(manager.departure({ ...fought(), site: 'a', stage: 'finalized' })).toBe('remove');
+    expect(manager.departure({ ...fought(), site: 'a' })).toBe('park');
+    expect(manager.departure({ ...table(), site: 'a' })).toBe('park');
+    expect(manager.departure(fought())).toBeNull();
+  });
+
+  it('opens new ground at a site nothing is parked on', () => {
+    const opened = manager.moveTo(table(), null, moveTo('b'), presence);
+
+    expect(opened).toMatchObject({ site: 'b', battleId: 'battle-b', revision: 7, turn: null, stage: 'setup' });
+    expect(opened.setup.units).toEqual([]);
+  });
+
+  it('reopens a parked battle with the answers it was waiting on', () => {
+    const parked: BattleSession = {
+      ...submitTo({ ...freshSession(), site: 'b' }, 'army.readiness', 'attacker', true, 'p1'),
+      recentCommandIds: ['cmd-old'], turn: 'p1',
+    };
+
+    const opened = manager.moveTo({ ...table(), site: 'a' }, saved(parked), moveTo('b'), presence);
+
+    expect(opened).toMatchObject({ site: 'b', battleId: parked.battleId, revision: 7, recentCommandIds: [], turn: null });
+    expect(opened.interactions).toEqual(parked.interactions);
+  });
+
+  it('refuses a parked record it cannot read', () => {
+    expect(() => manager.moveTo(table(), { schemaVersion: 99 }, moveTo('b'), presence))
+      .toThrow('the battle parked at b cannot be read');
   });
 });

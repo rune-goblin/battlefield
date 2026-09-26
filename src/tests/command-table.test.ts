@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMMANDS } from '../runtime/commandTable.js';
 
-const EXECUTOR_OWNED = ['session.undo', 'session.load', 'session.install', 'session.moveTo'];
+const EXECUTOR_OWNED = ['session.undo'];
 
 describe('the command table', () => {
   it('names a side for every side-scoped command and for no other', () => {

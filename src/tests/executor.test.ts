@@ -108,6 +108,19 @@ describe('the command executor', () => {
     expect(runtime.session.battle!.activated).toEqual([]);
   });
 
+  it('commits nothing when a port read ahead of the edit fails', async () => {
+    const session = freshSession();
+    const repository = fakeRepository(session);
+    const archive = { ...createLocalArchive(fakeStorage()), load: async () => { throw new Error('slot unreadable'); } };
+    const runtime = createRuntime({ repository, archive, session });
+
+    const result = await runtime.submit({ type: 'session.load', slot: 'slot-1' });
+
+    expect(result).toMatchObject({ ok: false, reason: 'storage', message: 'slot unreadable', revision: session.revision });
+    expect(runtime.session).toBe(session);
+    expect(repository.saves).toEqual([]);
+  });
+
   it('records a resolved action in undo history and a selection not', async () => {
     const { runtime } = runtimeOn();
 

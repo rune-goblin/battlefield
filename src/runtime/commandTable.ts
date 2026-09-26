@@ -8,7 +8,7 @@ import { abandonWriteback, beginWriteback, markWritebackTarget } from '../servic
 import type { BattleCommand, CommandStage, CommandType, PieceRef } from './commands.js';
 import { assignSeats, reassignTurn } from './control.js';
 import type { BattleEventBody } from './events.js';
-import type { PresencePort } from './ports.js';
+import type { BattleArchive, BattleSites, PresencePort } from './ports.js';
 import type { BattleSession } from './session.js';
 
 export interface Services {
@@ -21,7 +21,13 @@ export interface Services {
 
 export type CommandOf<T extends CommandType> = Extract<BattleCommand, { type: T }>;
 
-export interface CommandContext { services: Services; presence: PresencePort; userId: string }
+export interface CommandContext {
+  services: Services;
+  presence: PresencePort;
+  userId: string;
+  archive: BattleArchive;
+  sites: BattleSites;
+}
 
 /**
  * Who may issue a command. `tactical` is the open activation and belongs to the turn holder;
@@ -57,8 +63,14 @@ export type CommandDescriptor<T extends CommandType> = {
    * are shut out: part of the result already sits in the campaign, and rewinding the battle
    * behind it would leave the two disagreeing. */
   duringWriteback?: true;
-  /** Absent on the commands the executor runs itself. */
-  run?(session: BattleSession, command: CommandOf<T>, ctx: CommandContext): BattleSession;
+  /** Why the record cannot take the command as it stands. The executor answers it as a `stage`
+   * refusal before any port is touched. */
+  refuse?(session: BattleSession, command: CommandOf<T>, ctx: CommandContext): string | null;
+  /** The port reads and writes that come ahead of the edit. A throw is a `storage` refusal and
+   * commits nothing; what it resolves to reaches `run` as `prepared`. */
+  prepare?(session: BattleSession, command: CommandOf<T>, ctx: CommandContext): Promise<unknown>;
+  /** Absent on undo, which the executor runs itself. */
+  run?(session: BattleSession, command: CommandOf<T>, ctx: CommandContext, prepared: unknown): BattleSession;
   /** Only the commands that resolve rules carry events. A setup or lifecycle command replaces
    * whole boards and forces, which a client adopts rather than plays. */
   events?(previous: BattleSession, next: BattleSession, command: CommandOf<T>, ctx: CommandContext): BattleEventBody[];
@@ -244,9 +256,29 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     run: (s, c, { presence }) => reassignTurn(s, c.userId, presence),
   },
   'session.undo': { stage: 'any', scope: 'gm', history: 'pop' },
-  'session.load': { stage: 'any', scope: 'gm', history: 'clear', afterFinal: true },
-  'session.install': { stage: 'any', scope: 'gm', history: 'clear', afterFinal: true },
-  'session.moveTo': { stage: 'any', scope: 'gm', history: 'clear', afterFinal: true },
+  'session.load': {
+    stage: 'any', scope: 'gm', history: 'clear', afterFinal: true,
+    prepare: (_s, c, { archive }) => archive.load(c.slot),
+    run: (s, c, { services, presence }, raw) => services.manager.load(s, raw, c.slot, presence),
+  },
+  'session.install': {
+    stage: 'any', scope: 'gm', history: 'clear', afterFinal: true,
+    refuse: (s, _c, { services }) => services.manager.installRefusal(s),
+    run: (s, c, { services, presence }) => services.manager.install(s, c.battleId, c.request, presence),
+  },
+  // The record the table leaves is parked before the session write, so a failure between the
+  // two leaves a spare copy and loses nothing.
+  'session.moveTo': {
+    stage: 'any', scope: 'gm', history: 'clear', afterFinal: true,
+    refuse: (s, c, { services }) => services.manager.moveToRefusal(s, c.site),
+    prepare: async (s, c, { services, sites }) => {
+      const departure = services.manager.departure(s);
+      if (departure === 'park') await sites.park(s);
+      if (departure === 'remove') await sites.remove(s.site!);
+      return sites.load(c.site);
+    },
+    run: (s, c, { services, presence }, parked) => services.manager.moveTo(s, parked, c, presence),
+  },
 };
 
 /** One command's descriptor, widened so a caller holding the whole union can call it. */

@@ -1,15 +1,14 @@
 import type { BattleState } from '../engine/index.js';
-import { pruneSources, sessionAtSite, sessionFromRequest, type BattleRequest } from './campaign.js';
+import { pruneSources } from './campaign.js';
 import { COMMANDS, descriptorOf, type CommandContext, type HistoryEffect, type Services } from './commandTable.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
-import { openTurn, seatUsers } from './control.js';
+import { openTurn } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
 import { clearObsolete } from './interactions.js';
 import { refuseCommand } from './policy.js';
 import { memorySites } from './memorySites.js';
 import type { BattleArchive, BattleSites, PresencePort, SessionRepository } from './ports.js';
-import { migrateSession } from './migrate.js';
 import { writebackRunning, type BattleSession, type BattleSetupDraft } from './session.js';
 import type { Side } from '../engine/index.js';
 
@@ -156,42 +155,49 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     return { ok: true, commandId, revision: session.revision };
   }
 
-  function run({ battleId, commandId, expectedRevision, userId, command }: CommandEnvelope): Promise<CommandResult> {
-    if (battleId !== session.battleId) return Promise.resolve(reject(commandId, 'battle', `${battleId} is not the battle under way`));
+  async function run({ battleId, commandId, expectedRevision, userId, command }: CommandEnvelope): Promise<CommandResult> {
+    if (battleId !== session.battleId) return reject(commandId, 'battle', `${battleId} is not the battle under way`);
     // A client whose reply was lost resends the same command ID. The commit already happened,
     // so answer it with the revision that holds it rather than running the command twice.
-    if (session.recentCommandIds.includes(commandId)) return Promise.resolve({ ok: true, commandId, revision: session.revision });
+    if (session.recentCommandIds.includes(commandId)) return { ok: true, commandId, revision: session.revision };
     // The socket of Wave 4.2 delivers payloads this union cannot vouch for.
-    if (!Object.hasOwn(COMMANDS, command?.type)) return Promise.resolve(reject(commandId, 'unsupported', `${command?.type} is not a command`));
+    if (!Object.hasOwn(COMMANDS, command?.type)) return reject(commandId, 'unsupported', `${command?.type} is not a command`);
     // proto: the wording of a stale-revision refusal is reserved for review with the rest of
     // the turn and seat text. The revision travels with it so the client can refresh and ask.
     if (expectedRevision !== session.revision) {
-      return Promise.resolve(reject(commandId, 'revision', `the battle has moved on to revision ${session.revision}`));
+      return reject(commandId, 'revision', `the battle has moved on to revision ${session.revision}`);
     }
     const descriptor = descriptorOf(command);
     const stage = descriptor.stage;
-    if (stage === 'setup' && session.battle) return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
-    if (stage === 'battle' && !session.battle) return Promise.resolve(reject(commandId, 'stage', 'no battle is under way'));
+    if (stage === 'setup' && session.battle) return reject(commandId, 'stage', 'a battle is already under way');
+    if (stage === 'battle' && !session.battle) return reject(commandId, 'stage', 'no battle is under way');
     // A finalized battle has been reported to the campaign. Only leaving it, or replacing it
     // outright with a loaded save, reopens the record.
     if (session.stage === 'finalized' && !descriptor.afterFinal) {
-      return Promise.resolve(reject(commandId, 'stage', 'this battle is finalized'));
+      return reject(commandId, 'stage', 'this battle is finalized');
     }
     // proto: the wording is reserved for review with the rest of the player-facing text.
     if (writebackRunning(session) && !descriptor.duringWriteback) {
-      return Promise.resolve(reject(commandId, 'stage', 'the campaign outcome is being applied'));
+      return reject(commandId, 'stage', 'the campaign outcome is being applied');
     }
     const refusal = refuseCommand(session, command, userId, presence);
-    if (refusal) return Promise.resolve(reject(commandId, 'permission', refusal));
+    if (refusal) return reject(commandId, 'permission', refusal);
     if (command.type === 'session.undo') return rewind(commandId, userId);
-    if (command.type === 'session.load') return loadSession(commandId, command.slot, userId);
-    if (command.type === 'session.install') return install(commandId, command.battleId, command.request, userId);
-    if (command.type === 'session.moveTo') return moveTo(commandId, command, userId);
 
-    const ctx: CommandContext = { services, presence, userId };
+    const ctx: CommandContext = { services, presence, userId, archive, sites };
+    const barred = descriptor.refuse?.(session, command, ctx);
+    if (barred) return reject(commandId, 'stage', barred);
+    let prepared: unknown = null;
+    if (descriptor.prepare) {
+      try {
+        prepared = await descriptor.prepare(session, command, ctx);
+      } catch (error) {
+        return reject(commandId, 'storage', failure(error));
+      }
+    }
     return persist(commandId, userId, {
       type: command.type,
-      edit: (current) => descriptor.run!(current, command, ctx),
+      edit: (current) => descriptor.run!(current, command, ctx, prepared),
       describe: (previous, next) => descriptor.events?.(previous, next, command, ctx) ?? [],
     });
   }
@@ -208,84 +214,6 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
         control: { ...current.control, next: previous.next },
       }),
       seat: false,
-    });
-  }
-
-  /** Replace the record with a saved one. `migrateSession` runs inside the edit so a foreign
-   * or corrupt slot rejects as an ordinary `engine` failure, through the same commit path
-   * every other command takes — the authority still persists before it acknowledges. */
-  async function loadSession(commandId: string, slot: string, userId: string): Promise<CommandResult> {
-    let raw: unknown;
-    try {
-      raw = await archive.load(slot);
-    } catch (error) {
-      return reject(commandId, 'storage', failure(error));
-    }
-    return persist(commandId, userId, {
-      type: 'session.load',
-      edit: (current) => {
-        const migrated = migrateSession(raw);
-        if (!migrated) throw new Error(`${slot} is not a battlefield save`);
-        return {
-          ...migrated, revision: current.revision, interactions: [], recentCommandIds: [],
-          // A save carried from another table names users this one may not have; the seating
-          // is refitted here and the turn opens again under it.
-          control: seatUsers(migrated.control, presence), turn: null,
-        };
-      },
-    });
-  }
-
-  /** Install a battle a campaign asked for. The request is read inside the edit, so a
-   * malformed one rejects like any other refused command. */
-  // proto: a battle under way is never overwritten — one battle at a time, and the GM leaves
-  // this one before the next import lands. Reserved with the rest of the import defaults.
-  function install(
-    commandId: string, battleId: string, request: BattleRequest, userId: string,
-  ): Promise<CommandResult> {
-    if (session.battle && session.stage !== 'finalized') {
-      return Promise.resolve(reject(commandId, 'stage', 'a battle is already under way'));
-    }
-    return persist(commandId, userId, {
-      type: 'session.install',
-      edit: (current) => {
-        const built = sessionFromRequest(request, battleId);
-        // The imported seating knows no users; the table's own seats it, as a load does.
-        return { ...built, revision: current.revision, control: seatUsers(built.control, presence) };
-      },
-    });
-  }
-
-  /** Park the battle the table holds and open the one at `site`. The park lands before the
-   * session write, so a failure between the two leaves a spare copy and loses nothing. */
-  async function moveTo(
-    commandId: string, { site, battleId, opening }: Extract<BattleCommand, { type: 'session.moveTo' }>, userId: string,
-  ): Promise<CommandResult> {
-    if (session.site === site) return reject(commandId, 'stage', 'that battle is already open');
-    const resolved = session.stage === 'finalized';
-    if (session.site === null && session.battle && !resolved) {
-      return reject(commandId, 'stage', 'a battle on no site is under way; save or end it first');
-    }
-    let raw: unknown;
-    try {
-      // A resolved battle leaves the map; any other is kept for the GM to come back to.
-      if (session.site !== null) await (resolved ? sites.remove(session.site) : sites.park(session));
-      raw = await sites.load(site);
-    } catch (error) {
-      return reject(commandId, 'storage', failure(error));
-    }
-    return persist(commandId, userId, {
-      type: 'session.moveTo',
-      edit: (current) => {
-        const parked = raw === null ? null : migrateSession(raw);
-        if (raw !== null && !parked) throw new Error(`the battle parked at ${site} cannot be read`);
-        const opened = parked ?? sessionAtSite(site, opening, battleId);
-        return {
-          // The same table comes back to it, so the answers it was waiting on still stand.
-          ...opened, site, revision: current.revision, recentCommandIds: [],
-          control: seatUsers(opened.control, presence), turn: null,
-        };
-      },
     });
   }
 
