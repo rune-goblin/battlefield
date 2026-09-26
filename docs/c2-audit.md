@@ -30,7 +30,7 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W1.1 added `createJsonStore` in `src/adapters/json-store.ts`. It tells an absent value from an unreadable one, leaves the unreadable value in place, refuses every write over it and raises one notice. The browser and Foundry session repositories, both archives and the Foundry sites store read through it. An unreadable session loads fresh in memory while every save, `reseat` included, is refused. `migrateSession` now rejects a record from a newer schema before the legacy path can rebuild it, and the Foundry GM gets a permanent error notice. No UI lets a GM clear or export an unreadable setting; the todos file carries that.
 
-### C2. Duplicated engine rules have already diverged — Once And Only Once `[local]` `[partial]`
+### C2. Duplicated engine rules have already diverged — Once And Only Once `[local]` `[done]`
 - **Where:** `src/engine/battle.ts`:
   - Terror, the tier-4 Controlling spell (`1845-1849`), re-implements Controlling and skips the `immuneFear` check tiers 1–3 make (`1887`); it also logs nothing on frightened.
   - The wound pipeline exists twice (`applyWounds` `755-786`, `landPersistent` `2093-2111`); death by persistent damage skips `refreshAbilityAuras` (`2103` vs `770`).
@@ -39,6 +39,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Direction:** Extract `landWound(target, n, …)` and `displace(...)`, and route tier-4 spells through the per-tree effects.
 
 **Resolution (2026-09-26):** W1.2 routed Terror through `controlOne`, the tier 1–3 Controlling sequence, so it respects `immuneFear`, logs the frightened line, and a failed save costs Morale alone. `landWound`, `fall` and `moraleSave` now serve hits and persistent damage, so a death at dusk refreshes auras. Siege and ability push/pull share `forcedStep`, which asks Hold Ground only once a legal hex exists. The audit's claim that the siege copy skips the occupied-cell test is false: `enterable` refuses occupied hexes on both paths. One divergence stays open: the siege caller refuses rooted targets and the ability caller does not, pending the rules question in the todos file.
+
+**Resolution (2026-09-26):** W3.3 moved the rooted check into `forcedStep`, so siege engines and troop abilities refuse a rooted target by one rule. The Push / Pull and Rooted rows in `rules.html` say so, and a troop-ability test covers it. Overrun has its own displacement path and still moves a rooted target; the rules page is silent on it.
 
 ## Major
 
@@ -135,13 +137,17 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W2.4 trimmed `LayerManager` to the methods the board calls, deleted `MapTextUtils.ts` and `BoardApp.setTheme`, cut the barrel to the symbols `src/app` and `dev/**` import through it, and updated `docs/pixi-board.md`. App files still deep-import `art`, `asset-base`, `terrain-textures`, `status-bars`, `color`, `paper`, `ink-map`, `selection`, `preload` and `target-point`; routing them through the barrel goes to W8.3.
 
-### m3. Hash, PRNG, colour and easing helpers duplicated — Reinventing The Wheel `[cross-cutting]`
+### m3. Hash, PRNG, colour and easing helpers duplicated — Reinventing The Wheel `[cross-cutting]` `[done]`
 - **Where:** FNV-1a ×5 (`EdgeLayer.ts:144`, `vfx/textures.ts:112`, `ink-map.ts:208`, `forest-placement.ts:20`, `TerrainScatter.ts:167`); `mulberry32` (`vfx/textures.ts:102`) copies `engine/rng.ts:25`; hex-to-CSS ×4; `easeInOut` is cubic in `Token.ts:140` and quadratic in `FallenLayer.ts:18` though the two animations are meant to match.
 - **Direction:** One `hashSeed` beside `seededRandom`, one `cssHex`, one easing module.
 
-### m4. Sides and IDs are bare primitives — Primitive Obsession `[cross-cutting]`
+**Resolution (2026-09-26):** W3.2 put `hashSeed` beside `seededRandom` in `engine/rng.ts` and replaced the five FNV-1a copies and the `mulberry32` copy with it. `cssHex` in `board/layers/color.ts` serves the board, `LchColour.svelte` and `ArmyReel.svelte`. `board/easing.ts` holds the four curves, and `FallenLayer` now settles on `Token`'s cubic `easeInOut`.
+
+### m4. Sides and IDs are bare primitives — Primitive Obsession `[cross-cutting]` `[partial]`
 - **Where:** `side === 'attacker' ? 'defender' : 'attacker'` ×12; `SIDES` re-declared at `policy.ts:64` and `SeatingPanel.svelte:18` beside `engine/types.ts:9`; every ID is `string`.
 - **Direction:** `opponent(side)` in the engine; branded ID types.
+
+**Resolution (2026-09-26):** W3.1 added `opponent(side)` beside `SIDES` in `engine/types.ts`. Every side flip in the engine, runtime, services, adapters and Svelte views calls it, and `policy.ts`, `SeatingPanel.svelte` and `battle-ending.ts` import `SIDES` from the engine. Sites that pick a side by a condition keep their ternary. The plan defers branded ID types.
 
 ### m5. The two `withSetup` helpers differ — Once And Only Once `[local]` `[done]`
 - **Where:** `ArmyPreparationService.ts:160` and `MapPreparationService.ts:88`; `battleOf` ×3.
@@ -160,6 +166,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **What:** The map generator guarantees one rule and `ConnectionWarning` checks the other.
 
 **Resolution (2026-09-26):** W2.3 moved `hasGroundConnection` into `board.ts` and deleted `connectivity.ts`. The generator and `ConnectionWarning` share one rule, the one the user set: a walking route runs from the attacker's deployment zone to the defender's without entering water or crossing a cliff or an intact wall, and an open gate lets it through. `rules.html:833` states it under Map editing and says a generated map keeps a route unless water cuts every one. The generator now tests the deployment zones and counts walls, so six mountain seeds keep cliffs they used to flatten. The warning still checks river maps alone; the todos file asks whether it should cover every map.
+
+**Resolution (2026-09-26):** W3.4, the fallback in case W2.3 had not landed, did not run.
 
 ### m8. Import cycles between layers — Dependency Inversion `[cross-cutting]`
 - **Where:** `runtime/executeCommand.ts:7` and `createRuntime.ts` import services, which import runtime in 18 places; `board/layers/CombatTextLayer.ts:3` imports its types from `services`.

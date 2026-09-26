@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W3 — Shared primitives: W3.1–W3.3. W3.4 is not needed, because W2.3 landed.
 - W4 — Engine structure and the migration seam: W4.1–W4.2
 - W5 — Engine types: W5.1–W5.2
 - W6 — Engine answers, thin views: W6.1–W6.3
@@ -13,12 +12,6 @@ could not answer. An item leaves this list when it is done or answered.
 - W8 — App structure: W8.1–W8.4
 - W9 — Board structure: W9.1–W9.2
 - W10 — Recovery from an unreadable save: W10.1
-
-## Answered by the user (2026-09-26)
-
-- Push and pull: a rooted target resists a troop-ability push or pull, as it resists a siege
-  push. The ability path must refuse rooted targets; update the Push / Pull row in
-  `public/rules.html` to say so.
 
 ## Carried forward from W1
 
