@@ -1,5 +1,5 @@
 import './install-asset-base.js';
-import { blockPageZoom } from '../../app/app-root.js';
+import { blockPageZoom, withinApp } from '../../app/app-root.js';
 import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { bindClient, bindQuit, presenceChanged, tableChanged } from '../../app/game.svelte.js';
@@ -71,6 +71,19 @@ const recovery = createStoreRecovery({
 
 Hooks.once('init', () => {
   blockPageZoom();
+  // Core's Escape closes every open window, the battle's included, and opens the main menu when
+  // none closes. An Escape pressed inside the window belongs to the app, which steps back on it.
+  game.keybindings.register(MODULE_ID, 'escapeInWindow', {
+    name: 'Escape inside the Battlefield window',
+    uneditable: [{ key: 'Escape', modifiers: [] }],
+    onDown: ({ event }) => {
+      const app = BattlefieldApp.current;
+      // The app's own handler has run by now, and closing a dialog detaches the input the key
+      // was typed in. The dispatch path still holds the window it came from.
+      return app !== null && (event.composedPath().includes(app.element) || withinApp(event.target));
+    },
+    precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY,
+  });
   const sites = createFoundrySites(undefined, recovery);
   const module = hostModule(MODULE_ID);
   if (module) {

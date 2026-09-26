@@ -11,13 +11,14 @@ The tier needs a licensed local Foundry v14 and a migrated world, so CI runs vit
 ```
 playwright test
   ├─ webServer:   bash scripts/start-test-env.sh  → Foundry on :30005, --world=$TEST_WORLD
+  ├─ webServer:   npx vite --port 5199            → the browser app, for browser.spec.ts
   ├─ globalSetup: src/tests/e2e/global-setup.ts   → join as GM, enable the module, fail loud
   └─ specs:       *.spec.ts                       → drive the window, assert game.* and the DOM
 ```
 
 The test Foundry serves `dist-foundry` through a `modules/battlefield` link. `npm run test:e2e`
-runs `npm run build:foundry` first, so specs exercise current source. `npm run dev` serves the
-browser app and plays no part here.
+runs `npm run build:foundry` first, so specs exercise current source. `browser.spec.ts` drives
+`play.html` on the Vite dev server instead, with a fresh `localStorage` per test.
 
 ## Isolated test data
 
@@ -34,6 +35,10 @@ clones are copy-on-write and take seconds.
 skips that. A sibling module whose `packs` links into its repo gets that entry cloned. The world
 is cloned once and kept, since it holds the module-enabled setting and the `__e2e_player` user.
 `npm run test:e2e:setup -- --reset-world` clones it afresh.
+
+From a git worktree, link `test/foundry-data` to the main tree's copy. The clone's
+`modules/battlefield` link names one checkout's `dist-foundry`, so point it at the worktree's for
+the run and back afterwards, or the run exercises the other build.
 
 ## The test world
 
@@ -72,8 +77,14 @@ Kill a stray with `lsof -ti:30005 | xargs kill`.
 
 - Use the `gmPage` and `playerPage` fixtures from `fixtures/foundry-clients.ts`. Both are
   worker-scoped: one login each for the whole run.
-- `collectErrors(page)` gathers `console.error` output and uncaught exceptions for a spec to
-  assert empty.
+- `collectErrors(page)` gathers `console.error` output, uncaught exceptions and failed requests
+  for the module's own files, for a spec to assert empty.
+- `shot(page, name)` saves `test-results/live-check/<name>.png`, one for each screen a live check
+  covers. Playwright empties `test-results/` at the start of a run, so the last full run's set is
+  the record.
 - Select by stable hooks: the window is `#battlefield`, the app root is `.battlefield-root`,
   the scene control is `button[data-tool="battlefield"]`.
 - The world clone persists across runs. A spec ends its battle and closes the window.
+  `battle.spec.ts` and the rest need the clone's deployed setup, so a spec that writes a world
+  setting reads it first and restores it in a `finally`. After restoring the session it reloads
+  the GM, whose executor would otherwise save the session it holds over the restored one.

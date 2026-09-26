@@ -22,19 +22,29 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  // One service: a headless test Foundry on :30005 serving the built `dist-foundry` through the
-  // `modules/battlefield` link `scripts/setup-test-env.ts` makes. `npm run dev` serves the
-  // browser app and plays no part here. `npm run test:e2e` rebuilds `dist-foundry` first.
-  webServer: {
-    command: 'bash scripts/start-test-env.sh',
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    stdout: 'ignore',
-    stderr: 'pipe',
-    env: {
-      TEST_WORLD: process.env.TEST_WORLD ?? 'stolen-lands',
-      TEST_FOUNDRY_PORT: String(PORT),
+  // Two services. A headless test Foundry on :30005 serves the built `dist-foundry` through the
+  // `modules/battlefield` link `scripts/setup-test-env.ts` makes; `npm run test:e2e` rebuilds
+  // `dist-foundry` first. Vite on :5199 serves the browser app to `browser.spec.ts`.
+  webServer: [
+    {
+      command: 'bash scripts/start-test-env.sh',
+      url: BASE_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      stdout: 'ignore',
+      stderr: 'pipe',
+      env: {
+        TEST_WORLD: process.env.TEST_WORLD ?? 'stolen-lands',
+        TEST_FOUNDRY_PORT: String(PORT),
+      },
     },
-  },
+    {
+      command: 'npx vite --host 127.0.0.1 --port 5199 --strictPort',
+      url: 'http://127.0.0.1:5199/play.html',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
+  ],
 });

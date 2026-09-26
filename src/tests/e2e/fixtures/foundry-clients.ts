@@ -78,11 +78,23 @@ export async function ensurePlayer(gmPage: Page): Promise<JoinUser> {
 // `.notification` sets `pointer-events: all`, so hide the stack outright.
 const HIDE_NOTIFICATIONS = '#notifications { display: none !important; }';
 
-/** Every `console.error` and uncaught exception on the page, for a spec to assert empty. */
+/** Reload a logged-in client, as a player refreshing the page does. */
+export async function reloadClient(page: Page): Promise<void> {
+  await page.reload();
+  await waitForGameReady(page);
+  await waitForModuleActive(page);
+  await page.addStyleTag({ content: HIDE_NOTIFICATIONS });
+}
+
+/** Every `console.error`, uncaught exception and failed request for one of this module's own
+ * files on the page, for a spec to assert empty. A missing texture fails quietly in PIXI. */
 export function collectErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
   page.on('pageerror', (err) => { errors.push(err.message); });
+  page.on('response', (res) => {
+    if (res.status() >= 400 && res.url().includes(`/modules/${MODULE_ID}/`)) errors.push(`${res.status()} ${res.url()}`);
+  });
   return errors;
 }
 
