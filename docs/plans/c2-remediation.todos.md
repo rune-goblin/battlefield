@@ -5,12 +5,14 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W10 — Recovery from an unreadable save: W10.1
+W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is done.
 
 ## Carried forward from W1
 
 - `createJsonArchive`'s accept checks only for a string `slot`. An entry with a string slot and
-  no string `name` passes, and `filenameFor` throws on it during Foundry eviction.
+  no string `name` passes, and `filenameFor` throws on it during Foundry eviction. Tightening
+  `isStoredEntry` to demand a name would make such an archive unreadable, so it would reach the
+  W10.1 recovery notice.
 
 ## Open question from W2
 
@@ -28,7 +30,8 @@ could not answer. An item leaves this list when it is done or answered.
   from its setup and battle. The rebuild takes a new battleId, revision 0 and hot-seat control, and
   the Foundry store accepts it and saves over the original. The browser store reads through
   `reviveSession` and refuses such a record. Should the legacy fallback run only for records that
-  predate the envelope, leaving a corrupt envelope unreadable for W10.1 to handle?
+  predate the envelope, leaving a corrupt envelope unreadable? W10.1 recovers only what the
+  stores already refuse, so such a record would then reach its recovery notice.
 
 ## Carried forward from W4
 
@@ -120,18 +123,21 @@ could not answer. An item leaves this list when it is done or answered.
   `dev/foundry-mount/battle-state.json` has no `disorder` or `routed` field and still carries
   `shaken`.
 
-## Unreadable save recovery (W10.1)
+## Open question from W10
 
-The user asked for this on 2026-09-26. When a stored session, archive or battle-site record is
-unreadable, the store refuses writes (W1.1), and every commit shows "Changes could not be saved"
-until someone clears the key from the console.
+- `applyLaunchChoice` in `src/app/launch.ts` writes `SESSION_KEY` straight to local storage on
+  `?new` and `?example`. That overwrites an unreadable browser session with no export and no
+  notice. It is an explicit landing-page choice, so W10.1 left it alone. Should it go through the
+  store, so an unreadable session refuses it and the recovery notice shows?
 
-- In Foundry, the GM sees a notice naming the unreadable record, with two buttons:
-  - "Export the broken save" downloads the raw stored value as a file;
-  - "Start fresh" clears the stored value, and the table carries on from a blank record.
-- In the browser, the local user sees the same notice for local storage.
-- Players see only that the GM must act.
-- "Start fresh" asks for confirmation in the app's own UI, with no browser `confirm()`, and
-  nothing is cleared until the user confirms.
-- Each unreadable store (session, archive, sites) is handled on its own, and clearing one
-  leaves the others untouched.
+## Carried forward from W10
+
+- Live check: no one has played W10 in the browser or in Foundry, and no screenshot exists. Corrupt
+  each stored record in turn and check the GM's notice, export, confirm, cancel and clear, a
+  player's notice, and the GM-only Foundry toast. The notice wording is marked `proto:`.
+- The record names ("battle session", "saved battles", "battle sites") appear twice: in each
+  store's `name` option and in the `NAMES` map in `src/app/store-recovery.ts`.
+- Nothing marks a clear in flight: the confirm notice stays on screen until `port.clear` settles,
+  so a double click can call clear twice. The second clear writes the same empty value.
+- A GM with the Battlefield window open when a record turns unreadable sees both the Foundry toast
+  and the in-app notice.
