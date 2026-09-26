@@ -78,16 +78,20 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W6.1 added `recoveryModifier`, `canRecover`, `healSlots`, `unitOutcome`, `unitStatusLabel`, `positionNotes`, `haulingSpeed` and `commitment()`, and `shootModifier` answers without a target. `unitOutcome` counts a `left` unit as routed, so a unit that left with Morale to spare now falls in the routed count, where before it fell in no bucket. W6.3 moved `BattleReport`'s decisions into `src/app/battle-report.svelte.ts` and the healing rows into `src/app/healing-choices.ts`, which read `healableConditions` and `healSlots`; `HealingChoices.svelte` keeps its props. Healing validation keeps its `conditions.length > 2` bound, so no accepted command starts failing. W6.2 moved `gateReason`, `siegeReason` and the release and haul hexes into the battle controller, which uses `haulingSpeed`; the cast cap comes from `commitment()`, and the aim popup hides a CommitmentPicker that could offer nothing. `UnitSheet.svelte` calls `shootModifier` in place of its partial copy. It still calls engine stat getters (`movementSpeed`, `wallsFor`, `castCeiling` and others) in its markup; the todos file asks whether that breaks the views-render invariant.
 
-### M5. Each command's facts are spread across 5+ tables — Shotgun Surgery `[cross-cutting]`
+### M5. Each command's facts are spread across 5+ tables — Shotgun Surgery `[cross-cutting]` `[done]`
 - **Where:** `src/runtime/commands.ts:25,97`; `policy.ts:15,68,84`; `executeCommand.ts:29,81,86,92,205`.
 - **What:** 40 commands, at least 5 edit sites per new one; `commandSide` ends `default: return null`, so a side-scoped command left out fails at runtime with "that piece belongs to no side".
 - **Direction:** One descriptor per command — `{ stage, scope, history, side?, run }` — in a `Record<CommandType, …>`.
 
-### M6. The executor holds BattleManager's lifecycle transitions — God Module `[local]`
+**Resolution (2026-09-26):** W7.1 put one descriptor per command in `COMMANDS` in `src/runtime/commandTable.ts`: stage, scope, side, undo effect, the finalized and writeback allowances, the handler and the events. It replaces `COMMAND_STAGE`, `COMMAND_SCOPE`, `commandSide`, `placesEngine`, `HISTORY`, `AFTER_FINAL`, `DURING_WRITEBACK`, `applyCommand` and `eventsOf`. A side-scoped command must name its side, so a missing entry fails to compile. `assignSeats` and `reassignTurn` moved to `control.ts`, `HISTORY_LIMIT` became `UNDO_DEPTH` (still 30), and `refuseCommand` now throws on an unknown type; the executor refuses unknown types before it gets there.
+
+### M6. The executor holds BattleManager's lifecycle transitions — God Module `[local]` `[done]`
 - **Where:** `src/runtime/executeCommand.ts:290-300,332-408`
 - **What:** `loadSession`, `install` and `moveTo` run as special cases ahead of the handler table, and the executor drops army readiness on any setup command, an army rule.
 - **Why it matters:** Plan decision 3 makes BattleManager the one lifecycle coordinator; each new transition grows the commit boundary instead.
 - **Direction:** Narrow the executor to queue, validate and persist; BattleManager owns the transitions with a pre-fetched archive or site read, and ArmyPreparation owns the readiness drop.
+
+**Resolution (2026-09-26):** W7.2 moved the readiness drop into `withSetup` in `src/services/session-helpers.ts`, the one door every setup edit passes, so `army.setSide` to the side a unit already holds no longer withdraws readiness. BattleManager owns load, install and moveTo as pure methods. A descriptor's `refuse` answers before any port is touched, and its `prepare` does the archive or site read first; a throw there is a `storage` refusal that commits nothing. The executor queues, validates and persists, and runs undo alone.
 
 ### M7. `battle-controller` is a forwarding facade over one shared bag — Middle Man / Inappropriate Intimacy `[cross-cutting]`
 - **Where:** `src/app/battle/battle-controller.svelte.ts:50-96,504-646`
@@ -181,28 +185,40 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W3.4, the fallback in case W2.3 had not landed, did not run.
 
-### m8. Import cycles between layers — Dependency Inversion `[cross-cutting]`
+### m8. Import cycles between layers — Dependency Inversion `[cross-cutting]` `[done]`
 - **Where:** `runtime/executeCommand.ts:7` and `createRuntime.ts` import services, which import runtime in 18 places; `board/layers/CombatTextLayer.ts:3` imports its types from `services`.
 - **Direction:** Move shared session types and helpers to a module both import; the board owns its display types.
 
-### m9. Async failures vanish or look like failed commits — Error Hiding `[local]`
+**Resolution (2026-09-26):** W7.3 moved the five service interfaces and the `Services` bag to `src/runtime/servicePorts.ts`, and the writeback transitions join the bag as `outcome`. `createRuntime.ts` is the one runtime module that imports a service. `CombatTextLayer` declares its own display types and the board barrel exports them; the combat text queue moved to `src/app/combat-text.ts`. A strongly-connected-components check over `src` finds no module-level cycle. Two comments in `src/board/art.ts:30` and `src/board/layers/TerrainLayer.ts:79` still name ReignMaker's `services/` paths; neither is an import.
+
+### m9. Async failures vanish or look like failed commits — Error Hiding `[local]` `[done]`
 - **Where:** `foundry/tableCall.ts:60-71` and `foundry/index.ts:107,113` start promises with `void` and no `catch` — a throwing `refresh()` leaves this client primary with no runtime, and commands time out after 10 s; at `executeCommand.ts:258` a throwing listener rejects a command that already committed.
 
-### m10. Randomness and clock read inside authority edits — Hidden Dependencies `[cross-cutting]`
+**Resolution (2026-09-26):** W7.6 runs each record listener in its own try and sends a throw to `ExecutorOptions.onListenerError`, which defaults to `console.error`, so a committed command still answers ok. W7.7 gave every Foundry promise started with `void` a handler. A host whose runtime fails to build reports the error and refuses each request with `storage`, the GM's own included, so no sender waits out the ten-second timeout. `onListenerError` itself has no guard: a host handler that throws still rejects a committed command.
+
+### m10. Randomness and clock read inside authority edits — Hidden Dependencies `[cross-cutting]` `[done]`
 - **Where:** `randomSeed()` at `MapPreparationService.ts:95` and `BattleContinuationService.ts:41`; `mintId` at `session.ts:138`. Only `generateForce` carries its seed in the command.
 - **Direction:** A seed and ID port beside `DicePort`.
 
-### m11. `beginBattle` is three commands in a row — Sequential Coupling `[cross-cutting]`
+**Resolution (2026-09-26):** W7.4 added `MintPort` beside `DicePort` in `src/runtime/ports.ts`. `randomMint` replaces `mintId`, `randomSeed` and the `new*Id` helpers, and the services, `submitTo`, the session builders and `migrateSession` take the mint; `createRuntime` takes an optional one. Client-side builders keep a `randomMint` default. Command IDs, the client-side battleId and a parked site's `savedAt` stay on randomness and the clock, and no adapter binds a mint of its own.
+
+### m11. `beginBattle` is three commands in a row — Sequential Coupling `[cross-cutting]` `[done]`
 - **Where:** `src/app/navigation.svelte.ts:93-104` submits `declareReady` twice and then `startBattle`; a failure partway leaves one side ready.
 - **Direction:** One command.
 
-### m12. `Place.svelte` still holds controller logic `[local]`
+**Resolution (2026-09-26):** W7.5 made `battle.start` the one begin command. The GM's start gives both armies' word, so `battleFrom` requires every piece on the board and no prior readiness. `declareReady` stays for the player's "My army is ready" button and the Summary marks, and gates nothing.
+
+### m12. `Place.svelte` still holds controller logic `[local]` `[partial]`
 - **Where:** `src/app/Place.svelte`: 289 of its 628 lines are script; `lastPick` (`:161-165`) guesses the new ID with `.at(-1)`, so a remote `addUnit` landing first selects the wrong piece.
 - **Direction:** The planned split, with `CommandResult` returning the minted ID.
 
-### m13. The app layer binds the browser adapter at import time — Hidden Dependency `[cross-cutting]`
+**Resolution (2026-09-26):** W7.6 made `CommandAccepted` carry `added`: the units and then the engines the commit put into the setup, in record order. `army.addUnit`, `army.addEmplacement` and `army.generateForce` report it; a resent command carries none. `Place.svelte` still guesses with `.at(-1)`; the controller split and the switch to `added` remain for W8.2.
+
+### m13. The app layer binds the browser adapter at import time — Hidden Dependency `[cross-cutting]` `[done]`
 - **Where:** `src/app/game.svelte.ts:2-3,20-23`, `launch.ts:1`. Every Foundry client reads `localStorage` and builds a throwaway runtime before `bindClient` replaces it.
 - **Direction:** Build the browser runtime in `main.ts`.
+
+**Resolution (2026-09-26):** W7.7 starts the store on an unbound placeholder that reads no storage and refuses every command. `main.ts` binds `browserStoreClient()` from the new `src/adapters/browser/storeClient.ts` and mounts, so a Foundry client reads no saved browser session and builds no throwaway runtime. A browser save now opens on the stage `bindClient`'s record picks: one whose units carry `faction` with none placed reopens on Sides. `map-style.svelte.ts` and `shell/layout.svelte.ts` still keep UI preferences in `localStorage` on every host.
 
 ### m14. `VfxGallery` ships in the product bundle — Boat Anchor `[local]` `[done]`
 - **Where:** `src/app/App.svelte:10,34,58`: a query string alone gates it, and it is present in `dist-foundry`.
@@ -230,7 +246,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
   **Resolution (2026-09-26):** W2.5 removed the import.
 - `types.ts:383-386` `[local]` `[done]` — `BANDS` square and hex rows are identical.
   **Resolution (2026-09-26):** W2.1 collapsed `BANDS` to one `Record<Reach, number>`; every reader indexes it by reach alone.
-- `tsconfig.json` `[cross-cutting]` — Foundry types load for all of `src/**`, so the compiler cannot catch a leak; the app store shares the name `game` with the Foundry global.
+- `tsconfig.json` `[cross-cutting]` `[done]` — Foundry types load for all of `src/**`, so the compiler cannot catch a leak; the app store shares the name `game` with the Foundry global.
+  **Resolution (2026-09-26):** W7.7 dropped `foundry-pf2e` from `tsconfig.json` and excluded the Foundry, pf2e and ReignMaker adapters and the tests that import them; `tsconfig.foundry.json` checks those with the Foundry types, and `npm run check` runs both. A Foundry global leaked into the app, board or engine no longer compiles. The store keeps the name `game`, as the plan decided.
 
 ## Project conventions
 - `battle.ts:87` `[local]` `[done]` — `createBattle(setup, _rng?)`: a `_var` rename hack for a parameter no caller passes.

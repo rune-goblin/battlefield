@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W7 — Runtime and services: W7.1–W7.7
 - W8 — App structure: W8.1–W8.4
 - W9 — Board structure: W9.1–W9.2
 - W10 — Recovery from an unreadable save: W10.1
@@ -30,8 +29,6 @@ could not answer. An item leaves this list when it is done or answered.
 - W8.3: app files deep-import board internals `art`, `asset-base`, `terrain-textures`,
   `status-bars`, `color`, `paper`, `ink-map`, `selection`, `preload` and `target-point`; route
   them through the `src/board/index.ts` barrel.
-- W7.7: `npm run check` and `npm run build:foundry` print Svelte `state_referenced_locally`
-  warnings in `src/app/game.svelte.ts` and `src/app/TextureLab.svelte`. They predate W2.
 
 ## Open question from W4
 
@@ -72,6 +69,32 @@ could not answer. An item leaves this list when it is done or answered.
   for a melee dragged or dropped with waypoints; fold that into the engine answer if a second
   caller appears.
 - W8: the Svelte autofixer flags two unkeyed `each` blocks in `UnitSheet.svelte` (lines 25 and 28).
+
+## Open question from W7
+
+- Browser startup: the store now opens on a placeholder, and the record `bindClient` delivers
+  picks the stage, as in Foundry. A browser save whose units carry `faction` with none placed
+  reopens on Sides where it used to reopen on the first unfinished stage, and a resumed battle's
+  `nav.visited` is `['board', 'battle']` until setup reopens. Is Sides the right stage for that
+  save?
+
+## Carried forward from W7
+
+- Live check: no one has played W7 in the browser or in Foundry, and no screenshot exists. Check
+  browser startup and resume, the GM's one-click begin, and a player's "My army is ready".
+- `src/runtime/servicePorts.ts:49`: the `declareReady` comment says `battle.start` waits for it;
+  since W7.5 it gates nothing.
+- `src/runtime/ports.ts:70-73`: the `TransportPort` comment says a reply names a revision and
+  nothing more; since W7.6 it also names the minted pieces in `added`.
+- W8.2: `Place.svelte`'s `lastPick` should read the reply's `added` in place of `.at(-1)`.
+- `onListenerError` has no guard of its own, so a host handler that throws still rejects a
+  committed command.
+- `sessionFromRequest` and `sessionAtSite` build on `freshSession`, which draws a seed and six
+  unit IDs for the example setup and then overwrites them.
+- `session.moveTo`'s `prepare` in `src/runtime/commandTable.ts` asserts `s.site!` after
+  `departure` returns `'remove'`; `departure` guarantees it, and the type system does not know.
+- The combat text queue moved to `src/app/combat-text.ts` and kept the names
+  `CombatTextService` and `createCombatTextService`.
 
 ## Unreadable save recovery (W10.1)
 
