@@ -1,38 +1,15 @@
 import {
   canDeploy, canEmplace, deploymentCells, engineNamed, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, opponent, parse, seededRandom,
-  type BattleState, type Board, type Side, type Square, type UnitCard,
+  type BattleState, type Board, type Side, type Square,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
 import { submitTo } from '../runtime/interactions.js';
+import type { ArmyPreparationService } from '../runtime/servicePorts.js';
 import {
   newEquipmentId, newUnitId, randomSeed,
   type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit,
 } from '../runtime/session.js';
 import { settleHauling, withSetup } from './session-helpers.js';
-
-/**
- * The force a side brings and where it stands. Every call reads the executor's working
- * session and returns the next one; the queries beside them answer a view's legality
- * question from a setup draft alone.
- */
-export interface ArmyPreparationService {
-  addUnit(session: BattleSession, side: Side, card: UnitCard): BattleSession;
-  removeUnit(session: BattleSession, unitId: string): BattleSession;
-  /** Both keep every piece's identity and lift it off the board: a deployment zone belongs to
-   * a side. */
-  setSide(session: BattleSession, unitId: string, side: Side): BattleSession;
-  swapSides(session: BattleSession): BattleSession;
-  addEmplacement(session: BattleSession, side: Side, engine: string): BattleSession;
-  removeEmplacement(session: BattleSession, emplacementId: string): BattleSession;
-  setHauling(session: BattleSession, emplacementId: string, hauling: boolean): BattleSession;
-  setEngineLoaded(session: BattleSession, emplacementId: string, loaded: boolean): BattleSession;
-  place(session: BattleSession, piece: PieceRef, square: string): BattleSession;
-  unplace(session: BattleSession, piece: PieceRef): BattleSession;
-  autoPlace(session: BattleSession, piece: PieceRef): BattleSession;
-  generateForce(session: BattleSession, side: Side, seed?: number): BattleSession;
-  /** One army's word that it has finished deploying, which `battle.start` waits for. */
-  declareReady(session: BattleSession, side: Side, ready: boolean, userId: string): BattleSession;
-}
 
 export const isAmbush = (u: SetupUnit): boolean => (u.card.tactics ?? []).includes('ambush');
 

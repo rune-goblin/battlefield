@@ -1,17 +1,10 @@
 import {
-  BRIDGE_AXES, edgeCells, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board, type BoardSpec,
+  BRIDGE_AXES, edgeCells, wallsFor, canDeploy, canEmplace, generateBoard, parse, makeWall, type Board,
 } from '../engine/index.js';
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
-import type { BattleSession } from '../runtime/session.js';
+import type { MapPreparationService } from '../runtime/servicePorts.js';
 import { randomSeed, type BattleSetupDraft } from '../runtime/session.js';
 import { withSetup } from './session-helpers.js';
-
-export interface MapPreparationService {
-  generate(session: BattleSession): BattleSession;
-  rerollSeed(session: BattleSession): BattleSession;
-  editSpec(session: BattleSession, spec: Partial<BoardSpec>): BattleSession;
-  setRoundsPerDay(session: BattleSession, roundsPerDay: number): BattleSession;
-}
 
 function paintCell(board: Board, key: string, brush: PaintBrush): void {
   const sq = parse(key);

@@ -1,23 +1,10 @@
 import type { Side } from '../engine/index.js';
-import type { ActionResolutionService } from '../services/ActionResolutionService.js';
-import type { ArmyPreparationService } from '../services/ArmyPreparationService.js';
-import type { BattleContinuationService } from '../services/BattleContinuationService.js';
-import type { BattleManager } from '../services/BattleManager.js';
-import type { MapPreparationService } from '../services/MapPreparationService.js';
-import { abandonWriteback, beginWriteback, markWritebackTarget } from '../services/OutcomeApplicationService.js';
 import type { BattleCommand, CommandStage, CommandType, PieceRef } from './commands.js';
 import { assignSeats, reassignTurn } from './control.js';
 import type { BattleEventBody } from './events.js';
 import type { BattleArchive, BattleSites, PresencePort } from './ports.js';
+import type { Services } from './servicePorts.js';
 import type { BattleSession } from './session.js';
-
-export interface Services {
-  actions: ActionResolutionService;
-  map: MapPreparationService;
-  army: ArmyPreparationService;
-  continuation: BattleContinuationService;
-  manager: BattleManager;
-}
 
 export type CommandOf<T extends CommandType> = Extract<BattleCommand, { type: T }>;
 
@@ -237,15 +224,15 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
   // at the start of the writeback rather than at its end.
   'outcome.begin': {
     stage: 'battle', scope: 'gm', history: 'clear',
-    run: (s, c) => beginWriteback(s, c.operationId, c.via),
+    run: (s, c, { services }) => services.outcome.begin(s, c.operationId, c.via),
   },
   'outcome.markTarget': {
     stage: 'battle', scope: 'gm', history: 'keep', duringWriteback: true,
-    run: (s, c) => markWritebackTarget(s, c.unitId, c.status, c.problem),
+    run: (s, c, { services }) => services.outcome.markTarget(s, c.unitId, c.status, c.problem),
   },
   'outcome.abandon': {
     stage: 'battle', scope: 'gm', history: 'keep', duringWriteback: true,
-    run: (s) => abandonWriteback(s),
+    run: (s, _c, { services }) => services.outcome.abandon(s),
   },
   'control.assign': {
     stage: 'any', scope: 'gm', history: 'keep',

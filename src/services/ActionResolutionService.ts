@@ -5,22 +5,8 @@ import {
 import type { TacticalAction } from '../runtime/commands.js';
 import type { BattleEventBody } from '../runtime/events.js';
 import type { DicePort } from '../runtime/ports.js';
-import type { BattleSession } from '../runtime/session.js';
+import type { ActionResolutionService } from '../runtime/servicePorts.js';
 import { battleOf, withBattle } from './session-helpers.js';
-
-/**
- * Selection, resolution, and the explicit end of an activation. One module sees the whole
- * transition, so nothing advances an activation twice. It holds no battle of its own: every
- * call reads the executor's working session and returns the next one.
- */
-export interface ActionResolutionService {
-  select(session: BattleSession, unitId: string): BattleSession;
-  deselect(session: BattleSession): BattleSession;
-  act(session: BattleSession, action: TacticalAction): BattleSession;
-  endActivation(session: BattleSession, unitId: string): BattleSession;
-  /** What the transition did, in the order it happened, for the commit to carry. */
-  events(previous: BattleSession, next: BattleSession, action?: TacticalAction): BattleEventBody[];
-}
 
 const moved = (unit: string, route: string[]): BattleEventBody =>
   ({ type: 'unitMoved', unit, from: route[0], to: route[route.length - 1], route });

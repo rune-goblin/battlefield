@@ -3,51 +3,15 @@ import {
   startNextDay as beginNextDay,
   type BattleState,
 } from '../engine/index.js';
-import { sessionAtSite, sessionFromRequest, type BattleRequest } from '../runtime/campaign.js';
-import type { BattleCommand, PaintStroke } from '../runtime/commands.js';
+import { sessionAtSite, sessionFromRequest } from '../runtime/campaign.js';
 import { seatUsers } from '../runtime/control.js';
 import { submissionOf } from '../runtime/interactions.js';
 import { migrateSession } from '../runtime/migrate.js';
-import type { PresencePort } from '../runtime/ports.js';
+import type { BattleManager } from '../runtime/servicePorts.js';
 import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
 import { battleOf, withSetup } from './session-helpers.js';
-
-/**
- * The lifecycle transitions. Each one either moves the session from one stage to the next or
- * draws on more than one service, and each commits once, so undo restores all of its parts
- * together.
- */
-export interface BattleManager {
-  /** Deploy the prepared setup and open the first day. */
-  start(session: BattleSession): BattleSession;
-  /** Drop the battle under way and reopen the setup draft that made it. */
-  returnToSetup(session: BattleSession): BattleSession;
-  /** Throw the draft away and start from the example force. */
-  reset(session: BattleSession): BattleSession;
-  /** Both sides' collected placements, validated against the coming field, then the engine's
-   * next-day transition. */
-  startNextDay(session: BattleSession): BattleSession;
-  /** Close a battle that has ended for good. The campaign outcome is prepared from here. */
-  finalize(session: BattleSession): BattleSession;
-  /** A terrain edit and the placements it invalidates, as one change. */
-  paint(session: BattleSession, stroke: PaintStroke): BattleSession;
-  /** The saved record `raw` in place of this one. A foreign or corrupt slot throws, so it
-   * rejects through the same commit path as any refused command. */
-  load(session: BattleSession, raw: unknown, slot: string, presence: PresencePort): BattleSession;
-  installRefusal(session: BattleSession): string | null;
-  /** The battle a campaign asked for. A malformed request throws. */
-  install(session: BattleSession, battleId: string, request: BattleRequest, presence: PresencePort): BattleSession;
-  moveToRefusal(session: BattleSession, site: string): string | null;
-  /** What becomes of the record the table leaves for another site. A resolved battle leaves the
-   * map, and any other is kept for the GM to come back to. */
-  departure(session: BattleSession): 'park' | 'remove' | null;
-  /** Open the battle parked at the command's site, or a new one there when `parked` is null. */
-  moveTo(session: BattleSession, parked: unknown | null, command: MoveTo, presence: PresencePort): BattleSession;
-}
-
-type MoveTo = Extract<BattleCommand, { type: 'session.moveTo' }>;
 
 /** The decisions belong to the stage and the day that asked for them; a transition that ends
  * one drops them all, rather than leaving the next stage an answer to an older question. */

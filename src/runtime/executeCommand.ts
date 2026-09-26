@@ -1,6 +1,6 @@
 import type { BattleState } from '../engine/index.js';
 import { pruneSources } from './campaign.js';
-import { COMMANDS, descriptorOf, type CommandContext, type HistoryEffect, type Services } from './commandTable.js';
+import { COMMANDS, descriptorOf, type CommandContext, type HistoryEffect } from './commandTable.js';
 import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
 import { openTurn } from './control.js';
 import type { DiceRecorder } from './dice.js';
@@ -9,6 +9,7 @@ import { clearObsolete } from './interactions.js';
 import { refuseCommand } from './policy.js';
 import { memorySites } from './memorySites.js';
 import type { BattleArchive, BattleSites, PresencePort, SessionRepository } from './ports.js';
+import type { Services } from './servicePorts.js';
 import { writebackRunning, type BattleSession, type BattleSetupDraft } from './session.js';
 import type { Side } from '../engine/index.js';
 

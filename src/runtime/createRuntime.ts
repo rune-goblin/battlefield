@@ -5,7 +5,7 @@ import { createBattleContinuationService } from '../services/BattleContinuationS
 import { createBattleManager } from '../services/BattleManager.js';
 import { createMapPreparationService } from '../services/MapPreparationService.js';
 import {
-  createOutcomeApplicationService,
+  abandonWriteback, beginWriteback, createOutcomeApplicationService, markWritebackTarget,
   type ActorWritebackPort, type BattleOutcome, type CampaignOutcomePort, type WritebackReport,
 } from '../services/OutcomeApplicationService.js';
 import type { BattleCommand, CommandEnvelope, CommandResult } from './commands.js';
@@ -73,6 +73,7 @@ export function createRuntime({
     army: createArmyPreparationService(),
     continuation: createBattleContinuationService({ dice: recorder }),
     manager: createBattleManager(),
+    outcome: { begin: beginWriteback, markTarget: markWritebackTarget, abandon: abandonWriteback },
   });
   const outcomes = createOutcomeApplicationService({ campaign, actors });
 

@@ -1,28 +1,14 @@
 import {
   answerSurrender as answerSurrenderProposal, canContinueBattle, declareDayOrder as declareOrder,
   generateBoard, nextDayBattlefield, nightResolved, recoverAtNight, resolveDayOrders, SIDES,
-  type BattleState, type BoardSize, type BoardSpec, type DayOrder, type RecoveryChoice, type Side,
+  type BattleState, type BoardSize, type BoardSpec, type Side,
 } from '../engine/index.js';
 import { closeInteraction, dropInteraction, submitTo } from '../runtime/interactions.js';
 import type { DicePort } from '../runtime/ports.js';
-import { randomSeed, type BattleSession } from '../runtime/session.js';
+import type { BattleContinuationService } from '../runtime/servicePorts.js';
+import { randomSeed } from '../runtime/session.js';
 import { deploymentProblem } from './ArmyPreparationService.js';
 import { battleOf, withBattle } from './session-helpers.js';
-
-/**
- * The night between two days and the ground the next one is fought on. Each army declares and
- * rolls its own recovery; deployments arrive one side at a time and wait in the record, and
- * `BattleManager` starts the day once both are legal.
- */
-export interface BattleContinuationService {
-  declareRecovery(session: BattleSession, side: Side, choices: RecoveryChoice[], userId: string): BattleSession;
-  declareDayOrder(session: BattleSession, side: Side, order: DayOrder): BattleSession;
-  confirmDayOrders(session: BattleSession): BattleSession;
-  answerSurrender(session: BattleSession, side: Side, accept: boolean, userId: string): BattleSession;
-  /** A partial spec generates tomorrow's field over today's; null keeps the ground as it is. */
-  chooseBattlefield(session: BattleSession, spec: Partial<BoardSpec> | null): BattleSession;
-  declareDeployment(session: BattleSession, side: Side, positions: Record<string, string>, userId: string): BattleSession;
-}
 
 function requireSide(side: Side): Side {
   if (!SIDES.includes(side)) throw new Error('invalid side');
