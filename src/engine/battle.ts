@@ -1825,6 +1825,29 @@ function translocate(state: BattleState, u: Unit, label: string, index: Activity
 
 }
 
+/** One target's Will save against a Controlling spell and its result. Terror runs this once per
+ * target; its failure costs Morale alone, since only Stun and Hold carry a further effect. */
+function controlOne(state: BattleState, rng: Rng, u: Unit, target: Unit, index: ActivityIndex, label: string, dcBonus: number, tag?: LogTag) {
+  const c = roll(state, rng, target, willModifier(target) + resolveBonus(state, target), controllingDc(u) + dcBonus);
+  log(state, target, rollLine(target.name, `Will save against ${possessive(u.name)} ${label}`, c), c, tag);
+  if (c.degree === 'critical-success') return;
+  if (c.degree === 'success') {
+    if (target.immuneFear) return;
+    target.frightened = true;
+    log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until the end of its next activation.`);
+    return;
+  }
+  addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${label}`);
+  if (index === 2 || index === 3) {
+    target.stunned = true;
+    log(state, target, `${target.name} is stunned: one action fewer on its next activation.`);
+  }
+  if (index === 3) {
+    target.rooted = 1;
+    log(state, target, `${target.name} is held: rooted on its next activation.`);
+  }
+}
+
 /**
  * What a cast does, tree by tree (section 11). Each tree owns its own targets, its own roll
  * and its own effect; `index` is the spell tier, independent of its action price.
@@ -1842,12 +1865,9 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     const targets = action.target!.split('+').map(id => unit(state, id));
     log(state, u, `${u.name} casts ${label} on ${targets.map(t => t.name).join(', ')}.`, undefined, { kind: 'spell', caster: u.id, tree, activity: index, targets: targets.map(t => t.id) });
     for (const target of targets) {
-      if (tree === 'controlling') {
-        const c = roll(state, rng, target, willModifier(target) + resolveBonus(state, target), controllingDc(u));
-        log(state, target, rollLine(target.name, `Will save against ${label}`, c), c);
-        if (c.degree === 'success') target.frightened = true;
-        else if (c.degree !== 'critical-success') addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, label);
-      } else if (tree === 'offense') target.sureStrike = true;
+      // A spell's total cost cannot exceed three actions, so the three-action Terror takes no focus.
+      if (tree === 'controlling') controlOne(state, rng, u, target, index, label, 0);
+      else if (tree === 'offense') target.sureStrike = true;
       else if (tree === 'defense') {
         target.stoneskin = true;
         if (target.id === u.id && !target.selfBuffs.includes('stoneskin')) target.selfBuffs.push('stoneskin');
@@ -1877,27 +1897,9 @@ function resolveTree(state: BattleState, rng: Rng, u: Unit, tree: Tree, index: A
     case 'controlling': {
       const target = castTarget(state, u, tree, action);
       if (!target) break;
-      const activity = castActivityOf('controlling', index);
-      const c = roll(state, rng, target, willModifier(target) + resolveBonus(state, target), controllingDc(u) + ACTION_BONUS * (action.focus ?? 0));
       // Controlling announces itself through the target's own save, so the tag rides there.
-      log(state, target, rollLine(target.name, `Will save against ${possessive(u.name)} ${activity.label}`, c), c,
+      controlOne(state, rng, u, target, index, castActivityOf('controlling', index).label, ACTION_BONUS * (action.focus ?? 0),
         { kind: 'spell', caster: u.id, tree, activity: index, targets: [target.id] });
-      if (c.degree === 'critical-success') break;
-      if (c.degree === 'success') {
-        if (target.immuneFear) break;
-        target.frightened = true;
-        log(state, target, `${target.name} is frightened: −1 to every roll and to Defence until the end of its next activation.`);
-        break;
-      }
-      addDisorder(state, target, c.degree === 'critical-failure' ? 2 : 1, `${u.name}'s ${activity.label}`);
-      if (index >= 2) {
-        target.stunned = true;
-        log(state, target, `${target.name} is stunned: one action fewer on its next activation.`);
-      }
-      if (index >= 3) {
-        target.rooted = 1;
-        log(state, target, `${target.name} is held: rooted on its next activation.`);
-      }
       break;
     }
     case 'offense': {

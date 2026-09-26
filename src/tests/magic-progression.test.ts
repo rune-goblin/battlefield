@@ -114,6 +114,13 @@ describe('mastery spells', () => {
     const next=act(s,cast('controlling','u3+u4+u5'),scriptedRng([20,11,1]));
     expect(next.units.slice(3,6).map(u=>[u.disorder,u.frightened,u.stunned,u.rooted])).toEqual([[0,false,false,0],[0,true,false,0],[2,false,false,0]]);
   });
+  it('Terror spares a fear-immune target on a success and costs a failed save Morale alone', () => {
+    const s=field('occult');
+    unit(s,'u3').immuneFear=true;
+    const next=act(s,cast('controlling','u3+u4+u5'),scriptedRng([11,11,5]));
+    expect(next.units.slice(3,6).map(u=>[u.disorder,u.frightened,u.stunned,u.rooted])).toEqual([[0,false,false,0],[0,true,false,0],[1,false,false,0]]);
+    expect(next.log.filter(e=>e.text.includes('is frightened')).map(e=>e.unit)).toEqual(['u4']);
+  });
   it('Battle chorus applies Sure strike separately and keeps its normal self-cast expiry', () => {
     const s=field('occult');
     const next=act(s,cast('offense','u0+u1+u2'),noRoll);
