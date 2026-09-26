@@ -8,7 +8,7 @@ import { submissionOf } from '../runtime/interactions.js';
 import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
-import { battleOf } from './session-helpers.js';
+import { battleOf, withSetup } from './session-helpers.js';
 
 /**
  * The lifecycle transitions. Each one either moves the session from one stage to the next or
@@ -108,7 +108,7 @@ export function createBattleManager(): BattleManager {
     paint: (session, stroke) => {
       const board = session.setup.board;
       if (!board) throw new Error('no board to paint');
-      return { ...session, setup: clearWaterPlacements(applyStroke(board, stroke), session.setup) };
+      return withSetup(session, clearWaterPlacements(applyStroke(board, stroke), session.setup));
     },
   };
 }

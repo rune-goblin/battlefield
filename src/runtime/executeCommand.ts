@@ -5,7 +5,7 @@ import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandRes
 import { openTurn, seatUsers } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
-import { clearObsolete, dropInteraction } from './interactions.js';
+import { clearObsolete } from './interactions.js';
 import { refuseCommand } from './policy.js';
 import { memorySites } from './memorySites.js';
 import type { BattleArchive, BattleSites, PresencePort, SessionRepository } from './ports.js';
@@ -191,13 +191,7 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     const ctx: CommandContext = { services, presence, userId };
     return persist(commandId, userId, {
       type: command.type,
-      edit: (current) => {
-        const next = descriptor.run!(current, command, ctx);
-        // A board or a force that changed after an army called itself ready needs that word
-        // again: the other army agreed to fight what was on the table a moment ago.
-        return descriptor.stage === 'setup' && command.type !== 'army.declareReady'
-          ? dropInteraction(next, 'army.readiness') : next;
-      },
+      edit: (current) => descriptor.run!(current, command, ctx),
       describe: (previous, next) => descriptor.events?.(previous, next, command, ctx) ?? [],
     });
   }
