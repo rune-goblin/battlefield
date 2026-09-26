@@ -2,7 +2,7 @@ import type { AbilityMark, AbilityOutcome } from '../abilities.js';
 import { exploitBonus, shieldBonus, type AbilityContext } from '../ability-effects.js';
 import { wallsFor } from '../walls.js';
 import { coverBetween, wallCoverBetween, isMountain } from '../sight.js';
-import { TERRAIN } from '../terrain.js';
+import { TERRAIN, TERRAIN_NOTE } from '../terrain.js';
 import { at, barrierBetween, gridOf, sameCell, SIZE, type Square } from '../board.js';
 import { check, rollTwice, type CheckResult } from '../check.js';
 import { canFocus } from '../ladders.js';
@@ -127,6 +127,21 @@ export function rangeBetween(state: BattleState, a: Unit, b: Unit): Range {
 }
 
 export const isOutflanked = (state: BattleState, u: Unit) => engagedEnemies(state, u).length >= 2;
+
+/** What the unit's ground and position mean for it, for its status line. The conditions on it
+ * are the app's to word. */
+export function positionNotes(state: BattleState, u: Unit): string[] {
+  const hex = at(state.board, u.square);
+  const hauled = u.engines.find((e) => e.hauling);
+  return [
+    isMountain(state.board, u.square) ? 'mountain +1 Defence' : '',
+    TERRAIN_NOTE[hex.terrain],
+    hauled ? `hauling ${hauled.name}` : '',
+    hex.elevation > 0 ? 'attacks +1 and shots +1 hex a level downhill' : '',
+    u.flies ? 'flying' : '',
+    state.phase === 'battle' && isOutflanked(state, u) ? 'outflanked' : '',
+  ].filter(Boolean);
+}
 
 // A defender occupies a firing position on the interior side of an intact wall.
 export function garrisoned(state: BattleState, u: Unit, target?: Unit): boolean {

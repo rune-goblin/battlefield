@@ -1,7 +1,7 @@
 export {
-  homeRank, unit, isRouted, isStanding, isSurvivor, unitOutcome, unitStatusLabel, activatable, activeUnit, unitAt, isEngaged,
-  engagedEnemies, rangeBetween, isOutflanked, garrisoned, GUARD_DEFENCE, rollBonus, roll, attackRoll,
-  defenceOf, reachOf, willModifier, spellAttackModifier, spellDcFor, routDcFor, fortitudeModifier,
+  homeRank, unit, isRouted, isStanding, isSurvivor, unitOutcome, unitStatusLabel, activatable, activeUnit, unitAt,
+  isEngaged, engagedEnemies, rangeBetween, isOutflanked, positionNotes, garrisoned, GUARD_DEFENCE, rollBonus, roll,
+  attackRoll, defenceOf, reachOf, willModifier, spellAttackModifier, spellDcFor, routDcFor, fortitudeModifier,
   escapeModifier,
 } from './state.js';
 export type { UnitOutcome } from './state.js';
