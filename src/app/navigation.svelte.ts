@@ -63,6 +63,14 @@ onRecord(() => {
   else if (nav.stage === 'battle') enter(openingStage(), true);
 });
 
+/** The browser's saved record arrives through `bindClient` as a replaced battle, which would open
+ * a save with chosen, unplaced armies on Sides. A reload resumes at the first unfinished stage
+ * instead, with every step before it visited. Foundry's entry skips this: an import lands on Sides. */
+export function resume(): void {
+  followed = game.battleId;
+  enter(openingStage(), true);
+}
+
 export function next() {
   const i = STAGES.indexOf(nav.stage);
   if (i < STAGES.length - 2 && !stageReason(STAGES[i + 1] as SetupStage)) enter(STAGES[i + 1]);
