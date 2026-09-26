@@ -1,12 +1,10 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import type { TerrainAppearance } from '../board/terrain-textures.js';
   import {
     createBoardView, HIGHLIGHT_STYLES, type BoardCombatText, type BoardEventOf, type BoardMode, type BoardView, type Brush, type FallenModel,
-    type TargetArrow, type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TokenModel,
+    statusBars, type TargetArrow, type GridUpdate, type HighlightStyle, type InkMapAppearance, type Rect, type TerrainAppearance, type TokenModel,
   } from '../board/index.js';
   import type { Board, Side, Tree } from '../engine/index.js';
-  import { statusBars } from '../board/status-bars.js';
   import HexInfo from './HexInfo.svelte';
 
   interface HighlightGroup { style: HighlightStyle; cells: string[] }

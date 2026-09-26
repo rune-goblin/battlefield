@@ -625,4 +625,15 @@ export { targetIconUrl, type TargetIcon, actionIconUrl, bannerSvg, castIconUrl, 
 export { BRUSH_TERRAINS, sameBrush } from './brush.js';
 export { currentTheme, HIGHLIGHT_STYLES, type BoardTheme } from './theme.js';
 
-export type { TargetArrow } from './target-point.js';
+export { targetAnchor, type TargetArrow } from './target-point.js';
+export { assetUrl } from './asset-base.js';
+export {
+  brokenCells, createTextureSample, DEFAULT_TREES, defaultTextureSettings, normalizeTextureSettings, surfaceGroup,
+  TERRAIN_GROUPS, TERRAIN_LABELS, TEXTURE_CHOICES, wallStates, type TerrainAppearance, type TerrainGroup,
+} from './terrain-textures.js';
+export { statusBars, STATUS_OUTLINE, STATUS_TRACK } from './status-bars.js';
+export { isPage, PAPER_GRAINS, PAPER_LABELS, PAPER_PAGES } from './paper.js';
+export { cssHex, IDENTITY_HSB, lchToRgb, rgbToLch, type Lch } from './layers/color.js';
+export { defaultInkSettings, normalizeInkSettings, type InkMapSettings } from './ink-map.js';
+export { selectionCss } from './selection.js';
+export { preloadBoardArt, preloadPieceArt } from './preload.js';

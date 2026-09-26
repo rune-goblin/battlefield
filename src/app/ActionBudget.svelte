@@ -14,7 +14,7 @@
 
 <style>
   .action-budget { display: inline-flex; align-items: center; gap: .3rem; flex: none; }
-  .action-slot { display: inline-flex; color: #808080; opacity: .35; transition: color .18s ease, opacity .18s ease; }
+  .action-slot { display: inline-flex; color: var(--muted); opacity: .35; transition: color .18s ease, opacity .18s ease; }
   .action-slot.available { color: var(--good); opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .action-slot { transition: none; } }
 </style>

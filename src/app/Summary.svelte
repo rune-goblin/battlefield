@@ -1,6 +1,5 @@
 <script lang="ts">
   import { fortification, SIDES, type Side } from '../engine/index.js';
-  import type { TokenModel } from '../board/index.js';
   import { gameMap } from './map-style.svelte.js';
   import { MapControls, TopBar } from './shell/index.js';
   import { presentStage, stage } from './stage-view.svelte.js';
@@ -8,14 +7,14 @@
   import WizardSteps from './WizardSteps.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { declaredReady, game, sideReady, tableUsers } from './game.svelte.js';
-  import { engineUnder } from '../services/ArmyPreparationService.js';
+  import ArmyCard from './ArmyCard.svelte';
+  import { setupTokens } from './presentation.js';
   import { goToStage, stageReason, type SetupStage } from './navigation.svelte.js';
 
   const board = $derived(game.setup.board!);
   const spec = $derived(game.setup.spec);
 
   const SIDE_STEP: Record<Side, SetupStage> = { attacker: 'attackers', defender: 'defenders' };
-  const SIDE_TITLE: Record<Side, string> = { attacker: 'Attacking army', defender: 'Defending army' };
 
   const armies = $derived(SIDES.map((side) => {
     const units = game.setup.units.filter((u) => u.side === side);
@@ -43,15 +42,7 @@
     ['Seed', String(spec.seed)],
   ]);
 
-  const tokens = $derived<TokenModel[]>([
-    ...game.setup.units.flatMap((u) => u.square ? [{
-      kind: 'unit' as const, id: u.id, side: u.side, name: u.card.name, role: u.card.role, level: u.card.level,
-      cell: u.square, wounds: 0, disorder: 0, engine: (engineUnder(game.setup, u) ?? u.engines[0])?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
-    }] : []),
-    ...game.setup.emplacements.flatMap((e) => e.square && !game.setup.units.some((u) => u.square === e.square) ? [{
-      kind: 'engine' as const, id: e.id, side: e.side, name: e.name, cell: e.square, ring: null,
-    }] : []),
-  ]);
+  const tokens = $derived(setupTokens(game.setup));
 
   presentStage({
     leftTitle: 'Review and begin', leftWidth: 30,
@@ -90,13 +81,12 @@
   </section>
 
   {#each armies as army (army.side)}
-    <section class="card army" style:--side={army.side === 'attacker' ? 'var(--att)' : 'var(--def)'}>
-      <header>
-        <h3>{SIDE_TITLE[army.side]}</h3>
+    <ArmyCard side={army.side}>
+      {#snippet edit()}
         <button class="edit" disabled={!!stageReason(SIDE_STEP[army.side])}
           title={stageReason(SIDE_STEP[army.side]) ?? undefined}
           onclick={() => goToStage(SIDE_STEP[army.side])}>Edit</button>
-      </header>
+      {/snippet}
       <p class="line">
         {army.units.length} {army.units.length === 1 ? 'unit' : 'units'} · {army.levels} levels · played by {seats(army.side)}
         {#if declaredReady(army.side)} · <span class="ready">ready</span>{/if}
@@ -118,11 +108,11 @@
           </li>
         {/each}
       </ul>
-    </section>
+    </ArmyCard>
   {/each}
 
   {#if freeEngines.length}
-    <section class="card">
+    <section class="card free">
       <header>
         <h3>Unclaimed engines</h3>
         <button class="edit" onclick={() => goToStage('siege')}>Edit</button>
@@ -144,22 +134,20 @@
 <style>
   section header { display: flex; align-items: baseline; gap: .5rem; }
   section h3 { flex: 1; margin: 0; }
-  .army { border-left: 4px solid var(--side); }
-  .army h3 { color: var(--side); }
   .edit { padding: .1rem .6rem; font-size: var(--type-small); }
 
   dl { margin: .5rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .8rem; }
   dt { font-size: var(--type-small); font-weight: 600; color: var(--muted); }
   dd { margin: 0; font-size: var(--type-1); }
 
-  .line { margin: .3rem 0 0; font-size: var(--type-body); color: var(--muted); }
   .ready { color: var(--good); font-weight: 600; }
-  .problem { margin: .4rem 0 0; font-size: var(--type-body); color: var(--bad); font-weight: 600; }
 
-  ul { list-style: none; margin: .5rem 0 0; padding: 0; }
-  li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: baseline; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: var(--type-body); }
-  .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .meta { font-size: var(--type-small); color: var(--muted); white-space: nowrap; }
+  /* The unclaimed engines list rows as an army card does, with no army's colour. */
+  .free .line { margin: .3rem 0 0; font-size: var(--type-body); color: var(--muted); }
+  .free ul { list-style: none; margin: .4rem 0 0; padding: 0; }
+  .free li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; align-items: center; padding: .22rem 0; border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent); font-size: var(--type-body); }
+  .free .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .free .meta { font-size: var(--type-small); color: var(--muted); white-space: nowrap; }
   .cell { min-width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; }
   .cell.off { color: var(--bad); font-style: italic; font-size: var(--type-small); }
   .link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; font-size: inherit; }

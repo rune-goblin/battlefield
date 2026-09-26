@@ -18,7 +18,7 @@
   import { connectAuthority } from './authority.svelte.js';
   import { followArt } from './art-preload.js';
   import { visibleRect } from './shell/layout.svelte.js';
-  import { selectionCss } from '../board/selection.js';
+  import { selectionCss } from '../board/index.js';
 
   let viewportWidth = $state(window.innerWidth);
   let viewportHeight = $state(window.innerHeight);

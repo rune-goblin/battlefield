@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Point } from '../engine/index.js';
-  import { targetIconUrl } from '../board/art.js';
+  import { targetIconUrl } from '../board/index.js';
   import { targetAnchor, targetText, type TargetMarker } from './targeting.js';
 
   interface Props {
@@ -76,11 +76,11 @@
     padding: 0; border: 1px solid transparent; border-radius: 50%; background: transparent;
     cursor: crosshair;
   }
-  .target-marker img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 2px 4px #000b); }
+  .target-marker img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(var(--icon-shadow)); }
   .target-marker.compact { background: var(--card); border-color: var(--accent); padding: 2px; }
   .geometry { position: absolute; right: -5px; bottom: -6px; font-size: var(--type-label); padding: 0 .15rem; border-radius: 3px; background: var(--card); color: var(--ink); }
   .target-marker:hover:not([data-selected='true']), .target-marker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .target-marker:hover img { filter: drop-shadow(0 2px 5px #000c) brightness(1.2); }
+  .target-marker:hover img { filter: drop-shadow(var(--icon-shadow-lift)) brightness(1.2); }
   .target-marker.resolved { pointer-events: none; animation: resolve .8s ease-out forwards; }
   @keyframes resolve { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.9); } 45% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); } }
   @media (prefers-reduced-motion: reduce) { .target-marker.resolved { animation: none; } }

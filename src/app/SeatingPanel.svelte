@@ -5,6 +5,7 @@
   import { assignSeating, game, reassignTurn, tableUsers } from './game.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { viewer } from './viewer.svelte.js';
+  import Popover from './Popover.svelte';
 
   const run = commandReporter(useNotifications());
 
@@ -62,88 +63,75 @@
 
   const unseated = (side: Side) => users.filter((u) => !control.seats[side].includes(u.id));
   let picked = $state<Record<Side, string>>({ attacker: '', defender: '' });
-  let open = $state(false);
 </script>
 
-<div class="seating">
-  <button onclick={() => (open = !open)} aria-expanded={open}>Seating</button>
-  {#if open}
-    <div class="panel">
-      {#if viewer.isGm}
-        <div class="modes">
-          {#each GM_SIDES as choice (choice)}
-            <button
-              class:selected={control.mode === 'auto' && control.gmSide === choice}
-              aria-pressed={control.mode === 'auto' && control.gmSide === choice}
-              onclick={() => void send({ mode: 'auto', gmSide: choice })}
-            >{GM_PLAYS[choice]}</button>
-          {/each}
-        </div>
-        <p class="muted">
-          {#if control.mode === 'manual'}
-            The seats below are set by hand.
-          {:else if control.gmSide === 'both'}
-            The GM plays both armies and every player watches.
-          {:else}
-            The GM plays one army and every player takes the other.
-          {/if}
-        </p>
-      {/if}
-
-      {#each SIDES as side (side)}
-        <div class="army" class:att={side === 'attacker'}>
-          <h4>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h4>
-          <ol>
-            {#each control.seats[side] as userId, i (userId)}
-              <li>
-                {#if handsTo(side, userId)}
-                  <button class="who pass" onclick={() => void run(reassignTurn(userId))} title="Hand the turn to {named(userId)}">{named(userId)}</button>
-                {:else}
-                  <span class="who" class:away={away(userId)} class:holder={userId === game.turn}>{named(userId)}{away(userId) ? ' · away' : ''}{userId === game.turn ? ' · playing' : ''}</span>
-                {/if}
-                {#if byHand}
-                  <span class="order">
-                    <button disabled={i === 0} onclick={() => void shift(side, i, -1)} aria-label="Act earlier">↑</button>
-                    <button disabled={i === control.seats[side].length - 1} onclick={() => void shift(side, i, 1)} aria-label="Act later">↓</button>
-                    <button onclick={() => void unseat(side, userId)} aria-label="Take the seat back">×</button>
-                  </span>
-                {/if}
-              </li>
-            {:else}
-              <li class="muted">Nobody — the GM plays this army.</li>
-            {/each}
-          </ol>
-          {#if byHand}
-            <div class="add">
-              <select bind:value={picked[side]}>
-                <option value="">Seat someone…</option>
-                {#each unseated(side) as u (u.id)}<option value={u.id}>{u.name}</option>{/each}
-              </select>
-              <button disabled={!picked[side]} onclick={() => { void seat(side, picked[side]); picked[side] = ''; }}>Seat</button>
-            </div>
-          {/if}
-        </div>
+<Popover label="Seating">
+  {#if viewer.isGm}
+    <div class="modes">
+      {#each GM_SIDES as choice (choice)}
+        <button
+          class:selected={control.mode === 'auto' && control.gmSide === choice}
+          aria-pressed={control.mode === 'auto' && control.gmSide === choice}
+          onclick={() => void send({ mode: 'auto', gmSide: choice })}
+        >{GM_PLAYS[choice]}</button>
       {/each}
-      <p class="muted">Each army's activations pass down its list in turn. A seat whose player is away is skipped.</p>
-      {#if viewer.isGm && pending}
-        <p class="muted">Click a name in the army now playing to hand that player the turn.</p>
+    </div>
+    <p class="muted">
+      {#if control.mode === 'manual'}
+        The seats below are set by hand.
+      {:else if control.gmSide === 'both'}
+        The GM plays both armies and every player watches.
+      {:else}
+        The GM plays one army and every player takes the other.
       {/if}
+    </p>
+  {/if}
 
-      {#if viewer.isGm && control.mode === 'auto'}
-        <button class="hand" onclick={() => void send({ mode: 'manual' })}>Seat players by hand</button>
+  {#each SIDES as side (side)}
+    <div class="army" class:att={side === 'attacker'}>
+      <h4>{side === 'attacker' ? 'Attackers' : 'Defenders'}</h4>
+      <ol>
+        {#each control.seats[side] as userId, i (userId)}
+          <li>
+            {#if handsTo(side, userId)}
+              <button class="who pass" onclick={() => void run(reassignTurn(userId))} title="Hand the turn to {named(userId)}">{named(userId)}</button>
+            {:else}
+              <span class="who" class:away={away(userId)} class:holder={userId === game.turn}>{named(userId)}{away(userId) ? ' · away' : ''}{userId === game.turn ? ' · playing' : ''}</span>
+            {/if}
+            {#if byHand}
+              <span class="order">
+                <button disabled={i === 0} onclick={() => void shift(side, i, -1)} aria-label="Act earlier">↑</button>
+                <button disabled={i === control.seats[side].length - 1} onclick={() => void shift(side, i, 1)} aria-label="Act later">↓</button>
+                <button onclick={() => void unseat(side, userId)} aria-label="Take the seat back">×</button>
+              </span>
+            {/if}
+          </li>
+        {:else}
+          <li class="muted">Nobody — the GM plays this army.</li>
+        {/each}
+      </ol>
+      {#if byHand}
+        <div class="add">
+          <select bind:value={picked[side]}>
+            <option value="">Seat someone…</option>
+            {#each unseated(side) as u (u.id)}<option value={u.id}>{u.name}</option>{/each}
+          </select>
+          <button disabled={!picked[side]} onclick={() => { void seat(side, picked[side]); picked[side] = ''; }}>Seat</button>
+        </div>
       {/if}
     </div>
+  {/each}
+  <p class="muted">Each army's activations pass down its list in turn. A seat whose player is away is skipped.</p>
+  {#if viewer.isGm && pending}
+    <p class="muted">Click a name in the army now playing to hand that player the turn.</p>
   {/if}
-</div>
+
+  {#if viewer.isGm && control.mode === 'auto'}
+    <button class="hand" onclick={() => void send({ mode: 'manual' })}>Seat players by hand</button>
+  {/if}
+</Popover>
 
 <style>
-  .seating { position: relative; }
-  .panel {
-    position: absolute; right: 0; top: calc(100% + .3rem); z-index: 10; width: 20rem;
-    display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
-    background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: var(--type-body);
-  }
   .hand { align-self: flex-start; }
   h4 { margin: 0 0 .2rem; font-size: var(--type-body); color: var(--def); }
   .att h4 { color: var(--att); }

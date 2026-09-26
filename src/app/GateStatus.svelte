@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { actionIconUrl } from '../board/art.js';
+  import { actionIconUrl } from '../board/index.js';
   let { open }: { open: boolean } = $props();
 </script>
 

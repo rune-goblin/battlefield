@@ -1,5 +1,8 @@
-import { castActivityOf, MAX_WOUNDS, notation, type BattleState, type Tree, type Verb } from '../engine/index.js';
-import type { TargetArrow, TargetIcon } from '../board/index.js';
+import { castActivityOf, MAX_WOUNDS, notation, type BattleState, type Side, type Tree, type Unit, type Verb } from '../engine/index.js';
+import type { TargetArrow, TargetIcon, TokenModel, UnitTokenModel } from '../board/index.js';
+import type { PieceRef } from '../runtime/commands.js';
+import type { BattleSetupDraft, SetupUnit } from '../runtime/session.js';
+import { engineUnder } from '../services/ArmyPreparationService.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
 import { createCombatTextService, type CombatTextDisplay, type CombatTextLine, type CombatTextService } from './combat-text.js';
@@ -32,6 +35,42 @@ export interface PresentationSink {
 
 /** U+2212 for the minus sign, matching every copy of this format across the app. */
 export const signed = (n: number | null): string => (n === null ? '—' : `${n < 0 ? '−' : '+'}${Math.abs(n)}`);
+
+export const sideColour = (side: Side): string => side === 'attacker' ? 'var(--att)' : 'var(--def)';
+
+export const ARMY_TITLE: Record<Side, string> = { attacker: 'Attacking army', defender: 'Defending army' };
+
+export function pieceToken(
+  p: Pick<UnitTokenModel, 'id' | 'side' | 'name' | 'role' | 'level'>, cell: string, extra: Partial<UnitTokenModel> = {},
+): UnitTokenModel {
+  return {
+    kind: 'unit', id: p.id, side: p.side, name: p.name, role: p.role, level: p.level, cell,
+    wounds: 0, disorder: 0, engine: null, verdict: null, statuses: [], pick: null, ring: null,
+    ...extra,
+  };
+}
+
+export const unitToken = (u: Unit, cell: string, extra: Partial<UnitTokenModel> = {}): UnitTokenModel => pieceToken(u, cell, {
+  wounds: u.wounds, disorder: u.disorder, engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, ...extra,
+});
+
+/** A setup's placed pieces. An engine a unit stands on shows as that unit's badge. */
+export function setupTokens(
+  setup: BattleSetupDraft,
+  { units = setup.units, selected = null }: { units?: SetupUnit[]; selected?: PieceRef | null } = {},
+): TokenModel[] {
+  const ring = (kind: PieceRef['kind'], id: string) => (selected?.kind === kind && selected.id === id ? 'selected' as const : null);
+  const crewed = new Set(units.map((u) => u.square));
+  return [
+    ...units.flatMap((u) => u.square ? [pieceToken({ id: u.id, side: u.side, name: u.card.name, role: u.card.role, level: u.card.level }, u.square, {
+      engine: (engineUnder(setup, u) ?? u.engines[0])?.name ?? null,
+      ring: ring('unit', u.id),
+    })] : []),
+    ...setup.emplacements.flatMap((e) => e.square && !crewed.has(e.square) ? [{
+      kind: 'engine' as const, id: e.id, side: e.side, name: e.name, cell: e.square, ring: ring('engine', e.id),
+    }] : []),
+  ];
+}
 
 function cellOf(battle: BattleState, id: string): string | null {
   const u = unitOf(battle, id);

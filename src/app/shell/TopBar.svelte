@@ -7,7 +7,7 @@
   import { setDock, toggleDock, ui } from './layout.svelte.js';
   import { quitGame, sessionUnsaved, tableCalled, tableSummons } from '../game.svelte.js';
   import { viewer } from '../viewer.svelte.js';
-  import { assetUrl } from '../../board/asset-base.js';
+  import { assetUrl } from '../../board/index.js';
 
   interface Props {
     /** Stage-specific readout, left of centre: round and turn in battle, the deploy note in

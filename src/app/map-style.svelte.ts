@@ -1,5 +1,4 @@
-import { normalizeInkSettings } from '../board/ink-map.js';
-import { normalizeTextureSettings } from '../board/terrain-textures.js';
+import { normalizeInkSettings, normalizeTextureSettings } from '../board/index.js';
 
 export const MAP_STYLES = ['textures', 'ink'] as const;
 export type MapStyle = (typeof MAP_STYLES)[number];

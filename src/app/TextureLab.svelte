@@ -5,11 +5,10 @@
   import { setLayout, setTextureLab, textureLab } from './texture-lab.svelte.js';
   import { mapSettings, persistMapSettings, setMapStyle } from './map-style.svelte.js';
   import { at, gridOf, type Wall } from '../engine/index.js';
-  import type { BoardEventOf, Brush } from '../board/index.js';
   import {
-    createTextureSample, defaultTextureSettings, DEFAULT_TREES, TERRAIN_GROUPS, TERRAIN_LABELS, TEXTURE_CHOICES, wallStates, type TerrainGroup,
-  } from '../board/terrain-textures.js';
-  import { IDENTITY_HSB } from '../board/layers/color.js';
+    createTextureSample, defaultTextureSettings, DEFAULT_TREES, IDENTITY_HSB, TERRAIN_GROUPS, TERRAIN_LABELS, TEXTURE_CHOICES, wallStates,
+    type BoardEventOf, type Brush, type TerrainGroup,
+  } from '../board/index.js';
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
   const notifications = useNotifications();

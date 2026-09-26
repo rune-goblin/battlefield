@@ -13,6 +13,6 @@
 {/if}
 
 <style>
-  .connection-warning { margin: .8rem 0; padding: .65rem; border: 1px solid #b78939; border-left-width: 3px; border-radius: 4px; background: color-mix(in srgb, #b78939 12%, var(--paper)); }
+  .connection-warning { margin: .8rem 0; padding: .65rem; border: 1px solid var(--caution); border-left-width: 3px; border-radius: 4px; background: color-mix(in srgb, var(--caution) 12%, var(--paper)); }
   p { margin: .35rem 0; font-size: var(--type-body); }
 </style>

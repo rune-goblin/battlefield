@@ -4,21 +4,16 @@
   import { useNotifications } from './notification-context.js';
   import { commandReporter } from './command-notices.js';
   import { viewer } from './viewer.svelte.js';
+  import Popover from './Popover.svelte';
 
   const run = commandReporter(useNotifications());
 
-  let open = $state(false);
   let saves = $state<ArchiveEntry[]>([]);
   let name = $state('');
   let error = $state<string | null>(null);
 
   async function refresh() {
     saves = await listSaves();
-  }
-
-  async function toggle() {
-    open = !open;
-    if (open) await guard(refresh);
   }
 
   async function guard(work: () => Promise<unknown>) {
@@ -73,45 +68,33 @@
   const progress = (entry: ArchiveEntry) => entry.day === null ? 'Setup' : `Day ${entry.day}${entry.round === null ? '' : ` · round ${entry.round}`}`;
 </script>
 
-<div class="saveload">
-  <button onclick={() => void toggle()} aria-expanded={open}>Save / Load</button>
-  {#if open}
-    <div class="panel">
-      <div class="row">
-        <input placeholder="Name this save" bind:value={name} onkeydown={(e) => e.key === 'Enter' && void doSave()} />
-        <button class="primary" onclick={() => void doSave()}>Save</button>
-      </div>
-      {#if error}<p class="error">{error}</p>{/if}
-      <ul>
-        {#each saves as entry (entry.slot)}
-          <li>
-            <div class="meta">
-              <span class="name">{entry.name}</span>
-              <span class="muted">{progress(entry)} · {when(entry.savedAt)}</span>
-            </div>
-            <div class="actions">
-              <button disabled={!viewer.isGm} onclick={() => void doLoad(entry.slot)}>Load</button>
-              <button onclick={() => void doExport(entry.slot, entry.name)}>Export</button>
-              <button onclick={() => void doRemove(entry.slot)}>Remove</button>
-            </div>
-          </li>
-        {:else}
-          <li class="muted">No saved battles yet.</li>
-        {/each}
-      </ul>
-      <button onclick={pickImport}>Import…</button>
-    </div>
-  {/if}
-</div>
+<Popover label="Save / Load" onopen={() => void guard(refresh)}>
+  <div class="row">
+    <input placeholder="Name this save" bind:value={name} onkeydown={(e) => e.key === 'Enter' && void doSave()} />
+    <button class="primary" onclick={() => void doSave()}>Save</button>
+  </div>
+  {#if error}<p class="error">{error}</p>{/if}
+  <ul>
+    {#each saves as entry (entry.slot)}
+      <li>
+        <div class="meta">
+          <span class="name">{entry.name}</span>
+          <span class="muted">{progress(entry)} · {when(entry.savedAt)}</span>
+        </div>
+        <div class="actions">
+          <button disabled={!viewer.isGm} onclick={() => void doLoad(entry.slot)}>Load</button>
+          <button onclick={() => void doExport(entry.slot, entry.name)}>Export</button>
+          <button onclick={() => void doRemove(entry.slot)}>Remove</button>
+        </div>
+      </li>
+    {:else}
+      <li class="muted">No saved battles yet.</li>
+    {/each}
+  </ul>
+  <button onclick={pickImport}>Import…</button>
+</Popover>
 
 <style>
-  .saveload { position: relative; }
-  .panel {
-    position: absolute; right: 0; top: calc(100% + .3rem); z-index: 10; width: 20rem;
-    display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
-    background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: var(--type-body);
-  }
   .row { display: flex; gap: .4rem; }
   .row input { flex: 1; min-width: 0; }
   .error { color: var(--bad); margin: 0; }

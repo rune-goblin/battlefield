@@ -8,7 +8,7 @@ import { allSubmitted, submissionOf } from '../runtime/interactions.js';
 import { viewer } from './viewer.svelte.js';
 import { leaveBattle } from './navigation.svelte.js';
 import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
-import { signed } from './presentation.js';
+import { signed, unitToken } from './presentation.js';
 import type { NotificationService } from './notifications.js';
 
 export type Step = 'report' | 'recovery' | 'orders' | 'battlefield' | 'deployment';
@@ -125,11 +125,7 @@ export function createBattleReport(deps: { notifications: NotificationService })
       && Object.entries(local).every(([id, cell]) => held[id] === cell);
   };
 
-  const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
-    kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
-    cell: positions[u.id], wounds: u.wounds, disorder: u.disorder,
-    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
-  }] : []) : []);
+  const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [unitToken(u, positions[u.id])] : []) : []);
 
   function preview(u: Unit, activity: RecoveryActivity) {
     const terms = recoveryModifier(u, activity, participants(u.side));

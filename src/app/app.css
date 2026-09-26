@@ -34,6 +34,20 @@
   /* Chrome that floats over the map: readable, but the ground still shows through it. Resolved
      at the use site, so the dark palette's own --card carries into it. */
   --glass:color-mix(in srgb, var(--card) 82%, transparent);
+  /* Depth increases with how far a piece sits above the map: a resting chip, a floated panel, a
+     dragged one. */
+  --shadow-1:0 2px 8px rgb(0 0 0 / .3);     /* chips and cards on the map */
+  --shadow-2:0 6px 20px rgb(0 0 0 / .35);   /* popovers, docks, board popups */
+  --shadow-3:0 12px 40px rgb(0 0 0 / .45);  /* modals and a popup being dragged */
+  --icon-shadow:0 2px 5px rgb(0 0 0 / .5);
+  --icon-shadow-lift:0 3px 8px rgb(0 0 0 / .6);
+  /* A dialog's backdrop and the outcome scene's deeper hold. */
+  --scrim:rgb(0 0 0 / .5);
+  --scrim-deep:rgb(0 0 0 / .88);
+  /* The radial menu and army reel read as physical chips over the board, dark in both themes. */
+  --chip:rgb(24 22 20 / .92); --chip-glass:rgb(26 23 20 / .78); --chip-ink:#ece6dc; --chip-muted:#b5ab9c; --chip-rim:rgb(150 143 132 / .5);
+  --caution:#b78939;
+  --popup-cast:#66539b; --popup-rally:#87611d; --popup-shoot:#66714b;
   /* The root itself draws nothing: the stages are fixed layers, and a box here would only sit
      between them and the window's content root. */
   display:contents;
@@ -41,7 +55,8 @@
   font:var(--type-body)/var(--leading-body) var(--sans);
 }
 @media (prefers-color-scheme: dark) {
-  :where(.battlefield-root) { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#b5a898; --band:#2a2520; --card:#23201c; --edge:#7a6e5e; --att:#d9705c; --def:#6f9bd1; --good:#7fb77f; --bad:#e08a78; --warn:#e0a75c; --warn2:#cf6a1f; }
+  :where(.battlefield-root) { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#b5a898; --band:#2a2520; --card:#23201c; --edge:#7a6e5e; --att:#d9705c; --def:#6f9bd1; --good:#7fb77f; --bad:#e08a78; --warn:#e0a75c; --warn2:#cf6a1f;
+    --popup-cast:#b5a3e2; --popup-rally:#d5b36e; --popup-shoot:#b4bd93; }
 }
 /* The radial menu animates its two radii, and only a registered property interpolates.
    Registration is global; the names are the app's own. */

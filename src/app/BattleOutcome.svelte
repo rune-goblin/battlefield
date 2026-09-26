@@ -31,7 +31,7 @@
 </div>
 
 <style>
-  .outcome-scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .88); animation: scrim-in .6s ease both; }
+  .outcome-scrim { position: absolute; inset: 0; background: var(--scrim-deep); animation: scrim-in .6s ease both; }
   .outcome-scene { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; }
   .outcome-scene.ready { opacity: 1; }
   .outcome-scene.ready.intro { animation: outcome-reveal 4.2s ease both; }
@@ -44,7 +44,7 @@
   }
   .reporting .outcome-title { opacity: 0; }
   .outcome-report { position: absolute; inset: 0; animation: report-in .8s ease both; }
-  @keyframes scrim-in { from { background: transparent; } to { background: rgb(0 0 0 / .88); } }
+  @keyframes scrim-in { from { background: transparent; } to { background: var(--scrim-deep); } }
   @keyframes outcome-reveal { 0% { opacity: 0; } 20%, 100% { opacity: 1; } }
   @keyframes report-in { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) {
