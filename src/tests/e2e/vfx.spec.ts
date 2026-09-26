@@ -3,7 +3,9 @@ import { test, expect, MODULE_ID, collectErrors, waitForGameReady, waitForModule
 test.describe('Board effects on Foundry\'s PIXI', () => {
   // The board draws through `globalThis.PIXI` by way of the shim, and a name the shim lacks is
   // `undefined` until an effect first reads it.
-  test('the spell gallery plays every burst without a console error', async ({ gmContext, gmPage: _loggedIn }) => {
+  // proto: skipped. W2.5 gated `?vfx` to dev builds, and `test:e2e` serves the production
+  // `build:foundry`, so the gallery never mounts here.
+  test.skip('the spell gallery plays every burst without a console error', async ({ gmContext, gmPage: _loggedIn }) => {
     // A third Foundry canvas on software GL loads slowly beside the two clients.
     test.setTimeout(180_000);
     // `gmPage` has logged the context in, so this page goes straight to the game.

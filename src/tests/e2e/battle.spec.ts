@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { endBattle, openFromSceneControl, windowOf } from './fixtures/battle-window';
+import { beginBattle, endBattle, openFromSceneControl, shot, windowOf } from './fixtures/battle-window';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 const STEPS = [
@@ -47,11 +47,8 @@ test.describe('A battle on two clients', () => {
       expect(box.button.bottom).toBeGreaterThanOrEqual(box.hint.bottom);
     }
 
-    const begin = rail.getByRole('button', { name: 'Begin', exact: true });
-    await expect(begin, 'the world clone holds no deployed setup; deploy both armies once by hand').toBeEnabled();
-    await begin.click();
-
-    await expect(rail).toBeHidden();
+    await beginBattle(gm);
+    await shot(gmPage, 'W7-gm-begin');
     const player = windowOf(playerPage);
     await expect(player.locator('.battlefield-root')).toBeVisible();
     // The chip is the way back to a shut window, and an open one hides it.

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { activation, notation, type BattleState } from '../../engine/index';
-import { endBattle, openFromSceneControl, windowOf } from './fixtures/battle-window';
+import { beginBattle, endBattle, openFromSceneControl, windowOf } from './fixtures/battle-window';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 interface Point { x: number; y: number }
@@ -28,11 +28,7 @@ test.describe('An activation on two clients', () => {
 
     // A run that died mid-battle leaves one open in the world clone.
     if (!(await rail.isVisible())) await endBattle(gm);
-    await rail.locator('li', { has: gmPage.locator('.label', { hasText: 'Review and begin' }) }).locator('button').click();
-    const begin = rail.getByRole('button', { name: 'Begin', exact: true });
-    await expect(begin, 'the world clone holds no deployed setup; deploy both armies once by hand').toBeEnabled();
-    await begin.click();
-    await expect(rail).toBeHidden();
+    await beginBattle(gm);
     const player = windowOf(playerPage);
     await expect(player.locator('.battlefield-root')).toBeVisible();
 
@@ -71,7 +67,7 @@ test.describe('An activation on two clients', () => {
     await expect.poll(async () => (await battleOn(gmPage)).units.find((u) => u.id === unit)!.guard).toBeTruthy();
 
     await expect(events).toHaveCount(before + 2);
-    await expect(player.locator('.army-reel .unit-card.on .meta')).toContainText(to);
+    await expect(player.locator('.army-reel .unit-card.on .square')).toContainText(to);
     expect(cellOf(await battleOn(playerPage), unit)).toBe(to);
 
     await endBattle(gm);
