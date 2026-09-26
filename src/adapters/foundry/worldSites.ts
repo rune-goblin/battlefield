@@ -2,6 +2,7 @@ import { siteEntryOf } from '../../runtime/memorySites.js';
 import type { BattleSites, SiteEntry } from '../../runtime/ports.js';
 import type { BattleSession } from '../../runtime/session.js';
 import { createJsonStore } from '../json-store.js';
+import type { StoreRecovery } from '../store-recovery.js';
 import { gameSettingStorage, SITES_SETTING, type WorldSettingStorage } from './worldSettings.js';
 
 interface StoredSite extends SiteEntry { data: unknown }
@@ -16,11 +17,12 @@ const acceptSites = (parsed: unknown): StoredSites | null =>
 // review with the archive's own ten-slot cap.
 export function createFoundrySites(
   storage: WorldSettingStorage = gameSettingStorage(SITES_SETTING),
-  onUnreadable?: (message: string) => void,
+  recovery?: StoreRecovery,
 ): BattleSites {
   const store = createJsonStore<StoredSites>(storage, {
-    name: 'battle sites', empty: () => ({}), accept: acceptSites, onUnreadable,
+    name: 'battle sites', empty: () => ({}), accept: acceptSites, onUnreadable: () => recovery?.report('sites'),
   });
+  recovery?.track('sites', store);
   return {
     async list() {
       return Object.values(store.read()).map(({ data: _, ...entry }) => entry);

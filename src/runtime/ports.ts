@@ -54,6 +54,20 @@ export interface BattleSites {
   remove(site: string): Promise<void>;
 }
 
+/** A record the host keeps in one stored cell. */
+export type StoredRecord = 'session' | 'archive' | 'sites';
+
+/** The stored records this client cannot read, and the way out of each. `raw` is the stored
+ * text byte for byte, for an export. `clear` empties one record so it reads as absent and
+ * leaves the others as they are. Only a viewer who `mayRepair` is offered either. */
+export interface StoreRecoveryPort {
+  unreadable(): readonly StoredRecord[];
+  subscribe(listener: () => void): () => void;
+  readonly mayRepair: boolean;
+  raw(record: StoredRecord): string | null;
+  clear(record: StoredRecord): Promise<void>;
+}
+
 /** The authority's dice. The shape is the engine's `Rng`, so a service hands it straight to a
  * rule; Wave 3.1 wraps it to record the faces a transition drew. */
 export interface DicePort {

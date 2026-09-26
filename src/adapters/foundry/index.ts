@@ -4,6 +4,8 @@ import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { bindClient, bindQuit, presenceChanged, tableChanged } from '../../app/game.svelte.js';
 import { stage } from '../../app/stage-view.svelte.js';
+import { bindRecovery, storedName } from '../../app/store-recovery.js';
+import { createStoreRecovery } from '../store-recovery.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
 import { pickBattleSite, registerBattleSitePicker, reignMakerActive } from './battleSitePicker.js';
@@ -54,11 +56,18 @@ const tableCall = createTableCall({
 });
 BattlefieldApp.table = tableCall;
 
-const unreadableNotice = (message: string) => ui.notifications.error(message, { permanent: true });
+const recovery = createStoreRecovery({
+  mayRepair: () => game.user?.isGM === true,
+  onFlag: (record) => {
+    if (game.user?.isGM !== true) return;
+    // proto: wording.
+    ui.notifications.error(`Battlefield cannot read the stored ${storedName(record)}. Open Battlefield to export or clear it.`, { permanent: true });
+  },
+});
 
 Hooks.once('init', () => {
   blockPageZoom();
-  const sites = createFoundrySites(undefined, unreadableNotice);
+  const sites = createFoundrySites(undefined, recovery);
   const module = hostModule(MODULE_ID);
   if (module) {
     module.api = createModuleApi({
@@ -76,16 +85,20 @@ Hooks.once('init', () => {
       },
     });
   }
-  registerFoundrySettings((raw) => sessionWatcher.handleChange(raw), (raw) => { tableCall.handleChange(raw); tableChanged(); });
+  registerFoundrySettings(
+    (raw) => sessionWatcher.handleChange(raw),
+    (raw) => { tableCall.handleChange(raw); tableChanged(); },
+    (record) => recovery.recheck(record),
+  );
   // Registered here, before `ready`, because Foundry replays the socket events it buffered
   // during startup. The host's readiness gate is what holds them until it can answer.
   const channel = foundrySocketChannel(MODULE_ID);
   const users = foundryTableUsers();
-  const archive = createFoundryArchive(undefined, undefined, unreadableNotice);
+  const archive = createFoundryArchive(undefined, undefined, recovery);
   host = createBattlefieldHost({
     users,
     channel,
-    repository: createFoundrySessionRepository(undefined, unreadableNotice),
+    repository: createFoundrySessionRepository(undefined, recovery),
     archive,
     sites,
     records: (listener) => sessionWatcher.subscribe(listener),
@@ -95,6 +108,7 @@ Hooks.once('init', () => {
     onError: reportFailure,
   });
   bindQuit(() => { BattlefieldApp.close().catch(reportFailure); });
+  bindRecovery(recovery);
   bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive, table: tableCall }));
   channel.on((message) => host?.handleMessage(message));
   sessionWatcher.subscribe(() => tableCall.handleSession());
@@ -110,6 +124,8 @@ Hooks.once('ready', () => {
   registerBattleSitePicker(() => (hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
   registerTroopSources(foundryTroopSources());
   sessionWatcher.handleChange(game.settings.get(MODULE_ID, SESSION_SETTING));
+  // Players too: the settings are readable by all, and this is how a player learns the GM must act.
+  recovery.probe();
   // Before any window opens, so a player's first board finds its art already decoded.
   followArt();
   // A world with no saved session delivers no record, and this seeds the same first reading.

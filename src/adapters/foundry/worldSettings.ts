@@ -1,3 +1,4 @@
+import type { StoredRecord } from '../../runtime/ports.js';
 import { MODULE_ID } from './module-id.js';
 
 /** Both settings are hidden from Foundry's own configuration sheet — the session and the
@@ -30,16 +31,19 @@ export function gameSettingStorage(key: string): WorldSettingStorage {
  */
 export function registerFoundrySettings(
   onSessionChange: (raw: string) => void, onTableCall: (raw: string) => void,
+  onStoredChange: (record: StoredRecord) => void,
 ): void {
   game.settings.register(MODULE_ID, SESSION_SETTING, {
     name: 'Battle session', scope: 'world', config: false, type: String, default: '',
-    onChange: (value) => onSessionChange(value as string),
+    onChange: (value) => { onSessionChange(value as string); onStoredChange('session'); },
   });
   game.settings.register(MODULE_ID, ARCHIVE_SETTING, {
     name: 'Saved battles', scope: 'world', config: false, type: String, default: '[]',
+    onChange: () => onStoredChange('archive'),
   });
   game.settings.register(MODULE_ID, SITES_SETTING, {
     name: 'Battle sites', scope: 'world', config: false, type: String, default: '{}',
+    onChange: () => onStoredChange('sites'),
   });
   game.settings.register(MODULE_ID, TABLE_CALL_SETTING, {
     name: 'Table call', scope: 'world', config: false, type: String, default: '',

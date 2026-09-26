@@ -15,7 +15,9 @@
   import PixiBoard from './PixiBoard.svelte';
   import { AppShell } from './shell/index.js';
   import { stage } from './stage-view.svelte.js';
+  import { onDestroy } from 'svelte';
   import { connectAuthority } from './authority.svelte.js';
+  import { connectRecovery } from './store-recovery.js';
   import { followArt } from './art-preload.js';
   import { visibleRect } from './shell/layout.svelte.js';
   import { selectionCss } from '../board/index.js';
@@ -25,7 +27,9 @@
 
   const notifications = provideNotifications();
   presentation.connectNotices(notifications, { get userId() { return viewerId(); }, get isGm() { return gmUserId() === viewerId(); } });
-  connectAuthority(notifications);
+  const disconnectAuthority = connectAuthority(notifications);
+  const disconnectRecovery = connectRecovery(notifications);
+  onDestroy(() => { disconnectAuthority(); disconnectRecovery(); });
   followArt();
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be

@@ -1,5 +1,6 @@
 import type { BattleArchive } from '../../runtime/ports.js';
 import { archiveStore, createJsonArchive, type StoredEntry } from '../json-store.js';
+import type { StoreRecovery } from '../store-recovery.js';
 import { ARCHIVE_SETTING, gameSettingStorage, type WorldSettingStorage } from './worldSettings.js';
 
 /** The world setting keeps at most this many slots. Beyond it, a save evicts the oldest slot
@@ -30,7 +31,7 @@ function withinLimit(entries: StoredEntry[], download: DownloadFile): StoredEntr
 export function createFoundryArchive(
   storage: WorldSettingStorage = gameSettingStorage(ARCHIVE_SETTING),
   download: DownloadFile = defaultDownload,
-  onUnreadable?: (message: string) => void,
+  recovery?: StoreRecovery,
 ): BattleArchive {
-  return createJsonArchive(archiveStore(storage, onUnreadable), { beforeInsert: (entries) => withinLimit(entries, download) });
+  return createJsonArchive(archiveStore(storage, recovery), { beforeInsert: (entries) => withinLimit(entries, download) });
 }

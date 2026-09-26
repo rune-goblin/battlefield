@@ -1,4 +1,8 @@
 export type NotificationTone = 'info' | 'success' | 'warning' | 'error';
+export interface NotificationAction {
+  label: string;
+  run: () => void;
+}
 export interface Notification {
   /** Reuse an ID to replace a message rather than stack copies during a drag or retry. */
   id: string;
@@ -7,6 +11,10 @@ export interface Notification {
   tone: NotificationTone;
   /** Clears itself after this many milliseconds, for a notice nobody has to dismiss by hand. */
   expiresInMs?: number;
+  /** Buttons under the copy. */
+  actions?: readonly NotificationAction[];
+  /** False for a notice that stands until its cause is gone. Defaults to true. */
+  dismissible?: boolean;
 }
 
 /** Local presentation state. Each app instance owns its service; nothing enters a save. */
@@ -36,7 +44,8 @@ export function createNotificationService() {
     show(message: Notification) {
       const previous = messages.find(n => n.id === message.id);
       const same = previous?.title === message.title && previous.message === message.message
-        && previous.tone === message.tone && previous.expiresInMs === message.expiresInMs;
+        && previous.tone === message.tone && previous.expiresInMs === message.expiresInMs
+        && previous.actions === message.actions && previous.dismissible === message.dismissible;
       // A reused ID replaces the running notice and whatever timer was clearing it. An
       // identical expiring notice keeps its text on screen without a republish, and still
       // restarts the clock: two commits summarized the same way are two events, and the second
