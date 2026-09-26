@@ -210,7 +210,7 @@
           <span class="row-cost"><ActionCost n={i === c.pending.index ? c.dropCost(row) : row.kind === 'step' ? 1 : row.actions} /></span>
         </span>
         <span class="muted">
-          {#if i === c.pending.index && row.kind === 'advance'}{c.actionCost(row.plan.moveActions)} to move + {c.actions(c.chargeActivity + (row.plan.kind === 'charge' ? 1 : 0) + c.focus)} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
+          {#if i === c.pending.index && row.kind === 'advance'}{c.actionCost(row.plan.moveActions)} to move + {c.actions(c.finishActions(row))} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
           {:else if i === c.pending.index && row.kind === 'charge'}{c.actions(c.dropCost(row))}, melee included
           {:else}{c.rowDetail(row)}{/if}
         </span>
@@ -246,22 +246,20 @@
           {:else}Attack uses the normal melee rules.{/if}
         </p>
         <div class="activity-chips">
-          {#each charging ? c.CHARGE_ACTIVITIES : c.ACTIVITIES as g (g)}
-            {@const total = c.chargeCost(row, g)}
-            {@const can = total <= c.active.actions}
+          {#each c.finishesFor(row) as finish (finish.activity)}
             <button
               class="activity-chip"
-              class:on={c.chargeActivity === g}
-              disabled={!can}
-              title={can ? '' : `needs ${total} actions`}
-              onclick={() => c.chooseDropActivity(g)}
+              class:on={c.chargeActivity === finish.activity}
+              disabled={!finish.legal}
+              title={finish.legal ? '' : `needs ${finish.cost} actions`}
+              onclick={() => c.chooseDropActivity(finish.activity)}
             >
-              {charging ? c.CHARGES[g - 1] : ['Strike', 'Press', 'Overrun'][g - 1]}
-              <ActionCost n={total} />
+              {finish.label}
+              <ActionCost n={finish.cost} />
             </button>
           {/each}
         </div>
-        <CommitmentPicker base={c.chargeCost(row, c.chargeActivity)} available={c.actionsLeft} bind:value={c.focus} effect={charging ? 'on the attack, in addition to any run-up bonus' : 'on the attack'} />
+        <CommitmentPicker base={c.chosenFinish(row)?.cost ?? 0} available={c.actionsLeft} bind:value={c.focus} effect={charging ? 'on the attack, in addition to any run-up bonus' : 'on the attack'} />
       {/if}
     {/each}
     {@render popupFoot(c.commit, c.picked?.kind === 'flee' ? 'Confirm flee' : c.picked?.kind === 'charge' || (c.picked?.kind === 'advance' && c.picked.plan.kind === 'charge') ? 'Confirm charge' : c.picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
