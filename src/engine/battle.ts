@@ -22,7 +22,7 @@ import {
 import type { Rng } from './rng.js';
 import { siegeModes, siegeDetail, type SiegeMode } from './siege-profiles.js';
 import { siegeTargets } from './siege-targets.js';
-import { engineKind, engineNamed } from './engines.js';
+import { engineKind, engineNamed } from './siege-engines.js';
 import { clone } from './clone.js';
 import { levelDc } from './tables.js';
 import {

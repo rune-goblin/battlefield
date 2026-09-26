@@ -1,5 +1,5 @@
 import { at, gridOf, notation, parse, fortification } from './board.js';
-import { engineKind } from './engines.js';
+import { engineKind } from './siege-engines.js';
 import { hasSight, sightBlock } from './sight.js';
 import { siegeModes, type SiegeMode } from './siege-profiles.js';
 import { cellTarget, unitTarget, wallName, wallTarget } from './targets.js';
