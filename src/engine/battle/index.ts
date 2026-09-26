@@ -9,7 +9,7 @@ export {
   engineLoaded, engineLoading, siegeEngines,
 } from './emplacements.js';
 export {
-  movementSpeed, movementBudget, moveActionsFor, moveReach, movePath, stepTargets, escapeDcFor, holdersOf,
+  movementSpeed, haulingSpeed, movementBudget, moveActionsFor, moveReach, movePath, stepTargets, escapeDcFor, holdersOf,
   isFleeEdge, escapeOffer,
 } from './movement.js';
 export { reduceWounds } from './wounds.js';
