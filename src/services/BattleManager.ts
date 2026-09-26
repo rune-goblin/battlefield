@@ -1,5 +1,5 @@
 import {
-  canContinueBattle, createBattle, ENGINES, nextDayBattlefield, SIDES,
+  canContinueBattle, createBattle, engineNamed, nextDayBattlefield, SIDES,
   startNextDay as beginNextDay,
   type BattleState,
 } from '../engine/index.js';
@@ -55,12 +55,12 @@ function battleFrom(session: BattleSession): BattleState {
       side: u.side,
       square: u.square!,
       engines: u.engines
-        .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)! }))
+        .map((e) => ({ id: e.id, card: engineNamed(e.name)! }))
         .filter((e) => e.card),
     })),
     engines: setup.emplacements
       .filter((e) => e.square)
-      .map((e) => ({ id: e.id, card: ENGINES.find((x) => x.name === e.name)!, side: e.side, square: e.square!, hauled: e.hauled, loaded: e.loaded }))
+      .map((e) => ({ id: e.id, card: engineNamed(e.name)!, side: e.side, square: e.square!, hauled: e.hauled, loaded: e.loaded }))
       .filter((e) => e.card),
   });
 }

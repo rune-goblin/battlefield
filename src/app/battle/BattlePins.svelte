@@ -229,7 +229,6 @@
             <p class="escape">
               <span class="escape-name">{h.name}</span>
               <span class="muted">DC {h.dc}{h.pinning ? ' · pinning' : ''}</span>
-              {#if h.follows}<span class="tag">gives no retreat — follows you</span>{/if}
             </p>
           {/each}
           <p class="muted activity-detail">
@@ -359,5 +358,4 @@
   .popup-escapes { padding: .1rem .5rem .2rem 1rem; font-size: var(--type-small); }
   .escape { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; margin: .15rem 0; font-size: var(--type-small); }
   .escape-name { font-weight: 600; }
-  .tag { padding: .02rem .35rem; border-radius: 999px; border: 1px solid var(--bad); color: var(--bad); font-size: var(--type-small); }
 </style>

@@ -6,12 +6,12 @@ import type { HealingChoice, HealingCondition } from './types.js';
 import { coverBetween, wallCoverBetween, hasSight, isMountain } from './sight.js';
 import { heightEdge, heightRange, TERRAIN } from './terrain.js';
 import {
-  at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
+  at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, sameCell, SIZE,
   wallBlocks, structuralDamage, fortification, type Board, type Square, type Wall,
 } from './board.js';
-import { cardTraits, deriveStats, paceOf, speedOf, movementRates, convertSpeed, type SiegeEngineCard, type UnitCard } from './cards.js';
+import { cardTraits, deriveStats, speedOf, movementRates, convertSpeed, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { CELL_FEET, reachable, reachableVia, routedPath, stepFeet, type ReachMap, type Routed, type StepOpts } from './path.js';
-import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, type CheckResult, type Degree } from './check.js';
+import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, successes, type CheckResult, type Degree } from './check.js';
 import {
   VERBS, activityOf, treesFor, canFocus,
   type ActivityIndex, type Verb, type Activity,
@@ -22,7 +22,8 @@ import {
 import type { Rng } from './rng.js';
 import { siegeModes, siegeDetail, type SiegeMode } from './siege-profiles.js';
 import { siegeTargets } from './siege-targets.js';
-import { ENGINES } from './engines.js';
+import { engineKind, engineNamed } from './siege-engines.js';
+import { clone } from './clone.js';
 import { levelDc } from './tables.js';
 import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT,
@@ -53,8 +54,8 @@ function emplacementClaimant(
   board: Board, units: readonly { side: Side; square: Square }[], square: Square,
 ): Side | null {
   const beside = gridOf(board).neighbours(square);
-  const claimant = units.find((u) => sameSquare(u.square, square))
-    ?? units.find((u) => beside.some((n) => sameSquare(n, u.square)));
+  const claimant = units.find((u) => sameCell(u.square, square))
+    ?? units.find((u) => beside.some((n) => sameCell(n, u.square)));
   return claimant?.side ?? null;
 }
 
@@ -66,11 +67,7 @@ const positionalEmplacedId = (index: number) => `engine:${index}`;
 
 export interface BattleSetup { units: Deployment[]; board: Board; engines?: Emplacement[]; roundsPerDay?: number; }
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-
 export const homeRank = (s: Side, dimension = SIZE) => (s === 'attacker' ? 0 : dimension - 1);
-
-export const sameSquare = (a: Square, b: Square) => a.file === b.file && a.rank === b.rank;
 
 const grid = (state: BattleState) => gridOf(state.board);
 const dist = (state: BattleState, a: Square, b: Square) => grid(state).distance(a, b);
@@ -84,8 +81,7 @@ export function canEmplace(board: Board, sq: Square): boolean {
   return gridOf(board).inBounds(sq) && at(board, sq).terrain !== 'water';
 }
 
-// The rng is unused now that there is no initiative roll; callers still pass one.
-export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
+export function createBattle(setup: BattleSetup): BattleState {
   const roundsPerDay = setup.roundsPerDay ?? LAST_ROUND;
   if (!Number.isInteger(roundsPerDay) || roundsPerDay < 1) throw new Error('rounds per day must be a positive integer');
   const taken = new Set<string>();
@@ -100,7 +96,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       id, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       abilities: validatedAbilities(d.card.abilities ?? (traits.signals.includes('no-retreat') ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : [])), abilityReview: d.card.abilityReview ?? [],
       abilityState: freshAbilityMemory(d.card.wounds ?? 0), traits: d.card.traits ?? [], immuneFear: d.card.immuneFear ?? false, attackTags: d.card.attackTags,
-      stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
+      stats: deriveStats(d.card), tactics: traits.tactics,
       ...(d.card.sheet ? { attackSources: { strike: d.card.sheet.battleName, volley: d.card.sheet.salvoName } } : {}),
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
@@ -108,7 +104,6 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       ...(d.card.sheet ? { movementRates: movementRates(d.card), sourceSpeed: {
         speed: d.card.sheet.speed, otherSpeeds: d.card.sheet.otherSpeeds?.map(s => ({ ...s })),
       } } : {}),
-      noRetreat: false,
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e, slot) =>
         engineState(e.card, e.id ?? positionalAttachedId(id, slot), d.side, sq, false)),
@@ -127,7 +122,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
     if (!canEmplace(setup.board, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
     if (engineSquares.has(e.square)) throw new Error(`${e.square} is already occupied`);
     engineSquares.add(e.square);
-    const crew = units.find((u) => sameSquare(u.square, sq));
+    const crew = units.find((u) => sameCell(u.square, sq));
     const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), emplacementClaimant(setup.board, units, sq), sq, true);
     if (e.loaded === false) engine.loaded = 0;
     if (e.hauled && crew && !isFixedEngine(e.card) && !crew.engines.some((x) => x.hauling)) {
@@ -160,7 +155,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
 }
 
 const engineState = (e: SiegeEngineCard, id: string, side: Side | null, square: Square, emplaced: boolean): EngineState => {
-  const card = ENGINES.find(card => card.name === e.name);
+  const card = engineNamed(e.name);
   const steps = (card?.loadSteps ?? e.loadSteps) === 0 ? 0 : card?.loadCost ?? e.loadCost ?? 1;
   return { id, name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced,
     speed: e.speed, loadCost: e.loadCost, loadSteps: steps, loaded: steps, hauling: false };
@@ -180,10 +175,14 @@ export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < ROU
 /** Troops in camp survive the day but never hold ground or take another activation today. */
 export const isSurvivor = (u: Unit) => (u.status === 'active' || u.status === 'camp') && u.disorder < ROUTED_AT;
 
-/** Units of `side` that may still act this round. */
+const mayActivate = (state: BattleState, u: Unit) => u.side === state.pending && u.status === 'active' && !state.activated.includes(u.id);
+const canActNow = (state: BattleState, u: Unit) => state.phase === 'battle' && isStanding(u) && mayActivate(state, u) && (!state.begun || state.active === u.id);
+
+/** Units of `side` that may still act this round. `nextSide` asks this for a side that is
+ * not yet pending, so pending is read as `side` here rather than off `state`. */
 export function activatable(state: BattleState, side: Side): Unit[] {
   return state.order.map((id) => unit(state, id))
-    .filter((u) => u.side === side && u.status === 'active' && !state.activated.includes(u.id));
+    .filter((u) => u.side === side && mayActivate({ ...state, pending: side }, u));
 }
 
 // The side with more un-activated units goes next; a tie goes to the side that did not act last.
@@ -201,7 +200,7 @@ export const activeUnit = (state: BattleState): Unit | null => {
   if (state.phase !== 'battle') return null;
   if (state.active) {
     const u = unit(state, state.active);
-    if (u.side === state.pending && u.status === 'active' && !state.activated.includes(u.id)) return u;
+    if (mayActivate(state, u)) return u;
   }
   return activatable(state, state.pending)[0] ?? null;
 };
@@ -210,9 +209,7 @@ export const activeUnit = (state: BattleState): Unit | null => {
 export function select(input: BattleState, id: string): BattleState {
   const state = clone(input);
   const u = unit(state, id);
-  if (u.side !== state.pending || state.activated.includes(id) || u.status !== 'active') {
-    throw new Error(`${u.name} cannot activate now`);
-  }
+  if (!mayActivate(state, u)) throw new Error(`${u.name} cannot activate now`);
   if (state.begun && state.active !== id) throw new Error('an activation is already under way');
   state.active = id;
   return state;
@@ -228,7 +225,7 @@ export function deselect(input: BattleState): BattleState {
 }
 
 export const unitAt = (state: BattleState, sq: Square): Unit | undefined =>
-  state.units.find((u) => u.status === 'active' && sameSquare(u.square, sq));
+  state.units.find((u) => u.status === 'active' && sameCell(u.square, sq));
 
 const square = (state: BattleState, u: Unit) => at(state.board, u.square);
 const elevation = (state: BattleState, u: Unit) => square(state, u).elevation;
@@ -246,7 +243,7 @@ export const engagedEnemies = (state: BattleState, u: Unit) =>
 
 /** Which of the four range bands a distance falls in. Rank 5 is out of range altogether. */
 function bandRank(state: BattleState, d: number): number {
-  const b = BANDS[state.board.grid];
+  const b = BANDS;
   return d <= b.short ? 1 : d <= b.medium ? 2 : d <= b.long ? 3 : d <= b.extreme ? 4 : 5;
 }
 
@@ -346,7 +343,7 @@ export const enginesOf = (state: BattleState, u: Unit): EngineState[] =>
 function refreshEmplacements(state: BattleState) {
   // A standing friendly in the same hex can recover equipment that a routed crew left.
   for (const owner of state.units) for (const e of [...owner.engines]) {
-    if (e.status !== 'abandoned' || !state.units.some(u => u.side === e.side && isStanding(u) && sameSquare(u.square, e.square))) continue;
+    if (e.status !== 'abandoned' || !state.units.some(u => u.side === e.side && isStanding(u) && sameCell(u.square, e.square))) continue;
     owner.engines = owner.engines.filter(x => x.id !== e.id);
     e.emplaced = true;
     e.hauling = false;
@@ -354,7 +351,7 @@ function refreshEmplacements(state: BattleState) {
   }
   for (const e of state.engines) {
     const crew = crewOf(state, e);
-    if (crew && sameSquare(crew.square, e.square) && e.side !== crew.side) {
+    if (crew && sameCell(crew.square, e.square) && e.side !== crew.side) {
       e.side = crew.side;
       log(state, crew, `${crew.name} takes the ${e.name} on ${notation(e.square)}.`);
     }
@@ -363,8 +360,7 @@ function refreshEmplacements(state: BattleState) {
 }
 
 /** Equipment uses its imported movement and loading profile, including older saves. */
-const engineCard = (e: EngineState) => ENGINES.find(card => card.name === e.name);
-export const engineKind = (e: EngineState) => engineCard(e)?.kind ?? e.kind;
+const engineCard = (e: EngineState) => engineNamed(e.name);
 export const engineSpeed = (e: EngineState): number | null => {
   const source = engineCard(e)?.sourceSpeed;
   if (source != null && (e.speed === undefined || e.speed === convertSpeed(source)
@@ -404,11 +400,10 @@ export const movementSpeed = (u: Unit): number => {
 export const siegeEngines = (state: BattleState, u: Unit): EngineState[] =>
   !isStanding(u) ? [] : enginesOf(state, u).filter(e =>
     // Existing saves can retain an abandoned flag after a unit entered the hex.
-    (e.status === 'crewed' || state.engines.includes(e)) && sameSquare(e.square, u.square));
+    (e.status === 'crewed' || state.engines.includes(e)) && sameCell(e.square, u.square));
 
 export function siegeReason(state: BattleState, u: Unit, e: EngineState, operation: SiegeAction['operation']): string | null {
-  if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
-    || (state.begun && state.active !== u.id)) return 'This unit cannot act now.';
+  if (!canActNow(state, u)) return 'This unit cannot act now.';
   if (!siegeEngines(state, u).some(x => x.id === e.id)) return 'Stand in the siege engine’s hex to operate it.';
   if (operation === 'release') return e.hauling ? null : 'This unit is not hauling this engine.';
   if (u.actions < 1) return 'No actions remain.';
@@ -448,8 +443,7 @@ export function siegeAttackOffer(state: BattleState, u: Unit, e: EngineState): A
 export function gateReason(state: BattleState, u: Unit, key: string): string | null {
   const w = state.board.walls[key];
   if (!w?.gate || w.remaining <= 0) return 'This gate is breached or absent.';
-  if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
-    || (state.begun && state.active !== u.id)) return 'This unit cannot act now.';
+  if (!canActNow(state, u)) return 'This unit cannot act now.';
   if (wallsFor(state.board).insideOf(key) !== notation(u.square)) return 'Operate the gate from its interior hex.';
   if (u.actions < 1) return 'The gate needs one action.';
   if (engagedEnemies(state, u).length) return 'Break contact before operating the gate.';
@@ -596,7 +590,7 @@ const SHOT_BANDS = ['short', 'medium', 'long', 'extreme'] as const;
 
 /** Preferred distance interval: from two hexes out to the weapon's band. */
 function shootPreferred(state: BattleState, u: Unit): { min: number; max: number } {
-  return { min: 2, max: BANDS[state.board.grid][SHOT_BANDS[shootHome(state, u) - 1]] };
+  return { min: 2, max: BANDS[SHOT_BANDS[shootHome(state, u) - 1]] };
 }
 
 /** Weapons flex one hex past their band at −2. Only short weapons flex inward, to a target
@@ -677,7 +671,7 @@ const controllingDc = (u: Unit) => (u.stats.spellDc === null ? levelDc(u.level) 
  * rallying beside a levy. */
 export function routDcFor(state: BattleState, u: Unit): number {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
-  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS[state.board.grid].short);
+  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS.short);
   const pool = near.length ? near : enemies;
   return levelDc(Math.max(0, ...pool.map((e) => e.level)));
 }
@@ -862,7 +856,7 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
   const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + Math.max(0, (opts.circumstance ?? 0) - highGroundBonus(state, u.square, target.square)) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, rollLine(u.name, `${opts.label} against ${target.name}`, c, 'attack'), c,
     opts.free ? { kind: 'freeStrike', attacker: u.id, target: target.id } : undefined, attackOn(target));
-  const rolled = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+  const rolled = successes(c.degree);
   const damage = applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0, u.level, u.attackTags?.melee);
   if (!opts.free) {
     attackAbilities(state, u, target, 'melee', 'result', c.degree, damage, !!opts.charging, guarded, ctx);
@@ -896,7 +890,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Ac
   });
   if (degree === null) return;
   if (succeeded(degree)) {
-    if (drive && u.status === 'active' && sameSquare(before, target.square)) giveGround(state, u, target);
+    if (drive && u.status === 'active' && sameCell(before, target.square)) giveGround(state, u, target);
     return;
   }
   const c = roll(state, rng, u, willModifier(u) + (u.disorder >= ROUTED_AT - 1 ? resolveBonus(state, u) : 0), levelDc(target.level));
@@ -957,7 +951,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: 
   if (!attackGate(state, rng, u, target)) return;
   const c = attackRoll(state, rng, u, target, shootModifier(state, u, target) + bonus, defenceOf(state, target, u, true, false, shotFrom(state, u)));
   log(state, u, rollLine(u.name, `${activity.label} against ${target.name}`, c, 'attack'), c, undefined, attackOn(target));
-  const damage = applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u, false, 0, u.level, u.attackTags?.volley);
+  const damage = applyWounds(state, rng, target, successes(c.degree), source, u, false, 0, u.level, u.attackTags?.volley);
   attackAbilities(state, u, target, 'volley', 'result', c.degree, damage, false, !!u.guard, ctx);
   abilityMemory(u).attackUsed = true;
   const eff = activity.shoot!;
@@ -979,7 +973,7 @@ function freeShot(state: BattleState, rng: Rng, u: Unit, target: Unit): Degree |
   const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true, false, shotFrom(state, u)));
   log(state, u, rollLine(u.name, `Free shot against ${target.name}`, c, 'attack'), c,
     { kind: 'freeStrike', attacker: u.id, target: target.id }, attackOn(target));
-  applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, `${u.name}'s volley`, u);
+  applyWounds(state, rng, target, successes(c.degree), `${u.name}'s volley`, u);
   return c.degree;
 }
 
@@ -993,7 +987,7 @@ function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier
   // rather than surviving to the unit's next Strike.
   const c = attackRoll(state, rng, u, null, modifier, wallDc(state, wall));
   log(state, u, rollLine(u.name, `${label} against the wall ${key}`, c, 'attack'), c);
-  const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+  const hits = successes(c.degree);
   if (!hits) return;
   wall.remaining = Math.max(0, wall.remaining - structuralDamage(wall, hits));
   log(state, u, wall.remaining ? `The wall holds ${wall.remaining}/${wall.boxes}.` : `The wall at ${key} is breached.`);
@@ -1100,7 +1094,7 @@ export function chargeImpact(u: Unit): boolean {
 }
 /** A charge that ends a short range from where it began has built momentum: +2 on the attack. */
 const runUp = (state: BattleState, from: Square, landing: Square) =>
-  dist(state, from, landing) >= BANDS[state.board.grid].short;
+  dist(state, from, landing) >= BANDS.short;
 
 /** Whether the unit may charge at all. One in contact fights instead, and a pinned, rooted or
  * spent unit charges nothing. */
@@ -1274,8 +1268,6 @@ export function stepTargets(state: BattleState, u: Unit): string[] {
     .map(notation).sort();
 }
 
-const homewardStep = (u: Unit) => u.side === 'attacker' ? -1 : 1;
-
 /** What a shot off this unit rolls: a crewed artillery piece stands in for a Volley the crew
  * may not have, loaded or not — a pinning crew holds its target with the shot it already made. */
 const volleyOf = (state: BattleState, u: Unit) => {
@@ -1373,7 +1365,7 @@ function doFlee(state: BattleState, rng: Rng, u: Unit, action: FleeAction): numb
 
 const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filter(([, w]) => w.remaining > 0).map(([k]) => k);
 const wallCells = (key: string) => key.split('|').map(parse);
-const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameSquare(c, u.square));
+const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameCell(c, u.square));
 
 
 interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
@@ -1383,7 +1375,7 @@ interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
  * way "range: 30 feet" reads on any other statblock. */
 export function castCeiling(state: BattleState, tree: Tree): number {
   const band = TREE_RANGE[tree];
-  return band === 'engaged' ? 1 : BANDS[state.board.grid][band];
+  return band === 'engaged' ? 1 : BANDS[band];
 }
 
 // proto: a shape is offered as one target, its hexes joined by '+', so the aim popup needs no
@@ -1391,7 +1383,7 @@ export function castCeiling(state: BattleState, tree: Tree): number {
 const shapeId = (shape: Square[]) => shape.map(notation).sort().join('+');
 
 const enemiesIn = (state: BattleState, u: Unit, shape: Square[]) => state.units.filter(
-  (e) => e.side !== u.side && e.status === 'active' && shape.some((c) => sameSquare(c, e.square)),
+  (e) => e.side !== u.side && e.status === 'active' && shape.some((c) => sameCell(c, e.square)),
 );
 
 /** Every pair of hexes a Line may cover: two adjacent hexes on one straight line out from the
@@ -1445,7 +1437,7 @@ function stormShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
       const hit = enemiesIn(state, u, shape).map(e => e.id).sort().join('+');
       if (!effects.has(hit)) effects.set(hit, shape);
       if (size < 4) for (const cell of shape) for (const neighbour of g.neighbours(cell)) {
-        if (allowed.has(notation(neighbour)) && !shape.some(c => sameSquare(c, neighbour))) next.push([...shape, neighbour]);
+        if (allowed.has(notation(neighbour)) && !shape.some(c => sameCell(c, neighbour))) next.push([...shape, neighbour]);
       }
     }
     frontier = next;
@@ -1536,7 +1528,7 @@ function gateTargets(state: BattleState, allies: Unit[]): ActivityTarget[] {
       const move = moveTarget(first.ally, dest);
       out.push(move);
       for (let j = i + 1; j < choices.length; j++) for (const other of choices[j].destinations) {
-        if (!sameSquare(dest, other)) out.push(pairTarget(move, moveTarget(choices[j].ally, other)));
+        if (!sameCell(dest, other)) out.push(pairTarget(move, moveTarget(choices[j].ally, other)));
       }
     }
   }
@@ -1662,44 +1654,14 @@ function escape(state: BattleState, rng: Rng, u: Unit, holders: Unit[]): boolean
   return false;
 }
 
-/** After a unit changes hex: the pin ends, a no-retreat holder gives chase, and a routed unit
- * that reached its own edge leaves. */
-function departed(state: BattleState, u: Unit, chasers: Unit[]) {
+/** After a unit changes hex: the pin ends, and a routed unit that reached its own edge leaves. */
+function departed(state: BattleState, u: Unit) {
   if (u.pinnedBy) {
     const pinner = state.units.find((e) => e.id === u.pinnedBy);
     u.pinnedBy = null;
     log(state, u, `${u.name} is out from under ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
   }
-  follow(state, u, chasers);
   if (isRouted(u) && u.square.rank === homeRank(u.side, state.board.squares.length)) leaveField(state, u);
-}
-
-/** Read before anything moves: a pinning shooter never chases. */
-const chasersOf = (u: Unit, holders: Unit[]) => holders.filter((h) => h.noRetreat && h.id !== u.pinnedBy);
-
-/**
- * A `no-retreat` holder gives chase: one free Move of its own Speed, through the ordinary
- * terrain costs, to a cell touching wherever the unit ended. It deals no damage — it
- * only keeps contact, so outrunning it is the only way clear.
- */
-function follow(state: BattleState, u: Unit, chasers: Unit[]) {
-  for (const holder of chasers) {
-    if (u.status !== 'active') return;
-    if (!isStanding(holder) || movementSpeed(holder) === 0 || holder.rooted > 0) continue;
-    if (engagedEnemies(state, holder).length) continue;
-    const reach = reachable(state.board, holder.square, {
-      budget: movementSpeed(holder), ...groundFor(holder), occupied: occupiedBy(state, holder), stopAt: controlCells(state, holder),
-    });
-    let best: { cell: string; feet: number } | null = null;
-    for (const [cell, entry] of reach) {
-      if (cell === notation(holder.square) || !touching(state, parse(cell), u) || !canEndOn(holder, state.board, parse(cell))) continue;
-      if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) best = { cell, feet: entry.feet };
-    }
-    if (!best) { log(state, holder, `${holder.name} cannot follow ${u.name}.`); continue; }
-    moveTo(state, holder, parse(best.cell));
-    log(state, holder, `${holder.name} gives no retreat and follows ${u.name} to ${best.cell}.`);
-
-  }
 }
 
 /** One cast: the tree is spent for this activation, and its own case resolves it. */
@@ -1758,7 +1720,7 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
       ? readTwice([first, second], targetModifier, dc, sureStrike)
       : readCheck(first, targetModifier, dc);
     log(state, u, rollLine(u.name, `${activity.label} against ${target.name}`, c, 'attack'), c, undefined, attackOn(target));
-    const wounds = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+    const wounds = successes(c.degree);
     // Blast uses its shared counter after Health loss, regardless of source damage tags.
     const damage = applyWounds(state, rng, target, wounds, `${u.name}'s ${activity.label}`, u);
     if (damage > 0) suppressRegeneration(target, 'Blast damage', (unit, text) => log(state, unit, text));
@@ -1825,7 +1787,7 @@ function renewOne(state: BattleState, target: Unit, degree: Degree, choice?: Hea
   const amount = { 'critical-success': 3, success: 2, failure: 1, 'critical-failure': 0 }[degree];
   clearDisorder(state, target, Math.max(1, amount), 'Renewal');
   for (let i = 0; i < amount; i++) healWound(state, target);
-  const clears = degree === 'critical-success' ? 2 : degree === 'success' ? 1 : 0;
+  const clears = successes(degree);
   for (let i = 0; i < clears; i++) {
     if (choice && !choice.conditions[i]) break;
     if (!endCondition(state, target, choice?.conditions[i])) break;
@@ -2045,7 +2007,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
       if (eff.scope === 'adjacent') {
         reached.push(unit(state, action.target!));
       } else if (eff.scope === 'nearby') {
-        reached.push(...alliesWithin(state, u, BANDS[state.board.grid].short));
+        reached.push(...alliesWithin(state, u, BANDS.short));
       }
       const c = roll(state, rng, u, willModifier(u) + focusBonus, routDcFor(state, u));
       log(state, u, rollLine(u.name, `Will check to ${activity.label}`, c), c);
@@ -2271,17 +2233,16 @@ export function escapeOffer(state: BattleState, u: Unit): EscapeOffer | null {
     dc: Math.max(...holders.map((h) => escapeDcFor(state, h, u))),
     holders: holders.map((h) => ({
       unit: h.id, name: h.name, dc: escapeDcFor(state, h, u),
-      pinning: h.id === u.pinnedBy, follows: h.noRetreat && h.id !== u.pinnedBy,
+      pinning: h.id === u.pinnedBy,
     })),
   };
 }
 
 function doStep(state: BattleState, u: Unit, action: StepAction): number {
   if (!stepTargets(state, u).includes(action.to)) throw new Error(`${u.name} cannot step to ${action.to}`);
-  const chasers = chasersOf(u, holdersOf(state, u));
   moveTo(state, u, parse(action.to));
   log(state, u, `${u.name} steps to ${action.to}.`);
-  departed(state, u, chasers);
+  departed(state, u);
   return 1;
 }
 
@@ -2294,12 +2255,11 @@ function doStride(state: BattleState, rng: Rng, u: Unit, action: MoveAction): nu
   const m = moveReach(state, u, action.waypoints).get(action.to);
   if (!m) throw new Error(`${u.name} cannot reach ${action.to}`);
   const holders = holdersOf(state, u);
-  const chasers = chasersOf(u, holders);
   if (holders.length && !escape(state, rng, u, holders)) return 1;
   spendMovement(u, m);
   moveTo(state, u, parse(action.to));
   log(state, u, `${u.name} strides to ${action.to} — ${m.feet} ft, ${m.actions} action${m.actions === 1 ? '' : 's'}.`);
-  if (holders.length) departed(state, u, chasers);
+  if (holders.length) departed(state, u);
   return m.actions;
 
 }
@@ -2360,9 +2320,7 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const state = clone(input);
   if (state.phase !== 'battle') throw new Error('battle is over');
   const u = unit(state, action.unit);
-  if (u.side !== state.pending || state.activated.includes(u.id) || u.status !== 'active') {
-    throw new Error(`${u.name} cannot activate now`);
-  }
+  if (!mayActivate(state, u)) throw new Error(`${u.name} cannot activate now`);
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u, rng);
   const cost = action.type === 'gate' ? doGate(state, u, action) : action.type === 'siege' ? doSiege(state, rng, u, action)

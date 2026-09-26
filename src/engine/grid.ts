@@ -6,7 +6,6 @@ export interface Point { x: number; y: number; }
 
 export const SIZE = 15;
 export const FILES = 'abcdefghijklmno';
-export const RADIUS = (SIZE - 1) / 2;
 
 export function notation(c: Cell): string { return `${FILES[c.file]}${c.rank + 1}`; }
 export function parse(text: string): Cell { return { file: FILES.indexOf(text[0]), rank: Number(text.slice(1)) - 1 }; }

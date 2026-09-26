@@ -6,7 +6,6 @@ import { treesForTradition, type Tree } from './magic.js';
 // `doStep` in `battle.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
 // its own six trees live in `magic.ts`.
 export type Verb = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
-export const VERB_TYPES: Verb[] = ['shoot', 'fight', 'guard', 'rally', 'cast'];
 
 /** Ordinary activities use 1–3; spells also have a fourth tier at a three-action cost. */
 export type ActivityIndex = 1 | 2 | 3 | 4;

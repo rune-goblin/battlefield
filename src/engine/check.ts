@@ -41,6 +41,8 @@ export function rollTwice(rng: Rng, modifier: number, dc: number, better: boolea
 
 export const succeeded = (d: Degree) => d === 'success' || d === 'critical-success';
 
+export const successes = (d: Degree): 0 | 1 | 2 => d === 'critical-success' ? 2 : d === 'success' ? 1 : 0;
+
 const DEGREE_WORD: Record<Degree, string> = {
   'critical-failure': 'critical failure', failure: 'failure', success: 'success', 'critical-success': 'critical success',
 };

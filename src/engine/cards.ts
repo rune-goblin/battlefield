@@ -120,7 +120,6 @@ export function cardTraits(card: UnitCard) {
   const tactics: Tactic[] = card.tactics ?? p.tactics;
   return {
     pace: card.pace ?? p.pace,
-    fear: card.fear ?? false,
     caster: card.caster ?? false,
     // proto: imports retain explicit spellcasting traditions; legacy or custom cards
     // without one retain their arcane default.
@@ -172,8 +171,6 @@ export function movementRateLabel(rates: MovementRates): string {
   return Object.entries(rates).filter(([, rate]) => rate > 0)
     .map(([mode, rate]) => `${mode} ${rate / CELL_FEET} ${rate === CELL_FEET ? 'hex' : 'hexes'}/Move`).join(' · ') || 'Speed 0';
 }
-
-export const paceOf = (card: UnitCard): boolean => squaresPerAction(card) > 1;
 
 /** What one Move action buys, in feet — `CELL_FEET` a square. */
 export const speedOf = (card: UnitCard): number => squaresPerAction(card) * CELL_FEET;

@@ -8,7 +8,7 @@ const file = new URL('../public/rules.html', import.meta.url);
 const start = '<!-- siege-reference:start -->';
 const end = '<!-- siege-reference:end -->';
 const escape = (value: string | number) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
-const reach = BANDS.hex;
+const reach = BANDS;
 const rows = [...ENGINES].sort((a, b) => a.name.localeCompare(b.name)).map(engine => {
   const mobility = engine.speed === 0 ? 'Fixed' : engine.speed == null ? 'Crew speed' : `${engine.speed / 10} hex/action`;
   const modes = siegeModes(engine.name, engine.kind).map(mode =>
