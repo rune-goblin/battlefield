@@ -23,7 +23,7 @@
   const id = $props.id();
 </script>
 
-<svelte:window onkeydown={onEscape(() => close?.())} />
+<svelte:document onkeydown={onEscape(() => close?.())} />
 
 <div class="scrim" class:window={layer === 'window'} class:stage={layer === 'stage'} role="presentation" onclick={(e) => { if (close && e.target === e.currentTarget) close(); }}>
   <div

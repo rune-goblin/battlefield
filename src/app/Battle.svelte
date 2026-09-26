@@ -52,7 +52,8 @@
   {/if}
 {/snippet}
 
-<svelte:window onkeydown={c.onKey} onpointerdown={c.onWindowPointerDown} onclick={c.drag.onWindowClick} />
+<svelte:document onkeydown={c.onKey} />
+<svelte:window onpointerdown={c.onWindowPointerDown} onclick={c.drag.onWindowClick} />
 
 {#snippet top()}
   <TopBar>

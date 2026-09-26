@@ -74,15 +74,19 @@ test.describe('The setup wizard on two clients', () => {
       await toggle.focus();
       await gmPage.keyboard.press('Escape');
       await expect(pop.locator('.panel')).toBeHidden();
-      await expect(gm).toBeVisible();
+      // Foundry's own Escape closes a window with an animation, after the popover has gone.
+      await gmPage.waitForTimeout(1_000);
+      await expect(gm, 'Escape inside the window closed the window').toBeVisible();
     }
 
     await gm.getByRole('button', { name: 'Quit', exact: true }).click();
     const quit = gm.getByRole('alertdialog');
     await expect(quit).toContainText('Save before quitting?');
     await shot(gmPage, 'W8-quit');
-    await quit.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await gmPage.keyboard.press('Escape');
     await expect(quit).toBeHidden();
+    await gmPage.waitForTimeout(1_000);
+    await expect(gm, 'Escape in the Quit dialog closed the window').toBeVisible();
 
     await goToStep(gm, 'Defending army');
     const units = gm.locator('.unitlist .piece:not(.engine)');

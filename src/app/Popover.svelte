@@ -16,7 +16,7 @@
   }
 </script>
 
-<svelte:window onkeydown={onEscape(() => (open = false))} />
+<svelte:document onkeydown={onEscape(() => (open = false))} />
 
 <div class="popover">
   <button onclick={toggle} aria-expanded={open}>{label}</button>

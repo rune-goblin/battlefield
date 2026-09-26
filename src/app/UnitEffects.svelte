@@ -11,7 +11,7 @@
   let missingArt = $state<Record<string, boolean>>({});
 </script>
 
-<svelte:window onkeydown={onEscape(() => (openStatus = null))} />
+<svelte:document onkeydown={onEscape(() => (openStatus = null))} />
 
 {#if effects.length}
   <aside class="effects" aria-label="Conditions on {unitName}">
