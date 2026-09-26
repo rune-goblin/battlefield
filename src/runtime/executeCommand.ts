@@ -31,6 +31,8 @@ export interface ExecutorOptions extends Services {
   dice: DiceRecorder;
   /** Who is at the table, for naming a turn holder and for judging who sent a command. */
   presence: PresencePort;
+  /** Where a subscriber's throw goes. The commit it followed stands, and the rest still hear it. */
+  onListenerError?: (error: unknown) => void;
 }
 
 /** A change to the record, applied to the committed one inside the queue. A throw rejects. */
@@ -90,7 +92,12 @@ function addedPieces(previous: BattleSession, next: BattleSession): PieceRef[] {
  * until the record is durable: validate, resolve, bump the revision, save, then publish.
  * A rejection returns a result and leaves the session and the undo history as they were.
  */
-export function createExecutor({ repository, archive, sites = memorySites(), dice, presence, session: initial, ...services }: ExecutorOptions): Executor {
+export function createExecutor({
+  repository, archive, sites = memorySites(), dice, presence, session: initial,
+  // proto: a subscriber's throw goes to the console until a host gives it a surface.
+  onListenerError = (error) => console.error(error),
+  ...services
+}: ExecutorOptions): Executor {
   let session = initial;
   let history: HistorySnapshot[] = [];
   const listeners = new Set<(session: BattleSession) => void>();
@@ -164,7 +171,13 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
 
     session = next;
     remember(COMMANDS[type].history, previous);
-    for (const listener of [...listeners]) listener(session);
+    for (const listener of [...listeners]) {
+      try {
+        listener(session);
+      } catch (error) {
+        onListenerError(error);
+      }
+    }
     const accepted: CommandAccepted = { ok: true, commandId, revision: session.revision };
     if (COMMANDS[type].adds) accepted.added = addedPieces(previous, session);
     return accepted;

@@ -209,6 +209,28 @@ describe('the command executor', () => {
     expect(result).toMatchObject({ ok: false, reason: 'battle', revision: 0 });
     expect(repository.saves).toHaveLength(0);
   });
+
+  it('answers a committed command ok when a subscriber throws, and still tells the rest', async () => {
+    const session = battleSession();
+    const repository = fakeRepository(session);
+    const errors: unknown[] = [];
+    const runtime = createRuntime({
+      repository, archive: createLocalArchive(fakeStorage()), session, onListenerError: (error) => errors.push(error),
+    });
+    const broken = new Error('listener broke');
+    const heard: BattleSession[] = [];
+    runtime.subscribe(() => { throw broken; });
+    runtime.subscribe((s) => heard.push(s));
+
+    const result = await runtime.submit({ type: 'action.resolve', action: guard });
+
+    expect(result).toMatchObject({ ok: true, revision: 1 });
+    expect(runtime.session.revision).toBe(1);
+    expect(repository.saves.map((s) => s.revision)).toEqual([1]);
+    expect(heard).toHaveLength(1);
+    expect(heard[0]).toBe(runtime.session);
+    expect(errors).toEqual([broken]);
+  });
 });
 
 function setupSession(): BattleSession {

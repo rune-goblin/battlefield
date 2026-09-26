@@ -30,6 +30,8 @@ export interface RuntimeOptions {
   campaign?: CampaignOutcomePort | null;
   /** Troop actors, for the writeback a campaign module is not there to do. */
   actors?: ActorWritebackPort | null;
+  /** Where a subscriber's throw goes. The commit it followed stands. */
+  onListenerError?: (error: unknown) => void;
 }
 
 export interface Runtime {
@@ -59,7 +61,7 @@ export interface Runtime {
 /** The one place that wires the services, the ports, and the executor together. */
 export function createRuntime({
   repository, archive, sites, session, dice = randomRng, mint = randomMint, policy = hotSeatPolicy(), campaign = null,
-  actors = null,
+  actors = null, onListenerError,
 }: RuntimeOptions): Runtime {
   // Every service rolls through the recorder, so a commit holds the faces its own rules read.
   const recorder = recordDice(dice);
@@ -70,6 +72,7 @@ export function createRuntime({
     session,
     dice: recorder,
     presence: policy.presence,
+    onListenerError,
     actions: createActionResolutionService({ dice: recorder }),
     map: createMapPreparationService({ mint }),
     army: createArmyPreparationService({ mint }),
