@@ -8,7 +8,24 @@
     "noEmit": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "types": ["vite/client", "node", "foundry-pf2e"]
+    "types": ["vite/client", "node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte"]
+  "include": ["src/**/*.ts", "src/**/*.svelte"],
+  "exclude": [
+    "src/adapters/foundry/**",
+    "src/adapters/pf2e/**",
+    "src/adapters/reignmaker/**",
+    "src/tests/e2e/**",
+    "src/tests/battle-sites.test.ts",
+    "src/tests/create-battle.test.ts",
+    "src/tests/foundry-chat.test.ts",
+    "src/tests/foundry-socket.test.ts",
+    "src/tests/foundry-table-call.test.ts",
+    "src/tests/foundry-turn-notice.test.ts",
+    "src/tests/foundry-world-settings.test.ts",
+    "src/tests/outcome-writeback.test.ts",
+    "src/tests/pf2e-troop.test.ts",
+    "src/tests/reignmaker-battle-site.test.ts",
+    "src/tests/troop-abilities.test.ts"
+  ]
 }
