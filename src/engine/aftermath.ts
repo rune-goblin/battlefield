@@ -1,11 +1,10 @@
 import { gridOf, notation, parse } from './board.js';
 import { canDeploy, crewOf, isStanding, isSurvivor, unit } from './battle.js';
-import { check, rollLine } from './check.js';
+import { check, rollLine, successes } from './check.js';
+import { clone } from './clone.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
 import { ACTIONS_PER_ACTIVATION, SIDES, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
-
-const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 export function canContinueBattle(state: BattleState): boolean {
   return state.phase === 'ended' && state.endedBy === 'dusk'
@@ -121,7 +120,7 @@ export function recoverAtNight(input: BattleState, side: Side, choices: Recovery
     const u = unit(state, choice.unit);
     const modifier = (choice.activity === 'rally' ? u.stats.will : u.stats.fortitude) - u.disorder - penalty;
     const result = check(rng, modifier, recoveryDc(input, choice));
-    const amount = result.degree === 'critical-success' ? 2 : result.degree === 'success' ? 1 : 0;
+    const amount = successes(result.degree);
     const field = choice.activity === 'rally' ? 'disorder' : 'wounds';
     const recovered = Math.min(u[field], amount);
     u[field] -= recovered;

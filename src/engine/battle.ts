@@ -6,12 +6,12 @@ import type { HealingChoice, HealingCondition } from './types.js';
 import { coverBetween, wallCoverBetween, hasSight, isMountain } from './sight.js';
 import { heightEdge, heightRange, TERRAIN } from './terrain.js';
 import {
-  at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
+  at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, sameCell, SIZE,
   wallBlocks, structuralDamage, fortification, type Board, type Square, type Wall,
 } from './board.js';
 import { cardTraits, deriveStats, speedOf, movementRates, convertSpeed, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { CELL_FEET, reachable, reachableVia, routedPath, stepFeet, type ReachMap, type Routed, type StepOpts } from './path.js';
-import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, type CheckResult, type Degree } from './check.js';
+import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, successes, type CheckResult, type Degree } from './check.js';
 import {
   VERBS, activityOf, treesFor, canFocus,
   type ActivityIndex, type Verb, type Activity,
@@ -23,6 +23,7 @@ import type { Rng } from './rng.js';
 import { siegeModes, siegeDetail, type SiegeMode } from './siege-profiles.js';
 import { siegeTargets } from './siege-targets.js';
 import { ENGINES } from './engines.js';
+import { clone } from './clone.js';
 import { levelDc } from './tables.js';
 import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT,
@@ -53,8 +54,8 @@ function emplacementClaimant(
   board: Board, units: readonly { side: Side; square: Square }[], square: Square,
 ): Side | null {
   const beside = gridOf(board).neighbours(square);
-  const claimant = units.find((u) => sameSquare(u.square, square))
-    ?? units.find((u) => beside.some((n) => sameSquare(n, u.square)));
+  const claimant = units.find((u) => sameCell(u.square, square))
+    ?? units.find((u) => beside.some((n) => sameCell(n, u.square)));
   return claimant?.side ?? null;
 }
 
@@ -66,11 +67,7 @@ const positionalEmplacedId = (index: number) => `engine:${index}`;
 
 export interface BattleSetup { units: Deployment[]; board: Board; engines?: Emplacement[]; roundsPerDay?: number; }
 
-const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-
 export const homeRank = (s: Side, dimension = SIZE) => (s === 'attacker' ? 0 : dimension - 1);
-
-export const sameSquare = (a: Square, b: Square) => a.file === b.file && a.rank === b.rank;
 
 const grid = (state: BattleState) => gridOf(state.board);
 const dist = (state: BattleState, a: Square, b: Square) => grid(state).distance(a, b);
@@ -125,7 +122,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     if (!canEmplace(setup.board, sq)) throw new Error(`${e.card.name} cannot deploy on ${e.square}`);
     if (engineSquares.has(e.square)) throw new Error(`${e.square} is already occupied`);
     engineSquares.add(e.square);
-    const crew = units.find((u) => sameSquare(u.square, sq));
+    const crew = units.find((u) => sameCell(u.square, sq));
     const engine = engineState(e.card, e.id ?? positionalEmplacedId(index), emplacementClaimant(setup.board, units, sq), sq, true);
     if (e.loaded === false) engine.loaded = 0;
     if (e.hauled && crew && !isFixedEngine(e.card) && !crew.engines.some((x) => x.hauling)) {
@@ -226,7 +223,7 @@ export function deselect(input: BattleState): BattleState {
 }
 
 export const unitAt = (state: BattleState, sq: Square): Unit | undefined =>
-  state.units.find((u) => u.status === 'active' && sameSquare(u.square, sq));
+  state.units.find((u) => u.status === 'active' && sameCell(u.square, sq));
 
 const square = (state: BattleState, u: Unit) => at(state.board, u.square);
 const elevation = (state: BattleState, u: Unit) => square(state, u).elevation;
@@ -344,7 +341,7 @@ export const enginesOf = (state: BattleState, u: Unit): EngineState[] =>
 function refreshEmplacements(state: BattleState) {
   // A standing friendly in the same hex can recover equipment that a routed crew left.
   for (const owner of state.units) for (const e of [...owner.engines]) {
-    if (e.status !== 'abandoned' || !state.units.some(u => u.side === e.side && isStanding(u) && sameSquare(u.square, e.square))) continue;
+    if (e.status !== 'abandoned' || !state.units.some(u => u.side === e.side && isStanding(u) && sameCell(u.square, e.square))) continue;
     owner.engines = owner.engines.filter(x => x.id !== e.id);
     e.emplaced = true;
     e.hauling = false;
@@ -352,7 +349,7 @@ function refreshEmplacements(state: BattleState) {
   }
   for (const e of state.engines) {
     const crew = crewOf(state, e);
-    if (crew && sameSquare(crew.square, e.square) && e.side !== crew.side) {
+    if (crew && sameCell(crew.square, e.square) && e.side !== crew.side) {
       e.side = crew.side;
       log(state, crew, `${crew.name} takes the ${e.name} on ${notation(e.square)}.`);
     }
@@ -402,7 +399,7 @@ export const movementSpeed = (u: Unit): number => {
 export const siegeEngines = (state: BattleState, u: Unit): EngineState[] =>
   !isStanding(u) ? [] : enginesOf(state, u).filter(e =>
     // Existing saves can retain an abandoned flag after a unit entered the hex.
-    (e.status === 'crewed' || state.engines.includes(e)) && sameSquare(e.square, u.square));
+    (e.status === 'crewed' || state.engines.includes(e)) && sameCell(e.square, u.square));
 
 export function siegeReason(state: BattleState, u: Unit, e: EngineState, operation: SiegeAction['operation']): string | null {
   if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
@@ -860,7 +857,7 @@ function resolveStrike(state: BattleState, rng: Rng, u: Unit, target: Unit, opts
   const c = attackRoll(state, rng, u, target, strikeModifier(state, u, target) + Math.max(0, (opts.circumstance ?? 0) - highGroundBonus(state, u.square, target.square)) + (opts.bonus ?? 0), defenceOf(state, target, u, false));
   log(state, u, rollLine(u.name, `${opts.label} against ${target.name}`, c, 'attack'), c,
     opts.free ? { kind: 'freeStrike', attacker: u.id, target: target.id } : undefined, attackOn(target));
-  const rolled = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+  const rolled = successes(c.degree);
   const damage = applyWounds(state, rng, target, rolled, u.name, u, opts.pressed ?? false, opts.saveShift ?? 0, u.level, u.attackTags?.melee);
   if (!opts.free) {
     attackAbilities(state, u, target, 'melee', 'result', c.degree, damage, !!opts.charging, guarded, ctx);
@@ -894,7 +891,7 @@ function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: Ac
   });
   if (degree === null) return;
   if (succeeded(degree)) {
-    if (drive && u.status === 'active' && sameSquare(before, target.square)) giveGround(state, u, target);
+    if (drive && u.status === 'active' && sameCell(before, target.square)) giveGround(state, u, target);
     return;
   }
   const c = roll(state, rng, u, willModifier(u) + (u.disorder >= ROUTED_AT - 1 ? resolveBonus(state, u) : 0), levelDc(target.level));
@@ -955,7 +952,7 @@ function shootAt(state: BattleState, rng: Rng, u: Unit, target: Unit, activity: 
   if (!attackGate(state, rng, u, target)) return;
   const c = attackRoll(state, rng, u, target, shootModifier(state, u, target) + bonus, defenceOf(state, target, u, true, false, shotFrom(state, u)));
   log(state, u, rollLine(u.name, `${activity.label} against ${target.name}`, c, 'attack'), c, undefined, attackOn(target));
-  const damage = applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, source, u, false, 0, u.level, u.attackTags?.volley);
+  const damage = applyWounds(state, rng, target, successes(c.degree), source, u, false, 0, u.level, u.attackTags?.volley);
   attackAbilities(state, u, target, 'volley', 'result', c.degree, damage, false, !!u.guard, ctx);
   abilityMemory(u).attackUsed = true;
   const eff = activity.shoot!;
@@ -977,7 +974,7 @@ function freeShot(state: BattleState, rng: Rng, u: Unit, target: Unit): Degree |
   const c = attackRoll(state, rng, u, target, shootModifier(state, u, target), defenceOf(state, target, u, true, false, shotFrom(state, u)));
   log(state, u, rollLine(u.name, `Free shot against ${target.name}`, c, 'attack'), c,
     { kind: 'freeStrike', attacker: u.id, target: target.id }, attackOn(target));
-  applyWounds(state, rng, target, c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0, `${u.name}'s volley`, u);
+  applyWounds(state, rng, target, successes(c.degree), `${u.name}'s volley`, u);
   return c.degree;
 }
 
@@ -991,7 +988,7 @@ function attackWall(state: BattleState, rng: Rng, u: Unit, key: string, modifier
   // rather than surviving to the unit's next Strike.
   const c = attackRoll(state, rng, u, null, modifier, wallDc(state, wall));
   log(state, u, rollLine(u.name, `${label} against the wall ${key}`, c, 'attack'), c);
-  const hits = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+  const hits = successes(c.degree);
   if (!hits) return;
   wall.remaining = Math.max(0, wall.remaining - structuralDamage(wall, hits));
   log(state, u, wall.remaining ? `The wall holds ${wall.remaining}/${wall.boxes}.` : `The wall at ${key} is breached.`);
@@ -1369,7 +1366,7 @@ function doFlee(state: BattleState, rng: Rng, u: Unit, action: FleeAction): numb
 
 const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filter(([, w]) => w.remaining > 0).map(([k]) => k);
 const wallCells = (key: string) => key.split('|').map(parse);
-const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameSquare(c, u.square));
+const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameCell(c, u.square));
 
 
 interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
@@ -1387,7 +1384,7 @@ export function castCeiling(state: BattleState, tree: Tree): number {
 const shapeId = (shape: Square[]) => shape.map(notation).sort().join('+');
 
 const enemiesIn = (state: BattleState, u: Unit, shape: Square[]) => state.units.filter(
-  (e) => e.side !== u.side && e.status === 'active' && shape.some((c) => sameSquare(c, e.square)),
+  (e) => e.side !== u.side && e.status === 'active' && shape.some((c) => sameCell(c, e.square)),
 );
 
 /** Every pair of hexes a Line may cover: two adjacent hexes on one straight line out from the
@@ -1441,7 +1438,7 @@ function stormShapes(state: BattleState, u: Unit, ceiling: number): Square[][] {
       const hit = enemiesIn(state, u, shape).map(e => e.id).sort().join('+');
       if (!effects.has(hit)) effects.set(hit, shape);
       if (size < 4) for (const cell of shape) for (const neighbour of g.neighbours(cell)) {
-        if (allowed.has(notation(neighbour)) && !shape.some(c => sameSquare(c, neighbour))) next.push([...shape, neighbour]);
+        if (allowed.has(notation(neighbour)) && !shape.some(c => sameCell(c, neighbour))) next.push([...shape, neighbour]);
       }
     }
     frontier = next;
@@ -1532,7 +1529,7 @@ function gateTargets(state: BattleState, allies: Unit[]): ActivityTarget[] {
       const move = moveTarget(first.ally, dest);
       out.push(move);
       for (let j = i + 1; j < choices.length; j++) for (const other of choices[j].destinations) {
-        if (!sameSquare(dest, other)) out.push(pairTarget(move, moveTarget(choices[j].ally, other)));
+        if (!sameCell(dest, other)) out.push(pairTarget(move, moveTarget(choices[j].ally, other)));
       }
     }
   }
@@ -1724,7 +1721,7 @@ function blast(state: BattleState, rng: Rng, u: Unit, index: ActivityIndex, acti
       ? readTwice([first, second], targetModifier, dc, sureStrike)
       : readCheck(first, targetModifier, dc);
     log(state, u, rollLine(u.name, `${activity.label} against ${target.name}`, c, 'attack'), c, undefined, attackOn(target));
-    const wounds = c.degree === 'critical-success' ? 2 : c.degree === 'success' ? 1 : 0;
+    const wounds = successes(c.degree);
     // Blast uses its shared counter after Health loss, regardless of source damage tags.
     const damage = applyWounds(state, rng, target, wounds, `${u.name}'s ${activity.label}`, u);
     if (damage > 0) suppressRegeneration(target, 'Blast damage', (unit, text) => log(state, unit, text));
@@ -1791,7 +1788,7 @@ function renewOne(state: BattleState, target: Unit, degree: Degree, choice?: Hea
   const amount = { 'critical-success': 3, success: 2, failure: 1, 'critical-failure': 0 }[degree];
   clearDisorder(state, target, Math.max(1, amount), 'Renewal');
   for (let i = 0; i < amount; i++) healWound(state, target);
-  const clears = degree === 'critical-success' ? 2 : degree === 'success' ? 1 : 0;
+  const clears = successes(degree);
   for (let i = 0; i < clears; i++) {
     if (choice && !choice.conditions[i]) break;
     if (!endCondition(state, target, choice?.conditions[i])) break;
