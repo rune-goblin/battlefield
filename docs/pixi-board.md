@@ -111,6 +111,7 @@ Gates use double doors viewed from above. Closed leaves meet in a solid line acr
 src/board/BoardApp.ts          owns PIXI.Application, canvas, resize, theme — the in-app board only
 src/board/BoardContainer.ts    a plain PIXI.Container + LayerManager; mountable anywhere
 src/board/layers/LayerManager.ts   adapted and trimmed from Reignmaker; owns LAYER_ORDER, the board's whole z-order
+src/board/layers/BoardLayer.ts     the contract every layer implements: setGeometry(LayerContext | null) and destroy
 src/board/layers/TerrainLayer.ts   cell fills, procedural texture overlays, elevation, slope hatching
 src/board/layers/InkLayer.ts       the illustrated map: one wash per hex under one pencil drawing
 src/board/layers/EdgeLayer.ts      walls, breached walls, cliffs
