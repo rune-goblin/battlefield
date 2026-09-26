@@ -32,6 +32,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W10.1 added that UI. Every session, archive and sites store reports to one recovery tracker, `src/adapters/store-recovery.ts`, which the store factories accept. The app shows one notice for each unreadable record. A GM, or the local user in the browser, can download the stored text or start fresh; "Start fresh" swaps the notice's actions for an in-app confirm step, and only the confirmed clear writes `''` to that one record, which then reads as absent and can report a later corruption again. A cleared session writes no record, so the table carries on from a new world's state. A player probes the stores at `ready` and sees a notice with no actions saying the GM must act. Only a GM gets the Foundry toast. Two gaps remain in the todos file: `createJsonArchive` still accepts an entry with no name, and `migrateSession`'s legacy fallback still rebuilds a corrupt envelope instead of leaving it unreadable.
 
+**Resolution (2026-09-26):** W11.6 sends every record that carries `schemaVersion` to `reviveSession` alone, so a corrupt envelope is unreadable and reaches the recovery notice; only a record from before the envelope runs `migrateLegacySave`. `isStoredEntry` demands a string `name`, so a nameless archive entry reads as unreadable and no longer throws in `filenameFor` during Foundry eviction. W11.8 moved the record names into `STORED_NAMES` in `src/runtime/ports.ts`, made a repeated confirm call `port.clear` once, and skips the Foundry toast for a GM whose Battlefield window is open. `?new` and `?example` still overwrite the browser session, as the user chose. W11.12's `recovery.spec` breaks the session, archive and sites settings in turn in a live Foundry and checks the GM's toast, notice, export, cancel and clear, the player's notice, and the open-window case. Nothing remains.
+
 ### C2. Duplicated engine rules have already diverged — Once And Only Once `[local]` `[done]`
 - **Where:** `src/engine/battle.ts`:
   - Terror, the tier-4 Controlling spell (`1845-1849`), re-implements Controlling and skips the `immuneFear` check tiers 1–3 make (`1887`); it also logs nothing on frightened.
@@ -44,6 +46,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W3.3 moved the rooted check into `forcedStep`, so siege engines and troop abilities refuse a rooted target by one rule. The Push / Pull and Rooted rows in `rules.html` say so, and a troop-ability test covers it. Overrun has its own displacement path and still moves a rooted target; the rules page is silent on it.
 
+**Resolution (2026-09-26):** W11.1 made `giveGround` check `rooted` before Hold Ground and before the cornered test, so an Overrun leaves a rooted target in place, spends no Hold Ground and costs no extra Morale. The Overrun, Rooted and Cornered rows in `rules.html` say so. The Overrun detail in `src/engine/ladders.ts` still reads "A blocked retreat causes no extra Morale loss", which the Cornered row contradicts; the todos file carries it.
+
 ## Major
 
 ### M1. `battle.ts` is a God Module — Divergent Change `[local]` `[done]`
@@ -54,12 +58,16 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W4.1 replaced `battle.ts` with eleven modules in `src/engine/battle/`: setup, state, turn, movement, manoeuvres, combat, wounds, siege, emplacements, targeting and spells, none over 340 lines. `battle/index.ts` re-exports exactly the 83 names `battle.ts` exported, so helpers shared between the modules stay off the engine barrel, and the engine has no import cycles. Callers changed only import paths: eleven tests and one comment in `docs/pixi-board.md`.
 
+**Resolution (2026-09-26):** W11.11 corrected `docs/pixi-board.md` and `grid.ts`'s `beyond` docstring to name its two live callers, `giveGround` in `battle/combat.ts` and `siege-targets.ts`, and merged the duplicate engine imports in `morale.test.ts`, `targeting.test.ts` and `battle.test.ts`.
+
 ### M2. Conditions are flat fields enumerated by hand in 8 places — Shotgun Surgery / Primitive Obsession `[cross-cutting]` `[done]`
 - **Where:** `src/engine/types.ts:96-130` (about 18 fields on `Unit`); re-listed at `battle.ts:115-120`, `:479-483`, `:1749-1783`, `:2131-2141`, `:2205`, `aftermath.ts:135-159`, `status.ts:19-38`, `ability-effects.ts:225`.
 - **Why it matters:** A new condition needs 8 or more coordinated edits plus 3 in the app; missing one leaves a condition that never clears.
 - **Direction:** One condition record with per-condition lifetime metadata; derive the reset, nullify, heal and status lists from it.
 
 **Resolution (2026-09-26):** W5.1 gathered Unit's 19 condition fields into a `Conditions` interface that `Unit` extends, so the saved shape and schema 2 stay as they were. `CONDITIONS` in `src/engine/conditions.ts` gives each field its fresh value, lapse, magical flag, status and heal text, and a missing entry fails the type check. Battle creation, the night reset, begin, finish, the shooter clear, the nullify hit, `endCondition`, recovery, healing validation, the status list and `HealingChoices.svelte` read the record, and `HealingCondition` derives from it. Log lines and clear order are unchanged, and a test pins the heal order. The app's hand-written `status()` list belongs to M3 and W6.
+
+**Resolution (2026-09-26):** W11.2 removed `flies`, a temporary-Fly condition nothing set, from `Conditions` and `CONDITIONS`. `canFly` in `src/engine/cards.ts` reads the unit's fly rate; `Unit.flying` and `TroopSheet.fly`, which duplicated that rate, are gone from the types, the pf2e reader, the troop importer and the generated catalogues.
 
 ### M3. App controllers re-derive what the engine decides — Once And Only Once `[cross-cutting]` `[done]`
 - **Where:** `src/app/battle/ring-controller.svelte.ts:110,126,138-143`; `drag-controller.svelte.ts:326-331,378-387`; `battle-controller.svelte.ts:466-491`.
@@ -71,6 +79,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W6.1 made `activation()` return every verb with a legal flag and an engine reason, and priced a melee's finishes in `meleeFinishes`. `doAdvance` now checks the run plus the chosen activity against the unit's actions before any stride, so an over-budget move-and-charge is refused with "The move and chosen attack exceed the available actions." rather than `doCharge`'s text. The step refusal gains "zero Speed", per the Step rule in `rules.html`. W6.2 read the ring's six slices off `activation().verbs` and dropped the hand-written reason ladders. Cast stays legal while the unit knows any tree, so a blocked tree shows its refusal in the tree ring. The battle controller builds the status line from `unitOutcome`, `positionNotes` and `statusEffectsOf`, so the condition entries read in the board's words (Held, Marked, Guard); the guard and burst-of-speed amounts leave that line, and the UnitEffects strip shows them. Nothing remains.
 
+**Resolution (2026-09-26):** W11.3 passed the dragged waypoints into `activation()`, which routes melee, Move and Charge along them, so the drag controller no longer calls `meleePlans`, `moveReach` or `chargeTargets` itself. A waypoint change now rebuilds the whole activation answer; nobody has timed a long waypoint chain.
+
 ### M4. Views compute rules — Feature Envy `[cross-cutting]` `[done]`
 - **Where:** `src/app/BattleReport.svelte:124` recomputes the recovery modifier from `aftermath.ts:122`; `:98` and `:106-107` decide routed without `isRouted`'s `status === 'active'` check, so a unit in camp counts as both in camp and routed; `:223` repeats the "nothing to recover" guard. `HealingChoices.svelte:5,7` maps conditions and the renewal heal count. `UnitSheet.svelte:9` partially copies `shootModifier`. `BattlePins.svelte:98` repeats `movementSpeed`, `:129` hard-codes the cast cap, and `:73,101,108,117` call `gateReason`/`siegeReason` in the template.
 - **Why it matters:** This breaks the rule in `docs/plans/battle-controller-split.md:33` ("a view imports no engine function that decides anything"); the routed count is already wrong on screen.
@@ -79,6 +89,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 **Resolution (2026-09-26):** The overseer rejected the routed claim. A unit in camp never reaches the routed disorder level, and every `left` unit is routed, so switching to `isRouted` would drop the units that left from the routed count; the count on screen is right. W6.1 and W6.3 should give the engine status label `left` as routed and gone. The recovery modifier, recovery guard, healing map, shoot modifier and `BattlePins` rules remain for W6.1–W6.3.
 
 **Resolution (2026-09-26):** W6.1 added `recoveryModifier`, `canRecover`, `healSlots`, `unitOutcome`, `unitStatusLabel`, `positionNotes`, `haulingSpeed` and `commitment()`, and `shootModifier` answers without a target. `unitOutcome` counts a `left` unit as routed, so a unit that left with Morale to spare now falls in the routed count, where before it fell in no bucket. W6.3 moved `BattleReport`'s decisions into `src/app/battle-report.svelte.ts` and the healing rows into `src/app/healing-choices.ts`, which read `healableConditions` and `healSlots`; `HealingChoices.svelte` keeps its props. Healing validation keeps its `conditions.length > 2` bound, so no accepted command starts failing. W6.2 moved `gateReason`, `siegeReason` and the release and haul hexes into the battle controller, which uses `haulingSpeed`; the cast cap comes from `commitment()`, and the aim popup hides a CommitmentPicker that could offer nothing. `UnitSheet.svelte` calls `shootModifier` in place of its partial copy. It still calls engine stat getters (`movementSpeed`, `wallsFor`, `castCeiling` and others) in its markup; the todos file asks whether that breaks the views-render invariant.
+
+**Resolution (2026-09-26):** W11.3 made `commitment()` return null for an option with a null cost, so the picker stays hidden for a cast tier the unit cannot reach, as before W6. W11.4 added `src/app/battle/unit-sheet.ts`, which builds every figure, title and label of the unit sheet from the engine; the battle controller derives the model for the active unit and `UnitSheet.svelte` renders it. Outside the audit's list, `TroopPicker` (`deriveStats`, `abilitySummary`), `HexInfo` (`at`, `gridOf`) and `ArmyReel`'s routed test still call engine functions in the view; the todos file carries them.
 
 ### M5. Each command's facts are spread across 5+ tables — Shotgun Surgery `[cross-cutting]` `[done]`
 - **Where:** `src/runtime/commands.ts:25,97`; `policy.ts:15,68,84`; `executeCommand.ts:29,81,86,92,205`.
@@ -95,6 +107,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W7.2 moved the readiness drop into `withSetup` in `src/services/session-helpers.ts`, the one door every setup edit passes, so `army.setSide` to the side a unit already holds no longer withdraws readiness. BattleManager owns load, install and moveTo as pure methods. A descriptor's `refuse` answers before any port is touched, and its `prepare` does the archive or site read first; a throw there is a `storage` refusal that commits nothing. The executor queues, validates and persists, and runs undo alone.
 
+**Resolution (2026-09-26):** W11.7 made `session.moveTo`'s `prepare` narrow the site it removes in place of asserting `s.site!`.
+
 ### M7. `battle-controller` is a forwarding facade over one shared bag — Middle Man / Inappropriate Intimacy `[cross-cutting]` `[done]`
 - **Where:** `src/app/battle/battle-controller.svelte.ts:50-96,504-646`
 - **What:** 127 public members, 79 of them pure forwards; all three sub-controllers receive the same 35-getter bag `s` and call each other's verbs through it.
@@ -110,6 +124,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Direction:** Normalise once at load in a `migrate.ts` backed by engine helpers, then bump the schema.
 
 **Resolution (2026-09-26):** W4.2 moved the save repairs out of the rules. `engine/legacy.ts` upgrades saved battles and cards: legacy engine rates, the Wolf Fang case, load-count rescaling, the no-retreat card fallback and the missing engine IDs. The engine's reads carry no save shims. `runtime/migrate.ts` steps a schema-1 record to schema 2 once at load, and `SCHEMA_VERSION` is 2. Only schema-1 records run the catalogue backfill, so a future catalogue change needs its own step. `reviveSession` accepts every schema from 1 to the current one, so the bump leaves browser saves readable, and a test loads a schema-1 browser save. Two effects reach players: an old save whose engine owner was never updated logs one "takes the X" line when it loads, and a module-API `createBattle` card with the `no-retreat` signal and no `abilities` no longer gains Hold Ground.
+
+**Resolution (2026-09-26):** W11.2 added a schema-3 step in `runtime/migrate.ts` that folds a saved `flying` flag or a sheet's `fly` flag into a fly rate and drops the fields; `SCHEMA_VERSION` is 3, and the schema-1 catalogue backfill ignores a `fly` flag that matches the catalogue. A schema-2 unit whose card carried the flag keeps no `sourceSpeed.otherSpeeds`, so its sheet's Army Speed label shows land speed alone; its rates are right. W11.6 limited the legacy rebuild to records from before the envelope.
 
 ### M9. Target IDs are encoded as strings — Stringly Typed `[cross-cutting]` `[done]`
 - **Where:** 28 `'+'` split/join sites across 8 files and 16 `'|'` sites across 9; `battle.ts:1988` tells a wall from a unit with `includes('|')`.
@@ -142,11 +158,15 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W9.1 added `BoardLayer { setGeometry(ctx | null); destroy() }` in `src/board/layers/BoardLayer.ts`. `index.ts` keeps one layer list and iterates it for redraw and teardown; `TerrainLayer` takes its dependencies in its constructor. The token layer is now destroyed after the fallen and combat-text layers, so `FallenLayer.destroy` hands its held pieces to a live `TokenLayer`, which renders them once to no purpose. `clearEffects()` still clears the effect and combat-text layers by name; it drops effects in flight on a stage switch and lies outside the contract.
 
+**Resolution (2026-09-26):** W11.10 made `FallenLayer.destroy()` drop its ticker and marks without releasing them to the token layer, so teardown renders nothing, and dropped the redundant `currentBoard &&` in both `setTerrainAppearance` guards. W11.12 walked four setup stages after a live Foundry battle ended with no console error.
+
 ### M13. Modal, popover and army-card chrome is copied between components — Copy-and-Paste Programming `[cross-cutting]` `[done]`
 - **Where:** `QuitDialog.svelte:43-55` and `EndBattleDialog.svelte:53-65` are identical; Escape-to-close is written 4 times; `SeatingPanel.svelte:143-148` and `SaveLoadPanel.svelte:109-114` share one panel; `Sides.svelte` and `Summary.svelte` repeat the army card, and the `--side` ternary appears 5 times. `TokenModel` is built by hand in `BattleReport.svelte:117`, `Summary.svelte:46`, `VfxGallery.svelte:15` and `Place.svelte`, which already pick the engine name differently.
 - **Direction:** `Modal`, `Popover` and `ArmyCard` components, a `sideColour` helper, and `unitToken`/`setupToken` builders in `presentation.ts`; sweep every caller.
 
 **Resolution (2026-09-26):** W8.3 added `Modal.svelte`, `Popover.svelte` and `ArmyCard.svelte`. `QuitDialog` and `EndBattleDialog` share `Modal`, `SeatingPanel` and `SaveLoadPanel` share `Popover`, and `Sides` and `Summary` share `ArmyCard`. `onEscape` in `keys.ts` is the one Escape handler, which `Modal`, `Popover` and `UnitEffects` use; it keeps today's window-level listener, with no guard for keys pressed outside the app. One behaviour is new: Escape now closes an open Seating or Save/Load popover. `presentation.ts` gained `sideColour`, `ARMY_TITLE`, `pieceToken`, `unitToken` and `setupTokens`, and the report, `Summary`, the place controller, `ArmyReel` and the VFX gallery call them. The battle controller still builds unit tokens by hand, because it picks the engine with `engineOn`, which also checks board engines on the unit's square; the audit did not list it, and the todos file carries it.
+
+**Resolution (2026-09-26):** W11.9 made `onEscape` close only for a key pressed inside the app root. W11.12 found that Escape inside the Foundry window still closed the whole window through core's dismiss, so a priority keybinding, "Escape inside the Battlefield window", now consumes that Escape, and the Escape handlers in `Modal`, `Popover`, `UnitEffects` and `Battle.svelte` listen on the document, which the key reaches before Foundry stops it. The live check covers the Sides and Summary cards, Seating, Save/Load, Quit and End battle. Other core keybindings, map pan and tool letters, still fire for keys typed inside the window; nobody has checked them.
 
 ## Minor
 
@@ -199,16 +219,22 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W3.4, the fallback in case W2.3 had not landed, did not run.
 
+**Resolution (2026-09-26):** W11.5 shows the ground-route warning on every map, through `src/app/connection-warning.ts`, so the view imports no engine function. `BoardSetup` drops the seed input and Reroll: Generate draws a new seed, and Hex, Feature and Construction edits regenerate at once, as Grid and Size do. The Summary still shows the seed, and Paint's "Regenerate map" keeps it. `rules.html` says the warning appears and offers a new map. W11.12 saw the warning live on swamp/lakeside/9/hex seed 47 with a tier-4 fort.
+
 ### m8. Import cycles between layers — Dependency Inversion `[cross-cutting]` `[done]`
 - **Where:** `runtime/executeCommand.ts:7` and `createRuntime.ts` import services, which import runtime in 18 places; `board/layers/CombatTextLayer.ts:3` imports its types from `services`.
 - **Direction:** Move shared session types and helpers to a module both import; the board owns its display types.
 
 **Resolution (2026-09-26):** W7.3 moved the five service interfaces and the `Services` bag to `src/runtime/servicePorts.ts`, and the writeback transitions join the bag as `outcome`. `createRuntime.ts` is the one runtime module that imports a service. `CombatTextLayer` declares its own display types and the board barrel exports them; the combat text queue moved to `src/app/combat-text.ts`. A strongly-connected-components check over `src` finds no module-level cycle. Two comments in `src/board/art.ts:30` and `src/board/layers/TerrainLayer.ts:79` still name ReignMaker's `services/` paths; neither is an import.
 
+**Resolution (2026-09-26):** W11.7 renamed the app's combat text queue `CombatTextQueue`, and the `declareReady` comment in `servicePorts.ts` now says it gates nothing. W11.12 made the combat text loader read `statusIconUrl`, which ended a 404 for `fortified.webp` that failed the whole icon load.
+
 ### m9. Async failures vanish or look like failed commits — Error Hiding `[local]` `[done]`
 - **Where:** `foundry/tableCall.ts:60-71` and `foundry/index.ts:107,113` start promises with `void` and no `catch` — a throwing `refresh()` leaves this client primary with no runtime, and commands time out after 10 s; at `executeCommand.ts:258` a throwing listener rejects a command that already committed.
 
 **Resolution (2026-09-26):** W7.6 runs each record listener in its own try and sends a throw to `ExecutorOptions.onListenerError`, which defaults to `console.error`, so a committed command still answers ok. W7.7 gave every Foundry promise started with `void` a handler. A host whose runtime fails to build reports the error and refuses each request with `storage`, the GM's own included, so no sender waits out the ten-second timeout. `onListenerError` itself has no guard: a host handler that throws still rejects a committed command.
+
+**Resolution (2026-09-26):** W11.7 guards the host's `onListenerError` and sends both errors to `console.error`, so a committed command answers ok. Nothing remains.
 
 ### m10. Randomness and clock read inside authority edits — Hidden Dependencies `[cross-cutting]` `[done]`
 - **Where:** `randomSeed()` at `MapPreparationService.ts:95` and `BattleContinuationService.ts:41`; `mintId` at `session.ts:138`. Only `generateForce` carries its seed in the command.
@@ -216,11 +242,15 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W7.4 added `MintPort` beside `DicePort` in `src/runtime/ports.ts`. `randomMint` replaces `mintId`, `randomSeed` and the `new*Id` helpers, and the services, `submitTo`, the session builders and `migrateSession` take the mint; `createRuntime` takes an optional one. Client-side builders keep a `randomMint` default. Command IDs, the client-side battleId and a parked site's `savedAt` stay on randomness and the clock, and no adapter binds a mint of its own.
 
+**Resolution (2026-09-26):** W11.7 added `sessionWith(setup, battleId, mint)`. `sessionFromRequest` and `sessionAtSite` build on it and no longer draw a seed and six unit IDs for an example setup they discard; `freshSession` keeps its draw order.
+
 ### m11. `beginBattle` is three commands in a row — Sequential Coupling `[cross-cutting]` `[done]`
 - **Where:** `src/app/navigation.svelte.ts:93-104` submits `declareReady` twice and then `startBattle`; a failure partway leaves one side ready.
 - **Direction:** One command.
 
 **Resolution (2026-09-26):** W7.5 made `battle.start` the one begin command. The GM's start gives both armies' word, so `battleFrom` requires every piece on the board and no prior readiness. `declareReady` stays for the player's "My army is ready" button and the Summary marks, and gates nothing.
+
+**Resolution (2026-09-26):** W11.12 checked a seated player's "My army is ready" live in Foundry: the button turns to "Ready — waiting for the GM" and the GM's Summary marks the army ready.
 
 ### m12. `Place.svelte` still holds controller logic `[local]` `[done]`
 - **Where:** `src/app/Place.svelte`: 289 of its 628 lines are script; `lastPick` (`:161-165`) guesses the new ID with `.at(-1)`, so a remote `addUnit` landing first selects the wrong piece.
@@ -230,11 +260,15 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W8.2 added `src/app/place-controller.svelte.ts`. It holds `Place`'s state, derived values, board prop and every call into the rules, services and commands, which `Place.svelte` passes in as dependencies; `Place.svelte` renders and forwards events. Adding a unit or an engine selects the piece the reply's `added` names, and only a resent command, which carries no `added`, falls back to the newest piece, marked `proto:`. A test in `src/tests/place-controller.test.ts` covers the pick.
 
+**Resolution (2026-09-26):** W11.7 corrected the `TransportPort` comment in `ports.ts` to say a reply names the minted pieces in `added`. W11.9 replaced `Place.svelte`'s `import * as store` with named imports that match `PlaceDeps`. W11.12 checked live that an added unit or engine comes up selected.
+
 ### m13. The app layer binds the browser adapter at import time — Hidden Dependency `[cross-cutting]` `[done]`
 - **Where:** `src/app/game.svelte.ts:2-3,20-23`, `launch.ts:1`. Every Foundry client reads `localStorage` and builds a throwaway runtime before `bindClient` replaces it.
 - **Direction:** Build the browser runtime in `main.ts`.
 
 **Resolution (2026-09-26):** W7.7 starts the store on an unbound placeholder that reads no storage and refuses every command. `main.ts` binds `browserStoreClient()` from the new `src/adapters/browser/storeClient.ts` and mounts, so a Foundry client reads no saved browser session and builds no throwaway runtime. A browser save now opens on the stage `bindClient`'s record picks: one whose units carry `faction` with none placed reopens on Sides. `map-style.svelte.ts` and `shell/layout.svelte.ts` still keep UI preferences in `localStorage` on every host.
+
+**Resolution (2026-09-26):** W11.7 reversed the Sides reopening. `main.ts` calls navigation's `resume()` after `bindClient`, which opens the first unfinished stage with every step before it visited, as before W7; Foundry's entry keeps its path. W11.12's `browser.spec` checks a fresh load, a reload with the defenders placed, and a reload mid-battle.
 
 ### m14. `VfxGallery` ships in the product bundle — Boat Anchor `[local]` `[done]`
 - **Where:** `src/app/App.svelte:10,34,58`: a query string alone gates it, and it is present in `dist-foundry`.
@@ -242,12 +276,14 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W2.5 loads `VfxGallery` through a dynamic `import()` gated on `import.meta.env.DEV`, as `TextureLab` already was, so production and Foundry builds drop it. A deployed web build no longer serves `?vfx`.
 
-### m15. Colours and shadows bypass tokens — Hard Code `[cross-cutting]` `[partial]`
+### m15. Colours and shadows bypass tokens — Hard Code `[cross-cutting]` `[done]`
 - **Where:** `SaveLoadPanel.svelte:117` uses the undefined `--danger` (`--bad` exists); `BoardPopup.svelte:78-99` and `ArmyReel` hard-code palettes; 10 distinct shadow values and 4 scrim alphas have no token.
 
 **Resolution (2026-09-26):** W2.5 switched `SaveLoadPanel`'s error colour to `--bad`. The hard-coded palettes, shadows and scrims remain for W8.4.
 
 **Resolution (2026-09-26):** W8.4 added `--shadow-1`, `--shadow-2`, `--shadow-3`, `--icon-shadow`, `--icon-shadow-lift`, `--scrim`, `--scrim-deep`, the `--chip-*` palette, `--caution` and the `--popup-cast`, `--popup-rally` and `--popup-shoot` accents to `app.css`, and every component outside `src/app/battle/` reads them. `BoardPopup` drops its own dark-mode override, since the tokens swap. Two shadows changed slightly: `Dock`'s all-round glow now takes `--shadow-2`, and the `MapControls` grid dialog takes the deeper `--shadow-3`. `battle/BattlePins.svelte` and `battle/ActivityChoices.svelte` still hard-code their shadows, because they sat in the other lane; the todos file carries them.
+
+**Resolution (2026-09-26):** W11.9 switched the three shadows in `BattlePins.svelte` and `ActivityChoices.svelte` to `--shadow-1` and `--icon-shadow`. W11.12 screenshotted the drag HUD, the activity picker and the grid dialog live. Nothing remains.
 
 ## Nits
 - `TroopPicker.svelte:92` `[local]` `[done]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.
@@ -261,6 +297,7 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - `EdgeLayer.ts:467` `[local]` `[done]` — the cliff test restates `barrierBetween`; `Token.ts:267,272` decide routed without `status`.
   **Resolution (2026-09-26):** W2.4 routed the cliff test through `barrierBetween`. `Token`'s routed test remains for W9.2.
   **Resolution (2026-09-26):** W9.2 added a required `routed` flag to the unit token model, set from the engine's `isRouted` in `unitToken`; the battle controller now builds its tokens with `unitToken`. `src/board/status-bars.ts` still labels a unit at Morale 0 "routed" without `status`; the todos file carries it.
+  **Resolution (2026-09-26):** W11.10 made `statusBars` take the engine's routed verdict, so a destroyed unit at Morale 0 no longer reads routed; `ArmyReel` passes `disorder >= ROUTED_AT` for its active-only list. W11.12 checked a routed unit's grey-out, flag and label live.
 - `ring-controller.svelte.ts:5` `[local]` `[done]` — unused `stage` import.
   **Resolution (2026-09-26):** W2.5 removed the import.
 - `types.ts:383-386` `[local]` `[done]` — `BANDS` square and hex rows are identical.
