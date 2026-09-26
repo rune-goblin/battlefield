@@ -343,9 +343,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const loading = terrainLayer.setAppearance(appearance);
       terrain = appearance;
       applyLines();
-      if (!inkMap && currentBoard && context) terrainLayer.setGeometry(context);
+      if (!inkMap && context) terrainLayer.setGeometry(context);
       void loading.then((loaded) => {
-        if (loaded && alive && !inkMap && terrain === appearance && currentBoard && context) {
+        if (loaded && alive && !inkMap && terrain === appearance && context) {
           terrainLayer.setGeometry(context);
         }
       });

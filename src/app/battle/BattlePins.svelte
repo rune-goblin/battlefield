@@ -301,7 +301,7 @@
     left: calc(var(--inset-left, 0px) + .85rem);
     display: flex; gap: .6rem; align-items: center;
     padding: .35rem .7rem; border-radius: 8px; font-size: var(--type-body);
-    background: var(--card); border: 1px solid var(--rule); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+    background: var(--card); border: 1px solid var(--rule); box-shadow: var(--shadow-1);
     pointer-events: none;
   }
   .popup-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .1rem 1.3rem .3rem .4rem; font-weight: 600; color: var(--muted); }
@@ -319,7 +319,7 @@
   .row-cost { display: inline-flex; align-items: center; min-width: 2.4rem; color: var(--accent); }
   .picker-heading { display: flex; align-items: center; gap: .65rem; padding: .35rem .7rem .5rem; margin-bottom: .35rem; border-bottom: 1px solid var(--rule); }
   .picker-emblem { position: relative; flex: 0 0 3rem; height: 3rem; display: grid; place-items: center; }
-  .picker-emblem img { width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 2px 3px #0004); }
+  .picker-emblem img { width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(var(--icon-shadow)); }
   .picker-heading-text { display: flex; flex-direction: column; min-width: 0; }
   .picker-heading-text strong { font-size: var(--type-2); line-height: var(--leading-heading); }
   .picker-kicker { color: var(--accent); font-size: var(--type-small); font-weight: 700; margin-bottom: .25rem; }

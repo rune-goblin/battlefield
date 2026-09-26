@@ -32,7 +32,7 @@
   .activity-row .popup-verb { gap: .4rem; font-size: var(--type-small); }
   .activity-row.dim { opacity: 1; color: var(--muted); background: var(--band); }
   .activity-row.dim .popup-verb { opacity: .55; filter: grayscale(1); }
-  .activity-tooltip { display: none; position: absolute; top: 100%; left: 0; z-index: 10; width: max-content; max-width: 16rem; padding: .4rem .55rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); box-shadow: 0 3px 10px #0004; font-size: var(--type-small); font-weight: 400; pointer-events: none; }
+  .activity-tooltip { display: none; position: absolute; top: 100%; left: 0; z-index: 10; width: max-content; max-width: 16rem; padding: .4rem .55rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); box-shadow: var(--shadow-1); font-size: var(--type-small); font-weight: 400; pointer-events: none; }
   .activity-row:nth-child(even) .activity-tooltip { left: auto; right: 0; }
   .activity-row:not(.on):hover .activity-tooltip, .activity-row:not(.on):focus-visible .activity-tooltip { display: block; }
   .selected-effect { margin: .4rem .5rem; color: var(--muted); line-height: var(--leading-compact); }

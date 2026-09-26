@@ -15,7 +15,7 @@ export interface StatusBar {
 }
 
 /** Stored losses remain compatible with saves; the interface shows Health and Morale remaining. */
-export function statusBars(wounds: number, disorder: number): { health: StatusBar; morale: StatusBar } {
+export function statusBars(wounds: number, disorder: number, routed: boolean): { health: StatusBar; morale: StatusBar } {
   const damage = Math.max(0, Math.min(MAX_WOUNDS, wounds));
   const loss = Math.max(0, Math.min(ROUTED_AT, disorder));
   const health = MAX_WOUNDS - damage;
@@ -29,7 +29,7 @@ export function statusBars(wounds: number, disorder: number): { health: StatusBa
     morale: {
       remaining: morale, max: ROUTED_AT,
       colour: morale === 0 ? STATUS_TRACK : loss >= 2 ? RED : loss >= 1 ? ORANGE : GREEN,
-      label: `Morale ${morale}/${ROUTED_AT}${morale === 0 ? ' — routed' : ''}`,
+      label: `Morale ${morale}/${ROUTED_AT}${routed ? ' — routed' : ''}`,
     },
   };
 }

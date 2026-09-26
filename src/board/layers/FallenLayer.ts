@@ -140,7 +140,10 @@ export class FallenLayer implements BoardLayer {
   }
 
   destroy(): void {
+    // Not setGeometry(null): that renders and calls opts.release, which runs TokenLayer.renderAll
+    // on a board already tearing down. Teardown drops the marks directly instead.
     this.ticker.remove(this.tick);
-    this.setGeometry(null);
+    for (const mark of this.marks.values()) mark.sprite.destroy();
+    this.marks.clear();
   }
 }
