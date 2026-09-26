@@ -39,12 +39,12 @@
 
 <style>
   .scrim { inset: 0; display: grid; place-items: center; }
-  .window { position: fixed; z-index: 60; padding: 1rem; background: rgba(0, 0, 0, .55); pointer-events: auto; }
-  .stage { position: absolute; padding: 2rem; background: rgba(0, 0, 0, .45); }
+  .window { position: fixed; z-index: 60; padding: 1rem; background: var(--scrim); pointer-events: auto; }
+  .stage { position: absolute; padding: 2rem; background: var(--scrim); }
   .frame {
     max-height: 100%; min-height: 0; display: flex; flex-direction: column;
     background: var(--card); border: 1px solid var(--rule); border-top: 3px solid var(--tone);
-    border-radius: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+    border-radius: 10px; box-shadow: var(--shadow-3);
   }
   .frame:not(.bare) { gap: .8rem; padding: 1.1rem 1.2rem; }
   h2 { margin: 0; padding: 0; border: 0; font-size: var(--type-2); line-height: var(--leading-compact); }

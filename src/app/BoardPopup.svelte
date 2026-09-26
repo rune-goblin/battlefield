@@ -66,16 +66,16 @@
     max-height: calc(100% - var(--inset-top, 0px) - var(--inset-bottom, 0px) - 1.2rem); overflow-y: auto;
     padding: .4rem; border-radius: 10px;
     background: var(--card); border: 1px solid var(--accent);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+    box-shadow: var(--shadow-2);
     font-size: var(--type-body);
     cursor: default;
     touch-action: pan-y;
   }
   .board-popup :global(.popup-head), .board-popup :global(.picker-heading), .board-popup :global(.siege-heading) { cursor: grab; touch-action: none; }
-  .board-popup.dragging { cursor: grabbing; box-shadow: 0 10px 26px rgba(0, 0, 0, .45); }
+  .board-popup.dragging { cursor: grabbing; box-shadow: var(--shadow-3); }
 
   .board-popup[data-appearance='cast'] {
-    --accent: #66539b;
+    --accent: var(--popup-cast);
     border: 3px double color-mix(in srgb, var(--accent) 65%, var(--rule));
     border-radius: 16px;
     background:
@@ -83,20 +83,15 @@
       var(--card);
   }
   .board-popup[data-appearance='rally'] {
-    --accent: #87611d;
+    --accent: var(--popup-rally);
     border-radius: 3px 3px 10px 10px;
     border-top: 4px solid var(--accent);
     background: linear-gradient(110deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent), var(--card);
   }
   .board-popup[data-appearance='shoot'] {
-    --accent: #66714b;
+    --accent: var(--popup-shoot);
     border-radius: 4px;
     border-top: 2px solid var(--accent);
-  }
-  @media (prefers-color-scheme: dark) {
-    .board-popup[data-appearance='cast'] { --accent: #b5a3e2; }
-    .board-popup[data-appearance='rally'] { --accent: #d5b36e; }
-    .board-popup[data-appearance='shoot'] { --accent: #b4bd93; }
   }
 
   .popup-close {

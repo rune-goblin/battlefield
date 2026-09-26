@@ -61,10 +61,10 @@
   .icon {
     pointer-events: auto; position: relative; width: 2.75rem; height: 2.75rem; padding: 0;
     border: 2px solid var(--tone); border-radius: 6px; background: var(--glass); overflow: visible;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+    box-shadow: var(--shadow-1);
   }
   .icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
-  .icon.on { box-shadow: 0 0 0 2px var(--tone), 0 2px 8px rgba(0, 0, 0, .35); }
+  .icon.on { box-shadow: 0 0 0 2px var(--tone), var(--shadow-1); }
   .initial { font-size: var(--type-3); font-weight: 700; color: var(--tone); }
   .good { --tone: var(--good); }
   .warn { --tone: var(--warn2); }
@@ -85,7 +85,7 @@
   .detail {
     pointer-events: auto; order: -1; width: 19rem; padding: .6rem .8rem .7rem;
     background: var(--card); border: 1px solid var(--tone);
-    border-radius: 8px; box-shadow: 0 6px 22px rgba(0, 0, 0, .4); font-size: var(--type-body);
+    border-radius: 8px; box-shadow: var(--shadow-2); font-size: var(--type-body);
   }
   .detail header { display: flex; align-items: baseline; gap: .5rem; }
   .detail h3 { flex: 1; margin: 0; color: var(--tone); }

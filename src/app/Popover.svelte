@@ -31,6 +31,6 @@
     position: absolute; right: 0; top: calc(100% + .3rem); z-index: 10; width: 20rem;
     display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
     background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, .25); font-size: var(--type-body);
+    box-shadow: var(--shadow-2); font-size: var(--type-body);
   }
 </style>

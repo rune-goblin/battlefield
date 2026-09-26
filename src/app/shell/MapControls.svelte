@@ -103,7 +103,7 @@
     border: 1px solid var(--rule);
     border-radius: 9px;
     background: color-mix(in srgb, var(--card) 92%, transparent);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, .3);
+    box-shadow: var(--shadow-1);
     transition: right .18s ease, bottom .18s ease;
   }
 
@@ -126,9 +126,9 @@
     border-radius: 9px;
     background: var(--card);
     color: var(--ink);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
+    box-shadow: var(--shadow-3);
   }
-  .grid-settings::backdrop { background: rgba(0, 0, 0, .35); }
+  .grid-settings::backdrop { background: var(--scrim); }
   .grid-settings h2 { margin: 0 0 .7rem; font-size: var(--type-1); }
   .grid-settings label {
     display: flex; align-items: center; gap: .5rem;

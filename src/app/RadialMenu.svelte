@@ -113,15 +113,15 @@
   }
   /* Translucent, so the board keeps reading through the ring — an opaque band flattens it. */
   .band {
-    background: rgb(26 23 20 / .78);
-    filter: drop-shadow(0 2px 4px rgb(0 0 0 / .18));
+    background: var(--chip-glass);
+    filter: drop-shadow(var(--icon-shadow));
     mask: radial-gradient(
       closest-side,
       transparent calc(var(--ri) / var(--ro) * 100%),
       #000 calc(var(--ri) / var(--ro) * 100% + .5px)
     );
   }
-  .rim { border: 1px solid rgb(150 143 132 / .5); }
+  .rim { border: 1px solid var(--chip-rim); }
   .inner { width: calc(var(--ri) * 2px); height: calc(var(--ri) * 2px); }
 
   .slice {
@@ -138,7 +138,7 @@
   .face {
     position: absolute; inset: 0;
     width: 100%; height: 100%; object-fit: contain; pointer-events: none;
-    filter: drop-shadow(0 2px 5px rgb(0 0 0 / .55));
+    filter: drop-shadow(var(--icon-shadow));
     transition: transform .12s cubic-bezier(.25, 1.3, .45, 1), filter .12s ease;
     animation: pop .3s cubic-bezier(.25, 1.3, .45, 1) 120ms backwards;
   }
@@ -160,10 +160,10 @@
   /* Growth is the highlight: the hovered icon lifts off the ring instead of lighting a disc. */
   .slice:hover:not(.dim) .face {
     transform: scale(1.22);
-    filter: drop-shadow(0 3px 8px rgb(0 0 0 / .6)) brightness(1.12);
+    filter: drop-shadow(var(--icon-shadow-lift)) brightness(1.12);
   }
   .slice.dim { cursor: default; }
-  .slice.dim .face { filter: grayscale(1) drop-shadow(0 2px 5px rgb(0 0 0 / .45)); opacity: .4; }
+  .slice.dim .face { filter: grayscale(1) drop-shadow(var(--icon-shadow)); opacity: .4; }
 
   /* Seated in the hole itself, not a seventh slice — small enough that the piece underneath
      still reads, since undoing the branch is the one thing this ring adds over the last. */
@@ -171,15 +171,15 @@
     position: absolute; left: 0; top: 0;
     width: 34px; height: 34px; transform: translate(-50%, -50%);
     display: flex; align-items: center; justify-content: center;
-    border-radius: 50%; border: 1px solid rgb(150 143 132 / .5);
-    background: rgb(26 23 20 / .78);
+    border-radius: 50%; border: 1px solid var(--chip-rim);
+    background: var(--chip-glass);
     /* Fixed, not `--ink`/`--paper`: the band behind it is dark in either theme, and those two
        swap which one that means. */
-    color: #f4efe6; font-size: var(--type-4); font-weight: 700; line-height: 1; cursor: pointer;
-    filter: drop-shadow(0 2px 4px rgb(0 0 0 / .4));
+    color: var(--chip-ink); font-size: var(--type-4); font-weight: 700; line-height: 1; cursor: pointer;
+    filter: drop-shadow(var(--icon-shadow));
     transition: transform .12s cubic-bezier(.25, 1.3, .45, 1), background-color .12s ease;
   }
-  .back:hover { transform: translate(-50%, -50%) scale(1.15); background: rgb(26 23 20 / .92); }
+  .back:hover { transform: translate(-50%, -50%) scale(1.15); background: var(--chip); }
 
   @keyframes spread {
     from { --ro: 10; opacity: 0; }

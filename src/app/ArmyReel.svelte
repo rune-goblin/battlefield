@@ -104,17 +104,17 @@
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .15rem;
     width: min-content; min-width: 5.4rem; padding: .25rem .35rem;
     /* Dark in both themes so the miniature and flag stand out; only the border carries the side. */
-    background: rgba(24, 22, 20, .92);
+    background: var(--chip);
     border: 2px solid var(--side);
-    border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
-    font: inherit; font-size: var(--type-small); color: #ece6dc; text-align: center; cursor: pointer;
+    border-radius: 8px; box-shadow: var(--shadow-1);
+    font: inherit; font-size: var(--type-small); color: var(--chip-ink); text-align: center; cursor: pointer;
     /* Width follows the name's longest word and cannot tween, so a card grows by padding: the
        name keeps its room and does not rewrap mid-animation. */
     transition: min-width .16s ease, padding .16s ease, opacity .16s ease;
   }
   .unit-card .square {
     position: absolute; top: .2rem; left: .3rem;
-    color: #b5ab9c; font-size: var(--type-label); line-height: 1;
+    color: var(--chip-muted); font-size: var(--type-label); line-height: 1;
   }
   /* The piece's own flag, in the army's colour, with the level on its cloth. */
   .flag {
@@ -124,7 +124,7 @@
   .flag :global(svg) { display: block; width: 100%; height: 100%; }
   .flag .level {
     position: absolute; inset: 0 0 .25rem; display: grid; place-items: center;
-    color: #f8f4ec; font-size: var(--type-label); font-weight: 700; line-height: 1;
+    color: var(--chip-ink); font-size: var(--type-label); font-weight: 700; line-height: 1;
   }
   .unit-card img {
     width: 3.2rem; height: 3.2rem; object-fit: contain;
@@ -157,9 +157,9 @@
     pointer-events: auto;
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .1rem;
     width: min-content; min-width: 3.4rem; padding: .15rem .3rem;
-    background: rgba(24, 22, 20, .92);
+    background: var(--chip);
     border: 1px solid var(--side); border-radius: 6px;
-    color: #b5ab9c;
+    color: var(--chip-muted);
   }
   .chit img { width: 2rem; height: 2rem; object-fit: contain; filter: grayscale(1); opacity: .7; }
   .chit .name { font-size: var(--type-label); line-height: var(--leading-heading); text-align: center; }
