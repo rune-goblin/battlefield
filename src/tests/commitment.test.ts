@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, isRouted, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, isRouted, unit } from '../engine/index.js';
 import { parse, notation } from '../engine/board.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';

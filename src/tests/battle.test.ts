@@ -3,7 +3,7 @@ import {
   act, activatable, activation, activeUnit, availableActions, chargeTargets, createBattle, crewOf, defenceOf, deselect,
   endActivation, engagedEnemies, holdersOf, isOutflanked, stepTargets, isRouted, isStanding, moveReach, movePath,
   rangeBetween, select, shootModifier, siegeAttackOffer, siegeReason, strikeModifier, unit, willModifier,
-} from '../engine/battle.js';
+} from '../engine/index.js';
 import { edgeKey, gridOf, hexGrid, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';

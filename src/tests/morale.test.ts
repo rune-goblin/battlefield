@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, endActivation, isRouted, isStanding, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, endActivation, isRouted, isStanding, unit } from '../engine/index.js';
 import { COMBATANTS, OFFICIAL, ROSTER, ENGINES, ROUTED_AT, parse, type UnitCard } from '../engine/index.js';
 import { migrateMorale } from '../runtime/session.js';
 import { scriptedRng } from '../engine/rng.js';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { answerSurrender, canContinueBattle, declareDayOrder, nextDayBattlefield, recoverAtNight, recoveryDc, resolveDayOrders, startNextDay, suggestDeployment } from '../engine/aftermath.js';
-import { createBattle, endActivation, isStanding } from '../engine/battle.js';
+import { createBattle, endActivation, isStanding } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
 import { levelDc } from '../engine/tables.js';
 import { parse } from '../engine/board.js';

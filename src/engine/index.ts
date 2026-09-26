@@ -6,7 +6,7 @@ export * from './ladders.js';
 export * from './magic.js';
 export * from './types.js';
 export * from './status.js';
-export * from './battle.js';
+export * from './battle/index.js';
 export * from './targets.js';
 export * from './aftermath.js';
 export * from './roster.js';

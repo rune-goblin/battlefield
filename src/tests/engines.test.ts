@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, activeUnit, availableActions, createBattle, unit, movementSpeed, moveReach, siegeAttackOffer, siegeEngines, siegeReason, engineLoaded, endActivation } from '../engine/battle.js';
+import { act, activeUnit, availableActions, createBattle, unit, movementSpeed, moveReach, siegeAttackOffer, siegeEngines, siegeReason, engineLoaded, endActivation } from '../engine/index.js';
 import { edgeKey, parse } from '../engine/board.js';
 import { ENGINES } from '../engine/engines.js';
 import { scriptedRng } from '../engine/rng.js';

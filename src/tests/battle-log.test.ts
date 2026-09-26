@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { battleLogBlocks } from '../app/battle-log.js';
-import { act, createBattle, deselect, endActivation, select } from '../engine/battle.js';
+import { act, createBattle, deselect, endActivation, select } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 

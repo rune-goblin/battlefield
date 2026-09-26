@@ -1,5 +1,5 @@
 import { gridOf, notation, parse } from './board.js';
-import { canDeploy, crewOf, isStanding, isSurvivor, unit } from './battle.js';
+import { canDeploy, crewOf, isStanding, isSurvivor, unit } from './battle/index.js';
 import { check, rollLine, successes } from './check.js';
 import { clone } from './clone.js';
 import type { Rng } from './rng.js';
