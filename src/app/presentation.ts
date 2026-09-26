@@ -5,7 +5,7 @@ import type { BattleSetupDraft, SetupUnit } from '../runtime/session.js';
 import { engineUnder } from '../services/ArmyPreparationService.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
-import { createCombatTextService, type CombatTextDisplay, type CombatTextLine, type CombatTextService } from './combat-text.js';
+import { createCombatTextQueue, type CombatTextDisplay, type CombatTextLine, type CombatTextQueue } from './combat-text.js';
 import { unitOf } from './battle-lookup.js';
 import type { NotificationService } from './notifications.js';
 import { noticesFor, type NoticeViewer } from './session-notices.js';
@@ -29,7 +29,7 @@ export interface PresentationSink {
   burst(cell: string, tree: Tree, from: string): void;
   /** The afterglow of a resolved action: marks where it landed and arrows to each. */
   resolved(markers: TargetMarker[], arrows: TargetArrow[]): void;
-  /** Attached to the combat text service while the board is on screen. */
+  /** Attached to the combat text queue while the board is on screen. */
   combatText: CombatTextDisplay;
 }
 
@@ -224,7 +224,7 @@ export interface Presentation {
   /** The board view takes the play while it is on screen. */
   connect(sink: PresentationSink): () => void;
   /** Every commit's words go here, and so may any other line the app wants over a piece. */
-  readonly combatText: CombatTextService;
+  readonly combatText: CombatTextQueue;
   /** The notification host takes the session notices while the app is mounted. */
   connectNotices(notifications: NotificationService, viewer: NoticeViewer): () => void;
 }
@@ -237,7 +237,7 @@ function deliver(host: NoticeHost, next: BattleSession): void {
   for (const id of dismiss) host.service.dismiss(id);
 }
 
-export function createPresentation(seed: BattleSession, combatText = createCombatTextService()): Presentation {
+export function createPresentation(seed: BattleSession, combatText = createCombatTextQueue()): Presentation {
   let last: BattleSession = seed;
   let sink: PresentationSink | null = null;
   let notices: NoticeHost | null = null;

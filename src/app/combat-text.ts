@@ -11,7 +11,7 @@ export type CombatTextDisplay = (line: CombatTextLine) => void;
  * plays every line in the order queued. Lines queued with no display attached wait for the
  * next one.
  */
-export interface CombatTextService {
+export interface CombatTextQueue {
   queue(...lines: CombatTextLine[]): void;
   /** Replaces any display attached before. The returned function detaches this one alone. */
   attach(display: CombatTextDisplay): () => void;
@@ -19,7 +19,7 @@ export interface CombatTextService {
   clear(): void;
 }
 
-export function createCombatTextService(): CombatTextService {
+export function createCombatTextQueue(): CombatTextQueue {
   let display: CombatTextDisplay | null = null;
   let waiting: CombatTextLine[] = [];
   const flush = () => {
