@@ -17,7 +17,7 @@ export interface TableUsers {
 }
 
 /** A world user, as the seating reads them. */
-export interface WorldUser { id: string; name: string }
+export interface WorldUser { id: string; name: string; character?: string | null }
 
 export function foundryTableUsers(): TableUsers {
   return {
@@ -25,7 +25,7 @@ export function foundryTableUsers(): TableUsers {
     primaryGmId: () => game.users.activeGM?.id ?? null,
     isActive: (userId) => game.users.get(userId)?.active === true,
     activeUserIds: () => game.users.filter((user) => user.active).map((user) => user.id),
-    worldUsers: () => game.users.contents.map((user) => ({ id: user.id, name: user.name })),
+    worldUsers: () => game.users.contents.map((user) => ({ id: user.id, name: user.name, character: user.character?.name ?? null })),
   };
 }
 

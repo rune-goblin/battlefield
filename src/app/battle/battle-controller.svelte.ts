@@ -342,6 +342,8 @@ export function createBattleController(deps: BattleDeps) {
     if (deps.tableUsers().length < 2 || !deps.game.turn) return null;
     return deps.viewer.isHolder ? 'Your turn' : deps.viewer.holderName;
   }
+  /** The character whose player holds the turn, shown under the army reel. */
+  const playing = $derived(deps.tableUsers().length < 2 || !deps.game.turn ? null : deps.viewer.holderCharacter);
   $effect(() => {
     if (b.phase !== 'battle') { announced = null; return; }
     const next = { day: b.day, round: b.round, activated: b.activated.length, pending: b.pending, player: playerNow() };
@@ -556,6 +558,7 @@ export function createBattleController(deps: BattleDeps) {
     get cost() { return cost; },
     get actionsLeft() { return actionsLeft; },
     get announced() { return announced; },
+    get playing() { return playing; },
     onWindowPointerDown,
     get pickUnit() { return pickUnit; },
     get statusLine() { return statusLine; },

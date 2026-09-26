@@ -91,6 +91,7 @@
       hover={(id) => { c.hoveredCard = id; }}
     >
       {#snippet below()}
+        {#if c.playing}<p class="playing" class:mine={viewer.isHolder}>{c.playing}</p>{/if}
         {#if c.announced}
           <BattleAnnouncement kind="side" text={c.announced.pending === 'attacker' ? 'Attackers' : 'Defenders'}
             side={c.announced.pending} afterRound={c.announced.activated === 0} detail={c.announced.player} cue={`${c.announced.day}:${c.announced.round}:${c.announced.activated}:${c.announced.pending}`} />
@@ -117,4 +118,10 @@
 <style>
   .turn { padding: .05rem .45rem; border: 1px solid var(--rule); border-radius: 999px; font-size: var(--type-small); color: var(--muted); }
   .turn.mine { border-color: var(--accent); color: var(--ink); }
+  .playing {
+    width: fit-content; margin: .3rem auto 0; padding: .1rem .7rem; border-radius: 999px;
+    background: color-mix(in srgb, var(--side) 22%, var(--glass)); color: var(--ink);
+    font-size: var(--type-body); font-weight: 600;
+  }
+  .playing.mine { outline: 1px solid var(--accent); }
 </style>

@@ -115,4 +115,6 @@ export interface TableUser {
   id: string;
   name: string;
   online: boolean;
+  /** The character the host assigns this user, where it has one. */
+  character?: string | null;
 }

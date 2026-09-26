@@ -29,6 +29,7 @@ export function foundryStoreClient(
     gmUserId: () => presence.gmUserId(),
     tableUsers: () => presence.users().map((id) => ({
       id, name: presence.displayName(id), online: presence.online(id),
+      character: users.worldUsers().find((user) => user.id === id)?.character ?? null,
     })),
     submit: (command) => host.submit(command),
     subscribe: (listener) => watcher.subscribe(listener),

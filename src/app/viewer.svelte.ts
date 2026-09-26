@@ -25,6 +25,13 @@ export const viewer = {
     return game.turn === null ? null : tableUsers().find((u) => u.id === game.turn)?.name ?? game.turn;
   },
 
+  /** The character the turn holder plays, falling back to their own name. */
+  get holderCharacter(): string | null {
+    if (game.turn === null) return null;
+    const user = tableUsers().find((u) => u.id === game.turn);
+    return user?.character ?? user?.name ?? game.turn;
+  },
+
   get isHolder(): boolean { return game.turn !== null && game.turn === viewerId(); },
 
   /** Whether this client's tactical controls are live. With no primary GM at the table there
