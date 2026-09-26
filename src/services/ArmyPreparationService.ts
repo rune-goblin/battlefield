@@ -8,6 +8,7 @@ import {
   newEquipmentId, newUnitId, randomSeed,
   type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit,
 } from '../runtime/session.js';
+import { settleHauling, withSetup } from './session-helpers.js';
 
 /**
  * The force a side brings and where it stands. Every call reads the executor's working
@@ -144,21 +145,6 @@ export function sideReady(setup: BattleSetupDraft, side: Side): boolean {
   const us = setup.units.filter((u) => u.side === side);
   return us.length > 0 && us.every((u) => u.square !== null);
 }
-
-/** The unit standing on an engine claims it for its army, and hauling lasts only while one does. */
-function settleHauling(setup: BattleSetupDraft): BattleSetupDraft {
-  const crew = (e: SetupEngine) => (e.square === null ? undefined : setup.units.find((u) => u.square === e.square));
-  const settled = (e: SetupEngine): SetupEngine => {
-    const unit = crew(e);
-    if (!unit) return e.hauled ? { ...e, hauled: false } : e;
-    return unit.side === e.side ? e : { ...e, side: unit.side };
-  };
-  const emplacements = setup.emplacements.map(settled);
-  return emplacements.every((e, i) => e === setup.emplacements[i]) ? setup : { ...setup, emplacements };
-}
-
-const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession =>
-  ({ ...session, setup: settleHauling(setup) });
 
 const otherSide = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 

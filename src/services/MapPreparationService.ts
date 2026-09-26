@@ -4,6 +4,7 @@ import {
 import type { PaintBrush, PaintStroke } from '../runtime/commands.js';
 import type { BattleSession } from '../runtime/session.js';
 import { randomSeed, type BattleSetupDraft } from '../runtime/session.js';
+import { withSetup } from './session-helpers.js';
 
 export interface MapPreparationService {
   generate(session: BattleSession): BattleSession;
@@ -84,8 +85,6 @@ function clearUndeployable(board: Board, setup: BattleSetupDraft): BattleSetupDr
 function generateFrom(setup: BattleSetupDraft): BattleSetupDraft {
   return clearUndeployable(generateBoard(setup.spec), setup);
 }
-
-const withSetup = (session: BattleSession, setup: BattleSetupDraft): BattleSession => ({ ...session, setup });
 
 export function createMapPreparationService(): MapPreparationService {
   return {

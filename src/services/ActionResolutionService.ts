@@ -6,6 +6,7 @@ import type { TacticalAction } from '../runtime/commands.js';
 import type { BattleEventBody } from '../runtime/events.js';
 import type { DicePort } from '../runtime/ports.js';
 import type { BattleSession } from '../runtime/session.js';
+import { battleOf, withBattle } from './session-helpers.js';
 
 /**
  * Selection, resolution, and the explicit end of an activation. One module sees the whole
@@ -20,13 +21,6 @@ export interface ActionResolutionService {
   /** What the transition did, in the order it happened, for the commit to carry. */
   events(previous: BattleSession, next: BattleSession, action?: TacticalAction): BattleEventBody[];
 }
-
-function battleOf(session: BattleSession): BattleState {
-  if (!session.battle) throw new Error('no battle is under way');
-  return session.battle;
-}
-
-const withBattle = (session: BattleSession, battle: BattleState): BattleSession => ({ ...session, battle });
 
 const moved = (unit: string, route: string[]): BattleEventBody =>
   ({ type: 'unitMoved', unit, from: route[0], to: route[route.length - 1], route });

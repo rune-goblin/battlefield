@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { UnitCard } from '../engine/index.js';
+import { canEmplace, generateBoard, gridOf, notation, type UnitCard } from '../engine/index.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import type { PaintStroke } from '../runtime/commands.js';
 import type { SessionRepository } from '../runtime/ports.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
+import { createMapPreparationService } from '../services/MapPreparationService.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
 const infantry: UnitCard = { name: 'Infantry', level: 6, role: 'infantry', tactics: [] };
@@ -78,5 +79,22 @@ describe('map preparation', () => {
     await runtime.submit({ type: 'setup.paint', stroke: { ...bridge, brush: { kind: 'terrain', terrain: 'water' } } });
     await runtime.submit({ type: 'setup.paint', stroke: bridge });
     expect(cell().bridgeTurns).toBeUndefined();
+  });
+
+  it('settles a stale hauled flag when the board regenerates under an unattended engine', () => {
+    const spec = { base: 'plains' as const, size: 9 as const, feature: 'none' as const, construction: null, seed: 1 };
+    const board = generateBoard(spec);
+    const cell = notation(gridOf(board).cells().find((sq) => canEmplace(board, sq))!);
+    const session: BattleSession = {
+      ...freshSession(),
+      setup: {
+        spec, board, units: [],
+        emplacements: [{ id: 'eq-1', name: 'Ballista', side: 'attacker', square: cell, hauled: true }],
+      },
+    };
+
+    const result = createMapPreparationService().generate(session);
+
+    expect(result.setup.emplacements[0].hauled).toBe(false);
   });
 });

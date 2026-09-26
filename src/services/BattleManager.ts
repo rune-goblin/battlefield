@@ -8,6 +8,7 @@ import { submissionOf } from '../runtime/interactions.js';
 import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
+import { battleOf } from './session-helpers.js';
 
 /**
  * The lifecycle transitions. Each one either moves the session from one stage to the next or
@@ -28,11 +29,6 @@ export interface BattleManager {
   finalize(session: BattleSession): BattleSession;
   /** A terrain edit and the placements it invalidates, as one change. */
   paint(session: BattleSession, stroke: PaintStroke): BattleSession;
-}
-
-function battleOf(session: BattleSession): BattleState {
-  if (!session.battle) throw new Error('no battle is under way');
-  return session.battle;
 }
 
 /** The decisions belong to the stage and the day that asked for them; a transition that ends
