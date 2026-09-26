@@ -36,6 +36,12 @@ export const sessionWatcher = createSessionWatcher(freshSession());
  * are registered and `game.users` can name the active GM. */
 export let host: BattlefieldHost | null = null;
 
+// proto: one generic line for every failure, until each has wording of its own.
+function reportFailure(error: unknown): void {
+  console.error('battlefield |', error);
+  ui.notifications.error(`Battlefield hit an error: ${error instanceof Error ? error.message : String(error)}`);
+}
+
 const tableCall = createTableCall({
   storage: gameSettingStorage(TABLE_CALL_SETTING),
   isGm: () => game.user?.isGM === true,
@@ -44,6 +50,7 @@ const tableCall = createTableCall({
   openWindow: () => BattlefieldApp.open(),
   closeWindow: () => BattlefieldApp.close(),
   chip: domReopenChip(),
+  onError: reportFailure,
 });
 BattlefieldApp.table = tableCall;
 
@@ -85,8 +92,9 @@ Hooks.once('init', () => {
     dice: foundryDice(),
     chat: foundryChatPoster(),
     onAuthority: reportAuthority,
+    onError: reportFailure,
   });
-  bindQuit(() => void BattlefieldApp.close());
+  bindQuit(() => { BattlefieldApp.close().catch(reportFailure); });
   bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive, table: tableCall }));
   channel.on((message) => host?.handleMessage(message));
   sessionWatcher.subscribe(() => tableCall.handleSession());
@@ -106,18 +114,18 @@ Hooks.once('ready', () => {
   followArt();
   // A world with no saved session delivers no record, and this seeds the same first reading.
   tableCall.handleSession();
-  void host?.refresh();
+  host?.refresh().catch(reportFailure);
 });
 
 // `activeGM` moves when a GM connects or drops, and every client hears it: the new primary
 // loads the committed session, and the rest start sending their commands to it. The same event
 // changes who is online, which is what the seating is rebuilt from.
-Hooks.on('userConnected', () => { presenceChanged(); void host?.refresh(); });
+Hooks.on('userConnected', () => { presenceChanged(); host?.refresh().catch(reportFailure); });
 
 // A user added to the world, renamed, or removed is a new roster for the seating to fit.
-Hooks.on('createUser', () => { void host?.reseat(); });
-Hooks.on('updateUser', () => { void host?.reseat(); });
-Hooks.on('deleteUser', () => { void host?.reseat(); });
+Hooks.on('createUser', () => { host?.reseat().catch(reportFailure); });
+Hooks.on('updateUser', () => { host?.reseat().catch(reportFailure); });
+Hooks.on('deleteUser', () => { host?.reseat().catch(reportFailure); });
 
 Hooks.on('getSceneControlButtons', (controls) => {
   const tools = controls['tokens']?.tools;
@@ -128,7 +136,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
     icon: 'fa-solid fa-chess-rook',
     order: Object.keys(tools).length,
     button: true,
-    onChange: () => void BattlefieldApp.open(),
+    onChange: () => { BattlefieldApp.open().catch(reportFailure); },
   };
   if (!reignMakerActive() || game.user?.isGM !== true) return;
   tools[`${MODULE_ID}-pick-hex`] = {

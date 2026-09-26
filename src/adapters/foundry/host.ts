@@ -37,6 +37,9 @@ export interface BattlefieldHostOptions {
   campaign?: CampaignOutcomePort;
   actors?: ActorWritebackPort;
   onAuthority?: (report: AuthorityReport) => void;
+  /** A failure no command result carries: a runtime that would not build, a chat card, a
+   * request that could not be answered. */
+  onError?: (error: unknown) => void;
 }
 
 export interface BattlefieldHost {
@@ -82,8 +85,11 @@ const closedGate = (): Gate => {
 export function createBattlefieldHost({
   users, channel, repository, archive, sites, records, dice, chat = foundryChatPoster(),
   campaign = foundryCampaignPort(), actors = foundryTroopWriteback(), onAuthority,
+  onError = (error) => { console.error('battlefield |', error); },
 }: BattlefieldHostOptions): BattlefieldHost {
   let runtime: Runtime | null = null;
+  // This client holds the authority but its runtime would not build, so nobody can execute.
+  let failed = false;
   let delivered: BattleSession | null = null;
   let primaryGm: string | null = null;
   let handingOff = false;
@@ -135,7 +141,7 @@ export function createBattlefieldHost({
     // should post the cards — not every client that happens to hold a copy of the record.
     // proto: cards keep their order inside one commit; two commits landing back to back can
     // interleave theirs, since nothing chains one publish onto the last.
-    rt.subscribe((next) => { void publishCommit(next.lastCommit?.events ?? [], chat); });
+    rt.subscribe((next) => { publishCommit(next.lastCommit?.events ?? [], chat).catch(onError); });
     return rt;
   }
 
@@ -166,6 +172,11 @@ export function createBattlefieldHost({
     report();
     try {
       runtime = take ? await build() : null;
+      failed = false;
+    } catch (error) {
+      runtime = null;
+      failed = true;
+      onError(error);
     } finally {
       handingOff = false;
       gate.open();
@@ -174,9 +185,18 @@ export function createBattlefieldHost({
     await reseat();
   }
 
+  // proto: placeholder wording.
+  const unopened = 'the GM’s client could not open the battle';
+
   async function serve(request: CommandRequestMessage): Promise<void> {
     await gate.promise;
     const executor = runtime;
+    // Silence here would leave the sender waiting out its timeout for an answer nobody sends.
+    if (!executor && failed && holdsAuthority(users)) {
+      channel.emit(errorOf(request.requestId, request.userId, request.commandId,
+        delivered?.revision ?? 0, 'storage', unopened));
+      return;
+    }
     // A secondary GM and every player hear this request and leave it alone: one client runs it.
     if (!executor || !holdsAuthority(users)) return;
     const reply = (result: CommandResult): void =>
@@ -207,12 +227,14 @@ export function createBattlefieldHost({
     handleMessage(raw) {
       const message = asSocketMessage(raw);
       if (!message) return;
-      if (message.kind === 'request') void serve(message);
+      if (message.kind === 'request') serve(message).catch(onError);
       else transport.handleReply(message);
     },
 
     submit(command) {
       if (runtime) return runtime.submit(command).then(noteAnswer);
+      // The socket does not echo to its sender, so the primary's own request would go unheard.
+      if (failed && holdsAuthority(users)) return Promise.resolve(refuse('storage', unopened));
       if (primaryGm === null) return Promise.resolve(refuse('permission', 'no GM is at the table'));
       const record = delivered;
       if (!record) return Promise.resolve(refuse('battle', 'no battle has reached this client yet'));

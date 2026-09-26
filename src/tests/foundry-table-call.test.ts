@@ -1,18 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { createTableCall } from '../adapters/foundry/tableCall.js';
 
-function tableFor(role: { gm: boolean }) {
+function tableFor(role: { gm: boolean; openFails?: Error }) {
   const state = { value: '', window: false, chip: false, battle: false };
+  const errors: unknown[] = [];
   const table = createTableCall({
     storage: { get: () => state.value, set: async (next) => { state.value = next; table.handleChange(next); } },
     isGm: () => role.gm,
     battleRunning: () => state.battle,
     windowOpen: () => state.window,
-    openWindow: async () => { state.window = true; },
+    openWindow: async () => {
+      if (role.openFails) throw role.openFails;
+      state.window = true;
+    },
     closeWindow: async () => { state.window = false; },
     chip: { show: () => { state.chip = true; }, hide: () => { state.chip = false; } },
+    onError: (error) => { errors.push(error); },
   });
-  return { table, state };
+  return { table, state, errors };
 }
 
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -97,5 +102,16 @@ describe('the GM\'s call to the table', () => {
     await settled();
 
     expect(state.value).toBe('');
+  });
+
+  it('reports a window that fails to open and still shows the chip', async () => {
+    const failure = new Error('render failed');
+    const { table, state, errors } = tableFor({ gm: false, openFails: failure });
+
+    await table.call();
+    await settled();
+
+    expect(errors).toEqual([failure]);
+    expect(state).toMatchObject({ window: false, chip: true });
   });
 });

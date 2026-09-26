@@ -17,6 +17,7 @@ export interface TableCallOptions {
   openWindow(): Promise<unknown>;
   closeWindow(): Promise<unknown>;
   chip: ReopenChip;
+  onError(error: unknown): void;
 }
 
 export interface TableCall {
@@ -41,7 +42,7 @@ export interface TableCall {
  * late reads it like anyone else. The window opens once; after that the chip is the way back.
  */
 export function createTableCall(
-  { storage, isGm, battleRunning, windowOpen, openWindow, closeWindow, chip }: TableCallOptions,
+  { storage, isGm, battleRunning, windowOpen, openWindow, closeWindow, chip, onError }: TableCallOptions,
 ): TableCall {
   const called = (): boolean => storage.get() === CALLED;
   const wanted = (): boolean => called() || battleRunning();
@@ -49,17 +50,21 @@ export function createTableCall(
   // chip, and only a start it witnesses opens the window.
   let wasRunning: boolean | null = null;
   const sync = (): void => {
-    if (wanted() && !windowOpen()) chip.show(() => { void openWindow(); });
+    if (wanted() && !windowOpen()) chip.show(() => { openWindow().catch(onError); });
     else chip.hide();
+  };
+  // A window that failed to open or shut still leaves the chip fitted to what is on screen.
+  const settle = (step: Promise<unknown>): void => {
+    step.then(sync, (error: unknown) => { onError(error); sync(); });
   };
   return {
     get called() { return called(); },
     call: () => storage.set(CALLED),
     dismiss: () => storage.set(''),
     handleChange(raw) {
-      if (raw === CALLED) void openWindow().then(sync);
+      if (raw === CALLED) settle(openWindow());
       // The GM may still be reading the result, so only the players' windows shut.
-      else if (!isGm() && !battleRunning()) void closeWindow().then(sync);
+      else if (!isGm() && !battleRunning()) settle(closeWindow());
       else sync();
     },
     handleSession() {
@@ -67,11 +72,11 @@ export function createTableCall(
       const started = wasRunning === false && running;
       const ended = wasRunning === true && !running;
       wasRunning = running;
-      if (started) void openWindow().then(sync);
-      else if (ended && !isGm()) void closeWindow().then(sync);
+      if (started) settle(openWindow());
+      else if (ended && !isGm()) settle(closeWindow());
       else sync();
       // The end of the battle releases the players the call was holding.
-      if (ended && isGm() && called()) void storage.set('');
+      if (ended && isGm() && called()) storage.set('').catch(onError);
     },
     sync,
   };
