@@ -4,7 +4,7 @@ import { check, rollLine, successes } from './check.js';
 import { clone } from './clone.js';
 import type { Rng } from './rng.js';
 import { levelDc } from './tables.js';
-import { ACTIONS_PER_ACTIVATION, SIDES, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
+import { ACTIONS_PER_ACTIVATION, SIDES, opponent, type BattleState, type DayOrder, type NightRecovery, type RecoveryChoice, type Side, type Unit } from './types.js';
 
 export function canContinueBattle(state: BattleState): boolean {
   return state.phase === 'ended' && state.endedBy === 'dusk'
@@ -47,7 +47,7 @@ export function resolveDayOrders(input: BattleState): BattleState {
   const withdrawing = SIDES.filter((s) => choices[s] === 'withdraw');
   if (withdrawing.length) {
     state.endedBy = 'withdrawal';
-    state.winner = withdrawing.length === 2 ? 'draw' : withdrawing[0] === 'attacker' ? 'defender' : 'attacker';
+    state.winner = withdrawing.length === 2 ? 'draw' : opponent(withdrawing[0]);
     state.nextBoard = null;
     state.log.push({ round: state.round, text: withdrawing.length === 2 ? 'Both armies withdraw. The field remains contested.'
       : `The ${withdrawing[0]} withdraws with its surviving troops. The ${state.winner} holds the field.` });
@@ -62,7 +62,7 @@ export function resolveDayOrders(input: BattleState): BattleState {
 export function answerSurrender(input: BattleState, responder: Side, accept: boolean): BattleState {
   requireDayDecision(input);
   if (!SIDES.includes(responder)) throw new Error('invalid responding side');
-  const proposer = responder === 'attacker' ? 'defender' : 'attacker';
+  const proposer = opponent(responder);
   if (input.dayOrders?.choices[proposer] !== 'surrender') throw new Error('the opposing army has not proposed surrender');
   const state = clone(input);
   if (accept) {

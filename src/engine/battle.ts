@@ -26,7 +26,7 @@ import { engineKind, engineNamed } from './siege-engines.js';
 import { clone } from './clone.js';
 import { levelDc } from './tables.js';
 import {
-  ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT,
+  ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, LAST_ROUND, MAX_WOUNDS, REACH_RANK, ROUTED_AT, opponent,
   type GateAction, type SiegeAction, type Action, type ActionOffer, type Activation, type BattleState, type ChargeAction,
   type ChargeOption, type EngineState, type MoveAction, type StepAction, type EscapeOffer, type MoveReach, type PathStep, type MeleePlan, type AdvanceAction, type FleeAction, type FleePlan,
   type Range, type ActivityAction, type ActivityOption, type ActivityTarget, type Side,
@@ -193,7 +193,7 @@ function nextSide(state: BattleState): Side | null {
   if (!a) return 'defender';
   if (!d) return 'attacker';
   if (a !== d) return a > d ? 'attacker' : 'defender';
-  return state.lastSide === 'attacker' ? 'defender' : 'attacker';
+  return opponent(state.lastSide ?? 'defender');
 }
 
 export const activeUnit = (state: BattleState): Unit | null => {
