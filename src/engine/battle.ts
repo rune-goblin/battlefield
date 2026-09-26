@@ -463,7 +463,7 @@ function doGate(state: BattleState, u: Unit, action: GateAction): number {
 
 // Hold Ground is asked last, so a push with nowhere to go does not spend it.
 function forcedStep(state: BattleState, from: Square, target: Unit, direction: 'push' | 'pull') {
-  if (target.guard?.holds || target.engines.some(e => e.hauling)) return;
+  if (target.rooted > 0 || target.guard?.holds || target.engines.some(e => e.hauling)) return;
   const distance = dist(state, from, target.square);
   const to = grid(state).neighbours(target.square).find(cell =>
     (direction === 'pull' ? dist(state, from, cell) < distance : dist(state, from, cell) > distance)
@@ -486,7 +486,7 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
       if (at(state.board, target.square).terrain !== 'water') target.flies = false;
       target.selfBuffs = []; break;
     case 'push': case 'pull':
-      if (!target.rooted) forcedStep(state, e.square, target, mode.effect);
+      forcedStep(state, e.square, target, mode.effect);
       break;
   }
   if (mode.effect && mode.effect !== 'rough') log(state, target, `${target.name}: ${mode.label} applies ${mode.effect}.`);
