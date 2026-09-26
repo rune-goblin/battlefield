@@ -5,6 +5,7 @@ import {
   type ElevationLines, type MapLine,
 } from '../map-lines.js';
 import { terrainGroup, type TerrainGroup } from '../terrain-textures.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 export interface MapLineSettings {
   area: MapLine;
@@ -26,7 +27,7 @@ export const DEFAULT_MAP_LINES: MapLineSettings = {
  * read against the pieces standing on them, and dragging one of their sliders never re-touches
  * a terrain fill or a texture.
  */
-export class MapLineLayer {
+export class MapLineLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private board: Board | null = null;
   private size = 0;
@@ -36,9 +37,9 @@ export class MapLineLayer {
     this.container = container;
   }
 
-  setGeometry(board: Board | null, size: number): void {
-    this.board = board;
-    this.size = size;
+  setGeometry(context: LayerContext | null): void {
+    this.board = context?.board ?? null;
+    this.size = context?.size ?? 0;
     this.redraw();
   }
 
@@ -73,7 +74,7 @@ export class MapLineLayer {
   }
 
   clear(): void {
-    for (const child of this.container.removeChildren()) child.destroy({ children: true });
+    clearChildren(this.container);
   }
 
   destroy(): void {

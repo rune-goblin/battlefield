@@ -8,6 +8,7 @@ import { connectedCells } from '../terrain-regions.js';
 import { terrainGroup, type TerrainGroup } from '../terrain-textures.js';
 import { mix } from './color.js';
 import { drawElevationMarks, elevationLabelStyle } from '../map-lines.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 export interface InkMapAppearance {
   settings: InkMapSettings;
@@ -25,7 +26,7 @@ export interface InkMapAppearance {
  * sprite tint — a vertex colour, which keeps each atlas to a single draw call — rather than a
  * multiply blend, which would fix the ink at the graphite the art was drawn in.
  */
-export class InkLayer {
+export class InkLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private atlas: InkAtlas | null = null;
   private paper: PIXI.Texture | null = null;
@@ -43,7 +44,12 @@ export class InkLayer {
     this.paper = texture;
   }
 
-  draw(board: Board, size: number, appearance: InkMapAppearance): void {
+  setGeometry(context: LayerContext | null): void {
+    if (!context?.ink) this.clear();
+    else this.draw(context.board, context.size, context.ink);
+  }
+
+  private draw(board: Board, size: number, appearance: InkMapAppearance): void {
     this.clear();
     const grid = gridOf(board);
     const { settings } = appearance;
@@ -142,7 +148,7 @@ export class InkLayer {
   }
 
   clear(): void {
-    for (const child of this.container.removeChildren()) child.destroy({ children: true });
+    clearChildren(this.container);
   }
 
   destroy(): void { this.clear(); }

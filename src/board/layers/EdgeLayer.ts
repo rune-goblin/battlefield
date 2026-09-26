@@ -3,6 +3,7 @@ import { wallsFor, at, barrierBetween, edgeCells, gridOf, hashSeed, parse, seede
 import type { BoardTheme } from '../theme.js';
 import { mix, shade } from './color.js';
 import { GATE_HALF_OPENING, gateHandles, gateLeaves } from '../gate-geometry.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 // The wall is a map symbol, not a picture of masonry: a thin spine along the edge with square
 // merlons straddling it. Its width never changes — a wall is a wall from any side of any hex —
@@ -353,18 +354,26 @@ function drawCliff(g: PIXI.Graphics, a: Point, b: Point, lowerCenter: Point, col
 }
 
 /** Walls (standing and breached) and cliffs, drawn along `grid.edgeSegment`. */
-export class EdgeLayer {
+export class EdgeLayer implements BoardLayer {
   private readonly container: PIXI.Container;
+  private readonly theme: BoardTheme;
 
-  constructor(container: PIXI.Container) {
+  constructor(container: PIXI.Container, theme: BoardTheme) {
     this.container = container;
+    this.theme = theme;
+  }
+
+  setGeometry(context: LayerContext | null): void {
+    if (!context) { this.clear(); return; }
+    const { ink } = context;
+    this.draw(context.board, context.size, ink ? { pencil: ink.settings.ink.colour, paper: ink.settings.paper } : null);
   }
 
   /** `ink` is set when the illustrated map is the one on: its walls and cliffs are drawn out of
    * the same pencil and page as the rest of it, rather than out of the theme's near-black ink. */
-  draw(board: Board, size: number, theme: BoardTheme, ink: InkEdges | null = null): void {
+  private draw(board: Board, size: number, ink: InkEdges | null): void {
     this.clear();
-    const colours = edgePalette(theme, ink);
+    const colours = edgePalette(this.theme, ink);
     const grid = gridOf(board);
     const g = new PIXI.Graphics();
     g.name = 'Edges';
@@ -380,7 +389,7 @@ export class EdgeLayer {
       g.lineStyle(1, field.kind === 'web' ? 0xc5d7dd : 0x946d3c, 0.8);
       g.beginFill(field.kind === 'web' ? 0xc5d7dd : 0x946d3c, 0.13).drawPolygon(grid.vertices(sq, size).flatMap(p => [p.x, p.y])).endFill();
       for (const vertex of grid.vertices(sq, size)) g.moveTo(c.x, c.y).lineTo(vertex.x, vertex.y);
-      const label = new PIXI.Text(`${field.kind === 'web' ? 'Web' : 'Debris'} · R${field.expires}`, { fontFamily: 'sans-serif', fontSize: Math.max(9, size * 0.10), fill: theme.ink });
+      const label = new PIXI.Text(`${field.kind === 'web' ? 'Web' : 'Debris'} · R${field.expires}`, { fontFamily: 'sans-serif', fontSize: Math.max(9, size * 0.10), fill: this.theme.ink });
       label.anchor.set(0.5); label.position.set(c.x, c.y + size * 0.3);
       this.container.addChild(label);
     }
@@ -467,7 +476,7 @@ export class EdgeLayer {
   }
 
   clear(): void {
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearChildren(this.container);
   }
 
   destroy(): void { this.clear(); }

@@ -6,6 +6,7 @@ import { SHADOW_GROUP } from '../piece-shadow.js';
 import { actionIconUrl, type ActionIcon, type StatusIcon } from '../art.js';
 import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel, type UnitTokenModel } from '../Token.js';
 import type { TokenReaction } from '../vfx/Effect.js';
+import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
 const DRAG_PROP_RATIO = 0.95;
 
@@ -14,14 +15,14 @@ const DRAG_PROP_RATIO = 0.95;
  * pf2e-reignmaker's `renderers/FogOfWarRenderer.ts` ghost-sprite cache: destroy what's gone,
  * create what's new, and just reposition/redraw everything else in place.
  */
-export class TokenLayer {
+export class TokenLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   // Every piece's shadow in one group under every piece, darkened and softened once as a
   // whole — see `Token.shadow`.
   private readonly shadows = new PIXI.Container();
   private readonly shadowBlur = new PIXI.BlurFilter();
   private readonly ticker: PIXI.Ticker;
-  private theme: BoardTheme;
+  private readonly theme: BoardTheme;
   private grid: Grid | null = null;
   private size = 0;
   private models: readonly TokenModel[] = [];
@@ -61,12 +62,11 @@ export class TokenLayer {
   }
 
   /** Called by `setBoard`'s redraw with the board's current grid and cell size. */
-  setGeometry(grid: Grid | null, size: number, theme: BoardTheme): void {
+  setGeometry(context: LayerContext | null): void {
     this.clearGhost();
-    this.grid = grid;
-    this.size = size;
-    this.theme = theme;
-    this.shadowBlur.blur = size * SHADOW_GROUP.blur;
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
+    this.shadowBlur.blur = this.size * SHADOW_GROUP.blur;
     this.renderAll();
   }
 
@@ -223,6 +223,6 @@ export class TokenLayer {
    * teardown runs on `BoardContainer.destroy` — nothing left for it to double-free. */
   destroy(): void {
     this.ticker.remove(this.tick);
-    this.setGeometry(null, 0, this.theme);
+    this.setGeometry(null);
   }
 }

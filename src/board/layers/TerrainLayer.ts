@@ -8,6 +8,7 @@ import { hsbMatrix, hue, isIdentityHsb, mix, type Hsb } from './color.js';
 
 import { TerrainBlendMasks } from './TerrainBlendMasks.js';
 import { MASK_PITCH } from '../terrain-blending.js';
+import type { BoardLayer, LayerContext } from './BoardLayer.js';
 import { terrainRegions } from '../terrain-regions.js';
 import { reliefFilters } from './ElevationShadow.js';
 import { areaTrees, forestTrees, type ForestTree } from '../forest-placement.js';
@@ -81,8 +82,10 @@ const scatterForElevation = (level: number): Scenery | null =>
  * Graphics of the same shape to mask its overlay, since PIXI stops rendering whatever it is
  * handed as a mask.
  */
-export class TerrainLayer {
+export class TerrainLayer implements BoardLayer {
   private readonly layer: PIXI.Container;
+  private readonly renderer: PIXI.IRenderer;
+  private readonly theme: BoardTheme;
   // Built off the display list: only the bake renders it.
   private readonly container = new PIXI.Container();
   private readonly baked = new PIXI.Sprite(PIXI.Texture.EMPTY);
@@ -130,8 +133,10 @@ export class TerrainLayer {
     return false;
   }
 
-  constructor(container: PIXI.Container) {
+  constructor(container: PIXI.Container, renderer: PIXI.IRenderer, theme: BoardTheme) {
     this.layer = container;
+    this.renderer = renderer;
+    this.theme = theme;
     this.baked.name = 'Terrain_baked';
     this.baked.visible = false;
     this.layer.addChild(this.baked);
@@ -143,10 +148,15 @@ export class TerrainLayer {
     this.atlas = atlas;
   }
 
-  draw(renderer: PIXI.IRenderer, board: Board, size: number, theme: BoardTheme): void {
+  setGeometry(context: LayerContext | null): void {
+    if (!context || context.ink) this.clear();
+    else this.draw(context.board, context.size);
+  }
+
+  private draw(board: Board, size: number): void {
     this.clear();
-    this.build(renderer, board, size, theme);
-    this.bake(renderer, gridOf(board).bounds(size), size);
+    this.build(this.renderer, board, size, this.theme);
+    this.bake(this.renderer, gridOf(board).bounds(size), size);
   }
 
   private bake(renderer: PIXI.IRenderer, bounds: { width: number; height: number }, size: number): void {
