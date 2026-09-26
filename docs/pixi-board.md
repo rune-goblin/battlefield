@@ -125,7 +125,12 @@ src/board/layers/EffectLayer.ts    spell resolutions: plays a vfx recipe on a ce
 src/board/vfx/textures.ts       the soft white primitives (glow, spark, smoke, ring, streak...) on one atlas
 src/board/vfx/Effect.ts         track specs (particles, painted frames, token reaction, shake) and their runner
 src/board/vfx/recipes.ts        one track list per tree; the painted 16-frame sheets are referenced from here
-src/board/Token.ts              one battlefield piece: cast shadow, art, badge, pips, rings, spell reactions
+src/board/Token.ts              one battlefield piece: cast shadow, art, flag and badge, bars, spell reactions; composes token/
+src/board/token/geometry.ts     the piece's footprint, flag, status and engine-chip ratios; no PIXI
+src/board/token/MoveTween.ts    a piece's slide to a new cell, or its paced walk along a queued route
+src/board/token/StatusColumn.ts the status icons under the flag, and each one's arrival
+src/board/token/RingGlow.ts     the selection outline, the active glow and the free-strike flash
+src/board/token/EngineChip.ts   the crewed engine's framed icon and its hit box
 src/board/piece-shadow.ts       the board's one light, the shear that lays a piece's silhouette on the ground, the silhouette bake
 src/board/Interaction.ts        pointer state machine on the host canvas -> BoardEvents
 src/board/hit.ts                pixel -> cell, then what that cell holds: token | edge | cell
