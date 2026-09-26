@@ -52,7 +52,7 @@ describe('targeting service', () => {
     expect(targeting.matches({ kind: 'edge', id: 'f3|e3' })).toHaveLength(1);
     expect(targeting.resolve(edge)!.action.target).toBe(edge);
     expect(targeting.choices[0].anchorCells).toEqual(['e3', 'f3']);
-    expect(targeting.arrows([], null, 'f3|e3')).toEqual(targeting.arrows([], edge));
+    expect(targeting.arrows([], null, null, 'f3|e3')).toEqual(targeting.arrows([], edge));
   });
 
   it('places Translocate at the selected destination and applies its effect there', () => {

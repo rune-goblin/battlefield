@@ -1,5 +1,5 @@
 import {
-  gridOf, notation, occupantTarget, unitTarget, type ActionOffer, type ActivityAction, type ActivityOption,
+  edgeCells, gridOf, notation, occupantTarget, unitTarget, type ActionOffer, type ActivityAction, type ActivityOption,
   type ActivityTarget, type BattleState, type TargetRef, type Tree, type Unit,
 } from '../engine/index.js';
 import type { TargetIcon } from '../board/art.js';
@@ -24,10 +24,15 @@ export interface TargetResolution {
   effects: { cell: string; tree: Tree; from: string }[];
 }
 
+const sameCells = (a: readonly string[], b: readonly string[]): boolean => {
+  const x = [...a].sort(), y = [...b].sort();
+  return x.length === y.length && x.every((cell, i) => cell === y[i]);
+};
+
 export const targetText = (target: { label: string }, cells: string[]): string => `${target.label} · ${cells.join(' + ')}`;
 
 export function cellsForTarget(state: BattleState, target: ActivityTarget): string[] {
-  if (target.kind === 'wall') return target.id.split('|');
+  if (target.kind === 'wall') return edgeCells(target.id);
   if (target.kind === 'cell') return target.id.split('+');
   return target.id.split('+').flatMap((id) => {
     const u = state.units.find((unit) => unit.id === id && unit.status === 'active');
@@ -90,20 +95,21 @@ export class TargetingService {
     return target.geometry === 'group' ? target.cells.map((cell) => ({ ...target, id: `${target.id}:${cell}`, cells: [cell], anchorCells: [cell], geometry: 'hex' })) : [target];
   }
 
-  /** Resolve both exact choices and intermediate surface picks into visible aiming arrows. */
-  arrows(selected: string[] = [], targetId: string | null = null, cell: string | null = null): TargetArrow[] {
+  /** Resolve both exact choices and intermediate surface picks into visible aiming arrows. A
+   * hovered `edge` takes precedence over the hovered `cell`. */
+  arrows(selected: string[] = [], targetId: string | null = null, cell: string | null = null, edge: string | null = null): TargetArrow[] {
     if (this.placement && this.activity.index === 4) {
       const choice = this.candidates(selected).find(target => target.id === targetId);
       const cells = choice ? this.placementCells(choice, selected) : [...selected];
-      const hovered = cell ?? (targetId?.startsWith('hex:') ? targetId.slice(4) : null);
+      const hovered = edge ? null : cell ?? (targetId?.startsWith('hex:') ? targetId.slice(4) : null);
       if (!choice && hovered && !cells.includes(hovered) && this.surface(selected).some(marker => marker.cells.includes(hovered))) cells.push(hovered);
       return cells.flatMap((to, i) => i % 2 === 1 ? [{ from: cells[i - 1], to, toCells: [to], tone: 'movement' as const }] : []);
     }
     const surface = this.surface(selected);
     const choice = this.candidates(selected).find((target) => target.id === targetId);
+    const point = edge ? edgeCells(edge) : cell ? [cell] : null;
     const marker = surface.find((target) => target.id === targetId)
-      ?? (cell ? surface.find((target) => target.geometry !== 'group'
-        && target.anchorCells.slice().sort().join('|') === cell.split('|').sort().join('|')) : undefined);
+      ?? (point ? surface.find((target) => target.geometry !== 'group' && sameCells(target.anchorCells, point)) : undefined);
     const marks = choice ? this.markersFor(choice) : marker ? [marker] : [];
     if (!this.placement) marks.push(...surface.filter((target) => target.selected));
     else if (!marks.length && selected.length) marks.push(...surface.filter((target) => target.selected));
@@ -142,8 +148,7 @@ export class TargetingService {
     return this.choices.filter((target) => {
       if (hit.kind === 'target') return target.id === hit.id;
       if (hit.kind === 'hex') return target.kind !== 'wall' && target.cells.includes(hit.id);
-      if (hit.kind === 'edge') return target.geometry === 'edge'
-        && target.anchorCells.slice().sort().join('|') === hit.id.split(/[|+]/).sort().join('|');
+      if (hit.kind === 'edge') return target.geometry === 'edge' && sameCells(target.anchorCells, edgeCells(hit.id));
       return target.geometry === 'corner'
         && target.anchorCells.slice().sort().join('+') === hit.id.split('+').sort().join('+');
     });

@@ -1,5 +1,5 @@
 import { reachableActivities, soleLegalActivity } from './action-menu.js';
-import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse } from '../../engine/index.js';
+import { type HealingChoice, type ActionOffer, TREE_TARGET, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
 import type { BattleState, EngineState, Unit } from '../../engine/index.js';
@@ -216,14 +216,14 @@ export function createPickerController(s: PickerShared) {
     }
     if (targetingService) {
       const selected = activityPick?.selected ?? [];
-      const hovered = targetingService.arrows(selected, targetHover ?? blastHover, s.hoveredEdge ?? s.hoveredCell);
+      const hovered = targetingService.arrows(selected, targetHover ?? blastHover, s.hoveredCell, s.hoveredEdge);
       if (targetHover || blastHover || s.hoveredCell || s.hoveredEdge) {
         if (hovered.length) return hovered;
       }
       return targetingService.arrows(selected, targetingChoice?.id ?? null, aim?.cell ?? null);
     }
     if (!s.arming || !s.active) return [];
-    const cells = s.hoveredEdge && s.arming.edges.includes(s.hoveredEdge) ? s.hoveredEdge.split('|')
+    const cells = s.hoveredEdge && s.arming.edges.includes(s.hoveredEdge) ? edgeCells(s.hoveredEdge)
       : s.hoveredCell && s.arming.cells.includes(s.hoveredCell) ? [s.hoveredCell] : [];
     if (!cells.length) return [];
     return [{ from: notation(s.active.square), to: cells[0], toCells: cells,

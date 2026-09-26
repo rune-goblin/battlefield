@@ -1,4 +1,4 @@
-import { at, gridOf, notation, parse, fortification } from './board.js';
+import { at, edgeCells, gridOf, notation, parse, fortification } from './board.js';
 import { engineKind } from './siege-engines.js';
 import { hasSight, sightBlock } from './sight.js';
 import { siegeModes, type SiegeMode } from './siege-profiles.js';
@@ -15,7 +15,7 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
     return d >= (mode.minimum ?? (kind === 'ram' ? 0 : 1)) && d <= max && hasSight(state.board, e.square, sq);
   };
   if (mode.shape === 'wall') return Object.entries(state.board.walls)
-    .filter(([key, w]) => w.remaining > 0 && key.split('|').some(id => inRange(id) && (kind !== 'ram' || id === notation(e.square))))
+    .filter(([key, w]) => w.remaining > 0 && edgeCells(key).some(id => inRange(id) && (kind !== 'ram' || id === notation(e.square))))
     .map(([id, w]) => wallTarget(id, `${w.gate ? 'Gate' : 'Wall'} ${wallName(id)} · ${w.remaining}/${w.boxes} · hardness ${fortification(w.tier).hardness}`));
   const affected = (u: BattleState['units'][number]) => u.status === 'active'
     && (!mode.groundOnly || (!u.flying && !u.flies))
@@ -54,7 +54,7 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
 /** Why `cell` is no target for this mode: range, sight, then an empty hex. Null when some target covers it. */
 export function siegeCellReason(state: BattleState, e: EngineState, activity: number, cell: string): string | null {
   const mode = siegeModes(e.name, engineKind(e))[activity - 1];
-  if (siegeTargets(state, e, mode).some(t => (t.kind === 'wall' ? t.id.split('|') : t.kind === 'cell' ? t.id.split('+')
+  if (siegeTargets(state, e, mode).some(t => (t.kind === 'wall' ? edgeCells(t.id) : t.kind === 'cell' ? t.id.split('+')
     : state.units.filter(u => u.id === t.id).map(u => notation(u.square))).includes(cell))) return null;
   const g = gridOf(state.board), kind = engineKind(e);
   const max = kind === 'ram' ? 1 : BANDS[e.reach ?? 'medium'];

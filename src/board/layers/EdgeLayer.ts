@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { wallsFor, at, barrierBetween, gridOf, hashSeed, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
+import { wallsFor, at, barrierBetween, edgeCells, gridOf, hashSeed, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { mix, shade } from './color.js';
 import { GATE_HALF_OPENING, gateHandles, gateLeaves } from '../gate-geometry.js';
@@ -390,7 +390,7 @@ export class EdgeLayer {
     const bars: { key: string; wall: Wall; p: Point; q: Point }[] = [];
     for (const [key, wall] of Object.entries(board.walls)) {
       seen.add(key);
-      const [aKey, bKey] = key.split('|');
+      const [aKey, bKey] = edgeCells(key);
       const a = grid.parse(aKey);
       const b = grid.parse(bKey);
       if (!grid.inBounds(a) || !grid.inBounds(b)) continue;

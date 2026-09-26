@@ -1,4 +1,4 @@
-import { at, edgeKey, fortification, gridOf, notation, parse, wallBlocks, type Board, type Cell, type Point } from './board.js';
+import { at, edgeCells, edgeKey, fortification, gridOf, notation, parse, wallBlocks, type Board, type Cell, type Point } from './board.js';
 
 export interface FortRegion {
   id: string;
@@ -36,7 +36,7 @@ function buildLayout(board: Board, keys: string[], anchored: string[]): Layout {
   const regions: FortRegion[] = [];
   const boundaryCells = cells.filter(id => boundary(board, parse(id)));
   const add = (inside: Set<string>) => {
-    const edges = keys.filter(key => { const [a, b] = key.split('|'); return inside.has(a) !== inside.has(b); });
+    const edges = keys.filter(key => { const [a, b] = edgeCells(key); return inside.has(a) !== inside.has(b); });
     if (!edges.length) return;
     const id = [...inside].sort().join('+');
     if (!regions.some(region => region.id === id)) regions.push({ id, cells: inside, edges });
@@ -97,7 +97,7 @@ export class WallsService {
   insideOf(key: string): string | null {
     const wall = this.board.walls[key];
     if (!wall) return null;
-    const ends = key.split('|');
+    const ends = edgeCells(key);
     if (wall.gate?.facing && ends.includes(wall.gate.facing)) return wall.gate.facing;
     const choices = new Set(this.layout.regions.filter(r => r.edges.includes(key))
       .map(r => ends.find(id => r.cells.has(id))!));
@@ -116,7 +116,7 @@ export class WallsService {
       // A freestanding wall still protects its adjacent inside hex.
       const enclosing = this.layout.regions.some(r => r.edges.includes(key));
       if (!protectedEdges.has(key) && (enclosing || this.insideOf(key) !== toId)) continue;
-      const [a, b] = key.split('|').map(parse);
+      const [a, b] = edgeCells(key).map(parse);
       if (crosses(source, target, ...grid.edgeSegment(a, b, 1))) cover = Math.max(cover, fortification(wall.tier).cover);
     }
     return cover;

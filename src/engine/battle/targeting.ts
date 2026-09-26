@@ -2,7 +2,7 @@ import { abilityOffers } from '../ability-effects.js';
 import { groupTarget, moveTarget, pairTarget, unitTarget, wallTarget } from '../targets.js';
 import { hasSight } from '../sight.js';
 import { TERRAIN } from '../terrain.js';
-import { notation, parse, sameCell, type Square } from '../board.js';
+import { edgeCells, notation, parse, sameCell, type Square } from '../board.js';
 import { VERBS, activityOf, type ActivityIndex, type Verb } from '../ladders.js';
 import {
   castActivityOf, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
@@ -25,7 +25,7 @@ export function specialOffers(state: BattleState, u: Unit): ActionOffer[] {
 }
 
 const wallKeys = (state: BattleState) => Object.entries(state.board.walls).filter(([, w]) => w.remaining > 0).map(([k]) => k);
-const wallCells = (key: string) => key.split('|').map(parse);
+const wallCells = (key: string) => edgeCells(key).map(parse);
 const bordersWall = (u: Unit, key: string) => wallCells(key).some((c) => sameCell(c, u.square));
 
 interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
