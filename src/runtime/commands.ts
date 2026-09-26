@@ -113,7 +113,15 @@ export interface CommandEnvelope {
  * and the client waits for the next record or resends the same command ID. */
 export type RejectionReason = 'battle' | 'stage' | 'revision' | 'permission' | 'unsupported' | 'engine' | 'storage' | 'timeout';
 
-export interface CommandAccepted { ok: true; commandId: string; revision: number }
+export interface CommandAccepted {
+  ok: true;
+  commandId: string;
+  revision: number;
+  /** The pieces the commit put into the setup, units first and then engines, in record order.
+   * Only a command that creates pieces reports them. A resent command is answered without
+   * running again and carries none, so a caller must fall back when this is absent. */
+  added?: PieceRef[];
+}
 export interface CommandRejected {
   ok: false;
   commandId: string;

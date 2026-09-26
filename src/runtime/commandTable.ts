@@ -50,6 +50,9 @@ export type CommandDescriptor<T extends CommandType> = {
    * are shut out: part of the result already sits in the campaign, and rewinding the battle
    * behind it would leave the two disagreeing. */
   duringWriteback?: true;
+  /** The command creates pieces, and its reply names them. A command that replaces the whole
+   * setup stays unmarked, or its reply would name every piece the setup holds. */
+  adds?: true;
   /** Why the record cannot take the command as it stands. The executor answers it as a `stage`
    * refusal before any port is touched. */
   refuse?(session: BattleSession, command: CommandOf<T>, ctx: CommandContext): string | null;
@@ -110,7 +113,7 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     run: (s, c, { services }) => services.manager.paint(s, c.stroke),
   },
   'army.addUnit': {
-    stage: 'setup', scope: 'side', history: 'keep',
+    stage: 'setup', scope: 'side', history: 'keep', adds: true,
     side: (_s, c) => c.side,
     run: (s, c, { services }) => services.army.addUnit(s, c.side, c.card),
   },
@@ -128,7 +131,7 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     run: (s, _c, { services }) => services.army.swapSides(s),
   },
   'army.addEmplacement': {
-    stage: 'setup', scope: 'side', history: 'keep',
+    stage: 'setup', scope: 'side', history: 'keep', adds: true,
     side: () => 'either',
     run: (s, c, { services }) => services.army.addEmplacement(s, c.side, c.engine),
   },
@@ -163,7 +166,7 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     run: (s, c, { services }) => services.army.autoPlace(s, c.piece),
   },
   'army.generateForce': {
-    stage: 'setup', scope: 'side', history: 'keep',
+    stage: 'setup', scope: 'side', history: 'keep', adds: true,
     side: (_s, c) => c.side,
     run: (s, c, { services }) => services.army.generateForce(s, c.side, c.seed),
   },

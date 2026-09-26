@@ -1,7 +1,10 @@
 import type { BattleState } from '../engine/index.js';
 import { pruneSources } from './campaign.js';
 import { COMMANDS, descriptorOf, type CommandContext, type HistoryEffect } from './commandTable.js';
-import { newCommandId, type BattleCommand, type CommandEnvelope, type CommandResult, type CommandType, type RejectionReason } from './commands.js';
+import {
+  newCommandId, type BattleCommand, type CommandAccepted, type CommandEnvelope, type CommandResult, type CommandType,
+  type PieceRef, type RejectionReason,
+} from './commands.js';
 import { openTurn } from './control.js';
 import type { DiceRecorder } from './dice.js';
 import { stampEvents, type BattleEventBody } from './events.js';
@@ -72,6 +75,15 @@ export interface Executor {
 const activationKey = (b: BattleState): string => `${b.day}:${b.round}:${b.activated.length}:${b.pending}`;
 
 const failure = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+function addedPieces(previous: BattleSession, next: BattleSession): PieceRef[] {
+  const units = new Set(previous.setup.units.map((u) => u.id));
+  const engines = new Set(previous.setup.emplacements.map((e) => e.id));
+  return [
+    ...next.setup.units.filter((u) => !units.has(u.id)).map((u): PieceRef => ({ kind: 'unit', id: u.id })),
+    ...next.setup.emplacements.filter((e) => !engines.has(e.id)).map((e): PieceRef => ({ kind: 'engine', id: e.id })),
+  ];
+}
 
 /**
  * The commit boundary. Every shared change enters here, one at a time, and nothing leaves
@@ -153,7 +165,9 @@ export function createExecutor({ repository, archive, sites = memorySites(), dic
     session = next;
     remember(COMMANDS[type].history, previous);
     for (const listener of [...listeners]) listener(session);
-    return { ok: true, commandId, revision: session.revision };
+    const accepted: CommandAccepted = { ok: true, commandId, revision: session.revision };
+    if (COMMANDS[type].adds) accepted.added = addedPieces(previous, session);
+    return accepted;
   }
 
   async function run({ battleId, commandId, expectedRevision, userId, command }: CommandEnvelope): Promise<CommandResult> {

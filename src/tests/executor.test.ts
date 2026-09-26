@@ -210,3 +210,77 @@ describe('the command executor', () => {
     expect(repository.saves).toHaveLength(0);
   });
 });
+
+function setupSession(): BattleSession {
+  return {
+    ...freshSession(),
+    setup: {
+      spec: { base: 'plains', size: 9, feature: 'none', construction: null, seed: 1 },
+      board: openBoard(),
+      units: [{ id: 'unit-1', card: infantry, side: 'attacker', square: 'c1', engines: [] }],
+      emplacements: [],
+    },
+  };
+}
+
+describe('the pieces a commit reports', () => {
+  it('names the unit army.addUnit minted', async () => {
+    const { runtime } = runtimeOn(setupSession());
+
+    const result = await runtime.submit({ type: 'army.addUnit', side: 'defender', card: kobolds });
+
+    const minted = runtime.session.setup.units.find((u) => u.id !== 'unit-1')!;
+    expect(result).toMatchObject({ ok: true, added: [{ kind: 'unit', id: minted.id }] });
+  });
+
+  it('names every unit army.generateForce minted, in record order', async () => {
+    const session = setupSession();
+    session.setup.units.push(
+      { id: 'unit-2', card: infantry, side: 'attacker', square: 'd1', engines: [] },
+      { id: 'unit-3', card: infantry, side: 'attacker', square: 'e1', engines: [] },
+      { id: 'unit-old', card: kobolds, side: 'defender', square: null, engines: [] },
+    );
+    const { runtime } = runtimeOn(session);
+
+    const result = await runtime.submit({ type: 'army.generateForce', side: 'defender', seed: 7 });
+
+    const generated = runtime.session.setup.units.filter((u) => u.side === 'defender');
+    expect(generated.length).toBeGreaterThan(1);
+    expect(generated.map((u) => u.id)).not.toContain('unit-old');
+    expect(result).toMatchObject({ ok: true, added: generated.map((u) => ({ kind: 'unit', id: u.id })) });
+  });
+
+  it('names the one engine army.addEmplacement minted', async () => {
+    const { runtime } = runtimeOn(setupSession());
+
+    const result = await runtime.submit({ type: 'army.addEmplacement', side: 'attacker', engine: 'Catapult' });
+
+    expect(result).toMatchObject({ ok: true, added: [{ kind: 'engine', id: runtime.session.setup.emplacements[0].id }] });
+  });
+
+  it('names nothing for a command that replaces the whole setup', async () => {
+    const { runtime } = runtimeOn(setupSession());
+
+    const result = await runtime.submit({ type: 'battle.reset' });
+
+    expect(result.ok).toBe(true);
+    expect(runtime.session.setup.units.some((u) => u.id !== 'unit-1')).toBe(true);
+    expect(result).not.toHaveProperty('added');
+  });
+
+  it('answers a resent command without the pieces its first reply named', async () => {
+    const session = setupSession();
+    const { runtime } = runtimeOn(session);
+    const envelope = {
+      battleId: session.battleId, commandId: 'c-add', expectedRevision: 0, userId: HOT_SEAT_USER,
+      command: { type: 'army.addUnit', side: 'defender', card: kobolds },
+    } as const;
+
+    const first = await runtime.execute(envelope);
+    const resent = await runtime.execute(envelope);
+
+    expect(first).toMatchObject({ ok: true, added: [{ kind: 'unit' }] });
+    expect(resent).toEqual({ ok: true, commandId: 'c-add', revision: 1 });
+    expect(runtime.session.setup.units).toHaveLength(2);
+  });
+});
