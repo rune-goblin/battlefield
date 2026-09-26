@@ -1,5 +1,6 @@
 import type { ArchiveEntry, BattleArchive } from '../runtime/ports.js';
 import type { BattleSession } from '../runtime/session.js';
+import type { StoreRecovery } from './store-recovery.js';
 
 /** One stored string: a browser storage key or a Foundry world setting. */
 export interface TextCell {
@@ -19,6 +20,11 @@ export class UnreadableStore extends Error {
 export interface JsonStore<T> {
   read(): T;
   write(value: T): Promise<void>;
+  raw(): string | null;
+  /** False when the stored value is present and unreadable. */
+  readable(): boolean;
+  /** Empties the cell, which then reads as absent, and lets a later corruption report again. */
+  clear(): Promise<void>;
 }
 
 export interface JsonStoreOptions<T> {
@@ -65,20 +71,37 @@ export function createJsonStore<T>(
 
   const absent = (raw: string | null): raw is null | '' => raw === null || raw === '';
 
+  function read(): T {
+    const raw = cell.get();
+    if (absent(raw)) return empty();
+    const value = parse(raw);
+    known = raw;
+    return value;
+  }
+
   return {
-    read() {
-      const raw = cell.get();
-      if (absent(raw)) return empty();
-      const value = parse(raw);
-      known = raw;
-      return value;
-    },
+    read,
     async write(value) {
       const raw = cell.get();
       if (!absent(raw) && raw !== known) parse(raw);
       const text = JSON.stringify(value);
       await cell.set(text);
       known = text;
+    },
+    raw: () => cell.get(),
+    readable() {
+      try {
+        read();
+        return true;
+      } catch (error) {
+        if (error instanceof UnreadableStore) return false;
+        throw error;
+      }
+    },
+    async clear() {
+      await cell.set('');
+      known = null;
+      noticed = false;
     },
   };
 }
@@ -91,8 +114,13 @@ const isStoredEntry = (value: unknown): boolean =>
 const acceptEntries = (parsed: unknown): StoredEntry[] | null =>
   Array.isArray(parsed) && parsed.every(isStoredEntry) ? parsed as StoredEntry[] : null;
 
-export const archiveStore = (cell: TextCell, onUnreadable?: (message: string) => void): JsonStore<StoredEntry[]> =>
-  createJsonStore(cell, { name: 'saved battles', empty: () => [], accept: acceptEntries, onUnreadable });
+export function archiveStore(cell: TextCell, recovery?: StoreRecovery): JsonStore<StoredEntry[]> {
+  const store = createJsonStore(cell, {
+    name: 'saved battles', empty: () => [], accept: acceptEntries, onUnreadable: () => recovery?.report('archive'),
+  });
+  recovery?.track('archive', store);
+  return store;
+}
 
 // proto: slot IDs share the battle/unit/command ID shape, reserved for review since Wave 1.1.
 const newSlotId = (): string => `slot-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

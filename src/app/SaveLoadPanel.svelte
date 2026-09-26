@@ -3,6 +3,7 @@
   import { loadSave } from './navigation.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { commandReporter } from './command-notices.js';
+  import { downloadText } from './download.js';
   import { viewer } from './viewer.svelte.js';
   import Popover from './Popover.svelte';
 
@@ -43,13 +44,7 @@
 
   async function doExport(slot: string, label: string) {
     await guard(async () => {
-      const data = await exportSave(slot);
-      const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${label.replace(/[^\w-]+/g, '_') || 'battle'}.battlefield.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadText(`${label.replace(/[^\w-]+/g, '_') || 'battle'}.battlefield.json`, await exportSave(slot));
     });
   }
 

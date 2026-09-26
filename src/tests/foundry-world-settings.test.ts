@@ -4,6 +4,7 @@ import { createRuntime } from '../runtime/createRuntime.js';
 import { createFoundryArchive, ARCHIVE_LIMIT, type DownloadFile } from '../adapters/foundry/worldArchive.js';
 import { createFoundrySessionRepository } from '../adapters/foundry/worldSessionRepository.js';
 import type { WorldSettingStorage } from '../adapters/foundry/worldSettings.js';
+import { createStoreRecovery } from '../adapters/store-recovery.js';
 import { createSessionWatcher, parseDeliveredSession } from '../adapters/foundry/sessionWatcher.js';
 import { freshControl } from '../runtime/control.js';
 import { freshSession, SCHEMA_VERSION, type BattleSession } from '../runtime/session.js';
@@ -103,10 +104,9 @@ describe('an unreadable world setting', () => {
     const archiveSetting = fakeStorage(corrupt);
     const newer = JSON.stringify({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 });
     const sessionSetting = fakeStorage(newer);
-    const notices: string[] = [];
-    const notice = (message: string) => notices.push(message);
-    const archive = createFoundryArchive(archiveSetting, () => {}, notice);
-    const repository = createFoundrySessionRepository(sessionSetting, notice);
+    const recovery = createStoreRecovery({ mayRepair: () => true });
+    const archive = createFoundryArchive(archiveSetting, () => {}, recovery);
+    const repository = createFoundrySessionRepository(sessionSetting, recovery);
     const session = await repository.load();
     const runtime = createRuntime({ repository, archive, session, dice: scriptedRng([10]) });
 
@@ -119,9 +119,7 @@ describe('an unreadable world setting', () => {
     const result = await runtime.submit({ type: 'control.assign', control: freshControl('attacker') });
     expect(result).toMatchObject({ ok: false, reason: 'storage', message: expect.stringContaining('battle session') });
     expect(sessionSetting.get()).toBe(newer);
-    expect(notices).toEqual([
-      expect.stringContaining('The stored battle session'), expect.stringContaining('The stored saved battles'),
-    ]);
+    expect(recovery.unreadable()).toEqual(['session', 'archive']);
   });
 });
 

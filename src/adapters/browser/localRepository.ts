@@ -2,6 +2,7 @@ import type { SessionRepository } from '../../runtime/ports.js';
 import { migrateLegacySave, reviveSession } from '../../runtime/migrate.js';
 import { freshSession, type BattleSession } from '../../runtime/session.js';
 import { createJsonStore, UnreadableStore, type JsonStore, type TextCell } from '../json-store.js';
+import type { StoreRecovery } from '../store-recovery.js';
 
 /** The pre-session save: `{ stage, setup, battle }`, written by the app before Wave 1.1. */
 export const LEGACY_KEY = 'battlefield.v4';
@@ -27,8 +28,8 @@ function read(storage: WebStorage, key: string): unknown {
   }
 }
 
-const sessionStore = (storage: WebStorage): JsonStore<BattleSession | null> =>
-  createJsonStore(webCell(storage, SESSION_KEY), { name: 'battle session', empty: () => null, accept: reviveSession });
+const sessionStore = (storage: WebStorage, onUnreadable?: () => void): JsonStore<BattleSession | null> =>
+  createJsonStore(webCell(storage, SESSION_KEY), { name: 'battle session', empty: () => null, accept: reviveSession, onUnreadable });
 
 function loadFrom(store: JsonStore<BattleSession | null>, storage: WebStorage): BattleSession {
   let current: BattleSession | null;
@@ -53,8 +54,11 @@ function loadFrom(store: JsonStore<BattleSession | null>, storage: WebStorage): 
 export const loadSessionSync = (storage: WebStorage = globalThis.localStorage): BattleSession =>
   loadFrom(sessionStore(storage), storage);
 
-export function createLocalRepository(storage: WebStorage = globalThis.localStorage): SessionRepository {
-  const store = sessionStore(storage);
+export function createLocalRepository(
+  storage: WebStorage = globalThis.localStorage, recovery?: StoreRecovery,
+): SessionRepository {
+  const store = sessionStore(storage, () => recovery?.report('session'));
+  recovery?.track('session', store);
   return {
     async load() {
       return loadFrom(store, storage);

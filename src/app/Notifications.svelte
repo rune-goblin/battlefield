@@ -14,8 +14,19 @@
       {#if message.tone === 'error'}
         <img class="symbol" src={actionIconUrl('no')} alt="" />
       {:else}<span class="symbol" aria-hidden="true">{symbols[message.tone]}</span>{/if}
-      <div class="copy"><strong>{message.title}</strong><span>{message.message}</span></div>
-      <button aria-label="Dismiss notification" onclick={() => notifications.dismiss(message.id)}>×</button>
+      <div class="copy">
+        <strong>{message.title}</strong><span>{message.message}</span>
+        {#if message.actions?.length}
+          <div class="actions">
+            {#each message.actions as action (action.label)}
+              <button class="action" onclick={action.run}>{action.label}</button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+      {#if message.dismissible !== false}
+        <button class="dismiss" aria-label="Dismiss notification" onclick={() => notifications.dismiss(message.id)}>×</button>
+      {/if}
     </div>
   {/each}
 </div>
@@ -28,5 +39,7 @@
   .notification[data-tone='success'] { border-color: var(--good); }
   .copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: .3rem; line-height: var(--leading-compact); overflow-wrap: anywhere; }
   .symbol { flex-shrink: 0; width: 1.7rem; height: 1.3rem; object-fit: contain; text-align: center; font-weight: 700; }
-  button { pointer-events: auto; flex-shrink: 0; padding: 0 .3rem; color: var(--muted); background: transparent; border: 0; font: inherit; font-size: var(--type-2); cursor: pointer; }
+  .dismiss { pointer-events: auto; flex-shrink: 0; padding: 0 .3rem; color: var(--muted); background: transparent; border: 0; font: inherit; font-size: var(--type-2); cursor: pointer; }
+  .actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .2rem; }
+  .action { pointer-events: auto; font-size: var(--type-body); font-weight: 600; }
 </style>
