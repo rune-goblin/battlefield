@@ -1,6 +1,5 @@
 import { notation, sameCell, type Square } from '../board.js';
-import { convertSpeed, type SiegeEngineCard } from '../cards.js';
-import { CELL_FEET } from '../path.js';
+import type { SiegeEngineCard } from '../cards.js';
 import { engineKind, engineNamed } from '../siege-engines.js';
 import type { BattleState, EngineState, Side, Unit } from '../types.js';
 import { dist, isStanding, log } from './state.js';
@@ -44,30 +43,20 @@ export function refreshEmplacements(state: BattleState) {
   }
 }
 
-/** Equipment uses its imported movement and loading profile, including older saves. */
+/** Equipment uses its imported movement and loading profile. */
 export const engineCard = (e: EngineState) => engineNamed(e.name);
-export const engineSpeed = (e: EngineState): number | null => {
-  const source = engineCard(e)?.sourceSpeed;
-  if (source != null && (e.speed === undefined || e.speed === convertSpeed(source)
-    || e.speed === Math.ceil(source / 30) * CELL_FEET || e.speed === Math.ceil(source / 15) * CELL_FEET / 2)) {
-    return convertSpeed(source);
-  }
-  const speed = e.name === 'Wolf Fang' ? CELL_FEET : e.speed !== undefined ? e.speed
+export const engineSpeed = (e: EngineState): number | null =>
+  e.speed !== undefined ? e.speed
     : engineCard(e)?.speed !== undefined ? engineCard(e)!.speed! : (engineKind(e) === 'ram' ? null : 0);
-  // Older saves store half-hex rates. Round them to the same whole hexes as new imports.
-  return speed === null || speed === 0 ? speed : Math.ceil(speed / CELL_FEET) * CELL_FEET;
-};
 export const isFixedEngine = (card: SiegeEngineCard): boolean =>
   engineSpeed({ name: card.name, kind: card.kind, speed: card.speed } as EngineState) === 0;
 export const engineLoadCost = (e: EngineState): number => engineCard(e)?.loadCost ?? e.loadCost ?? 1;
-/** Each load action fills one pip. Old saves used a separate full-load step count. */
+/** Each load action fills one pip. */
 export const engineLoadSteps = (e: EngineState): number =>
   (engineCard(e)?.loadSteps ?? e.loadSteps) === 0 ? 0 : engineLoadCost(e);
 export const engineLoadProgress = (e: EngineState): number => {
   const total = engineLoadSteps(e);
-  if (!total) return 0;
-  const previousTotal = e.loadSteps ?? engineCard(e)?.loadSteps ?? total;
-  return Math.max(0, Math.min(total, Math.floor((e.loaded ?? previousTotal) * total / Math.max(1, previousTotal))));
+  return total ? Math.max(0, Math.min(total, e.loaded ?? total)) : 0;
 };
 export const engineLoaded = (e: EngineState): boolean => engineLoadProgress(e) >= engineLoadSteps(e);
 export function engineLoading(e: EngineState): { total: number; completed: number; label: string } {
@@ -78,9 +67,7 @@ export function engineLoading(e: EngineState): { total: number; completed: numbe
 
 /** The siege menu belongs to equipment in the unit's hex. */
 export const siegeEngines = (state: BattleState, u: Unit): EngineState[] =>
-  !isStanding(u) ? [] : enginesOf(state, u).filter(e =>
-    // Existing saves can retain an abandoned flag after a unit entered the hex.
-    (e.status === 'crewed' || state.engines.includes(e)) && sameCell(e.square, u.square));
+  !isStanding(u) ? [] : enginesOf(state, u).filter(e => e.status === 'crewed' && sameCell(e.square, u.square));
 
 export function abandonEngines(state: BattleState, u: Unit) {
   for (const e of u.engines) {

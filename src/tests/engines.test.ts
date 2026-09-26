@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { act, activeUnit, availableActions, createBattle, unit, movementSpeed, moveReach, siegeAttackOffer, siegeEngines, siegeReason, engineLoaded, endActivation } from '../engine/index.js';
 import { edgeKey, parse } from '../engine/board.js';
 import { ENGINES } from '../engine/engines.js';
+import { upgradeBattle, upgradeEngine } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import { openBoard } from './helpers.js';
@@ -126,6 +127,7 @@ describe('siege operations', () => {
     Object.assign(e, { side: null, status: 'abandoned', emplaced: true, loaded: 0 });
     s.engines.push(e);
     s.pending = 'attacker';
+    upgradeBattle(s);
     expect(siegeEngines(s, s.units[0])).toContain(e);
     s = act(s, { type: 'siege', unit: 'u0', engine: e.id, operation: 'haul' }, rng());
     expect(s.engines).toEqual([]);
@@ -161,6 +163,7 @@ describe('siege operations', () => {
     unit(s, 'u0').speed = 60;
     unit(s, 'u0').feet = 20;
     unit(s, 'u0').engines[0].speed = 15;
+    upgradeEngine(unit(s, 'u0').engines[0]);
     s = act(s, { type: 'siege', unit: 'u0', engine: id, operation: 'haul' }, rng());
     expect(movementSpeed(unit(s, 'u0'))).toBe(20);
     expect(unit(s, 'u0').feet).toBe(0);
@@ -182,6 +185,7 @@ describe('siege operations', () => {
     const s = battle(['Ballista']); const u = unit(s, 'u0');
     u.speed = 30;
     u.engines[0].speed = 10;
+    upgradeEngine(u.engines[0]);
     u.engines[0].hauling = true;
     u.actions = 1;
     expect(movementSpeed(u)).toBe(20);

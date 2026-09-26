@@ -36,8 +36,8 @@ function emplacementClaimant(
   return claimant?.side ?? null;
 }
 
-/** A deployment that carries no ID keeps the positional identity every battle used before
- * setup minted stable ones, so a save written then still names the same units. */
+/** A deployment that carries no ID takes one from its position. BattleManager always passes
+ * IDs, so only tests and the two-client dev page reach these. */
 const positionalUnitId = (index: number) => `u${index}`;
 const positionalAttachedId = (unitId: string, slot: number) => `${unitId}:engine:${slot}`;
 const positionalEmplacedId = (index: number) => `engine:${index}`;
@@ -66,7 +66,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     const id = d.id ?? positionalUnitId(index);
     return {
       id, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
-      abilities: validatedAbilities(d.card.abilities ?? (traits.signals.includes('no-retreat') ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : [])), abilityReview: d.card.abilityReview ?? [],
+      abilities: validatedAbilities(d.card.abilities ?? []), abilityReview: d.card.abilityReview ?? [],
       abilityState: freshAbilityMemory(d.card.wounds ?? 0), traits: d.card.traits ?? [], immuneFear: d.card.immuneFear ?? false, attackTags: d.card.attackTags,
       stats: deriveStats(d.card), tactics: traits.tactics,
       ...(d.card.sheet ? { attackSources: { strike: d.card.sheet.battleName, volley: d.card.sheet.salvoName } } : {}),

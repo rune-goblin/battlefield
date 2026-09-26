@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createBattleController, type BattleDeps } from '../app/battle/battle-controller.svelte.js';
 import { createNotificationService } from '../app/notifications.js';
 import { act, activation, createBattle, engineLoaded, ENGINES, notation, parse, select, type BattleState, type UnitCard } from '../engine/index.js';
+import { upgradeBattle } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
@@ -340,7 +341,10 @@ describe('siege targeting', () => {
     b.pending = 'attacker';
     b = act(b, { type: 'move', unit: 'u0', to: 'c4' }, scriptedRng([]));
     const engine = b.engines[0];
-    if (stale) Object.assign(engine, { side: 'defender', status: 'abandoned' });
+    if (stale) {
+      Object.assign(engine, { side: 'defender', status: 'abandoned' });
+      upgradeBattle(b);
+    }
     const { c, dispose } = controllerOver(b);
     expect(c.siegeEquipment.map(e => e.id)).toEqual([engine.id]);
     const token = c.board.tokens!.find(t => t.id === 'u0');

@@ -11,8 +11,8 @@ export type Tradition = 'arcane' | 'divine' | 'occult' | 'primal';
 // A troop's own Salvo attack never derives 'extreme' — that band belongs to siege engines.
 export type Reach = 'short' | 'medium' | 'long' | 'extreme';
 
-// Legacy structural metadata. New imports execute validated abilities. Old cards that carry
-// only the no-retreat signal migrate to Resolve's hold-ground mode.
+// Structural metadata read off a troop's action names. No rule reads it; abilities carry the
+// behaviour. `legacy.ts` gives an older saved card with only no-retreat Resolve's hold-ground mode.
 export type Signal = 'mounted' | 'melee-drill' | 'shielded' | 'formation' | 'magic-ward' | 'no-retreat';
 
 // Five of these change anything the engine plays: cavalry-charge is a charge's impact

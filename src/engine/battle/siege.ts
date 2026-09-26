@@ -51,11 +51,9 @@ export function siegeReason(state: BattleState, u: Unit, e: EngineState, operati
 /** The source actor determines the activities, shapes, and effects. */
 export function siegeAttackOffer(state: BattleState, u: Unit, e: EngineState): ActionOffer | null {
   if (siegeReason(state, u, e, 'attack')) return null;
-  // Preview from the occupant's side even before an older save records its new ownership.
-  const operated = e.side === u.side ? e : { ...e, side: u.side };
   return { type: engineKind(e) === 'ram' ? 'fight' : 'shoot', spell: null, label: e.name, detail: 'One attack per engine per round. Area attacks affect allies.',
     activities: siegeModes(e.name, engineKind(e)).map((mode, i) => {
-      const targets = siegeTargets(state, operated, mode);
+      const targets = siegeTargets(state, e, mode);
       const reason = u.actions < mode.cost ? `Needs ${mode.cost} actions.` : !targets.length ? 'No enemy in range.' : null;
       return { activity: `siege-${i + 1}`, index: (i + 1) as ActivityIndex, label: mode.label, detail: siegeDetail(mode), cost: mode.cost,
         legal: !reason, reason, needsTarget: true, targets };
@@ -142,8 +140,6 @@ function resolveSiege(state: BattleState, rng: Rng, u: Unit, e: EngineState, mod
 }
 
 export function doSiege(state: BattleState, rng: Rng, u: Unit, action: SiegeAction): number {
-  // Reconcile occupied engines from older saves before firing or transferring one to haul.
-  refreshEmplacements(state);
   const e = siegeEngines(state, u).find(e => e.id === action.engine);
   if (!e) throw new Error('This siege engine is not available in the unit’s hex.');
   const reason = siegeReason(state, u, e, action.operation);

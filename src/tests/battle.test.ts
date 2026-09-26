@@ -8,6 +8,7 @@ import { edgeKey, gridOf, hexGrid, notation, parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
+import { upgradeCard } from '../engine/legacy.js';
 import { ACTION_BONUS, ACTIONS_PER_ACTIVATION, MAX_WOUNDS, ROUTED_AT } from '../engine/types.js';
 import type { ActionOffer, BattleState, Side } from '../engine/types.js';
 import { activityOf, type ActivityIndex, type Verb } from '../engine/ladders.js';
@@ -1190,10 +1191,10 @@ describe('leaving contact', () => {
 
 describe('no retreat', () => {
   // Legacy No Retreat imports retain their position through Resolve.
-  const line: UnitCard = {
+  const line: UnitCard = upgradeCard({
     name: 'Line', level: 6, role: 'infantry', signals: ['no-retreat'], tactics: [],
     sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false },
-  };
+  });
   const chased = (runner: UnitCard = infantry) => {
     const state = createBattle({
       units: [{ card: runner, side: 'attacker', square: 'c2' }, { card: line, side: 'defender', square: 'c7' }],

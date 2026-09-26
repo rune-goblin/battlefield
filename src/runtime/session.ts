@@ -1,8 +1,8 @@
-import { validatedAbilities, freshAbilityMemory } from '../engine/abilities.js';
 import {
-  COMBATANTS, LAST_ROUND, OFFICIAL, ROUTED_AT, SIDES, fortification, deriveStats, movementRates, speedOf, CELL_FEET,
-  type BattleState, type Board, type BoardSize, type BoardSpec, type NightRecovery, type RecoveryChoice, type Side, type UnitCard, type Unit,
+  COMBATANTS, OFFICIAL, SIDES,
+  type BattleState, type Board, type BoardSize, type BoardSpec, type RecoveryChoice, type Side, type UnitCard,
 } from '../engine/index.js';
+import { upgradeBattle, upgradeBoard, upgradeCard, upgradeSourceStats, upgradeSpec } from '../engine/legacy.js';
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
 import type { BattleEvent } from './events.js';
 import type { InteractionKind, InteractionRecord } from './interactions.js';
@@ -192,92 +192,26 @@ export const intactBattle = (b: BattleState | null | undefined): boolean =>
   // Units gained `selfBuffs`, which `finish` reads on every activation.
   && b.units.every((u) => Array.isArray(u.selfBuffs));
 
-/** Apply the three-pip rule to an existing save while preserving battle progress. */
-export function migrateMorale(battle: BattleState): BattleState {
-  battle.day ??= 1;
-  battle.roundsPerDay ??= LAST_ROUND;
-  battle.night ??= null;
-  if (Array.isArray(battle.night)) {
-    // Before armies rolled separately, one night rolled both at once, so both have had theirs.
-    const rolled: NightRecovery[] = battle.night;
-    const sideOf = (id: string) => battle.units.find((u) => u.id === id)?.side ?? 'attacker';
-    battle.night = Object.fromEntries(SIDES.map((side) => [side, rolled.filter((r) => sideOf(r.unit) === side)]));
-  }
-  for (const u of battle.units) {
-    const legacy = u as Unit & { noRetreat?: boolean; pace?: boolean; fear?: boolean; quality?: number };
-    u.abilities = validatedAbilities(u.abilities ?? (legacy.noRetreat ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : []));
-    u.abilityState ??= freshAbilityMemory(u.wounds);
-    delete legacy.noRetreat; delete legacy.pace; delete legacy.fear; delete legacy.quality;
-    u.disorder = Math.max(0, Math.min(ROUTED_AT, u.disorder));
-    if (u.status === 'active' && u.disorder >= ROUTED_AT) {
-      for (const engine of u.engines) if (engine.status === 'crewed') engine.status = 'abandoned';
-    }
-  }
-  return battle;
-}
-
 function isSetupDraft(value: unknown): value is BattleSetupDraft {
   const s = value as BattleSetupDraft | null;
   return !!s && typeof s === 'object' && !!s.spec && typeof s.spec === 'object' && Array.isArray(s.units);
 }
 
-/** Retire the old tier-zero barricade without restoring a breached wall. */
-function repairFortifications(board: Board): void {
-  if (board.spec.construction?.tier === 0) board.spec.construction.tier = 1;
-  for (const wall of Object.values(board.walls)) {
-    if (wall.tier !== 0) continue;
-    const damage = wall.boxes - wall.remaining;
-    wall.tier = 1;
-    wall.boxes = fortification(1).boxes;
-    if (wall.remaining > 0) wall.remaining = Math.max(0, wall.boxes - damage);
-  }
-}
-
-/** Backfill source statistics only when the saved sheet still matches a catalogue card.
- * Preserve custom sheets, explicit overrides and battle statistics that have changed. */
-function repairSourceAttacks(setup: BattleSetupDraft, battle: BattleState | null): void {
+function upgradeSources(setup: BattleSetupDraft, battle: BattleState | null): void {
   for (const saved of setup.units) {
-    const card = saved.card;
-    const source = [...COMBATANTS, ...OFFICIAL].find(c => c.name === card.name && c.level === card.level && c.role === card.role);
-    if (!card.sheet || !source?.sheet) continue;
-    if (!Object.entries(card.sheet).every(([key, value]) =>
-      JSON.stringify(source.sheet![key as keyof typeof source.sheet]) === JSON.stringify(value))) continue;
-    const before = deriveStats(card);
-    card.sheet = { ...source.sheet, ...card.sheet };
-    const after = deriveStats(card);
-    const unit = battle?.units.find(u => u.id === saved.id && u.name === card.name);
-    if (!unit) continue;
-    for (const key of ['spellAttack', 'spellDc'] as const) {
-      if (unit.stats[key] === before[key]) unit.stats[key] = after[key];
-    }
-    unit.attackSources ??= {};
-    unit.attackSources.strike ??= card.sheet.battleName;
-    unit.attackSources.volley ??= card.sheet.salvoName;
-  }
-  for (const saved of setup.units) {
-    const sheet = saved.card.sheet;
-    const unit = battle?.units.find(u => u.id === saved.id && u.name === saved.card.name);
-    if (!sheet || !unit) continue;
-    const previous = unit.movementRates ? Math.max(...Object.values(unit.movementRates))
-      : Math.max(1, Math.ceil(sheet.speed / 30)) * CELL_FEET;
-    unit.sourceSpeed = { speed: sheet.speed, otherSpeeds: sheet.otherSpeeds?.map(s => ({ ...s })) };
-    unit.movementRates = movementRates(saved.card);
-    if (unit.speed === previous) {
-      unit.speed = speedOf(saved.card);
-      if (previous > 0) unit.feet *= unit.speed / previous;
-    }
-    unit.flying = unit.movementRates.fly > 0;
+    upgradeSourceStats(saved, battle?.units.find((u) => u.id === saved.id && u.name === saved.card.name));
   }
 }
 
 /** Fill the fields a setup gained after it was written. A setup written before Wave 2.2 named
  * its pieces by array position and its attached engines by name alone; both take IDs here. */
 function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
-  if (setup.spec.construction?.tier === 0) setup.spec.construction.tier = 1;
-  if (setup.board) repairFortifications(setup.board);
+  upgradeSpec(setup.spec);
+  if (setup.board) upgradeBoard(setup.board);
   setup.spec.size ??= (setup.board?.squares.length as BoardSize | undefined) ?? 11;
   setup.emplacements ??= [];
   for (const u of setup.units) {
+    upgradeCard(u.card);
     if (!u.id) u.id = newUnitId();
     const engines = (u.engines ?? []) as (SetupEquipment | string)[];
     u.engines = engines.map((e) => (typeof e === 'string'
@@ -291,9 +225,6 @@ function repairSetup(setup: BattleSetupDraft): BattleSetupDraft {
 /** A battle keeps the unit IDs it was created with; its engines predate equipment IDs, and
  * nothing outside the record referred to them, so they take fresh ones. */
 function repairBattleIds(battle: BattleState): BattleState {
-  repairFortifications(battle.board);
-  if (battle.nextBoard) repairFortifications(battle.nextBoard);
-  for (const field of battle.previousBattlefields ?? []) repairFortifications(field.board);
   const engines = [
     ...battle.engines,
     ...battle.units.flatMap((u) => u.engines),
@@ -350,8 +281,8 @@ export function isBattleSession(value: unknown): value is BattleSession {
 }
 
 function sessionFrom(setup: BattleSetupDraft, saved: BattleState | null, battleId: string): BattleSession {
-  const battle = saved && intactBattle(saved) ? repairBattleIds(migrateMorale(saved)) : null;
-  repairSourceAttacks(setup, battle);
+  const battle = saved && intactBattle(saved) ? upgradeBattle(repairBattleIds(saved)) : null;
+  upgradeSources(setup, battle);
   return {
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
@@ -397,9 +328,10 @@ function foldSubmissions(s: BattleSession & HeldSubmissions): InteractionRecord[
 export function reviveSession(value: unknown): BattleSession | null {
   const s = value as BattleSession | null;
   if (!s || typeof s !== 'object' || s.schemaVersion !== SCHEMA_VERSION || !isSetupDraft(s.setup)) return null;
-  repairSourceAttacks(s.setup, s.battle && intactBattle(s.battle) ? s.battle : null);
+  upgradeSources(s.setup, s.battle && intactBattle(s.battle) ? s.battle : null);
   repairSetup(s.setup);
-  s.battle = s.battle && intactBattle(s.battle) ? repairBattleIds(migrateMorale(s.battle)) : null;
+  // IDs first: the upgrade refreshes emplacements, which match engines by ID.
+  s.battle = s.battle && intactBattle(s.battle) ? upgradeBattle(repairBattleIds(s.battle)) : null;
   s.stage = LIFECYCLE_STAGES.includes(s.stage) ? s.stage : s.battle ? 'battle' : 'setup';
   if (!s.battle && s.stage === 'battle') s.stage = 'setup';
   // proto: no schema bump for the interactions Wave 3.5 added; a record written before them

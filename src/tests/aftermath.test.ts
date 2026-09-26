@@ -4,7 +4,7 @@ import { createBattle, endActivation, isStanding } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
 import { levelDc } from '../engine/tables.js';
 import { parse } from '../engine/board.js';
-import { migrateMorale } from '../runtime/session.js';
+import { upgradeBattle } from '../engine/legacy.js';
 import { openBoard } from './helpers.js';
 
 function dusk() {
@@ -252,12 +252,12 @@ describe('another battlefield day', () => {
   it('migrates previous saves without replacing campaign morale', () => {
     const old = JSON.parse(JSON.stringify(dusk()));
     delete old.day; delete old.roundsPerDay; delete old.night;
-    const next = migrateMorale(old);
+    const next = upgradeBattle(old);
     expect(next.day).toBe(1); expect(next.roundsPerDay).toBe(6); expect(next.night).toBeNull();
     expect(next.units[0].disorder).toBe(2);
     // A night rolled for both armies at once splits into each army's own, both counted as rolled.
     const rolled = bothRecover(dusk(), [{ unit: 'u0', activity: 'rally' }]);
     const joint = JSON.parse(JSON.stringify({ ...rolled, night: [...rolled.night!.attacker!, ...rolled.night!.defender!] }));
-    expect(migrateMorale(joint).night).toEqual({ attacker: rolled.night!.attacker, defender: [] });
+    expect(upgradeBattle(joint).night).toEqual({ attacker: rolled.night!.attacker, defender: [] });
   });
 });
