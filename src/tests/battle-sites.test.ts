@@ -274,9 +274,17 @@ describe('the sites world setting', () => {
     expect((await sites.list()).map((e) => e.site)).toEqual(['b']);
   });
 
-  it('refuses a battle on no site, and reads a corrupt setting as empty', async () => {
+  it('refuses a battle on no site', async () => {
     await expect(createFoundrySites(fakeStorage()).park(freshSession())).rejects.toThrow();
-    expect(await createFoundrySites(fakeStorage('not json')).list()).toEqual([]);
+  });
+
+  it('refuses to read or park over a corrupt setting and leaves it as it was', async () => {
+    const storage = fakeStorage('not json');
+    const sites = createFoundrySites(storage);
+
+    await expect(sites.list()).rejects.toThrow('could not be read');
+    await expect(sites.park({ ...freshSession(), site: 'a' })).rejects.toThrow('could not be read');
+    expect(storage.get()).toBe('not json');
   });
 });
 

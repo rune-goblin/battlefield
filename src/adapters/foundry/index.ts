@@ -47,9 +47,11 @@ const tableCall = createTableCall({
 });
 BattlefieldApp.table = tableCall;
 
+const unreadableNotice = (message: string) => ui.notifications.error(message, { permanent: true });
+
 Hooks.once('init', () => {
   blockPageZoom();
-  const sites = createFoundrySites();
+  const sites = createFoundrySites(undefined, unreadableNotice);
   const module = hostModule(MODULE_ID);
   if (module) {
     module.api = createModuleApi({
@@ -72,11 +74,11 @@ Hooks.once('init', () => {
   // during startup. The host's readiness gate is what holds them until it can answer.
   const channel = foundrySocketChannel(MODULE_ID);
   const users = foundryTableUsers();
-  const archive = createFoundryArchive();
+  const archive = createFoundryArchive(undefined, undefined, unreadableNotice);
   host = createBattlefieldHost({
     users,
     channel,
-    repository: createFoundrySessionRepository(),
+    repository: createFoundrySessionRepository(undefined, unreadableNotice),
     archive,
     sites,
     records: (listener) => sessionWatcher.subscribe(listener),
