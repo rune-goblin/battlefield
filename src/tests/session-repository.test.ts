@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, COMBATANTS, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
+import { createBattle, COMBATANTS, ENGINES, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
+import { hotSeatControl } from '../runtime/control.js';
 import { submissionOf } from '../runtime/interactions.js';
-import {
-  freshSession, isBattleSession, migrateLegacySave, migrateSession, reviveSession, SCHEMA_VERSION, type BattleSession,
-} from '../runtime/session.js';
+import { migrateLegacySave, migrateSession, reviveSession, STEPS } from '../runtime/migrate.js';
+import { freshSession, isBattleSession, SCHEMA_VERSION, type BattleSession } from '../runtime/session.js';
 import {
   createLocalRepository, loadSessionSync, LEGACY_KEY, SESSION_KEY, type WebStorage,
 } from '../adapters/browser/localRepository.js';
@@ -39,7 +39,7 @@ function fakeStorage(seed: Record<string, string> = {}): WebStorage & { items: R
 
 describe('the browser session repository', () => {
   it('restores source movement modes in old catalogue saves and preserves a custom battle Speed', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const old = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
     delete old.sheet!.otherSpeeds;
     session.setup.units = [{ id: 'flyer', card: old, side: 'attacker', square: 'c2', engines: [] }];
@@ -58,7 +58,7 @@ describe('the browser session repository', () => {
   });
 
   it('upgrades the previous movement scale once and preserves the fraction of a Move in reserve', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const army = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
     session.setup.units = [{ id: 'flyer', card: army, side: 'attacker', square: 'c2', engines: [] }];
     session.battle = createBattle({ board: openBoard(), units: [{ id: 'flyer', card: army, side: 'attacker', square: 'c2' }] });
@@ -68,7 +68,7 @@ describe('the browser session repository', () => {
     expect(reviveSession(structuredClone(fixed))).toEqual(fixed);
   });
   it('repairs old catalogue spell stats without changing morale, wounds or custom overrides', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const old = structuredClone(OFFICIAL.find(c => c.name === 'Apprentice Magician Clique')!);
     delete old.sheet!.spellAttack;
     delete old.sheet!.spellDc;
@@ -186,7 +186,7 @@ describe('the session record', () => {
     const storage = fakeStorage();
     const { interactions, ...older } = freshSession();
     const held = { nightDeclarations: { attacker: [{ unit: 'u0', activity: 'rally' }] }, nextDeployment: {} };
-    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, ...held, revision: 9 }));
+    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, ...held, schemaVersion: 1, revision: 9 }));
 
     const loaded = loadSessionSync(storage);
 
@@ -207,9 +207,62 @@ describe('the session record', () => {
   });
 });
 
+function halfHexBattle(): BattleState {
+  const battle = createBattle({ board: openBoard(), units: [
+    { card, side: 'attacker', square: 'c2', engines: [{ card: ENGINES.find((e) => e.name === 'Catapult')! }] },
+    { card, side: 'defender', square: 'c7' },
+  ] });
+  battle.units[0].engines[0].speed = 5;
+  return battle;
+}
+
+/** A schema-1 record written before the fields that schema gained without a bump. */
+function schemaOneRecord() {
+  const { site, sources, writeback, turn, recentCommandIds, control, ...older } = freshSession();
+  return { ...older, schemaVersion: 1, stage: 'battle', battle: halfHexBattle(), lastCommit: { commandId: 'c1' } };
+}
+
+describe('schema migration', () => {
+  it('steps a schema-1 record up to the current schema with its backfills', () => {
+    const revived = reviveSession(schemaOneRecord())!;
+
+    expect(revived).toMatchObject({
+      schemaVersion: SCHEMA_VERSION, site: null, sources: [], writeback: null, turn: null, recentCommandIds: [],
+      control: hotSeatControl(), lastCommit: { commandId: 'c1', events: [], dice: [], userId: '' },
+    });
+    expect(revived.battle!.units[0].engines[0].speed).toBe(10);
+  });
+
+  it('validates a current record and repairs nothing in it', () => {
+    const current: BattleSession = { ...freshSession(), stage: 'battle', battle: halfHexBattle() };
+
+    expect(reviveSession(structuredClone(current))).toEqual(current);
+  });
+
+  it('refuses a current record that lacks a field rather than backfilling it', () => {
+    const { sources, ...lacking } = freshSession();
+
+    expect(reviveSession(lacking)).toBeNull();
+  });
+
+  it('has a step from every older schema', () => {
+    for (let version = 1; version < SCHEMA_VERSION; version++) expect(STEPS[version]).toBeTypeOf('function');
+  });
+
+  it('loads a schema-1 browser save and saves over it', async () => {
+    const storage = fakeStorage({ [SESSION_KEY]: JSON.stringify({ ...schemaOneRecord(), revision: 5 }) });
+
+    const loaded = loadSessionSync(storage);
+
+    expect(loaded).toMatchObject({ schemaVersion: SCHEMA_VERSION, revision: 5 });
+    await expect(createLocalRepository(storage).save(loaded)).resolves.toBeUndefined();
+    expect(JSON.parse(storage.items[SESSION_KEY])).toMatchObject({ schemaVersion: SCHEMA_VERSION, revision: 5 });
+  });
+});
+
 describe('fortification tier alignment', () => {
   it('migrates barricades across saved maps, preserves breaches, and leaves tiers 1–4 intact', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const oldBoard = () => {
       const board = openBoard();
       board.spec.construction = { kind: 'fort', tier: 0 };

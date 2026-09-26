@@ -14,7 +14,8 @@ import { clearObsolete, dropInteraction } from './interactions.js';
 import { assignSeats, reassignTurn, refuseCommand } from './policy.js';
 import { memorySites } from './memorySites.js';
 import type { BattleArchive, BattleSites, PresencePort, SessionRepository } from './ports.js';
-import { migrateSession, writebackRunning, type BattleSession, type BattleSetupDraft } from './session.js';
+import { migrateSession } from './migrate.js';
+import { writebackRunning, type BattleSession, type BattleSetupDraft } from './session.js';
 import type { Side } from '../engine/index.js';
 
 /** How far undo walks back, the depth the prototype's store kept. */

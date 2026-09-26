@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, endActivation, moveReach, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, endActivation, moveReach, unit } from '../engine/index.js';
 import { gridOf, notation, parse } from '../engine/board.js';
 import type { UnitCard } from '../engine/cards.js';
 import { CAST_ACTIVITIES } from '../engine/magic.js';

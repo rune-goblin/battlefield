@@ -8,7 +8,8 @@ import type { BattleCommand, CommandEnvelope } from '../runtime/commands.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import { memorySites } from '../runtime/memorySites.js';
 import type { BattleSites, PresencePort } from '../runtime/ports.js';
-import { freshSession, reviveSession, type BattleSession } from '../runtime/session.js';
+import { reviveSession } from '../runtime/migrate.js';
+import { freshSession, type BattleSession } from '../runtime/session.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
 const GM = 'gm';
@@ -243,7 +244,7 @@ describe('resetting to the example force', () => {
 
 describe('a record written before sites', () => {
   it('revives on no site rather than failing to load', () => {
-    const older = { ...freshSession() } as Partial<BattleSession>;
+    const older = { ...freshSession(), schemaVersion: 1 } as Partial<BattleSession>;
     delete older.site;
 
     expect(reviveSession(older)?.site).toBeNull();

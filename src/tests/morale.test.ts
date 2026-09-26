@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, endActivation, isRouted, isStanding, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, endActivation, isRouted, isStanding, unit } from '../engine/index.js';
 import { COMBATANTS, OFFICIAL, ROSTER, ENGINES, ROUTED_AT, parse, type UnitCard } from '../engine/index.js';
-import { migrateMorale } from '../runtime/session.js';
+import { upgradeBattle } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
@@ -87,13 +87,13 @@ describe('saved morale migration', () => {
     Object.assign(unit(battle, 'u0'), { quality: 2, disorder: 2, wounds: 1 });
     Object.assign(unit(battle, 'u1'), { quality: 5, disorder: 5 });
     const log = structuredClone(battle.log);
-    expect(migrateMorale(battle)).toBe(battle);
+    expect(upgradeBattle(battle)).toBe(battle);
     expect(unit(battle, 'u0')).not.toHaveProperty('quality');
     expect(unit(battle, 'u0').wounds).toBe(1);
     expect(isStanding(unit(battle, 'u0'))).toBe(true);
     expect(unit(battle, 'u1').disorder).toBe(3);
     expect(isRouted(unit(battle, 'u1'))).toBe(true);
     expect(battle.log).toEqual(log);
-    expect(migrateMorale(structuredClone(battle))).toEqual(battle);
+    expect(upgradeBattle(structuredClone(battle))).toEqual(battle);
   });
 });

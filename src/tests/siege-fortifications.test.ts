@@ -4,6 +4,7 @@ import {
   gateReason, generateBoard, gridOf, makeWall, notation, parse, siegeAttackOffer, siegeReason,
   stepFeet, structuralDamage, unit, type BattleState, type UnitCard,
 } from '../engine/index.js';
+import { upgradeEngine } from '../engine/legacy.js';
 import { SIEGE_PROFILES, siegeDetail, siegeModes } from '../engine/siege-profiles.js';
 import { siegeCellReason, siegeTargets } from '../engine/siege-targets.js';
 import { scriptedRng } from '../engine/rng.js';
@@ -160,13 +161,17 @@ describe('siege catalog and combat', () => {
     expect((emplaced ? b.engines[0] : b.units[0].engines[0]).fired).toBe(true);
   });
   it('upgrades old loading counters without granting a free loaded shot', () => {
-    const b = setup(), e = b.units[0].engines[0]; e.loadSteps = 2; e.loadCost = 2; e.loaded = 1;
+    const b = setup(), e = b.units[0].engines[0], legacy = { loadSteps: 2, loadCost: 2 };
+    Object.assign(e, legacy, { loaded: 1 });
+    upgradeEngine(e);
     expect(engineLoaded(e)).toBe(false); expect(engineLoadCost(e)).toBe(1);
     const after = act(b, { type: 'siege', unit: 'u0', engine: e.id, operation: 'load' }, scriptedRng([]));
     expect(after.units[0].actions).toBe(2);
     expect(after.units[0].engines[0].loadSteps).toBe(1);
     expect(engineLoaded(after.units[0].engines[0])).toBe(true);
-    e.loaded = 2; expect(engineLoaded(e)).toBe(true);
+    const full = { ...e, ...legacy, loaded: 2 };
+    upgradeEngine(full);
+    expect(engineLoaded(full)).toBe(true);
   });
   it('keeps the Bolt Emitter ready without reloading, but spends its round shot', () => {
     const b = setup('Bolt Emitter'), after = fire(b, 1, 'u1'), e = after.units[0].engines[0];
@@ -227,13 +232,15 @@ describe('siege catalog and combat', () => {
   });
 
   it('reads legacy full-load counters without discarding a loaded shot', () => {
-    const b = setup('Heavy Ballista'), e = b.units[0].engines[0];
-    e.loadSteps = 1; e.loaded = 1;
-    expect(engineLoading(e)).toEqual({ total: 2, completed: 2, label: 'Ready to fire' });
-    delete e.loadSteps;
-    expect(engineLoaded(e)).toBe(true);
-    e.loaded = 0;
-    expect(engineLoadProgress(e)).toBe(0);
+    const b = setup('Heavy Ballista');
+    const saved = (loadSteps: number | undefined, loaded: number) => {
+      const e = { ...b.units[0].engines[0], loadSteps, loaded };
+      upgradeEngine(e);
+      return e;
+    };
+    expect(engineLoading(saved(1, 1))).toEqual({ total: 2, completed: 2, label: 'Ready to fire' });
+    expect(engineLoaded(saved(undefined, 1))).toBe(true);
+    expect(engineLoadProgress(saved(undefined, 0))).toBe(0);
   });
   it('marks without wounds and strips magical buffs on a nullifier hit', () => {
     for (const name of ['Marking Powder Cannon', 'Nullifier Sling']) {

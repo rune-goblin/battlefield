@@ -3,6 +3,7 @@ import {
   act, at, COMBATANTS, createBattle, dragBlockReason, movementRates, movementSpeed, moveReach,
   notation, parse, select, speedOf, stepFeet, type UnitCard,
 } from '../engine/index.js';
+import { upgradeEngine } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
@@ -113,6 +114,7 @@ describe('source movement speeds', () => {
     const b = battle(card(20)); const u = b.units[0];
     u.engines.push({ id: 'test', name: 'Test cart', kind: 'artillery', launch: 0, reach: null,
       fired: false, emplaced: false, status: 'crewed', square: u.square, side: u.side, hauling: true, speed: 5 });
+    upgradeEngine(u.engines[0]);
     at(b.board, parse('c3')).terrain = terrain;
     at(b.board, parse('c3')).elevation = 1;
     expect(movementSpeed(u)).toBe(10);

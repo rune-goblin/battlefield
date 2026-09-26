@@ -9,7 +9,8 @@ import type { BattleCommand, CommandEnvelope, CommandResult } from '../runtime/c
 import { createRuntime } from '../runtime/createRuntime.js';
 import { memorySites } from '../runtime/memorySites.js';
 import type { PresencePort } from '../runtime/ports.js';
-import { freshSession, reviveSession, type BattleSession } from '../runtime/session.js';
+import { reviveSession } from '../runtime/migrate.js';
+import { freshSession, type BattleSession } from '../runtime/session.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
 const GM = 'gm';
@@ -284,7 +285,7 @@ describe('the campaign seam', () => {
 
 describe('a record written before source bindings', () => {
   it('revives with no sources rather than failing to load', () => {
-    const older = { ...freshSession() } as Partial<BattleSession>;
+    const older = { ...freshSession(), schemaVersion: 1 } as Partial<BattleSession>;
     delete older.sources;
 
     expect(reviveSession(older)?.sources).toEqual([]);

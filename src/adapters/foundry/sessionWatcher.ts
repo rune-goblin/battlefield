@@ -1,5 +1,6 @@
 import { reconcile } from '../../runtime/reconcile.js';
-import { migrateSession, type BattleSession } from '../../runtime/session.js';
+import { migrateSession } from '../../runtime/migrate.js';
+import type { BattleSession } from '../../runtime/session.js';
 
 /** Turns the session setting's raw `onChange` value into a session `reconcile` can compare
  * against. A foreign or corrupt value yields nothing to adopt, the same way a corrupt save

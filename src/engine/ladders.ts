@@ -3,7 +3,7 @@ import { treesForTradition, type Tree } from './magic.js';
 
 // Move and Step have no table of their own. A Move spends the troop's Speed in feet, rolling
 // first to get away from whoever holds it, and a Step goes one open hex — see `doStride` and
-// `doStep` in `battle.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
+// `doStep` in `battle/manoeuvres.ts`. Cast keeps its slot in `Verb` (the offer menu still groups by it) and
 // its own six trees live in `magic.ts`.
 export type Verb = 'shoot' | 'fight' | 'guard' | 'rally' | 'cast';
 
@@ -21,14 +21,14 @@ export type ActivityId =
 export interface FightEffect { press: boolean; drive: boolean }
 /** Each activity includes everything below it. `suppress` sets the target's `suppressedBy`, hit or
  * miss; `pin` also sets `pinnedBy`, which makes the shooter one of the target's holders (see
- * `holdersOf` in battle.ts). Both clear at the shooter's own `begin`, or its leaving play. */
+ * `holdersOf` in battle/movement.ts). Both clear at the shooter's own `begin`, or its leaving play. */
 export interface ShootEffect { suppress: boolean; pin: boolean }
 /** Each activity includes everything below it. `cap` caps a hit at one wound, so a critical lands
  * as an ordinary one; `holds` refuses an Overrun's shove; `rooted` (Take cover only) ends the
  * unit's movement for the rest of this activation. */
 export interface GuardEffect { defence: 2 | 4; cap: boolean; holds: boolean; rooted: boolean }
 /** The activity carries scope, never amount — how much clears comes off the Rally check's
- * degree instead (see `perform`'s 'rally' case in `battle.ts`). */
+ * degree instead (see `perform`'s 'rally' case in `battle/turn.ts`). */
 export type RallyScope = 'self' | 'adjacent' | 'nearby';
 export interface RallyEffect { scope: RallyScope }
 
@@ -73,7 +73,7 @@ export const activityOf = (type: Exclude<Verb, 'cast'>, index: ActivityIndex): A
 
 // A tactic grants one tree's one-action activity to a troop with no magic of its own (section
 // 11): battlefield medicine reaches Soothe, demoralize reaches Dread, both capped at index 1
-// since a non-caster has no tradition to raise the cap (`castCostFor` in battle.ts). Each rolls
+// since a non-caster has no tradition to raise the cap (`castCostFor` in battle/targeting.ts). Each rolls
 // off the troop's own Will or level DC there, not a spell number it doesn't have. Defend allies
 // grants no tree — its Guard share is `auraOn`'s, not a cast.
 export const TACTIC_TREE: Partial<Record<Tactic, Tree>> = {

@@ -1,5 +1,6 @@
 import type { SessionRepository } from '../../runtime/ports.js';
-import { freshSession, migrateLegacySave, reviveSession, type BattleSession } from '../../runtime/session.js';
+import { migrateLegacySave, reviveSession } from '../../runtime/migrate.js';
+import { freshSession, type BattleSession } from '../../runtime/session.js';
 import { createJsonStore, UnreadableStore, type JsonStore, type TextCell } from '../json-store.js';
 
 /** The pre-session save: `{ stage, setup, battle }`, written by the app before Wave 1.1. */

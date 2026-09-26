@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, offersAt, select, unit } from '../engine/battle.js';
+import { createBattle, offersAt, select, unit } from '../engine/index.js';
 import { parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
 import type { UnitCard } from '../engine/cards.js';

@@ -1,7 +1,7 @@
 import type { Reach, Tradition } from './cards.js';
 
 // Six trees, four traditions, four spell tiers each — rules.html section 11. This module holds
-// the reference data only; resolving a cast against it lives in battle.ts alongside every
+// the reference data only; resolving a cast against it lives in battle/ alongside every
 // other act.
 
 export type Tree = 'blast' | 'healing' | 'controlling' | 'offense' | 'defense' | 'movement';
@@ -54,7 +54,7 @@ export function treesForTradition(tradition: Tradition, level: number): Tree[] {
 
 /**
  * Display-only stand-in for an `Activity` (see ladders.ts), one per activity per tree. An activity
- * costs one, two, or three actions; `battle.ts` resolves the mechanics itself, and nothing here
+ * costs one, two, or three actions; `battle/spells.ts` resolves the mechanics itself, and nothing here
  * is read back out except for the menu.
  */
 export interface CastActivity { id: string; label: string; verb: string; detail: string }

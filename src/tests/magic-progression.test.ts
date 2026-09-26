@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { act, activeUnit, availableActions, createBattle, endActivation, unit } from '../engine/battle.js';
+import { act, activeUnit, availableActions, createBattle, endActivation, unit } from '../engine/index.js';
 import { casterTier, spellCeiling, TREES, TRADITIONS, type Tree } from '../engine/magic.js';
 import { notation, parse } from '../engine/board.js';
 import type { Tradition, UnitCard } from '../engine/cards.js';

@@ -21,10 +21,10 @@ export const ROUTED_AT = 3;
 export interface EngineState {
   speed?: number | null;
   loadCost?: number;
-  /** Total loading actions; older saves counted full-load operations instead. */
+  /** Loading actions a full load takes. `legacy.ts` rescales an older save's full-load count. */
   loadSteps?: number;
-  /** Completed load steps belong to the engine and persist through crew changes and capture.
-   * Older saves begin loaded. */
+  /** Completed load steps, from 0 to `loadSteps`. They belong to the engine and persist through
+   * crew changes and capture. */
   loaded?: number;
   hauling?: boolean;
   /** The equipment ID the piece took in setup, kept through capture, days, and export. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TargetingService, targetAnchor } from '../app/targeting.js';
-import { act, availableActions, createBattle, unit } from '../engine/battle.js';
+import { act, availableActions, createBattle, unit } from '../engine/index.js';
 import { edgeKey, hexGrid, notation, parse } from '../engine/board.js';
 import { scriptedRng } from '../engine/rng.js';
 import type { ActivityIndex, Tree, Verb } from '../engine/index.js';

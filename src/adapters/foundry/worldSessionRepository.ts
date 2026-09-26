@@ -1,6 +1,7 @@
 import { freshControl } from '../../runtime/control.js';
 import type { SessionRepository } from '../../runtime/ports.js';
-import { freshSession, migrateSession, type BattleSession } from '../../runtime/session.js';
+import { migrateSession } from '../../runtime/migrate.js';
+import { freshSession, type BattleSession } from '../../runtime/session.js';
 import { createJsonStore, UnreadableStore } from '../json-store.js';
 import { gameSettingStorage, SESSION_SETTING, type WorldSettingStorage } from './worldSettings.js';
 
