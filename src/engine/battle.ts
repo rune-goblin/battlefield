@@ -175,10 +175,14 @@ export const isStanding = (u: Unit) => u.status === 'active' && u.disorder < ROU
 /** Troops in camp survive the day but never hold ground or take another activation today. */
 export const isSurvivor = (u: Unit) => (u.status === 'active' || u.status === 'camp') && u.disorder < ROUTED_AT;
 
-/** Units of `side` that may still act this round. */
+const mayActivate = (state: BattleState, u: Unit) => u.side === state.pending && u.status === 'active' && !state.activated.includes(u.id);
+const canActNow = (state: BattleState, u: Unit) => state.phase === 'battle' && isStanding(u) && mayActivate(state, u) && (!state.begun || state.active === u.id);
+
+/** Units of `side` that may still act this round. `nextSide` asks this for a side that is
+ * not yet pending, so pending is read as `side` here rather than off `state`. */
 export function activatable(state: BattleState, side: Side): Unit[] {
   return state.order.map((id) => unit(state, id))
-    .filter((u) => u.side === side && u.status === 'active' && !state.activated.includes(u.id));
+    .filter((u) => u.side === side && mayActivate({ ...state, pending: side }, u));
 }
 
 // The side with more un-activated units goes next; a tie goes to the side that did not act last.
@@ -196,7 +200,7 @@ export const activeUnit = (state: BattleState): Unit | null => {
   if (state.phase !== 'battle') return null;
   if (state.active) {
     const u = unit(state, state.active);
-    if (u.side === state.pending && u.status === 'active' && !state.activated.includes(u.id)) return u;
+    if (mayActivate(state, u)) return u;
   }
   return activatable(state, state.pending)[0] ?? null;
 };
@@ -205,9 +209,7 @@ export const activeUnit = (state: BattleState): Unit | null => {
 export function select(input: BattleState, id: string): BattleState {
   const state = clone(input);
   const u = unit(state, id);
-  if (u.side !== state.pending || state.activated.includes(id) || u.status !== 'active') {
-    throw new Error(`${u.name} cannot activate now`);
-  }
+  if (!mayActivate(state, u)) throw new Error(`${u.name} cannot activate now`);
   if (state.begun && state.active !== id) throw new Error('an activation is already under way');
   state.active = id;
   return state;
@@ -401,8 +403,7 @@ export const siegeEngines = (state: BattleState, u: Unit): EngineState[] =>
     (e.status === 'crewed' || state.engines.includes(e)) && sameCell(e.square, u.square));
 
 export function siegeReason(state: BattleState, u: Unit, e: EngineState, operation: SiegeAction['operation']): string | null {
-  if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
-    || (state.begun && state.active !== u.id)) return 'This unit cannot act now.';
+  if (!canActNow(state, u)) return 'This unit cannot act now.';
   if (!siegeEngines(state, u).some(x => x.id === e.id)) return 'Stand in the siege engine’s hex to operate it.';
   if (operation === 'release') return e.hauling ? null : 'This unit is not hauling this engine.';
   if (u.actions < 1) return 'No actions remain.';
@@ -442,8 +443,7 @@ export function siegeAttackOffer(state: BattleState, u: Unit, e: EngineState): A
 export function gateReason(state: BattleState, u: Unit, key: string): string | null {
   const w = state.board.walls[key];
   if (!w?.gate || w.remaining <= 0) return 'This gate is breached or absent.';
-  if (state.phase !== 'battle' || !isStanding(u) || u.side !== state.pending || state.activated.includes(u.id)
-    || (state.begun && state.active !== u.id)) return 'This unit cannot act now.';
+  if (!canActNow(state, u)) return 'This unit cannot act now.';
   if (wallsFor(state.board).insideOf(key) !== notation(u.square)) return 'Operate the gate from its interior hex.';
   if (u.actions < 1) return 'The gate needs one action.';
   if (engagedEnemies(state, u).length) return 'Break contact before operating the gate.';
@@ -2320,9 +2320,7 @@ export function act(input: BattleState, action: Action, rng: Rng): BattleState {
   const state = clone(input);
   if (state.phase !== 'battle') throw new Error('battle is over');
   const u = unit(state, action.unit);
-  if (u.side !== state.pending || state.activated.includes(u.id) || u.status !== 'active') {
-    throw new Error(`${u.name} cannot activate now`);
-  }
+  if (!mayActivate(state, u)) throw new Error(`${u.name} cannot activate now`);
   if (state.begun && state.active !== u.id) throw new Error('an activation is already under way');
   begin(state, u, rng);
   const cost = action.type === 'gate' ? doGate(state, u, action) : action.type === 'siege' ? doSiege(state, rng, u, action)
