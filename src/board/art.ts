@@ -3,6 +3,7 @@ import { engineArt, troopArt } from '../engine/art.js';
 import type { Role, Status, Tree } from '../engine/index.js';
 import bannerTemplate from './faction-banner.svg?raw';
 import { assetUrl } from './asset-base.js';
+import { cssHex } from './layers/color.js';
 
 // src/engine/art.ts stays free of Vite types (tsconfig.engine.json carries none) so it
 // type-checks as pure engine code; it returns paths without a leading slash. The asset-base
@@ -37,8 +38,7 @@ const banners = new Map<number, PIXI.Texture>();
 export function bannerTexture(colour: number): PIXI.Texture {
   const cached = banners.get(colour);
   if (cached) return cached;
-  const hex = `#${colour.toString(16).padStart(6, '0')}`;
-  const svg = bannerTemplate.split(BANNER_SENTINEL).join(hex);
+  const svg = bannerTemplate.split(BANNER_SENTINEL).join(cssHex(colour));
   const texture = PIXI.Texture.from(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`);
   banners.set(colour, texture);
   return texture;

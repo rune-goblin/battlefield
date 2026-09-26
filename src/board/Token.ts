@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
 import { ART_ANCHOR_Y, bannerTexture, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
+import { easeInOut, easeOutCubic } from './easing.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
 import type { BoardTheme } from './theme.js';
 import { statusBars, STATUS_TRACK, STATUS_OUTLINE, type StatusBar } from './status-bars.js';
@@ -136,8 +137,6 @@ function along(points: Point[], spans: number[], distance: number): Point {
   }
   return points[points.length - 1];
 }
-
-const easeInOut = (t: number): number => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 const same = (a: Point, b: Point): boolean => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5;
 
@@ -361,7 +360,7 @@ export class Token extends PIXI.Container {
     if (this.tween) {
       const { points, spans, length, start, duration, walk } = this.tween;
       const t = Math.min(1, (performance.now() - start) / duration);
-      const eased = walk ? easeInOut(t) : 1 - (1 - t) ** 3;
+      const eased = walk ? easeInOut(t) : easeOutCubic(t);
       const point = along(points, spans, eased * length);
       this.position.set(point.x, point.y);
       if (t >= 1) this.tween = null;

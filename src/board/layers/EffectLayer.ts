@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
-import type { Grid, Point, Tree } from '../../engine/index.js';
+import { hashSeed, type Grid, type Point, type Tree } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
 import type { BoardTheme } from '../theme.js';
 import { Effect, type TokenReaction } from '../vfx/Effect.js';
 import { recipe, SHEET } from '../vfx/recipes.js';
-import { hashSeed, primBase } from '../vfx/textures.js';
+import { primBase } from '../vfx/textures.js';
 
 const sheets = new Map<string, PIXI.Texture[]>();
 let sheetLoad: Promise<void> | null = null;

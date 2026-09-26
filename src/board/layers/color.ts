@@ -1,3 +1,5 @@
+export const cssHex = (colour: number): string => `#${colour.toString(16).padStart(6, '0')}`;
+
 // Scale a 0xRRGGBB colour's channels by `factor`. A pure per-channel multiply, so it only
 // darkens usefully (factor < 1) — a 0 channel stays 0, so it can't lighten toward white.
 export function shade(color: number, factor: number): number {

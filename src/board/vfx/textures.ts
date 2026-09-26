@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { seededRandom } from '../../engine/index.js';
 
 /** The soft white primitives every particle and flash is built from. All of them live on one
  * canvas so a `ParticleContainer` can mix them, and all are white so tint sets the colour. */
@@ -53,7 +54,7 @@ const PAINT: Record<Prim, (ctx: CanvasRenderingContext2D) => void> = {
   glow: (ctx) => radial(ctx, [[0, 1], [0.2, 0.8], [0.45, 0.35], [0.75, 0.08], [1, 0]]),
   spot: (ctx) => radial(ctx, [[0, 1], [0.4, 1], [0.6, 0.5], [0.8, 0.1], [1, 0]], 40),
   smoke: (ctx) => {
-    const random = mulberry32(7);
+    const random = seededRandom(7);
     ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 10; i++) {
       const angle = random() * Math.PI * 2;
@@ -98,22 +99,3 @@ const PAINT: Record<Prim, (ctx: CanvasRenderingContext2D) => void> = {
     radial(ctx, [[0, 1], [0.3, 0.7], [0.65, 0.2], [1, 0]]);
   },
 };
-
-export function mulberry32(seed: number): () => number {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function hashSeed(value: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    h ^= value.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}

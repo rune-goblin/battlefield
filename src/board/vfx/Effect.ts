@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
-import type { Point } from '../../engine/index.js';
-import { mulberry32, PRIM_PX, primTexture, type Prim } from './textures.js';
+import { seededRandom, type Point } from '../../engine/index.js';
+import { easeIn } from '../easing.js';
+import { PRIM_PX, primTexture, type Prim } from './textures.js';
 
 /** Uniformly spaced keyframes over a 0..1 span, interpolated linearly. */
 export type Curve = readonly number[];
@@ -122,7 +123,7 @@ export class Effect {
   private readonly size: number;
 
   constructor(tracks: readonly Track[], host: EffectHost, seed: number) {
-    const random = mulberry32(seed);
+    const random = seededRandom(seed);
     this.size = host.size;
     this.runners = [];
     this.shakes = [];
@@ -451,5 +452,3 @@ export function colourAt(colour: Colour | undefined, u: number): number {
   };
   return (mix(16) << 16) | (mix(8) << 8) | mix(0);
 }
-
-const easeIn = (t: number): number => t * t;

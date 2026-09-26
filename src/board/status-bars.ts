@@ -33,5 +33,3 @@ export function statusBars(wounds: number, disorder: number): { health: StatusBa
     },
   };
 }
-
-export const statusColourCss = (colour: number): string => `#${colour.toString(16).padStart(6, '0')}`;
