@@ -193,6 +193,16 @@ describe('siege operations', () => {
     expect(moveReach(s, u).has('c5')).toBe(false);
   });
 
+  it('upgrades a saved half-hex or Wolf Fang rate to the whole hexes the engine reads', () => {
+    const s = battle(['Wolf Fang', 'Catapult', 'Catapult']);
+    const [fang, halfHex, custom] = unit(s, 'u0').engines;
+    fang.speed = 20;
+    halfHex.speed = 5;
+    Object.assign(custom, { name: 'Test cart', speed: 15 });
+    upgradeBattle(s);
+    expect([fang, halfHex, custom].map(e => e.speed)).toEqual([10, 10, 20]);
+  });
+
   it('leaves an engine behind when its occupant moves without hauling', () => {
     let s = battle(['Trebuchet']);
     const id = unit(s, 'u0').engines[0].id;

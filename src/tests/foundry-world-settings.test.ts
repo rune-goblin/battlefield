@@ -34,6 +34,18 @@ describe('the Foundry session repository', () => {
     expect(session.control).toMatchObject({ mode: 'auto', gmSide: 'defender' });
   });
 
+  it('loads a schema-1 setting value and saves over it', async () => {
+    const { sources, site, ...older } = freshSession();
+    const storage = fakeStorage(JSON.stringify({ ...older, schemaVersion: 1, revision: 4 }));
+    const repo = createFoundrySessionRepository(storage);
+
+    const session = await repo.load();
+
+    expect(session).toMatchObject({ schemaVersion: SCHEMA_VERSION, battleId: older.battleId, revision: 4, sources: [], site: null });
+    await repo.save(session);
+    expect(JSON.parse(storage.get())).toMatchObject({ schemaVersion: SCHEMA_VERSION, battleId: older.battleId });
+  });
+
   it('loads fresh over a corrupt setting value and refuses to save over it', async () => {
     const storage = fakeStorage('not json');
     const repo = createFoundrySessionRepository(storage);
