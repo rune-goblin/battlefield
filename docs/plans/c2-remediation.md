@@ -196,3 +196,23 @@ Not an audit finding: the user asked for it on 2026-09-26, after W1 made unreada
 | Task | Lane | Findings | Files | Model | Agent |
 | --- | --- | --- | --- | --- | --- |
 | W10.1 Export and reset an unreadable save | A | todos: unreadable save recovery | `src/adapters/**`, `src/app/**` (notice and its controller), `src/runtime/ports.ts`, tests | Opus | svelte-file-editor |
+
+### W11 — The user's answers to the open questions
+
+Written 2026-09-26 from the user's answers (`###` lines) and the "W11 decisions" in the todos file.
+Two stages: the fixes, then a live check in Foundry through the Playwright harness.
+
+| Task | Stage | Lane | Source | Model | Agent |
+| --- | --- | --- | --- | --- | --- |
+| W11.1 Rooted resists an Overrun push | 1 | A | W11 decisions | Sonnet | wave-executor |
+| W11.2 One source for flight | 1 | A | W5 answer | Opus | wave-executor |
+| W11.3 Reachable activities only; waypoints in melee answers | 1 | A | W6 answer | Opus | wave-executor |
+| W11.4 UnitSheet controller | 1 | A | W6 question answer | Opus | svelte-file-editor |
+| W11.5 Connectivity warning on every map; one Generate button | 1 | B | W2 answer | Opus | svelte-file-editor |
+| W11.6 Store edge cases, simplest fix | 1 | C | W1, W4, W10 answers | Sonnet | wave-executor |
+| W11.7 Runtime cleanup and browser resume stage | 1 | C | W7 items and decision | Opus | wave-executor |
+| W11.8 Recovery notice cleanup | 1 | C | W10 items | Sonnet | wave-executor |
+| W11.9 App chrome cleanup | 1 | D | W8 items | Sonnet | svelte-file-editor |
+| W11.10 Board cleanup | 1 | D | W9 items | Sonnet | wave-executor |
+| W11.11 Consistent imports and names | 1 | E | W4 answer | Sonnet | wave-executor |
+| W11.12 Live check in Foundry | 2 | A | every live-check item | Opus | wave-executor |

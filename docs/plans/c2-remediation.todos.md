@@ -5,7 +5,29 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is done.
+W1–W10 are done. W11 carries out the user's answers below (tasks W11.1–W11.12 in
+`docs/plans/c2-remediation.md`); the `###` lines are the user's answers.
+
+## W11 decisions
+
+Made 2026-09-26 by Claude where the user asked for a decision, or where a question needed one.
+
+- Overrun and rooted: a rooted target resists every forced move. An Overrun leaves a rooted target
+  in place with no extra Morale loss, as an occupied hex does. `public/rules.html` says so on the
+  Overrun rows and the Rooted row.
+- Browser resume (W7 question): a resumed browser save reopens on the first unfinished stage, as it
+  did before W7. A save whose armies are chosen and unplaced reopens on Place.
+- `commitment()`: the engine offers no commitment for an activity the unit cannot take, so the
+  picker stays hidden, as before W6.
+- Waypoints: `activation().melee` takes the dragged waypoints, and the drag controller stops calling
+  `meleePlans` itself.
+- Stores: the legacy rebuild runs only for records that predate the save envelope. A corrupt
+  envelope is unreadable, and the recovery notice clears it. An archive entry needs a name.
+  `?new` and `?example` keep overwriting the browser session.
+- Escape: a dialog or popover closes only for an Escape pressed inside the Battlefield window.
+- Flight: a unit flies when its fly speed is above zero. The boolean `flies` goes, unless the
+  overseer finds a case a speed cannot express; data that sets one without the other is fixed at
+  the source.
 
 ## Carried forward from W1
 
@@ -22,6 +44,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   seals at seed 47). They show no warning. Should the warning cover every map, or should the
   generator drain a pond that seals a map?
 
+  ### Yeah, the warning should appear on all maps. Let's just check that. The GM then can paint or regenerate. For the UI on that step I think we don't need two buttons for regenerate: the seed and the generate button. I think we could condense that and just have the generate button. 
+
 ## Open question from W4
 
 - A corrupt saved session can be rebuilt and saved over. `migrateSession` falls back to
@@ -33,6 +57,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   predate the envelope, leaving a corrupt envelope unreadable? W10.1 recovers only what the
   stores already refuse, so such a record would then reach its recovery notice.
 
+  ### Unreadable corrupt saves can be removed. This seems like an edge case, so just resolve it in the most robust way you can, and then don't spend any Additional effort on it. Whatever solution is the simplest. This is a game. Data is not critical. 
+
 ## Carried forward from W4
 
 - `docs/pixi-board.md:99` names "`battle/combat.ts`'s Pace step" as the caller of `beyond`. The
@@ -40,10 +66,14 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
 - `src/tests/morale.test.ts` and `src/tests/targeting.test.ts` each import from
   `'../engine/index.js'` twice; merge the imports.
 
+  ### Consolidate any inconsistencies in naming or calling. Merge the imports. 
+
 ## Carried forward from W5
 
 - `Unit.flies`: nothing in `src` outside tests sets it to `true`. It looks like dead state; decide
   whether to delete it.
+
+  ### This sounds like a problem in our data in the source. Many units are flying in the full list of 180 or 200 units that we have. Check to make sure flying movement is properly handled and that we don't have duplicate properties. I think the existence of a fly speed that is greater than zero might replace `unit.flies` if it's a boolean, but you can decide whether we need a flag instead of a speed. 
 
 ## Open question from W6
 
@@ -54,6 +84,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   that hands it finished rows, or do stat readouts fall outside the invariant? W8 left it open:
   M7 does not cover it, so W8.1 fixed only the unkeyed `each` blocks.
 
+  ### I prefer, as yes, the UI should not make business logic decisions. Otherwise, we're breaking our architectural rules, so even a simple controller or generator is better than components that execute business logic. It's like a model-view-controller pattern, which is the only one I know. If there's a better way to handle this, let me know. 
+
 ## Carried forward from W6
 
 - `commitment()` prices an option as `cost ?? index`; the old `BattlePins` code used `cost ?? 3`.
@@ -63,6 +95,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   for a melee dragged or dropped with waypoints; fold that into the engine answer if a second
   caller appears.
 
+  ### Only activities the unit cannot take are affected. This sounds pointless, then. Perhaps I don't follow, but make a decision and resolve the issue. If it doesn't affect anything, I don't understand why we need it. We should always respect waypoints. 
+
 ## Open question from W7
 
 - Browser startup: the store now opens on a placeholder, and the record `bindClient` delivers
@@ -70,6 +104,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   reopens on Sides where it used to reopen on the first unfinished stage, and a resumed battle's
   `nav.visited` is `['board', 'battle']` until setup reopens. Is Sides the right stage for that
   save?
+
+  ### I don't follow this question. You'll have to clarify. 
 
 ## Carried forward from W7
 
@@ -87,6 +123,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   `departure` returns `'remove'`; `departure` guarantees it, and the type system does not know.
 - The combat text queue moved to `src/app/combat-text.ts` and kept the names
   `CombatTextService` and `createCombatTextService`.
+
+  ### Check in Foundry with the Playwright harness and clean up the comments and problems. 
 
 ## Carried forward from W8
 
@@ -106,6 +144,8 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   `MapControls` grid dialog reads the deeper `--shadow-3`. `MapControls`' `::backdrop` reads
   `var(--scrim)` with no literal fallback.
 
+### Make the simplest and most standardized fixes, switching to shared properties or tokens. Make any decisions otherwise for cleanup. 
+
 ## Carried forward from W9
 
 - Live check: no one has played W9 in the browser or in Foundry, and no screenshot exists. Check
@@ -123,12 +163,17 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   `dev/foundry-mount/battle-state.json` has no `disorder` or `routed` field and still carries
   `shaken`.
 
+    ### Check in Foundry with the Playwright harness and clean up the  problems. 
+
+
 ## Open question from W10
 
 - `applyLaunchChoice` in `src/app/launch.ts` writes `SESSION_KEY` straight to local storage on
   `?new` and `?example`. That overwrites an unreadable browser session with no export and no
   notice. It is an explicit landing-page choice, so W10.1 left it alone. Should it go through the
   store, so an unreadable session refuses it and the recovery notice shows?
+
+  ### Unreadable session is an edge case that it seems like we're putting a lot of effort into solving. This should not be common. I'd be okay with just overriding it. 
 
 ## Carried forward from W10
 
@@ -141,3 +186,6 @@ W10 was the last wave in `docs/plans/c2-remediation.md`, and every task in it is
   so a double click can call clear twice. The second clear writes the same empty value.
 - A GM with the Battlefield window open when a record turns unreadable sees both the Foundry toast
   and the in-app notice.
+
+   ### Check in Foundry with the Playwright harness and clean up the  problems. 
+   

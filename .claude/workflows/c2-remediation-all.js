@@ -1,14 +1,14 @@
 export const meta = {
   name: 'c2-remediation-all',
   description: 'Run c2-remediation waves in order, one after another, stopping at the first wave that halts',
-  whenToUse: 'args: { from: "W2", to: "W10" }. Unattended runs of docs/plans/c2-remediation.md.',
+  whenToUse: 'args: { from: "W2", to: "W11" }. Unattended runs of docs/plans/c2-remediation.md.',
   phases: [{ title: 'Waves', detail: 'one c2-remediation run per wave' }],
 }
 
-const ORDER = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10']
+const ORDER = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11']
 const WAVE_SCRIPT = '/Users/mark/Documents/repos/battlefield/.claude/workflows/c2-remediation.js'
 const from = ORDER.indexOf((args && args.from) || 'W1')
-const to = ORDER.indexOf((args && args.to) || 'W10')
+const to = ORDER.indexOf((args && args.to) || 'W11')
 if (from < 0 || to < from) throw new Error(`bad range ${JSON.stringify(args)}`)
 
 phase('Waves')

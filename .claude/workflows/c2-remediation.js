@@ -103,6 +103,34 @@ const WAVES = {
   W10: { title: 'Recovery from an unreadable save', stages: [[
     { lane: 'A', tasks: [t('W10.1', 'Export and reset an unreadable save', 'Feature the user asked for on 2026-09-26: see "Unreadable save recovery" in the todos file', 'src/adapters/**, src/app/** (notice and its controller), src/runtime/ports.ts, tests', 'opus', 'svelte')] },
   ]] },
+  W11: { title: "The user's answers to the open questions", stages: [
+    [
+      { lane: 'A', tasks: [
+        t('W11.1', 'Rooted resists an Overrun push', 'Decision recorded in the todos file under "W11 decisions": a rooted target resists every forced move', 'src/engine/**, public/rules.html, engine tests', 'sonnet', 'exec'),
+        t('W11.2', 'One source for flight', 'User answer under "Carried forward from W5" (Unit.flies)', 'src/engine/**, src/runtime/migrate.ts, src/adapters/pf2e/**, troop data files, src/app/** readers of flies, tests', 'opus', 'exec'),
+        t('W11.3', 'Engine prices only reachable activities; melee answers respect waypoints', 'User answer under "Carried forward from W6"', 'src/engine/**, src/app/battle/drag-controller.svelte.ts, src/app/battle/battle-controller.svelte.ts, tests', 'opus', 'exec'),
+        t('W11.4', 'UnitSheet controller', 'User answer under "Open question from W6"', 'src/app/battle/UnitSheet.svelte, new src/app/battle/unit-sheet.ts, src/app/battle/battle-controller.svelte.ts', 'opus', 'svelte'),
+      ] },
+      { lane: 'B', tasks: [
+        t('W11.5', 'Connectivity warning on every map; one Generate button', 'User answer under "Open question from W2"', 'src/app/ConnectionWarning.svelte, the map setup stage components (BoardSetup, Paint, MapControls and any seed control) and their controllers, src/engine/connectivity.ts', 'opus', 'svelte'),
+      ] },
+      { lane: 'C', tasks: [
+        t('W11.6', 'Store edge cases, simplest fix', 'User answers under "Carried forward from W1", "Open question from W4" and "Open question from W10"', 'src/runtime/{session,migrate}.ts, src/adapters/json-store.ts, runtime tests', 'sonnet', 'exec'),
+        t('W11.7', 'Runtime cleanup and browser resume stage', 'Carried forward from W7 (all items) and the W7 startup decision under "W11 decisions"', 'src/runtime/**, src/app/{game.svelte,combat-text,navigation.svelte,stage-view.svelte}.ts, importers of the combat text queue, tests', 'opus', 'exec'),
+        t('W11.8', 'Recovery notice cleanup', 'Carried forward from W10 (record names, clear in flight, double notice)', 'src/app/store-recovery.ts, the recovery notice component, src/adapters/**', 'sonnet', 'exec'),
+      ] },
+      { lane: 'D', tasks: [
+        t('W11.9', 'App chrome cleanup', 'Carried forward from W8 (shadows, Escape guard, Place deps)', 'src/app/battle/{BattlePins,ActivityChoices}.svelte (shadow lines only), src/app/keys.ts, src/app/Place.svelte, src/app/place-controller.svelte.ts, src/app/app.css', 'sonnet', 'svelte'),
+        t('W11.10', 'Board cleanup', 'Carried forward from W9 (routed label, teardown order, redundant guards, dev fixtures)', 'src/board/**, src/app/PixiBoard.svelte, dev/two-clients/**, dev/foundry-mount/**', 'sonnet', 'exec'),
+      ] },
+      { lane: 'E', tasks: [
+        t('W11.11', 'Consistent imports and names', 'User answer under "Carried forward from W4": merge duplicate engine imports in src/tests, fix docs/pixi-board.md, and fix other stale names in docs and tests', 'src/tests/*.test.ts (imports only), docs/*.md', 'sonnet', 'exec'),
+      ] },
+    ],
+    [
+      { lane: 'A', tasks: [t('W11.12', 'Live check in Foundry', 'Every "Live check" item in the todos file (W7, W8, W9, W10). Run the Playwright harness (npm run test:e2e; see src/tests/e2e/README.md), extend the specs to cover those checks, save a screenshot of each checked screen under test-results/, and fix what fails', 'src/tests/e2e/**, plus any source file a failing check implicates', 'opus', 'exec')] },
+    ],
+  ] },
 }
 
 const BRIEFS = { type: 'object', properties: {
