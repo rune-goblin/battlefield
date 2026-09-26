@@ -118,4 +118,21 @@ describe('the unreadable save notice', () => {
     expect(notice('unreadable-archive')?.actions).toBeUndefined();
     disconnect();
   });
+
+  it('clears once even when the confirm action is pressed twice while a clear is in flight', async () => {
+    const port = fakePort(true, ['session']);
+    let resolveClear!: () => void;
+    port.clear.mockImplementation(() => new Promise<void>((resolve) => { resolveClear = resolve; }));
+    const { notice, press, disconnect } = watch(port);
+
+    press('unreadable-session', 'Start fresh');
+    press('unreadable-session', 'Clear and start fresh');
+    press('unreadable-session', 'Clear and start fresh');
+    expect(port.clear).toHaveBeenCalledOnce();
+
+    resolveClear();
+    await vi.waitFor(() => expect(notice('unreadable-session')).toBeUndefined());
+    expect(port.clear).toHaveBeenCalledOnce();
+    disconnect();
+  });
 });

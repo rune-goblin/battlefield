@@ -1,4 +1,4 @@
-import type { ArchiveEntry, BattleArchive } from '../runtime/ports.js';
+import { STORED_NAMES, type ArchiveEntry, type BattleArchive } from '../runtime/ports.js';
 import type { BattleSession } from '../runtime/session.js';
 import type { StoreRecovery } from './store-recovery.js';
 
@@ -118,7 +118,7 @@ const acceptEntries = (parsed: unknown): StoredEntry[] | null =>
 
 export function archiveStore(cell: TextCell, recovery?: StoreRecovery): JsonStore<StoredEntry[]> {
   const store = createJsonStore(cell, {
-    name: 'saved battles', empty: () => [], accept: acceptEntries, onUnreadable: () => recovery?.report('archive'),
+    name: STORED_NAMES.archive, empty: () => [], accept: acceptEntries, onUnreadable: () => recovery?.report('archive'),
   });
   recovery?.track('archive', store);
   return store;

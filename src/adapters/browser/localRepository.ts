@@ -1,4 +1,4 @@
-import type { SessionRepository } from '../../runtime/ports.js';
+import { STORED_NAMES, type SessionRepository } from '../../runtime/ports.js';
 import { migrateLegacySave, reviveSession } from '../../runtime/migrate.js';
 import { freshSession, type BattleSession } from '../../runtime/session.js';
 import { createJsonStore, UnreadableStore, type JsonStore, type TextCell } from '../json-store.js';
@@ -29,7 +29,7 @@ function read(storage: WebStorage, key: string): unknown {
 }
 
 const sessionStore = (storage: WebStorage, onUnreadable?: () => void): JsonStore<BattleSession | null> =>
-  createJsonStore(webCell(storage, SESSION_KEY), { name: 'battle session', empty: () => null, accept: reviveSession, onUnreadable });
+  createJsonStore(webCell(storage, SESSION_KEY), { name: STORED_NAMES.session, empty: () => null, accept: reviveSession, onUnreadable });
 
 function loadFrom(store: JsonStore<BattleSession | null>, storage: WebStorage): BattleSession {
   let current: BattleSession | null;

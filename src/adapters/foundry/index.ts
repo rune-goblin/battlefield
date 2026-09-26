@@ -4,8 +4,9 @@ import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { bindClient, bindQuit, presenceChanged, tableChanged } from '../../app/game.svelte.js';
 import { stage } from '../../app/stage-view.svelte.js';
-import { bindRecovery, storedName } from '../../app/store-recovery.js';
+import { bindRecovery } from '../../app/store-recovery.js';
 import { createStoreRecovery } from '../store-recovery.js';
+import { STORED_NAMES } from '../../runtime/ports.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
 import { pickBattleSite, registerBattleSitePicker, reignMakerActive } from './battleSitePicker.js';
@@ -60,8 +61,11 @@ const recovery = createStoreRecovery({
   mayRepair: () => game.user?.isGM === true,
   onFlag: (record) => {
     if (game.user?.isGM !== true) return;
+    // A window open already shows the in-app notice; the toast is for a GM who would
+    // otherwise see nothing.
+    if (BattlefieldApp.current !== null) return;
     // proto: wording.
-    ui.notifications.error(`Battlefield cannot read the stored ${storedName(record)}. Open Battlefield to export or clear it.`, { permanent: true });
+    ui.notifications.error(`Battlefield cannot read the stored ${STORED_NAMES[record]}. Open Battlefield to export or clear it.`, { permanent: true });
   },
 });
 

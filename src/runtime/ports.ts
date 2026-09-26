@@ -57,6 +57,11 @@ export interface BattleSites {
 /** A record the host keeps in one stored cell. */
 export type StoredRecord = 'session' | 'archive' | 'sites';
 
+/** What a store or a notice calls each record. */
+export const STORED_NAMES: Readonly<Record<StoredRecord, string>> = {
+  session: 'battle session', archive: 'saved battles', sites: 'battle sites',
+};
+
 /** The stored records this client cannot read, and the way out of each. `raw` is the stored
  * text byte for byte, for an export. `clear` empties one record so it reads as absent and
  * leaves the others as they are. Only a viewer who `mayRepair` is offered either. */

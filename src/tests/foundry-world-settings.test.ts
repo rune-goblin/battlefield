@@ -7,6 +7,7 @@ import type { WorldSettingStorage } from '../adapters/foundry/worldSettings.js';
 import { createStoreRecovery } from '../adapters/store-recovery.js';
 import { createSessionWatcher, parseDeliveredSession } from '../adapters/foundry/sessionWatcher.js';
 import { freshControl } from '../runtime/control.js';
+import { STORED_NAMES } from '../runtime/ports.js';
 import { freshSession, SCHEMA_VERSION, type BattleSession } from '../runtime/session.js';
 
 function fakeStorage(initial = ''): WorldSettingStorage {
@@ -117,7 +118,7 @@ describe('an unreadable world setting', () => {
     expect(archiveSetting.get()).toBe(corrupt);
 
     const result = await runtime.submit({ type: 'control.assign', control: freshControl('attacker') });
-    expect(result).toMatchObject({ ok: false, reason: 'storage', message: expect.stringContaining('battle session') });
+    expect(result).toMatchObject({ ok: false, reason: 'storage', message: expect.stringContaining(STORED_NAMES.session) });
     expect(sessionSetting.get()).toBe(newer);
     expect(recovery.unreadable()).toEqual(['session', 'archive']);
   });
