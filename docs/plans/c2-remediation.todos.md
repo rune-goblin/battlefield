@@ -5,8 +5,7 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W2 — Dead code, conventions, small duplication: W2.1–W2.6
-- W3 — Shared primitives: W3.1–W3.2
+- W3 — Shared primitives: W3.1–W3.3. W3.4 is not needed, because W2.3 landed.
 - W4 — Engine structure and the migration seam: W4.1–W4.2
 - W5 — Engine types: W5.1–W5.2
 - W6 — Engine answers, thin views: W6.1–W6.3
@@ -20,13 +19,6 @@ could not answer. An item leaves this list when it is done or answered.
 - Push and pull: a rooted target resists a troop-ability push or pull, as it resists a siege
   push. The ability path must refuse rooted targets; update the Push / Pull row in
   `public/rules.html` to say so.
-- Ground connectivity (W2.3): one rule, stated in elevation terms, not feet. A map is connected
-  when a walking route runs from the attacker's deployment zone to the defender's, and no step on
-  it enters water or crosses a cliff (a change of two or more elevation levels) or a wall. The
-  generator and the warning both use it. Describe it this way in code comments and in
-  `public/rules.html`; never as "30 ft". The rule concerns walking units only, because the
-  generator runs before armies exist: swimmers enter water, and fliers cross water, walls and
-  cliffs, as the movement rules already say. Movement rules stay as they are.
 
 ## Carried forward from W1
 
@@ -38,6 +30,26 @@ could not answer. An item leaves this list when it is done or answered.
   in `doCharge` after `doStride` has run on the clone, with the text "invalid charge activity".
 - W6.1: the comment above `ACTIVITIES` in `drag-controller.svelte.ts` still describes the charge
   activity, which no longer lives there.
+
+## Open question from W2
+
+- Water-sealed maps: `ConnectionWarning` checks river maps alone. A sweep of 86,400 non-river
+  boards found four with no ground route, all sealed by a lake and ponds: swamp/lakeside/9/square
+  seeds 20 and 129 (no fort), and swamp/lakeside/9/hex seeds 47 and 132 (fort tier 4; tier 3 also
+  seals at seed 47). They show no warning. Should the warning cover every map, or should the
+  generator drain a pond that seals a map?
+
+## Carried forward from W2
+
+- W6.2: `BattlePins.svelte` keeps two inline sign formats (near lines 220 and 236); switch them to
+  `signed` from `presentation.ts`.
+- W8.2: `Place.svelte` keeps two `ENGINES.find` calls (lines 248 and 263); switch them to
+  `engineNamed` from `src/engine/siege-engines.ts`.
+- W8.3: app files deep-import board internals `art`, `asset-base`, `terrain-textures`,
+  `status-bars`, `color`, `paper`, `ink-map`, `selection`, `preload` and `target-point`; route
+  them through the `src/board/index.ts` barrel.
+- W7.7: `npm run check` and `npm run build:foundry` print Svelte `state_referenced_locally`
+  warnings in `src/app/game.svelte.ts` and `src/app/TextureLab.svelte`. They predate W2.
 
 ## Unreadable save recovery (W10.1)
 

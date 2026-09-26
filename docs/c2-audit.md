@@ -122,14 +122,18 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 ## Minor
 
-### m1. Dead engine rules code — Lava Flow `[local]`
+### m1. Dead engine rules code — Lava Flow `[local]` `[done]`
 - **Where:** `src/engine/battle.ts:1655,1662-1680,2258`
 - **What:** Nothing sets `noRetreat`, so pursuit (`follow`, `chasersOf`, `follows`) never runs and the "follows you" tag at `BattlePins.svelte:232` never shows. Also dead: `homewardStep` (`:1254`), `seededRng` (`rng.ts:3`), `VERB_TYPES`, `RADIUS`, and the write-only `Unit.fear` and `Unit.pace`.
 - **Direction:** Delete them.
 
-### m2. Dead board surface — Speculative Generality `[local]`
+**Resolution (2026-09-26):** W2.1 deleted the pursuit code, the "follows you" tag, `battle.ts`'s `homewardStep`, `seededRng`, `VERB_TYPES`, `RADIUS` and the `noRetreat`, `fear` and `pace` fields; `rules.html:435` gives No Retreat only Hold Ground. Session migration now deletes the three legacy fields from saved units and still turns `noRetreat` into the Hold Ground ability. `grid.ts` keeps its own `homewardStep`, which is live.
+
+### m2. Dead board surface — Speculative Generality `[local]` `[partial]`
 - **Where:** `LayerManager.ts` (8 of 13 public methods have no callers), `layers/MapTextUtils.ts` (no importer), `BoardApp.setTheme` (no callers), and the `index.ts:625-637` barrel, which exports 11 unused symbols while `app/` deep-imports 12 internal modules.
 - **Direction:** Delete the dead code and make the barrel match actual use.
+
+**Resolution (2026-09-26):** W2.4 trimmed `LayerManager` to the methods the board calls, deleted `MapTextUtils.ts` and `BoardApp.setTheme`, cut the barrel to the symbols `src/app` and `dev/**` import through it, and updated `docs/pixi-board.md`. App files still deep-import `art`, `asset-base`, `terrain-textures`, `status-bars`, `color`, `paper`, `ink-map`, `selection`, `preload` and `target-point`; routing them through the barrel goes to W8.3.
 
 ### m3. Hash, PRNG, colour and easing helpers duplicated — Reinventing The Wheel `[cross-cutting]`
 - **Where:** FNV-1a ×5 (`EdgeLayer.ts:144`, `vfx/textures.ts:112`, `ink-map.ts:208`, `forest-placement.ts:20`, `TerrainScatter.ts:167`); `mulberry32` (`vfx/textures.ts:102`) copies `engine/rng.ts:25`; hex-to-CSS ×4; `easeInOut` is cubic in `Token.ts:140` and quadratic in `FallenLayer.ts:18` though the two animations are meant to match.
@@ -146,12 +150,16 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W1.5 moved `battleOf`, `withBattle`, `settleHauling` and a `withSetup` that always settles into `src/services/session-helpers.ts`, and all five services import it. Map `generate` and `rerollSeed` now settle hauling.
 
-### m6. Small engine utilities duplicated — Once And Only Once `[local]`
+### m6. Small engine utilities duplicated — Once And Only Once `[local]` `[partial]`
 - **Where:** `sameSquare` (`battle.ts:73`) copies `sameCell` (`grid.ts:22`); `clone` ×2; the degree-to-wounds ternary ×6; `ENGINES.find` by name ×5; the "can act now" guard ×4.
 
-### m7. Two ground-connectivity checks disagree — Once And Only Once `[local]`
+**Resolution (2026-09-26):** W2.2 replaced `sameSquare` with `sameCell`, moved both `clone` copies into `clone.ts`, replaced the degree ternary with `successes()` in `check.ts`, and replaced the activation guard with `mayActivate` and `canActNow`. `engineNamed` and `engineKind` in the new `siege-engines.ts` serve the engine, `BattleManager` and `ArmyPreparationService`; `engines.ts` is generated and stays as the importer writes it. `Place.svelte` keeps two `ENGINES.find` calls for W8.2.
+
+### m7. Two ground-connectivity checks disagree — Once And Only Once `[local]` `[done]`
 - **Where:** `board.ts:229` and `connectivity.ts:7`
 - **What:** The map generator guarantees one rule and `ConnectionWarning` checks the other.
+
+**Resolution (2026-09-26):** W2.3 moved `hasGroundConnection` into `board.ts` and deleted `connectivity.ts`. The generator and `ConnectionWarning` share one rule, the one the user set: a walking route runs from the attacker's deployment zone to the defender's without entering water or crossing a cliff or an intact wall, and an open gate lets it through. `rules.html:833` states it under Map editing and says a generated map keeps a route unless water cuts every one. The generator now tests the deployment zones and counts walls, so six mountain seeds keep cliffs they used to flatten. The warning still checks river maps alone; the todos file asks whether it should cover every map.
 
 ### m8. Import cycles between layers — Dependency Inversion `[cross-cutting]`
 - **Where:** `runtime/executeCommand.ts:7` and `createRuntime.ts` import services, which import runtime in 18 places; `board/layers/CombatTextLayer.ts:3` imports its types from `services`.
@@ -176,29 +184,44 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Where:** `src/app/game.svelte.ts:2-3,20-23`, `launch.ts:1`. Every Foundry client reads `localStorage` and builds a throwaway runtime before `bindClient` replaces it.
 - **Direction:** Build the browser runtime in `main.ts`.
 
-### m14. `VfxGallery` ships in the product bundle — Boat Anchor `[local]`
+### m14. `VfxGallery` ships in the product bundle — Boat Anchor `[local]` `[done]`
 - **Where:** `src/app/App.svelte:10,34,58`: a query string alone gates it, and it is present in `dist-foundry`.
 - **Direction:** A dynamic `import()`, or a DEV gate.
 
-### m15. Colours and shadows bypass tokens — Hard Code `[cross-cutting]`
+**Resolution (2026-09-26):** W2.5 loads `VfxGallery` through a dynamic `import()` gated on `import.meta.env.DEV`, as `TextureLab` already was, so production and Foundry builds drop it. A deployed web build no longer serves `?vfx`.
+
+### m15. Colours and shadows bypass tokens — Hard Code `[cross-cutting]` `[partial]`
 - **Where:** `SaveLoadPanel.svelte:117` uses the undefined `--danger` (`--bad` exists); `BoardPopup.svelte:78-99` and `ArmyReel` hard-code palettes; 10 distinct shadow values and 4 scrim alphas have no token.
+
+**Resolution (2026-09-26):** W2.5 switched `SaveLoadPanel`'s error colour to `--bad`. The hard-coded palettes, shadows and scrims remain for W8.4.
 
 ## Nits
 - `TroopPicker.svelte:92` `[local]` `[partial]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.
   **Resolution (2026-09-26):** W1.4 gave `TroopPicker`'s `signed` the sign-aware form, so a negative prints `−2`. The sweep of the five copies remains for W2.5.
-- `foundry/battleSitePicker.ts:27` and `troopLibrary.ts:37` `[local]` — the same actor-to-card reader twice; `BattleSiteArmy` and `KingdomArmy` are identical, as are the two `PLAYER_KINGDOM` constants.
-- `Interaction.ts:172-183`/`424-435` `[local]` — zoom-about-point math twice; `board/index.ts:330-347` duplicates `connectedCells`.
-- `EdgeLayer.ts:467` `[local]` — the cliff test restates `barrierBetween`; `Token.ts:267,272` decide routed without `status`.
-- `ring-controller.svelte.ts:5` `[local]` — unused `stage` import.
-- `types.ts:383-386` `[local]` — `BANDS` square and hex rows are identical.
+  **Resolution (2026-09-26):** W2.5 exports the sign-aware `signed` from `presentation.ts`, and `TroopPicker`, `BattleReport`, `Place`, `UnitSheet`, `BattleOrders`, the drag controller and `result-words.ts` read it. `BattlePins.svelte` keeps two inline sign formats for W6.2.
+- `foundry/battleSitePicker.ts:27` and `troopLibrary.ts:37` `[local]` `[done]` — the same actor-to-card reader twice; `BattleSiteArmy` and `KingdomArmy` are identical, as are the two `PLAYER_KINGDOM` constants.
+  **Resolution (2026-09-26):** W2.6 dropped `BattleSiteArmy` for `KingdomArmy`, kept one `PLAYER_KINGDOM` in `kingdomArmies.ts`, and moved the actor reader into `foundry/armyActor.ts`, which both callers use.
+- `Interaction.ts:172-183`/`424-435` `[local]` `[done]` — zoom-about-point math twice; `board/index.ts:330-347` duplicates `connectedCells`.
+  **Resolution (2026-09-26):** W2.4 extracted `scaleAbout` for both zoom paths and rebuilt `region()` on `connectedCells`.
+- `EdgeLayer.ts:467` `[local]` `[partial]` — the cliff test restates `barrierBetween`; `Token.ts:267,272` decide routed without `status`.
+  **Resolution (2026-09-26):** W2.4 routed the cliff test through `barrierBetween`. `Token`'s routed test remains for W9.2.
+- `ring-controller.svelte.ts:5` `[local]` `[done]` — unused `stage` import.
+  **Resolution (2026-09-26):** W2.5 removed the import.
+- `types.ts:383-386` `[local]` `[done]` — `BANDS` square and hex rows are identical.
+  **Resolution (2026-09-26):** W2.1 collapsed `BANDS` to one `Record<Reach, number>`; every reader indexes it by reach alone.
 - `tsconfig.json` `[cross-cutting]` — Foundry types load for all of `src/**`, so the compiler cannot catch a leak; the app store shares the name `game` with the Foundry global.
 
 ## Project conventions
-- `battle.ts:87` `[local]` — `createBattle(setup, _rng?)`: a `_var` rename hack for a parameter no caller passes.
-- `Token.ts:550,707,742`, `TokenLayer.ts:218`, `FallenLayer.ts:58` `[local]` — `.catch(() => {})` without a `proto:` mark.
-- `Token.ts:220`, `TokenLayer.ts:37`, `board/index.ts:141,165`, `theme.ts:51-53`, `hit.ts:11` `[local]` — wave-history commentary.
-- `LayerManager.ts:174` `[local]` — a leftover "Logging removed" stub.
-- `EdgeLayer.ts:389` `[local]` — uppercase `WEB`/`DEBRIS` labels break the no-caps rule.
+- `battle.ts:87` `[local]` `[done]` — `createBattle(setup, _rng?)`: a `_var` rename hack for a parameter no caller passes.
+  **Resolution (2026-09-26):** W2.1 removed the parameter.
+- `Token.ts:550,707,742`, `TokenLayer.ts:218`, `FallenLayer.ts:58` `[local]` `[done]` — `.catch(() => {})` without a `proto:` mark.
+  **Resolution (2026-09-26):** W2.4 marked every silent catch in `src/board` with `proto:`.
+- `Token.ts:220`, `TokenLayer.ts:37`, `board/index.ts:141,165`, `theme.ts:51-53`, `hit.ts:11` `[local]` `[done]` — wave-history commentary.
+  **Resolution (2026-09-26):** W2.4 rewrote these comments to state the present reason.
+- `LayerManager.ts:174` `[local]` `[done]` — a leftover "Logging removed" stub.
+  **Resolution (2026-09-26):** W2.4 deleted the stub with the dead `LayerManager` methods.
+- `EdgeLayer.ts:389` `[local]` `[done]` — uppercase `WEB`/`DEBRIS` labels break the no-caps rule.
+  **Resolution (2026-09-26):** W2.4 changed the labels to `Web` and `Debris`.
 
 ## Clean
 - Layering: the engine imports no DOM, PIXI, Svelte, app or board code; all hex math goes through `Grid`.
