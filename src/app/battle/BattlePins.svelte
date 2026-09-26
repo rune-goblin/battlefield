@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { wallsFor, isRouted, notation, canFocus, type ActivityIndex, type ActivityOption, type Tree, gateReason, fortification, siegeReason, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, engineLoading, CELL_FEET, wallName } from '../../engine/index.js';
-  import { offerReason } from './action-menu.js';
+  import { notation, type ActivityIndex, type ActivityOption, type Tree } from '../../engine/index.js';
+  import { signed } from '../presentation.js';
   import { engineArtUrl, actionIconUrl, castIconUrl, targetIconUrl } from '../../board/index.js';
   import ActivityChoices from './ActivityChoices.svelte';
   import TargetChoices from './TargetChoices.svelte';
@@ -69,21 +69,21 @@
   <BoardPopup cell={notation(c.active.square)} close={() => { c.gateOpen = false; }} appearance="rally">
     <strong>Gates</strong>
     <p class="muted">Operate from the interior hex while free of enemy contact. Either army can use the mechanism.</p>
-    {#each c.nearbyGates as [key, wall] (key)}
-      {@const reason = gateReason(c.b, c.active, key)}
-      <button class="popup-row" disabled={!c.myTurn || c.gateBusy || !!reason} title={reason ?? 'Operate gate'} onclick={() => c.operateGate(key)}>
-        <span class="popup-verb"><GateStatus open={wall.gate!.open} /> {wall.gate?.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
-        <span class="muted">{wallName(key)} · {fortification(wall.tier).name} · {wall.remaining}/{wall.boxes} · hardness {fortification(wall.tier).hardness} · interior {wallsFor(c.b.board).insideOf(key)}{reason ? ` · ${reason}` : ''}</span>
+    {#each c.gates as gate (gate.key)}
+      <button class="popup-row" disabled={!c.myTurn || c.gateBusy || !!gate.reason} title={gate.reason ?? 'Operate gate'} onclick={() => c.operateGate(gate.key)}>
+        <span class="popup-verb"><GateStatus open={gate.open} /> {gate.open ? 'Close' : 'Open'} gate <ActionCost n={1} /></span>
+        <span class="muted">{gate.detail}{gate.reason ? ` · ${gate.reason}` : ''}</span>
       </button>
     {/each}
   </BoardPopup>
 {/if}
-{#if c.siegeOpen && c.active && c.siegeEngine}
+{#if c.siegeOpen && c.active && c.siegeEngine && c.siegePanel}
+  {@const panel = c.siegePanel}
   <BoardPopup cell={notation(c.active.square)} close={c.cancelAction}>
     {@render popupHead(`${c.actionsLeft} ${c.actionsLeft === 1 ? 'action' : 'actions'} left`)}
     <div class="siege-heading">
       <img src={engineArtUrl(c.siegeEngine.name) ?? actionIconUrl('shoot')} alt="" />
-      <div><strong>{c.siegeEngine.name}</strong><div class="muted">{c.siegeEngine.hauling ? 'Hauling' : engineSpeed(c.siegeEngine) === 0 ? 'Fixed emplacement' : 'In this hex'}</div></div>
+      <div><strong>{c.siegeEngine.name}</strong><div class="muted">{c.siegeEngine.hauling ? 'Hauling' : panel.fixed ? 'Fixed emplacement' : 'In this hex'}</div></div>
     </div>
     {#if c.siegeEquipment.length > 1}
       <div class="siege-selector" aria-label="Siege engines">
@@ -93,30 +93,26 @@
       </div>
     {/if}
     <p class="popup-escapes" aria-live="polite">
-      {#if engineKind(c.siegeEngine) === 'ram'}Ram · attacks adjacent walls
-      {:else}{engineLoading(c.siegeEngine).label}{/if}
-      {#if engineSpeed(c.siegeEngine) !== 0} · {Math.min(c.active.speed, c.active.movementRates?.land ?? c.active.speed, engineSpeed(c.siegeEngine) ?? c.active.speed) / CELL_FEET} hexes per Move while hauling{/if}
+      {#if panel.isRam}Ram · attacks adjacent walls
+      {:else}{panel.loadingLabel}{/if}
+      {#if !panel.fixed} · {panel.haulHexes} hexes per Move while hauling{/if}
     </p>
-    {#if engineLoadSteps(c.siegeEngine) > 0}
-      {@const reason = siegeReason(c.b, c.active, c.siegeEngine, 'load')}
-      {@const remaining = engineLoadSteps(c.siegeEngine) - engineLoadProgress(c.siegeEngine)}
-      <button class="popup-row" disabled={c.siegeBusy || !!reason} title={reason ?? 'Reload the engine'} onclick={() => c.operateSiege('load')}>
+    {#if panel.loads}
+      <button class="popup-row" disabled={c.siegeBusy || !!panel.loadReason} title={panel.loadReason ?? 'Reload the engine'} onclick={() => c.operateSiege('load')}>
         <span class="popup-verb">Load <ActionCost n={1} /></span>
-        <span class="muted">{reason ?? `${remaining} loading ${remaining === 1 ? 'action' : 'actions'} left`}</span>
+        <span class="muted">{panel.loadReason ?? `${panel.loadRemaining} loading ${panel.loadRemaining === 1 ? 'action' : 'actions'} left`}</span>
       </button>
     {/if}
-    {@const attackReason = siegeReason(c.b, c.active, c.siegeEngine, 'attack') ?? (c.siegeOffer ? offerReason(c.siegeOffer) : 'No target in range')}
-    <button class="popup-row" disabled={c.siegeBusy || !!attackReason} title={attackReason ?? 'Choose an attack and target'} onclick={() => c.operateSiege('attack')}>
-      <span class="popup-verb">Attack</span><span class="muted">{attackReason ?? (engineKind(c.siegeEngine) === 'ram' ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
+    <button class="popup-row" disabled={c.siegeBusy || !!panel.attackReason} title={panel.attackReason ?? 'Choose an attack and target'} onclick={() => c.operateSiege('attack')}>
+      <span class="popup-verb">Attack</span><span class="muted">{panel.attackReason ?? (panel.isRam ? 'Ram an adjacent wall' : 'Choose an attack behavior and target')}</span>
     </button>
     {#if c.siegeEngine.hauling}
       <button class="popup-row" disabled={c.siegeBusy} onclick={() => c.operateSiege('release')}>
-        <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {c.active.speed / CELL_FEET} hexes per Move</span>
+        <span class="popup-verb">Release siege engine</span><span class="muted">Free · leave it in this hex · restore {panel.releaseHexes} hexes per Move</span>
       </button>
     {:else}
-      {@const reason = siegeReason(c.b, c.active, c.siegeEngine, 'haul')}
-      <button class="popup-row" disabled={c.siegeBusy || !!reason} title={reason ?? 'Attach the engine, then move your unit'} onclick={() => c.operateSiege('haul')}>
-        <span class="popup-verb">Haul siege engine <ActionCost n={1} /></span><span class="muted">{reason ?? 'Attach the engine, then move your unit'}</span>
+      <button class="popup-row" disabled={c.siegeBusy || !!panel.haulReason} title={panel.haulReason ?? 'Attach the engine, then move your unit'} onclick={() => c.operateSiege('haul')}>
+        <span class="popup-verb">Haul siege engine <ActionCost n={1} /></span><span class="muted">{panel.haulReason ?? 'Attach the engine, then move your unit'}</span>
       </button>
     {/if}
   </BoardPopup>
@@ -126,16 +122,10 @@
     {@render pickerHead(c.pickerOffer.label, c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally', c.pickerOffer.spell)}
     {@render activityRows(c.pickerOffer.activities, c.pickerActivity?.index ?? null, c.choosePickerActivity)}
     {#if c.pickerActivity}
-      {#if canFocus(c.pickerOffer.type, c.pickerOffer.spell) && (c.pickerOffer.type !== 'cast' || (c.pickerActivity.cost ?? 3) < 3)}
-        <CommitmentPicker base={c.pickerActivity.cost ?? c.pickerActivity.index} available={c.pickerOffer.type === 'cast' ? Math.min(3, c.actionsLeft) : c.actionsLeft} bind:value={c.focus} effect={c.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+      {#if c.pickerCommitment}
+        <CommitmentPicker base={c.pickerCommitment.base} available={c.pickerCommitment.available} bind:value={c.focus} effect={c.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
-      <p class="popup-escapes" aria-live="polite">
-        {#if !c.pickerActivity.needsTarget}Ready to confirm.
-        {:else if c.pickerService?.placement}{c.activityPick.selected.length % 2 ? 'Choose a destination hex.' : c.activityPick.selected.length === 2 && c.pickerActivity.index === 4 ? 'Confirm one transfer, or choose a second unit and its destination.' : 'Choose a unit to transfer.'}
-        {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index === 4}Choose yourself or one adjacent ally.
-        {:else if c.pickerOffer.spell === 'healing' && c.pickerActivity.index > 1}Choose up to {c.pickerActivity.index === 4 ? 1 : c.pickerActivity.index} units on the board. {c.activityPick.selected.length} selected.
-        {:else}Choose a target on the board.{/if}
-      </p>
+      <p class="popup-escapes" aria-live="polite">{c.pickerHint}</p>
       {#if c.pickerActivity.needsTarget}
       {#key `${c.pickerOffer.spell}:${c.pickerActivity.index}`}
         <TargetChoices targets={c.pickerCandidates} selected={c.activityPick.target ?? null}
@@ -161,7 +151,7 @@
     {@render pickerHead('Blast', 'cast', 'blast')}
     {@render activityRows(c.blastOffer.activities, c.blastLevel, c.chooseBlastLevel)}
     {#if c.blastActivity}
-      {#if (c.blastActivity.cost ?? 3) < 3}<CommitmentPicker base={c.blastActivity.cost ?? c.blastActivity.index} available={Math.min(3, c.actionsLeft)} bind:value={c.focus} effect="on the spell attack" />{/if}
+      {#if c.blastCommitment}<CommitmentPicker base={c.blastCommitment.base} available={c.blastCommitment.available} bind:value={c.focus} effect="on the spell attack" />{/if}
       <p class="popup-escapes" aria-live="polite">
         {#if c.blastLevel === 1}Choose an enemy hex.
         {:else if c.blastLevel === 2}Choose a two-hex line on the board.
@@ -217,9 +207,9 @@
       </button>
       {#if i === c.pending.index && row.kind === 'flee'}
         <p class="muted activity-detail popup-escapes">
-          Leave through {row.cell}. Morale: d20 {row.modifier >= 0 ? '+' : '−'}{Math.abs(row.modifier)} against DC {row.dc}.
+          Leave through {row.cell}. Morale: d20 {signed(row.modifier)} against DC {row.dc}.
           The unit escapes either way. Success sends it to camp without morale loss; failure routes it and removes it from the end-of-day survivors.
-          {#if c.active && isRouted(c.active)}This unit is already routed and stays routed after leaving.{/if}
+          {#if c.activeRouted}This unit is already routed and stays routed after leaving.{/if}
         </p>
       {/if}
       {#if i === c.pending.index && row.kind === 'move' && c.act?.escape}
@@ -232,7 +222,7 @@
             </p>
           {/each}
           <p class="muted activity-detail">
-            One roll, d20{w.modifier < 0 ? '−' : '+'}{Math.abs(w.modifier)}, read against each DC. Fall short of any and you stay, spending one action;
+            One roll, d20{signed(w.modifier)}, read against each DC. Fall short of any and you stay, spending one action;
             a holder you critically fail against also attacks free. A Step to open ground needs no roll.
           </p>
         </div>
@@ -283,8 +273,8 @@
     {/if}
     {@render activityRows(c.aimActivities, c.aimed?.index ?? null, (index) => c.aimChoose(c.aimActivities.findIndex((opt) => opt.index === index)))}
     {#if c.aimed?.legal}
-      {#if canFocus(c.aimGroup.offer.type, c.aimGroup.offer.spell) && c.aimGroup.offer.spell !== 'blast'}
-        <CommitmentPicker base={c.aimed.cost ?? c.aimed.index} available={c.aimGroup.offer.type === 'cast' ? Math.min(3, c.actionsLeft) : c.actionsLeft} bind:value={c.focus} effect={c.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+      {#if c.aimCommitment}
+        <CommitmentPicker base={c.aimCommitment.base} available={c.aimCommitment.available} bind:value={c.focus} effect={c.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
       {@render popupFoot(c.takeAim, c.aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
     {/if}

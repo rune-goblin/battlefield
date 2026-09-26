@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { abilityDescription, abilitySummary, wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
-    shootCeiling, shootFloor, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
+  import { abilityDescription, abilitySummary, wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, MAX_WOUNDS, movementSpeed, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
+    shootCeiling, shootFloor, shootModifier, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
     type BattleState, type Unit } from '../../engine/index.js';
   import { signed } from '../presentation.js';
 
   let { battle, unit }: { battle: BattleState; unit: Unit } = $props();
   const fort = $derived(unit.status === 'active' ? wallsFor(battle.board).fortifiedAt(unit.square) : null);
   const rollNote = 'Roll 1d20 plus this bonus. Target, height, range and action modifiers apply when choosing an attack.';
-  const volley = $derived((unit.stats.volley ?? 0) - unit.disorder + rollBonus(unit) + (garrisoned(battle, unit) ? 1 : 0));
+  const volley = $derived(shootModifier(battle, unit));
   const spellRanges = $derived(unit.trees.map(tree => `${TREE_LABEL[tree]}: ${castCeiling(battle, tree)} hexes`).join(' · '));
   const sourceName = (name?: string) => name?.replace(/\s*\[(Battle|Salvo)\]/g, '');
 </script>

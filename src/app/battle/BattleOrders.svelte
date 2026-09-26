@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wallsFor, engagedEnemies, gateReason, isRouted, levelDc, notation, CELL_FEET, wallName } from '../../engine/index.js';
+  import { notation, CELL_FEET } from '../../engine/index.js';
   import { actionIconUrl } from '../../board/index.js';
   import ActionCost from '../ActionCost.svelte';
   import ActionBudget from '../ActionBudget.svelte';
@@ -10,7 +10,7 @@
   import type { BattleController } from './battle-controller.svelte.js';
 
   let { c }: { c: BattleController } = $props();
-  const interiorGates = $derived(c.nearbyGates.filter(([key]) => c.active && wallsFor(c.b.board).insideOf(key) === notation(c.active.square)));
+  const interiorGates = $derived(c.gates.filter((g) => g.interior));
 </script>
 
 {#if c.active && c.act}
@@ -29,13 +29,12 @@
       {#each c.siegeEquipment as engine (engine.id)}
         <button onclick={() => c.openSiege(engine.id)}>Operate {engine.name}</button>
       {/each}
-      {#each interiorGates as [key, wall] (key)}
-        {@const reason = gateReason(c.b, c.active, key)}
-        <button class="gate-control" disabled={!c.myTurn || c.gateBusy || !!reason}
-          title={reason ?? `Gate ${wallName(key)} is ${wall.gate!.open ? 'open' : 'closed'}. Costs one action.`}
-          onclick={() => { c.cancelAction(); void c.operateGate(key); }}>
-          <GateStatus open={wall.gate!.open} />
-          <span>{wall.gate!.open ? 'Close' : 'Open'} gate{#if interiorGates.length > 1}<small>{wallName(key)}</small>{/if}</span>
+      {#each interiorGates as gate (gate.key)}
+        <button class="gate-control" disabled={!c.myTurn || c.gateBusy || !!gate.reason}
+          title={gate.reason ?? `Gate ${gate.name} is ${gate.open ? 'open' : 'closed'}. Costs one action.`}
+          onclick={() => { c.cancelAction(); void c.operateGate(gate.key); }}>
+          <GateStatus open={gate.open} />
+          <span>{gate.open ? 'Close' : 'Open'} gate{#if interiorGates.length > 1}<small>{gate.name}</small>{/if}</span>
           <ActionCost n={1} />
         </button>
       {/each}
@@ -44,10 +43,10 @@
   <details class="unit-details">
     <summary>Tactics and rules</summary>
   <table class="stats"><tbody>
-    <tr><td>Level</td><td>{c.active.level}</td><td>Level DC</td><td>{levelDc(c.active.level)}</td></tr>
-    <tr><td>Engaged</td><td>{engagedEnemies(c.b, c.active).length}</td><td>Banked move</td><td>{Number((c.act.feet / CELL_FEET).toFixed(2))} points</td></tr>
+    <tr><td>Level</td><td>{c.active.level}</td><td>Level DC</td><td>{c.activeDc}</td></tr>
+    <tr><td>Engaged</td><td>{c.engagedCount}</td><td>Banked move</td><td>{Number((c.act.feet / CELL_FEET).toFixed(2))} points</td></tr>
     {#if c.active.tactics.length}<tr><td>Tactics</td><td colspan="3">{c.active.tactics.join(', ')}</td></tr>{/if}
-    {#if c.status(c.active)}<tr><td>Status</td><td colspan="3">{c.status(c.active)}</td></tr>{/if}
+    {#if c.statusLine}<tr><td>Status</td><td colspan="3">{c.statusLine}</td></tr>{/if}
   </tbody></table>
     <p class="cost-key">One attack per activation. Each extra action adds +2 to a supported roll.</p>
   </details>
@@ -106,7 +105,7 @@
     {/if}
   </div>
 
-  {#if isRouted(c.active)}
+  {#if c.activeRouted}
     <p class="muted">
       Routed · Move or Step to your edge, or recover Morale with an ally.
     </p>

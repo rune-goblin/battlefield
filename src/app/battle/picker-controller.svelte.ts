@@ -1,5 +1,5 @@
 import { reachableActivities, soleLegalActivity } from './action-menu.js';
-import { type HealingChoice, type ActionOffer, TREE_TARGET, type BoardObject, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
+import { type HealingChoice, type ActionOffer, TREE_TARGET, type BoardObject, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, commitment, healSlots, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
 import type { BattleState, EngineState, Unit } from '../../engine/index.js';
@@ -55,6 +55,9 @@ export function createPickerController(s: PickerShared) {
       && (o.targets.some((x) => targetMatches(s.b, x, t)) || (own && !o.needsTarget)));
   });
   const aimed = $derived(aimActivities[aim?.index ?? -1] ?? null);
+  // Blast routes the aim popup to its own shape picker, which carries the commitment.
+  const aimCommitment = $derived(s.active && aimGroup && aimed && aimGroup.offer.spell !== 'blast'
+    ? commitment(s.active, aimGroup.offer, aimed) : null);
   const targetCells = (target: ActivityTarget): string[] => cellsForTarget(s.b, target);
   let blastOpen = $state(false);
   let blastLevel = $state<ActivityIndex | null>(null);
@@ -71,6 +74,7 @@ export function createPickerController(s: PickerShared) {
     ?? (blastHoverMatches.length === 1 ? blastHoverMatches[0] : null)
     ?? blastTargets.find((t) => t.id === blastTarget) ?? null);
   const blastSelection = $derived(blastTargets.find((t) => t.id === blastTarget) ?? null);
+  const blastCommitment = $derived(s.active && blastOffer && blastActivity ? commitment(s.active, blastOffer, blastActivity) : null);
 
 
   // Cast and Rally show their activities before asking for a target.
@@ -86,6 +90,22 @@ export function createPickerController(s: PickerShared) {
   const pickerPreview = $derived(pickerTargets.find((t) => t.id === targetHover)
     ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null)
     ?? pickerTargets.find((t) => t.id === activityPick?.target) ?? null);
+  const pickerCommitment = $derived(s.active && pickerOffer && pickerActivity ? commitment(s.active, pickerOffer, pickerActivity) : null);
+  /** What the open activity picker asks for next. */
+  const pickerHint = $derived.by(() => {
+    if (!activityPick || !pickerOffer || !pickerActivity) return '';
+    const { index } = pickerActivity;
+    const selected = activityPick.selected.length;
+    if (!pickerActivity.needsTarget) return 'Ready to confirm.';
+    if (pickerService?.placement) {
+      return selected % 2 ? 'Choose a destination hex.'
+        : selected === 2 && index === 4 ? 'Confirm one transfer, or choose a second unit and its destination.'
+          : 'Choose a unit to transfer.';
+    }
+    if (pickerOffer.spell === 'healing' && index === 4) return 'Choose yourself or one adjacent ally.';
+    if (pickerOffer.spell === 'healing' && index > 1) return `Choose up to ${healSlots(index).recipients} units on the board. ${selected} selected.`;
+    return 'Choose a target on the board.';
+  });
   const healingRecipients = $derived.by<Unit[]>(() => {
     const choice = pickerTargets.find((t) => t.id === activityPick?.target);
     return choice?.kind === 'unit' ? s.b.units.filter((u) => choice.ids.includes(u.id)) : [];
@@ -412,6 +432,10 @@ export function createPickerController(s: PickerShared) {
     get blastActivity() { return blastActivity; },
     get blastSelection() { return blastSelection; },
     get pickerActivity() { return pickerActivity; },
+    get pickerCommitment() { return pickerCommitment; },
+    get pickerHint() { return pickerHint; },
+    get blastCommitment() { return blastCommitment; },
+    get aimCommitment() { return aimCommitment; },
     get pickerCandidates() { return pickerCandidates; },
     get choosePickerActivity() { return choosePickerActivity; },
     get confirmPicker() { return confirmPicker; },
