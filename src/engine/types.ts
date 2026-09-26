@@ -2,6 +2,7 @@ import type { TroopAbility, AbilityReview, AbilityMemory, AbilityMark, AbilityOu
 import type { Board, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats, MovementRates, TroopSheet } from './cards.js';
 import type { CheckResult } from './check.js';
+import type { CONDITIONS } from './conditions.js';
 import type { ActivityIndex, Verb } from './ladders.js';
 import type { CastActivityIndex, Tree } from './magic.js';
 
@@ -47,7 +48,45 @@ export interface EngineState {
 /** The three buffs of the Defense tree, which stand until the unit they fell on has acted. */
 export type DefenceBuff = 'ward' | 'stoneskin' | 'aegis';
 
-export interface Unit {
+export interface Conditions {
+  /** The Guard in force until this unit next activates. `cap` is Dig in's wound cap, `holds`
+   * Take cover's refusal of an Overrun's shove. */
+  guard: { defence: 2 | 4; cap: boolean; holds: boolean } | null;
+  /** Activations left before the unit may move again. Take cover sets one: the rest of this one. */
+  rooted: number;
+  exposed: boolean;
+  /** +2 on the unit's next roll of any kind. Never set while disorder stands. */
+  inspired: boolean;
+  /** The shooter's id: −2 to every roll and to Defence until that shooter acts again or leaves play. */
+  suppressedBy: string | null;
+  /** The shooter's id: it holds this unit at Volley + 10 until it acts again or leaves play. */
+  pinnedBy: string | null;
+  frightened: boolean;
+  /** One action fewer on its next activation. */
+  stunned: boolean;
+  /** Wrath's wound, waiting on the unit's own `finish`; `dc` is the Fortitude save's. */
+  persistent: { dc: number; tag?: string } | null;
+  sureStrike: boolean;
+  /** The unit's next hit leaves persistent damage on whoever takes it. */
+  wrath: boolean;
+  /** Activations left with a fourth action. */
+  haste: number;
+  ward: boolean;
+  stoneskin: boolean;
+  /** The caster's spell DC: an attacker rolls Will against it or wastes the activity. */
+  aegis: { dc: number } | null;
+  /** Defense buffs cast on this unit inside its own activation. A buff lasts until the unit it
+   * fell on has next acted, so `finish` holds these over the activation that cast them: a
+   * caster's own ward stands through the enemy's turn (section 11). */
+  selfBuffs: DefenceBuff[];
+  /** Extra movement in feet for the next activation, or this activation after a self-cast. */
+  movementBonus?: number;
+  sureFooting: boolean;
+  /** Flies on its next activation only; `flying` is the troop that always does. */
+  flies: boolean;
+}
+
+export interface Unit extends Conditions {
   abilities?: TroopAbility[];
   abilityReview?: AbilityReview[];
   abilityState?: AbilityMemory;
@@ -88,47 +127,16 @@ export interface Unit {
   wounds: number;
   disorder: number;
   status: 'active' | 'destroyed' | 'left' | 'camp';
-  /** The Guard in force until this unit next activates. `cap` is Dig in's wound cap, `holds`
-   * Take cover's refusal of an Overrun's shove. */
-  guard: { defence: 2 | 4; cap: boolean; holds: boolean } | null;
-  /** Activations left before the unit may move again. Take cover sets one: the rest of this one. */
-  rooted: number;
-  exposed: boolean;
-  /** +2 on the unit's next roll of any kind. Never set while disorder stands. */
-  inspired: boolean;
-  /** The shooter's id: −2 to every roll and to Defence until that shooter acts again or leaves play. */
-  suppressedBy: string | null;
-  /** The shooter's id: it holds this unit at Volley + 10 until it acts again or leaves play. */
-  pinnedBy: string | null;
-  frightened: boolean;
-  /** One action fewer on its next activation. */
-  stunned: boolean;
-  /** Wrath's wound, waiting on the unit's own `finish`; `dc` is the Fortitude save's. */
-  persistent: { dc: number; tag?: string } | null;
-  sureStrike: boolean;
-  /** The unit's next hit leaves persistent damage on whoever takes it. */
-  wrath: boolean;
-  /** Activations left with a fourth action. */
-  haste: number;
-  ward: boolean;
-  stoneskin: boolean;
-  /** The caster's spell DC: an attacker rolls Will against it or wastes the activity. */
-  aegis: { dc: number } | null;
-  /** Defense buffs cast on this unit inside its own activation. A buff lasts until the unit it
-   * fell on has next acted, so `finish` holds these over the activation that cast them: a
-   * caster's own ward stands through the enemy's turn (section 11). */
-  selfBuffs: DefenceBuff[];
-  /** Extra movement in feet for the next activation, or this activation after a self-cast. */
-  movementBonus?: number;
-  sureFooting: boolean;
-  /** Flies on its next activation only; `flying` is the troop that always does. */
-  flies: boolean;
 }
 
 /** Which unit acts. */
 interface Acts { unit: string }
 
-export type HealingCondition = 'pinned' | 'rooted' | 'suppressed' | 'exposed' | 'frightened' | 'persistent';
+type ConditionEntries = typeof CONDITIONS;
+/** The statuses of the conditions a heal may clear. */
+export type HealingCondition = {
+  [K in keyof ConditionEntries]: ConditionEntries[K] extends { status: infer S; heal: object } ? S : never;
+}[keyof ConditionEntries];
 export interface HealingChoice { conditions: HealingCondition[]; extraHealth?: boolean }
 
 export interface ActivityAction extends Acts {

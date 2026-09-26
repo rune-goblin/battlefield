@@ -2,6 +2,7 @@ import { abilityMemory, hasAbility } from '../ability-effects.js';
 import { wallsFor } from '../walls.js';
 import { at, notation, structuralDamage, fortification } from '../board.js';
 import { CELL_FEET } from '../path.js';
+import { MAGICAL_CONDITIONS, resetConditions } from '../conditions.js';
 import { rollLine, succeeded } from '../check.js';
 import type { ActivityIndex } from '../ladders.js';
 import type { Rng } from '../rng.js';
@@ -89,12 +90,12 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
     case 'stun': target.stunned = true; break;
     case 'expose': target.exposed = true; break;
     case 'sicken': addDisorder(state, target, 1, mode.label); break;
-    case 'nullify':
-      target.ward = false; target.stoneskin = false; target.aegis = null; target.sureStrike = false;
-      target.wrath = false; target.haste = 0; target.movementBonus = 0; target.sureFooting = false;
+    case 'nullify': {
       // A temporary flier over water lands after reaching safe ground.
-      if (at(state.board, target.square).terrain !== 'water') target.flies = false;
-      target.selfBuffs = []; break;
+      const overWater = at(state.board, target.square).terrain === 'water';
+      resetConditions(target, MAGICAL_CONDITIONS.filter((key) => !(key === 'flies' && overWater)));
+      break;
+    }
     case 'push': case 'pull':
       forcedStep(state, e.square, target, mode.effect);
       break;

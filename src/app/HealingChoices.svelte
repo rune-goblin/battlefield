@@ -1,10 +1,9 @@
 <script lang="ts">
-  import type { Unit, HealingChoice, HealingCondition } from '../engine/index.js';
+  import { healableConditions, type Unit, type HealingChoice, type HealingCondition } from '../engine/index.js';
   let { units, renewal, choices = $bindable({}) }: { units: Unit[]; renewal: boolean; choices?: Record<string, HealingChoice> } = $props();
   const labels: Record<HealingCondition, string> = { pinned: 'Pinned', rooted: 'Rooted', suppressed: 'Suppressed', exposed: 'Exposed', frightened: 'Frightened', persistent: 'Persistent damage' };
-  const conditions = (unit: Unit): HealingCondition[] => (Object.keys(labels) as HealingCondition[]).filter(condition => ({ pinned: !!unit.pinnedBy, rooted: unit.rooted > 0, suppressed: !!unit.suppressedBy, exposed: unit.exposed, frightened: unit.frightened, persistent: !!unit.persistent })[condition]);
   function choose(unit: Unit, slot: number, value: string) {
-    const current = choices[unit.id] ?? { conditions: conditions(unit).slice(0, renewal ? 2 : 1) };
+    const current = choices[unit.id] ?? { conditions: healableConditions(unit).slice(0, renewal ? 2 : 1) };
     const selected = [...current.conditions];
     if (value === 'health' || value === '') selected.splice(slot);
     else { selected[slot] = value as HealingCondition; if (selected[1] === selected[0]) selected.splice(1); }
@@ -15,7 +14,7 @@
   <legend>Recovery priorities</legend>
   <p>{renewal ? 'A success clears your first choice; a critical success also clears your second.' : 'On a critical success, clear a condition or restore 1 extra Health.'}</p>
   {#each units as unit (unit.id)}
-    {@const eligible = conditions(unit)}
+    {@const eligible = healableConditions(unit)}
     {@const selected = choices[unit.id]}
     <label>{unit.name}
       <select aria-label={`${unit.name} first recovery`} value={selected ? selected.extraHealth ? 'health' : selected.conditions[0] ?? '' : eligible[0] ?? (renewal ? '' : 'health')} onchange={event => choose(unit, 0, event.currentTarget.value)}>

@@ -5,6 +5,9 @@ import { activityOf, type Activity } from '../ladders.js';
 import type { Rng } from '../rng.js';
 import { clone } from '../clone.js';
 import {
+  AFTER_ACTED_CONDITIONS, BEGIN_CONDITIONS, COUNTDOWN_CONDITIONS, FINISH_CONDITIONS, HEALING_CONDITIONS, resetConditions,
+} from '../conditions.js';
+import {
   ACTION_BONUS, ACTIONS_PER_ACTIVATION, BANDS, type Action, type BattleState, type ChargeAction,
   type AdvanceAction, type ActivityAction, type Side, type Unit,
 } from '../types.js';
@@ -126,14 +129,12 @@ function begin(state: BattleState, u: Unit, rng: Rng) {
   u.feet = u.movementBonus ?? 0;
   u.castTrees = [];
   abilityMemory(u).guardAtStart = !!u.guard;
-  u.guard = null;
-  u.exposed = false;
   if (u.haste > 0) log(state, u, `${u.name} is hasted: one extra action this activation.`);
   if (u.stunned) {
     u.actions -= 1;
-    u.stunned = false;
     log(state, u, `${u.name} is stunned: one fewer action this activation.`);
   }
+  resetConditions(u, BEGIN_CONDITIONS);
   clearAsShooter(state, u.id);
   startAbilities(state, u, abilityContext(state, rng, u));
 }
@@ -146,9 +147,8 @@ function finish(state: BattleState, rng: Rng, u: Unit) {
   // `begin` has not run, and a tree left standing from last time reads "already cast".
   u.castTrees = [];
   u.feet = 0;
-  u.rooted = Math.max(0, u.rooted - 1);
+  for (const key of COUNTDOWN_CONDITIONS) u[key] = Math.max(0, u[key] - 1);
   if (!u.rooted) abilityMemory(u).snare = false;
-  u.haste = Math.max(0, u.haste - 1);
   // The persistent wound lands before the clears below: its Fortitude save is a roll of this
   // activation, so `inspired` bonuses it and is spent by it, and `frightened` still costs its −1.
   if (u.persistent) landPersistent(state, rng, u);
@@ -156,17 +156,8 @@ function finish(state: BattleState, rng: Rng, u: Unit) {
   // through the whole of this activation and lapses here — which is what lets Stoneskin meet a
   // persistent wound above. One the unit cast on itself this activation is held over instead:
   // its own next act is the activation after this one.
-  if (!u.selfBuffs.includes('ward')) u.ward = false;
-  if (!u.selfBuffs.includes('stoneskin')) u.stoneskin = false;
-  if (!u.selfBuffs.includes('aegis')) u.aegis = null;
-  u.selfBuffs = [];
-  u.inspired = false;
-  u.frightened = false;
-  u.sureStrike = false;
-  u.wrath = false;
-  u.movementBonus = 0;
-  u.sureFooting = false;
-  u.flies = false;
+  resetConditions(u, AFTER_ACTED_CONDITIONS.filter((key) => !u.selfBuffs.includes(key)));
+  resetConditions(u, FINISH_CONDITIONS);
   state.activated.push(u.id);
   state.lastSide = u.side;
   state.log.push({ round: state.round, unit: u.id, turn: 'end', text: `${u.name} ends its turn.` });
@@ -220,7 +211,7 @@ function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityActio
     for (const [id, choice] of Object.entries(action.healingChoices)) {
       if (!recipients.includes(id) || !Array.isArray(choice.conditions) || choice.conditions.length > 2
         || new Set(choice.conditions).size !== choice.conditions.length
-        || choice.conditions.some(c => !['pinned', 'rooted', 'suppressed', 'exposed', 'frightened', 'persistent'].includes(c))
+        || choice.conditions.some(c => !HEALING_CONDITIONS.includes(c))
         || (action.activity === 4 && choice.extraHealth)) throw new Error('invalid recovery choices');
     }
   }

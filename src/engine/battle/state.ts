@@ -6,6 +6,7 @@ import { TERRAIN } from '../terrain.js';
 import { at, barrierBetween, gridOf, sameCell, SIZE, type Square } from '../board.js';
 import { check, rollTwice, type CheckResult } from '../check.js';
 import { canFocus } from '../ladders.js';
+import { SHOOTER_CONDITIONS, resetConditions } from '../conditions.js';
 import type { Rng } from '../rng.js';
 import { levelDc } from '../tables.js';
 import {
@@ -204,10 +205,7 @@ export const fortitudeModifier = (u: Unit) => u.stats.fortitude - u.disorder + r
 
 // A suppression or a pin also lifts when its shooter leaves play — dead or fled fires no more.
 export function clearAsShooter(state: BattleState, shooterId: string) {
-  for (const o of state.units) {
-    if (o.suppressedBy === shooterId) o.suppressedBy = null;
-    if (o.pinnedBy === shooterId) o.pinnedBy = null;
-  }
+  for (const o of state.units) resetConditions(o, SHOOTER_CONDITIONS.filter((key) => o[key] === shooterId));
 }
 
 /** Reflex, less disorder: what a unit rolls to leave a zone of control. */
