@@ -7,6 +7,7 @@ import { closeInteraction, dropInteraction, submitTo } from '../runtime/interact
 import type { DicePort } from '../runtime/ports.js';
 import { randomSeed, type BattleSession } from '../runtime/session.js';
 import { deploymentProblem } from './ArmyPreparationService.js';
+import { battleOf, withBattle } from './session-helpers.js';
 
 /**
  * The night between two days and the ground the next one is fought on. Each army declares and
@@ -22,13 +23,6 @@ export interface BattleContinuationService {
   chooseBattlefield(session: BattleSession, spec: Partial<BoardSpec> | null): BattleSession;
   declareDeployment(session: BattleSession, side: Side, positions: Record<string, string>, userId: string): BattleSession;
 }
-
-function battleOf(session: BattleSession): BattleState {
-  if (!session.battle) throw new Error('no battle is under way');
-  return session.battle;
-}
-
-const withBattle = (session: BattleSession, battle: BattleState): BattleSession => ({ ...session, battle });
 
 function requireSide(side: Side): Side {
   if (!SIDES.includes(side)) throw new Error('invalid side');
