@@ -475,4 +475,6 @@ export class EdgeLayer {
   clear(): void {
     this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
   }
+
+  destroy(): void { this.clear(); }
 }
