@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
+import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
 import { ART_ANCHOR_Y, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
 import type { BoardTheme } from './theme.js';
@@ -34,6 +34,8 @@ export interface UnitTokenModel {
   cell: string;
   wounds: number;
   disorder: number;
+  /** The engine's `isRouted` verdict. The piece greys, flies a colourless flag and carries a retreat arrow. */
+  routed: boolean;
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
   engineId?: string;
@@ -169,8 +171,7 @@ export class Token extends PIXI.Container {
     if (!this.dragging) this.place(model, grid, size);
 
     const wounds = model.kind === 'unit' ? model.wounds : 0;
-    const disorder = model.kind === 'unit' ? model.disorder : 0;
-    const routed = model.kind === 'unit' && disorder >= ROUTED_AT;
+    const routed = model.kind === 'unit' && model.routed;
 
     this.drawContact(size);
     this.updateArt(model, size);
