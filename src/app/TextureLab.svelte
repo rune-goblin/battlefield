@@ -17,7 +17,8 @@
 
   const ELEVATION_LEVELS = [2, 1, 0, -1, -2];
   // Raw, like the board: one draw of the patches, replaced whole when a new layout is rolled.
-  let sample = $state.raw(createTextureSample(textureLab.layout));
+  const firstSample = createTextureSample(textureLab.layout);
+  let sample = $state.raw(firstSample);
   // The lab edits the game board's own settings in place, so the map style chosen in the top
   // bar shows what was last set here.
   const settings = $derived(mapSettings.textures);
@@ -35,7 +36,7 @@
   let compareHard = $state(false);
   // Raw, not deep state: the board is handed straight to Pixi, and a paint stroke announces
   // itself by replacing the object rather than by being watched cell by cell.
-  let board = $state.raw(sample.board);
+  let board = $state.raw(firstSample.board);
   let elevationLevel = $state<number | null>(null);
   const SHADOW_LEVELS = [{ key: 'level1', label: 'One step up' }, { key: 'level2', label: 'Two steps or more' }] as const;
   const appearance = $derived(style === 'ink' ? null : { settings, groups: sample.groups, compareHard, elevationMarks });
