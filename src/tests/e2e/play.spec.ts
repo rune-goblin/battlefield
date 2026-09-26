@@ -1,22 +1,7 @@
-import type { Page } from '@playwright/test';
-
-import { activation, notation, type BattleState } from '../../engine/index';
-import { beginBattle, endBattle, openFromSceneControl, windowOf } from './fixtures/battle-window';
+import { activation } from '../../engine/index';
+import { beginBattle, endBattle, openFromSceneControl, shot, windowOf } from './fixtures/battle-window';
+import { battleOn, cellOf, drag, screenOf, settle } from './fixtures/board';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
-
-interface Point { x: number; y: number }
-
-const battleOn = (page: Page): Promise<BattleState> => page.evaluate(
-  (id) => JSON.parse((window as any).game.settings.get(id, 'session')).battle,
-  MODULE_ID,
-);
-
-const screenOf = (page: Page, cell: string): Promise<Point> => page.evaluate(
-  ([id, c]) => (window as any).game.modules.get(id).api.screenOf(c),
-  [MODULE_ID, cell],
-);
-
-const cellOf = (b: BattleState, unit: string): string => notation(b.units.find((u) => u.id === unit)!.square);
 
 test.describe('An activation on two clients', () => {
   test('the GM drags a unit one hex, then spends Guard off the ring', async ({ gmPage, playerPage }) => {
@@ -41,27 +26,19 @@ test.describe('An activation on two clients', () => {
     const events = gm.locator('.battle-log .event');
     const before = await events.count();
 
-    // The reel centres the board on its pick, and the cell moves under the pointer until it lands.
-    await expect.poll(async () => {
-      const first = await screenOf(gmPage, from);
-      await gmPage.waitForTimeout(150);
-      const second = await screenOf(gmPage, from);
-      return Math.hypot(first.x - second.x, first.y - second.y);
-    }).toBeLessThan(0.5);
+    await settle(gmPage, from);
+    await shot(gmPage, 'W9-ring-active');
 
-    const start = await screenOf(gmPage, from);
-    const end = await screenOf(gmPage, to);
-    await gmPage.mouse.move(start.x, start.y);
-    await gmPage.mouse.down();
-    await gmPage.mouse.move(end.x, end.y, { steps: 12 });
-    await gmPage.mouse.up();
+    await drag(gmPage, await screenOf(gmPage, from), await screenOf(gmPage, to));
     await gm.locator('.popup-foot .primary').click();
     await expect.poll(async () => cellOf(await battleOn(gmPage), unit)).toBe(to);
+    await shot(gmPage, 'W9-token-move');
 
     const here = await screenOf(gmPage, to);
     await gmPage.mouse.click(here.x, here.y);
     const slices = gm.locator('.radial .slice');
     await expect(slices).toHaveCount(6);
+    await shot(gmPage, 'W9-ring-radial');
     await slices.nth(5).click();
     await gm.locator('.popup-foot .primary').click();
     await expect.poll(async () => (await battleOn(gmPage)).units.find((u) => u.id === unit)!.guard).toBeTruthy();
@@ -69,6 +46,7 @@ test.describe('An activation on two clients', () => {
     await expect(events).toHaveCount(before + 2);
     await expect(player.locator('.army-reel .unit-card.on .square')).toContainText(to);
     expect(cellOf(await battleOn(playerPage), unit)).toBe(to);
+    await shot(playerPage, 'W9-token-move-player');
 
     await endBattle(gm);
     await expect(rail).toBeVisible();
