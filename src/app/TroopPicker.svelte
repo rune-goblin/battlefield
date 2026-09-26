@@ -2,6 +2,7 @@
   import { abilityName, abilitySummary, deriveStats, type Side, type UnitCard } from '../engine/index.js';
   import { troopArtUrl } from '../board/index.js';
   import { allTroops, campaignTroops, type TroopEntry } from './troop-library.svelte.js';
+  import { signed } from './presentation.js';
 
   interface Props {
     side: Side;
@@ -89,7 +90,6 @@
     else { sortKey = key; ascending = true; }
   }
 
-  const signed = (n: number | null) => n === null ? '—' : `${n < 0 ? '−' : '+'}${Math.abs(n)}`;
   function onKey(e: KeyboardEvent) { if (e.key === 'Escape') close(); }
 </script>
 

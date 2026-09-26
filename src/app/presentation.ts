@@ -30,6 +30,9 @@ export interface PresentationSink {
   combatText: CombatTextDisplay;
 }
 
+/** U+2212 for the minus sign, matching every copy of this format across the app. */
+export const signed = (n: number | null): string => (n === null ? '—' : `${n < 0 ? '−' : '+'}${Math.abs(n)}`);
+
 function cellOf(battle: BattleState, id: string): string | null {
   const u = unitOf(battle, id);
   return u ? notation(u.square) : null;
