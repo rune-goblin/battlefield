@@ -2,7 +2,6 @@ import { offerReason, actionReason } from './action-menu.js';
 import { engagedEnemies, isRouted, type Verb, type ActionOffer, notation, type TargetRef } from '../../engine/index.js';
 import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon } from '../../board/art.js';
 import type { HighlightStyle } from '../../board/index.js';
-import { stage } from '../stage-view.svelte.js';
 import { DRAG_NOTICE } from './drag-controller.svelte.js';
 import type { Activation, ActivityIndex, ActivityTarget, BattleState, EngineState, MeleePlan, Unit, Wall } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
