@@ -18,7 +18,7 @@
 
   async function toggle() {
     open = !open;
-    if (open) await refresh();
+    if (open) await guard(refresh);
   }
 
   async function guard(work: () => Promise<unknown>) {
@@ -39,7 +39,7 @@
   // refusal goes through the app's own command notice rather than this panel's error line.
   async function doLoad(slot: string) {
     await run(loadSave(slot));
-    await refresh();
+    await guard(refresh);
   }
 
   async function doRemove(slot: string) {
