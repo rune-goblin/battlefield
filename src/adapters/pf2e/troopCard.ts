@@ -275,7 +275,6 @@ export function cardFromActor(actor: TroopActor): UnitCard {
     will: saves.will!.value! + demoralized,
     perception: (system.perception?.mod ?? attributes.perception?.value ?? 0) + demoralized,
     speed,
-    fly: flySpeed !== undefined,
     otherSpeeds: (attributes.speed!.otherSpeeds ?? [])
       .filter((s): s is { type: string; value: number } => typeof s.type === 'string' && Number.isFinite(s.value) && s.value! >= 0)
       .map(s => ({ type: s.type, value: s.value })),
@@ -300,7 +299,7 @@ export function cardFromActor(actor: TroopActor): UnitCard {
     level: system.details!.level!.value!,
     role: roleOf(speed, flySpeed?.value ?? 0, signals),
     salvo: reach,
-    pace: sheet.fly || speed >= SPEED_PER_SQUARE,
+    pace: (flySpeed?.value ?? 0) > 0 || speed >= SPEED_PER_SQUARE,
     fear,
     caster,
     ...(caster && tradition ? { tradition } : {}),

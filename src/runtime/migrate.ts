@@ -1,5 +1,5 @@
 import { SIDES, type BattleState, type BoardSize, type RecoveryChoice, type Side } from '../engine/index.js';
-import { upgradeBattle, upgradeBoard, upgradeCard, upgradeFlight, upgradeSourceStats, upgradeSpec } from '../engine/legacy.js';
+import { upgradeBattle, upgradeBoard, upgradeCard, upgradeFlight, upgradeSheet, upgradeSourceStats, upgradeSpec } from '../engine/legacy.js';
 import { hotSeatControl, isSideControl } from './control.js';
 import type { InteractionKind, InteractionRecord } from './interactions.js';
 import type { MintPort } from './ports.js';
@@ -93,8 +93,10 @@ function toSchema2(s: BattleSession & HeldSubmissions, mint: MintPort): void {
   s.recentCommandIds ??= [];
 }
 
-/** Flight became the fly rate alone, so a unit's `flying` and `flies` flags give way to it. */
+/** Flight became the fly speed alone: a sheet's `fly` flag gives way to a fly speed, and a
+ * unit's `flying` and `flies` flags to a fly rate. */
 function toSchema3(s: BattleSession): void {
+  for (const saved of s.setup.units) upgradeSheet(saved.card);
   const battle = s.battle && intactBattle(s.battle) ? s.battle : null;
   for (const u of battle?.units ?? []) upgradeFlight(u);
 }

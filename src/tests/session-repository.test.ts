@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBattle, COMBATANTS, ENGINES, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
+import { createBattle, COMBATANTS, ENGINES, movementRates, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
 import { hotSeatControl } from '../runtime/control.js';
 import { submissionOf } from '../runtime/interactions.js';
 import { migrateLegacySave, migrateSession, reviveSession, STEPS } from '../runtime/migrate.js';
@@ -42,6 +42,7 @@ describe('the browser session repository', () => {
     const session = { ...freshSession(), schemaVersion: 1 };
     const old = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
     delete old.sheet!.otherSpeeds;
+    Object.assign(old.sheet!, { fly: true });
     session.setup.units = [{ id: 'flyer', card: old, side: 'attacker', square: 'c2', engines: [] }];
     session.battle = createBattle({ board: openBoard(), units: [{ id: 'flyer', card: old, side: 'attacker', square: 'c2' }] });
     delete session.battle.units[0].movementRates;
@@ -51,6 +52,7 @@ describe('the browser session repository', () => {
     custom.battle!.units[0].speed = 40;
     expect(reviveSession(custom)!.battle!.units[0].speed).toBe(40);
     const restored = reviveSession(session)!;
+    expect(restored.setup.units[0].card.sheet).not.toHaveProperty('fly');
     expect(restored.battle!.units[0]).not.toHaveProperty('flying');
     expect(restored.battle!.units[0]).toMatchObject({ speed: 40,
       movementRates: { land: 20, fly: 40, swim: 0 },
@@ -58,14 +60,31 @@ describe('the browser session repository', () => {
     expect(reviveSession(structuredClone(restored))).toEqual(restored);
   });
 
-  it('revives a schema-2 flier with its flight held in its fly rate alone', () => {
+  it('revives a schema-2 flier with its flight held in its fly speed and rate alone', () => {
+    const session = { ...freshSession(), schemaVersion: 2 };
+    const harpies: UnitCard = { ...card, name: 'Harpies', sheet: { ac: 18, hp: 40, battleDc: 20, salvoDc: null,
+      salvoFeet: null, fortitude: 10, reflex: 12, will: 8, perception: 9, speed: 20 } };
+    Object.assign(harpies.sheet!, { fly: true });
+    session.setup.units = [{ id: 'harpy', card: harpies, side: 'attacker', square: 'c2', engines: [] }];
+    session.battle = createBattle({ board: openBoard(), units: [{ id: 'harpy', card: harpies, side: 'attacker', square: 'c2' }] });
+    Object.assign(session.battle.units[0], { flying: true, flies: false, movementRates: { land: 20, fly: 20, swim: 0 } });
+    const revived = reviveSession(session)!;
+    expect(revived.setup.units[0].card.sheet).not.toHaveProperty('fly');
+    expect(revived.setup.units[0].card.sheet!.otherSpeeds).toEqual([{ type: 'fly', value: 20 }]);
+    expect(movementRates(revived.setup.units[0].card).fly).toBe(20);
+    const unit = revived.battle!.units[0];
+    expect(unit).not.toHaveProperty('flying');
+    expect(unit).not.toHaveProperty('flies');
+    expect(unit.movementRates).toEqual({ land: 20, fly: 20, swim: 0 });
+  });
+
+  it('gives a saved unit that flew by its flag alone a fly rate at its Speed', () => {
     const session = { ...freshSession(), schemaVersion: 2 };
     session.setup.units = [{ id: 'harpy', card, side: 'attacker', square: 'c2', engines: [] }];
     session.battle = createBattle({ board: openBoard(), units: [{ id: 'harpy', card, side: 'attacker', square: 'c2' }] });
     Object.assign(session.battle.units[0], { flying: true, flies: false });
     const unit = reviveSession(session)!.battle!.units[0];
     expect(unit).not.toHaveProperty('flying');
-    expect(unit).not.toHaveProperty('flies');
     expect(unit.movementRates).toEqual({ land: 10, fly: 10, swim: 0 });
   });
 

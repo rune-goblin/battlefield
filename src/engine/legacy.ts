@@ -1,6 +1,6 @@
 import { freshAbilityMemory, validatedAbilities, type TroopAbility } from './abilities.js';
 import { fortification, type Board, type BoardSpec } from './board.js';
-import { canFly, convertSpeed, deriveStats, movementRates, speedOf, type UnitCard } from './cards.js';
+import { canFly, convertSpeed, deriveStats, movementRates, speedOf, type TroopSheet, type UnitCard } from './cards.js';
 import { COMBATANTS } from './combatants.js';
 import { OFFICIAL } from './official.js';
 import { CELL_FEET } from './path.js';
@@ -17,6 +17,15 @@ const LEGACY_HOLD_GROUND: TroopAbility = {
 export function upgradeCard(card: UnitCard): UnitCard {
   if (!card.abilities && card.signals?.includes('no-retreat')) card.abilities = [{ ...LEGACY_HOLD_GROUND }];
   return card;
+}
+
+/** The retired `fly` flag gave a sheet without source speeds a fly speed equal to its land
+ * Speed, and never less than the fifteen feet of one hex. That fly speed replaces the flag. */
+export function upgradeSheet(card: UnitCard): void {
+  const saved = card.sheet as (TroopSheet & { fly?: boolean }) | undefined;
+  if (!saved || !('fly' in saved)) return;
+  if (saved.fly === true && saved.otherSpeeds === undefined) saved.otherSpeeds = [{ type: 'fly', value: Math.max(saved.speed, 15) }];
+  delete saved.fly;
 }
 
 /** The tier-zero barricade retired into tier 1. */
@@ -69,8 +78,8 @@ export function upgradeEngine(e: EngineState): void {
 export function upgradeSourceStats(saved: { id: string; card: UnitCard }, unit: Unit | undefined): void {
   const card = saved.card;
   const source = [...COMBATANTS, ...OFFICIAL].find(c => c.name === card.name && c.level === card.level && c.role === card.role);
-  if (card.sheet && source?.sheet && Object.entries(card.sheet).every(([key, value]) =>
-    JSON.stringify(source.sheet![key as keyof typeof source.sheet]) === JSON.stringify(value))) {
+  if (card.sheet && source?.sheet && Object.entries(card.sheet).every(([key, value]) => key === 'fly'
+    || JSON.stringify(source.sheet![key as keyof typeof source.sheet]) === JSON.stringify(value))) {
     const before = deriveStats(card);
     card.sheet = { ...source.sheet, ...card.sheet };
     const after = deriveStats(card);
@@ -83,6 +92,7 @@ export function upgradeSourceStats(saved: { id: string; card: UnitCard }, unit: 
       unit.attackSources.volley ??= card.sheet.salvoName;
     }
   }
+  upgradeSheet(card);
   const sheet = card.sheet;
   if (!sheet || !unit) return;
   const previous = unit.movementRates ? Math.max(...Object.values(unit.movementRates))
@@ -104,8 +114,7 @@ export function upgradeFlight(unit: Unit): void {
       land: unit.movementRates?.land ?? unit.speed, fly: Math.max(unit.speed, CELL_FEET), swim: unit.movementRates?.swim ?? 0,
     };
   }
-  delete saved.flying;
-  delete saved.flies;
+  for (const retired of ['flying', 'flies'] as const) delete saved[retired];
 }
 
 /** Bring a saved battle to the shape the engine reads, keeping its progress. Returns the same

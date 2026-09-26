@@ -35,14 +35,14 @@ const cards = files.map((f) => {
   const salvoDc = salvo ? dc(salvo.system.description.value) : NaN;
   const reach = salvo ? reachOf(salvo.system.description.value) : null;
   const actions = actionsOf(d);
-  const fly = (s.attributes.speed.otherSpeeds ?? []).some((o) => o.type === 'fly');
+  const flies = (s.attributes.speed.otherSpeeds ?? []).some((o) => o.type === 'fly' && o.value > 0);
   const { tradition, ...spellStats } = spellcastingOf(d.items);
   return {
     slug: f.replace(/\.json$/, ''),
     name: d.name,
     level: s.details.level.value,
     role: role(d),
-    pace: fly || s.attributes.speed.value >= 30,
+    pace: flies || s.attributes.speed.value >= 30,
     fear: false,
     caster: casterOf(d, actions),
     tradition,
@@ -60,7 +60,6 @@ const cards = files.map((f) => {
       will: s.saves.will.value,
       perception: s.perception?.mod ?? s.attributes.perception?.value ?? 0,
       speed: s.attributes.speed.value,
-      fly,
       otherSpeeds: s.attributes.speed.otherSpeeds ?? [],
       battleName: battle.name,
       ...(salvo ? { salvoName: salvo.name } : {}),

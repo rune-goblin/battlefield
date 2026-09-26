@@ -1183,7 +1183,7 @@ describe('no retreat', () => {
   // Legacy No Retreat imports retain their position through Resolve.
   const line: UnitCard = upgradeCard({
     name: 'Line', level: 6, role: 'infantry', signals: ['no-retreat'], tactics: [],
-    sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false },
+    sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20 },
   });
   const chased = (runner: UnitCard = infantry) => {
     const state = createBattle({
