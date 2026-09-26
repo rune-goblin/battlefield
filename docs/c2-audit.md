@@ -93,11 +93,13 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W7.2 moved the readiness drop into `withSetup` in `src/services/session-helpers.ts`, the one door every setup edit passes, so `army.setSide` to the side a unit already holds no longer withdraws readiness. BattleManager owns load, install and moveTo as pure methods. A descriptor's `refuse` answers before any port is touched, and its `prepare` does the archive or site read first; a throw there is a `storage` refusal that commits nothing. The executor queues, validates and persists, and runs undo alone.
 
-### M7. `battle-controller` is a forwarding facade over one shared bag — Middle Man / Inappropriate Intimacy `[cross-cutting]`
+### M7. `battle-controller` is a forwarding facade over one shared bag — Middle Man / Inappropriate Intimacy `[cross-cutting]` `[done]`
 - **Where:** `src/app/battle/battle-controller.svelte.ts:50-96,504-646`
 - **What:** 127 public members, 79 of them pure forwards; all three sub-controllers receive the same 35-getter bag `s` and call each other's verbs through it.
 - **Why it matters:** Each new drag or picker field needs three edits, and any sub-controller can call any sibling.
 - **Direction:** Expose `c.drag`, `c.picker` and `c.ring` directly, and replace `s` with narrow ports.
+
+**Resolution (2026-09-26):** W8.1 replaced the shared bag with a `BattleContext` in `src/app/battle/battle-context.ts`, holding what two or more sub-controllers read, and gave each sub-controller its own `DragPorts`, `PickerPorts` or `RingPorts` for sibling reach. The battle controller exposes `c.drag`, `c.picker` and `c.ring` and drops its pure forwards; the live drag preview is `drag.live`. `BattlePins`, `BattleOrders`, `Battle.svelte` and the controller test read the sub-controllers directly, and the ring controller imports its art through the board barrel. `UnitSheet` keys its two ability lists. Nothing remains.
 
 ### M8. Save migration is mixed into rules and schema code — Backwards-compat shims / Divergent Change `[cross-cutting]` `[done]`
 - **Where:** `src/engine/battle.ts:61-65,101,368-390,406,437,535` (legacy engine rate formulas, a hard-coded `'Wolf Fang'`, load-count rescaling); `src/runtime/session.ts:188-450` (about 260 lines of repairs, including `deriveStats` arithmetic).
@@ -134,9 +136,11 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W1.6 made `destroy()` tear down the grid, map-line, edge, overlay and shot layers and destroy the ink layer; `EdgeLayer` and `InkLayer` gained a `destroy()`. `OverlayLayer.destroyed` now flips, so a late `loadBarred` stops. The shared layer contract remains for W9.1.
 
-### M13. Modal, popover and army-card chrome is copied between components — Copy-and-Paste Programming `[cross-cutting]`
+### M13. Modal, popover and army-card chrome is copied between components — Copy-and-Paste Programming `[cross-cutting]` `[done]`
 - **Where:** `QuitDialog.svelte:43-55` and `EndBattleDialog.svelte:53-65` are identical; Escape-to-close is written 4 times; `SeatingPanel.svelte:143-148` and `SaveLoadPanel.svelte:109-114` share one panel; `Sides.svelte` and `Summary.svelte` repeat the army card, and the `--side` ternary appears 5 times. `TokenModel` is built by hand in `BattleReport.svelte:117`, `Summary.svelte:46`, `VfxGallery.svelte:15` and `Place.svelte`, which already pick the engine name differently.
 - **Direction:** `Modal`, `Popover` and `ArmyCard` components, a `sideColour` helper, and `unitToken`/`setupToken` builders in `presentation.ts`; sweep every caller.
+
+**Resolution (2026-09-26):** W8.3 added `Modal.svelte`, `Popover.svelte` and `ArmyCard.svelte`. `QuitDialog` and `EndBattleDialog` share `Modal`, `SeatingPanel` and `SaveLoadPanel` share `Popover`, and `Sides` and `Summary` share `ArmyCard`. `onEscape` in `keys.ts` is the one Escape handler, which `Modal`, `Popover` and `UnitEffects` use; it keeps today's window-level listener, with no guard for keys pressed outside the app. One behaviour is new: Escape now closes an open Seating or Save/Load popover. `presentation.ts` gained `sideColour`, `ARMY_TITLE`, `pieceToken`, `unitToken` and `setupTokens`, and the report, `Summary`, the place controller, `ArmyReel` and the VFX gallery call them. The battle controller still builds unit tokens by hand, because it picks the engine with `engineOn`, which also checks board engines on the unit's square; the audit did not list it, and the todos file carries it.
 
 ## Minor
 
@@ -152,6 +156,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Direction:** Delete the dead code and make the barrel match actual use.
 
 **Resolution (2026-09-26):** W2.4 trimmed `LayerManager` to the methods the board calls, deleted `MapTextUtils.ts` and `BoardApp.setTheme`, cut the barrel to the symbols `src/app` and `dev/**` import through it, and updated `docs/pixi-board.md`. App files still deep-import `art`, `asset-base`, `terrain-textures`, `status-bars`, `color`, `paper`, `ink-map`, `selection`, `preload` and `target-point`; routing them through the barrel goes to W8.3.
+
+**Resolution (2026-09-26):** W8.3 exported the asset, terrain-texture, status-bar, paper, colour, ink-map, selection, preload and target-point symbols from `src/board/index.ts`, and the app imports them through it. One deep import remains: `targeting.ts` re-exports `targetAnchor` from `board/target-point.js`, marked `proto:`, because tests load it under node and `src/board/Token.ts:145` builds a `ColorMatrixFilter` when the barrel loads, which throws "document is not defined". Making the barrel load under node would remove it.
 
 ### m3. Hash, PRNG, colour and easing helpers duplicated — Reinventing The Wheel `[cross-cutting]` `[done]`
 - **Where:** FNV-1a ×5 (`EdgeLayer.ts:144`, `vfx/textures.ts:112`, `ink-map.ts:208`, `forest-placement.ts:20`, `TerrainScatter.ts:167`); `mulberry32` (`vfx/textures.ts:102`) copies `engine/rng.ts:25`; hex-to-CSS ×4; `easeInOut` is cubic in `Token.ts:140` and quadratic in `FallenLayer.ts:18` though the two animations are meant to match.
@@ -172,10 +178,12 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W1.5 moved `battleOf`, `withBattle`, `settleHauling` and a `withSetup` that always settles into `src/services/session-helpers.ts`, and all five services import it. Map `generate` and `rerollSeed` now settle hauling.
 
-### m6. Small engine utilities duplicated — Once And Only Once `[local]` `[partial]`
+### m6. Small engine utilities duplicated — Once And Only Once `[local]` `[done]`
 - **Where:** `sameSquare` (`battle.ts:73`) copies `sameCell` (`grid.ts:22`); `clone` ×2; the degree-to-wounds ternary ×6; `ENGINES.find` by name ×5; the "can act now" guard ×4.
 
 **Resolution (2026-09-26):** W2.2 replaced `sameSquare` with `sameCell`, moved both `clone` copies into `clone.ts`, replaced the degree ternary with `successes()` in `check.ts`, and replaced the activation guard with `mayActivate` and `canActNow`. `engineNamed` and `engineKind` in the new `siege-engines.ts` serve the engine, `BattleManager` and `ArmyPreparationService`; `engines.ts` is generated and stays as the importer writes it. `Place.svelte` keeps two `ENGINES.find` calls for W8.2.
+
+**Resolution (2026-09-26):** W8.2 moved `Place.svelte`'s logic into the place controller, which has no `ENGINES.find` call; no copy remains in `src/app`.
 
 ### m7. Two ground-connectivity checks disagree — Once And Only Once `[local]` `[done]`
 - **Where:** `board.ts:229` and `connectivity.ts:7`
@@ -208,11 +216,13 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W7.5 made `battle.start` the one begin command. The GM's start gives both armies' word, so `battleFrom` requires every piece on the board and no prior readiness. `declareReady` stays for the player's "My army is ready" button and the Summary marks, and gates nothing.
 
-### m12. `Place.svelte` still holds controller logic `[local]` `[partial]`
+### m12. `Place.svelte` still holds controller logic `[local]` `[done]`
 - **Where:** `src/app/Place.svelte`: 289 of its 628 lines are script; `lastPick` (`:161-165`) guesses the new ID with `.at(-1)`, so a remote `addUnit` landing first selects the wrong piece.
 - **Direction:** The planned split, with `CommandResult` returning the minted ID.
 
 **Resolution (2026-09-26):** W7.6 made `CommandAccepted` carry `added`: the units and then the engines the commit put into the setup, in record order. `army.addUnit`, `army.addEmplacement` and `army.generateForce` report it; a resent command carries none. `Place.svelte` still guesses with `.at(-1)`; the controller split and the switch to `added` remain for W8.2.
+
+**Resolution (2026-09-26):** W8.2 added `src/app/place-controller.svelte.ts`. It holds `Place`'s state, derived values, board prop and every call into the rules, services and commands, which `Place.svelte` passes in as dependencies; `Place.svelte` renders and forwards events. Adding a unit or an engine selects the piece the reply's `added` names, and only a resent command, which carries no `added`, falls back to the newest piece, marked `proto:`. A test in `src/tests/place-controller.test.ts` covers the pick.
 
 ### m13. The app layer binds the browser adapter at import time — Hidden Dependency `[cross-cutting]` `[done]`
 - **Where:** `src/app/game.svelte.ts:2-3,20-23`, `launch.ts:1`. Every Foundry client reads `localStorage` and builds a throwaway runtime before `bindClient` replaces it.
@@ -230,6 +240,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Where:** `SaveLoadPanel.svelte:117` uses the undefined `--danger` (`--bad` exists); `BoardPopup.svelte:78-99` and `ArmyReel` hard-code palettes; 10 distinct shadow values and 4 scrim alphas have no token.
 
 **Resolution (2026-09-26):** W2.5 switched `SaveLoadPanel`'s error colour to `--bad`. The hard-coded palettes, shadows and scrims remain for W8.4.
+
+**Resolution (2026-09-26):** W8.4 added `--shadow-1`, `--shadow-2`, `--shadow-3`, `--icon-shadow`, `--icon-shadow-lift`, `--scrim`, `--scrim-deep`, the `--chip-*` palette, `--caution` and the `--popup-cast`, `--popup-rally` and `--popup-shoot` accents to `app.css`, and every component outside `src/app/battle/` reads them. `BoardPopup` drops its own dark-mode override, since the tokens swap. Two shadows changed slightly: `Dock`'s all-round glow now takes `--shadow-2`, and the `MapControls` grid dialog takes the deeper `--shadow-3`. `battle/BattlePins.svelte` and `battle/ActivityChoices.svelte` still hard-code their shadows, because they sat in the other lane; the todos file carries them.
 
 ## Nits
 - `TroopPicker.svelte:92` `[local]` `[done]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.

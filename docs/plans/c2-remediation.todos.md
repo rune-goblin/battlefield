@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W8 — App structure: W8.1–W8.4
 - W9 — Board structure: W9.1–W9.2
 - W10 — Recovery from an unreadable save: W10.1
 
@@ -21,14 +20,6 @@ could not answer. An item leaves this list when it is done or answered.
   seeds 20 and 129 (no fort), and swamp/lakeside/9/hex seeds 47 and 132 (fort tier 4; tier 3 also
   seals at seed 47). They show no warning. Should the warning cover every map, or should the
   generator drain a pond that seals a map?
-
-## Carried forward from W2
-
-- W8.2: `Place.svelte` keeps two `ENGINES.find` calls (lines 248 and 263); switch them to
-  `engineNamed` from `src/engine/siege-engines.ts`.
-- W8.3: app files deep-import board internals `art`, `asset-base`, `terrain-textures`,
-  `status-bars`, `color`, `paper`, `ink-map`, `selection`, `preload` and `target-point`; route
-  them through the `src/board/index.ts` barrel.
 
 ## Open question from W4
 
@@ -58,7 +49,8 @@ could not answer. An item leaves this list when it is done or answered.
   `wallsFor(...).fortifiedAt`, `castCeiling`, `shootFloor`, `shootCeiling` and the save
   modifiers). Each is the engine's own answer, so no rule is copied, but the plan's invariant says
   no view imports an engine function that decides anything. Should `UnitSheet` get a controller
-  that hands it finished rows (W8), or do stat readouts fall outside the invariant?
+  that hands it finished rows, or do stat readouts fall outside the invariant? W8 left it open:
+  M7 does not cover it, so W8.1 fixed only the unkeyed `each` blocks.
 
 ## Carried forward from W6
 
@@ -68,7 +60,6 @@ could not answer. An item leaves this list when it is done or answered.
 - `activation().melee` ignores waypoints. The drag controller still calls `meleePlans` itself
   for a melee dragged or dropped with waypoints; fold that into the engine answer if a second
   caller appears.
-- W8: the Svelte autofixer flags two unkeyed `each` blocks in `UnitSheet.svelte` (lines 25 and 28).
 
 ## Open question from W7
 
@@ -86,7 +77,6 @@ could not answer. An item leaves this list when it is done or answered.
   since W7.5 it gates nothing.
 - `src/runtime/ports.ts:70-73`: the `TransportPort` comment says a reply names a revision and
   nothing more; since W7.6 it also names the minted pieces in `added`.
-- W8.2: `Place.svelte`'s `lastPick` should read the reply's `added` in place of `.at(-1)`.
 - `onListenerError` has no guard of its own, so a host handler that throws still rejects a
   committed command.
 - `sessionFromRequest` and `sessionAtSite` build on `freshSession`, which draws a seed and six
@@ -95,6 +85,31 @@ could not answer. An item leaves this list when it is done or answered.
   `departure` returns `'remove'`; `departure` guarantees it, and the type system does not know.
 - The combat text queue moved to `src/app/combat-text.ts` and kept the names
   `CombatTextService` and `createCombatTextService`.
+
+## Carried forward from W8
+
+- Live check: no one has played W8 in the browser or in Foundry, and no screenshot exists. Check
+  the Place stage (adding a unit or engine selects it), the Quit, End battle, Seating and Save/Load
+  frames, the Sides and Summary cards, and the new shadows. Escape now closes an open Seating or
+  Save/Load popover.
+- Three shadows in `src/app/battle/` stay hard-coded: `BattlePins.svelte:304`
+  (`0 2px 8px rgba(0, 0, 0, .25)`), `BattlePins.svelte:322` (`drop-shadow(0 2px 3px #0004)`) and
+  `ActivityChoices.svelte:35` (`0 3px 10px #0004`). Switch them to `--shadow-1` and
+  `--icon-shadow`, which now exist.
+- `battle/battle-controller.svelte.ts` builds unit tokens by hand. It picks the engine with
+  `engineOn`, which also checks board engines on the unit's square; it could adopt `unitToken(u,
+  cell, extra)` from `presentation.ts`.
+- `src/app/targeting.ts:41` deep-imports `targetAnchor` from `board/target-point.js`, marked
+  `proto:`. The barrel cannot load under node, because `src/board/Token.ts:145` builds a
+  `ColorMatrixFilter` at import. W9.2 splits `Token`; building the filter lazily there would let
+  this import go through the barrel.
+- `onEscape` in `src/app/keys.ts` listens on the window with no guard, so Escape pressed anywhere
+  on a Foundry page closes an open dialog or popover.
+- `Place.svelte` passes the store's commands to the place controller with a namespace import
+  (`import * as store`) spread into its dependencies.
+- Two shadows moved to shared tokens: `Dock`'s all-round glow now reads `--shadow-2`, and the
+  `MapControls` grid dialog reads the deeper `--shadow-3`. `MapControls`' `::backdrop` reads
+  `var(--scrim)` with no literal fallback.
 
 ## Unreadable save recovery (W10.1)
 
