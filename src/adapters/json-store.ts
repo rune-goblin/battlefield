@@ -109,7 +109,9 @@ export function createJsonStore<T>(
 export interface StoredEntry extends ArchiveEntry { data: unknown }
 
 const isStoredEntry = (value: unknown): boolean =>
-  !!value && typeof value === 'object' && typeof (value as { slot?: unknown }).slot === 'string';
+  !!value && typeof value === 'object'
+  && typeof (value as { slot?: unknown }).slot === 'string'
+  && typeof (value as { name?: unknown }).name === 'string';
 
 const acceptEntries = (parsed: unknown): StoredEntry[] | null =>
   Array.isArray(parsed) && parsed.every(isStoredEntry) ? parsed as StoredEntry[] : null;

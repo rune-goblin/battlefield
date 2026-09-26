@@ -141,13 +141,12 @@ export function migrateLegacySave(
 
 /** Read a save at whatever schema it was written in: the current envelope, an older one, or
  * the pre-session `{ stage, setup, battle }` shape. An archived slot can predate the schema
- * running now, the same way `battlefield.v4` can. Nothing else is recognized. A record from a
- * newer schema is refused before the legacy path, which would keep its setup and drop the
- * rest. */
+ * running now, the same way `battlefield.v4` can. A record carrying a `schemaVersion` is an
+ * envelope and goes to `reviveSession` alone, so a corrupt envelope is refused rather than
+ * rebuilt from its setup. Only a record without that key reaches the legacy path. */
 export function migrateSession(
   value: unknown, battleId?: string, mint: MintPort = randomMint,
 ): BattleSession | null {
-  const version = (value as { schemaVersion?: unknown } | null)?.schemaVersion;
-  if (typeof version === 'number' && version > SCHEMA_VERSION) return null;
-  return reviveSession(value, mint) ?? migrateLegacySave(value, battleId, mint);
+  const envelope = !!value && typeof value === 'object' && 'schemaVersion' in value;
+  return envelope ? reviveSession(value, mint) : migrateLegacySave(value, battleId, mint);
 }
