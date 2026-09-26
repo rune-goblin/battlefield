@@ -2,6 +2,7 @@ import { targetAnchor, type TargetArrow } from '../target-point.js';
 import * as PIXI from 'pixi.js';
 import type { Grid, Point } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 // The shot's flight, in fractions of cell size: how high the arc rises over the straight
 // line, how thin it leaves the shooter, how thick it lands, and the head it lands with.
@@ -19,11 +20,11 @@ const SAMPLES = 40;
  * Shared targeting arcs: each source to its target, above the pieces. Each action supplies
  * its tone; spells use the same palette as their effects.
  */
-export class ShotLayer {
+export class ShotLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private grid: Grid | null = null;
   private size = 0;
-  private theme: BoardTheme;
+  private readonly theme: BoardTheme;
   private arrows: readonly TargetArrow[] = [];
 
   constructor(container: PIXI.Container, theme: BoardTheme) {
@@ -31,10 +32,9 @@ export class ShotLayer {
     this.theme = theme;
   }
 
-  setGeometry(grid: Grid | null, size: number, theme: BoardTheme): void {
-    this.grid = grid;
-    this.size = size;
-    this.theme = theme;
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
     this.redraw();
   }
 
@@ -47,7 +47,7 @@ export class ShotLayer {
   }
 
   private redraw(): void {
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearChildren(this.container);
     if (!this.grid || !this.size) return;
     for (const arrow of this.arrows) {
       const from = this.grid.parse(arrow.from);
@@ -147,6 +147,6 @@ export class ShotLayer {
   }
 
   destroy(): void {
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearChildren(this.container);
   }
 }

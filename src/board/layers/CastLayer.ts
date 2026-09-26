@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js';
 import type { Grid, Point, Tree } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { primTexture } from '../vfx/textures.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 const PARTICLE_COUNT = 16;
 /** Where the glow primitive's falloff reads as its edge, in texture pixels. */
@@ -33,10 +34,10 @@ interface Particle {
  * the pointer's own cell until a target is picked, then holds there, the way `ShotLayer`
  * holds a shot's arc once aimed.
  */
-export class CastLayer {
+export class CastLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private readonly ticker: PIXI.Ticker;
-  private theme: BoardTheme;
+  private readonly theme: BoardTheme;
   private grid: Grid | null = null;
   private size = 0;
   private cast: { from: string; to: string; tree: Tree; toCells?: string[] } | null = null;
@@ -87,10 +88,9 @@ export class CastLayer {
     this.ticker.add(this.tick);
   }
 
-  setGeometry(grid: Grid | null, size: number, theme: BoardTheme): void {
-    this.grid = grid;
-    this.size = size;
-    this.theme = theme;
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
     this.redraw();
   }
 
@@ -157,7 +157,7 @@ export class CastLayer {
   }
 
   private clearVisual(): void {
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearChildren(this.container);
     this.particles = [];
     this.a = null;
     this.b = null;
@@ -168,7 +168,7 @@ export class CastLayer {
   /** Unhooks the ticker before the generic `LayerManager` teardown runs. */
   destroy(): void {
     this.ticker.remove(this.tick);
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearChildren(this.container);
   }
 }
 

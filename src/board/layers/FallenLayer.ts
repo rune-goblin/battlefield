@@ -2,7 +2,8 @@ import * as PIXI from 'pixi.js';
 import type { Grid } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
 import { easeInOut } from '../easing.js';
-import { STATUS_INTRO } from '../Token.js';
+import { STATUS_INTRO } from '../token/geometry.js';
+import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
 export interface FallenModel { id: string; name: string; cell: string }
 
@@ -27,7 +28,7 @@ interface Mark {
 
 /** Where a unit died: the dead icon, large over the piece as the blow's last word, then down
  * onto the ground at half a hex, grey and faint. It takes no pointer and stays for the battle. */
-export class FallenLayer {
+export class FallenLayer implements BoardLayer {
   private readonly ground: PIXI.Container;
   private readonly over: PIXI.Container;
   private readonly ticker: PIXI.Ticker;
@@ -58,10 +59,10 @@ export class FallenLayer {
       .catch(() => {});
   }
 
-  setGeometry(grid: Grid | null, size: number): void {
-    this.grid = grid;
-    this.size = size;
-    if (!grid || !size) this.settled = false;
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
+    if (!context) this.settled = false;
     this.render();
   }
 
@@ -140,6 +141,6 @@ export class FallenLayer {
 
   destroy(): void {
     this.ticker.remove(this.tick);
-    this.setGeometry(null, 0);
+    this.setGeometry(null);
   }
 }

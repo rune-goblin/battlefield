@@ -5,6 +5,7 @@ import { BoardApp } from './BoardApp.js';
 import { BoardContainer } from './BoardContainer.js';
 import { brushColour, type Brush } from './brush.js';
 import { Interaction, type BoardEvent, type BoardEventOf, type BoardEventType, type BoardMode, type Rect } from './Interaction.js';
+import type { BoardLayer, LayerContext } from './layers/BoardLayer.js';
 import { CastLayer } from './layers/CastLayer.js';
 import { EdgeLayer } from './layers/EdgeLayer.js';
 import { EffectLayer } from './layers/EffectLayer.js';
@@ -168,7 +169,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   opts.parent.addChild(boardContainer);
 
   const layers = boardContainer.layers;
-  const terrainLayer = new TerrainLayer(layers.createLayer('terrain'));
+  const terrainLayer = new TerrainLayer(layers.createLayer('terrain'), opts.renderer, opts.theme);
   // The scatter sheet decodes and chroma-keys off the main thread's first idle moment; the
   // board draws its procedural patterns until then and repaints once the scenery is ready.
   let alive = true;
@@ -187,7 +188,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   // The map lines top the stack: they say where an area ends and where the ground steps, and a
   // piece standing on the step must not hide the step. Their opacity keeps them out of the way.
   const mapLineLayer = new MapLineLayer(layers.createLayer('mapLines'));
-  const edgeLayer = new EdgeLayer(layers.createLayer('edges'));
+  const edgeLayer = new EdgeLayer(layers.createLayer('edges'), opts.theme);
   const overlayLayer = new OverlayLayer(layers.createLayer('overlay'), opts.theme);
   const tokenLayer = new TokenLayer(layers.createLayer('tokens'), opts.ticker, opts.theme, opts.renderer.screen);
   const shotLayer = new ShotLayer(layers.createLayer('shot'), opts.theme);
@@ -198,7 +199,6 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     layers.createLayer('effectsGround'),
     layers.createLayer('effects'),
     opts.ticker,
-    opts.theme,
     {
       onToken: (cell, reaction) => tokenLayer.reactAt(cell, reaction),
       onShake: (offset) => boardContainer.position.set(boardOrigin.x + offset.x, boardOrigin.y + offset.y),
@@ -216,11 +216,16 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     expectFallen: (id) => fallenLayer.expect(id),
     announceFallen: (id) => fallenLayer.announce(id),
   });
+  // The fallen marks come before the token layer they release held pieces into.
+  const boardLayers: BoardLayer[] = [
+    terrainLayer, inkLayer, gridLayer, mapLineLayer, edgeLayer, overlayLayer,
+    shotLayer, castLayer, effectLayer, combatTextLayer, fallenLayer, tokenLayer,
+  ];
 
   let currentBoard: Board | null = null;
   let inkMap: InkMapAppearance | null = null;
   let terrain: TerrainAppearance | null = null;
-  let geometry: { grid: Grid; size: number } | null = null;
+  let context: LayerContext | null = null;
   let boardOrigin: Point = { x: 0, y: 0 };
   const handlers = new Map<BoardEventType, Set<(event: never) => void>>();
 
@@ -244,54 +249,24 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   }
 
   function redraw(): void {
-    geometry = fit();
-    if (!currentBoard || !geometry) {
-      terrainLayer.clear();
-      inkLayer.clear();
-      gridLayer.setGeometry(null, 0);
-      mapLineLayer.setGeometry(null, 0);
-      edgeLayer.clear();
-      overlayLayer.setGeometry(null, 0, opts.theme);
-      shotLayer.setGeometry(null, 0, opts.theme);
-      castLayer.setGeometry(null, 0, opts.theme);
-      effectLayer.setGeometry(null, 0, opts.theme);
-      combatTextLayer.setGeometry(null, 0);
-      fallenLayer.setGeometry(null, 0);
-      tokenLayer.setGeometry(null, 0, opts.theme);
-      return;
+    const fitted = fit();
+    context = currentBoard && fitted ? { board: currentBoard, ...fitted, ink: inkMap } : null;
+    if (context) {
+      const bounds = context.grid.bounds(context.size);
+      const { width, height } = opts.size();
+      boardOrigin = { x: (width - bounds.width) / 2, y: (height - bounds.height) / 2 };
+      boardContainer.position.set(boardOrigin.x, boardOrigin.y);
     }
-    const { grid, size } = geometry;
-    const bounds = grid.bounds(size);
-    const { width, height } = opts.size();
-    boardOrigin = { x: (width - bounds.width) / 2, y: (height - bounds.height) / 2 };
-    boardContainer.position.set(boardOrigin.x, boardOrigin.y);
-
-    if (inkMap) {
-      terrainLayer.clear();
-      inkLayer.draw(currentBoard, size, inkMap);
-    } else {
-      inkLayer.clear();
-      terrainLayer.draw(opts.renderer, currentBoard, size, opts.theme);
-    }
-    gridLayer.setGeometry(grid, size);
-    mapLineLayer.setGeometry(currentBoard, size);
-    edgeLayer.draw(currentBoard, size, opts.theme, inkMap ? { pencil: inkMap.settings.ink.colour, paper: inkMap.settings.paper } : null);
-    overlayLayer.setGeometry(grid, size, opts.theme);
-    shotLayer.setGeometry(grid, size, opts.theme);
-    castLayer.setGeometry(grid, size, opts.theme);
-    effectLayer.setGeometry(grid, size, opts.theme);
-    combatTextLayer.setGeometry(grid, size);
-    fallenLayer.setGeometry(grid, size);
-    tokenLayer.setGeometry(grid, size, opts.theme);
-    interaction.clamp();
+    for (const layer of boardLayers) layer.setGeometry(context);
+    if (context) interaction.clamp();
   }
 
   /** The padded board rectangle. Extra room below belongs to panning, not framing. */
   function contentRect(forPanning = true): Rect | null {
-    if (!geometry) return null;
-    const bounds = geometry.grid.bounds(geometry.size);
-    const pad = PAD_CELLS * geometry.size;
-    const bottomPad = (forPanning ? BOTTOM_PAD_CELLS : PAD_CELLS) * geometry.size;
+    if (!context) return null;
+    const bounds = context.grid.bounds(context.size);
+    const pad = PAD_CELLS * context.size;
+    const bottomPad = (forPanning ? BOTTOM_PAD_CELLS : PAD_CELLS) * context.size;
     return {
       x: boardContainer.position.x - pad,
       y: boardContainer.position.y - pad,
@@ -303,8 +278,8 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
   /** The rectangle a set of cells covers, in the viewport's coordinates, with a cell of margin
    * so a piece at the edge keeps its art and its flag. */
   function cellsBox(cells: readonly string[]): Rect | null {
-    if (!geometry) return null;
-    const { grid, size } = geometry;
+    if (!context) return null;
+    const { grid, size } = context;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const key of cells) {
       const cell = grid.parse(key);
@@ -326,9 +301,9 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
 
   /** Shift-click fill: the connected run of cells sharing the clicked cell's terrain. */
   function region(key: string): string[] {
-    if (!currentBoard || !geometry) return [key];
+    if (!currentBoard || !context) return [key];
     const board = currentBoard;
-    const { grid } = geometry;
+    const { grid } = context;
     const start = grid.parse(key);
     if (!grid.inBounds(start)) return [];
     const terrain = at(board, start).terrain;
@@ -347,7 +322,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     canvas: opts.canvas,
     viewport: opts.parent,
     toLocal: (screen: Point) => boardContainer.toLocal(screen),
-    geometry: () => geometry,
+    geometry: () => context,
     content: contentRect,
     tokens: () => tokenLayer.placements(),
     region,
@@ -368,10 +343,10 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       const loading = terrainLayer.setAppearance(appearance);
       terrain = appearance;
       applyLines();
-      if (!inkMap && currentBoard && geometry) terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+      if (!inkMap && currentBoard && context) terrainLayer.setGeometry(context);
       void loading.then((loaded) => {
-        if (loaded && alive && !inkMap && terrain === appearance && currentBoard && geometry) {
-          terrainLayer.draw(opts.renderer, currentBoard, geometry.size, opts.theme);
+        if (loaded && alive && !inkMap && terrain === appearance && currentBoard && context) {
+          terrainLayer.setGeometry(context);
         }
       });
     },
@@ -473,33 +448,33 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       return () => set.delete(handler as (event: never) => void);
     },
     cellAt(clientX, clientY) {
-      if (!geometry) return null;
+      if (!context) return null;
       const rect = opts.canvas.getBoundingClientRect();
       const local = boardContainer.toLocal({ x: clientX - rect.left, y: clientY - rect.top });
-      const cell = geometry.grid.fromPoint(local, geometry.size);
-      return cell ? geometry.grid.key(cell) : null;
+      const cell = context.grid.fromPoint(local, context.size);
+      return cell ? context.grid.key(cell) : null;
     },
     screenOf(cell) {
-      if (!geometry) return null;
-      const c = geometry.grid.parse(cell);
-      if (!geometry.grid.inBounds(c)) return null;
-      return boardContainer.toGlobal(geometry.grid.center(c, geometry.size));
+      if (!context) return null;
+      const c = context.grid.parse(cell);
+      if (!context.grid.inBounds(c)) return null;
+      return boardContainer.toGlobal(context.grid.center(c, context.size));
     },
     cellRadius(cell) {
-      if (!geometry) return null;
-      const c = geometry.grid.parse(cell);
-      if (!geometry.grid.inBounds(c)) return null;
-      const centre = boardContainer.toGlobal(geometry.grid.center(c, geometry.size));
-      const vertex = boardContainer.toGlobal(geometry.grid.vertices(c, geometry.size)[0]);
+      if (!context) return null;
+      const c = context.grid.parse(cell);
+      if (!context.grid.inBounds(c)) return null;
+      const centre = boardContainer.toGlobal(context.grid.center(c, context.size));
+      const vertex = boardContainer.toGlobal(context.grid.vertices(c, context.size)[0]);
       return Math.hypot(vertex.x - centre.x, vertex.y - centre.y);
     },
     // Pans `opts.parent` (the pan/zoom container `boardContainer` sits in) so the cell's
     // centre lands under the viewport's screen centre, at whatever zoom is already set.
     centerOn(cell) {
-      if (!currentBoard || !geometry) return;
-      const c = geometry.grid.parse(cell);
-      if (!geometry.grid.inBounds(c)) return;
-      const local = geometry.grid.center(c, geometry.size);
+      if (!currentBoard || !context) return;
+      const c = context.grid.parse(cell);
+      if (!context.grid.inBounds(c)) return;
+      const local = context.grid.center(c, context.size);
       const { width, height } = opts.size();
       const scale = opts.parent.scale.x;
       opts.parent.position.set(
@@ -515,7 +490,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     // The cells' own bounding box, grown by a cell all round so pieces on the edge of the
     // frame are not cropped by their own art, then handed to `Interaction` to centre.
     frame(cells, into) {
-      if (!geometry) return;
+      if (!context) return;
       const box = cells?.length ? cellsBox(cells) : contentRect(false);
       if (!box) return;
       interaction.frame(box, into ?? { x: 0, y: 0, ...opts.size() });
@@ -537,18 +512,7 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
     destroy() {
       alive = false;
       interaction.destroy();
-      terrainLayer.destroy();
-      inkLayer.destroy();
-      gridLayer.destroy();
-      mapLineLayer.destroy();
-      edgeLayer.destroy();
-      overlayLayer.destroy();
-      tokenLayer.destroy();
-      shotLayer.destroy();
-      castLayer.destroy();
-      effectLayer.destroy();
-      fallenLayer.destroy();
-      combatTextLayer.destroy();
+      for (const layer of boardLayers) layer.destroy();
       boardContainer.destroy({ children: true });
     },
   };

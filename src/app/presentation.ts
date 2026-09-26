@@ -1,4 +1,4 @@
-import { castActivityOf, MAX_WOUNDS, notation, type BattleState, type Side, type Tree, type Unit, type Verb } from '../engine/index.js';
+import { castActivityOf, isRouted, MAX_WOUNDS, notation, type BattleState, type Side, type Tree, type Unit, type Verb } from '../engine/index.js';
 import type { TargetArrow, TargetIcon, TokenModel, UnitTokenModel } from '../board/index.js';
 import type { PieceRef } from '../runtime/commands.js';
 import type { BattleSetupDraft, SetupUnit } from '../runtime/session.js';
@@ -45,13 +45,13 @@ export function pieceToken(
 ): UnitTokenModel {
   return {
     kind: 'unit', id: p.id, side: p.side, name: p.name, role: p.role, level: p.level, cell,
-    wounds: 0, disorder: 0, engine: null, verdict: null, statuses: [], pick: null, ring: null,
+    wounds: 0, disorder: 0, routed: false, engine: null, verdict: null, statuses: [], pick: null, ring: null,
     ...extra,
   };
 }
 
 export const unitToken = (u: Unit, cell: string, extra: Partial<UnitTokenModel> = {}): UnitTokenModel => pieceToken(u, cell, {
-  wounds: u.wounds, disorder: u.disorder, engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, ...extra,
+  wounds: u.wounds, disorder: u.disorder, routed: isRouted(u), engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, ...extra,
 });
 
 /** A setup's placed pieces. An engine a unit stands on shows as that unit's badge. */

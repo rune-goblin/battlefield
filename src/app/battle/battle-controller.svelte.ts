@@ -6,8 +6,9 @@ import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engin
   gateReason, siegeReason, wallsFor, fortification, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, haulingSpeed, CELL_FEET, levelDc } from '../../engine/index.js';
 import { offerReason } from './action-menu.js';
 import { statusEffectsOf } from '../status-effects.js';
+import { unitToken } from '../presentation.js';
 import { withinApp } from '../app-root.js';
-import type { HighlightStyle, TokenPick, TokenModel, UnitTokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
+import type { HighlightStyle, TokenPick, TokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
 import { createDragController, DRAG_NOTICE, type DragPorts } from './drag-controller.svelte.js';
 import { createPickerController, type PickerPorts } from './picker-controller.svelte.js';
 import { afterBoardSettles, presentationHooks } from './presentation-hooks.js';
@@ -377,24 +378,18 @@ export function createBattleController(deps: BattleDeps) {
       ?? boardEngines.find(e => notation(e.square) === notation(u.square));
   }
   const tokens = $derived.by<TokenModel[]>(() => [
-    ...b.units.filter((u) => u.status === 'active').map((u): UnitTokenModel => ({
-      kind: 'unit',
-      id: u.id,
-      side: u.side,
-      name: u.name,
-      role: u.role,
-      level: u.level,
-      cell: notation(u.square),
-      wounds: u.wounds,
-      disorder: u.disorder,
-      engine: engineOn(u)?.name ?? null,
-      engineId: engineOn(u)?.id,
-      loading: engineOn(u) ? engineLoading(engineOn(u)!) : undefined,
-      verdict: drag.dragTarget?.id === u.id ? (drag.dragTarget.attack ? 'attack' : 'no') : null,
-      statuses: statusesOf(u, b.board),
-      pick: pickOn(u),
-      ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
-    })),
+    ...b.units.filter((u) => u.status === 'active').map((u) => {
+      const e = engineOn(u);
+      return unitToken(u, notation(u.square), {
+        engine: e?.name ?? null,
+        engineId: e?.id,
+        loading: e ? engineLoading(e) : undefined,
+        verdict: drag.dragTarget?.id === u.id ? (drag.dragTarget.attack ? 'attack' : 'no') : null,
+        statuses: statusesOf(u, b.board),
+        pick: pickOn(u),
+        ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
+      });
+    }),
     ...boardEngines.filter(e => !b.units.some(u => u.status === 'active' && notation(u.square) === notation(e.square)))
       .map((e): EngineTokenModel => ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null, loading: engineLoading(e) })),
   ]);

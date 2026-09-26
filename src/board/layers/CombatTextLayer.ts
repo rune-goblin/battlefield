@@ -3,7 +3,8 @@ import { STATUSES, type Grid, type Point, type Status } from '../../engine/index
 import { assetUrl } from '../asset-base.js';
 import type { StatusIcon } from '../art.js';
 import { easeOutBack, easeOutCubic } from '../easing.js';
-import { STATUS_INTRO } from '../Token.js';
+import { STATUS_INTRO } from '../token/geometry.js';
+import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
 export type CombatTextTone = 'good' | 'bad' | 'warn';
 /** A bar's icon follows its number; any other leads its word. A status icon hands the word to
@@ -186,7 +187,7 @@ interface Live {
 
 /** The word a roll came to, popped over the piece it landed on, then lifted and faded. The words
  * of a commit take turns in the order they happened, whichever pieces they land on. */
-export class CombatTextLayer {
+export class CombatTextLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private readonly viewport: PIXI.Container;
   private readonly ticker: PIXI.Ticker;
@@ -218,10 +219,10 @@ export class CombatTextLayer {
     loadIcons();
   }
 
-  setGeometry(grid: Grid | null, size: number): void {
-    this.grid = grid;
-    this.size = size;
-    if (!grid || !size) this.clear();
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
+    if (!context) this.clear();
   }
 
   /** How long until the last word is gone, counting the ones still waiting their turn. */

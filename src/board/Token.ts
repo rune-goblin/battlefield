@@ -1,12 +1,15 @@
 import * as PIXI from 'pixi.js';
-import { MAX_WOUNDS, ROUTED_AT, type Grid, type Point, type Role, type Side } from '../engine/index.js';
-import { ART_ANCHOR_Y, bannerTexture, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
-import { easeInOut, easeOutCubic } from './easing.js';
+import { MAX_WOUNDS, type Grid, type Point, type Role, type Side } from '../engine/index.js';
+import { ART_ANCHOR_Y, bannerTexture, engineArtUrl, troopArtUrl, type ActionIcon, type StatusIcon } from './art.js';
 import { LIFTED_SHADOW, PIECE_LIGHT, SHADOW_CONTACT, castMatrix, silhouetteTexture } from './piece-shadow.js';
 import type { BoardTheme } from './theme.js';
 import { statusBars, STATUS_TRACK, STATUS_OUTLINE, type StatusBar } from './status-bars.js';
 import type { TokenReaction } from './vfx/Effect.js';
-import { drawSelection } from './selection.js';
+import { EngineChip } from './token/EngineChip.js';
+import { ART_DROP, FLAG_OFFSET, FLAG_RATIO, TOKEN_FOOTPRINT_RATIO } from './token/geometry.js';
+import { MoveTween } from './token/MoveTween.js';
+import { RingGlow } from './token/RingGlow.js';
+import { StatusColumn } from './token/StatusColumn.js';
 
 /** Selection uses the shared neutral outline. Active turns glow in the army's colour;
  * a free strike flashes over the piece. */
@@ -31,6 +34,8 @@ export interface UnitTokenModel {
   cell: string;
   wounds: number;
   disorder: number;
+  /** The engine's `isRouted` verdict. The piece greys, flies a colourless flag and carries a retreat arrow. */
+  routed: boolean;
   /** The crewed engine card riding with this unit, if any — draws the chip. */
   engine: string | null;
   engineId?: string;
@@ -59,91 +64,28 @@ export interface EngineTokenModel {
 
 export type TokenModel = UnitTokenModel | EngineTokenModel;
 
-/** The piece's footprint, as a fraction of cell size: how wide the miniature draws and where
- * the markers hang off it. Clicks are answered by the hex, not the footprint — see `hit.ts`. */
-export const TOKEN_FOOTPRINT_RATIO = 0.82;
-
-// A pointy-top hex is only ~0.577 of a pitch tall above its centre, and a piece drawn to the
-// full footprint width overshoots that; dropping the miniature (and the ground it stands on)
-// keeps its head inside its own cell.
-const ART_DROP = 0.1;
-// The ring traces the piece's footprint — which is also its hit area — now that there is no
-// disc for it to sit outside of. Any wider and it cuts through the flag's level.
-const RING_GAP = 0.01;
-/** How far the glow breathes either side of its footprint, as a fraction of it. */
-const GLOW_SWELL = 0.06;
-/** The flag's height, as a fraction of cell size. */
-const FLAG_RATIO = 0.32;
-/** A status icon's box, as a fraction of cell size. */
-const STATUS_RATIO = 0.3;
-/** A status joining the column: large over the piece, growing as it fades in, held, then down
- * into its slot. Several joining at once take turns, each starting as the last begins to settle. */
-export const STATUS_INTRO = { ratio: 0.85, from: 0.6, fadeMs: 300, holdMs: 500, settleMs: 400 };
-// A status the combat text queue never came for shows itself after this long.
-const STATUS_WAIT_MS = 20000;
-/** The column hangs under the flag on the piece's right, since an engine's chip takes the left.
- * It fills downward, and a full column starts another to its right. */
-const STATUS_COLUMN = { rows: 3, pitch: 0.9, gap: 0.02 };
 // The cloth's mass sits above the middle of the square template — it tapers to a point at the
 // bottom — so the level rides a little high of the sprite's own centre.
 const FLAG_TEXT_Y = -0.07;
 const LIFT_SCALE = 1.08;
 const GHOST_ALPHA = 0.26;
-const PULSE_PERIOD_MS = 1400;
 /** The selection breath: slower than the ring's glow, so the two read as separate signals. */
 const PICK_PERIOD_MS = 1800;
 const PICK_SWELL = 0.07;
 const SPENT_SCALE = 0.8;
-const FLASH_PERIOD_MS = 260;
-const MOVE_TWEEN_MS = 200;
-// A routed walk holds a steady pace per cell rather than stretching one tween over the whole
-// distance, so a six-cell move reads as six steps; the cap keeps a long charge watchable.
-const WALK_STEP_MS = 150;
-const WALK_MAX_MS = 900;
-
-interface Tween {
-  points: Point[];
-  /** Length of each leg, so a multi-leg walk holds one pace instead of speeding up on the
-   * long legs and crawling on the short ones. */
-  spans: number[];
-  length: number;
-  start: number;
-  duration: number;
-  walk: boolean;
-}
-
-function tweenOf(points: Point[], duration: number, walk: boolean): Tween {
-  const spans: number[] = [];
-  let length = 0;
-  for (let i = 1; i < points.length; i += 1) {
-    const span = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-    spans.push(span);
-    length += span;
-  }
-  return { points, spans, length, start: performance.now(), duration, walk };
-}
-
-function along(points: Point[], spans: number[], distance: number): Point {
-  let left = distance;
-  for (let i = 0; i < spans.length; i += 1) {
-    if (left > spans[i] && i < spans.length - 1) {
-      left -= spans[i];
-      continue;
-    }
-    const t = spans[i] > 0 ? Math.min(1, left / spans[i]) : 1;
-    const a = points[i];
-    const b = points[i + 1];
-    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
-  }
-  return points[points.length - 1];
-}
-
-const same = (a: Point, b: Point): boolean => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5;
 
 // A shared filter instance: desaturate() only ever sets the same fixed matrix, so every
-// dead or routed miniature can point at the one instance instead of allocating its own.
-const DESATURATE = new PIXI.ColorMatrixFilter();
-DESATURATE.desaturate();
+// dead or routed miniature can point at the one instance instead of allocating its own. It is
+// built on first use: a filter needs a `document`, and tests load the board barrel under node.
+let desaturate: PIXI.ColorMatrixFilter | null = null;
+
+function desaturateFilter(): PIXI.ColorMatrixFilter {
+  if (!desaturate) {
+    desaturate = new PIXI.ColorMatrixFilter();
+    desaturate.desaturate();
+  }
+  return desaturate;
+}
 
 function badgeStyle(size: number, theme: BoardTheme): Partial<PIXI.ITextStyle> {
   return {
@@ -177,7 +119,7 @@ export class Token extends PIXI.Container {
   private readonly contact = new PIXI.Graphics();
   private readonly cast = new PIXI.Container();
   private silhouette: PIXI.Sprite | null = null;
-  private readonly decor = new PIXI.Graphics(); // wound/disorder pips, chip frame
+  private readonly decor = new PIXI.Graphics(); // the health and morale bars
   private art: PIXI.Sprite | null = null;
   private artPath: string | null = null;
   private artGeneration = 0;
@@ -186,25 +128,14 @@ export class Token extends PIXI.Container {
   private flagColour: number | null = null;
   private badge: PIXI.Text | null = null;
 
-  private engineChip: PIXI.Sprite | null = null;
+  private readonly chip = new EngineChip();
   private readonly loadingPips = new PIXI.Graphics();
   private loadingLabel: PIXI.Text | null = null;
   private loadingKey = '';
-  private chipPath: string | null = null;
-  private chipGeneration = 0;
 
-  private readonly statusColumn = Object.assign(new PIXI.Container(), { sortableChildren: true });
-  /** `intro` is when the status starts to show: null once seated, Infinity while it waits for
-   * its announcement. */
-  private statuses: { icon: StatusIcon; sprite: PIXI.Sprite | null; intro: number | null; joined: number }[] = [];
-  private readonly awaited = new Set<StatusIcon>();
-  /** False until the first draw: a piece that mounts already guarding has nothing to announce. */
-  private settled = false;
-
+  private readonly statusColumn = new StatusColumn();
   private readonly routArrow = new PIXI.Graphics();
-  private readonly ring = new PIXI.Graphics();
-  private ringKind: TokenRing | null = null;
-  private pulseStart = 0;
+  private readonly ring = new RingGlow();
 
   private pick: TokenPick | null = null;
   private pickStart = 0;
@@ -216,33 +147,19 @@ export class Token extends PIXI.Container {
   private reaction: { spec: TokenReaction; start: number } | null = null;
   private flashFilter: PIXI.ColorMatrixFilter | null = null;
 
-  // A battle move tweens from wherever the token is actually sitting (which may itself be
-  // mid-tween from the previous move) to the new cell's centre. `lastCell` is null until the
-  // first `place()`, so mounting never tweens in from the origin.
-  private lastCell: string | null = null;
-  private tween: Tween | null = null;
+  private readonly motion = new MoveTween();
 
-  get moving(): boolean { return this.tween !== null; }
+  get moving(): boolean { return this.motion.moving; }
 
-  /** How long until every status has settled into its slot. One still waiting for the combat text
-   * queue does not count: the queue answers for it. */
-  get settlingMs(): number {
-    const { fadeMs, holdMs, settleMs } = STATUS_INTRO;
-    const now = performance.now();
-    return Math.max(0, ...this.statuses
-      .filter((held) => held.intro !== null && held.intro !== Infinity)
-      .map((held) => held.intro! + fadeMs + holdMs + settleMs - now));
-  }
-  private route: string[] | null = null;
+  get settlingMs(): number { return this.statusColumn.settlingMs; }
 
   constructor(id: string) {
     super();
     this.id = id;
-    this.addChild(this.decor, this.routArrow, this.ring);
+    this.addChild(this.decor, this.chip.container, this.routArrow, this.ring.graphics);
     this.cast.transform.setFromMatrix(castMatrix(PIECE_LIGHT));
     this.shadow.addChild(this.contact, this.cast);
     this.routArrow.visible = false;
-    this.ring.visible = false;
   }
 
   get isDragging(): boolean {
@@ -262,8 +179,7 @@ export class Token extends PIXI.Container {
     if (!this.dragging) this.place(model, grid, size);
 
     const wounds = model.kind === 'unit' ? model.wounds : 0;
-    const disorder = model.kind === 'unit' ? model.disorder : 0;
-    const routed = model.kind === 'unit' && disorder >= ROUTED_AT;
+    const routed = model.kind === 'unit' && model.routed;
 
     this.drawContact(size);
     this.updateArt(model, size);
@@ -277,36 +193,40 @@ export class Token extends PIXI.Container {
     if (this.flag) this.flag.visible = model.kind === 'unit';
 
     if (model.kind === 'unit') {
-      this.drawDecor(model, size, theme);
+      this.drawDecor(model, size);
       this.drawBadge(model.level, size, theme);
-      this.updateEngineChip(model.engine, size);
-      this.updateStatuses(model.statuses, size);
+      this.chip.update(model.engine, size, theme);
+      this.statusColumn.update(model.statuses, size);
     } else {
       this.decor.clear();
       this.badge?.destroy();
       this.badge = null;
-      this.updateEngineChip(null, size);
-      this.updateStatuses([], size);
+      this.chip.update(null, size, theme);
+      this.statusColumn.update([], size);
     }
 
     this.setPick(model.kind === 'unit' ? model.pick : null);
     this.drawLoading(model, size, theme);
     this.drawRoutArrow(routed, side, size, theme);
-    this.drawRing(model.ring, side, size, theme);
+    this.ring.draw(model.ring, side, size, theme);
 
-    // Re-append: the art and the engine chip are attached lazily as their textures resolve,
-    // which would otherwise draw them over the flag and the arrow/ring. addChild on an
-    // existing child just moves it to the top, so this fixes the order regardless of load
-    // order — flag under its own level, both under the arrow and ring.
+    // Re-append in a fixed order: the flag and badge attach at the top when first drawn, and
+    // addChild on an existing child just moves it there — flag under its own level, both under
+    // the arrow and ring.
     if (this.flag) this.addChild(this.flag);
     if (this.badge) this.addChild(this.badge);
-    this.addChild(this.statusColumn);
+    this.addChild(this.statusColumn.container);
     this.addChild(this.loadingPips);
     if (this.loadingLabel) this.addChild(this.loadingLabel);
     this.addChild(this.routArrow);
-    if (model.ring === 'flash') this.addChild(this.ring);
-    else this.addChildAt(this.ring, 0);
-    this.settled = true;
+    if (model.ring === 'flash') this.addChild(this.ring.graphics);
+    else this.addChildAt(this.ring.graphics, 0);
+  }
+
+  /** The engine chip's hit box in the layer's coordinates, scaled with the piece's breath and recoil. */
+  chipBounds(): { x: number; y: number; size: number } {
+    const { x, y, side } = this.chip.bounds(this.size);
+    return { x: this.x + x * this.scale.x, y: this.y + y * this.scale.y, size: side * Math.max(this.scale.x, this.scale.y) };
   }
 
   /** A still of the miniature where it currently stands, for the layer to leave behind while
@@ -335,10 +255,9 @@ export class Token extends PIXI.Container {
     this.position.set(point.x, point.y);
   }
 
-  /** The route this piece's next move follows, its own cell first. Spent by that move — see
-   * `takeRoute`. */
+  /** The route this piece's next move follows — see `MoveTween.setRoute`. */
   setRoute(cells: readonly string[]): void {
-    this.route = cells.length > 1 ? [...cells] : null;
+    this.motion.setRoute(cells);
   }
 
   /** Snaps straight back to this token's last-drawn cell — its old one, since a rejected
@@ -357,17 +276,10 @@ export class Token extends PIXI.Container {
   /** Advances the move tween and the ring's pulse/flash animation. Called every tick; a
    * cheap no-op unless this token has one or the other running. */
   tick(): void {
-    if (this.tween) {
-      const { points, spans, length, start, duration, walk } = this.tween;
-      const t = Math.min(1, (performance.now() - start) / duration);
-      const eased = walk ? easeInOut(t) : easeOutCubic(t);
-      const point = along(points, spans, eased * length);
-      this.position.set(point.x, point.y);
-      if (t >= 1) this.tween = null;
-    }
-    if (this.statuses.some((held) => held.intro !== null)) this.layoutStatuses(this.size);
-    if (this.ringKind === 'flash') this.ring.alpha = this.flashAlpha();
-    else if (this.ringKind === 'active') this.breathe();
+    const point = this.motion.step();
+    if (point) this.position.set(point.x, point.y);
+    this.statusColumn.tick();
+    this.ring.tick();
     if (this.pick === 'ready') this.breathePick();
     if (this.reaction) this.animateReaction();
     this.followShadow();
@@ -444,44 +356,14 @@ export class Token extends PIXI.Container {
   private applyFilters(): void {
     const list: PIXI.Filter[] = [];
     // Keep each bar's severity colour when the miniature loses its colour.
-    if (this.art) this.art.filters = this.desaturated ? [DESATURATE] : null;
+    if (this.art) this.art.filters = this.desaturated ? [desaturateFilter()] : null;
     if (this.reaction?.spec.flash && this.flashFilter) list.push(this.flashFilter);
     this.filters = list.length ? list : null;
   }
 
   private place(model: TokenModel, grid: Grid, size: number): void {
-    const cell = grid.parse(model.cell);
-    const target = grid.center(cell, size);
-    const walk = this.takeRoute(model.cell, grid, size);
-    if (walk) {
-      this.tween = tweenOf(walk, Math.min(WALK_MAX_MS, WALK_STEP_MS * (walk.length - 1)), true);
-    } else if (this.tween && same(this.tween.points[this.tween.points.length - 1], target)) {
-      // A redraw that does not move the piece (a prop, a ring, the log) must not cut a tween
-      // already running to this same cell short.
-    } else if (this.lastCell !== null && this.lastCell !== model.cell) {
-      this.tween = tweenOf([{ x: this.x, y: this.y }, target], MOVE_TWEEN_MS, false);
-    } else {
-      this.position.set(target.x, target.y);
-      this.tween = null;
-    }
-    this.lastCell = model.cell;
-  }
-
-  /** The waypoints of the queued route, from where the piece actually stands to `cell`, or
-   * null when no route explains this move. The route is spent either way: it describes one
-   * move, and a second move must not replay it. A route is trimmed at `cell` rather than
-   * required to end there, so a push that fails and stops at its fallback still walks the
-   * part of the route it covered. */
-  private takeRoute(cell: string, grid: Grid, size: number): Point[] | null {
-    const route = this.route;
-    // A redraw that does not move the piece leaves the route queued: it is spent by the move
-    // it describes, not by whatever else happens to redraw first.
-    if (!route || cell === this.lastCell) return null;
-    this.route = null;
-    if (route[0] !== this.lastCell) return null;
-    const end = route.indexOf(cell);
-    if (end < 1) return null;
-    return [{ x: this.x, y: this.y }, ...route.slice(1, end + 1).map((k) => grid.center(grid.parse(k), size))];
+    const snap = this.motion.place({ x: this.x, y: this.y }, model.cell, grid, size);
+    if (snap) this.position.set(snap.x, snap.y);
   }
 
   // The miniature's own base ellipse lands at its local y ≈ 0 (see ART_ANCHOR_Y), so the
@@ -509,6 +391,10 @@ export class Token extends PIXI.Container {
   }
 
   override destroy(options?: boolean | PIXI.IDestroyOptions): void {
+    // The parts' texture loads check their own containers, which super leaves alive; going
+    // first also keeps a `children: true` destroy from reaching them twice.
+    this.statusColumn.destroy();
+    this.chip.destroy();
     super.destroy(options);
     this.shadow.destroy({ children: true });
   }
@@ -564,8 +450,7 @@ export class Token extends PIXI.Container {
     this.cast.position.set(0, size * ART_DROP);
   }
 
-  private drawDecor(model: UnitTokenModel, size: number, theme: BoardTheme): void {
-    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
+  private drawDecor(model: UnitTokenModel, size: number): void {
     this.decor.clear();
 
     const bars = statusBars(model.wounds, model.disorder);
@@ -575,17 +460,6 @@ export class Token extends PIXI.Container {
     const y = size * 0.28;
     this.drawStatusBar(bars.health, -width / 2, y, width, healthHeight);
     this.drawStatusBar(bars.morale, -width / 2, y + healthHeight + size * 0.03, width, moraleHeight);
-
-    if (model.engine) {
-      const cx = -r * 0.72;
-      const cy = -r * 0.72;
-      const cs = size * 0.3;
-      this.decor
-        .lineStyle(1, theme.rule, 1)
-        .beginFill(theme.token.badgeFill, 1)
-        .drawRoundedRect(cx - cs / 2, cy - cs / 2, cs, cs, size * 0.04)
-        .endFill();
-    }
   }
 
   private drawLoading(model: TokenModel, size: number, theme: BoardTheme): void {
@@ -666,7 +540,7 @@ export class Token extends PIXI.Container {
     }
     const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
     this.flag.scale.set((size * FLAG_RATIO) / height);
-    this.flag.position.set(r * 0.88, -r * 0.88);
+    this.flag.position.set(r * FLAG_OFFSET, -r * FLAG_OFFSET);
     this.badge?.position.set(this.flag.x, this.flag.y + size * FLAG_RATIO * FLAG_TEXT_Y);
   }
 
@@ -682,119 +556,14 @@ export class Token extends PIXI.Container {
     this.layoutFlag(size);
   }
 
-  private updateEngineChip(engineName: string | null, size: number): void {
-    const path = engineName ? engineArtUrl(engineName) : null;
-    if (!path) {
-      if (this.engineChip) this.engineChip.visible = false;
-      this.chipPath = null;
-      return;
-    }
-    if (path !== this.chipPath) {
-      this.chipPath = path;
-      const generation = ++this.chipGeneration;
-      PIXI.Assets.load<PIXI.Texture>(path)
-        .then((texture) => {
-          if (this.destroyed || generation !== this.chipGeneration) return;
-          if (!this.engineChip) {
-            this.engineChip = new PIXI.Sprite(texture);
-            this.engineChip.anchor.set(0.5);
-            this.addChild(this.engineChip);
-          } else {
-            this.engineChip.texture = texture;
-          }
-          this.layoutChip(size);
-        })
-        // proto: a missing chip icon leaves the piece without one; no error UI.
-        .catch(() => {});
-    }
-    if (this.engineChip) {
-      this.engineChip.visible = true;
-      this.layoutChip(size);
-    }
-  }
-
-  private layoutChip(size: number): void {
-    if (!this.engineChip) return;
-    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
-    this.engineChip.scale.set((size * 0.24) / Math.max(this.engineChip.texture.width, 1));
-    this.engineChip.position.set(-r * 0.72, -r * 0.72);
-  }
-
-  private updateStatuses(wanted: readonly StatusIcon[], size: number): void {
-    for (const gone of this.statuses.filter((held) => !wanted.includes(held.icon))) gone.sprite?.destroy();
-    const kept = this.statuses.filter((held) => wanted.includes(held.icon));
-    const { fadeMs, holdMs } = STATUS_INTRO;
-    const now = performance.now();
-    let turn = Math.max(now, ...kept.map((held) => (held.intro === Infinity ? -Infinity : held.intro ?? -Infinity) + fadeMs + holdMs));
-    this.statuses = wanted.map((icon) => {
-      const held = kept.find((k) => k.icon === icon);
-      if (held) return held;
-      const waits = this.settled && this.awaited.has(icon);
-      const entry = { icon, sprite: null as PIXI.Sprite | null, intro: waits ? Infinity : this.settled ? turn : null, joined: now };
-      if (this.settled && !waits) turn += fadeMs + holdMs;
-      PIXI.Assets.load<PIXI.Texture>(statusIconUrl(icon))
-        .then((texture) => {
-          if (this.destroyed || !this.statuses.includes(entry)) return;
-          entry.sprite = new PIXI.Sprite(texture);
-          entry.sprite.anchor.set(0.5);
-          this.statusColumn.addChild(entry.sprite);
-          this.layoutStatuses(this.size);
-        })
-        // proto: a missing icon leaves the piece without it; no error UI.
-        .catch(() => {});
-      return entry;
-    });
-    this.layoutStatuses(size);
-  }
-
   /** The combat text queue will announce these, so they stay hidden until it does. */
   expectStatuses(icons: readonly StatusIcon[]): void {
-    for (const icon of icons) {
-      this.awaited.add(icon);
-      const held = this.statuses.find((h) => h.icon === icon);
-      if (held && held.intro !== null) held.intro = Infinity;
-    }
+    this.statusColumn.expect(icons);
   }
 
   /** Plays each status's arrival now, one after another. False when the piece holds none of them. */
   announceStatuses(icons: readonly StatusIcon[]): boolean {
-    const { fadeMs, holdMs } = STATUS_INTRO;
-    let turn = performance.now();
-    let any = false;
-    for (const icon of icons) {
-      this.awaited.delete(icon);
-      const held = this.statuses.find((h) => h.icon === icon);
-      if (!held) continue;
-      held.intro = turn;
-      turn += fadeMs + holdMs;
-      any = true;
-    }
-    return any;
-  }
-
-  private layoutStatuses(size: number): void {
-    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2;
-    const { rows, pitch, gap } = STATUS_COLUMN;
-    const ratio = STATUS_RATIO;
-    const step = size * ratio * pitch;
-    const flagX = r * 0.88;
-    const top = -r * 0.88 + size * (FLAG_RATIO / 2 + gap + ratio / 2);
-    const now = performance.now();
-    const { ratio: large, from, fadeMs, holdMs, settleMs } = STATUS_INTRO;
-    this.statuses.forEach((held, slot) => {
-      if (!held.sprite) return;
-      if (held.intro === Infinity && now - held.joined > STATUS_WAIT_MS) held.intro = now;
-      const unit = size / Math.max(held.sprite.texture.width, held.sprite.texture.height, 1);
-      const t = held.intro === null ? Infinity : now - held.intro;
-      if (t >= fadeMs + holdMs + settleMs) held.intro = null;
-      const fade = Math.max(0, Math.min(1, t / fadeMs));
-      const settle = held.intro === null ? 1 : easeInOut(Math.max(0, t - fadeMs - holdMs) / settleMs);
-      held.sprite.alpha = fade;
-      held.sprite.scale.set(unit * (large * (from + (1 - from) * (1 - (1 - fade) ** 3)) * (1 - settle) + ratio * settle));
-      held.sprite.position.set((flagX + Math.floor(slot / rows) * step) * settle, (top + (slot % rows) * step) * settle);
-      // The one arriving rides over the ones already seated.
-      held.sprite.zIndex = held.intro === null ? slot : 100 + slot;
-    });
+    return this.statusColumn.announce(icons);
   }
 
   private drawRoutArrow(routed: boolean, side: Side, size: number, theme: BoardTheme): void {
@@ -822,45 +591,5 @@ export class Token extends PIXI.Container {
       .lineTo(x + width, half)
       .closePath()
       .endFill();
-  }
-
-  private drawRing(kind: TokenRing | null, side: Side, size: number, theme: BoardTheme): void {
-    this.ringKind = kind;
-    this.ring.clear();
-    this.ring.visible = !!kind;
-    this.ring.scale.set(1);
-    if (!kind) { this.pulseStart = 0; return; }
-    const r = (size * TOKEN_FOOTPRINT_RATIO) / 2 + size * RING_GAP;
-    if (kind === 'selected') {
-      this.pulseStart = 0;
-      this.ring.alpha = 1;
-      drawSelection(this.ring, outline => { outline.drawCircle(0, 0, r); });
-      return;
-    }
-    this.pulseStart ||= performance.now();
-    if (kind === 'flash') {
-      this.ring.lineStyle(size * 0.07, theme.token.ringFlash, 1).drawCircle(0, 0, r);
-      this.ring.alpha = this.flashAlpha();
-      return;
-    }
-    const colour = side === 'attacker' ? theme.attacker : theme.defender;
-    this.ring.beginFill(colour, 1).drawCircle(0, 0, r).endFill();
-    this.breathe();
-  }
-
-  /** The active unit's glow swells and brightens together. Selection stays still. */
-  private breathe(): void {
-    const t = ((performance.now() - this.pulseStart) % PULSE_PERIOD_MS) / PULSE_PERIOD_MS;
-    const phase = Math.sin(t * Math.PI * 2);
-    this.ring.alpha = 0.5 + 0.25 * phase;
-    this.ring.scale.set(1 + GLOW_SWELL * phase);
-  }
-
-  /** A fast, hard blink — distinct from the slow `active` breathing pulse — for a free
-   * strike's instant. The caller (Battle.svelte) owns the duration and clears `ring` itself;
-   * this just animates for as long as `ring` stays `'flash'`. */
-  private flashAlpha(): number {
-    const t = ((performance.now() - this.pulseStart) % FLASH_PERIOD_MS) / FLASH_PERIOD_MS;
-    return 0.35 + 0.65 * Math.abs(Math.sin(t * Math.PI * 2));
   }
 }

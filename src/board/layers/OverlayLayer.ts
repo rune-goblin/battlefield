@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { edgeCells, type Grid, type Side } from '../../engine/index.js';
 import { actionIconUrl } from '../art.js';
 import type { BoardTheme, HighlightStyle } from '../theme.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 export type { HighlightStyle } from '../theme.js';
 
@@ -44,11 +45,11 @@ const BAR_RATIO = 0.52;
  * Hover cell, selection ring, the highlight washes, and a paint preview — all cell-shaped, so
  * they share one draw pass keyed off the current `Grid`/cell size.
  */
-export class OverlayLayer {
+export class OverlayLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private grid: Grid | null = null;
   private size = 0;
-  private theme: BoardTheme;
+  private readonly theme: BoardTheme;
   private destroyed = false;
 
   private readonly highlights = new Map<HighlightStyle, Set<string>>();
@@ -73,10 +74,9 @@ export class OverlayLayer {
   }
 
   /** Called by `setBoard`'s redraw with the board's current grid and cell size. */
-  setGeometry(grid: Grid | null, size: number, theme: BoardTheme): void {
-    this.grid = grid;
-    this.size = size;
-    this.theme = theme;
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
     this.redraw();
   }
 
@@ -243,7 +243,7 @@ export class OverlayLayer {
 
   destroy(): void {
     this.destroyed = true;
-    this.container.removeChildren().forEach((c) => c.destroy({ children: true }));
+    clearChildren(this.container);
     this.barredSprite = null;
   }
 }

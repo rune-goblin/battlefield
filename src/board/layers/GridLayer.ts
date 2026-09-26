@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import type { Grid } from '../../engine/index.js';
 import type { MapLine } from '../map-lines.js';
+import { clearChildren, type BoardLayer, type LayerContext } from './BoardLayer.js';
 
 /** One weight for every hex on the board. Height is drawn by `MapLineLayer`'s own rings, so
  * the grid has nothing to say about it and is the same line everywhere. */
@@ -14,7 +15,7 @@ export const DEFAULT_GRID_SETTINGS: GridSettings = { visible: false, width: 1, o
  * dialog or the texture lab. Kept apart from `TerrainLayer` so toggling it, or dragging a
  * slider, never re-touches terrain fills or regenerates procedural textures.
  */
-export class GridLayer {
+export class GridLayer implements BoardLayer {
   private readonly container: PIXI.Container;
   private grid: Grid | null = null;
   private size = 0;
@@ -24,9 +25,9 @@ export class GridLayer {
     this.container = container;
   }
 
-  setGeometry(grid: Grid | null, size: number): void {
-    this.grid = grid;
-    this.size = size;
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
     this.redraw();
   }
 
@@ -47,7 +48,7 @@ export class GridLayer {
   }
 
   clear(): void {
-    this.container.removeChildren().forEach((c) => c.destroy());
+    clearChildren(this.container);
   }
 
   destroy(): void {

@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { hashSeed, type Grid, type Point, type Tree } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
-import type { BoardTheme } from '../theme.js';
 import { Effect, type TokenReaction } from '../vfx/Effect.js';
 import { recipe, SHEET } from '../vfx/recipes.js';
 import { primBase } from '../vfx/textures.js';
+import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
 const sheets = new Map<string, PIXI.Texture[]>();
 let sheetLoad: Promise<void> | null = null;
@@ -46,7 +46,7 @@ interface Active {
  * frames, token reactions and board shake, and `Effect` plays them as a pure function of time.
  * Ground tracks (light on the cell, scorch, pools) draw under the pieces; air tracks over.
  */
-export class EffectLayer {
+export class EffectLayer implements BoardLayer {
   private readonly ground: PIXI.Container;
   private readonly air: PIXI.Container;
   private readonly ticker: PIXI.Ticker;
@@ -77,7 +77,7 @@ export class EffectLayer {
     this.shaking = moving;
   };
 
-  constructor(ground: PIXI.Container, air: PIXI.Container, ticker: PIXI.Ticker, _theme: BoardTheme, opts: EffectLayerOptions) {
+  constructor(ground: PIXI.Container, air: PIXI.Container, ticker: PIXI.Ticker, opts: EffectLayerOptions) {
     this.ground = ground;
     this.air = air;
     this.ticker = ticker;
@@ -87,10 +87,10 @@ export class EffectLayer {
     loadSheets();
   }
 
-  setGeometry(grid: Grid | null, size: number, _theme: BoardTheme): void {
-    this.grid = grid;
-    this.size = size;
-    if (!grid || !size) this.clear();
+  setGeometry(context: LayerContext | null): void {
+    this.grid = context?.grid ?? null;
+    this.size = context?.size ?? 0;
+    if (!context) this.clear();
   }
 
   remainingMs(): number {
