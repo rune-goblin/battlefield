@@ -3,7 +3,7 @@ import { createBattle, ENGINES, isFixedEngine, type UnitCard } from '../engine/i
 import { createRuntime } from '../runtime/createRuntime.js';
 import { submitTo } from '../runtime/interactions.js';
 import type { SessionRepository } from '../runtime/ports.js';
-import { freshSession, type BattleSession } from '../runtime/session.js';
+import { freshSession, randomMint, type BattleSession } from '../runtime/session.js';
 import { autoCell, cellsFor, createArmyPreparationService, deployableCells, sideReady } from '../services/ArmyPreparationService.js';
 import { createBattleManager } from '../services/BattleManager.js';
 import { withSetup } from '../services/session-helpers.js';
@@ -322,7 +322,7 @@ describe('army preparation', () => {
 });
 
 describe('readiness across setup edits', () => {
-  const ready = () => submitTo(setupSession(), 'army.readiness', 'attacker', true, 'gm');
+  const ready = () => submitTo(setupSession(), 'army.readiness', 'attacker', true, 'gm', randomMint);
 
   it('takes back readiness on every edit through the setup door', () => {
     const session = ready();
@@ -330,12 +330,12 @@ describe('readiness across setup edits', () => {
   });
 
   it('takes back readiness on a paint stroke', () => {
-    const painted = createBattleManager().paint(ready(), { cells: ['e5'], edges: [], brush: { kind: 'erase' } });
+    const painted = createBattleManager({ mint: randomMint }).paint(ready(), { cells: ['e5'], edges: [], brush: { kind: 'erase' } });
     expect(painted.interactions).toEqual([]);
   });
 
   it('keeps readiness when a side change names the side the unit already holds', () => {
     const session = ready();
-    expect(createArmyPreparationService().setSide(session, 'unit-1', 'attacker')).toBe(session);
+    expect(createArmyPreparationService({ mint: randomMint }).setSide(session, 'unit-1', 'attacker')).toBe(session);
   });
 });

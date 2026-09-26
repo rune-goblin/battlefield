@@ -6,7 +6,7 @@ import { freshControl } from '../runtime/control.js';
 import { createRuntime, type Runtime } from '../runtime/createRuntime.js';
 import { submitTo } from '../runtime/interactions.js';
 import type { PresencePort, SessionRepository } from '../runtime/ports.js';
-import { freshSession, type BattleSession, type BattleSetupDraft } from '../runtime/session.js';
+import { freshSession, randomMint, type BattleSession, type BattleSetupDraft } from '../runtime/session.js';
 import { createBattleManager } from '../services/BattleManager.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
@@ -163,7 +163,7 @@ describe('the battle manager', () => {
 });
 
 describe('the lifecycle transitions', () => {
-  const manager = createBattleManager();
+  const manager = createBattleManager({ mint: randomMint });
   const presence: PresencePort = {
     online: () => true, gmUserId: () => 'gm', users: () => ['gm', 'p1'], displayName: (id) => id,
   };
@@ -186,7 +186,7 @@ describe('the lifecycle transitions', () => {
 
   it('loads a save at the table\'s revision and seating, with nothing pending', () => {
     const record: BattleSession = {
-      ...submitTo(freshSession(), 'army.readiness', 'attacker', true, 'someone'),
+      ...submitTo(freshSession(), 'army.readiness', 'attacker', true, 'someone', randomMint),
       revision: 42, control: freshControl('defender'), turn: 'someone', recentCommandIds: ['cmd-old'],
     };
 
@@ -239,7 +239,7 @@ describe('the lifecycle transitions', () => {
 
   it('reopens a parked battle with the answers it was waiting on', () => {
     const parked: BattleSession = {
-      ...submitTo({ ...freshSession(), site: 'b' }, 'army.readiness', 'attacker', true, 'p1'),
+      ...submitTo({ ...freshSession(), site: 'b' }, 'army.readiness', 'attacker', true, 'p1', randomMint),
       recentCommandIds: ['cmd-old'], turn: 'p1',
     };
 

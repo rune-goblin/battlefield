@@ -4,11 +4,9 @@ import {
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
 import { submitTo } from '../runtime/interactions.js';
+import type { MintPort } from '../runtime/ports.js';
 import type { ArmyPreparationService } from '../runtime/servicePorts.js';
-import {
-  newEquipmentId, newUnitId, randomSeed,
-  type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit,
-} from '../runtime/session.js';
+import type { BattleSession, BattleSetupDraft, SetupEngine, SetupUnit } from '../runtime/session.js';
 import { settleHauling, withSetup } from './session-helpers.js';
 
 export const isAmbush = (u: SetupUnit): boolean => (u.card.tactics ?? []).includes('ambush');
@@ -147,12 +145,12 @@ function standing(session: BattleSession, ref: PieceRef, square: string | null):
 const wallsTier = (board: Board | null): number =>
   Math.max(-1, ...Object.values(board?.walls ?? {}).map((w) => w.tier)) + 1;
 
-export function createArmyPreparationService(): ArmyPreparationService {
+export function createArmyPreparationService({ mint }: { mint: MintPort }): ArmyPreparationService {
   return {
     addUnit: (session, side, card) => withSetup(session, {
       ...session.setup,
       units: [...session.setup.units,
-        { id: newUnitId(), card: structuredClone(card), side, square: null, engines: [] }],
+        { id: mint.id('unit'), card: structuredClone(card), side, square: null, engines: [] }],
     }),
 
     removeUnit: (session, unitId) => {
@@ -177,7 +175,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
     addEmplacement: (session, side, engine) => withSetup(session, {
       ...session.setup,
       emplacements: [...session.setup.emplacements,
-        { id: newEquipmentId(), name: engineCard(engine).name, side, square: null, loaded: true }],
+        { id: mint.id('eq'), name: engineCard(engine).name, side, square: null, loaded: true }],
     }),
 
     removeEmplacement: (session, emplacementId) => {
@@ -226,7 +224,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
       return standing(session, piece, cell);
     },
 
-    generateForce: (session, side, seed = randomSeed()) => {
+    generateForce: (session, side, seed = mint.seed()) => {
       const setup = session.setup;
       const rivals = setup.units.filter((u) => u.side === opponent(side)).map((u) => u.card);
       const force = buildForce(rivals, seededRandom(seed), {
@@ -238,7 +236,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
           ...setup.units.filter((u) => u.side !== side),
           // Engines deploy in the siege step, so a generated force brings units alone.
           ...force.map(({ card }) => ({
-            id: newUnitId(), card: structuredClone(card), side, square: null, engines: [],
+            id: mint.id('unit'), card: structuredClone(card), side, square: null, engines: [],
           })),
         ],
       });
@@ -248,7 +246,7 @@ export function createArmyPreparationService(): ArmyPreparationService {
       // proto: the wording a refusal shows is reserved for review with the rest of the
       // player-facing text.
       if (ready && !sideReady(session.setup, side)) throw new Error(`the ${side} has a piece still off the board`);
-      return submitTo(session, 'army.readiness', side, ready, userId);
+      return submitTo(session, 'army.readiness', side, ready, userId, mint);
     },
   };
 }

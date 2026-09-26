@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, ENGINES, type BattleSetup, type UnitCard } from '../engine/index.js';
 import { migrateLegacySave, reviveSession } from '../runtime/migrate.js';
-import { newEquipmentId, newUnitId, type BattleSetupDraft, type SetupUnit } from '../runtime/session.js';
+import { randomMint, type BattleSetupDraft, type SetupUnit } from '../runtime/session.js';
 import { openBoard } from './helpers.js';
 
 const card = (name: string, level: number): UnitCard => ({ name, level, role: 'infantry', tactics: [] });
@@ -9,17 +9,17 @@ const catapult = ENGINES.find((e) => e.name === 'Catapult')!;
 
 function roster(): BattleSetupDraft {
   const unit = (name: string, level: number, square: string): SetupUnit =>
-    ({ id: newUnitId(), card: card(name, level), side: 'attacker', square, engines: [] });
+    ({ id: randomMint.id('unit'), card: card(name, level), side: 'attacker', square, engines: [] });
   return {
     spec: { base: 'plains', size: 9, feature: 'none', construction: null, seed: 1 },
     board: openBoard(),
     units: [
-      { ...unit('Vanguard', 4, 'b2'), engines: [{ id: newEquipmentId(), name: catapult.name }] },
+      { ...unit('Vanguard', 4, 'b2'), engines: [{ id: randomMint.id('eq'), name: catapult.name }] },
       unit('Line', 3, 'c2'),
       unit('Reserve', 2, 'd2'),
       { ...unit('Kobolds', 3, 'c7'), side: 'defender' },
     ],
-    emplacements: [{ id: newEquipmentId(), name: catapult.name, side: 'attacker', square: 'b1' }],
+    emplacements: [{ id: randomMint.id('eq'), name: catapult.name, side: 'attacker', square: 'b1' }],
   };
 }
 

@@ -60,6 +60,13 @@ export interface DicePort {
   d20(): number;
 }
 
+/** The authority's seeds and identities. A service that seeds a field or names a new piece or
+ * interaction draws from here, so a test can fix every value an edit writes. */
+export interface MintPort {
+  seed(): number;
+  id(kind: 'battle' | 'unit' | 'eq' | 'int'): string;
+}
+
 /** A client's line to the authority. `request` carries one command and waits for the reply,
  * which names a revision and nothing more. State travels on `onRecord` alone: the authority
  * saves the record, the host delivers it, and every client adopts it. A reply lost on the way

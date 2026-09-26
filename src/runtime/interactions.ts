@@ -1,5 +1,6 @@
 import { SIDES, type RecoveryChoice, type Side } from '../engine/index.js';
-import { newInteractionId, type BattleSession, type LifecycleStage } from './session.js';
+import type { MintPort } from './ports.js';
+import type { BattleSession, LifecycleStage } from './session.js';
 
 /** What one side submits to each shared decision. Ordinary targeting and hover stay local;
  * these four are the decisions a battle waits on, so they live in the record every client
@@ -71,13 +72,13 @@ export const allSubmitted = (records: readonly InteractionRecord[], kind: Intera
 /** Record one side's answer, opening the interaction if this is the first. A later submission
  * from the same side replaces the earlier one: the last word before the side confirms stands. */
 export function submitTo<K extends InteractionKind>(
-  session: BattleSession, kind: K, side: Side, value: InteractionValue[K], userId: string,
+  session: BattleSession, kind: K, side: Side, value: InteractionValue[K], userId: string, mint: MintPort,
 ): BattleSession {
   const open = interactionOf(session.interactions, kind);
   const record: InteractionRecord<K> = open
     ? { ...open, submissions: { ...open.submissions, [side]: value } }
     : {
-      id: newInteractionId(),
+      id: mint.id('int'),
       kind,
       initiator: userId,
       participants: [...SIDES],

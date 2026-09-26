@@ -7,6 +7,7 @@ import { sessionAtSite, sessionFromRequest } from '../runtime/campaign.js';
 import { seatUsers } from '../runtime/control.js';
 import { submissionOf } from '../runtime/interactions.js';
 import { migrateSession } from '../runtime/migrate.js';
+import type { MintPort } from '../runtime/ports.js';
 import type { BattleManager } from '../runtime/servicePorts.js';
 import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
@@ -47,7 +48,7 @@ function battleFrom(session: BattleSession): BattleState {
   });
 }
 
-export function createBattleManager(): BattleManager {
+export function createBattleManager({ mint }: { mint: MintPort }): BattleManager {
   return {
     start: (session) => ({
       ...session, ...cleared(), stage: 'battle', battle: battleFrom(session),
@@ -59,7 +60,7 @@ export function createBattleManager(): BattleManager {
 
     // The example force is no campaign's battle, so it leaves the site it was reset on.
     reset: (session) => ({
-      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(), battle: null, writeback: null, site: null,
+      ...session, ...cleared(), stage: 'setup', setup: defaultSetup(mint), battle: null, writeback: null, site: null,
     }),
 
     startNextDay: (session) => {
@@ -94,7 +95,7 @@ export function createBattleManager(): BattleManager {
     },
 
     load: (session, raw, slot, presence) => {
-      const migrated = migrateSession(raw);
+      const migrated = migrateSession(raw, undefined, mint);
       if (!migrated) throw new Error(`${slot} is not a battlefield save`);
       return {
         ...migrated, revision: session.revision, interactions: [], recentCommandIds: [],
@@ -109,7 +110,7 @@ export function createBattleManager(): BattleManager {
     installRefusal: (session) => (session.battle && session.stage !== 'finalized' ? 'a battle is already under way' : null),
 
     install: (session, battleId, request, presence) => {
-      const built = sessionFromRequest(request, battleId);
+      const built = sessionFromRequest(request, battleId, mint);
       // The imported seating knows no users; the table's own seats it, as a load does.
       return { ...built, revision: session.revision, control: seatUsers(built.control, presence) };
     },
@@ -128,9 +129,9 @@ export function createBattleManager(): BattleManager {
     },
 
     moveTo: (session, raw, { site, battleId, opening }, presence) => {
-      const parked = raw === null ? null : migrateSession(raw);
+      const parked = raw === null ? null : migrateSession(raw, undefined, mint);
       if (raw !== null && !parked) throw new Error(`the battle parked at ${site} cannot be read`);
-      const opened = parked ?? sessionAtSite(site, opening, battleId);
+      const opened = parked ?? sessionAtSite(site, opening, battleId, mint);
       return {
         // The same table comes back to it, so the answers it was waiting on still stand.
         ...opened, site, revision: session.revision, recentCommandIds: [],

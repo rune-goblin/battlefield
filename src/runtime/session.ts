@@ -4,6 +4,7 @@ import {
 import { hotSeatControl, isSideControl, type SideControl } from './control.js';
 import type { BattleEvent } from './events.js';
 import type { InteractionRecord } from './interactions.js';
+import type { MintPort } from './ports.js';
 
 export const SCHEMA_VERSION = 2;
 // proto: the rules document carries no version of its own, so the record dates them. Reserved
@@ -132,24 +133,20 @@ export interface BattleSession {
   recentCommandIds: string[];
 }
 
-// proto: ID format reserved for review. One shape for every identity the record holds.
-const mintId = (prefix: string): string =>
-  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+/** The mint every host runs on. A piece takes its ID when it enters setup and keeps it through
+ * the battle and beyond. */
+export const randomMint: MintPort = {
+  seed: () => Math.floor(Math.random() * 1e9),
+  // proto: ID format reserved for review. One shape for every identity the record holds.
+  id: (kind) => `${kind}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+};
 
-export const newBattleId = (): string => mintId('battle');
-/** A piece takes its ID when it enters setup and keeps it through the battle and beyond. */
-export const newUnitId = (): string => mintId('unit');
-export const newEquipmentId = (): string => mintId('eq');
-export const newInteractionId = (): string => mintId('int');
-
-export const randomSeed = () => Math.floor(Math.random() * 1e9);
-
-export function defaultSetup(): BattleSetupDraft {
+export function defaultSetup(mint: MintPort = randomMint): BattleSetupDraft {
   const pick = (name: string) => [...COMBATANTS, ...OFFICIAL].find((c) => c.name === name)!;
   const unit = (name: string, side: Side): SetupUnit =>
-    ({ id: newUnitId(), card: pick(name), side, square: null, engines: [] });
+    ({ id: mint.id('unit'), card: pick(name), side, square: null, engines: [] });
   return {
-    spec: { base: 'plains', size: 15, feature: 'none', construction: null, seed: randomSeed() },
+    spec: { base: 'plains', size: 15, feature: 'none', construction: null, seed: mint.seed() },
     board: null,
     emplacements: [],
     units: [
@@ -163,15 +160,15 @@ export function defaultSetup(): BattleSetupDraft {
   };
 }
 
-export function freshSession(battleId = newBattleId()): BattleSession {
+export function freshSession(battleId?: string, mint: MintPort = randomMint): BattleSession {
   return {
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
-    battleId,
+    battleId: battleId ?? mint.id('battle'),
     site: null,
     revision: 0,
     stage: 'setup',
-    setup: defaultSetup(),
+    setup: defaultSetup(mint),
     battle: null,
     interactions: [],
     control: hotSeatControl(),
