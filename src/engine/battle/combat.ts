@@ -190,7 +190,8 @@ export function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activ
  * Overrun's shove, the shape of Pathfinder's Shove: the target moves one hex directly away
  * from the attacker, and the attacker steps into the hex it left, so contact holds. A destroyed
  * target simply yields its hex. With that one hex blocked the target holds without extra
- * disorder. Take cover also blocks displacement; the Overrun resolves as a Press.
+ * disorder. Take cover or a root also blocks displacement; the Overrun resolves as a Press,
+ * and a rooted target loses no extra Morale for it.
  */
 /** Section 10: water, a cliff or a standing wall behind the target. An occupied hex or the
  * board's edge merely blocks the shove. A native flier has the sky behind it. */
@@ -207,7 +208,15 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
     }
     return;
   }
-  if (target.guard?.holds || holdsGround(state, target)) {
+  if (target.guard?.holds) {
+    log(state, target, `${target.name} holds its ground under cover: the Overrun lands as a Press.`);
+    return;
+  }
+  if (target.rooted > 0) {
+    log(state, target, `${target.name} is rooted and holds its hex: the Overrun lands as a Press.`);
+    return;
+  }
+  if (holdsGround(state, target)) {
     log(state, target, `${target.name} holds its ground under cover: the Overrun lands as a Press.`);
     return;
   }

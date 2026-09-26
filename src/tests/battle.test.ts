@@ -922,6 +922,18 @@ describe('activities carry effects', () => {
     expect(said(held, 'nowhere to give ground')).toBe(true);
   });
 
+  it('a rooted target resists an Overrun even with water behind it, and loses no extra Morale', () => {
+    const wet = engaged();
+    wet.board.squares[3][2].terrain = 'water';
+    unit(wet, 'u2').rooted = 1;
+    const before = unit(wet, 'u2').disorder;
+    const s = act(wet, { type: 'fight', activity: 3, target: { kind: 'unit', ids: ['u2'] }, unit: 'u0' }, scriptedRng([10, 20, 20]));
+    expect(notation(unit(s, 'u2').square)).toBe('c3');
+    expect(notation(unit(s, 'u0').square)).toBe('c2');
+    expect(unit(s, 'u2').disorder).toBe(before);
+    expect(said(s, 'rooted')).toBe(true);
+  });
+
   it('allows Brace alone on wet ground', () => {
     const state = engaged();
     state.board.squares[1][2].terrain = 'shallows';
