@@ -2,37 +2,30 @@ import { reachableActivities, soleLegalActivity } from './action-menu.js';
 import { type HealingChoice, type ActionOffer, TREE_TARGET, type BoardObject, type TargetRef, type TargetOffer, type ActivityOption, targetMatches, type ActivityTarget, type ActivityIndex, notation, canFocus, commitment, healSlots, type Verb, offersAt, siegeCellReason, sightBlock, parse, edgeCells } from '../../engine/index.js';
 import type { HighlightStyle, TargetArrow } from '../../board/index.js';
 import { cellsForTarget, TargetingService, type TargetMarker } from '../targeting.js';
-import type { BattleState, EngineState, Unit } from '../../engine/index.js';
-import type { CommandResult } from '../../runtime/commands.js';
+import type { EngineState, Unit } from '../../engine/index.js';
 import type { Parked } from './drag-controller.svelte.js';
 import type { Prop } from './ring-controller.svelte.js';
-import type { BattleDeps } from './battle-controller.svelte.js';
+import type { BattleContext } from './battle-context.js';
 
 // Touching a board object opens the other popup: every activity that can act on *that*, which
 // is `offersAt`'s whole job. Grouped by verb, because the props are what the eye lands on —
 // a tile row across the top, then the chosen verb's three activities beneath it.
 export interface Aim { cell: string; target: BoardObject; label: string; groups: TargetOffer[]; group: number; index: number }
 
-export interface PickerShared extends BattleDeps {
-  readonly active: Unit | null;
-  readonly b: BattleState;
-  readonly offers: ActionOffer[];
+export interface PickerPorts {
   readonly hoveredCell: string | null;
-  readonly siegeOffer: ActionOffer | null;
-  focus: number;
-  readonly unpark: () => void;
-  readonly clearRing: () => void;
-  readonly disarm: () => void;
-  readonly arming: Prop | null;
   readonly hoveredEdge: string | null;
-  readonly clearHover: () => void;
-  readonly requireTurn: () => boolean;
-  readonly siegeEngine: EngineState | null;
-  readonly fireSiege: (activity: ActivityIndex, target: TargetRef, commitment: number) => Promise<void>;
-  readonly run: (pending: Promise<CommandResult>) => Promise<CommandResult>;
+  clearHover(): void;
+  readonly siege: {
+    readonly engine: EngineState | null;
+    readonly offer: ActionOffer | null;
+    fire(activity: ActivityIndex, target: TargetRef, commitment: number): Promise<void>;
+  };
+  readonly drag: { unpark(): void };
+  readonly ring: { readonly arming: Prop | null; clear(): void; disarm(): void };
 }
 
-export function createPickerController(s: PickerShared) {
+export function createPickerController(ctx: BattleContext, ports: PickerPorts) {
 
   const offerKey = (offer: ActionOffer) => `${offer.type}:${offer.spell ?? ''}:${offer.ability ?? ''}`;
 
@@ -47,50 +40,50 @@ export function createPickerController(s: PickerShared) {
   /** Show activities for this target, including their unavailable levels. Blast exposes its
    * whole ladder because choosing a level starts a separate area selection. */
   const aimActivities = $derived.by<ActivityOption[]>(() => {
-    if (!aim || !aimGroup || !s.active) return [];
+    if (!aim || !aimGroup || !ctx.active) return [];
     if (aimGroup.offer.spell === 'blast') return reachableActivities(aimGroup.offer.activities);
     const t = aim.target;
-    const own = t.kind === 'unit' && t.id === s.active.id;
+    const own = t.kind === 'unit' && t.id === ctx.active.id;
     return aimGroup.offer.activities.filter((o) => o.cost !== null
-      && (o.targets.some((x) => targetMatches(s.b, x, t)) || (own && !o.needsTarget)));
+      && (o.targets.some((x) => targetMatches(ctx.b, x, t)) || (own && !o.needsTarget)));
   });
   const aimed = $derived(aimActivities[aim?.index ?? -1] ?? null);
   // Blast routes the aim popup to its own shape picker, which carries the commitment.
-  const aimCommitment = $derived(s.active && aimGroup && aimed && aimGroup.offer.spell !== 'blast'
-    ? commitment(s.active, aimGroup.offer, aimed) : null);
-  const targetCells = (target: ActivityTarget): string[] => cellsForTarget(s.b, target);
+  const aimCommitment = $derived(ctx.active && aimGroup && aimed && aimGroup.offer.spell !== 'blast'
+    ? commitment(ctx.active, aimGroup.offer, aimed) : null);
+  const targetCells = (target: ActivityTarget): string[] => cellsForTarget(ctx.b, target);
   let blastOpen = $state(false);
   let blastLevel = $state<ActivityIndex | null>(null);
   let blastTarget = $state<string | null>(null);
   let blastHover = $state<string | null>(null);
   let blastCell = $state<string | null>(null);
-  const blastOffer = $derived(s.offers.find((o) => o.spell === 'blast') ?? null);
+  const blastOffer = $derived(ctx.offers.find((o) => o.spell === 'blast') ?? null);
   const blastActivity = $derived(blastOpen ? blastOffer?.activities.find((o) => o.index === blastLevel) ?? null : null);
-  const blastService = $derived(s.active && blastOffer && blastActivity ? new TargetingService(s.b, s.active, blastOffer, blastActivity) : null);
+  const blastService = $derived(ctx.active && blastOffer && blastActivity ? new TargetingService(ctx.b, ctx.active, blastOffer, blastActivity) : null);
   const blastTargets = $derived(blastService?.choices ?? []);
   const blastCandidates = $derived(blastTargets.filter((t) => !blastCell || targetCells(t).includes(blastCell)));
-  const blastHoverMatches = $derived(s.hoveredCell ? blastService?.matches({ kind: 'hex', id: s.hoveredCell }) ?? [] : []);
+  const blastHoverMatches = $derived(ports.hoveredCell ? blastService?.matches({ kind: 'hex', id: ports.hoveredCell }) ?? [] : []);
   const blastPreview = $derived(blastTargets.find((t) => t.id === blastHover)
     ?? (blastHoverMatches.length === 1 ? blastHoverMatches[0] : null)
     ?? blastTargets.find((t) => t.id === blastTarget) ?? null);
   const blastSelection = $derived(blastTargets.find((t) => t.id === blastTarget) ?? null);
-  const blastCommitment = $derived(s.active && blastOffer && blastActivity ? commitment(s.active, blastOffer, blastActivity) : null);
+  const blastCommitment = $derived(ctx.active && blastOffer && blastActivity ? commitment(ctx.active, blastOffer, blastActivity) : null);
 
 
   // Cast and Rally show their activities before asking for a target.
   let activityPick = $state<{ key: string; index: ActivityIndex | null; selected: string[]; target?: string } | null>(null);
   let targetHover = $state<string | null>(null);
   let healingChoices = $state<Record<string, HealingChoice>>({});
-  const pickerOffer = $derived(activityPick?.key === 'siege' ? s.siegeOffer : s.offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
+  const pickerOffer = $derived(activityPick?.key === 'siege' ? ports.siege.offer : ctx.offers.find((o) => offerKey(o) === activityPick?.key) ?? null);
   const pickerActivity = $derived(pickerOffer?.activities.find((o) => o.index === activityPick?.index) ?? null);
-  const pickerService = $derived(s.active && pickerOffer && pickerActivity ? new TargetingService(s.b, s.active, pickerOffer, pickerActivity) : null);
+  const pickerService = $derived(ctx.active && pickerOffer && pickerActivity ? new TargetingService(ctx.b, ctx.active, pickerOffer, pickerActivity) : null);
   const pickerTargets = $derived(pickerService?.choices ?? []);
   const pickerCandidates = $derived(pickerService?.candidates(activityPick?.selected) ?? []);
-  const pickerHoverMatches = $derived(s.hoveredCell ? pickerService?.matches({ kind: 'hex', id: s.hoveredCell }) ?? [] : []);
+  const pickerHoverMatches = $derived(ports.hoveredCell ? pickerService?.matches({ kind: 'hex', id: ports.hoveredCell }) ?? [] : []);
   const pickerPreview = $derived(pickerTargets.find((t) => t.id === targetHover)
     ?? (pickerHoverMatches.length === 1 ? pickerHoverMatches[0] : null)
     ?? pickerTargets.find((t) => t.id === activityPick?.target) ?? null);
-  const pickerCommitment = $derived(s.active && pickerOffer && pickerActivity ? commitment(s.active, pickerOffer, pickerActivity) : null);
+  const pickerCommitment = $derived(ctx.active && pickerOffer && pickerActivity ? commitment(ctx.active, pickerOffer, pickerActivity) : null);
   /** What the open activity picker asks for next. */
   const pickerHint = $derived.by(() => {
     if (!activityPick || !pickerOffer || !pickerActivity) return '';
@@ -108,28 +101,28 @@ export function createPickerController(s: PickerShared) {
   });
   const healingRecipients = $derived.by<Unit[]>(() => {
     const choice = pickerTargets.find((t) => t.id === activityPick?.target);
-    return choice?.kind === 'unit' ? s.b.units.filter((u) => choice.ids.includes(u.id)) : [];
+    return choice?.kind === 'unit' ? ctx.b.units.filter((u) => choice.ids.includes(u.id)) : [];
   });
 
   const AIM_NOTICE = 'battle-aim';
 
   /** Why the open picker cannot aim at `cell`, or null when a target covers it or the cell is the actor's own. */
   function aimReason(cell: string): string | null {
-    if (!activityPick || !s.active || cell === notation(s.active.square)) return null;
-    if (activityPick.key === 'siege' && s.siegeEngine) {
+    if (!activityPick || !ctx.active || cell === notation(ctx.active.square)) return null;
+    if (activityPick.key === 'siege' && ports.siege.engine) {
       // Preview from the occupant's side, as the offer does.
-      return siegeCellReason(s.b, { ...s.siegeEngine, side: s.active.side }, activityPick.index ?? 1, cell);
+      return siegeCellReason(ctx.b, { ...ports.siege.engine, side: ctx.active.side }, activityPick.index ?? 1, cell);
     }
     if (pickerService?.matches({ kind: 'hex', id: cell }).length) return null;
-    return sightBlock(s.b.board, s.active.square, parse(cell)) ?? 'Nothing here this action can target.';
+    return sightBlock(ctx.b.board, ctx.active.square, parse(cell)) ?? 'Nothing here this action can target.';
   }
-  const hoverReason = $derived(s.hoveredCell ? aimReason(s.hoveredCell) : null);
-  $effect(() => { if (!activityPick) s.notifications.dismiss(AIM_NOTICE); });
+  const hoverReason = $derived(ports.hoveredCell ? aimReason(ports.hoveredCell) : null);
+  $effect(() => { if (!activityPick) ctx.notifications.dismiss(AIM_NOTICE); });
 
   /** `key` names the siege engine's picker, whose offer no verb on the ring holds. */
   function openActivityPicker(offer: ActionOffer, key = offerKey(offer)) {
-    s.focus = 0;
-    aim = null; s.unpark(); s.clearRing();
+    ctx.focus = 0;
+    aim = null; ports.drag.unpark(); ports.ring.clear();
     targetHover = null;
     activityPick = { key, index: soleLegalActivity(offer.activities)?.index ?? null, selected: [] };
     healingChoices = {};
@@ -140,7 +133,7 @@ export function createPickerController(s: PickerShared) {
     const option = offer?.activities.find((o) => o.index === index);
     if (!offer || !option?.legal || !activityPick) return;
     targetHover = null;
-    s.focus = 0;
+    ctx.focus = 0;
     activityPick = { ...activityPick, index, selected: [], target: undefined };
     healingChoices = {};
   }
@@ -164,8 +157,8 @@ export function createPickerController(s: PickerShared) {
 
   function pickActivityCell(cell: string) {
     const reason = aimReason(cell);
-    if (reason) s.notifications.show({ id: AIM_NOTICE, title: `Cannot target ${cell}`, message: reason, tone: 'error' });
-    else s.notifications.dismiss(AIM_NOTICE);
+    if (reason) ctx.notifications.show({ id: AIM_NOTICE, title: `Cannot target ${cell}`, message: reason, tone: 'error' });
+    else ctx.notifications.dismiss(AIM_NOTICE);
     if (!activityPick || !pickerActivity?.legal) return;
     if (activityPick.key === 'siege') {
       const matches = pickerService?.matches({ kind: 'hex', id: cell }) ?? [];
@@ -185,7 +178,7 @@ export function createPickerController(s: PickerShared) {
   }
 
   function openBlast(level: ActivityIndex | null = null) {
-    aim = null; s.unpark(); s.clearRing();
+    aim = null; ports.drag.unpark(); ports.ring.clear();
     activityPick = null; targetHover = null;
     blastOpen = true;
     chooseBlastLevel(level ?? soleLegalActivity(blastOffer?.activities ?? [])?.index ?? null);
@@ -193,7 +186,7 @@ export function createPickerController(s: PickerShared) {
 
   function chooseBlastLevel(level: ActivityIndex | null) {
     if (level !== null && !blastOffer?.activities.some(option => option.index === level && option.legal)) return;
-    s.focus = 0;
+    ctx.focus = 0;
     blastLevel = level; blastTarget = null; blastHover = null; blastCell = null;
   }
 
@@ -214,7 +207,7 @@ export function createPickerController(s: PickerShared) {
     blastOpen = false; chooseBlastLevel(null);
   }
 
-  const aimService = $derived(s.active && aimGroup && aimed ? new TargetingService(s.b, s.active, aimGroup.offer, aimed) : null);
+  const aimService = $derived(ctx.active && aimGroup && aimed ? new TargetingService(ctx.b, ctx.active, aimGroup.offer, aimed) : null);
   const aimChoices = $derived(aim && aimService ? aimService.forRef(aim.target) : []);
   const targetingService = $derived(pickerService ?? blastService ?? aimService);
   const targetingChoice = $derived(pickerPreview ?? blastPreview ?? (aimChoices.length === 1 ? aimChoices[0] : null));
@@ -231,25 +224,25 @@ export function createPickerController(s: PickerShared) {
   });
   const arrowContext = $derived(targetingService
     ? `${targetingService.actor.id}:${offerKey(targetingService.offer)}:${targetingService.activity.index}:${activityPick?.selected.join('+') ?? ''}`
-    : s.arming && s.active ? `${s.active.id}:${s.arming.key}` : null);
+    : ports.ring.arming && ctx.active ? `${ctx.active.id}:${ports.ring.arming.key}` : null);
   const liveArrows = $derived.by<TargetArrow[]>(() => {
-    if (activityPick && s.active && s.hoveredCell && hoverReason) {
-      return [{ from: notation(s.active.square), to: s.hoveredCell, toCells: [s.hoveredCell], muted: true }];
+    if (activityPick && ctx.active && ports.hoveredCell && hoverReason) {
+      return [{ from: notation(ctx.active.square), to: ports.hoveredCell, toCells: [ports.hoveredCell], muted: true }];
     }
     if (targetingService) {
       const selected = activityPick?.selected ?? [];
-      const hovered = targetingService.arrows(selected, targetHover ?? blastHover, s.hoveredCell, s.hoveredEdge);
-      if (targetHover || blastHover || s.hoveredCell || s.hoveredEdge) {
+      const hovered = targetingService.arrows(selected, targetHover ?? blastHover, ports.hoveredCell, ports.hoveredEdge);
+      if (targetHover || blastHover || ports.hoveredCell || ports.hoveredEdge) {
         if (hovered.length) return hovered;
       }
       return targetingService.arrows(selected, targetingChoice?.id ?? null, aim?.cell ?? null);
     }
-    if (!s.arming || !s.active) return [];
-    const cells = s.hoveredEdge && s.arming.edges.includes(s.hoveredEdge) ? edgeCells(s.hoveredEdge)
-      : s.hoveredCell && s.arming.cells.includes(s.hoveredCell) ? [s.hoveredCell] : [];
+    if (!ports.ring.arming || !ctx.active) return [];
+    const cells = ports.hoveredEdge && ports.ring.arming.edges.includes(ports.hoveredEdge) ? edgeCells(ports.hoveredEdge)
+      : ports.hoveredCell && ports.ring.arming.cells.includes(ports.hoveredCell) ? [ports.hoveredCell] : [];
     if (!cells.length) return [];
-    return [{ from: notation(s.active.square), to: cells[0], toCells: cells,
-      tone: s.arming.key === 'step' ? 'movement' : s.arming.key === 'melee' ? 'fight' : s.arming.key }];
+    return [{ from: notation(ctx.active.square), to: cells[0], toCells: cells,
+      tone: ports.ring.arming.key === 'step' ? 'movement' : ports.ring.arming.key === 'melee' ? 'fight' : ports.ring.arming.key }];
   });
   let heldArrows = $state<{ context: string; arrows: TargetArrow[] } | null>(null);
   let resolvedArrows = $state<TargetArrow[]>([]);
@@ -266,7 +259,7 @@ export function createPickerController(s: PickerShared) {
   let resolvedMarkers = $state<TargetMarker[]>([]);
 
   function hoverTargetMarker(id: string | null) {
-    if (id) s.clearHover();
+    if (id) ports.clearHover();
     if (blastOpen) blastHover = id;
     else if (activityPick) targetHover = id;
   }
@@ -282,21 +275,21 @@ export function createPickerController(s: PickerShared) {
   const aimStyle = $derived<HighlightStyle>(aimGroup ? styleFor(aimGroup.offer) : 'attack');
 
   async function performActivity(offer: ActionOffer, opt: ActivityOption, targetId?: string) {
-    if (!s.active || !s.requireTurn()) return;
-    const resolution = new TargetingService(s.b, s.active, offer, opt).resolve(targetId);
+    if (!ctx.active || !ctx.requireTurn()) return;
+    const resolution = new TargetingService(ctx.b, ctx.active, offer, opt).resolve(targetId);
     if (!resolution) return;
-    const commitment = canFocus(offer.type, offer.spell) ? s.focus : 0;
-    if (activityPick?.key === 'siege' && s.siegeEngine) {
-      if (resolution.action.target) await s.fireSiege(opt.index, resolution.action.target, commitment);
-    } else await s.run(s.takeAction({ ...resolution.action, focus: commitment, ...(offer.spell === 'healing' ? { healingChoices: structuredClone($state.snapshot(healingChoices)) } : {}) }));
+    const commitment = canFocus(offer.type, offer.spell) ? ctx.focus : 0;
+    if (activityPick?.key === 'siege' && ports.siege.engine) {
+      if (resolution.action.target) await ports.siege.fire(opt.index, resolution.action.target, commitment);
+    } else await ctx.run(ctx.takeAction({ ...resolution.action, focus: commitment, ...(offer.spell === 'healing' ? { healingChoices: structuredClone($state.snapshot(healingChoices)) } : {}) }));
   }
 
   /** Open the popup for a board object: everything this unit can do to it, verb by verb. A
    * prop taken off the tray narrows it to that one verb. */
   function aimAt(target: BoardObject, cell: string, label: string, only: Verb | null = null) {
-    s.focus = 0;
-    if (!s.active) return;
-    const all = offersAt(s.b, target, s.active.id);
+    ctx.focus = 0;
+    if (!ctx.active) return;
+    const all = offersAt(ctx.b, target, ctx.active.id);
     const groups = only ? all.filter((g) => g.offer.type === only) : all;
     aim = groups.length ? { cell, target, label, groups, group: 0, index: 0 } : null;
     // The cheapest legal row is the one to land on: it is the one the player most often wants.
@@ -309,12 +302,12 @@ export function createPickerController(s: PickerShared) {
   /** Choose the effect first, then its commitment, and confirm the total. */
   function aimChoose(i: number) {
     if (!aim) return;
-    s.focus = 0;
+    ctx.focus = 0;
     aim = { ...aim, index: i };
   }
 
   const aimVerb = (i: number) => {
-    s.focus = 0;
+    ctx.focus = 0;
     if (!aim) return;
     aim = { ...aim, group: i, index: 0 };
     const legal = aimActivities.findIndex((option) => option.legal);
@@ -328,13 +321,13 @@ export function createPickerController(s: PickerShared) {
     if (!a || !row || !group || !row.legal) return;
     if (group.offer.spell === 'blast') { openBlast(row.index); return; }
     aim = null;
-    s.disarm();
-    const service = new TargetingService(s.b, s.active!, group.offer, row);
+    ports.ring.disarm();
+    const service = new TargetingService(ctx.b, ctx.active!, group.offer, row);
     const matches = service.forRef(a.target);
     if (row.needsTarget && (matches.length !== 1 || group.offer.spell === 'healing')) {
-      const committed = s.focus;
+      const committed = ctx.focus;
       openActivityPicker(group.offer);
-      s.focus = committed;
+      ctx.focus = committed;
       activityPick = { key: offerKey(group.offer), index: row.index, selected: service.pickCell(a.cell)?.selected ?? [], target: matches.length === 1 ? matches[0].id : undefined };
       return;
     }
@@ -357,7 +350,7 @@ export function createPickerController(s: PickerShared) {
       if (activityPick.target) { activityPick = { ...activityPick, target: undefined }; return 'done'; }
       if (activityPick.selected.length) { activityPick = { ...activityPick, selected: activityPick.selected.slice(0, -1) }; return 'done'; }
       if (activityPick.index !== null && !soleLegalActivity(pickerOffer?.activities ?? [])) {
-        s.focus = 0; activityPick = { ...activityPick, index: null }; return 'done';
+        ctx.focus = 0; activityPick = { ...activityPick, index: null }; return 'done';
       }
       const next = activityPick.key === 'siege' ? 'siege' : pickerOffer?.type === 'cast' ? 'trees' : 'ring';
       activityPick = null;
@@ -375,12 +368,12 @@ export function createPickerController(s: PickerShared) {
   function stepAimRow(by: number) {
     const n = aimActivities.length;
     if (!aim || !n) return;
-    s.focus = 0;
+    ctx.focus = 0;
     aim = { ...aim, index: (aim.index + by) % n };
   }
   function stepAimVerb(by: number) {
     if (!aim) return;
-    s.focus = 0;
+    ctx.focus = 0;
     aim = { ...aim, group: (aim.group + by) % aim.groups.length, index: 0 };
   }
 

@@ -3,11 +3,12 @@ import { type Verb, type ActionOffer, notation, type BoardObject } from '../../e
 import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon } from '../../board/art.js';
 import type { HighlightStyle } from '../../board/index.js';
 import { DRAG_NOTICE } from './drag-controller.svelte.js';
-import type { Activation, ActivityIndex, ActivityTarget, BattleState, EngineState, MeleePlan, Unit, Wall } from '../../engine/index.js';
+import type { ActivityIndex, ActivityTarget, EngineState, MeleePlan, Unit, Wall } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
 import type { Notification, NotificationService } from '../notifications.js';
 import type { Parked, Preview } from './drag-controller.svelte.js';
-import type { BattleDeps } from './battle-controller.svelte.js';
+import type { BattleContext } from './battle-context.js';
+import type { BattleBoard } from './battle-controller.svelte.js';
 
 
 // Always these six, always in this order. A ring is learned by direction, so a verb the
@@ -30,36 +31,32 @@ export interface Prop {
   edges: string[];
 }
 
-export interface RingShared extends BattleDeps {
-  readonly b: BattleState;
-  readonly active: Unit | null;
-  readonly act: Activation | null;
-  readonly offers: ActionOffer[];
-  readonly nearbyGates: [string, Wall][];
-  readonly siegeEquipment: EngineState[];
-  focus: number;
+export interface RingPorts {
+  readonly board: () => BattleBoard | undefined;
   readonly cellOf: (id: string) => string | null;
-  readonly openGates: () => void;
-  readonly openSiege: (id?: string) => Promise<void>;
-
-  readonly pending: Parked | null;
-  readonly meleeOptions: Map<string, MeleePlan[]>;
-  readonly enemyAt: (cell: string) => Unit | undefined;
-  readonly rowsAt: (cell: string) => Preview[];
-  readonly openMelee: (id: string) => void;
-  readonly park: (cell: string, rows: Preview[]) => void;
-  readonly unpark: () => void;
-
-  readonly aim: Aim | null;
-  readonly targetCells: (target: ActivityTarget) => string[];
-  readonly aimAt: (target: BoardObject, cell: string, label: string, only?: Verb | null) => void;
-  readonly openActivityPicker: (offer: ActionOffer) => void;
-  readonly openBlast: (level?: ActivityIndex | null) => void;
-  readonly closeAim: () => void;
-  readonly closePicker: () => void;
+  readonly gates: { readonly nearby: [string, Wall][]; open(): void };
+  readonly siege: { readonly equipment: EngineState[]; open(id?: string): Promise<void> };
+  readonly drag: {
+    readonly pending: Parked | null;
+    readonly meleeOptions: Map<string, MeleePlan[]>;
+    enemyAt(cell: string): Unit | undefined;
+    rowsAt(cell: string): Preview[];
+    openMelee(id: string): void;
+    park(cell: string, rows: Preview[]): void;
+    unpark(): void;
+  };
+  readonly picker: {
+    readonly aim: Aim | null;
+    targetCells(target: ActivityTarget): string[];
+    aimAt(target: BoardObject, cell: string, label: string, only?: Verb | null): void;
+    openActivityPicker(offer: ActionOffer): void;
+    openBlast(level?: ActivityIndex | null): void;
+    closeAim(): void;
+    closePicker(): void;
+  };
 }
 
-export function createRingController(s: RingShared) {
+export function createRingController(ctx: BattleContext, ports: RingPorts) {
   let anchor = $state<{ x: number; y: number } | null>(null);
   let anchorR = $state(0);
 
@@ -85,24 +82,24 @@ export function createRingController(s: RingShared) {
   /** Where an offer can land, with the unit's own square first when an activity needs no target. */
   function offerCells(offer: ActionOffer): string[] {
     const legal = offer.activities.filter((r) => r.legal);
-    const cells = legal.flatMap((r) => r.targets).flatMap(s.targetCells);
+    const cells = legal.flatMap((r) => r.targets).flatMap(ports.picker.targetCells);
     // A activity that names no target acts on your own piece, which is where its popup opens.
-    if (s.active && legal.some((r) => !r.needsTarget)) cells.unshift(notation(s.active.square));
+    if (ctx.active && legal.some((r) => !r.needsTarget)) cells.unshift(notation(ctx.active.square));
     return [...new Set(cells)];
   }
 
   const props = $derived.by<Prop[]>(() => {
-    if (!s.active || !s.act) return [];
-    const { verbs, steps } = s.act;
+    if (!ctx.active || !ctx.act) return [];
+    const { verbs, steps } = ctx.act;
     const byType = new Map<Verb, ActionOffer[]>();
-    for (const offer of s.act.offers) {
+    for (const offer of ctx.act.offers) {
       const list = byType.get(offer.type);
       if (list) list.push(offer);
       else byType.set(offer.type, [offer]);
     }
     // Charge shares the melee slice with Fight. Charging is how a unit out of contact reaches
     // the fight the slice already holds, so one direction means "hit them" either way.
-    const charges = [...s.meleeOptions].filter(([, plans]) => plans.length).map(([id]) => s.cellOf(id)).filter((x): x is string => x !== null);
+    const charges = [...ports.drag.meleeOptions].filter(([, plans]) => plans.length).map(([id]) => ports.cellOf(id)).filter((x): x is string => x !== null);
 
     return SLOTS.map((key): Prop => {
       const verb = verbs[key === 'melee' ? 'fight' : key];
@@ -136,14 +133,14 @@ export function createRingController(s: RingShared) {
   const armedProp = $derived(props.find((p) => p.key === armed && p.legal) ?? null);
   // Stepping back from a popup retains the arm. Cancelling clears it. `arming` is the state
   // where the board is waiting to be touched.
-  const arming = $derived(armedProp && !s.aim && !s.pending ? armedProp : null);
+  const arming = $derived(armedProp && !ports.picker.aim && !ports.drag.pending ? armedProp : null);
   // A new activation, or a verb that has run out of targets, drops the arm.
   $effect(() => { if (armed && !armedProp) armed = null; });
 
   /** The arm, the tree picker and the ring: everything this controller holds open. */
   function clear() { radial = null; castPick = null; armed = null; }
   const disarm = () => { armed = null; };
-  const openRing = () => { if (s.active) radial = { cell: notation(s.active.square) }; };
+  const openRing = () => { if (ctx.active) radial = { cell: notation(ctx.active.square) }; };
   const openTrees = () => { castPick = castOffers(); };
 
   /** The ring's part of the walk out: the wash, then the tree picker (Cast only), then the
@@ -161,20 +158,20 @@ export function createRingController(s: RingShared) {
 
   /** Every tree the active unit knows — a fresh read, not a stored list, so a spent
    * pool point is reflected the moment the picker reopens. */
-  const castOffers = () => (s.act?.offers ?? []).filter((o) => o.type === 'cast');
+  const castOffers = () => (ctx.act?.offers ?? []).filter((o) => o.type === 'cast');
 
   /** Rally opens its activities; Cast opens its trees and then activities. Other verbs
    * highlight their targets, opening the target popup directly when only one exists. */
   function takeProp(p: Prop) {
-    s.focus = 0;
-    if (!p.legal || !s.active) return;
-    s.unpark();
-    s.closeAim();
+    ctx.focus = 0;
+    if (!p.legal || !ctx.active) return;
+    ports.drag.unpark();
+    ports.picker.closeAim();
     radial = null;
-    s.closePicker();
+    ports.picker.closePicker();
     if (p.key === 'rally') {
-      const offer = s.offers.find((o) => o.type === 'rally');
-      if (offer) s.openActivityPicker(offer);
+      const offer = ctx.offers.find((o) => o.type === 'rally');
+      if (offer) ports.picker.openActivityPicker(offer);
       return;
     }
     if (p.key === 'cast') {
@@ -182,8 +179,8 @@ export function createRingController(s: RingShared) {
       const offers = castOffers();
       if (offers.length <= 1) {
         if (offers[0] && offerReason(offers[0])) { castPick = offers; return; }
-        if (offers[0]?.spell === 'blast') { s.openBlast(); return; }
-        if (offers[0]) s.openActivityPicker(offers[0]);
+        if (offers[0]?.spell === 'blast') { ports.picker.openBlast(); return; }
+        if (offers[0]) ports.picker.openActivityPicker(offers[0]);
       } else {
         castPick = offers;
       }
@@ -197,40 +194,40 @@ export function createRingController(s: RingShared) {
   /** A tree opens its activity picker; Blast retains its shape picker. */
   function chooseTree(o: ActionOffer) {
     if (offerReason(o)) return;
-    if (o.spell === 'blast') { s.openBlast(); return; }
-    s.openActivityPicker(o);
+    if (o.spell === 'blast') { ports.picker.openBlast(); return; }
+    ports.picker.openActivityPicker(o);
   }
 
   /** Spend an armed prop on a board object. */
   function applyProp(p: Prop, cell: string) {
-    s.focus = 0;
+    ctx.focus = 0;
     // A charge is read off the cell rather than the slice: in contact the melee slice fights,
     // out of it the same slice closes.
-    const enemy = p.key === 'melee' ? s.enemyAt(cell) : undefined;
-    if (enemy && s.meleeOptions.get(enemy.id)?.length) {
-      s.openMelee(enemy.id);
+    const enemy = p.key === 'melee' ? ports.drag.enemyAt(cell) : undefined;
+    if (enemy && ports.drag.meleeOptions.get(enemy.id)?.length) {
+      ports.drag.openMelee(enemy.id);
       return;
     }
     // A step is a destination, not a target, so it parks the same drop a drag there would.
     if (p.key === 'step') {
-      const rows = s.rowsAt(cell).filter((r) => r.kind === 'step');
-      if (rows.length) s.park(cell, rows);
+      const rows = ports.drag.rowsAt(cell).filter((r) => r.kind === 'step');
+      if (rows.length) ports.drag.park(cell, rows);
       return;
     }
-    const u = s.b.units.find((x) => x.status === 'active' && notation(x.square) === cell);
+    const u = ctx.b.units.find((x) => x.status === 'active' && notation(x.square) === cell);
     const target: BoardObject = u ? { kind: 'unit', id: u.id } : { kind: 'cell', id: cell };
-    s.aimAt(target, cell, u?.name ?? cell, p.type);
+    ports.picker.aimAt(target, cell, u?.name ?? cell, p.type);
   }
 
   let radial = $state<{ cell: string } | null>(null);
   const radialItems = $derived([
     ...props.map((p) => ({ key: p.key, src: actionIconUrl(p.icon), label: p.label, legal: p.legal, reason: p.reason })),
-    ...(s.nearbyGates.length ? [{ key: 'gate', src: actionIconUrl('gate'), label: 'Gate', legal: true }] : []),
-    ...(s.siegeEquipment.length ? [{ key: 'siege', src: engineArtUrl(s.siegeEquipment[0].name) ?? actionIconUrl('shoot'), label: 'Siege engine', legal: true }] : []),
+    ...(ports.gates.nearby.length ? [{ key: 'gate', src: actionIconUrl('gate'), label: 'Gate', legal: true }] : []),
+    ...(ports.siege.equipment.length ? [{ key: 'siege', src: engineArtUrl(ports.siege.equipment[0].name) ?? actionIconUrl('shoot'), label: 'Siege engine', legal: true }] : []),
   ]);
   const pickProp = (key: string) => {
-    if (key === 'gate') { s.openGates(); return; }
-    if (key === 'siege') { void s.openSiege(); return; }
+    if (key === 'gate') { ports.gates.open(); return; }
+    if (key === 'siege') { void ports.siege.open(); return; }
     const p = props.find((x) => x.key === key);
     if (p) takeProp(p);
   };
@@ -250,16 +247,16 @@ export function createRingController(s: RingShared) {
   // Cast's own ring held — the caster's own square — so it shares this same tracker.
   let lastAnchor: { x: number; y: number } | null = null;
   $effect(() => {
-    const cell = radial?.cell ?? (castPick && s.active ? notation(s.active.square) : null);
+    const cell = radial?.cell ?? (castPick && ctx.active ? notation(ctx.active.square) : null);
     if (!cell) { anchor = null; lastAnchor = null; return; }
     let frame = 0;
     const follow = () => {
-      const p = s.board()?.screenOf(cell);
+      const p = ports.board()?.screenOf(cell);
       if (p && (!lastAnchor || Math.abs(p.x - lastAnchor.x) > 0.5 || Math.abs(p.y - lastAnchor.y) > 0.5)) {
         lastAnchor = { x: p.x, y: p.y };
         anchor = lastAnchor;
       }
-      const r = s.board()?.cellRadius(cell);
+      const r = ports.board()?.cellRadius(cell);
       if (r && Math.abs(r - anchorR) > 0.5) anchorR = r;
       frame = requestAnimationFrame(follow);
     };
