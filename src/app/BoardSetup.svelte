@@ -23,11 +23,10 @@
   const spec = $derived(game.setup.spec);
   const fortTier = $derived(spec.construction?.tier ?? -1);
   function setConstruction(tier: number) {
-    void run(editSpec({ construction: tier < 0 ? null : { kind: 'fort', tier } }));
+    void editAndRegenerate({ construction: tier < 0 ? null : { kind: 'fort', tier } });
   }
 
-  // Grid and size pick a new layout outright, so the edit regenerates in the same gesture, as
-  // it did when the view wrote `game.setup.spec` directly.
+  // Every spec edit regenerates in the same gesture, so Generate always means a new layout.
   async function editAndRegenerate(patch: Partial<typeof spec>) {
     const edited = await run(editSpec(patch));
     if (edited.ok) await run(generate());
@@ -66,7 +65,7 @@
         <option value={6}>6 rounds</option><option value={8}>8 rounds</option>
       </select>
     </label>
-    <label>Hex <select value={spec.base} onchange={(e) => void run(editSpec({ base: e.currentTarget.value as HexTerrain }))}>{#each HEX_TERRAINS as t (t)}<option value={t}>{t}</option>{/each}</select></label>
+    <label>Hex <select value={spec.base} onchange={(e) => void editAndRegenerate({ base: e.currentTarget.value as HexTerrain })}>{#each HEX_TERRAINS as t (t)}<option value={t}>{t}</option>{/each}</select></label>
     <label>Grid
       <select value={spec.grid ?? 'hex'} onchange={(e) => void editAndRegenerate({ grid: e.currentTarget.value as GridKind })}>
         {#each GRIDS as g (g)}<option value={g}>{g}</option>{/each}
@@ -77,20 +76,18 @@
         <option value={15}>Field · {spec.grid === 'square' ? '15 × 15' : '169 hexes'}</option><option value={11}>Large · {spec.grid === 'square' ? '11 × 11' : '91 hexes'}</option><option value={9}>Original · {spec.grid === 'square' ? '9 × 9' : '61 hexes'}</option>
       </select>
     </label>
-    <label>Feature <select value={spec.feature} onchange={(e) => void run(editSpec({ feature: e.currentTarget.value as Feature }))}>{#each FEATURES as f (f)}<option value={f}>{f}</option>{/each}</select></label>
+    <label>Feature <select value={spec.feature} onchange={(e) => void editAndRegenerate({ feature: e.currentTarget.value as Feature })}>{#each FEATURES as f (f)}<option value={f}>{f}</option>{/each}</select></label>
     <label>Construction
       <select value={fortTier} onchange={(e) => setConstruction(Number(e.currentTarget.value))}>
         <option value={-1}>none</option>
         {#each FORTIFICATIONS as wall (wall.tier)}<option value={wall.tier}>{wall.tier} · {wall.name}</option>{/each}
       </select>
     </label>
-    <label>Seed <input type="number" value={spec.seed} onchange={(e) => void run(editSpec({ seed: Number(e.currentTarget.value) }))}></label>
   </div>
   <div class="row">
-    <button class="primary" onclick={() => void run(generate())}>Generate</button>
-    <button onclick={() => void run(rerollSeed())}>Reroll seed</button>
+    <button class="primary" onclick={() => void run(rerollSeed())}>Generate</button>
   </div>
-  <p class="muted">The seed reproduces the board exactly. Painting comes next; nothing here is final.</p>
+  <p class="muted">Painting comes next; nothing here is final.</p>
   <ConnectionWarning board={game.setup.board} edit={() => goToStage('paint')} />
   {#if !game.setup.board}<p class="muted">No board yet. Generate one.</p>{/if}
 {/snippet}

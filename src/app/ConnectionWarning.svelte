@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { hasGroundConnection, type Board } from '../engine/index.js';
+  import type { Board } from '../engine/index.js';
+  import { groundRouteWarning } from './connection-warning.js';
   let { board, edit }: { board: Board | null; edit?: () => void } = $props();
-  const blocked = $derived(board?.spec.feature === 'river' && !hasGroundConnection(board));
+  const warning = $derived(groundRouteWarning(board));
 </script>
 
-{#if blocked}
+{#if warning}
   <div class="connection-warning" role="status">
-    <strong>River blocks the ground crossing</strong>
-    <p>Ground units have no route between the deployment zones. The GM can keep this battlefield, or paint bridges or shallows to connect the banks.</p>
-    {#if edit}<button onclick={edit}>Edit crossings</button>{/if}
+    <strong>{warning.title}</strong>
+    <p>{warning.message}</p>
+    {#if edit}<button onclick={edit}>Paint a crossing</button>{/if}
   </div>
 {/if}
 
