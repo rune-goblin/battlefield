@@ -44,11 +44,13 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 ## Major
 
-### M1. `battle.ts` is a God Module — Divergent Change `[local]`
+### M1. `battle.ts` is a God Module — Divergent Change `[local]` `[done]`
 - **Where:** `src/engine/battle.ts:1-2436`
 - **What:** 2,436 lines and 83 exports holding setup, turn flow, siege, shooting, combat, movement and charge, targeting and menus, and every spell; 81 of the 94 engine commits since August touched it.
 - **Why it matters:** Every rules change lands in one file, and private helpers couple clusters that do not otherwise touch — C2 grew out of that.
 - **Direction:** Split along existing seams: siege (`333-581`, `2405-2436`), movement and charge (`988-1348`), targeting (`1351-1621`), spells (`1682-1976`), combat (`733-986`), turn flow; all 97 outside importers use the `engine/index.ts` barrel, so no caller changes.
+
+**Resolution (2026-09-26):** W4.1 replaced `battle.ts` with eleven modules in `src/engine/battle/`: setup, state, turn, movement, manoeuvres, combat, wounds, siege, emplacements, targeting and spells, none over 340 lines. `battle/index.ts` re-exports exactly the 83 names `battle.ts` exported, so helpers shared between the modules stay off the engine barrel, and the engine has no import cycles. Callers changed only import paths: eleven tests and one comment in `docs/pixi-board.md`.
 
 ### M2. Conditions are flat fields enumerated by hand in 8 places — Shotgun Surgery / Primitive Obsession `[cross-cutting]`
 - **Where:** `src/engine/types.ts:96-130` (about 18 fields on `Unit`); re-listed at `battle.ts:115-120`, `:479-483`, `:1749-1783`, `:2131-2141`, `:2205`, `aftermath.ts:135-159`, `status.ts:19-38`, `ability-effects.ts:225`.
@@ -87,11 +89,13 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Why it matters:** Each new drag or picker field needs three edits, and any sub-controller can call any sibling.
 - **Direction:** Expose `c.drag`, `c.picker` and `c.ring` directly, and replace `s` with narrow ports.
 
-### M8. Save migration is mixed into rules and schema code — Backwards-compat shims / Divergent Change `[cross-cutting]`
+### M8. Save migration is mixed into rules and schema code — Backwards-compat shims / Divergent Change `[cross-cutting]` `[done]`
 - **Where:** `src/engine/battle.ts:61-65,101,368-390,406,437,535` (legacy engine rate formulas, a hard-coded `'Wolf Fang'`, load-count rescaling); `src/runtime/session.ts:188-450` (about 260 lines of repairs, including `deriveStats` arithmetic).
 - **What:** `SCHEMA_VERSION` is still 1 while five fields arrive as "proto: no schema bump" backfills.
 - **Why it matters:** Every engine read pays for save history, rules knowledge leaks into the runtime, and C1 makes the next schema bump dangerous.
 - **Direction:** Normalise once at load in a `migrate.ts` backed by engine helpers, then bump the schema.
+
+**Resolution (2026-09-26):** W4.2 moved the save repairs out of the rules. `engine/legacy.ts` upgrades saved battles and cards: legacy engine rates, the Wolf Fang case, load-count rescaling, the no-retreat card fallback and the missing engine IDs. The engine's reads carry no save shims. `runtime/migrate.ts` steps a schema-1 record to schema 2 once at load, and `SCHEMA_VERSION` is 2. Only schema-1 records run the catalogue backfill, so a future catalogue change needs its own step. `reviveSession` accepts every schema from 1 to the current one, so the bump leaves browser saves readable, and a test loads a schema-1 browser save. Two effects reach players: an old save whose engine owner was never updated logs one "takes the X" line when it loads, and a module-API `createBattle` card with the `no-retreat` signal and no `abilities` no longer gains Hold Ground.
 
 ### M9. Target IDs are encoded as strings — Stringly Typed `[cross-cutting]`
 - **Where:** 28 `'+'` split/join sites across 8 files and 16 `'|'` sites across 9; `battle.ts:1988` tells a wall from a unit with `includes('|')`.

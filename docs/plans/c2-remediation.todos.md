@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W4 — Engine structure and the migration seam: W4.1–W4.2
 - W5 — Engine types: W5.1–W5.2
 - W6 — Engine answers, thin views: W6.1–W6.3
 - W7 — Runtime and services: W7.1–W7.7
@@ -43,6 +42,25 @@ could not answer. An item leaves this list when it is done or answered.
   them through the `src/board/index.ts` barrel.
 - W7.7: `npm run check` and `npm run build:foundry` print Svelte `state_referenced_locally`
   warnings in `src/app/game.svelte.ts` and `src/app/TextureLab.svelte`. They predate W2.
+
+## Open question from W4
+
+- A corrupt saved session can be rebuilt and saved over. `migrateSession` falls back to
+  `migrateLegacySave` for any envelope that `reviveSession` refuses, so a schema-1 or schema-2
+  record with a valid setup but a broken body (a schema-2 record with no `sources`, say) is rebuilt
+  from its setup and battle. The rebuild takes a new battleId, revision 0 and hot-seat control, and
+  the Foundry store accepts it and saves over the original. The browser store reads through
+  `reviveSession` and refuses such a record. Should the legacy fallback run only for records that
+  predate the envelope, leaving a corrupt envelope unreadable for W10.1 to handle?
+
+## Carried forward from W4
+
+- W5.1: `src/engine/siege-engines.ts:7` still says `engineKind` covers "older saves whose own
+  field may be stale". Saved engines are upgraded at load now, so the comment is stale.
+- `docs/pixi-board.md:99` names "`battle/combat.ts`'s Pace step" as the caller of `beyond`. The
+  caller is `giveGround` in `combat.ts`; the Pace step wording predates W4.
+- `src/tests/morale.test.ts` and `src/tests/targeting.test.ts` each import from
+  `'../engine/index.js'` twice; merge the imports.
 
 ## Unreadable save recovery (W10.1)
 
