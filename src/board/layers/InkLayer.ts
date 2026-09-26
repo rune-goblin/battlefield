@@ -144,6 +144,8 @@ export class InkLayer {
   clear(): void {
     for (const child of this.container.removeChildren()) child.destroy({ children: true });
   }
+
+  destroy(): void { this.clear(); }
 }
 
 const pick = (frames: NonNullable<InkFrames[TerrainGroup]>, variant: number): PIXI.Texture =>

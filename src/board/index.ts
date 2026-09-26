@@ -547,11 +547,16 @@ export function mountBoardView(opts: MountBoardOptions): BoardView {
       alive = false;
       interaction.destroy();
       terrainLayer.destroy();
-      inkLayer.clear();
-      fallenLayer.destroy();
+      inkLayer.destroy();
+      gridLayer.destroy();
+      mapLineLayer.destroy();
+      edgeLayer.destroy();
+      overlayLayer.destroy();
       tokenLayer.destroy();
+      shotLayer.destroy();
       castLayer.destroy();
       effectLayer.destroy();
+      fallenLayer.destroy();
       combatTextLayer.destroy();
       boardContainer.destroy({ children: true });
     },
