@@ -42,6 +42,18 @@ describe('commitment', () => {
     expect(commitment(u, offer, offer.activities[3])).toBeNull();
     expect(commitment(u, offer, offer.activities[1])).toEqual({ base: 2, available: 3 });
   });
+
+  it('offers none for a cast tier the unit level bars', () => {
+    const novice: UnitCard = { ...troop, level: 3, caster: true, tradition: 'occult' };
+    const s = createBattle({ board: openBoard(), units: [
+      { card: novice, side: 'attacker', square: 'c2' },
+      { card: troop, side: 'defender', square: 'c7' },
+    ] });
+    unit(s, 'u1').square = parse('c4');
+    const offer = availableActions(s, 'u0').find((o) => o.spell === 'controlling')!;
+    expect(offer.activities[1].cost).toBeNull();
+    expect(commitment(unit(s, 'u0'), offer, offer.activities[1])).toBeNull();
+  });
 });
 
 describe('move and melee', () => {

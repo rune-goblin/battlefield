@@ -295,10 +295,11 @@ export function offerRefusal(offer: ActionOffer): string | null {
 }
 
 /** The extra actions an activity may commit: counted up from its own price, to what the unit
- * has, and never past three in all for a cast. Null when it takes no commitment. */
+ * has, and never past three in all for a cast. Null when it takes no commitment, or when the
+ * unit's level or tradition bars the activity. */
 export function commitment(u: Unit, offer: ActionOffer, option: ActivityOption): { base: number; available: number } | null {
-  if (!canFocus(offer.type, offer.spell)) return null;
-  const base = option.cost ?? option.index;
+  if (!canFocus(offer.type, offer.spell) || option.cost === null) return null;
+  const base = option.cost;
   if (offer.type === 'cast' && base >= CAST_COMMITMENT) return null;
   return { base, available: offer.type === 'cast' ? Math.min(CAST_COMMITMENT, u.actions) : u.actions };
 }
