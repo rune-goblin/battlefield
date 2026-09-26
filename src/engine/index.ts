@@ -16,7 +16,6 @@ export * from './engines.js';
 export * from './siege-engines.js';
 export * from './board.js';
 export * from './path.js';
-export * from './connectivity.js';
 export * from './force.js';
 
 export * from './sight.js';

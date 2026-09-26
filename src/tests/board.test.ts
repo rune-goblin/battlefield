@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { at, barrierBetween, count, generateBoard, gridOf, NEUTRAL_RANKS, parse, SIZE, wallBudget, type Board } from '../engine/board.js';
-import { hasGroundConnection } from '../engine/connectivity.js';
+import { at, barrierBetween, count, generateBoard, gridOf, hasGroundConnection, NEUTRAL_RANKS, parse, SIZE, wallBudget, type Board } from '../engine/board.js';
 import { liesLow } from '../engine/terrain.js';
 
 const cells = (b: Board) => gridOf(b).cells();

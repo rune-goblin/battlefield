@@ -226,15 +226,21 @@ function layLandform(board: Board, rnd: Random, form: Landform, sign: 1 | -1): v
   }
 }
 
-function groundConnected(board: Board): boolean {
-  const SIZE = board.squares.length;
+/** A map is connected when a ground route runs from the attacker's deployment zone to the
+ * defender's, and no step on it enters water or crosses a cliff (a change of two or more
+ * elevation levels) or an intact wall. An open gate lets the route through. The rule concerns
+ * walking units only: the generator runs before armies exist. */
+export function hasGroundConnection(board: Board): boolean {
   const grid = gridOf(board);
-  const frontier = grid.cells().filter(sq => sq.rank === 0 && at(board, sq).terrain !== 'water');
+  const attackerRanks = new Set(deployRanks('attacker', false, board.squares.length));
+  const defenderRanks = new Set(deployRanks('defender', false, board.squares.length));
+  const frontier = grid.cells().filter(sq => attackerRanks.has(sq.rank) && at(board, sq).terrain !== 'water');
   const seen = new Set(frontier.map(notation));
   for (let i = 0; i < frontier.length; i++) {
-    if (frontier[i].rank === SIZE - 1) return true;
-    for (const n of grid.neighbours(frontier[i])) {
-      if (seen.has(notation(n)) || at(board, n).terrain === 'water' || barrierBetween(board, frontier[i], n)?.kind === 'cliff') continue;
+    const from = frontier[i];
+    if (defenderRanks.has(from.rank)) return true;
+    for (const n of grid.neighbours(from)) {
+      if (seen.has(notation(n)) || at(board, n).terrain === 'water' || barrierBetween(board, from, n)) continue;
       seen.add(notation(n));
       frontier.push(n);
     }
@@ -366,7 +372,7 @@ export function generateBoard(spec: BoardSpec): Board {
   for (let i = roughs; i > 0; i--) growPatch(board, rnd, 'rough', size(), d.merge, rnd() < 0.6 ? high : () => true);
 
   // Cliffs may channel the advance and never seal it; a river's crossings stay the GM's call.
-  if (feature !== 'river' && !groundConnected(board)) {
+  if (feature !== 'river' && !hasGroundConnection(board)) {
     for (const sq of gridOf(board).cells()) at(board, sq).elevation = Math.min(1, Math.max(0, at(board, sq).elevation));
   }
 
