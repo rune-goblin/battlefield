@@ -262,9 +262,10 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     stage: 'any', scope: 'gm', history: 'clear', afterFinal: true,
     refuse: (s, c, { services }) => services.manager.moveToRefusal(s, c.site),
     prepare: async (s, c, { services, sites }) => {
+      const site = s.site;
       const departure = services.manager.departure(s);
       if (departure === 'park') await sites.park(s);
-      if (departure === 'remove') await sites.remove(s.site!);
+      if (departure === 'remove' && site !== null) await sites.remove(site);
       return sites.load(c.site);
     },
     run: (s, c, { services, presence }, parked) => services.manager.moveTo(s, parked, c, presence),
