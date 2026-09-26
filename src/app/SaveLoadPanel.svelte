@@ -114,7 +114,7 @@
   }
   .row { display: flex; gap: .4rem; }
   .row input { flex: 1; min-width: 0; }
-  .error { color: var(--danger, #c0392b); margin: 0; }
+  .error { color: var(--bad); margin: 0; }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; max-height: 14rem; overflow-y: auto; }
   li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .meta { display: flex; flex-direction: column; min-width: 0; }
