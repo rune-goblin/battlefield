@@ -3,6 +3,8 @@ import {
   act, activation, availableActions, commitment, createBattle, meleePlans, parse, ROUTED_AT, select, unit, unitOutcome,
   type UnitCard,
 } from '../engine/index.js';
+import { recoverAtNight, recoveryModifier } from '../engine/aftermath.js';
+import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
 const troop: UnitCard = { name: 'Troop', level: 6, role: 'infantry', salvo: 'medium', tactics: [], overrides: { strike: 11, volley: 11, defence: 24, will: 13, fortitude: 15 } };
@@ -64,5 +66,21 @@ describe('unit outcome', () => {
     expect(unitOutcome({ ...u, status: 'camp' })).toBe('camp');
     expect(unitOutcome({ ...u, disorder: ROUTED_AT })).toBe('routed');
     expect(unitOutcome(u)).toBe('standing');
+  });
+});
+
+describe('overnight recovery', () => {
+  it('rolls the modifier recoveryModifier gives', () => {
+    const s = createBattle({ board: openBoard(), units: [
+      { card: { ...troop, disorder: 2, wounds: 1 }, side: 'attacker', square: 'c2' },
+      { card: { ...troop, wounds: 2 }, side: 'attacker', square: 'e2' },
+      { card: troop, side: 'defender', square: 'c7' },
+    ] });
+    s.phase = 'ended'; s.endedBy = 'dusk'; s.winner = 'draw';
+    const night = recoverAtNight(s, 'attacker', [{ unit: 'u0', activity: 'rally' }, { unit: 'u1', activity: 'treat' }], scriptedRng([10, 10]));
+    const [rally, treat] = night.night!.attacker!;
+    expect(rally.check.modifier).toBe(recoveryModifier(unit(s, 'u0'), 'rally', 2).total);
+    expect(treat.check.modifier).toBe(recoveryModifier(unit(s, 'u1'), 'treat', 2).total);
+    expect(recoveryModifier(unit(s, 'u0'), 'rally', 2)).toEqual({ save: 'Will', bonus: 13, missingMorale: 2, penalty: 2, total: 9 });
   });
 });
