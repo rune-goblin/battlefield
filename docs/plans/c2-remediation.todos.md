@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W1 — Live bugs: W1.1–W1.6
 - W2 — Dead code, conventions, small duplication: W2.1–W2.6
 - W3 — Shared primitives: W3.1–W3.2
 - W4 — Engine structure and the migration seam: W4.1–W4.2
@@ -17,12 +16,22 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Questions for the overseer to settle from the rules page, or to raise here
 
-- Terror (tier-4 Controlling): does `immuneFear` block it as it blocks tiers 1–3?
-- Push and pull: does a rooted target resist a siege push, an ability push, both or neither?
-  Can either push move a unit onto an occupied hex?
+- Push and pull: does a rooted target resist a troop-ability push or pull? The rules page says
+  siege forced movement respects roots, and the troop-ability Push / Pull row says only "one legal
+  hex". The ability path keeps today's answer, no; the siege path refuses rooted targets.
 - Ground connectivity: which rule holds — the generator's (from rank 0, water and cliffs block)
   or the warning's (between deploy zones, any step over 30 ft blocks, walls included)?
-- Charge: does a `charge` ability grant impact exactly as `cavalry-charge` does, and may a unit
-  with four actions choose charge activity 3?
-- Unreadable save: which notice does the GM see, and what does the store keep — a backup setting,
-  or the raw value left in place with writes refused?
+
+## Carried forward from W1
+
+- For play: nothing lets a GM clear or export an unreadable world setting, and the browser
+  cannot clear an unreadable session or archive key. Recovery needs the console, and every commit
+  shows "Changes could not be saved" until the key is cleared.
+- `createJsonArchive`'s accept checks only for a string `slot`. An entry with a string slot and
+  no string `name` passes, and `filenameFor` throws on it during Foundry eviction.
+- W6.1 and W6.3: the engine status label should treat a `left` unit as routed and gone. The
+  audit's routed claim in M4 was false on current code.
+- W6.1: `doAdvance` still accepts `[1, 2, 3]` for both finishes. A charge finish with 3 now fails
+  in `doCharge` after `doStride` has run on the clone, with the text "invalid charge activity".
+- W6.1: the comment above `ACTIVITIES` in `drag-controller.svelte.ts` still describes the charge
+  activity, which no longer lives there.

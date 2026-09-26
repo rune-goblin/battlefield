@@ -22,19 +22,23 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 ## Critical
 
-### C1. Unreadable stored data is treated as empty and then overwritten — Swallowed Exception / Data Loss `[cross-cutting]`
+### C1. Unreadable stored data is treated as empty and then overwritten — Swallowed Exception / Data Loss `[cross-cutting]` `[done]`
 - **Where:** `src/adapters/foundry/worldSessionRepository.ts:19-25`; same shape in `worldArchive.ts:20-27,64`, `worldSites.ts:8-15,28`, `browser/localArchive.ts:12-20`, `browser/localRepository.ts:14-21`.
 - **What:** Any record `migrateSession` rejects (a newer `schemaVersion` after a module downgrade, a corrupt string) silently becomes `freshTable()`, `[]` or `{}`; on `ready`, `reseat()` commits that fresh table over the setting, and an archive save writes `[...[], entry]`, wiping every slot.
 - **Why it matters:** A downgrade or schema bump erases a campaign's battles with no notice to the GM.
 - **Direction:** A store distinguishes absent from unreadable, keeps the raw value, refuses writes and raises a notice; build it once in the shared store helper from M10.
 
-### C2. Duplicated engine rules have already diverged — Once And Only Once `[local]`
+**Resolution (2026-09-26):** W1.1 added `createJsonStore` in `src/adapters/json-store.ts`. It tells an absent value from an unreadable one, leaves the unreadable value in place, refuses every write over it and raises one notice. The browser and Foundry session repositories, both archives and the Foundry sites store read through it. An unreadable session loads fresh in memory while every save, `reseat` included, is refused. `migrateSession` now rejects a record from a newer schema before the legacy path can rebuild it, and the Foundry GM gets a permanent error notice. No UI lets a GM clear or export an unreadable setting; the todos file carries that.
+
+### C2. Duplicated engine rules have already diverged — Once And Only Once `[local]` `[partial]`
 - **Where:** `src/engine/battle.ts`:
   - Terror, the tier-4 Controlling spell (`1845-1849`), re-implements Controlling and skips the `immuneFear` check tiers 1–3 make (`1887`); it also logs nothing on frightened.
   - The wound pipeline exists twice (`applyWounds` `755-786`, `landPersistent` `2093-2111`); death by persistent damage skips `refreshAbilityAuras` (`2103` vs `770`).
   - Push/pull exists twice (siege `484-491`, ability `displace` `713-720`); the siege copy refuses rooted targets and skips the occupied-cell test, the ability copy the reverse.
 - **Why it matters:** These are live rules bugs: Terror frightens an immune unit, and a dead aura source keeps its aura until something else refreshes auras.
 - **Direction:** Extract `landWound(target, n, …)` and `displace(...)`, and route tier-4 spells through the per-tree effects.
+
+**Resolution (2026-09-26):** W1.2 routed Terror through `controlOne`, the tier 1–3 Controlling sequence, so it respects `immuneFear`, logs the frightened line, and a failed save costs Morale alone. `landWound`, `fall` and `moraleSave` now serve hits and persistent damage, so a death at dusk refreshes auras. Siege and ability push/pull share `forcedStep`, which asks Hold Ground only once a legal hex exists. The audit's claim that the siege copy skips the occupied-cell test is false: `enterable` refuses occupied hexes on both paths. One divergence stays open: the siege caller refuses rooted targets and the ability caller does not, pending the rules question in the todos file.
 
 ## Major
 
@@ -49,16 +53,20 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Why it matters:** A new condition needs 8 or more coordinated edits plus 3 in the app; missing one leaves a condition that never clears.
 - **Direction:** One condition record with per-condition lifetime metadata; derive the reset, nullify, heal and status lists from it.
 
-### M3. App controllers re-derive what the engine decides — Once And Only Once `[cross-cutting]`
+### M3. App controllers re-derive what the engine decides — Once And Only Once `[cross-cutting]` `[partial]`
 - **Where:** `src/app/battle/ring-controller.svelte.ts:110,126,138-143`; `drag-controller.svelte.ts:326-331,378-387`; `battle-controller.svelte.ts:466-491`.
 - **What:** The ring guesses refusal reasons with its own precedence ladder. `CHARGES` ignores the `charge` ability the engine honours (`battle.ts:2308`), and `CHARGE_ACTIVITIES = [1, 2]` never offers the activity 3 the engine accepts (verified drift). `status()` is a third hand-written list of 22 unit flags, beside `status.ts` and `status-effects.ts`.
 - **Why it matters:** `rules.html` and the engine are the arbiters; these copies go silently wrong when a rule changes, and the charge copy already has.
 - **Direction:** `activation()` returns every verb with a legal flag and an engine-authored reason; `ChargeOption` carries activities, cost and impact; the status line builds from `statusEffectsOf`.
 
-### M4. Views compute rules — Feature Envy `[cross-cutting]`
+**Resolution (2026-09-26):** W1.3 fixed the charge drift. The rules list only Charge 2 and Charge and Press 3, so `doCharge` now rejects activity 3. `chargeImpact` moves the impact formula into the engine, and the drag controller reads the engine's activities and impact, so a unit with the `charge` ability sees its impact. The ring's refusal ladder and the hand-written `status()` list remain for W6.1 and W6.2.
+
+### M4. Views compute rules — Feature Envy `[cross-cutting]` `[partial]`
 - **Where:** `src/app/BattleReport.svelte:124` recomputes the recovery modifier from `aftermath.ts:122`; `:98` and `:106-107` decide routed without `isRouted`'s `status === 'active'` check, so a unit in camp counts as both in camp and routed; `:223` repeats the "nothing to recover" guard. `HealingChoices.svelte:5,7` maps conditions and the renewal heal count. `UnitSheet.svelte:9` partially copies `shootModifier`. `BattlePins.svelte:98` repeats `movementSpeed`, `:129` hard-codes the cast cap, and `:73,101,108,117` call `gateReason`/`siegeReason` in the template.
 - **Why it matters:** This breaks the rule in `docs/plans/battle-controller-split.md:33` ("a view imports no engine function that decides anything"); the routed count is already wrong on screen.
 - **Direction:** Engine exports `recoveryModifier`, `canRecover` and `healableConditions`; a controller per view hands finished rows to the view.
+
+**Resolution (2026-09-26):** The overseer rejected the routed claim. A unit in camp never reaches the routed disorder level, and every `left` unit is routed, so switching to `isRouted` would drop the units that left from the routed count; the count on screen is right. W6.1 and W6.3 should give the engine status label `left` as routed and gone. The recovery modifier, recovery guard, healing map, shoot modifier and `BattlePins` rules remain for W6.1–W6.3.
 
 ### M5. Each command's facts are spread across 5+ tables — Shotgun Surgery `[cross-cutting]`
 - **Where:** `src/runtime/commands.ts:25,97`; `policy.ts:15,68,84`; `executeCommand.ts:29,81,86,92,205`.
@@ -88,21 +96,25 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **What:** `ActivityAction.target: string` discards `ActivityTarget.kind`, and the encoding has spread into `app/targeting.ts`, the picker and the board.
 - **Direction:** Carry a typed `TargetRef` in actions and parse only at the UI edge.
 
-### M10. Browser and Foundry archives are copy-pasted — Copy-and-Paste Programming `[cross-cutting]`
+### M10. Browser and Foundry archives are copy-pasted — Copy-and-Paste Programming `[cross-cutting]` `[done]`
 - **Where:** `src/adapters/browser/localArchive.ts` and `src/adapters/foundry/worldArchive.ts`
 - **What:** `list`, `load`, `remove`, `export`, `import`, `newSlotId` and the parse fallback exist in both; only the Foundry copy evicts.
 - **Why it matters:** Every format fix — the C1 fix included — lands twice.
 - **Direction:** One `createJsonArchive(store, { beforeInsert? })` over a minimal get/set store.
+
+**Resolution (2026-09-26):** W1.1 added `createJsonArchive` in `src/adapters/json-store.ts`, the one copy of list, save, load, remove, export and import. Both archives are thin bindings over it, and the Foundry one keeps its ten-slot eviction as `beforeInsert`.
 
 ### M11. `Token` is a God Class — Divergent Change `[local]`
 - **Where:** `src/board/Token.ts:171`
 - **What:** 37 methods covering art loading, tweening, drag lift, spell reactions, rings, flag, engine chip, pips, status bars, rout arrow and the status-intro handshake.
 - **Direction:** Compose per-concern parts: `StatusColumn`, `MoveTween`, `RingGlow`, `EngineChip`.
 
-### M12. Board layers share no contract, and `destroy()` misses five — Shotgun Surgery / Resource Leak `[cross-cutting]`
+### M12. Board layers share no contract, and `destroy()` misses five — Shotgun Surgery / Resource Leak `[cross-cutting]` `[partial]`
 - **Where:** `src/board/index.ts:248-289,546-557`
 - **What:** 12 layers use 6 different `setGeometry`/`draw` signatures and repeat their teardown 13 times; `destroy()` skips the overlay, shot, grid, map-line and edge layers and only clears ink, so `OverlayLayer.destroyed` never flips and a late `loadBarred` redraws into a destroyed container.
 - **Direction:** A `BoardLayer { setGeometry(ctx|null); destroy() }` interface and an iterated layer list.
+
+**Resolution (2026-09-26):** W1.6 made `destroy()` tear down the grid, map-line, edge, overlay and shot layers and destroy the ink layer; `EdgeLayer` and `InkLayer` gained a `destroy()`. `OverlayLayer.destroyed` now flips, so a late `loadBarred` stops. The shared layer contract remains for W9.1.
 
 ### M13. Modal, popover and army-card chrome is copied between components — Copy-and-Paste Programming `[cross-cutting]`
 - **Where:** `QuitDialog.svelte:43-55` and `EndBattleDialog.svelte:53-65` are identical; Escape-to-close is written 4 times; `SeatingPanel.svelte:143-148` and `SaveLoadPanel.svelte:109-114` share one panel; `Sides.svelte` and `Summary.svelte` repeat the army card, and the `--side` ternary appears 5 times. `TokenModel` is built by hand in `BattleReport.svelte:117`, `Summary.svelte:46`, `VfxGallery.svelte:15` and `Place.svelte`, which already pick the engine name differently.
@@ -127,10 +139,12 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Where:** `side === 'attacker' ? 'defender' : 'attacker'` ×12; `SIDES` re-declared at `policy.ts:64` and `SeatingPanel.svelte:18` beside `engine/types.ts:9`; every ID is `string`.
 - **Direction:** `opponent(side)` in the engine; branded ID types.
 
-### m5. The two `withSetup` helpers differ — Once And Only Once `[local]`
+### m5. The two `withSetup` helpers differ — Once And Only Once `[local]` `[done]`
 - **Where:** `ArmyPreparationService.ts:160` and `MapPreparationService.ts:88`; `battleOf` ×3.
 - **What:** Only the army copy runs `settleHauling`, so map `generate` can leave a stale `hauled` flag in setup.
 - **Direction:** One shared services helper module with the settle step.
+
+**Resolution (2026-09-26):** W1.5 moved `battleOf`, `withBattle`, `settleHauling` and a `withSetup` that always settles into `src/services/session-helpers.ts`, and all five services import it. Map `generate` and `rerollSeed` now settle hauling.
 
 ### m6. Small engine utilities duplicated — Once And Only Once `[local]`
 - **Where:** `sameSquare` (`battle.ts:73`) copies `sameCell` (`grid.ts:22`); `clone` ×2; the degree-to-wounds ternary ×6; `ENGINES.find` by name ×5; the "can act now" guard ×4.
@@ -170,7 +184,8 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 - **Where:** `SaveLoadPanel.svelte:117` uses the undefined `--danger` (`--bad` exists); `BoardPopup.svelte:78-99` and `ArmyReel` hard-code palettes; 10 distinct shadow values and 4 scrim alphas have no token.
 
 ## Nits
-- `TroopPicker.svelte:92` `[local]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.
+- `TroopPicker.svelte:92` `[local]` `[partial]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.
+  **Resolution (2026-09-26):** W1.4 gave `TroopPicker`'s `signed` the sign-aware form, so a negative prints `−2`. The sweep of the five copies remains for W2.5.
 - `foundry/battleSitePicker.ts:27` and `troopLibrary.ts:37` `[local]` — the same actor-to-card reader twice; `BattleSiteArmy` and `KingdomArmy` are identical, as are the two `PLAYER_KINGDOM` constants.
 - `Interaction.ts:172-183`/`424-435` `[local]` — zoom-about-point math twice; `board/index.ts:330-347` duplicates `connectedCells`.
 - `EdgeLayer.ts:467` `[local]` — the cliff test restates `barrierBetween`; `Token.ts:267,272` decide routed without `status`.
