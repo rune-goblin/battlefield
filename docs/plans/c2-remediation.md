@@ -1,7 +1,7 @@
 # C2 remediation plan
 
 Written 2026-09-26 against `6850377`. It fixes every finding in [the C2 audit](../c2-audit.md) in nine
-waves. [The todos file](c2-remediation.todos.md) holds the work still open and the questions for play.
+waves, and W10 adds one feature. [The todos file](c2-remediation.todos.md) holds the work still open and the questions for play.
 `.claude/workflows/c2-remediation.js` runs one wave per invocation.
 
 ## Running a wave
@@ -187,3 +187,11 @@ One stage, one lane.
 | --- | --- | --- | --- | --- | --- |
 | W9.1 Board layer contract | A | M12 | `src/board/index.ts`, `src/board/layers/*` | Opus | wave-executor |
 | W9.2 Token parts and presenter flags | A | M11, nit Token routed, `chipBounds` | `src/board/{Token,layers/TokenLayer,layers/FallenLayer}.ts`, new `src/board/token/*`, `src/app/presentation.ts` | Opus | wave-executor |
+
+### W10 — Recovery from an unreadable save
+
+Not an audit finding: the user asked for it on 2026-09-26, after W1 made unreadable saves refuse writes.
+
+| Task | Lane | Findings | Files | Model | Agent |
+| --- | --- | --- | --- | --- | --- |
+| W10.1 Export and reset an unreadable save | A | todos: unreadable save recovery | `src/adapters/**`, `src/app/**` (notice and its controller), `src/runtime/ports.ts`, tests | Opus | svelte-file-editor |

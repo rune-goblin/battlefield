@@ -13,6 +13,7 @@ could not answer. An item leaves this list when it is done or answered.
 - W7 — Runtime and services: W7.1–W7.7
 - W8 — App structure: W8.1–W8.4
 - W9 — Board structure: W9.1–W9.2
+- W10 — Recovery from an unreadable save: W10.1
 
 ## Answered by the user (2026-09-26)
 
@@ -29,9 +30,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Carried forward from W1
 
-- For play: nothing lets a GM clear or export an unreadable world setting, and the browser
-  cannot clear an unreadable session or archive key. Recovery needs the console, and every commit
-  shows "Changes could not be saved" until the key is cleared.
 - `createJsonArchive`'s accept checks only for a string `slot`. An entry with a string slot and
   no string `name` passes, and `filenameFor` throws on it during Foundry eviction.
 - W6.1 and W6.3: the engine status label should treat a `left` unit as routed and gone. The
@@ -40,3 +38,19 @@ could not answer. An item leaves this list when it is done or answered.
   in `doCharge` after `doStride` has run on the clone, with the text "invalid charge activity".
 - W6.1: the comment above `ACTIVITIES` in `drag-controller.svelte.ts` still describes the charge
   activity, which no longer lives there.
+
+## Unreadable save recovery (W10.1)
+
+The user asked for this on 2026-09-26. When a stored session, archive or battle-site record is
+unreadable, the store refuses writes (W1.1), and every commit shows "Changes could not be saved"
+until someone clears the key from the console.
+
+- In Foundry, the GM sees a notice naming the unreadable record, with two buttons:
+  - "Export the broken save" downloads the raw stored value as a file;
+  - "Start fresh" clears the stored value, and the table carries on from a blank record.
+- In the browser, the local user sees the same notice for local storage.
+- Players see only that the GM must act.
+- "Start fresh" asks for confirmation in the app's own UI, with no browser `confirm()`, and
+  nothing is cleared until the user confirms.
+- Each unreadable store (session, archive, sites) is handled on its own, and clearing one
+  leaves the others untouched.

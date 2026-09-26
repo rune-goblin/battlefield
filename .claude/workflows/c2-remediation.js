@@ -100,6 +100,9 @@ const WAVES = {
       t('W9.2', 'Token parts and presenter flags', 'M11, nit Token routed flags, TokenLayer chipBounds', 'src/board/{Token,layers/TokenLayer,layers/FallenLayer}.ts, new src/board/token/*, src/app/presentation.ts', 'opus', 'exec'),
     ] },
   ]] },
+  W10: { title: 'Recovery from an unreadable save', stages: [[
+    { lane: 'A', tasks: [t('W10.1', 'Export and reset an unreadable save', 'Feature the user asked for on 2026-09-26: see "Unreadable save recovery" in the todos file', 'src/adapters/**, src/app/** (notice and its controller), src/runtime/ports.ts, tests', 'opus', 'svelte')] },
+  ]] },
 }
 
 const BRIEFS = { type: 'object', properties: {
