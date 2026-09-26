@@ -9,6 +9,9 @@ import { upgradeBattle } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
+// proto: the board barrel loads PIXI, which needs a DOM; the controller reads only the art URLs from it.
+vi.mock('../board/index.js', () => import('../board/art.js'));
+
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
 
 function battle(): BattleState {

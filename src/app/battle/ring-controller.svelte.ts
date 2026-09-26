@@ -1,7 +1,6 @@
 import { offerReason, actionReason } from './action-menu.js';
 import { type Verb, type ActionOffer, notation, type BoardObject } from '../../engine/index.js';
-import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon } from '../../board/art.js';
-import type { HighlightStyle } from '../../board/index.js';
+import { actionIconUrl, castIconUrl, engineArtUrl, type ActionIcon, type HighlightStyle } from '../../board/index.js';
 import { DRAG_NOTICE } from './drag-controller.svelte.js';
 import type { ActivityIndex, ActivityTarget, EngineState, MeleePlan, Unit, Wall } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
