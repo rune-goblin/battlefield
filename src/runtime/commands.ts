@@ -47,7 +47,8 @@ export type BattleCommand =
   | { type: 'army.autoPlace'; piece: PieceRef }
   /** The seed rides along so the authority's draw is reproducible from the envelope. */
   | { type: 'army.generateForce'; side: Side; seed?: number }
-  /** One army calls itself deployed, or takes that word back. The battle starts once both have. */
+  /** One army calls itself deployed, or takes that word back, for the GM's information; the GM's
+   * `battle.start` gives both armies' word. */
   | { type: 'army.declareReady'; side: Side; ready: boolean }
   | { type: 'continuation.declareRecovery'; side: Side; choices: RecoveryChoice[] }
   | { type: 'continuation.declareDayOrder'; side: Side; order: DayOrder }

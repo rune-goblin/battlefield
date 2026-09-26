@@ -24,10 +24,6 @@ function battleFrom(session: BattleSession): BattleState {
   if (!board) throw new Error('generate a board first');
   for (const side of SIDES) {
     if (!sideReady(setup, side)) throw new Error(`the ${side} has a piece still off the board`);
-    // proto: the wording is reserved for review with the rest of the player-facing text.
-    if (submissionOf(session.interactions, 'army.readiness', side) !== true) {
-      throw new Error(`the ${side} has not called itself ready`);
-    }
   }
   return createBattle({
     board,

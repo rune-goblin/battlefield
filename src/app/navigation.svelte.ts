@@ -91,13 +91,6 @@ export function goToStage(stage: Stage) {
 /** Each of the three below moves the tab once the authority has accepted the transition, so a
  * refused command leaves the player looking at the stage they are still on. */
 export async function beginBattle(): Promise<CommandResult> {
-  // The summary step is the one confirmation: beginning from it gives both armies' word. A
-  // seated player has already given theirs from the same step.
-  for (const side of SIDES) {
-    if (declaredReady(side)) continue;
-    const declared = await declareReady(side, true);
-    if (!declared.ok) return declared;
-  }
   const result = await startBattle();
   if (result.ok) enter('battle');
   return result;

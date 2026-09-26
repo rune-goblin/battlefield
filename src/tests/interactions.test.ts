@@ -78,18 +78,8 @@ describe('shared interactions', () => {
     expect(record.id).toMatch(/^int-/);
   });
 
-  it('keeps a side’s last word and starts the battle once both armies have spoken', async () => {
+  it('starts the battle on the GM’s word alone, with neither side declared ready', async () => {
     const runtime = setupSession();
-
-    await runtime.submit({ type: 'army.declareReady', side: 'attacker', ready: true });
-    await runtime.submit({ type: 'army.declareReady', side: 'attacker', ready: false });
-    const half = await runtime.submit({ type: 'battle.start' });
-
-    expect(half).toMatchObject({ ok: false, reason: 'engine' });
-    expect(half.ok === false && half.message).toMatch(/attacker/);
-
-    await runtime.submit({ type: 'army.declareReady', side: 'attacker', ready: true });
-    await runtime.submit({ type: 'army.declareReady', side: 'defender', ready: true });
 
     expect(await runtime.submit({ type: 'battle.start' })).toMatchObject({ ok: true });
   });
@@ -135,7 +125,9 @@ describe('shared interactions', () => {
     await runtime.submit({ type: 'army.addUnit', side: 'defender', card: kobolds });
 
     expect(runtime.session.interactions).toEqual([]);
-    expect(await runtime.submit({ type: 'battle.start' })).toMatchObject({ ok: false, reason: 'engine' });
+    const result = await runtime.submit({ type: 'battle.start' });
+    expect(result).toMatchObject({ ok: false, reason: 'engine' });
+    expect(result.ok === false && result.message).toMatch(/defender/);
   });
 
   it('records a surrender response beside the answer the engine gave', async () => {

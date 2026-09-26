@@ -38,7 +38,8 @@ function runtimeOn(setup = draft()) {
   return createRuntime({ repository: fakeRepository(session), archive: fakeArchive(), session });
 }
 
-/** Both armies call themselves ready, which `battle.start` waits for. */
+/** Neither declaration gates `battle.start`; these tests keep declaring both ready so the
+ * revision counts and interaction-clearing they check stay meaningful. */
 async function bothReady(runtime: Runtime) {
   for (const side of ['attacker', 'defender'] as const) {
     expect(await runtime.submit({ type: 'army.declareReady', side, ready: true })).toMatchObject({ ok: true });
