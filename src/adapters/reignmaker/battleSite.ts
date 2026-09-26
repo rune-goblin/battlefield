@@ -1,26 +1,14 @@
 import { HEX_TERRAINS, type BoardSpec, type HexTerrain, type Side, type UnitCard } from '../../engine/index.js';
 import type { BattleRequest, BattleRequestUnit, UnitSource } from '../../runtime/campaign.js';
-
-/** ReignMaker's `api.getBattleSite(hexId)` answer; see its `src/api/battleSite.ts`. */
-export interface BattleSiteArmy {
-  armyId: string;
-  name: string;
-  level: number;
-  actorId?: string;
-  /** `"player"`, `"unassigned"`, or a faction ID. */
-  ledBy: string;
-  leaderName: string;
-}
+import { PLAYER_KINGDOM, type KingdomArmy } from './kingdomArmies.js';
 
 export interface BattleSite {
   hexId: string;
   terrain: string | null;
   claimedBy: string | null;
   fortificationTier: number;
-  armies: BattleSiteArmy[];
+  armies: KingdomArmy[];
 }
-
-const PLAYER_KINGDOM = 'player';
 
 /**
  * A first guess at who attacks, for the GM to correct at the Sides step. Whoever holds the hex
@@ -28,10 +16,10 @@ const PLAYER_KINGDOM = 'player';
  * with no player army present the first banner found attacks. Every banner that is neither the
  * holder nor the attacker joins the side opposite the player, or opposite the holder.
  */
-export function sideOf(site: BattleSite): (army: BattleSiteArmy) => Side {
+export function sideOf(site: BattleSite): (army: KingdomArmy) => Side {
   const banners = [...new Set(site.armies.map((a) => a.ledBy))];
   // ReignMaker's hexes name a holder by faction ID or by faction name.
-  const holds = (a: BattleSiteArmy): boolean => site.claimedBy !== null
+  const holds = (a: KingdomArmy): boolean => site.claimedBy !== null
     && (a.ledBy === site.claimedBy || a.leaderName === site.claimedBy);
   const holder = site.armies.find(holds)?.ledBy ?? null;
   if (holder !== null) return (army) => (army.ledBy === holder ? 'defender' : 'attacker');
@@ -53,7 +41,7 @@ export function specFromSite(site: BattleSite, seed: number): BoardSpec {
 }
 
 /** What the host could read off one army's actor, or null for an army with no usable actor. */
-export type ArmyReader = (army: BattleSiteArmy) => { card: UnitCard; source: UnitSource } | null;
+export type ArmyReader = (army: KingdomArmy) => { card: UnitCard; source: UnitSource } | null;
 
 export interface SiteRequest {
   request: BattleRequest;

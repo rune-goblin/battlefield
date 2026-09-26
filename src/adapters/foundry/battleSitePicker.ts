@@ -1,8 +1,9 @@
-import { cardFromActor, importBaselineOf, troopActorProblems, type TroopActor } from '../pf2e/troopCard.js';
+import { importBaselineOf } from '../pf2e/troopCard.js';
 import type { SiteOpening } from '../../runtime/campaign.js';
 import type { SiteEntry } from '../../runtime/ports.js';
 import { requestFromSite, specFromSite, type ArmyReader, type BattleSite } from '../reignmaker/battleSite.js';
 import { REIGNMAKER_MODULE_ID } from '../reignmaker/outcomePort.js';
+import { readArmyActor } from './armyActor.js';
 import type { BattlefieldModuleApi } from './moduleApi.js';
 import { hostModule } from './hostModule.js';
 
@@ -25,10 +26,8 @@ const mapApi = (api: unknown): ReignMakerMapApi | null => {
 };
 
 const readArmy: ArmyReader = (army) => {
-  const actor = army.actorId ? game.actors.get(army.actorId) : undefined;
-  if (!actor || troopActorProblems(actor).length) return null;
-  const troop = actor as unknown as TroopActor;
-  return { card: cardFromActor(troop), source: { actorUuid: `Actor.${actor.id}`, baseline: importBaselineOf(troop) } };
+  const r = readArmyActor(army.actorId);
+  return 'problem' in r ? null : { card: r.card, source: { actorUuid: `Actor.${r.actor.id}`, baseline: importBaselineOf(r.troop) } };
 };
 
 const standingLabel = ({ stage, day, round }: SiteEntry): string => (day === null

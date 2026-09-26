@@ -1,7 +1,8 @@
 import type { UnitCard } from '../../engine/index.js';
 import type { CampaignTroops, TroopEntry } from '../../app/troop-library.svelte.js';
 
-/** ReignMaker's `api.getArmies()` row; see its `src/api/armies.ts`. */
+/** ReignMaker's `api.getArmies()` row, and the element of `getBattleSite(...).armies`; see its
+ * `src/api/armies.ts` and `src/api/battleSite.ts`. */
 export interface KingdomArmy {
   armyId: string;
   name: string;
@@ -14,6 +15,8 @@ export interface KingdomArmy {
 
 /** ReignMaker's `api.getFactions()` row. The player kingdom comes first. */
 export interface KingdomFaction { id: string; name: string }
+
+export const PLAYER_KINGDOM = 'player';
 
 /** The card and token art the host read off an army's actor, or the reasons it could not. */
 export type KingdomArmyReader = (army: KingdomArmy) => { card: UnitCard; art?: string } | { problem: string };
