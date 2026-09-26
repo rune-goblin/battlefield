@@ -44,7 +44,7 @@
     <summary>Tactics and rules</summary>
   <table class="stats"><tbody>
     <tr><td>Level</td><td>{c.active.level}</td><td>Level DC</td><td>{c.activeDc}</td></tr>
-    <tr><td>Engaged</td><td>{c.engagedCount}</td><td>Banked move</td><td>{Number((c.act.feet / CELL_FEET).toFixed(2))} points</td></tr>
+    <tr><td>Engaged</td><td>{c.drag.holders.length}</td><td>Banked move</td><td>{Number((c.act.feet / CELL_FEET).toFixed(2))} points</td></tr>
     {#if c.active.tactics.length}<tr><td>Tactics</td><td colspan="3">{c.active.tactics.join(', ')}</td></tr>{/if}
     {#if c.statusLine}<tr><td>Status</td><td colspan="3">{c.statusLine}</td></tr>{/if}
   </tbody></table>
@@ -56,48 +56,48 @@
   <div class="move-card">
     <button
       class="move-head"
-      aria-expanded={c.moveOpen}
-      onclick={() => { c.moveOpen = !c.moveOpen; if (!c.moveOpen) c.hoveredBand = null; }}
+      aria-expanded={c.drag.moveOpen}
+      onclick={() => { c.drag.moveOpen = !c.drag.moveOpen; if (!c.drag.moveOpen) c.drag.hoveredBand = null; }}
     >
       <h3>Move</h3>
       <span class="muted">
-        {#if c.holders.length}
+        {#if c.drag.holders.length}
           — held in contact
-        {:else if c.stuck}
-          — {c.stuck.tag}
-        {:else if c.moveOpen}
+        {:else if c.drag.stuck}
+          — {c.drag.stuck.tag}
+        {:else if c.drag.moveOpen}
           — drag to move
         {:else}
-          — {c.moveBands[1].length + c.moveBands[2].length + c.moveBands[3].length} cells reachable
+          — {c.drag.moveBands[1].length + c.drag.moveBands[2].length + c.drag.moveBands[3].length} cells reachable
         {/if}
       </span>
     </button>
-    {#if c.moveOpen}
-    {#if c.holders.length}
+    {#if c.drag.moveOpen}
+    {#if c.drag.holders.length}
       <p class="move-note">
-        <strong>{c.holders.map((e) => e.name).join(' and ')}</strong>
-        {c.holders.length === 1 ? 'holds' : 'hold'} this unit in contact.
+        <strong>{c.drag.holders.map((e) => e.name).join(' and ')}</strong>
+        {c.drag.holders.length === 1 ? 'holds' : 'hold'} this unit in contact.
         {#if c.act.escape}A Move away rolls Reflex {signed(c.act.escape.modifier)} against DC {c.act.escape.dc}.{/if}
         {#if c.act.steps.length}A Step to open ground needs no roll.{/if}
       </p>
     {/if}
-    {#if c.stuck}
+    {#if c.drag.stuck}
       <p class="move-note">
         <img class="row-prop" src={actionIconUrl('no')} alt="" />
-        {c.stuck.why}
+        {c.drag.stuck.why}
       </p>
     {:else}
     <div class="move-rows">
       {#each ([1, 2, 3] as const) as n (n)}
         <div
           class="move-row band-{n}"
-          class:current={c.dragBand === n}
+          class:current={c.drag.dragBand === n}
           role="group"
-          onmouseenter={() => { c.hoveredBand = n; }}
-          onmouseleave={() => { if (c.hoveredBand === n) c.hoveredBand = null; }}
+          onmouseenter={() => { c.drag.hoveredBand = n; }}
+          onmouseleave={() => { if (c.drag.hoveredBand === n) c.drag.hoveredBand = null; }}
         >
           <span class="move-row-label"><ActionCost n={n} size="1.1em" /></span>
-          <span class="muted">{c.moveBands[n].length} cell{c.moveBands[n].length === 1 ? '' : 's'} reachable</span>
+          <span class="muted">{c.drag.moveBands[n].length} cell{c.drag.moveBands[n].length === 1 ? '' : 's'} reachable</span>
         </div>
       {/each}
     </div>

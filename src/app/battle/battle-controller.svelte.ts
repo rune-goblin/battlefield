@@ -8,10 +8,11 @@ import { offerReason } from './action-menu.js';
 import { statusEffectsOf } from '../status-effects.js';
 import { withinApp } from '../app-root.js';
 import type { HighlightStyle, TokenPick, TokenModel, UnitTokenModel, EngineTokenModel, FallenModel, BoardEventOf } from '../../board/index.js';
-import { createDragController, DRAG_NOTICE } from './drag-controller.svelte.js';
-import { createPickerController } from './picker-controller.svelte.js';
+import { createDragController, DRAG_NOTICE, type DragPorts } from './drag-controller.svelte.js';
+import { createPickerController, type PickerPorts } from './picker-controller.svelte.js';
 import { afterBoardSettles, presentationHooks } from './presentation-hooks.js';
-import { createRingController } from './ring-controller.svelte.js';
+import { createRingController, type RingPorts } from './ring-controller.svelte.js';
+import type { BattleContext } from './battle-context.js';
 import type { BoardView } from '../../board/index.js';
 import type { deselectUnit, endActivation, game, presentation, selectUnit, tableUsers, takeAction, undo } from '../game.svelte.js';
 import type { gameMap } from '../map-style.svelte.js';
@@ -47,59 +48,54 @@ export function createBattleController(deps: BattleDeps) {
 
   let focus = $state(0);
 
-  // What the three controllers below share. State is read through getters; a controller
-  // changes another's state through the verbs here and never by assignment. `focus` is the
-  // one field any of them writes: the commitment belongs to whichever popup is open.
-  const s = {
-    ...deps,
-    get notifications() { return notifications; },
-    get notices() { return notices; },
-    get run() { return run; },
-    get requireTurn() { return requireTurn; },
-    get turnScope() { return turnScope; },
+  const ctx: BattleContext = {
     get b() { return b; },
     get active() { return active; },
     get act() { return act; },
     get offers() { return offers; },
-    get nearbyGates() { return nearbyGates; },
-    get siegeEquipment() { return siegeEquipment; },
-    get siegeOffer() { return siegeOffer; },
-    get siegeEngine() { return siegeEngine; },
-    get hoveredCell() { return hoveredCell; },
-    get hoveredEdge() { return hoveredEdge; },
     get focus() { return focus; },
     set focus(next) { focus = next; },
-    cellOf: (id: string) => cellOf(id),
-    clearHover: () => { hoveredCell = null; hoveredEdge = null; },
-    openGates: () => { cancelAction(); gateOpen = true; },
-    openSiege: (id?: string) => openSiege(id),
-    fireSiege: (activity: NonNullable<SiegeAction['activity']>, target: TargetRef, commitment: number) => fireSiege(activity, target, commitment),
-
-    get pending() { return dragging.pending; },
-    get meleeOptions() { return dragging.meleeOptions; },
-    get enemyAt() { return dragging.enemyAt; },
-    get rowsAt() { return dragging.rowsAt; },
-    get openMelee() { return dragging.openMelee; },
-    get park() { return dragging.park; },
-    get unpark() { return dragging.unpark; },
-
-    get aim() { return picker.aim; },
-    get blastOpen() { return picker.blastOpen; },
-    get activityPick() { return picker.activityPick; },
-    get targetCells() { return picker.targetCells; },
-    get aimAt() { return picker.aimAt; },
-    get openActivityPicker() { return picker.openActivityPicker; },
-    get openBlast() { return picker.openBlast; },
-    get closeAim() { return picker.closeAim; },
-    get closePicker() { return picker.closePicker; },
-
-    get arming() { return ring.arming; },
-    get clearRing() { return ring.clear; },
-    get disarm() { return ring.disarm; },
+    run,
+    requireTurn,
+    takeAction: deps.takeAction,
+    notifications,
   };
-  const dragging = createDragController(s);
-  const picker = createPickerController(s);
-  const ring = createRingController(s);
+  // Each port resolves its siblings on read, so all three exist before any is reached.
+  const dragPorts: DragPorts = {
+    notices,
+    get turnScope() { return turnScope; },
+    get picker() { return picker; },
+    get ring() { return ring; },
+  };
+  const pickerPorts: PickerPorts = {
+    get hoveredCell() { return hoveredCell; },
+    get hoveredEdge() { return hoveredEdge; },
+    clearHover: () => { hoveredCell = null; hoveredEdge = null; },
+    siege: {
+      get engine() { return siegeEngine; },
+      get offer() { return siegeOffer; },
+      fire: fireSiege,
+    },
+    get drag() { return drag; },
+    get ring() { return ring; },
+  };
+  const ringPorts: RingPorts = {
+    board: deps.board,
+    cellOf: (id) => cellOf(id),
+    gates: {
+      get nearby() { return nearbyGates; },
+      open: () => { cancelAction(); gateOpen = true; },
+    },
+    siege: {
+      get equipment() { return siegeEquipment; },
+      open: openSiege,
+    },
+    get drag() { return drag; },
+    get picker() { return picker; },
+  };
+  const drag = createDragController(ctx, dragPorts);
+  const picker = createPickerController(ctx, pickerPorts);
+  const ring = createRingController(ctx, ringPorts);
 
   const b = $derived(deps.game.battle!);
   // Only an army the player has actually chosen is active. The engine falls back to the first
@@ -198,7 +194,7 @@ export function createBattleController(deps: BattleDeps) {
       // Keep the next operation within reach while this crew still has its turn.
       if (result.ok && !view.closed && turn === activationKey && myTurn && active && active.actions > 0
         && siegeSelected === engine && !picker.activityPick && !picker.aim && !picker.blastOpen
-        && !ring.radial && !ring.castPick && !dragging.pending) siegeOpen = true;
+        && !ring.radial && !ring.castPick && !drag.pending) siegeOpen = true;
     } finally { siegeBusy = false; }
   }
 
@@ -248,7 +244,7 @@ export function createBattleController(deps: BattleDeps) {
   function dropLocalInteraction() {
     siegeOpen = false; siegeSelected = null; gateOpen = false;
     focus = 0;
-    dragging.clear(); dragging.resetBands();
+    drag.clear(); drag.resetBands();
     ring.clear();
     picker.clear();
   }
@@ -257,7 +253,7 @@ export function createBattleController(deps: BattleDeps) {
   function cancelAction() {
     siegeOpen = false; siegeSelected = null; gateOpen = false;
     focus = 0;
-    dragging.clear(); notifications.dismiss(DRAG_NOTICE);
+    drag.clear(); notifications.dismiss(DRAG_NOTICE);
     ring.clear();
     picker.clear();
   }
@@ -266,22 +262,22 @@ export function createBattleController(deps: BattleDeps) {
    * (Cast only), then the ring, then nothing. Nothing is committed until the last click, so
    * every stage can be walked out of. Each controller walks its own part; the order is here. */
   function stepBack() {
-    if (dragging.blockedNotice) { notifications.dismiss(DRAG_NOTICE); return; }
+    if (drag.blockedNotice) { notifications.dismiss(DRAG_NOTICE); return; }
     const reopen = picker.stepBack();
     if (reopen === 'siege') siegeOpen = true;
     else if (reopen === 'trees') ring.openTrees();
     else if (reopen === 'ring') ring.openRing();
     if (reopen) return;
-    if (dragging.pending) { dragging.unpark(); return; }
+    if (drag.pending) { drag.unpark(); return; }
     if (picker.aim) { picker.closeAim(); return; }
-    if (dragging.meleeTarget) { dragging.closeMelee(); return; }
+    if (drag.meleeTarget) { drag.closeMelee(); return; }
     if (ring.stepBack()) return;
     if (gateOpen) { gateOpen = false; return; }
     if (siegeOpen) siegeOpen = false;
   }
 
   function onWindowPointerDown(e: PointerEvent) {
-    dragging.notePress();
+    drag.notePress();
     ring.onWindowPointerDown(e);
   }
 
@@ -312,11 +308,11 @@ export function createBattleController(deps: BattleDeps) {
     // Native controls handle Enter themselves; a disabled choice must never confirm another action.
     if (e.target instanceof Element && e.target.closest('button, input, select, textarea, summary, a')) return;
     if (picker.blastOpen || picker.activityPick) return;
-    if (dragging.pending) {
-      if (e.key === 'Enter') { e.preventDefault(); void dragging.commit(); }
+    if (drag.pending) {
+      if (e.key === 'Enter') { e.preventDefault(); void drag.commit(); }
       else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        dragging.stepRow(stepBy(e.key, dragging.pending.rows.length));
+        drag.stepRow(stepBy(e.key, drag.pending.rows.length));
       }
       return;
     }
@@ -330,7 +326,7 @@ export function createBattleController(deps: BattleDeps) {
       picker.stepAimVerb(e.key === 'ArrowRight' ? 1 : picker.aim.groups.length - 1);
     }
   }
-  const cost = $derived(dragging.picked ? dragging.dropCost(dragging.picked) : picker.aimed ? (picker.aimed.cost ?? 0) + (picker.aimGroup && canFocus(picker.aimGroup.offer.type, picker.aimGroup.offer.spell) ? focus : 0) : 0);
+  const cost = $derived(drag.picked ? drag.dropCost(drag.picked) : picker.aimed ? (picker.aimed.cost ?? 0) + (picker.aimGroup && canFocus(picker.aimGroup.offer.type, picker.aimGroup.offer.spell) ? focus : 0) : 0);
   const actionsLeft = $derived(act?.actions ?? 0);
   // The round and the side are announced as the board finishes showing the commit that changed
   // them: the walk, the cast, the words and the statuses play out, and the announcement comes in
@@ -359,8 +355,8 @@ export function createBattleController(deps: BattleDeps) {
     { style: picker.aimStyle, cells: picker.aimCells },
     { style: picker.pickerOffer ? picker.styleFor(picker.pickerOffer) : 'deploy', cells: picker.activityPick ? (picker.targetHover && picker.pickerPreview ? picker.targetCells(picker.pickerPreview) : picker.pickerService?.surface(picker.activityPick.selected).flatMap((target) => target.cells) ?? []) : [] },
     { style: 'attack', cells: picker.blastOpen ? (picker.blastPreview ? picker.targetCells(picker.blastPreview) : picker.blastCandidates.flatMap(picker.targetCells)) : [] },
-    ...dragging.bandHighlights,
-    ...dragging.previewHighlights,
+    ...drag.bandHighlights,
+    ...drag.previewHighlights,
   ]);
 
   // The acting piece's own hex, in its side's colour: once a unit is picked, the board stops
@@ -394,7 +390,7 @@ export function createBattleController(deps: BattleDeps) {
       engine: engineOn(u)?.name ?? null,
       engineId: engineOn(u)?.id,
       loading: engineOn(u) ? engineLoading(engineOn(u)!) : undefined,
-      verdict: dragging.dragTarget?.id === u.id ? (dragging.dragTarget.attack ? 'attack' : 'no') : null,
+      verdict: drag.dragTarget?.id === u.id ? (drag.dragTarget.attack ? 'attack' : 'no') : null,
       statuses: statusesOf(u, b.board),
       pick: pickOn(u),
       ring: active?.id === u.id ? 'active' : flashSet.has(u.id) ? 'flash' : hot === u.id ? 'selected' : null,
@@ -415,9 +411,9 @@ export function createBattleController(deps: BattleDeps) {
     // A click on the parked destination confirms the row it has chosen. Anywhere else is a
     // cancel: while something is open or armed, a stray click walks one step back rather than
     // meaning something new, so a verb picked by mistake costs one click to undo.
-    if (dragging.pending) {
-      if (dragging.pending.cell === e.cell) {
-        if (dragging.picked?.kind !== 'charge' && dragging.picked?.kind !== 'advance') void dragging.commit();
+    if (drag.pending) {
+      if (drag.pending.cell === e.cell) {
+        if (drag.picked?.kind !== 'charge' && drag.picked?.kind !== 'advance') void drag.commit();
         return;
       }
       stepBack();
@@ -425,7 +421,7 @@ export function createBattleController(deps: BattleDeps) {
     }
     if (picker.aim) { stepBack(); return; }
     if (ring.castPick) { stepBack(); return; }
-    if (dragging.meleeTarget) { dragging.closeMelee(); return; }
+    if (drag.meleeTarget) { drag.closeMelee(); return; }
     const p = ring.arming;
     if (p) {
       if (p.cells.includes(e.cell)) ring.applyProp(p, e.cell);
@@ -452,14 +448,14 @@ export function createBattleController(deps: BattleDeps) {
       return;
     }
     // Clicking the target preserves the melee review; its Confirm button executes it.
-    if (dragging.pending) {
-      if ((dragging.picked?.kind === 'charge' || dragging.picked?.kind === 'advance') && dragging.picked.enemy === e.id) return;
+    if (drag.pending) {
+      if ((drag.picked?.kind === 'charge' || drag.picked?.kind === 'advance') && drag.picked.enemy === e.id) return;
       stepBack();
       return;
     }
     if (picker.aim) { stepBack(); return; }
     if (ring.castPick) { stepBack(); return; }
-    if (dragging.meleeTarget) { dragging.closeMelee(); return; }
+    if (drag.meleeTarget) { drag.closeMelee(); return; }
     const u = b.units.find((x) => x.id === e.id);
     const cell = u ? notation(u.square) : '';
     const p = ring.arming;
@@ -524,15 +520,15 @@ export function createBattleController(deps: BattleDeps) {
     close: () => view.close(),
     endTurn,
     undoLast,
+    drag,
+    picker,
+    ring,
     get focus() { return focus; },
     set focus(next) { focus = next; },
     get b() { return b; },
     get active() { return active; },
     get act() { return act; },
     get offers() { return offers; },
-    get meleeOptions() { return dragging.meleeOptions; },
-    get meleeTarget() { return dragging.meleeTarget; },
-    get meleeSelected() { return dragging.meleeSelected; },
     get roster() { return roster; },
     get gateOpen() { return gateOpen; },
     get gateBusy() { return gateBusy; },
@@ -552,105 +548,21 @@ export function createBattleController(deps: BattleDeps) {
     get operateSiege() { return operateSiege; },
     get locked() { return locked; },
     get myTurn() { return myTurn; },
-    get hoveredBand() { return dragging.hoveredBand; },
-    set hoveredBand(next) { dragging.hoveredBand = next; },
-    get moveOpen() { return dragging.moveOpen; },
-    set moveOpen(next) { dragging.moveOpen = next; },
     get hoveredCard() { return hoveredCard; },
     set hoveredCard(next) { hoveredCard = next; },
     get hoveredPiece() { return hoveredPiece; },
-    get offerKey() { return picker.offerKey; },
-    get drag() { return dragging.drag; },
-    get blockedNotice() { return dragging.blockedNotice; },
-    get dragTarget() { return dragging.dragTarget; },
-    get pending() { return dragging.pending; },
-    get picked() { return dragging.picked; },
-    get meleeHover() { return dragging.meleeHover; },
-    set meleeHover(next) { dragging.meleeHover = next; },
-    get aim() { return picker.aim; },
-    get aimGroup() { return picker.aimGroup; },
-    get aimActivities() { return picker.aimActivities; },
-    get aimed() { return picker.aimed; },
-    get anchor() { return ring.anchor; },
-    get anchorR() { return ring.anchorR; },
     get cellOf() { return cellOf; },
-    get targetCells() { return picker.targetCells; },
-    get castPick() { return ring.castPick; },
-    get blastOpen() { return picker.blastOpen; },
-    get blastLevel() { return picker.blastLevel; },
-    get blastTarget() { return picker.blastTarget; },
-    get blastCell() { return picker.blastCell; },
-    get blastOffer() { return picker.blastOffer; },
-    get blastActivity() { return picker.blastActivity; },
-    get blastCandidates() { return picker.blastCandidates; },
-    get blastPreview() { return picker.blastPreview; },
-    get blastSelection() { return picker.blastSelection; },
-    get activityPick() { return picker.activityPick; },
-    get healingChoices() { return picker.healingChoices; },
-    set healingChoices(value) { picker.healingChoices = value; },
-    get healingRecipients() { return picker.healingRecipients; },
-    get pickerOffer() { return picker.pickerOffer; },
-    get pickerActivity() { return picker.pickerActivity; },
-    get pickerCommitment() { return picker.pickerCommitment; },
-    get pickerHint() { return picker.pickerHint; },
-    get blastCommitment() { return picker.blastCommitment; },
-    get aimCommitment() { return picker.aimCommitment; },
-    get pickerService() { return picker.pickerService; },
-    get pickerCandidates() { return picker.pickerCandidates; },
-    get choosePickerActivity() { return picker.choosePickerActivity; },
-    get choosePickerTarget() { return picker.choosePickerTarget; },
-    get confirmPicker() { return picker.confirmPicker; },
-    get chooseBlastLevel() { return picker.chooseBlastLevel; },
-    get confirmBlast() { return picker.confirmBlast; },
     cancelAction,
     stepBack,
-    get resetPickerTargets() { return picker.resetPickerTargets; },
-    get chooseBlastTarget() { return picker.chooseBlastTarget; },
-    get showAllBlastTargets() { return picker.showAllBlastTargets; },
-    get chooseDropActivity() { return dragging.chooseDropActivity; },
-    get radial() { return ring.radial; },
-    get radialItems() { return ring.radialItems; },
-    get pickProp() { return ring.pickProp; },
-    get castRadialItems() { return ring.castRadialItems; },
-    get pickCastTree() { return ring.pickCastTree; },
-    get chooseMelee() { return dragging.chooseMelee; },
-    get choose() { return dragging.choose; },
-    get commit() { return dragging.commit; },
     get onKey() { return onKey; },
-    get enemyName() { return dragging.enemyName; },
-    get actions() { return dragging.actions; },
-    get actionCost() { return dragging.actionCost; },
-    get rowLabel() { return dragging.rowLabel; },
-    get rowDetail() { return dragging.rowDetail; },
-    get rowKey() { return dragging.rowKey; },
-    get chargeActivity() { return dragging.chargeActivity; },
-    get finishesFor() { return dragging.finishesFor; },
-    get chosenFinish() { return dragging.chosenFinish; },
-    get finishActions() { return dragging.finishActions; },
-    get dropCost() { return dragging.dropCost; },
     get cost() { return cost; },
     get actionsLeft() { return actionsLeft; },
-    get dragBand() { return dragging.dragBand; },
-    get moveBands() { return dragging.moveBands; },
-    get holders() { return dragging.holders; },
-    get stuck() { return dragging.stuck; },
-    get targetingService() { return picker.targetingService; },
-    get targetingChoice() { return picker.targetingChoice; },
-    get targetMarkers() { return picker.targetMarkers; },
     get announced() { return announced; },
-    get resolvedMarkers() { return picker.resolvedMarkers; },
-    get hoverTargetMarker() { return picker.hoverTargetMarker; },
-    get chooseTargetMarker() { return picker.chooseTargetMarker; },
-    get aimChoose() { return picker.aimChoose; },
-    get aimVerb() { return picker.aimVerb; },
-    get takeAim() { return picker.takeAim; },
     onWindowPointerDown,
-    get onWindowClick() { return dragging.onWindowClick; },
     get pickUnit() { return pickUnit; },
     get statusLine() { return statusLine; },
     get activeRouted() { return activeRouted; },
     get activeDc() { return active ? levelDc(active.level) : 0; },
-    get engagedCount() { return dragging.holders.length; },
     get spec() { return spec; },
     get ending() { return ending; },
     set ending(next) { ending = next; },
@@ -660,13 +572,13 @@ export function createBattleController(deps: BattleDeps) {
           board: b.board, tokens, fallen, mode: 'battle' as const,
           terrainAppearance: deps.gameMap.terrainAppearance, inkMap: deps.gameMap.inkMap,
           frozen: ring.radial !== null || ring.castPick !== null,
-          highlights, dragPath: dragging.previewPath, barred: dragging.blockedCell, anchored: dragging.anchored, shot: picker.shot, selected: selectedHex,
+          highlights, dragPath: drag.previewPath, barred: drag.blockedCell, anchored: drag.anchored, shot: picker.shot, selected: selectedHex,
           draggable: picker.blastOpen || picker.activityPick || !myTurn ? null : active?.id ?? null,
           pickableEdges,
           onhover: (e: BoardEventOf<'hover'>) => { hoveredCell = e.cell; hoveredEdge = e.edge ?? null; },
           oncell: active ? onCell : undefined, ontoken: onToken, onedge: active ? onEdge : undefined,
-          ondrag: active ? dragging.onBoardDrag : undefined, ondrop: active ? dragging.onBoardDrop : undefined,
-          onwaypoint: active ? dragging.onBoardWaypoint : undefined,
+          ondrag: active ? drag.onBoardDrag : undefined, ondrop: active ? drag.onBoardDrop : undefined,
+          onwaypoint: active ? drag.onBoardWaypoint : undefined,
         };
     },
   };

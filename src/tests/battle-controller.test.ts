@@ -9,6 +9,9 @@ import { upgradeBattle } from '../engine/legacy.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
+// proto: the board barrel loads PIXI, which needs a DOM; the controller reads only the art URLs from it.
+vi.mock('../board/index.js', () => import('../board/art.js'));
+
 const cavalry: UnitCard = { name: 'Cavalry', level: 7, role: 'cavalry', tactics: [] };
 
 function battle(): BattleState {
@@ -54,8 +57,8 @@ describe('the battle controller', () => {
 
     c.board.ondrop!({ type: 'drop', id: b.active!, cell: charge.cell, exit: false });
 
-    expect(c.pending?.rows.map((row) => row.kind)).toEqual(['move', 'charge']);
-    expect(c.picked?.kind).toBe('move');
+    expect(c.drag.pending?.rows.map((row) => row.kind)).toEqual(['move', 'charge']);
+    expect(c.drag.picked?.kind).toBe('move');
     dispose();
   });
 
@@ -65,16 +68,16 @@ describe('the battle controller', () => {
     const { c, dispose } = controllerOver(b);
 
     c.board.ontoken({ type: 'token', id: own.id });
-    c.pickProp('guard');
-    expect(c.aim?.cell).toBe(notation(own.square));
+    c.ring.pickProp('guard');
+    expect(c.picker.aim?.cell).toBe(notation(own.square));
 
     c.stepBack();
-    expect(c.aim).toBeNull();
-    expect(c.radial).toBeNull();
+    expect(c.picker.aim).toBeNull();
+    expect(c.ring.radial).toBeNull();
     c.stepBack();
-    expect(c.radial).toEqual({ cell: notation(own.square) });
+    expect(c.ring.radial).toEqual({ cell: notation(own.square) });
     c.stepBack();
-    expect(c.radial).toBeNull();
+    expect(c.ring.radial).toBeNull();
     dispose();
   });
 
@@ -83,12 +86,12 @@ describe('the battle controller', () => {
     const own = b.units[0];
     const { c, dispose } = controllerOver(b);
 
-    c.pickProp('melee');
+    c.ring.pickProp('melee');
     expect(c.board.highlights[0].cells.length).toBeGreaterThan(1);
 
     c.board.oncell!({ type: 'cell', cell: 'a1' });
     expect(c.board.highlights[0].cells).toEqual([]);
-    expect(c.radial).toEqual({ cell: notation(own.square) });
+    expect(c.ring.radial).toEqual({ cell: notation(own.square) });
     dispose();
   });
 
@@ -97,17 +100,17 @@ describe('the battle controller', () => {
     const own = b.units[0];
     const { c, dispose } = controllerOver(b);
 
-    c.pickProp('rally');
-    expect(c.activityPick).not.toBeNull();
-    c.choosePickerActivity(1);
-    expect(c.pickerActivity?.index).toBe(1);
+    c.ring.pickProp('rally');
+    expect(c.picker.activityPick).not.toBeNull();
+    c.picker.choosePickerActivity(1);
+    expect(c.picker.pickerActivity?.index).toBe(1);
 
     c.stepBack();
-    expect(c.pickerActivity).toBeNull();
-    expect(c.activityPick).not.toBeNull();
+    expect(c.picker.pickerActivity).toBeNull();
+    expect(c.picker.activityPick).not.toBeNull();
     c.stepBack();
-    expect(c.activityPick).toBeNull();
-    expect(c.radial).toEqual({ cell: notation(own.square) });
+    expect(c.picker.activityPick).toBeNull();
+    expect(c.ring.radial).toEqual({ cell: notation(own.square) });
     dispose();
   });
 
@@ -116,16 +119,16 @@ describe('the battle controller', () => {
     const act = activation(b, b.active!)!;
     const { c, dispose } = controllerOver(b);
 
-    c.pickProp('melee');
+    c.ring.pickProp('melee');
     c.board.oncell!({ type: 'cell', cell: 'd4' });
-    expect(c.meleeTarget).toBe(b.units[1].id);
-    c.chooseMelee('charge');
-    expect(c.pending?.rows[0].kind).toBe('charge');
+    expect(c.drag.meleeTarget).toBe(b.units[1].id);
+    c.drag.chooseMelee('charge');
+    expect(c.drag.pending?.rows[0].kind).toBe('charge');
     expect(act.charges.length).toBe(2);
 
     c.cancelAction();
-    expect(c.pending).toBeNull();
-    expect(c.meleeTarget).toBeNull();
+    expect(c.drag.pending).toBeNull();
+    expect(c.drag.meleeTarget).toBeNull();
     expect(c.board.highlights.every((h) => h.cells.length === 0)).toBe(true);
     dispose();
   });
@@ -144,14 +147,14 @@ function casterBattle(level = 5, enemyCell = 'e7') {
 describe('action menu availability', () => {
   it('keeps known trees in place when their targets are out of range', () => {
     const { c, dispose } = controllerOver(casterBattle(5, 'a9'));
-    c.pickProp('cast');
-    expect(c.castRadialItems.map(item => item.key)).toEqual(['blast', 'controlling', 'movement']);
-    expect(c.castRadialItems.find(item => item.key === 'blast')).toMatchObject({ legal: false, reason: 'No target in range' });
-    c.pickCastTree('blast');
-    expect(c.blastOpen).toBe(false);
-    expect(c.castPick).not.toBeNull();
-    c.pickCastTree('movement');
-    expect(c.pickerOffer?.spell).toBe('movement');
+    c.ring.pickProp('cast');
+    expect(c.ring.castRadialItems.map(item => item.key)).toEqual(['blast', 'controlling', 'movement']);
+    expect(c.ring.castRadialItems.find(item => item.key === 'blast')).toMatchObject({ legal: false, reason: 'No target in range' });
+    c.ring.pickCastTree('blast');
+    expect(c.picker.blastOpen).toBe(false);
+    expect(c.ring.castPick).not.toBeNull();
+    c.ring.pickCastTree('movement');
+    expect(c.picker.pickerOffer?.spell).toBe('movement');
     dispose();
   });
 
@@ -161,26 +164,26 @@ describe('action menu availability', () => {
     b.active = b.units[0].id;
     b.begun = true;
     const { c, dispose } = controllerOver(b);
-    expect(c.radialItems.find(item => item.key === 'cast')?.legal).toBe(true);
-    c.pickProp('cast');
-    expect(c.castRadialItems).toHaveLength(3);
-    expect(c.castRadialItems.every(item => !item.legal && item.reason === 'Already cast this activation')).toBe(true);
-    c.pickCastTree('movement');
-    expect(c.activityPick).toBeNull();
+    expect(c.ring.radialItems.find(item => item.key === 'cast')?.legal).toBe(true);
+    c.ring.pickProp('cast');
+    expect(c.ring.castRadialItems).toHaveLength(3);
+    expect(c.ring.castRadialItems.every(item => !item.legal && item.reason === 'Already cast this activation')).toBe(true);
+    c.ring.pickCastTree('movement');
+    expect(c.picker.activityPick).toBeNull();
     dispose();
   });
 
   it('shows only an apprentice’s reachable spell tier in the dialog', () => {
     const { c, dispose } = controllerOver(casterBattle(5, 'e5'));
-    c.pickProp('cast');
-    c.pickCastTree('blast');
-    expect(c.blastOpen).toBe(true);
-    expect(c.blastLevel).toBe(1);
-    expect(c.targetMarkers.length).toBeGreaterThan(0);
-    expect(reachableActivities(c.blastOffer!.activities).map(option => option.label)).toEqual(['Missile']);
-    c.chooseBlastLevel(2);
-    expect(c.blastLevel).toBe(1);
-    const html = render(ActivityChoices, { props: { options: c.blastOffer!.activities, selected: c.blastLevel, choose: c.chooseBlastLevel } }).body;
+    c.ring.pickProp('cast');
+    c.ring.pickCastTree('blast');
+    expect(c.picker.blastOpen).toBe(true);
+    expect(c.picker.blastLevel).toBe(1);
+    expect(c.picker.targetMarkers.length).toBeGreaterThan(0);
+    expect(reachableActivities(c.picker.blastOffer!.activities).map(option => option.label)).toEqual(['Missile']);
+    c.picker.chooseBlastLevel(2);
+    expect(c.picker.blastLevel).toBe(1);
+    const html = render(ActivityChoices, { props: { options: c.picker.blastOffer!.activities, selected: c.picker.blastLevel, choose: c.picker.chooseBlastLevel } }).body;
     expect(html).toContain('Missile');
     expect(html).not.toContain('>Line<');
     expect(html).not.toContain('>Burst<');
@@ -192,40 +195,40 @@ describe('action menu availability', () => {
     const b = casterBattle(11, 'e5');
     b.units[0].actions = 1;
     const { c, dispose } = controllerOver(b);
-    c.pickProp('cast');
-    c.pickCastTree('blast');
-    const options = reachableActivities(c.blastOffer!.activities);
+    c.ring.pickProp('cast');
+    c.ring.pickCastTree('blast');
+    const options = reachableActivities(c.picker.blastOffer!.activities);
     expect(options.map(option => option.label)).toEqual(['Missile', 'Line', 'Burst']);
     expect(options.map(option => option.legal)).toEqual([true, false, false]);
-    const html = render(ActivityChoices, { props: { options: c.blastOffer!.activities, selected: c.blastLevel, choose: c.chooseBlastLevel } }).body;
+    const html = render(ActivityChoices, { props: { options: c.picker.blastOffer!.activities, selected: c.picker.blastLevel, choose: c.picker.chooseBlastLevel } }).body;
     expect(html).toContain('aria-disabled="true"');
     expect(html).toContain('Needs 2 actions');
-    c.chooseBlastLevel(2);
-    expect(c.blastLevel).toBe(1);
-    c.chooseBlastLevel(1);
-    expect(c.blastLevel).toBe(1);
+    c.picker.chooseBlastLevel(2);
+    expect(c.picker.blastLevel).toBe(1);
+    c.picker.chooseBlastLevel(1);
+    expect(c.picker.blastLevel).toBe(1);
     dispose();
   });
 
   it('starts a sole legal spell at targeting and returns directly to the spell trees', () => {
     const { c, takeAction, dispose } = controllerOver(casterBattle());
-    c.pickProp('cast');
-    c.pickCastTree('movement');
-    expect(c.pickerActivity?.index).toBe(1);
-    expect(c.targetMarkers.length).toBeGreaterThan(0);
+    c.ring.pickProp('cast');
+    c.ring.pickCastTree('movement');
+    expect(c.picker.pickerActivity?.index).toBe(1);
+    expect(c.picker.targetMarkers.length).toBeGreaterThan(0);
     expect(takeAction).not.toHaveBeenCalled();
     c.stepBack();
-    expect(c.activityPick).toBeNull();
-    expect(c.castPick).not.toBeNull();
+    expect(c.picker.activityPick).toBeNull();
+    expect(c.ring.castPick).not.toBeNull();
     dispose();
   });
 
   it('keeps the choice explicit when several spell tiers are legal', () => {
     const { c, dispose } = controllerOver(casterBattle(11, 'e5'));
-    c.pickProp('cast');
-    c.pickCastTree('blast');
-    expect(c.blastOffer!.activities.filter(option => option.legal).length).toBeGreaterThan(1);
-    expect(c.blastLevel).toBeNull();
+    c.ring.pickProp('cast');
+    c.ring.pickCastTree('blast');
+    expect(c.picker.blastOffer!.activities.filter(option => option.legal).length).toBeGreaterThan(1);
+    expect(c.picker.blastLevel).toBeNull();
     dispose();
   });
 });
@@ -248,17 +251,17 @@ describe('siege targeting', () => {
     const { c, takeAction, dispose } = controllerOver(b);
     await c.openSiege(b.units[0].engines[0].id);
     await c.operateSiege('attack');
-    expect(c.activityPick).toMatchObject({ key: 'siege', index: 1 });
+    expect(c.picker.activityPick).toMatchObject({ key: 'siege', index: 1 });
     expect(c.board.frozen).toBe(false);
-    expect(c.targetMarkers.length).toBeGreaterThan(0);
+    expect(c.picker.targetMarkers.length).toBeGreaterThan(0);
     c.board.ontoken({ type: 'token', id: b.units[1].id });
-    expect(c.pickerCandidates.every(target => target.cells.includes('f6'))).toBe(true);
-    const target = c.pickerCandidates[0];
+    expect(c.picker.pickerCandidates.every(target => target.cells.includes('f6'))).toBe(true);
+    const target = c.picker.pickerCandidates[0];
     expect(target).toBeDefined();
-    c.chooseTargetMarker(target.id);
-    expect(c.activityPick?.target).toBe(target.id);
+    c.picker.chooseTargetMarker(target.id);
+    expect(c.picker.activityPick?.target).toBe(target.id);
     expect(takeAction).not.toHaveBeenCalled();
-    c.confirmPicker();
+    c.picker.confirmPicker();
     expect(takeAction).toHaveBeenCalledWith(expect.objectContaining({
       type: 'siege', operation: 'attack', engine: b.units[0].engines[0].id,
       unit: b.units[0].id, activity: 1, target: refOf(target),
@@ -271,9 +274,9 @@ describe('siege targeting', () => {
     const { c, takeAction, dispose } = controllerOver(b);
     await c.openSiege(b.units[0].engines[0].id);
     await c.operateSiege('attack');
-    c.choosePickerActivity(1);
+    c.picker.choosePickerActivity(1);
     c.board.ontoken({ type: 'token', id: b.units[1].id });
-    expect(c.activityPick?.target).toBe(b.units[1].id);
+    expect(c.picker.activityPick?.target).toBe(b.units[1].id);
     expect(takeAction).not.toHaveBeenCalled();
     dispose();
   });
@@ -283,9 +286,9 @@ describe('siege targeting', () => {
     const { c, dispose } = controllerOver(b, true);
     await c.openSiege(b.units[0].engines[0].id);
     await c.operateSiege('attack');
-    c.choosePickerActivity(1);
-    c.choosePickerTarget(b.units[1].id);
-    await c.confirmPicker();
+    c.picker.choosePickerActivity(1);
+    c.picker.choosePickerTarget(b.units[1].id);
+    await c.picker.confirmPicker();
     expect(c.siegeOpen).toBe(true);
     expect(c.actionsLeft).toBe(1);
     expect(engineLoaded(c.siegeEngine!)).toBe(false);
@@ -300,10 +303,10 @@ describe('siege targeting', () => {
     const { c, dispose } = controllerOver(b, true);
     await c.openSiege(b.units[0].engines[0].id);
     await c.operateSiege('attack');
-    c.choosePickerActivity(1);
-    c.choosePickerTarget(b.units[1].id);
+    c.picker.choosePickerActivity(1);
+    c.picker.choosePickerTarget(b.units[1].id);
     c.focus = 1;
-    await c.confirmPicker();
+    await c.picker.confirmPicker();
     expect(c.siegeOpen).toBe(false);
     expect(c.b.activated).toContain(b.units[0].id);
     dispose();
@@ -323,11 +326,11 @@ describe('siege targeting', () => {
     expect(c.actionsLeft).toBe(2);
     expect(c.siegeOffer?.activities[0].legal).toBe(true);
     await c.operateSiege('attack');
-    expect(c.activityPick).toMatchObject({ key: 'siege', index: 1 });
-    const target = c.pickerCandidates.find(t => t.cells.includes('e6'))!;
+    expect(c.picker.activityPick).toMatchObject({ key: 'siege', index: 1 });
+    const target = c.picker.pickerCandidates.find(t => t.cells.includes('e6'))!;
     expect(target).toBeDefined();
-    c.chooseTargetMarker(target.id);
-    await c.confirmPicker();
+    c.picker.chooseTargetMarker(target.id);
+    await c.picker.confirmPicker();
     expect(c.b.engines[0].fired).toBe(true);
     expect(c.b.activated).toContain(b.units[0].id);
     dispose();

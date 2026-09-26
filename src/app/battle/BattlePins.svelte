@@ -53,16 +53,16 @@
   </div>
 {/snippet}
 
-{#if c.meleeTarget && c.cellOf(c.meleeTarget)}
-  <MeleeChoices cell={c.cellOf(c.meleeTarget)!} plans={c.meleeOptions.get(c.meleeTarget) ?? []} selected={c.meleeSelected}
-    screenOf={(cell) => stage.board?.screenOf(cell) ?? null} radiusOf={(cell) => stage.board?.cellRadius(cell) ?? null} choose={c.chooseMelee}
-    hover={(kind) => { c.meleeHover = kind; }} />
+{#if c.drag.meleeTarget && c.cellOf(c.drag.meleeTarget)}
+  <MeleeChoices cell={c.cellOf(c.drag.meleeTarget)!} plans={c.drag.meleeOptions.get(c.drag.meleeTarget) ?? []} selected={c.drag.meleeSelected}
+    screenOf={(cell) => stage.board?.screenOf(cell) ?? null} radiusOf={(cell) => stage.board?.cellRadius(cell) ?? null} choose={c.drag.chooseMelee}
+    hover={(kind) => { c.drag.meleeHover = kind; }} />
 {/if}
-<TargetMarkers targets={c.targetMarkers} screenOf={(cell) => stage.board?.screenOf(cell) ?? null}
-  opacity={c.targetingService?.placement ? 0.75 : 1}
-  cellRadius={(cell) => stage.board?.cellRadius(cell) ?? null} selected={c.targetingChoice?.id ?? null}
-  hover={c.hoverTargetMarker} choose={c.chooseTargetMarker} />
-<TargetMarkers targets={c.resolvedMarkers} screenOf={(cell) => stage.board?.screenOf(cell) ?? null}
+<TargetMarkers targets={c.picker.targetMarkers} screenOf={(cell) => stage.board?.screenOf(cell) ?? null}
+  opacity={c.picker.targetingService?.placement ? 0.75 : 1}
+  cellRadius={(cell) => stage.board?.cellRadius(cell) ?? null} selected={c.picker.targetingChoice?.id ?? null}
+  hover={c.picker.hoverTargetMarker} choose={c.picker.chooseTargetMarker} />
+<TargetMarkers targets={c.picker.resolvedMarkers} screenOf={(cell) => stage.board?.screenOf(cell) ?? null}
   cellRadius={(cell) => stage.board?.cellRadius(cell) ?? null} selected={null} resolved
   hover={() => {}} choose={() => {}} />
 {#if c.gateOpen && c.active}
@@ -117,102 +117,102 @@
     {/if}
   </BoardPopup>
 {/if}
-{#if c.activityPick && c.pickerOffer && c.active}
-  <BoardPopup cell={notation(c.active.square)} close={c.cancelAction} appearance={c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
-    {@render pickerHead(c.pickerOffer.label, c.pickerOffer.type === 'shoot' ? 'shoot' : c.pickerOffer.type === 'cast' ? 'cast' : 'rally', c.pickerOffer.spell)}
-    {@render activityRows(c.pickerOffer.activities, c.pickerActivity?.index ?? null, c.choosePickerActivity)}
-    {#if c.pickerActivity}
-      {#if c.pickerCommitment}
-        <CommitmentPicker base={c.pickerCommitment.base} available={c.pickerCommitment.available} bind:value={c.focus} effect={c.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+{#if c.picker.activityPick && c.picker.pickerOffer && c.active}
+  <BoardPopup cell={notation(c.active.square)} close={c.cancelAction} appearance={c.picker.pickerOffer.type === 'shoot' ? 'shoot' : c.picker.pickerOffer.type === 'cast' ? 'cast' : 'rally'}>
+    {@render pickerHead(c.picker.pickerOffer.label, c.picker.pickerOffer.type === 'shoot' ? 'shoot' : c.picker.pickerOffer.type === 'cast' ? 'cast' : 'rally', c.picker.pickerOffer.spell)}
+    {@render activityRows(c.picker.pickerOffer.activities, c.picker.pickerActivity?.index ?? null, c.picker.choosePickerActivity)}
+    {#if c.picker.pickerActivity}
+      {#if c.picker.pickerCommitment}
+        <CommitmentPicker base={c.picker.pickerCommitment.base} available={c.picker.pickerCommitment.available} bind:value={c.focus} effect={c.picker.pickerOffer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
-      <p class="popup-escapes" aria-live="polite">{c.pickerHint}</p>
-      {#if c.pickerActivity.needsTarget}
-      {#key `${c.pickerOffer.spell}:${c.pickerActivity.index}`}
-        <TargetChoices targets={c.pickerCandidates} selected={c.activityPick.target ?? null}
-          choose={c.choosePickerTarget} hover={c.hoverTargetMarker} cells={c.targetCells} label={`${c.pickerOffer.label} targets`} />
+      <p class="popup-escapes" aria-live="polite">{c.picker.pickerHint}</p>
+      {#if c.picker.pickerActivity.needsTarget}
+      {#key `${c.picker.pickerOffer.spell}:${c.picker.pickerActivity.index}`}
+        <TargetChoices targets={c.picker.pickerCandidates} selected={c.picker.activityPick.target ?? null}
+          choose={c.picker.choosePickerTarget} hover={c.picker.hoverTargetMarker} cells={c.picker.targetCells} label={`${c.picker.pickerOffer.label} targets`} />
       {/key}
       {/if}
-      {#if c.pickerOffer.spell === 'healing' && c.activityPick.target}
-        <HealingChoices units={c.healingRecipients} renewal={c.pickerActivity.index === 4} bind:choices={c.healingChoices} />
+      {#if c.picker.pickerOffer.spell === 'healing' && c.picker.activityPick.target}
+        <HealingChoices units={c.picker.healingRecipients} renewal={c.picker.pickerActivity.index === 4} bind:choices={c.picker.healingChoices} />
       {/if}
-      {#if c.activityPick.selected.length}<button onclick={c.resetPickerTargets}>Reset targets</button>{/if}
+      {#if c.picker.activityPick.selected.length}<button onclick={c.picker.resetPickerTargets}>Reset targets</button>{/if}
     {:else}
       <p class="popup-escapes">Choose an activity.</p>
     {/if}
     <div class="popup-foot">
-      {#if c.pickerActivity}<span class="muted">Spends {(c.pickerActivity.cost ?? 0) + c.focus} of {c.actionsLeft}</span>{/if}
+      {#if c.picker.pickerActivity}<span class="muted">Spends {(c.picker.pickerActivity.cost ?? 0) + c.focus} of {c.actionsLeft}</span>{/if}
       <button onclick={c.cancelAction}>Cancel</button>
-      <button class="primary" disabled={!c.pickerActivity?.legal || (c.pickerActivity.needsTarget && !c.activityPick.target)} onclick={c.confirmPicker}>Confirm</button>
+      <button class="primary" disabled={!c.picker.pickerActivity?.legal || (c.picker.pickerActivity.needsTarget && !c.picker.activityPick.target)} onclick={c.picker.confirmPicker}>Confirm</button>
     </div>
   </BoardPopup>
 {/if}
-{#if c.blastOpen && c.blastOffer && c.active}
+{#if c.picker.blastOpen && c.picker.blastOffer && c.active}
   <BoardPopup cell={notation(c.active.square)} close={c.cancelAction} appearance="cast">
     {@render pickerHead('Blast', 'cast', 'blast')}
-    {@render activityRows(c.blastOffer.activities, c.blastLevel, c.chooseBlastLevel)}
-    {#if c.blastActivity}
-      {#if c.blastCommitment}<CommitmentPicker base={c.blastCommitment.base} available={c.blastCommitment.available} bind:value={c.focus} effect="on the spell attack" />{/if}
+    {@render activityRows(c.picker.blastOffer.activities, c.picker.blastLevel, c.picker.chooseBlastLevel)}
+    {#if c.picker.blastActivity}
+      {#if c.picker.blastCommitment}<CommitmentPicker base={c.picker.blastCommitment.base} available={c.picker.blastCommitment.available} bind:value={c.focus} effect="on the spell attack" />{/if}
       <p class="popup-escapes" aria-live="polite">
-        {#if c.blastLevel === 1}Choose an enemy hex.
-        {:else if c.blastLevel === 2}Choose a two-hex line on the board.
-        {:else if c.blastLevel === 3}Choose a three-hex corner on the board.
+        {#if c.picker.blastLevel === 1}Choose an enemy hex.
+        {:else if c.picker.blastLevel === 2}Choose a two-hex line on the board.
+        {:else if c.picker.blastLevel === 3}Choose a three-hex corner on the board.
         {:else}Choose an area on the board or from the list.{/if}
       </p>
-      {#key c.blastLevel}
-        <TargetChoices targets={c.blastCandidates} selected={c.blastTarget} choose={c.chooseBlastTarget}
-          hover={c.hoverTargetMarker} cells={c.targetCells} label="Blast targets" />
+      {#key c.picker.blastLevel}
+        <TargetChoices targets={c.picker.blastCandidates} selected={c.picker.blastTarget} choose={c.picker.chooseBlastTarget}
+          hover={c.picker.hoverTargetMarker} cells={c.picker.targetCells} label="Blast targets" />
       {/key}
-      {#if c.blastCell}<button onclick={c.showAllBlastTargets}>Show all targets</button>{/if}
+      {#if c.picker.blastCell}<button onclick={c.picker.showAllBlastTargets}>Show all targets</button>{/if}
       <div class="popup-foot">
         <button onclick={c.cancelAction}>Cancel</button>
-        <button class="primary" disabled={!c.blastActivity.legal || !c.blastSelection} onclick={c.confirmBlast}>Cast {c.blastActivity.label} · {(c.blastActivity.cost ?? 0) + c.focus} action{(c.blastActivity.cost ?? 0) + c.focus === 1 ? '' : 's'}</button>
+        <button class="primary" disabled={!c.picker.blastActivity.legal || !c.picker.blastSelection} onclick={c.picker.confirmBlast}>Cast {c.picker.blastActivity.label} · {(c.picker.blastActivity.cost ?? 0) + c.focus} action{(c.picker.blastActivity.cost ?? 0) + c.focus === 1 ? '' : 's'}</button>
       </div>
     {:else}
       <p class="popup-escapes">Choose a spell.</p>
     {/if}
   </BoardPopup>
 {/if}
-{#if c.radial && c.anchor && c.radialItems.length}
-  <RadialMenu x={c.anchor.x} y={c.anchor.y} hole={c.anchorR} items={c.radialItems} pick={c.pickProp} />
+{#if c.ring.radial && c.ring.anchor && c.ring.radialItems.length}
+  <RadialMenu x={c.ring.anchor.x} y={c.ring.anchor.y} hole={c.ring.anchorR} items={c.ring.radialItems} pick={c.ring.pickProp} />
 {/if}
-{#if c.castPick && c.anchor && c.castRadialItems.length}
-  <RadialMenu x={c.anchor.x} y={c.anchor.y} hole={c.anchorR} items={c.castRadialItems} pick={c.pickCastTree} back={c.stepBack} />
+{#if c.ring.castPick && c.ring.anchor && c.ring.castRadialItems.length}
+  <RadialMenu x={c.ring.anchor.x} y={c.ring.anchor.y} hole={c.ring.anchorR} items={c.ring.castRadialItems} pick={c.ring.pickCastTree} back={c.stepBack} />
 {/if}
-{#if c.drag && !c.blockedNotice}
+{#if c.drag.live && !c.drag.blockedNotice}
   <div class="drag-hud">
-    <strong>{c.rowLabel(c.drag)}</strong>
-    <span class="muted">{c.drag.cell} — {c.rowDetail(c.drag)}</span>
+    <strong>{c.drag.rowLabel(c.drag.live)}</strong>
+    <span class="muted">{c.drag.live.cell} — {c.drag.rowDetail(c.drag.live)}</span>
   </div>
-{:else if c.dragTarget?.attack && !c.blockedNotice}
+{:else if c.drag.dragTarget?.attack && !c.drag.blockedNotice}
   <div class="drag-hud">
-    <strong>Attack {c.enemyName(c.dragTarget.id)}</strong>
+    <strong>Attack {c.drag.enemyName(c.drag.dragTarget.id)}</strong>
     <span class="muted">Release to choose a Melee activity · from 1 action</span>
   </div>
 {/if}
-{#if c.pending}
-  <BoardPopup cell={c.pending.cell} close={c.cancelAction}>
-    {@render popupHead(c.pending.cell)}
-    {#each c.pending.rows as row, i (c.rowKey(row))}
-      <button class="popup-row" class:on={i === c.pending.index} onclick={() => c.choose(i)}>
+{#if c.drag.pending}
+  <BoardPopup cell={c.drag.pending.cell} close={c.cancelAction}>
+    {@render popupHead(c.drag.pending.cell)}
+    {#each c.drag.pending.rows as row, i (c.drag.rowKey(row))}
+      <button class="popup-row" class:on={i === c.drag.pending.index} onclick={() => c.drag.choose(i)}>
         <span class="popup-verb">
           {#if row.kind === 'charge' || row.kind === 'advance'}<img class="row-prop" src={actionIconUrl(row.kind === 'charge' || row.plan.kind === 'charge' ? 'charge' : 'attack')} alt="" />{/if}
-          {c.rowLabel(row)}
-          <span class="row-cost"><ActionCost n={i === c.pending.index ? c.dropCost(row) : row.kind === 'step' ? 1 : row.actions} /></span>
+          {c.drag.rowLabel(row)}
+          <span class="row-cost"><ActionCost n={i === c.drag.pending.index ? c.drag.dropCost(row) : row.kind === 'step' ? 1 : row.actions} /></span>
         </span>
         <span class="muted">
-          {#if i === c.pending.index && row.kind === 'advance'}{c.actionCost(row.plan.moveActions)} to move + {c.actions(c.finishActions(row))} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
-          {:else if i === c.pending.index && row.kind === 'charge'}{c.actions(c.dropCost(row))}, melee included
-          {:else}{c.rowDetail(row)}{/if}
+          {#if i === c.drag.pending.index && row.kind === 'advance'}{c.drag.actionCost(row.plan.moveActions)} to move + {c.drag.actions(c.drag.finishActions(row))} to {row.plan.kind === 'charge' ? 'charge' : 'attack'}
+          {:else if i === c.drag.pending.index && row.kind === 'charge'}{c.drag.actions(c.drag.dropCost(row))}, melee included
+          {:else}{c.drag.rowDetail(row)}{/if}
         </span>
       </button>
-      {#if i === c.pending.index && row.kind === 'flee'}
+      {#if i === c.drag.pending.index && row.kind === 'flee'}
         <p class="muted activity-detail popup-escapes">
           Leave through {row.cell}. Morale: d20 {signed(row.modifier)} against DC {row.dc}.
           The unit escapes either way. Success sends it to camp without morale loss; failure routes it and removes it from the end-of-day survivors.
           {#if c.activeRouted}This unit is already routed and stays routed after leaving.{/if}
         </p>
       {/if}
-      {#if i === c.pending.index && row.kind === 'move' && c.act?.escape}
+      {#if i === c.drag.pending.index && row.kind === 'move' && c.act?.escape}
         {@const w = c.act.escape}
         <div class="popup-escapes">
           {#each w.holders as h (h.unit)}
@@ -227,7 +227,7 @@
           </p>
         </div>
       {/if}
-      {#if i === c.pending.index && (row.kind === 'charge' || row.kind === 'advance') && c.active}
+      {#if i === c.drag.pending.index && (row.kind === 'charge' || row.kind === 'advance') && c.active}
         {@const charging = row.kind === 'charge' || row.plan.kind === 'charge'}
         <p class="muted activity-detail popup-escapes">
           {#if row.kind === 'advance'}Move to {row.plan.via}, then {charging ? 'charge' : 'attack'} from there. {row.actions} actions total for the basic attack. {/if}
@@ -236,47 +236,47 @@
           {:else}Attack uses the normal melee rules.{/if}
         </p>
         <div class="activity-chips">
-          {#each c.finishesFor(row) as finish (finish.activity)}
+          {#each c.drag.finishesFor(row) as finish (finish.activity)}
             <button
               class="activity-chip"
-              class:on={c.chargeActivity === finish.activity}
+              class:on={c.drag.chargeActivity === finish.activity}
               disabled={!finish.legal}
               title={finish.legal ? '' : `needs ${finish.cost} actions`}
-              onclick={() => c.chooseDropActivity(finish.activity)}
+              onclick={() => c.drag.chooseDropActivity(finish.activity)}
             >
               {finish.label}
               <ActionCost n={finish.cost} />
             </button>
           {/each}
         </div>
-        <CommitmentPicker base={c.chosenFinish(row)?.cost ?? 0} available={c.actionsLeft} bind:value={c.focus} effect={charging ? 'on the attack, in addition to any run-up bonus' : 'on the attack'} />
+        <CommitmentPicker base={c.drag.chosenFinish(row)?.cost ?? 0} available={c.actionsLeft} bind:value={c.focus} effect={charging ? 'on the attack, in addition to any run-up bonus' : 'on the attack'} />
       {/if}
     {/each}
-    {@render popupFoot(c.commit, c.picked?.kind === 'flee' ? 'Confirm flee' : c.picked?.kind === 'charge' || (c.picked?.kind === 'advance' && c.picked.plan.kind === 'charge') ? 'Confirm charge' : c.picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
+    {@render popupFoot(c.drag.commit, c.drag.picked?.kind === 'flee' ? 'Confirm flee' : c.drag.picked?.kind === 'charge' || (c.drag.picked?.kind === 'advance' && c.drag.picked.plan.kind === 'charge') ? 'Confirm charge' : c.drag.picked?.kind === 'advance' ? 'Confirm attack' : 'Confirm')}
   </BoardPopup>
 {/if}
-{#if c.aim && c.aimGroup && c.active && !c.pending}
-  <BoardPopup cell={c.aim.cell} close={c.cancelAction} appearance={c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally' ? c.aimGroup.offer.type : 'default'}>
-    {#if c.aimGroup.offer.type === 'shoot' || c.aimGroup.offer.type === 'cast' || c.aimGroup.offer.type === 'rally'}
-      {@render pickerHead(c.aim.label, c.aimGroup.offer.type, c.aimGroup.offer.spell, !!c.aimGroup.offer.ability)}
-    {:else}{@render popupHead(c.aim.label)}{/if}
-    {#if c.aim.groups.length > 1}
+{#if c.picker.aim && c.picker.aimGroup && c.active && !c.drag.pending}
+  <BoardPopup cell={c.picker.aim.cell} close={c.cancelAction} appearance={c.picker.aimGroup.offer.type === 'shoot' || c.picker.aimGroup.offer.type === 'cast' || c.picker.aimGroup.offer.type === 'rally' ? c.picker.aimGroup.offer.type : 'default'}>
+    {#if c.picker.aimGroup.offer.type === 'shoot' || c.picker.aimGroup.offer.type === 'cast' || c.picker.aimGroup.offer.type === 'rally'}
+      {@render pickerHead(c.picker.aim.label, c.picker.aimGroup.offer.type, c.picker.aimGroup.offer.spell, !!c.picker.aimGroup.offer.ability)}
+    {:else}{@render popupHead(c.picker.aim.label)}{/if}
+    {#if c.picker.aim.groups.length > 1}
     <div class="verb-row">
-      {#each c.aim.groups as g, gi (c.offerKey(g.offer))}
+      {#each c.picker.aim.groups as g, gi (c.picker.offerKey(g.offer))}
         {@const icon = targetingIcon(g.offer)}
-        <button class="verb-tile" class:on={gi === c.aim.group} onclick={() => c.aimVerb(gi)}>
+        <button class="verb-tile" class:on={gi === c.picker.aim.group} onclick={() => c.picker.aimVerb(gi)}>
           {#if icon}<img src={targetIconUrl(icon)} alt="" />{/if}
           <span>{g.offer.label}</span>
         </button>
         {/each}
     </div>
     {/if}
-    {@render activityRows(c.aimActivities, c.aimed?.index ?? null, (index) => c.aimChoose(c.aimActivities.findIndex((opt) => opt.index === index)))}
-    {#if c.aimed?.legal}
-      {#if c.aimCommitment}
-        <CommitmentPicker base={c.aimCommitment.base} available={c.aimCommitment.available} bind:value={c.focus} effect={c.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
+    {@render activityRows(c.picker.aimActivities, c.picker.aimed?.index ?? null, (index) => c.picker.aimChoose(c.picker.aimActivities.findIndex((opt) => opt.index === index)))}
+    {#if c.picker.aimed?.legal}
+      {#if c.picker.aimCommitment}
+        <CommitmentPicker base={c.picker.aimCommitment.base} available={c.picker.aimCommitment.available} bind:value={c.focus} effect={c.picker.aimGroup.offer.spell === 'controlling' ? 'to spell DC' : 'on the roll'} />
       {/if}
-      {@render popupFoot(c.takeAim, c.aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
+      {@render popupFoot(c.picker.takeAim, c.picker.aimGroup.offer.type === 'fight' ? 'Confirm attack' : 'Confirm')}
     {/if}
   </BoardPopup>
 {/if}
