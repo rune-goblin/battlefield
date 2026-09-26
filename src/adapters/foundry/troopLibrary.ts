@@ -1,13 +1,13 @@
 import type { HostedTroops, TroopEntry, TroopSources } from '../../app/troop-library.svelte.js';
 import { cardFromActor, troopActorProblems, type TroopActor } from '../pf2e/troopCard.js';
-import { campaignTroopsFrom, type KingdomArmy, type KingdomArmyReader, type KingdomFaction } from '../reignmaker/kingdomArmies.js';
+import { campaignTroopsFrom, PLAYER_KINGDOM, type KingdomArmy, type KingdomArmyReader, type KingdomFaction } from '../reignmaker/kingdomArmies.js';
 import { REIGNMAKER_MODULE_ID } from '../reignmaker/outcomePort.js';
+import { readArmyActor } from './armyActor.js';
 import { hostModule } from './hostModule.js';
 
 // proto: an installed ReignMaker that predates `getArmies` keeps the kingdom on the party actor
 // under these keys; see its `config/flagKeys.ts` and `types/ownership.ts`.
 const KINGDOM_DATA_FLAG = 'kingdom-data';
-const PLAYER_KINGDOM = 'player';
 const UNASSIGNED = 'unassigned';
 
 interface StoredArmy { id: string; name: string; level: number; ledBy: string | null; actorId?: string }
@@ -35,11 +35,8 @@ function storedKingdom(): ReignMakerArmyApi {
 }
 
 const readArmy: KingdomArmyReader = (army) => {
-  const actor = army.actorId ? game.actors.get(army.actorId) : undefined;
-  if (!actor) return { problem: 'the army has no actor in this world' };
-  const problems = troopActorProblems(actor);
-  if (problems.length) return { problem: problems.join('; ') };
-  return { card: cardFromActor(actor as unknown as TroopActor), art: actor.prototypeToken?.texture?.src ?? undefined };
+  const r = readArmyActor(army.actorId);
+  return 'problem' in r ? r : { card: r.card, art: r.actor.prototypeToken?.texture?.src ?? undefined };
 };
 
 const TROOPER_MODULE_ID = 'pf2e-trooper';

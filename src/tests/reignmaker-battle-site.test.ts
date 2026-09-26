@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { requestFromSite, type BattleSite, type BattleSiteArmy } from '../adapters/reignmaker/battleSite.js';
+import { requestFromSite, type BattleSite } from '../adapters/reignmaker/battleSite.js';
+import type { KingdomArmy } from '../adapters/reignmaker/kingdomArmies.js';
 import { battleRequestProblems } from '../runtime/campaign.js';
 
-const army = (name: string, ledBy: string, leaderName: string): BattleSiteArmy =>
+const army = (name: string, ledBy: string, leaderName: string): KingdomArmy =>
   ({ armyId: `army-${name}`, name, level: 3, actorId: `actor-${name}`, ledBy, leaderName });
 
-const read = (a: BattleSiteArmy) => (a.name === 'Ghosts' ? null : {
+const read = (a: KingdomArmy) => (a.name === 'Ghosts' ? null : {
   card: { name: 'Troop', level: a.level, role: 'infantry' as const, tactics: [] },
   source: { actorUuid: `Actor.${a.actorId}`, baseline: { hitPoints: 30, maxHitPoints: 30, demoralized: 0 } },
 });
 
-const site = (claimedBy: string | null, armies: BattleSiteArmy[]): BattleSite =>
+const site = (claimedBy: string | null, armies: KingdomArmy[]): BattleSite =>
   ({ hexId: '5.12', terrain: 'forest', claimedBy, fortificationTier: 0, armies });
 
 const sides = (s: BattleSite) => Object.fromEntries(requestFromSite(s, read, 1).request.units.map((u) => [u.card.name, u.side]));
