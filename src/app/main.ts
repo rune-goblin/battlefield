@@ -4,6 +4,7 @@ import App from './App.svelte';
 import { blockPageZoom } from './app-root.js';
 import { bindClient } from './game.svelte.js';
 import { applyLaunchChoice } from './launch.js';
+import { resume } from './navigation.svelte.js';
 import { bindRecovery } from './store-recovery.js';
 import './page.css';
 import './app.css';
@@ -11,6 +12,7 @@ import './app.css';
 applyLaunchChoice();
 const { client, recovery } = browserStoreClient();
 bindClient(client);
+resume();
 bindRecovery(recovery);
 blockPageZoom();
 

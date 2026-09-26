@@ -160,7 +160,8 @@ export function defaultSetup(mint: MintPort = randomMint): BattleSetupDraft {
   };
 }
 
-export function freshSession(battleId?: string, mint: MintPort = randomMint): BattleSession {
+/** A session in setup on the draft given, at revision 0 with the browser's hot seat. */
+export function sessionWith(setup: BattleSetupDraft, battleId?: string, mint: MintPort = randomMint): BattleSession {
   return {
     schemaVersion: SCHEMA_VERSION,
     rulesVersion: RULES_VERSION,
@@ -168,7 +169,7 @@ export function freshSession(battleId?: string, mint: MintPort = randomMint): Ba
     site: null,
     revision: 0,
     stage: 'setup',
-    setup: defaultSetup(mint),
+    setup,
     battle: null,
     interactions: [],
     control: hotSeatControl(),
@@ -178,6 +179,12 @@ export function freshSession(battleId?: string, mint: MintPort = randomMint): Ba
     lastCommit: null,
     recentCommandIds: [],
   };
+}
+
+export function freshSession(battleId?: string, mint: MintPort = randomMint): BattleSession {
+  // The battle ID draws before the example setup, so a fixed mint writes the record it always has.
+  const id = battleId ?? mint.id('battle');
+  return sessionWith(defaultSetup(mint), id, mint);
 }
 
 /** A save written before a field existed still parses; it crashes later, at render. Drop it

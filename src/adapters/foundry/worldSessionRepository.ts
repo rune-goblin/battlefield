@@ -1,5 +1,5 @@
 import { freshControl } from '../../runtime/control.js';
-import type { SessionRepository } from '../../runtime/ports.js';
+import { STORED_NAMES, type SessionRepository } from '../../runtime/ports.js';
 import { migrateSession } from '../../runtime/migrate.js';
 import { freshSession, type BattleSession } from '../../runtime/session.js';
 import { createJsonStore, UnreadableStore } from '../json-store.js';
@@ -19,7 +19,7 @@ export function createFoundrySessionRepository(
   recovery?: StoreRecovery,
 ): SessionRepository {
   const store = createJsonStore<BattleSession | null>(storage, {
-    name: 'battle session', empty: () => null, accept: migrateSession, onUnreadable: () => recovery?.report('session'),
+    name: STORED_NAMES.session, empty: () => null, accept: migrateSession, onUnreadable: () => recovery?.report('session'),
   });
   recovery?.track('session', store);
   return {

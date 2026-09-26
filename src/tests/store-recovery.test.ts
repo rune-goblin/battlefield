@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createJsonStore, type TextCell } from '../adapters/json-store.js';
+import { archiveStore, createJsonStore, type TextCell } from '../adapters/json-store.js';
 import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, type WebStorage } from '../adapters/browser/localRepository.js';
 import { createStoreRecovery } from '../adapters/store-recovery.js';
@@ -34,6 +34,19 @@ describe('a JSON store over an unreadable cell', () => {
     expect(store.readable()).toBe(true);
     await store.write([1, 2]);
     expect(stored.value).toBe('[1,2]');
+  });
+});
+
+describe('the archive store', () => {
+  it('reads an entry with no name as unreadable and reports it', () => {
+    const stored = cell(JSON.stringify([{ slot: 's', data: {} }]));
+    const recovery = createStoreRecovery({ mayRepair: () => true });
+    const store = archiveStore(stored, recovery);
+    recovery.probe();
+
+    expect(store.readable()).toBe(false);
+    expect(() => store.read()).toThrow();
+    expect(recovery.unreadable()).toEqual(['archive']);
   });
 });
 
@@ -103,6 +116,23 @@ describe('the unreadable save notice', () => {
     const { notice, disconnect } = watch(fakePort(false, ['archive']));
     expect(notice('unreadable-archive')).toMatchObject({ tone: 'warning' });
     expect(notice('unreadable-archive')?.actions).toBeUndefined();
+    disconnect();
+  });
+
+  it('clears once even when the confirm action is pressed twice while a clear is in flight', async () => {
+    const port = fakePort(true, ['session']);
+    let resolveClear!: () => void;
+    port.clear.mockImplementation(() => new Promise<void>((resolve) => { resolveClear = resolve; }));
+    const { notice, press, disconnect } = watch(port);
+
+    press('unreadable-session', 'Start fresh');
+    press('unreadable-session', 'Clear and start fresh');
+    press('unreadable-session', 'Clear and start fresh');
+    expect(port.clear).toHaveBeenCalledOnce();
+
+    resolveClear();
+    await vi.waitFor(() => expect(notice('unreadable-session')).toBeUndefined());
+    expect(port.clear).toHaveBeenCalledOnce();
     disconnect();
   });
 });

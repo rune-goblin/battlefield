@@ -1,5 +1,5 @@
 import { siteEntryOf } from '../../runtime/memorySites.js';
-import type { BattleSites, SiteEntry } from '../../runtime/ports.js';
+import { STORED_NAMES, type BattleSites, type SiteEntry } from '../../runtime/ports.js';
 import type { BattleSession } from '../../runtime/session.js';
 import { createJsonStore } from '../json-store.js';
 import type { StoreRecovery } from '../store-recovery.js';
@@ -20,7 +20,7 @@ export function createFoundrySites(
   recovery?: StoreRecovery,
 ): BattleSites {
   const store = createJsonStore<StoredSites>(storage, {
-    name: 'battle sites', empty: () => ({}), accept: acceptSites, onUnreadable: () => recovery?.report('sites'),
+    name: STORED_NAMES.sites, empty: () => ({}), accept: acceptSites, onUnreadable: () => recovery?.report('sites'),
   });
   recovery?.track('sites', store);
   return {

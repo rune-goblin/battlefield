@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createBattle, scriptedRng, unit, type BattleState, type UnitCard } from '../engine/index.js';
 import { createLocalArchive } from '../adapters/browser/localArchive.js';
 import { createLocalRepository, loadSessionSync, type WebStorage } from '../adapters/browser/localRepository.js';
@@ -230,6 +230,29 @@ describe('the command executor', () => {
     expect(heard).toHaveLength(1);
     expect(heard[0]).toBe(runtime.session);
     expect(errors).toEqual([broken]);
+  });
+
+  it('answers a committed command ok when the listener error handler throws too', async () => {
+    const session = battleSession();
+    const repository = fakeRepository(session);
+    const runtime = createRuntime({
+      repository, archive: createLocalArchive(fakeStorage()), session,
+      onListenerError: () => { throw new Error('handler broke'); },
+    });
+    const heard: BattleSession[] = [];
+    runtime.subscribe(() => { throw new Error('listener broke'); });
+    runtime.subscribe((s) => heard.push(s));
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await runtime.submit({ type: 'action.resolve', action: guard });
+    const messages = logged.mock.calls.map(([e]) => (e as Error).message);
+    logged.mockRestore();
+
+    expect(result).toMatchObject({ ok: true, revision: 1 });
+    expect(runtime.session.revision).toBe(1);
+    expect(repository.saves.map((s) => s.revision)).toEqual([1]);
+    expect(heard).toHaveLength(1);
+    expect(messages).toEqual(['listener broke', 'handler broke']);
   });
 });
 

@@ -231,6 +231,18 @@ describe('the session record', () => {
     expect(migrateSession({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 })).toBeNull();
   });
 
+  it('refuses a corrupt current envelope rather than rebuilding it from its setup', () => {
+    expect(migrateSession({ ...freshSession(), battleId: '' })).toBeNull();
+  });
+
+  it('migrates a pre-envelope legacy shape through migrateSession', () => {
+    const battle = battleState();
+    const migrated = migrateSession(JSON.parse(legacySave(battle)));
+
+    expect(migrated?.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(migrated?.battle!.units.map((u) => u.id)).toEqual(battle.units.map((u) => u.id));
+  });
+
   it('refuses a record of another schema version', () => {
     expect(migrateLegacySave({ setup: null })).toBeNull();
     expect(isBattleSession({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 })).toBe(false);

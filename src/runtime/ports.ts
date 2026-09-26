@@ -57,6 +57,11 @@ export interface BattleSites {
 /** A record the host keeps in one stored cell. */
 export type StoredRecord = 'session' | 'archive' | 'sites';
 
+/** What a store or a notice calls each record. */
+export const STORED_NAMES: Readonly<Record<StoredRecord, string>> = {
+  session: 'battle session', archive: 'saved battles', sites: 'battle sites',
+};
+
 /** The stored records this client cannot read, and the way out of each. `raw` is the stored
  * text byte for byte, for an export. `clear` empties one record so it reads as absent and
  * leaves the others as they are. Only a viewer who `mayRepair` is offered either. */
@@ -81,10 +86,11 @@ export interface MintPort {
   id(kind: 'battle' | 'unit' | 'eq' | 'int'): string;
 }
 
-/** A client's line to the authority. `request` carries one command and waits for the reply,
- * which names a revision and nothing more. State travels on `onRecord` alone: the authority
- * saves the record, the host delivers it, and every client adopts it. A reply lost on the way
- * back therefore costs nothing the next delivered record does not repair. */
+/** A client's line to the authority. `request` carries one command and waits for the reply.
+ * The reply names a revision, and the reply to a command that mints pieces also names them in
+ * `added`. State travels on `onRecord` alone: the authority saves the record, the host delivers
+ * it, and every client adopts it. A reply lost on the way back therefore costs nothing the next
+ * delivered record does not repair. */
 export interface TransportPort {
   request(envelope: CommandEnvelope): Promise<CommandResult>;
   /** Returns the call that stops the deliveries. */

@@ -31,7 +31,8 @@ export interface ExecutorOptions extends Services {
   dice: DiceRecorder;
   /** Who is at the table, for naming a turn holder and for judging who sent a command. */
   presence: PresencePort;
-  /** Where a subscriber's throw goes. The commit it followed stands, and the rest still hear it. */
+  /** Where a subscriber's throw goes. The commit it followed stands, and the rest still hear it.
+   * A throw from this handler goes to `console.error` with the error it was handed. */
   onListenerError?: (error: unknown) => void;
 }
 
@@ -175,7 +176,12 @@ export function createExecutor({
       try {
         listener(session);
       } catch (error) {
-        onListenerError(error);
+        try {
+          onListenerError(error);
+        } catch (handlerError) {
+          console.error(error);
+          console.error(handlerError);
+        }
       }
     }
     const accepted: CommandAccepted = { ok: true, commandId, revision: session.revision };

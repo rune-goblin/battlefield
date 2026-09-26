@@ -6,8 +6,8 @@ import type { BattleCommand, CommandResult, RejectionReason } from './commands.j
 import { freshControl, isGmSide, type GmSide } from './control.js';
 import type { MintPort } from './ports.js';
 import {
-  freshSession, randomMint,
-  type BattleSession, type ImportBaseline, type SetupUnit, type SourceBinding,
+  randomMint, sessionWith,
+  type BattleSession, type BattleSetupDraft, type ImportBaseline, type SetupUnit, type SourceBinding,
 } from './session.js';
 
 /** One unit a campaign sends to the field: its card, the army it joins, the engines riding
@@ -189,22 +189,22 @@ export function sessionFromRequest(
     if (entry.source) sources.push({ unitId: id, ...structuredClone(entry.source) });
   }
   const spec = structuredClone(request.board);
+  const setup: BattleSetupDraft = {
+    spec,
+    // proto: the caller describes the ground and names no squares, so the field is drawn
+    // here and every piece arrives off the board for the table to deploy. Reserved.
+    board: generateBoard(spec),
+    units,
+    emplacements: (request.emplacements ?? []).map((e) => ({
+      id: mint.id('eq'), name: e.engine, side: e.side, square: null,
+    })),
+    ...(request.roundsPerDay === undefined ? {} : { roundsPerDay: request.roundsPerDay }),
+  };
   return {
-    ...freshSession(battleId, mint),
+    ...sessionWith(setup, battleId, mint),
     // An imported battle opens on a real table rather than the browser's hot seat: the GM takes
     // one army and every other user takes the other, which the host seats as it installs this.
     control: freshControl(request.gmSide ?? 'defender'),
-    setup: {
-      spec,
-      // proto: the caller describes the ground and names no squares, so the field is drawn
-      // here and every piece arrives off the board for the table to deploy. Reserved.
-      board: generateBoard(spec),
-      units,
-      emplacements: (request.emplacements ?? []).map((e) => ({
-        id: mint.id('eq'), name: e.engine, side: e.side, square: null,
-      })),
-      ...(request.roundsPerDay === undefined ? {} : { roundsPerDay: request.roundsPerDay }),
-    },
     sources,
   };
 }
@@ -221,10 +221,9 @@ export function sessionAtSite(
   if (problems.length) throw new Error(problems.join('; '));
   const spec = structuredClone(opening.board);
   return {
-    ...freshSession(battleId, mint),
+    ...sessionWith({ spec, board: generateBoard(spec), units: [], emplacements: [] }, battleId, mint),
     site,
     control: freshControl('defender'),
-    setup: { spec, board: generateBoard(spec), units: [], emplacements: [] },
   };
 }
 

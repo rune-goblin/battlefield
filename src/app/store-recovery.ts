@@ -1,12 +1,10 @@
-import type { StoredRecord, StoreRecoveryPort } from '../runtime/ports.js';
+import { STORED_NAMES, type StoredRecord, type StoreRecoveryPort } from '../runtime/ports.js';
 import { STORAGE_NOTICE } from './command-notices.js';
 import { downloadText } from './download.js';
 import type { Notification, NotificationService } from './notifications.js';
 
-const NAMES: Record<StoredRecord, string> = { session: 'battle session', archive: 'saved battles', sites: 'battle sites' };
-
 /** What a notice calls the record. The stores use the same names. */
-export const storedName = (record: StoredRecord): string => NAMES[record];
+export const storedName = (record: StoredRecord): string => STORED_NAMES[record];
 
 const nothingUnreadable: StoreRecoveryPort = {
   unreadable: () => [],
@@ -25,6 +23,7 @@ export const recoveryNoticeId = (record: StoredRecord): string => `unreadable-${
  * repair it can export the stored text or clear it; anyone else learns the GM must act. */
 export function connectRecovery(notifications: NotificationService): () => void {
   const shown = new Set<StoredRecord>();
+  const clearing = new Set<StoredRecord>();
 
   // proto: wording, a first draft.
   function unreadable(record: StoredRecord): Notification {
@@ -59,6 +58,8 @@ export function connectRecovery(notifications: NotificationService): () => void 
   }
 
   async function clear(record: StoredRecord): Promise<void> {
+    if (clearing.has(record)) return;
+    clearing.add(record);
     const failed = `${recoveryNoticeId(record)}-failed`;
     try {
       await port.clear(record);
@@ -69,6 +70,8 @@ export function connectRecovery(notifications: NotificationService): () => void 
         message: error instanceof Error ? error.message : String(error),
       });
       return;
+    } finally {
+      clearing.delete(record);
     }
     notifications.dismiss(recoveryNoticeId(record));
     notifications.dismiss(failed);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, type UnitCard } from '../engine/index.js';
+import { sessionAtSite, sessionFromRequest } from '../runtime/campaign.js';
 import { createRuntime } from '../runtime/createRuntime.js';
 import { interactionOf } from '../runtime/interactions.js';
 import type { MintPort, SessionRepository } from '../runtime/ports.js';
@@ -13,6 +14,19 @@ const kobolds: UnitCard = { name: 'Kobolds', level: 3, role: 'infantry', tactics
 function countingMint(): MintPort {
   let n = 0;
   return { seed: () => ++n, id: (kind) => `${kind}-${++n}` };
+}
+
+/** Every draw is written down by kind, in order. */
+function recordingMint(): { mint: MintPort; draws: string[] } {
+  const draws: string[] = [];
+  let n = 0;
+  return {
+    draws,
+    mint: {
+      seed: () => { draws.push('seed'); return ++n; },
+      id: (kind) => { draws.push(kind); return `${kind}-${++n}`; },
+    },
+  };
 }
 
 function setupSession(): BattleSession {
@@ -88,6 +102,31 @@ describe('the authority mint', () => {
     expect(runtime.session.setup.spec.seed).toBe(1);
     expect(runtime.session.setup.units.map((u) => u.id))
       .toEqual(['unit-2', 'unit-3', 'unit-4', 'unit-5', 'unit-6', 'unit-7']);
+  });
+
+  it('draws a fresh session\'s battle ID before its example setup', () => {
+    const { mint, draws } = recordingMint();
+    freshSession(undefined, mint);
+    expect(draws).toEqual(['battle', 'seed', 'unit', 'unit', 'unit', 'unit', 'unit', 'unit']);
+  });
+
+  it('draws for a requested battle only its battle ID and the IDs of the pieces it names', () => {
+    const { mint, draws } = recordingMint();
+    sessionFromRequest({
+      board: { base: 'plains', size: 9, feature: 'none', seed: 7 },
+      units: [
+        { card: infantry, side: 'attacker', equipment: ['Battering Ram'] },
+        { card: kobolds, side: 'defender' },
+      ],
+      emplacements: [{ engine: 'Ballista', side: 'defender' }],
+    }, undefined, mint);
+    expect([...draws].sort()).toEqual(['battle', 'eq', 'eq', 'unit', 'unit']);
+  });
+
+  it('draws for bare ground at a site only its battle ID', () => {
+    const { mint, draws } = recordingMint();
+    sessionAtSite('hex-1', { board: { base: 'plains', size: 9, feature: 'none', seed: 7 } }, undefined, mint);
+    expect(draws).toEqual(['battle']);
   });
 
   it('seeds a fresh field for the next day', async () => {

@@ -46,7 +46,8 @@ export interface ArmyPreparationService {
   unplace(session: BattleSession, piece: PieceRef): BattleSession;
   autoPlace(session: BattleSession, piece: PieceRef): BattleSession;
   generateForce(session: BattleSession, side: Side, seed?: number): BattleSession;
-  /** One army's word that it has finished deploying, which `battle.start` waits for. */
+  /** Records one army's word that it has finished deploying, which the Summary shows. The
+   * GM's Begin does not wait for it. */
   declareReady(session: BattleSession, side: Side, ready: boolean, userId: string): BattleSession;
 }
 
