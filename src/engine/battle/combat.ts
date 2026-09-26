@@ -4,6 +4,7 @@ import { heightEdge, heightRange, TERRAIN } from '../terrain.js';
 import {
   at, barrierBetween, notation, sameCell, structuralDamage, type Square, type Wall,
 } from '../board.js';
+import { canFly } from '../cards.js';
 import { possessive, rollLine, succeeded, successes, type Degree } from '../check.js';
 import type { Activity } from '../ladders.js';
 import type { Rng } from '../rng.js';
@@ -194,9 +195,9 @@ export function melee(state: BattleState, rng: Rng, u: Unit, target: Unit, activ
  * and a rooted target loses no extra Morale for it.
  */
 /** Section 10: water, a cliff or a standing wall behind the target. An occupied hex or the
- * board's edge merely blocks the shove. A native flier has the sky behind it. */
+ * board's edge merely blocks the shove. A flier has the sky behind it. */
 const cornered = (state: BattleState, target: Unit, ground: Square, away: Square): boolean =>
-  !target.flying && grid(state).inBounds(away)
+  !canFly(target) && grid(state).inBounds(away)
   && ((at(state.board, away).terrain === 'water' && !nativeWaterMovement(target)) || barrierBetween(state.board, ground, away) !== null);
 
 function giveGround(state: BattleState, u: Unit, target: Unit) {
@@ -220,17 +221,13 @@ function giveGround(state: BattleState, u: Unit, target: Unit) {
     log(state, target, `${target.name} holds its ground under cover: the Overrun lands as a Press.`);
     return;
   }
-  // Section 8 blocks the shove on water, a wall or a cliff with no flier exception at all, and
-  // the target spends no action of its own giving ground — Fly buys only its next activation
-  // (`follow` already reads a holder's native `flying` alone for the same reason), so an unspent
-  // Fly does not open a hex here either. A native flier still shrugs the shove off anywhere.
   const away = grid(state).beyond(u.square, ground);
   if (away && cornered(state, target, ground, away)) {
     log(state, target, `${target.name} is cornered with no ground to give.`);
     addDisorder(state, target, 1, 'cornered');
     return;
   }
-  if (!away || !enterable(state, ground, away, { flying: target.flying,
+  if (!away || !enterable(state, ground, away, { flying: canFly(target),
     swimming: at(state.board, away).terrain === 'water' && (target.movementRates?.swim ?? 0) > 0 })) {
     log(state, target, `${target.name} has nowhere to give ground and holds its hex without losing extra Morale.`);
     return;

@@ -84,7 +84,6 @@ export const CONDITIONS = {
     fresh: () => 0, lapse: 'finish', magical: true, status: 'burst-of-speed', holds: (u) => (u.movementBonus ?? 0) > 0,
   },
   sureFooting: { fresh: () => false, lapse: 'finish', magical: true, status: 'sure-footing', holds: (u) => u.sureFooting },
-  flies: { fresh: () => false, lapse: 'finish', magical: true },
   selfBuffs: { fresh: () => [], lapse: 'finish', magical: true },
 } satisfies ConditionRecord;
 

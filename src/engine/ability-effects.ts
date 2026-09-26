@@ -2,6 +2,7 @@ import { at, barrierBetween, gridOf, notation, type Square } from './board.js';
 import { abilityName, abilityDescription, freshAbilityMemory, type AbilityMark, type AbilityOutcome, type TroopAbility, type AttackKind, type AbilityEnvironment } from './abilities.js';
 import { cellTarget, unitTarget } from './targets.js';
 import { healableConditions } from './conditions.js';
+import { canFly } from './cards.js';
 import type { ActionOffer, ActivityTarget, BattleState, Unit } from './types.js';
 import type { Degree } from './check.js';
 import { levelDc } from './tables.js';
@@ -46,7 +47,7 @@ function predicate(s: BattleState, u: Unit, target: Unit | null, a: TroopAbility
     case 'snared': return !!target?.abilityState?.snare;
     case 'controlled': return !!target && (!!target.suppressedBy || !!target.abilityState?.snare);
     case 'unmounted': return !!target && target.role !== 'cavalry';
-    case 'nonflying': return !!target && !target.flying && !target.flies;
+    case 'nonflying': return !!target && !canFly(target);
     case 'unholy': case 'undead': case 'giant': return traits.includes(a.predicate!);
     case 'wounded': return u.wounds >= 2;
     case 'first-attack': return !u.abilityState?.attackUsed;

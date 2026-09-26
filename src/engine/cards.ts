@@ -162,6 +162,8 @@ export function movementRates(card: UnitCard): MovementRates {
     swim: convertSpeed(other('swim')) };
 }
 
+export const canFly = (u: { movementRates?: MovementRates }): boolean => (u.movementRates?.fly ?? 0) > 0;
+
 export function sourceSpeedLabel(sheet: Pick<TroopSheet, 'speed' | 'otherSpeeds'>): string {
   return [{ type: 'land', value: sheet.speed }, ...(sheet.otherSpeeds ?? [])]
     .map(s => `${s.type} ${s.value} ft`).join(' · ');

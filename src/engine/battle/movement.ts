@@ -1,5 +1,6 @@
 import { unitAbilities, holdsGround, refreshAbilityAuras } from '../ability-effects.js';
 import { at, barrierBetween, deployRanks, notation, parse, type Board, type Square } from '../board.js';
+import { canFly } from '../cards.js';
 import { CELL_FEET, reachableVia, routedPath, stepFeet, type Routed, type StepOpts } from '../path.js';
 import type { BattleState, EngineState, EscapeOffer, MoveReach, PathStep, Unit } from '../types.js';
 import {
@@ -31,22 +32,19 @@ export function forcedStep(state: BattleState, from: Square, target: Unit, direc
   if (to && !holdsGround(state, target)) moveTo(state, target, to);
 }
 
-/** Source movement modes share a budget; each step chooses the cheapest legal mode.
- * Temporary Fly uses the unit's current Speed, and hauling restricts movement to land. */
+/** Source movement modes share a budget; each step chooses the cheapest legal mode. Hauling
+ * restricts movement to land. */
 export const groundFor = (u: Unit): StepOpts => {
   const hauling = u.engines.some(e => e.hauling && e.status === 'crewed');
-  const rates = u.movementRates && !hauling ? { ...u.movementRates,
-    fly: u.flies ? Math.max(u.speed, u.movementRates.fly) : u.flying ? u.movementRates.fly || u.speed : 0 } : undefined;
-  return { climber: u.role === 'infantry' && !hauling, flying: !hauling && (u.flying || u.flies),
-    rates, terrainPassage: unitAbilities(u).filter(a => a.kind === 'terrain-passage').flatMap(a => a.terrain ?? []), surefooted: u.sureFooting };
+  return { climber: u.role === 'infantry' && !hauling, flying: !hauling && canFly(u),
+    rates: u.movementRates && !hauling ? u.movementRates : undefined,
+    terrainPassage: unitAbilities(u).filter(a => a.kind === 'terrain-passage').flatMap(a => a.terrain ?? []), surefooted: u.sureFooting };
 };
 
-export const nativeWaterMovement = (u: Unit): boolean => u.flying || (u.movementRates?.swim ?? 0) > 0;
+export const nativeWaterMovement = (u: Unit): boolean => canFly(u) || (u.movementRates?.swim ?? 0) > 0;
 
-/** Whether `u` could stand on `sq` unassisted: section 7 gives a native flier free run of
- * anywhere, but Fly only "crosses" water (section 11) — it never says a unit ends its move
- * there, and `finish` strips the buff, so a unit that ends its Move or Translocate on water
- * with only an unspent Fly would be grounded in a river with no way out. */
+/** Whether `u` could stand on `sq` unassisted. A hauling unit moves by land alone, so water
+ * holds it no more than a walker. */
 export const canEndOn = (u: Unit, board: Board, sq: Square) =>
   at(board, sq).terrain !== 'water' || (nativeWaterMovement(u) && !u.engines.some(e => e.hauling && e.status === 'crewed'));
 
@@ -176,8 +174,8 @@ export function isFleeEdge(state: BattleState, u: Unit, cell: string): boolean {
     && g.neighbours(sq).length < (g.kind === 'hex' ? 6 : 4);
 }
 
-/** A hex a unit may be set down in: empty, and ground it could stand on — water holds nobody
- * but a native flier. */
+/** A hex a unit may be set down in: empty, and ground it could stand on — water holds only a
+ * flier or a swimmer. */
 export const standable = (state: BattleState, u: Unit, sq: Square) =>
   !unitAt(state, sq) && canEndOn(u, state.board, sq);
 

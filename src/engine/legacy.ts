@@ -1,6 +1,6 @@
 import { freshAbilityMemory, validatedAbilities, type TroopAbility } from './abilities.js';
 import { fortification, type Board, type BoardSpec } from './board.js';
-import { convertSpeed, deriveStats, movementRates, speedOf, type UnitCard } from './cards.js';
+import { canFly, convertSpeed, deriveStats, movementRates, speedOf, type UnitCard } from './cards.js';
 import { COMBATANTS } from './combatants.js';
 import { OFFICIAL } from './official.js';
 import { CELL_FEET } from './path.js';
@@ -93,7 +93,19 @@ export function upgradeSourceStats(saved: { id: string; card: UnitCard }, unit: 
     unit.speed = speedOf(card);
     if (previous > 0) unit.feet *= unit.speed / previous;
   }
-  unit.flying = unit.movementRates.fly > 0;
+}
+
+/** A saved unit that flew by its `flying` flag alone takes a fly rate at its Speed, the rate
+ * it moved at before flight became the fly rate alone. */
+export function upgradeFlight(unit: Unit): void {
+  const saved = unit as Unit & { flying?: boolean; flies?: boolean };
+  if (saved.flying === true && !canFly(unit)) {
+    unit.movementRates = {
+      land: unit.movementRates?.land ?? unit.speed, fly: Math.max(unit.speed, CELL_FEET), swim: unit.movementRates?.swim ?? 0,
+    };
+  }
+  delete saved.flying;
+  delete saved.flies;
 }
 
 /** Bring a saved battle to the shape the engine reads, keeping its progress. Returns the same

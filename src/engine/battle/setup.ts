@@ -73,7 +73,7 @@ export function createBattle(setup: BattleSetup): BattleState {
       ...(d.card.sheet ? { attackSources: { strike: d.card.sheet.battleName, volley: d.card.sheet.salvoName } } : {}),
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
-      speed: speedOf(d.card), flying: movementRates(d.card).fly > 0,
+      speed: speedOf(d.card),
       ...(d.card.sheet ? { movementRates: movementRates(d.card), sourceSpeed: {
         speed: d.card.sheet.speed, otherSpeeds: d.card.sheet.otherSpeeds?.map(s => ({ ...s })),
       } } : {}),

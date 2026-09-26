@@ -1,5 +1,5 @@
 import { SIDES, type BattleState, type BoardSize, type RecoveryChoice, type Side } from '../engine/index.js';
-import { upgradeBattle, upgradeBoard, upgradeCard, upgradeSourceStats, upgradeSpec } from '../engine/legacy.js';
+import { upgradeBattle, upgradeBoard, upgradeCard, upgradeFlight, upgradeSourceStats, upgradeSpec } from '../engine/legacy.js';
 import { hotSeatControl, isSideControl } from './control.js';
 import type { InteractionKind, InteractionRecord } from './interactions.js';
 import type { MintPort } from './ports.js';
@@ -93,8 +93,14 @@ function toSchema2(s: BattleSession & HeldSubmissions, mint: MintPort): void {
   s.recentCommandIds ??= [];
 }
 
+/** Flight became the fly rate alone, so a unit's `flying` and `flies` flags give way to it. */
+function toSchema3(s: BattleSession): void {
+  const battle = s.battle && intactBattle(s.battle) ? s.battle : null;
+  for (const u of battle?.units ?? []) upgradeFlight(u);
+}
+
 /** Keyed by the schema version a step reads; each leaves the record one version on. */
-export const STEPS: Record<number, (record: any, mint: MintPort) => void> = { 1: toSchema2 }; // proto: record typed loosely
+export const STEPS: Record<number, (record: any, mint: MintPort) => void> = { 1: toSchema2, 2: toSchema3 }; // proto: record typed loosely
 
 /** Read a record of this schema or an older one, stepping it up to this one in place. Null
  * for anything else. A current record is validated and left as it is. */

@@ -1,4 +1,5 @@
 import { at, edgeCells, gridOf, notation, parse, fortification } from './board.js';
+import { canFly } from './cards.js';
 import { engineKind } from './siege-engines.js';
 import { hasSight, sightBlock } from './sight.js';
 import { siegeModes, type SiegeMode } from './siege-profiles.js';
@@ -18,7 +19,7 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
     .filter(([key, w]) => w.remaining > 0 && edgeCells(key).some(id => inRange(id) && (kind !== 'ram' || id === notation(e.square))))
     .map(([id, w]) => wallTarget(id, `${w.gate ? 'Gate' : 'Wall'} ${wallName(id)} · ${w.remaining}/${w.boxes} · hardness ${fortification(w.tier).hardness}`));
   const affected = (u: BattleState['units'][number]) => u.status === 'active'
-    && (!mode.groundOnly || (!u.flying && !u.flies))
+    && (!mode.groundOnly || !canFly(u))
     && (!mode.cavalryOnly || u.role === 'cavalry')
     && (!mode.waterOnly || ['water', 'shallows'].includes(at(state.board, u.square).terrain));
   if (mode.shape === 'single') return state.units.filter(u => u.side !== e.side && affected(u) && inRange(notation(u.square)))

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, availableActions, createBattle, endActivation, moveReach, unit, type ActivityAction } from '../engine/index.js';
+import { act, availableActions, canFly, createBattle, endActivation, moveReach, unit, type ActivityAction } from '../engine/index.js';
 import { gridOf, notation, parse } from '../engine/board.js';
 import type { UnitCard } from '../engine/cards.js';
 import { CAST_ACTIVITIES } from '../engine/magic.js';
@@ -72,7 +72,7 @@ describe('Movement cast progression', () => {
     const s = act(setup(), { type: 'cast', spell: 'movement', activity: 2, target: { kind: 'unit', ids: ['u1'] }, unit: 'u0' }, scriptedRng([]));
     expect(unit(s, 'u0').actions).toBe(1);
     expect(unit(s, 'u1').sureFooting).toBe(true);
-    expect(unit(s, 'u1').flies).toBe(false);
+    expect(canFly(unit(s, 'u1'))).toBe(false);
     expect(unit(s, 'u1').movementBonus).toBe(0);
   });
 
@@ -108,9 +108,9 @@ describe('Movement cast progression', () => {
     s.board.squares[5][3].terrain = 'water';
     expect(placements(s)).not.toContainEqual({ unit: 'u1', to: 'd6' });
     expect(placements(s)).not.toContainEqual({ unit: 'u1', to: 'c2' });
-    unit(s, 'u1').flying = true;
+    unit(s, 'u1').movementRates = { land: 10, fly: 10, swim: 0 };
     expect(placements(s)).toContainEqual({ unit: 'u1', to: 'd6' });
-    unit(s, 'u1').flying = false;
+    unit(s, 'u1').movementRates = undefined;
     s.board.squares[5][3].terrain = 'open';
     s.board.squares[3][3].terrain = 'water';
     s.board.squares[4][3].elevation = 3;

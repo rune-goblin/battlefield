@@ -82,8 +82,6 @@ export interface Conditions {
   /** Extra movement in feet for the next activation, or this activation after a self-cast. */
   movementBonus?: number;
   sureFooting: boolean;
-  /** Flies on its next activation only; `flying` is the troop that always does. */
-  flies: boolean;
 }
 
 export interface Unit extends Conditions {
@@ -102,8 +100,6 @@ export interface Unit extends Conditions {
   attackSources?: { strike?: string; volley?: string };
   /** Feet a single Move action buys. */
   speed: number;
-  /** A flier ignores terrain cost and blocked edges. */
-  flying: boolean;
   movementRates?: MovementRates;
   sourceSpeed?: Pick<TroopSheet, 'speed' | 'otherSpeeds'>;
 

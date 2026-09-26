@@ -46,15 +46,27 @@ describe('the browser session repository', () => {
     session.battle = createBattle({ board: openBoard(), units: [{ id: 'flyer', card: old, side: 'attacker', square: 'c2' }] });
     delete session.battle.units[0].movementRates;
     delete session.battle.units[0].sourceSpeed;
-    session.battle.units[0].speed = 10;
+    Object.assign(session.battle.units[0], { speed: 10, flying: true });
     const custom = structuredClone(session);
     custom.battle!.units[0].speed = 40;
     expect(reviveSession(custom)!.battle!.units[0].speed).toBe(40);
     const restored = reviveSession(session)!;
-    expect(restored.battle!.units[0]).toMatchObject({ speed: 40, flying: true,
+    expect(restored.battle!.units[0]).not.toHaveProperty('flying');
+    expect(restored.battle!.units[0]).toMatchObject({ speed: 40,
       movementRates: { land: 20, fly: 40, swim: 0 },
       sourceSpeed: { speed: 20, otherSpeeds: [{ type: 'fly', value: 60 }] } });
     expect(reviveSession(structuredClone(restored))).toEqual(restored);
+  });
+
+  it('revives a schema-2 flier with its flight held in its fly rate alone', () => {
+    const session = { ...freshSession(), schemaVersion: 2 };
+    session.setup.units = [{ id: 'harpy', card, side: 'attacker', square: 'c2', engines: [] }];
+    session.battle = createBattle({ board: openBoard(), units: [{ id: 'harpy', card, side: 'attacker', square: 'c2' }] });
+    Object.assign(session.battle.units[0], { flying: true, flies: false });
+    const unit = reviveSession(session)!.battle!.units[0];
+    expect(unit).not.toHaveProperty('flying');
+    expect(unit).not.toHaveProperty('flies');
+    expect(unit.movementRates).toEqual({ land: 10, fly: 10, swim: 0 });
   });
 
   it('upgrades the previous movement scale once and preserves the fraction of a Move in reserve', () => {
