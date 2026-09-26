@@ -75,9 +75,17 @@ const PICK_SWELL = 0.07;
 const SPENT_SCALE = 0.8;
 
 // A shared filter instance: desaturate() only ever sets the same fixed matrix, so every
-// dead or routed miniature can point at the one instance instead of allocating its own.
-const DESATURATE = new PIXI.ColorMatrixFilter();
-DESATURATE.desaturate();
+// dead or routed miniature can point at the one instance instead of allocating its own. It is
+// built on first use: a filter needs a `document`, and tests load the board barrel under node.
+let desaturate: PIXI.ColorMatrixFilter | null = null;
+
+function desaturateFilter(): PIXI.ColorMatrixFilter {
+  if (!desaturate) {
+    desaturate = new PIXI.ColorMatrixFilter();
+    desaturate.desaturate();
+  }
+  return desaturate;
+}
 
 function badgeStyle(size: number, theme: BoardTheme): Partial<PIXI.ITextStyle> {
   return {
@@ -348,7 +356,7 @@ export class Token extends PIXI.Container {
   private applyFilters(): void {
     const list: PIXI.Filter[] = [];
     // Keep each bar's severity colour when the miniature loses its colour.
-    if (this.art) this.art.filters = this.desaturated ? [DESATURATE] : null;
+    if (this.art) this.art.filters = this.desaturated ? [desaturateFilter()] : null;
     if (this.reaction?.spec.flash && this.flashFilter) list.push(this.flashFilter);
     this.filters = list.length ? list : null;
   }

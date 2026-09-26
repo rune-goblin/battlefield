@@ -37,8 +37,7 @@ export const targetingIcon = (offer: Pick<ActionOffer, 'type' | 'spell'>): Targe
   offer.spell ? `cast:${offer.spell}`
     : ({ fight: 'attack', shoot: 'shoot', rally: 'rally', guard: 'block', cast: 'cast' } as const)[offer.type];
 
-// proto: tests load this module under node, and the barrel builds PIXI filters at import.
-export { targetAnchor } from '../board/target-point.js';
+export { targetAnchor } from '../board/index.js';
 
 /** Adapts exact engine targets to board picks, icons, previews and one action/effect plan. */
 export class TargetingService {
