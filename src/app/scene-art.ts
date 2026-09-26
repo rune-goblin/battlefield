@@ -1,4 +1,4 @@
-import { assetUrl } from '../board/asset-base.js';
+import { assetUrl } from '../board/index.js';
 
 const BATTLE_LINES = ['standards', 'pressure', 'bowmen'];
 const OUTCOMES = {

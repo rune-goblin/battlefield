@@ -1,7 +1,6 @@
 <script lang="ts">
   import { at, gridOf, parse, type Board } from '../engine/index.js';
-  import type { FallenModel, TokenModel } from '../board/index.js';
-  import { TERRAIN_LABELS, brokenCells, surfaceGroup } from '../board/terrain-textures.js';
+  import { brokenCells, surfaceGroup, TERRAIN_LABELS, type FallenModel, type TokenModel } from '../board/index.js';
 
   interface Props { board: Board | null; cell: string | null; tokens: TokenModel[]; fallen: FallenModel[] }
   let { board, cell, tokens, fallen }: Props = $props();

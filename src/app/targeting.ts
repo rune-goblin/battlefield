@@ -2,8 +2,7 @@ import {
   edgeCells, gridOf, notation, occupantTarget, refOf, targetCells, unitTarget, type ActionOffer, type ActivityAction,
   type ActivityOption, type ActivityTarget, type BattleState, type BoardObject, type Tree, type Unit,
 } from '../engine/index.js';
-import type { TargetIcon } from '../board/art.js';
-import type { TargetArrow } from '../board/target-point.js';
+import type { TargetArrow, TargetIcon } from '../board/index.js';
 
 export type TargetGeometry = 'hex' | 'edge' | 'corner' | 'group';
 export interface TargetMarker {
@@ -38,6 +37,7 @@ export const targetingIcon = (offer: Pick<ActionOffer, 'type' | 'spell'>): Targe
   offer.spell ? `cast:${offer.spell}`
     : ({ fight: 'attack', shoot: 'shoot', rally: 'rally', guard: 'block', cast: 'cast' } as const)[offer.type];
 
+// proto: tests load this module under node, and the barrel builds PIXI filters at import.
 export { targetAnchor } from '../board/target-point.js';
 
 /** Adapts exact engine targets to board picks, icons, previews and one action/effect plan. */

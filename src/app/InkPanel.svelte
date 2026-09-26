@@ -1,9 +1,9 @@
 <script lang="ts">
   import LchColour from './LchColour.svelte';
   import MapLinesPanel from './MapLinesPanel.svelte';
-  import { defaultInkSettings, type InkMapSettings } from '../board/ink-map.js';
-  import { isPage, PAPER_GRAINS, PAPER_LABELS, PAPER_PAGES } from '../board/paper.js';
-  import { TERRAIN_GROUPS, TERRAIN_LABELS, type TerrainGroup } from '../board/terrain-textures.js';
+  import {
+    defaultInkSettings, isPage, PAPER_GRAINS, PAPER_LABELS, PAPER_PAGES, TERRAIN_GROUPS, TERRAIN_LABELS, type InkMapSettings, type TerrainGroup,
+  } from '../board/index.js';
 
   interface Props {
     settings: InkMapSettings;

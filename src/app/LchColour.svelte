@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { cssHex, lchToRgb, rgbToLch, type Lch } from '../board/layers/color.js';
+  import { cssHex, lchToRgb, rgbToLch, type Lch } from '../board/index.js';
 
   interface Props {
     label: string;

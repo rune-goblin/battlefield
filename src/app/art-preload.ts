@@ -1,4 +1,4 @@
-import { preloadBoardArt, preloadPieceArt } from '../board/preload.js';
+import { preloadBoardArt, preloadPieceArt } from '../board/index.js';
 import { game, onRecord } from './game.svelte.js';
 
 function warm(): void {

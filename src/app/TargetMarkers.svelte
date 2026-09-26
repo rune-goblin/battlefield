@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Point } from '../engine/index.js';
-  import { targetIconUrl } from '../board/art.js';
+  import { targetIconUrl } from '../board/index.js';
   import { targetAnchor, targetText, type TargetMarker } from './targeting.js';
 
   interface Props {

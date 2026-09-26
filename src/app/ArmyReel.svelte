@@ -1,9 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { MAX_WOUNDS, ROUTED_AT, notation, type Unit } from '../engine/index.js';
-  import { bannerSvg, troopArtUrl } from '../board/index.js';
-  import { cssHex } from '../board/layers/color.js';
-  import { statusBars, STATUS_TRACK, STATUS_OUTLINE } from '../board/status-bars.js';
+  import { bannerSvg, cssHex, statusBars, STATUS_OUTLINE, STATUS_TRACK, troopArtUrl } from '../board/index.js';
+  import { sideColour } from './presentation.js';
 
   interface Props {
     /** Every standing unit of the side now on turn, in activation order. */
@@ -21,7 +20,7 @@
   let { units, activated, selected, locked, hovered, pick, hover, below }: Props = $props();
 
   const done = $derived(new Set(activated));
-  const side = $derived(units[0]?.side === 'defender' ? 'var(--def)' : 'var(--att)');
+  const side = $derived(sideColour(units[0]?.side ?? 'attacker'));
   const ready = $derived(units.filter((u) => !done.has(u.id)));
   const spent = $derived(units.filter((u) => done.has(u.id)));
   const flag = bannerSvg('currentColor');
@@ -51,7 +50,7 @@
       <img class:desaturated={u.wounds >= MAX_WOUNDS || u.disorder >= ROUTED_AT} src={troopArtUrl(u.name, u.role)} alt="" />
       <span class="name" lang="en">{u.name}</span>
       <span class="status-bars" style:--track={cssHex(STATUS_TRACK)} style:--outline={cssHex(STATUS_OUTLINE)}>
-        {#each [bars.health, bars.morale] as bar, i}
+        {#each [bars.health, bars.morale] as bar, i (i)}
           <span class="status-bar" class:morale={i === 1} role="meter" aria-label={bar.label} aria-valuemin={0} aria-valuemax={bar.max} aria-valuenow={bar.remaining} aria-valuetext={bar.label} title={bar.label}>
             <span class="bar-fill" style:width={`${bar.remaining / bar.max * 100}%`} style:background={cssHex(bar.colour)}></span>
             {#each Array(bar.max - 1) as _, n (n)}
