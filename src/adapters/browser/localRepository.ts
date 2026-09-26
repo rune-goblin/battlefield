@@ -1,5 +1,6 @@
 import type { SessionRepository } from '../../runtime/ports.js';
 import { freshSession, migrateLegacySave, reviveSession, type BattleSession } from '../../runtime/session.js';
+import type { TextCell } from '../json-store.js';
 
 /** The pre-session save: `{ stage, setup, battle }`, written by the app before Wave 1.1. */
 export const LEGACY_KEY = 'battlefield.v4';
@@ -10,6 +11,11 @@ export interface WebStorage {
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
 }
+
+export const webCell = (storage: WebStorage, key: string): TextCell => ({
+  get: () => storage.getItem(key),
+  set: (value) => storage.setItem(key, value),
+});
 
 function read(storage: WebStorage, key: string): unknown {
   try {

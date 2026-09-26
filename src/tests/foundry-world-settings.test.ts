@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { scriptedRng } from '../engine/index.js';
+import { createRuntime } from '../runtime/createRuntime.js';
 import { createFoundryArchive, ARCHIVE_LIMIT, type DownloadFile } from '../adapters/foundry/worldArchive.js';
 import { createFoundrySessionRepository } from '../adapters/foundry/worldSessionRepository.js';
 import type { WorldSettingStorage } from '../adapters/foundry/worldSettings.js';
@@ -74,6 +76,26 @@ describe('the Foundry archive', () => {
     expect(remaining).toHaveLength(ARCHIVE_LIMIT);
     expect(remaining.some((e) => e.slot === firstSlot)).toBe(false);
     expect(downloaded).toHaveLength(1);
+  });
+});
+
+describe('an unreadable world setting', () => {
+  it('keeps the saved battles byte for byte and refuses every write over them', async () => {
+    const corrupt = '[{"slot": "slot-1", "name": "Keep", "data": {}}, 42]';
+    const archiveSetting = fakeStorage(corrupt);
+    const notices: string[] = [];
+    const archive = createFoundryArchive(archiveSetting, () => {}, (message) => notices.push(message));
+    const session = freshSession();
+    const runtime = createRuntime({
+      repository: createFoundrySessionRepository(fakeStorage()), archive, session, dice: scriptedRng([10]),
+    });
+
+    await expect(archive.save('Night one', session)).rejects.toThrow('could not be read');
+    await expect(archive.remove('slot-1')).rejects.toThrow('could not be read');
+    await expect(archive.import(JSON.stringify({ name: 'x', data: session }))).rejects.toThrow('could not be read');
+    expect(await runtime.submit({ type: 'session.load', slot: 'slot-1' })).toMatchObject({ ok: false, reason: 'storage' });
+    expect(archiveSetting.get()).toBe(corrupt);
+    expect(notices).toHaveLength(1);
   });
 });
 
