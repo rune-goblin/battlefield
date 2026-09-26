@@ -4,6 +4,7 @@ import { rollLine } from '../check.js';
 import { activityOf, CAST_COMMITMENT, type Activity } from '../ladders.js';
 import type { Rng } from '../rng.js';
 import { clone } from '../clone.js';
+import { healSlots } from '../magic.js';
 import { targetKey } from '../targets.js';
 import {
   AFTER_ACTED_CONDITIONS, BEGIN_CONDITIONS, COUNTDOWN_CONDITIONS, FINISH_CONDITIONS, HEALING_CONDITIONS, resetConditions,
@@ -215,7 +216,7 @@ function doActivity(state: BattleState, rng: Rng, u: Unit, action: ActivityActio
       if (!recipients.includes(id) || !Array.isArray(choice.conditions) || choice.conditions.length > 2
         || new Set(choice.conditions).size !== choice.conditions.length
         || choice.conditions.some(c => !HEALING_CONDITIONS.includes(c))
-        || (action.activity === 4 && choice.extraHealth)) throw new Error('invalid recovery choices');
+        || (!healSlots(action.activity).extraHealth && choice.extraHealth)) throw new Error('invalid recovery choices');
     }
   }
   const focus = validateFocus(action);

@@ -5,7 +5,7 @@ import { TERRAIN } from '../terrain.js';
 import { edgeCells, notation, parse, sameCell, type Square } from '../board.js';
 import { CAST_COMMITMENT, VERBS, activityOf, canFocus, type ActivityIndex, type Verb } from '../ladders.js';
 import {
-  castActivityOf, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
+  castActivityOf, healSlots, spellCeiling, spellCost, treesForTradition, TREE_LABEL, TREE_RANGE, TREE_TARGET, type Tree,
 } from '../magic.js';
 import {
   BANDS, type ActionOffer, type Activation, type ActivationVerb, type BattleState, type ActivityOption, type ActivityTarget,
@@ -149,7 +149,7 @@ function connected(state: BattleState, cells: Square[]): boolean {
  * the group that most wants it. */
 function healTargets(state: BattleState, u: Unit, index: ActivityIndex): ActivityTarget[] {
   const need = (t: Unit) => t.disorder + t.wounds;
-  return groupsUpTo(healPool(state, u).filter(t => hasSight(state.board, u.square, t.square)), index === 4 ? 1 : index)
+  return groupsUpTo(healPool(state, u).filter(t => hasSight(state.board, u.square, t.square)), healSlots(index).recipients)
     .sort((a, b) => b.reduce((n, t) => n + need(t), 0) - a.reduce((n, t) => n + need(t), 0))
     .map(groupTarget);
 }
