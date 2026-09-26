@@ -2,10 +2,10 @@
   import { abilityDescription, abilitySummary, wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, garrisoned, MAX_WOUNDS, movementSpeed, rollBonus, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
     shootCeiling, shootFloor, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
     type BattleState, type Unit } from '../../engine/index.js';
+  import { signed } from '../presentation.js';
 
   let { battle, unit }: { battle: BattleState; unit: Unit } = $props();
   const fort = $derived(unit.status === 'active' ? wallsFor(battle.board).fortifiedAt(unit.square) : null);
-  const signed = (value: number) => `${value < 0 ? '−' : '+'}${Math.abs(value)}`;
   const rollNote = 'Roll 1d20 plus this bonus. Target, height, range and action modifiers apply when choosing an attack.';
   const volley = $derived((unit.stats.volley ?? 0) - unit.disorder + rollBonus(unit) + (garrisoned(battle, unit) ? 1 : 0));
   const spellRanges = $derived(unit.trees.map(tree => `${TREE_LABEL[tree]}: ${castCeiling(battle, tree)} hexes`).join(' · '));

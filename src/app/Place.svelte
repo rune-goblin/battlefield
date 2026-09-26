@@ -17,6 +17,7 @@
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { COMMAND_NOTICE } from './command-notices.js';
+  import { signed } from './presentation.js';
 
   interface Props {
     /** The army step's side. The siege step has none: an engine belongs to whoever stands on it. */
@@ -225,8 +226,6 @@
     if (cell === null || !p || !mayMove(p) || !cellsFor(game.setup, p).includes(cell)) return;
     void put(p, cell);
   }
-
-  const signed = (n: number | null) => (n === null ? '—' : `${n < 0 ? '−' : '+'}${Math.abs(n)}`);
 
   // The card as it plays here: attacks and Move, then AC, Health and Perception, then the saves.
   function statRows(card: UnitCard): { label: string; value: string; note: string }[] {

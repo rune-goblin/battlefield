@@ -7,6 +7,7 @@ import type { LocalScope } from '../scope.js';
 import type { Notification, NotificationService } from '../notifications.js';
 import type { Prop } from './ring-controller.svelte.js';
 import type { BattleDeps } from './battle-controller.svelte.js';
+import { signed } from '../presentation.js';
 
 export const DRAG_NOTICE = 'battle-drag';
 
@@ -316,7 +317,6 @@ export function createDragController(s: DragShared) {
       : row.kind === 'step' ? '1 action · no roll'
         : s.act?.escape ? `${actionCost(row.actions)} · Reflex ${signed(s.act.escape.modifier)} vs DC ${s.act.escape.dc} to get away`
           : actionCost(row.actions);
-  const signed = (n: number) => (n < 0 ? `−${-n}` : `+${n}`);
   const rowKey = (row: Preview) => `${row.kind}:${row.kind === 'charge' || row.kind === 'advance' ? row.enemy : row.cell}`;
 
   // A charge carries a Fight activity of its own; `doCharge` takes the Strike unless told.

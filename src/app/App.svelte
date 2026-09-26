@@ -7,7 +7,6 @@
   import Sides from './Sides.svelte';
   import Summary from './Summary.svelte';
   import Battle from './Battle.svelte';
-  import VfxGallery from './VfxGallery.svelte';
   import { game, gmUserId, presentation, viewerId } from './game.svelte.js';
   import { nav, STAGE_SIDE } from './navigation.svelte.js';
   import { provideNotifications } from './notification-context.js';
@@ -30,10 +29,10 @@
   followArt();
 
   // proto: `?vfx` opens the spell-effect gallery instead of the game, so an effect can be
-  // tuned and screenshotted without playing a battle up to a cast.
-  const vfxLab = new URLSearchParams(location.search).has('vfx');
+  // tuned and screenshotted without playing a battle up to a cast. Works in a dev build only.
+  const vfxGallery = import.meta.env.DEV && new URLSearchParams(location.search).has('vfx') ? import('./VfxGallery.svelte') : null;
 
-  const lab = $derived((import.meta.env.DEV && textureLab.open) || vfxLab);
+  const lab = $derived((import.meta.env.DEV && textureLab.open) || !!vfxGallery);
   const view = $derived(stage.view);
 
   // The board outlives a stage, and a burst or popup from the last one would play on over
@@ -55,8 +54,10 @@
 <div class="battlefield-root" style={selectionCss} {@attach appRoot}>
   {#if import.meta.env.DEV && textureLab.open}
     <TextureLab />
-  {:else if vfxLab}
-    <VfxGallery />
+  {:else if vfxGallery}
+    {#await vfxGallery then { default: VfxGallery }}
+      <VfxGallery />
+    {/await}
   {:else if nav.stage === 'battle' && game.battle}
     <Battle />
   {:else if STAGE_SIDE[nav.stage] && game.setup.board}

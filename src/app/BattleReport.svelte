@@ -14,6 +14,7 @@
   import { onDestroy, untrack } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
+  import { signed } from './presentation.js';
   let { backdrop = true }: { backdrop?: boolean } = $props();
   const notifications = useNotifications();
   const attempt = commandReporter(notifications);
@@ -96,7 +97,6 @@
   });
   const outcome = (r: NightRecovery) => r.recovered === 0 ? `fails to recover` : `recovers ${r.recovered} ${r.activity === 'rally' ? 'morale' : 'health'}`;
   const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'camp' ? 'In camp' : u.status === 'left' ? 'Left the field' : 'Standing';
-  const signed = (n: number) => n >= 0 ? `+${n}` : `−${-n}`;
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
     : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' ? `The ${b.winner === 'attacker' ? 'defender' : 'attacker'} surrenders.`
     : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);

@@ -6,6 +6,7 @@
   import UnitSheet from './UnitSheet.svelte';
   import GateStatus from '../GateStatus.svelte';
   import { turnNote } from '../viewer.svelte.js';
+  import { signed } from '../presentation.js';
   import type { BattleController } from './battle-controller.svelte.js';
 
   let { c }: { c: BattleController } = $props();
@@ -77,7 +78,7 @@
       <p class="move-note">
         <strong>{c.holders.map((e) => e.name).join(' and ')}</strong>
         {c.holders.length === 1 ? 'holds' : 'hold'} this unit in contact.
-        {#if c.act.escape}A Move away rolls Reflex {c.act.escape.modifier < 0 ? '−' : '+'}{Math.abs(c.act.escape.modifier)} against DC {c.act.escape.dc}.{/if}
+        {#if c.act.escape}A Move away rolls Reflex {signed(c.act.escape.modifier)} against DC {c.act.escape.dc}.{/if}
         {#if c.act.steps.length}A Step to open ground needs no roll.{/if}
       </p>
     {/if}
