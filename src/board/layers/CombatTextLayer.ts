@@ -3,7 +3,7 @@ import { STATUSES, type Grid, type Point, type Status } from '../../engine/index
 import { assetUrl } from '../asset-base.js';
 import type { StatusIcon } from '../art.js';
 import { easeOutBack, easeOutCubic } from '../easing.js';
-import { STATUS_INTRO } from '../Token.js';
+import { STATUS_INTRO } from '../token/geometry.js';
 import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
 export type CombatTextTone = 'good' | 'bad' | 'warn';

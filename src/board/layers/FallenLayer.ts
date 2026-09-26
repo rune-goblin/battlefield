@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import type { Grid } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
 import { easeInOut } from '../easing.js';
-import { STATUS_INTRO } from '../Token.js';
+import { STATUS_INTRO } from '../token/geometry.js';
 import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
 export interface FallenModel { id: string; name: string; cell: string }

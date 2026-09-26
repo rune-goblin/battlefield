@@ -4,7 +4,7 @@ import type { TokenPlacement } from '../hit.js';
 import type { BoardTheme } from '../theme.js';
 import { SHADOW_GROUP } from '../piece-shadow.js';
 import { actionIconUrl, type ActionIcon, type StatusIcon } from '../art.js';
-import { Token, TOKEN_FOOTPRINT_RATIO, type TokenModel, type UnitTokenModel } from '../Token.js';
+import { Token, type TokenModel, type UnitTokenModel } from '../Token.js';
 import type { TokenReaction } from '../vfx/Effect.js';
 import type { BoardLayer, LayerContext } from './BoardLayer.js';
 
@@ -81,11 +81,8 @@ export class TokenLayer implements BoardLayer {
     return this.models
       .map((m): TokenPlacement => {
         const token = this.cache.get(m.id);
-        const offset = this.size * TOKEN_FOOTPRINT_RATIO / 2 * .72;
         return { id: m.id, cell: m.cell,
-          badge: m.kind === 'unit' && m.engineId && token ? {
-            id: m.engineId, x: token.x - offset * token.scale.x, y: token.y - offset * token.scale.y, size: this.size * .3 * Math.max(token.scale.x, token.scale.y),
-          } : undefined };
+          badge: m.kind === 'unit' && m.engineId && token ? { id: m.engineId, ...token.chipBounds() } : undefined };
       })
       .filter((p) => this.cache.has(p.id));
   }
