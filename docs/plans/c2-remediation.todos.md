@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W6 — Engine answers, thin views: W6.1–W6.3
 - W7 — Runtime and services: W7.1–W7.7
 - W8 — App structure: W8.1–W8.4
 - W9 — Board structure: W9.1–W9.2
@@ -15,12 +14,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 - `createJsonArchive`'s accept checks only for a string `slot`. An entry with a string slot and
   no string `name` passes, and `filenameFor` throws on it during Foundry eviction.
-- W6.1 and W6.3: the engine status label should treat a `left` unit as routed and gone. The
-  audit's routed claim in M4 was false on current code.
-- W6.1: `doAdvance` still accepts `[1, 2, 3]` for both finishes. A charge finish with 3 now fails
-  in `doCharge` after `doStride` has run on the clone, with the text "invalid charge activity".
-- W6.1: the comment above `ACTIVITIES` in `drag-controller.svelte.ts` still describes the charge
-  activity, which no longer lives there.
 
 ## Open question from W2
 
@@ -32,8 +25,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Carried forward from W2
 
-- W6.2: `BattlePins.svelte` keeps two inline sign formats (near lines 220 and 236); switch them to
-  `signed` from `presentation.ts`.
 - W8.2: `Place.svelte` keeps two `ENGINES.find` calls (lines 248 and 263); switch them to
   `engineNamed` from `src/engine/siege-engines.ts`.
 - W8.3: app files deep-import board internals `art`, `asset-base`, `terrain-textures`,
@@ -61,10 +52,26 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Carried forward from W5
 
-- W6.1 keeps the `healableConditions` export W5.1 added. W6.3 moves `HealingChoices.svelte`'s call
-  to it behind the report and healing controller.
 - `Unit.flies`: nothing in `src` outside tests sets it to `true`. It looks like dead state; decide
   whether to delete it.
+
+## Open question from W6
+
+- `UnitSheet.svelte` calls engine stat getters in its markup (`movementSpeed`, `shootModifier`,
+  `wallsFor(...).fortifiedAt`, `castCeiling`, `shootFloor`, `shootCeiling` and the save
+  modifiers). Each is the engine's own answer, so no rule is copied, but the plan's invariant says
+  no view imports an engine function that decides anything. Should `UnitSheet` get a controller
+  that hands it finished rows (W8), or do stat readouts fall outside the invariant?
+
+## Carried forward from W6
+
+- `commitment()` prices an option as `cost ?? index`; the old `BattlePins` code used `cost ?? 3`.
+  For a cast tier I or II the unit cannot reach (cost `null`), the engine returns a commitment
+  where the view once hid the picker. Only activities the unit cannot take are affected.
+- `activation().melee` ignores waypoints. The drag controller still calls `meleePlans` itself
+  for a melee dragged or dropped with waypoints; fold that into the engine answer if a second
+  caller appears.
+- W8: the Svelte autofixer flags two unkeyed `each` blocks in `UnitSheet.svelte` (lines 25 and 28).
 
 ## Unreadable save recovery (W10.1)
 

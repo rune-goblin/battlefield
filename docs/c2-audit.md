@@ -59,7 +59,7 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W5.1 gathered Unit's 19 condition fields into a `Conditions` interface that `Unit` extends, so the saved shape and schema 2 stay as they were. `CONDITIONS` in `src/engine/conditions.ts` gives each field its fresh value, lapse, magical flag, status and heal text, and a missing entry fails the type check. Battle creation, the night reset, begin, finish, the shooter clear, the nullify hit, `endCondition`, recovery, healing validation, the status list and `HealingChoices.svelte` read the record, and `HealingCondition` derives from it. Log lines and clear order are unchanged, and a test pins the heal order. The app's hand-written `status()` list belongs to M3 and W6.
 
-### M3. App controllers re-derive what the engine decides — Once And Only Once `[cross-cutting]` `[partial]`
+### M3. App controllers re-derive what the engine decides — Once And Only Once `[cross-cutting]` `[done]`
 - **Where:** `src/app/battle/ring-controller.svelte.ts:110,126,138-143`; `drag-controller.svelte.ts:326-331,378-387`; `battle-controller.svelte.ts:466-491`.
 - **What:** The ring guesses refusal reasons with its own precedence ladder. `CHARGES` ignores the `charge` ability the engine honours (`battle.ts:2308`), and `CHARGE_ACTIVITIES = [1, 2]` never offers the activity 3 the engine accepts (verified drift). `status()` is a third hand-written list of 22 unit flags, beside `status.ts` and `status-effects.ts`.
 - **Why it matters:** `rules.html` and the engine are the arbiters; these copies go silently wrong when a rule changes, and the charge copy already has.
@@ -67,12 +67,16 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W1.3 fixed the charge drift. The rules list only Charge 2 and Charge and Press 3, so `doCharge` now rejects activity 3. `chargeImpact` moves the impact formula into the engine, and the drag controller reads the engine's activities and impact, so a unit with the `charge` ability sees its impact. The ring's refusal ladder and the hand-written `status()` list remain for W6.1 and W6.2.
 
-### M4. Views compute rules — Feature Envy `[cross-cutting]` `[partial]`
+**Resolution (2026-09-26):** W6.1 made `activation()` return every verb with a legal flag and an engine reason, and priced a melee's finishes in `meleeFinishes`. `doAdvance` now checks the run plus the chosen activity against the unit's actions before any stride, so an over-budget move-and-charge is refused with "The move and chosen attack exceed the available actions." rather than `doCharge`'s text. The step refusal gains "zero Speed", per the Step rule in `rules.html`. W6.2 read the ring's six slices off `activation().verbs` and dropped the hand-written reason ladders. Cast stays legal while the unit knows any tree, so a blocked tree shows its refusal in the tree ring. The battle controller builds the status line from `unitOutcome`, `positionNotes` and `statusEffectsOf`, so the condition entries read in the board's words (Held, Marked, Guard); the guard and burst-of-speed amounts leave that line, and the UnitEffects strip shows them. Nothing remains.
+
+### M4. Views compute rules — Feature Envy `[cross-cutting]` `[done]`
 - **Where:** `src/app/BattleReport.svelte:124` recomputes the recovery modifier from `aftermath.ts:122`; `:98` and `:106-107` decide routed without `isRouted`'s `status === 'active'` check, so a unit in camp counts as both in camp and routed; `:223` repeats the "nothing to recover" guard. `HealingChoices.svelte:5,7` maps conditions and the renewal heal count. `UnitSheet.svelte:9` partially copies `shootModifier`. `BattlePins.svelte:98` repeats `movementSpeed`, `:129` hard-codes the cast cap, and `:73,101,108,117` call `gateReason`/`siegeReason` in the template.
 - **Why it matters:** This breaks the rule in `docs/plans/battle-controller-split.md:33` ("a view imports no engine function that decides anything"); the routed count is already wrong on screen.
 - **Direction:** Engine exports `recoveryModifier`, `canRecover` and `healableConditions`; a controller per view hands finished rows to the view.
 
 **Resolution (2026-09-26):** The overseer rejected the routed claim. A unit in camp never reaches the routed disorder level, and every `left` unit is routed, so switching to `isRouted` would drop the units that left from the routed count; the count on screen is right. W6.1 and W6.3 should give the engine status label `left` as routed and gone. The recovery modifier, recovery guard, healing map, shoot modifier and `BattlePins` rules remain for W6.1–W6.3.
+
+**Resolution (2026-09-26):** W6.1 added `recoveryModifier`, `canRecover`, `healSlots`, `unitOutcome`, `unitStatusLabel`, `positionNotes`, `haulingSpeed` and `commitment()`, and `shootModifier` answers without a target. `unitOutcome` counts a `left` unit as routed, so a unit that left with Morale to spare now falls in the routed count, where before it fell in no bucket. W6.3 moved `BattleReport`'s decisions into `src/app/battle-report.svelte.ts` and the healing rows into `src/app/healing-choices.ts`, which read `healableConditions` and `healSlots`; `HealingChoices.svelte` keeps its props. Healing validation keeps its `conditions.length > 2` bound, so no accepted command starts failing. W6.2 moved `gateReason`, `siegeReason` and the release and haul hexes into the battle controller, which uses `haulingSpeed`; the cast cap comes from `commitment()`, and the aim popup hides a CommitmentPicker that could offer nothing. `UnitSheet.svelte` calls `shootModifier` in place of its partial copy. It still calls engine stat getters (`movementSpeed`, `wallsFor`, `castCeiling` and others) in its markup; the todos file asks whether that breaks the views-render invariant.
 
 ### M5. Each command's facts are spread across 5+ tables — Shotgun Surgery `[cross-cutting]`
 - **Where:** `src/runtime/commands.ts:25,97`; `policy.ts:15,68,84`; `executeCommand.ts:29,81,86,92,205`.
@@ -212,9 +216,10 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 **Resolution (2026-09-26):** W2.5 switched `SaveLoadPanel`'s error colour to `--bad`. The hard-coded palettes, shadows and scrims remain for W8.4.
 
 ## Nits
-- `TroopPicker.svelte:92` `[local]` `[partial]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.
+- `TroopPicker.svelte:92` `[local]` `[done]` — `signed` prints `+-2` for a negative; `signed` is defined 5 times.
   **Resolution (2026-09-26):** W1.4 gave `TroopPicker`'s `signed` the sign-aware form, so a negative prints `−2`. The sweep of the five copies remains for W2.5.
   **Resolution (2026-09-26):** W2.5 exports the sign-aware `signed` from `presentation.ts`, and `TroopPicker`, `BattleReport`, `Place`, `UnitSheet`, `BattleOrders`, the drag controller and `result-words.ts` read it. `BattlePins.svelte` keeps two inline sign formats for W6.2.
+  **Resolution (2026-09-26):** W6.2 switched `BattlePins.svelte`'s two inline sign formats to `signed`. No copy of `signed` remains.
 - `foundry/battleSitePicker.ts:27` and `troopLibrary.ts:37` `[local]` `[done]` — the same actor-to-card reader twice; `BattleSiteArmy` and `KingdomArmy` are identical, as are the two `PLAYER_KINGDOM` constants.
   **Resolution (2026-09-26):** W2.6 dropped `BattleSiteArmy` for `KingdomArmy`, kept one `PLAYER_KINGDOM` in `kingdomArmies.ts`, and moved the actor reader into `foundry/armyActor.ts`, which both callers use.
 - `Interaction.ts:172-183`/`424-435` `[local]` `[done]` — zoom-about-point math twice; `board/index.ts:330-347` duplicates `connectedCells`.
