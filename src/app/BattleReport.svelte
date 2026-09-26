@@ -1,337 +1,197 @@
 <script lang="ts">
-  import { FORTIFICATIONS } from '../engine/board.js';
-  import { canContinueBattle, deploymentCells, FEATURES, hasRecovered, HEX_TERRAINS, isStanding, isSurvivor, MAX_WOUNDS, nextDayBattlefield,
-    nightResolved, opponent, recoveryDc, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment,
-    type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
-  import type { TokenModel } from '../board/index.js';
-  import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, saveBattle, startNextDay } from './game.svelte.js';
-  import { allSubmitted, submissionOf } from '../runtime/interactions.js';
+  import { FEATURES, FORTIFICATIONS, HEX_TERRAINS, type BoardSpec } from '../engine/index.js';
   import { viewer } from './viewer.svelte.js';
-  import { leaveBattle } from './navigation.svelte.js';
   import PixiBoard from './PixiBoard.svelte';
   import ConnectionWarning from './ConnectionWarning.svelte';
   import { gameMap } from './map-style.svelte.js';
-  import { onDestroy, untrack } from 'svelte';
+  import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
-  import { commandReporter, COMMAND_NOTICE } from './command-notices.js';
-  import { signed } from './presentation.js';
+  import { createBattleReport, DAY_OPTIONS, STEPS } from './battle-report.svelte.js';
   let { backdrop = true }: { backdrop?: boolean } = $props();
-  const notifications = useNotifications();
-  const attempt = commandReporter(notifications);
-  onDestroy(() => notifications.dismiss(COMMAND_NOTICE));
-
-  type Step = 'report' | 'recovery' | 'orders' | 'battlefield' | 'deployment';
-  const steps: { id: Step; label: string }[] = [
-    { id: 'report', label: 'Report' }, { id: 'recovery', label: 'Recovery' },
-    { id: 'orders', label: 'Orders' }, { id: 'battlefield', label: 'Battlefield' }, { id: 'deployment', label: 'Deployment' },
-  ];
-  const b = $derived(game.battle!);
-  let step = $state<Step>('report');
-  let choices = $state<Record<string, RecoveryActivity | ''>>({});
-  let positions = $state<Record<string, string>>({});
-  let content: HTMLDivElement;
-  const resolved = $derived(nightResolved(b));
-  const continuing = $derived(canContinueBattle(b));
-  const stage = $derived<Step>(!continuing ? 'report' : resolved && step === 'report' ? (b.dayOrders?.confirmed ? 'deployment' : 'orders') : step);
-  const dayOptions: { id: DayOrder; label: string; description: string }[] = [
-    { id: 'surrender', label: 'Propose surrender', description: 'Ask the opposing side to accept your surrender. Agree the terms together.' },
-    { id: 'withdraw', label: 'Withdraw', description: 'Leave the field with your surviving troops. The enemy holds it if they stay.' },
-    { id: 'hold', label: 'Hold the field', description: 'Stay to contest the ground. If both armies hold, prepare for another day.' },
-  ];
-  const surrenderPending = $derived(SIDES.some((side) => b.dayOrders?.choices[side] === 'surrender'));
-  const ordersReady = $derived(SIDES.every((side) => !!b.dayOrders?.choices[side]) && !surrenderPending);
-  const bothHold = $derived(SIDES.every((side) => b.dayOrders?.choices[side] === 'hold'));
-  const field = $derived(nextDayBattlefield(b));
-  const newMap = $derived(!!b.nextBoard);
-  const survivors = $derived(b.units.filter(isSurvivor));
-  const declarations = $derived<RecoveryChoice[]>(Object.entries(choices)
-    .filter(([, activity]) => activity !== '').map(([unit, activity]) => ({ unit, activity: activity as RecoveryActivity })));
-  const sideOf = (unit: string) => b.units.find((u) => u.id === unit)?.side;
-  const declarationsFor = (side: Side) => declarations.filter((c) => sideOf(c.unit) === side);
-  const participants = (side: Side) => declarationsFor(side).length;
-  /** Whether this viewer answers for that army: any user seated on it, and the GM for either. */
-  const mine = (side: Side) => viewer.decidesFor(side);
-  const rolled = (side: Side) => hasRecovered(b, side);
-  /** Units in the army's night: its declared choices until it rolls, its rolled results after. */
-  const recovering = (side: Side) => rolled(side) ? b.night![side]!.length : participants(side);
-  const resultOf = (u: Unit) => b.night?.[u.side]?.find((r) => r.unit === u.id);
-  const recoveryOptions: { id: RecoveryActivity | ''; label: string; mark: string }[] = [
-    { id: '', label: 'None', mark: '' }, { id: 'rally', label: 'Morale', mark: '⚑' }, { id: 'treat', label: 'Health', mark: '♥' },
-  ];
-  /** How many of each army's results the viewer has been shown. An army's rolls arrive in one
-   * record; the view then reveals them one unit at a time, with a die tumbling over each. */
-  let shown = $state<Record<Side, number>>({ attacker: 0, defender: 0 });
-  let tumbling = $state<{ unit: string; face: number } | null>(null);
-  const playing = new Set<Side>();
-  const timers = new Set<ReturnType<typeof setTimeout>>();
-  const wait = (ms: number) => new Promise<void>((resolve) => {
-    const timer = setTimeout(() => { timers.delete(timer); resolve(); }, ms);
-    timers.add(timer);
-  });
-  onDestroy(() => timers.forEach(clearTimeout));
-  async function playRolls(side: Side, results: NightRecovery[]) {
-    playing.add(side);
-    for (let i = shown[side]; i < results.length; i++) {
-      for (let tick = 0; tick < 9; tick++) {
-        tumbling = { unit: results[i].unit, face: 1 + Math.floor(Math.random() * 20) };
-        await wait(55);
-      }
-      tumbling = null;
-      shown[side] = i + 1;
-      await wait(450);
-    }
-    playing.delete(side);
-  }
-  let seenNight = false;
-  $effect(() => {
-    for (const side of SIDES) {
-      const results = b.night?.[side];
-      untrack(() => {
-        if (!results) shown[side] = 0;
-        // Results already on the record when the report opens were rolled earlier; play only a roll that lands while it is open.
-        else if (!seenNight) shown[side] = results.length;
-        else if (shown[side] < results.length && !playing.has(side)) void playRolls(side, results);
-      });
-    }
-    seenNight = true;
-  });
-  const outcome = (r: NightRecovery) => r.recovered === 0 ? `fails to recover` : `recovers ${r.recovered} ${r.activity === 'rally' ? 'morale' : 'health'}`;
-  const status = (u: Unit) => u.status === 'destroyed' ? 'Destroyed' : u.disorder >= ROUTED_AT ? 'Routed' : u.status === 'camp' ? 'In camp' : u.status === 'left' ? 'Left the field' : 'Standing';
-  const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
-    : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' && b.winner !== null && b.winner !== 'draw' ? `The ${opponent(b.winner)} surrenders.`
-    : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);
-  const survivorsOf = (side: Side) => survivors.filter((u) => u.side === side);
-  const placementOf = (side: Side): Record<string, string> =>
-    Object.fromEntries(survivorsOf(side).filter((u) => positions[u.id]).map((u) => [u.id, positions[u.id]]));
-  const sideDeployReady = (side: Side) => survivorsOf(side).every((u) => positions[u.id] && deploymentCells(field, u).includes(positions[u.id]))
-    && new Set(Object.values(placementOf(side))).size === survivorsOf(side).length;
-  /** The record holds the cells this army submitted; an edit since then leaves them behind. */
-  const deployed = (side: Side) => {
-    const held = submissionOf(game.interactions, 'nextDay.deployment', side);
-    const local = placementOf(side);
-    return !!held && Object.keys(held).length === Object.keys(local).length
-      && Object.entries(local).every(([id, cell]) => held[id] === cell);
-  };
-  const deployReady = $derived(allSubmitted(game.interactions, 'nextDay.deployment'));
-  const mapReady = $derived(Object.keys(suggestDeployment(field)).length === survivors.length);
-  const previewTokens = $derived<TokenModel[]>(stage === 'deployment' ? survivors.flatMap((u) => positions[u.id] ? [{
-    kind: 'unit' as const, id: u.id, side: u.side, name: u.name, role: u.role, level: u.level,
-    cell: positions[u.id], wounds: u.wounds, disorder: u.disorder,
-    engine: u.engines.find((e) => e.status === 'crewed')?.name ?? null, verdict: null, statuses: [], pick: null, ring: null,
-  }] : []) : []);
-  function preview(u: Unit, activity: RecoveryActivity) {
-    const save = activity === 'rally' ? u.stats.will : u.stats.fortitude;
-    return `${activity === 'rally' ? 'Will' : 'Fortitude'} ${signed(save)} − ${u.disorder} missing Morale − ${recoveryPenalty(participants(u.side))} recovery = ${signed(save - u.disorder - recoveryPenalty(participants(u.side)))} vs DC ${recoveryDc(b, { unit: u.id, activity })}`;
-  }
-  $effect(() => { if (resolved) positions = suggestDeployment(field); });
-  function go(next: Step) { step = next; notifications.dismiss(COMMAND_NOTICE); content?.scrollTo({ top: 0 }); }
-  /** The authority generates tomorrow's field over the spec it already holds. */
-  function generateNext(changes: Partial<BoardSpec> = {}) {
-    void attempt(chooseNextBattlefield(changes));
-  }
-  async function saveForAnotherDay() {
-    const name = `Day ${b.day} complete · ${new Date().toLocaleString()}`;
-    try {
-      await saveBattle(name);
-      notifications.show({ id: 'end-of-day-save', title: 'Battle saved', message: name, tone: 'success', expiresInMs: 4000 });
-    } catch (e) {
-      notifications.show({ id: 'end-of-day-save', title: 'Save failed', message: e instanceof Error ? e.message : String(e), tone: 'error' });
-    }
-  }
-  async function finishDecisions() {
-    if (!b.dayOrders?.confirmed && !(await attempt(confirmDayOrders())).ok) return;
-    if (game.battle?.endedBy === 'dusk') go('battlefield');
-  }
+  const report = createBattleReport({ notifications: useNotifications() });
+  onDestroy(() => report.destroy());
 </script>
 
 <div class="report-scrim" class:over-art={!backdrop}>
   <section class="card report" aria-label="Battle report">
     <header>
-      <p class="eyebrow">Day {b.day} complete · {b.round} rounds</p>
-      <h2>{title}</h2>
-      {#if continuing}
+      <p class="eyebrow">Day {report.b.day} complete · {report.b.round} rounds</p>
+      <h2>{report.title}</h2>
+      {#if report.continuing}
         <ol class="steps" aria-label="Next day preparation">
-          {#each steps as item, index (item.id)}
-            <li class:current={stage === item.id} class:complete={steps.findIndex((s) => s.id === stage) > index} aria-current={stage === item.id ? 'step' : undefined}>
+          {#each STEPS as item, index (item.id)}
+            <li class:current={report.stage === item.id} class:complete={report.stepIndex > index} aria-current={report.stage === item.id ? 'step' : undefined}>
               <span>{index + 1}</span>{item.label}
             </li>
           {/each}
         </ol>
       {/if}
     </header>
-    <div class="report-content" bind:this={content}>
-      {#if stage === 'battlefield'}
+    <div class="report-content" bind:this={report.content}>
+      {#if report.stage === 'battlefield'}
         <p class="intro">Keep fighting over this ground, or move the surviving armies to a new field. Their health, morale, and recovery results carry forward.</p>
         <div class="map-choices" role="group" aria-label="Tomorrow's map">
-          <button class:selected={!newMap} aria-pressed={!newMap} disabled={!viewer.isGm} onclick={() => void attempt(chooseNextBattlefield(null))}>
-            <span class="choice-mark">{!newMap ? '●' : '○'}</span><span><strong>Same map</strong><small>Keep this terrain, damaged walls, and emplacements.</small></span>
+          <button class:selected={!report.newMap} aria-pressed={!report.newMap} disabled={!viewer.isGm} onclick={report.keepMap}>
+            <span class="choice-mark">{!report.newMap ? '●' : '○'}</span><span><strong>Same map</strong><small>Keep this terrain, damaged walls, and emplacements.</small></span>
           </button>
-          <button class:selected={newMap} aria-pressed={newMap} disabled={!viewer.isGm} onclick={() => { if (!newMap) generateNext(); }}>
-            <span class="choice-mark">{newMap ? '●' : '○'}</span><span><strong>New map</strong><small>Generate fresh ground for the next day.</small></span>
+          <button class:selected={report.newMap} aria-pressed={report.newMap} disabled={!viewer.isGm} onclick={report.newField}>
+            <span class="choice-mark">{report.newMap ? '●' : '○'}</span><span><strong>New map</strong><small>Generate fresh ground for the next day.</small></span>
           </button>
         </div>
         <div class="field-layout">
           <div class="map-preview" aria-label="Battlefield preview">
-            <PixiBoard board={field.board} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
+            <PixiBoard board={report.field.board} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
           </div>
           <div class="map-settings">
-            <h3>{newMap ? 'New battlefield' : 'The current battlefield'}</h3>
-            {#if newMap}
-              <label>Terrain<select aria-label="Next battlefield terrain" value={field.board.spec.base} onchange={(e) => generateNext({ base: e.currentTarget.value as BoardSpec['base'] })}>{#each HEX_TERRAINS as terrain (terrain)}<option value={terrain}>{terrain}</option>{/each}</select></label>
-              <label>Feature<select aria-label="Next battlefield feature" value={field.board.spec.feature ?? 'none'} onchange={(e) => generateNext({ feature: e.currentTarget.value as BoardSpec['feature'] })}>{#each FEATURES as feature (feature)}<option value={feature}>{feature}</option>{/each}</select></label>
-              <label>Fortification<select aria-label="Next battlefield fortification" value={field.board.spec.construction?.tier ?? -1} onchange={(e) => generateNext({ construction: Number(e.currentTarget.value) < 0 ? null : { kind: 'fort', tier: Number(e.currentTarget.value) } })}><option value={-1}>None</option>{#each FORTIFICATIONS as wall (wall.tier)}<option value={wall.tier}>{wall.tier} · {wall.name}</option>{/each}</select></label>
-              <button onclick={() => generateNext({ seed: Math.floor(Math.random() * 1e9) })}>Generate another map</button>
+            <h3>{report.newMap ? 'New battlefield' : 'The current battlefield'}</h3>
+            {#if report.newMap}
+              <label>Terrain<select aria-label="Next battlefield terrain" value={report.field.board.spec.base} onchange={(e) => report.generateNext({ base: e.currentTarget.value as BoardSpec['base'] })}>{#each HEX_TERRAINS as terrain (terrain)}<option value={terrain}>{terrain}</option>{/each}</select></label>
+              <label>Feature<select aria-label="Next battlefield feature" value={report.field.board.spec.feature ?? 'none'} onchange={(e) => report.generateNext({ feature: e.currentTarget.value as BoardSpec['feature'] })}>{#each FEATURES as feature (feature)}<option value={feature}>{feature}</option>{/each}</select></label>
+              <label>Fortification<select aria-label="Next battlefield fortification" value={report.field.board.spec.construction?.tier ?? -1} onchange={(e) => report.setFortification(Number(e.currentTarget.value))}><option value={-1}>None</option>{#each FORTIFICATIONS as wall (wall.tier)}<option value={wall.tier}>{wall.tier} · {wall.name}</option>{/each}</select></label>
+              <button onclick={report.anotherMap}>Generate another map</button>
               <p class="muted">Fixed emplacements and abandoned equipment stay on the old field. Crewed attached engines travel with their surviving units.</p>
             {:else}
-              <p>{field.board.spec.base} · {field.board.grid} grid</p>
+              <p>{report.field.board.spec.base} · {report.field.board.grid} grid</p>
               <p class="muted">Terrain and breaches remain as they were at dusk. Survivors will redeploy in their home zones.</p>
             {/if}
-            <ConnectionWarning board={field.board} />
-            {#if !mapReady}<p role="alert">This map has too few deployment cells for the survivors. Generate another map.</p>{/if}
+            <ConnectionWarning board={report.field.board} />
+            {#if !report.mapReady}<p role="alert">This map has too few deployment cells for the survivors. Generate another map.</p>{/if}
           </div>
         </div>
-      {:else if stage === 'recovery'}
-        <div class="instruction"><strong>{resolved ? 'Recovery complete.' : 'Each army tends its own troops.'}</strong><p>{resolved ? 'All results are final for this night. Review them before choosing to withdraw or hold.' : 'Choose None, Morale, or Health for each survivor, then roll. Each extra participant gives every recovery check on its side −2. Success restores 1; critical success restores 2.'}</p></div>
+      {:else if report.stage === 'recovery'}
+        <div class="instruction"><strong>{report.resolved ? 'Recovery complete.' : 'Each army tends its own troops.'}</strong><p>{report.resolved ? 'All results are final for this night. Review them before choosing to withdraw or hold.' : 'Choose None, Morale, or Health for each survivor, then roll. Each extra participant gives every recovery check on its side −2. Success restores 1; critical success restores 2.'}</p></div>
         <div class="armies">
-          {#each SIDES as side (side)}
-            {@const army = b.units.filter((u) => u.side === side)}
-            <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} recovery`}>
+          {#each report.armies as army (army.side)}
+            <section class="army" class:attacking={army.side === 'attacker'} class:defending={army.side === 'defender'} aria-label={`${army.side} recovery`}>
               <div class="army-heading">
-                <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
-                <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status === 'camp').length} in camp · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
+                <h3 class:side-att={army.side === 'attacker'} class:side-def={army.side === 'defender'}>{army.heading}</h3>
+                <p class="counts">{army.counts}</p>
               </div>
-              {#each army as u (u.id)}
-                {@const result = resultOf(u)}
-                {@const activity = rolled(side) ? (result?.activity ?? '') : (choices[u.id] ?? '')}
-                {@const revealed = !!result && b.night![side]!.indexOf(result) < shown[side]}
-                {@const rolling = tumbling?.unit === u.id}
-                <div class="report-unit" class:lost={!isSurvivor(u)} class:rolling class:revealed class:recovered={revealed && result!.recovered > 0} class:failed={revealed && result!.recovered === 0}>
+              {#each army.rows as u (u.id)}
+                <div class="report-unit" class:lost={!u.survivor} class:rolling={u.rolling} class:revealed={u.revealed} class:recovered={u.revealed && u.result!.recovered > 0} class:failed={u.revealed && u.result!.recovered === 0}>
                   <div class="unit-heading"><strong>{u.name}</strong>
-                    {#if rolling}<span class="die tumbling" aria-hidden="true">{tumbling!.face}</span>
-                    {:else if revealed}<span class="die" aria-label={`Rolled ${result!.check.roll}`}>{result!.check.roll}</span>{/if}
+                    {#if u.rolling}<span class="die tumbling" aria-hidden="true">{u.face}</span>
+                    {:else if u.revealed}<span class="die" aria-label={`Rolled ${u.result!.check.roll}`}>{u.result!.check.roll}</span>{/if}
                   </div>
-                  <div class="meters"><span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span><span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span></div>
-                  {#if !isSurvivor(u)}<small>{status(u)} · Cannot recover</small>
-                  {:else if rolled(side)}
-                    {#if !result}<small>Sat out the night.</small>
-                    {:else if revealed}
-                      <p class="recovery-outcome">{u.name} {outcome(result)}.<small class="check-preview">{result.activity === 'rally' ? 'Rally' : 'Treat Wounded'} · {result.check.degree.replaceAll('-', ' ')} · {result.check.roll} {signed(result.check.modifier)} = {result.check.total} vs DC {result.check.dc}</small></p>
-                    {:else}<small>{result.activity === 'rally' ? 'Rallying…' : 'Treating wounded…'}</small>{/if}
+                  <div class="meters"><span>Morale <b>{u.morale}</b></span><span>Health <b>{u.health}</b></span></div>
+                  {#if !u.survivor}<small>{u.outcome} · Cannot recover</small>
+                  {:else if army.rolled}
+                    {#if !u.result}<small>Sat out the night.</small>
+                    {:else if u.revealed}
+                      <p class="recovery-outcome">{u.resultText}<small class="check-preview">{u.checkText}</small></p>
+                    {:else}<small>{u.pendingText}</small>{/if}
                   {:else}
                     <div class="recovery-choice" role="radiogroup" aria-label={`Recovery for ${u.name}`}>
-                      {#each recoveryOptions as option (option.id)}
-                        {@const barred = (option.id === 'rally' && u.disorder === 0) || (option.id === 'treat' && u.wounds === 0)}
-                        <button type="button" role="radio" aria-checked={activity === option.id} class:selected={activity === option.id} disabled={!mine(side) || barred}
-                          onclick={() => choices[u.id] = option.id}>{#if option.mark}<span aria-hidden="true">{option.mark}</span> {/if}{option.label}</button>
+                      {#each u.options as option (option.id)}
+                        <button type="button" role="radio" aria-checked={u.activity === option.id} class:selected={u.activity === option.id} disabled={!army.mine || option.barred}
+                          onclick={() => report.choose(u.id, option.id)}>{#if option.mark}<span aria-hidden="true">{option.mark}</span> {/if}{option.label}</button>
                       {/each}
                     </div>
-                    {#if activity}<small class="check-preview">{preview(u, activity)}</small>
-                    {:else}<small>{u.wounds === 0 && u.disorder === 0 ? 'At full health and morale.' : 'Choose a recovery activity.'}</small>{/if}
+                    {#if u.preview}<small class="check-preview">{u.preview}</small>
+                    {:else}<small>{u.idleNote}</small>{/if}
                   {/if}
                 </div>
               {/each}
               <div class="army-roll">
-                {#if rolled(side)}
-                  <p class="counts">{shown[side] < recovering(side) ? 'Rolling…' : 'Recovery complete.'}</p>
+                {#if army.rolled}
+                  <p class="counts">{army.rollStatus}</p>
                 {:else}
-                  <button class="primary" disabled={!mine(side)} onclick={() => void attempt(declareRecovery(side, declarationsFor(side)))}>Roll {side} recovery</button>
+                  <button class="primary" disabled={!army.mine} onclick={() => report.rollRecovery(army.side)}>Roll {army.side} recovery</button>
                 {/if}
-                <p class="roll-penalty" aria-live="polite"><b>{signed(-recoveryPenalty(recovering(side)))}</b> on every check · {recovering(side)} {recovering(side) === 1 ? 'unit' : 'units'} recovering{#if !rolled(side) && recovering(side) > 1} · each unit past the first costs −2{/if}</p>
+                <p class="roll-penalty" aria-live="polite"><b>{army.rollPenalty}</b> on every check · {army.rollNote}</p>
               </div>
             </section>
           {/each}
         </div>
       {:else}
-        {#if stage === 'deployment'}
-          <div class="deployment-heading"><p class="intro">{newMap ? 'New battlefield' : 'Same battlefield'} · Recovery is complete. Choose a deployment cell for each survivor.</p><button onclick={() => go('battlefield')}>Change map</button></div>
+        {#if report.stage === 'deployment'}
+          <div class="deployment-heading"><p class="intro">{report.newMap ? 'New battlefield' : 'Same battlefield'} · Recovery is complete. Choose a deployment cell for each survivor.</p><button onclick={() => report.go('battlefield')}>Change map</button></div>
           <div class="deployment-preview" aria-label="Survivor deployment preview">
-            <PixiBoard board={field.board} tokens={previewTokens} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
+            <PixiBoard board={report.field.board} tokens={report.previewTokens} fill terrainAppearance={gameMap.terrainAppearance} inkMap={gameMap.inkMap} />
           </div>
         {:else}
-          <p class="intro">{continuing ? (stage === 'orders' ? 'Recovery is complete. Choose an end-of-day decision for each army.' : 'Review the survivors, then recover before choosing your next move.') : b.endedBy === 'surrender' ? 'The opponent accepted the surrender. Agree campaign terms together; surviving troops keep their Health and Morale.' : b.endedBy === 'withdrawal' ? 'Withdrawal is complete. Surviving troops keep their Health and Morale.' : 'The battle is over. Review the final army report.'}</p>
+          <p class="intro">{report.intro}</p>
         {/if}
         <div class="armies">
-          {#each SIDES as side (side)}
-            {@const army = b.units.filter((u) => u.side === side)}
-            {@const foe = opponent(side)}
-            <section class="army" class:attacking={side === 'attacker'} class:defending={side === 'defender'} aria-label={`${side} report`}>
+          {#each report.armies as army (army.side)}
+            <section class="army" class:attacking={army.side === 'attacker'} class:defending={army.side === 'defender'} aria-label={`${army.side} report`}>
               <div class="army-heading">
-                <h3 class:side-att={side === 'attacker'} class:side-def={side === 'defender'}>{side === 'attacker' ? 'Attacking army' : 'Defending army'}</h3>
-                <p class="counts">{army.filter(isStanding).length} standing · {army.filter((u) => u.status === 'camp').length} in camp · {army.filter((u) => u.status !== 'destroyed' && u.disorder >= ROUTED_AT).length} routed · {army.filter((u) => u.status === 'destroyed').length} destroyed</p>
+                <h3 class:side-att={army.side === 'attacker'} class:side-def={army.side === 'defender'}>{army.heading}</h3>
+                <p class="counts">{army.counts}</p>
               </div>
-              {#if stage === 'deployment'}
+              {#if report.stage === 'deployment'}
                 <div class="deploy-confirm">
-                  <button class:selected={deployed(side)} disabled={!mine(side) || !sideDeployReady(side) || deployed(side)}
-                    onclick={() => void attempt(declareDeployment(side, placementOf(side)))}>
-                    {deployed(side) ? 'Deployment submitted' : 'Submit deployment'}
+                  <button class:selected={army.deployed} disabled={!army.mine || !army.deployReady || army.deployed}
+                    onclick={() => report.submitDeployment(army.side)}>
+                    {army.deployed ? 'Deployment submitted' : 'Submit deployment'}
                   </button>
-                  <small>{deployed(side) ? 'Waiting for both armies before the day begins.' : 'Choose a cell for every survivor, then submit.'}</small>
+                  <small>{army.deployed ? 'Waiting for both armies before the day begins.' : 'Choose a cell for every survivor, then submit.'}</small>
                 </div>
-              {:else if stage === 'orders' && continuing}
+              {:else if report.stage === 'orders' && report.continuing}
                 <div class="day-decision">
                   <strong class="decision-label">End-of-day decision</strong>
-                  <div class="day-options" role="group" aria-label={`${side} end-of-day decision`}>
-                    {#each dayOptions as option (option.id)}
-                      <button class:selected={b.dayOrders?.choices[side] === option.id} aria-pressed={b.dayOrders?.choices[side] === option.id}
-                        disabled={!mine(side)} onclick={() => void attempt(chooseDayOrder(side, option.id))}>{option.label}</button>
+                  <div class="day-options" role="group" aria-label={`${army.side} end-of-day decision`}>
+                    {#each DAY_OPTIONS as option (option.id)}
+                      <button class:selected={army.order === option.id} aria-pressed={army.order === option.id}
+                        disabled={!army.mine} onclick={() => report.chooseOrder(army.side, option.id)}>{option.label}</button>
                     {/each}
                   </div>
-                  <p class="decision-description">{dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.description ?? 'Choose whether to negotiate, leave, or stay.'}</p>
-                  {#if b.dayOrders?.choices[foe] === 'surrender'}
-                    <div class="surrender-response" role="group" aria-label={`${side} response to surrender`}>
-                      <p>The {foe} proposes surrender.</p>
+                  <p class="decision-description">{army.orderDescription}</p>
+                  {#if army.foeProposes}
+                    <div class="surrender-response" role="group" aria-label={`${army.side} response to surrender`}>
+                      <p>The {army.foe} proposes surrender.</p>
                       <div class="day-options">
-                        <button disabled={!mine(side)} onclick={() => void attempt(respondToSurrender(side, true))}>Accept surrender</button>
-                        <button disabled={!mine(side)} onclick={() => void attempt(respondToSurrender(side, false))}>Reject proposal</button>
+                        <button disabled={!army.mine} onclick={() => report.respond(army.side, true)}>Accept surrender</button>
+                        <button disabled={!army.mine} onclick={() => report.respond(army.side, false)}>Reject proposal</button>
                       </div>
                     </div>
                   {/if}
                 </div>
-              {:else if stage === 'report' && b.dayOrders && (b.dayOrders.choices[side] || b.endedBy === 'surrender')}
-                <p class="final-decision">{b.endedBy === 'surrender' ? (b.winner === side ? 'Accepted surrender' : 'Surrendered') : b.endedBy === 'withdrawal' ? (b.dayOrders.choices[side] === 'withdraw' ? 'Withdrawn' : 'Holds the field') : dayOptions.find((o) => o.id === b.dayOrders?.choices[side])?.label}</p>
+              {:else if army.finalDecision}
+                <p class="final-decision">{army.finalDecision}</p>
               {/if}
-              {#each army.filter((u) => stage === 'report' || stage === 'orders' || isSurvivor(u)) as u (u.id)}
-                <div class="report-unit" class:lost={!isSurvivor(u)}>
-                  <div class="unit-heading"><strong>{u.name}</strong>{#if stage === 'report'}<span class="outcome">{status(u)}</span>{/if}</div>
+              {#each army.listed as u (u.id)}
+                <div class="report-unit" class:lost={!u.survivor}>
+                  <div class="unit-heading"><strong>{u.name}</strong>{#if report.stage === 'report'}<span class="outcome">{u.outcome}</span>{/if}</div>
                   <div class="meters">
-                    <span>Health <b>{MAX_WOUNDS - u.wounds}/{MAX_WOUNDS}</b></span>
-                    <span>Morale <b>{ROUTED_AT - u.disorder}/{ROUTED_AT}</b></span>
+                    <span>Health <b>{u.health}</b></span>
+                    <span>Morale <b>{u.morale}</b></span>
                   </div>
-                  {#if stage === 'deployment'}
-                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} disabled={!mine(side)} bind:value={positions[u.id]}><option value="">Choose a cell</option>{#each deploymentCells(field, u) as cell (cell)}<option value={cell} disabled={Object.entries(positions).some(([id, value]) => id !== u.id && value === cell)}>{cell}</option>{/each}</select></label>
+                  {#if report.stage === 'deployment'}
+                    <label class="choice">Deployment cell<select aria-label={`Deployment for ${u.name}`} disabled={!army.mine} bind:value={report.positions[u.id]}><option value="">Choose a cell</option>{#each u.cells as option (option.cell)}<option value={option.cell} disabled={option.taken}>{option.cell}</option>{/each}</select></label>
                   {/if}
                 </div>
               {/each}
             </section>
           {/each}
         </div>
-        {#if continuing}<p class="loss-note">Routed and destroyed units stay out of the next day’s battle.</p>{/if}
+        {#if report.continuing}<p class="loss-note">Routed and destroyed units stay out of the next day’s battle.</p>{/if}
       {/if}
     </div>
     <footer>
-      {#if stage === 'orders' && continuing}
-        <p class="decision-status" role="status">{surrenderPending ? 'Awaiting the opponent’s response to surrender.' : !ordersReady ? 'Choose a decision for both armies.' : bothHold ? 'Both armies will hold. Continue to choose the next battlefield.' : SIDES.every((s) => b.dayOrders?.choices[s] === 'withdraw') ? 'Both armies will withdraw. The field stays contested.' : `The ${b.dayOrders?.choices.attacker === 'withdraw' ? 'defender' : 'attacker'} will hold the field.`}</p>
+      {#if report.stage === 'orders' && report.continuing}
+        <p class="decision-status" role="status">{report.ordersStatus}</p>
       {/if}
       <div class="footer-actions">
-        <button class="end-battle" disabled={!viewer.isGm} onclick={() => void attempt(leaveBattle())}>End battle</button>
-        {#if continuing && resolved}<button class="save-day" onclick={() => void saveForAnotherDay()}>Save for another day</button>{/if}
-        {#if stage === 'deployment'}
-          <button class="primary" disabled={!deployReady || !viewer.isGm} onclick={() => void attempt(startNextDay())}>Begin day {b.day + 1}</button>
-        {:else if stage === 'recovery'}
-          {#if resolved}
-            <button class="primary" onclick={() => go('orders')}>Continue to orders</button>
+        <button class="end-battle" disabled={!viewer.isGm} onclick={report.endBattle}>End battle</button>
+        {#if report.continuing && report.resolved}<button class="save-day" onclick={() => void report.saveForAnotherDay()}>Save for another day</button>{/if}
+        {#if report.stage === 'deployment'}
+          <button class="primary" disabled={!report.deployReady || !viewer.isGm} onclick={report.beginNextDay}>Begin day {report.b.day + 1}</button>
+        {:else if report.stage === 'recovery'}
+          {#if report.resolved}
+            <button class="primary" onclick={() => report.go('orders')}>Continue to orders</button>
           {:else}
-            <p class="decision-status" role="status">{SIDES.some(rolled) ? `Waiting for the ${SIDES.find((s) => !rolled(s))} to roll.` : 'Each army rolls its own recovery.'}</p>
-            <button onclick={() => go('report')}>Back</button>
+            <p class="decision-status" role="status">{report.waitingNote}</p>
+            <button onclick={() => report.go('report')}>Back</button>
           {/if}
-        {:else if stage === 'battlefield'}
-          <button onclick={() => go('orders')}>Back</button>
-          <button class="primary" disabled={!mapReady} onclick={() => go('deployment')}>Continue to deployment</button>
-        {:else if stage === 'orders' && continuing}
-          <button onclick={() => go('recovery')}>Review recovery</button>
-          <button class="primary" disabled={!ordersReady || !viewer.isGm} onclick={() => void finishDecisions()}>{bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
-        {:else if continuing}
-          <button class="primary" onclick={() => go('recovery')}>Continue to recovery</button>
+        {:else if report.stage === 'battlefield'}
+          <button onclick={() => report.go('orders')}>Back</button>
+          <button class="primary" disabled={!report.mapReady} onclick={() => report.go('deployment')}>Continue to deployment</button>
+        {:else if report.stage === 'orders' && report.continuing}
+          <button onclick={() => report.go('recovery')}>Review recovery</button>
+          <button class="primary" disabled={!report.ordersReady || !viewer.isGm} onclick={() => void report.finishDecisions()}>{report.bothHold ? 'Fight another day' : 'Confirm decisions'}</button>
+        {:else if report.continuing}
+          <button class="primary" onclick={() => report.go('recovery')}>Continue to recovery</button>
         {/if}
       </div>
     </footer>
