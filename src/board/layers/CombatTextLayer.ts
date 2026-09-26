@@ -1,12 +1,23 @@
 import * as PIXI from 'pixi.js';
-import { STATUSES, type Grid, type Point } from '../../engine/index.js';
-import type { CombatTextIcon, CombatTextPart, CombatTextTone } from '../../services/CombatTextService.js';
+import { STATUSES, type Grid, type Point, type Status } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
 import type { StatusIcon } from '../art.js';
 import { easeOutBack, easeOutCubic } from '../easing.js';
 import { STATUS_INTRO } from '../Token.js';
 
-export type { CombatTextIcon, CombatTextPart, CombatTextTone };
+export type CombatTextTone = 'good' | 'bad' | 'warn';
+/** A bar's icon follows its number; any other leads its word. A status icon hands the word to
+ * the token's own slot, and a `dead` icon to the mark the piece leaves on the ground. */
+export type CombatTextIcon = 'wounds' | 'morale' | 'routed' | 'dead' | Status;
+
+export interface CombatTextPart {
+  text: string;
+  tone: CombatTextTone;
+  icon?: CombatTextIcon;
+  /** Drawn larger: the one word that settles the whole action. */
+  loud?: boolean;
+}
+
 const BARS = ['wounds', 'morale'] as const;
 const ICONS = [...BARS, 'routed', 'dead', ...STATUSES] as const satisfies readonly CombatTextIcon[];
 const isBar = (icon: CombatTextIcon | undefined): boolean => BARS.some((bar) => bar === icon);

@@ -2,7 +2,7 @@ import { castActivityOf, MAX_WOUNDS, notation, type BattleState, type Tree, type
 import type { TargetArrow, TargetIcon } from '../board/index.js';
 import type { BattleEvent } from '../runtime/events.js';
 import type { BattleSession } from '../runtime/session.js';
-import { createCombatTextService, type CombatTextDisplay, type CombatTextLine, type CombatTextService } from '../services/CombatTextService.js';
+import { createCombatTextService, type CombatTextDisplay, type CombatTextLine, type CombatTextService } from './combat-text.js';
 import { unitOf } from './battle-lookup.js';
 import type { NotificationService } from './notifications.js';
 import { noticesFor, type NoticeViewer } from './session-notices.js';

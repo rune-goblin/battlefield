@@ -620,7 +620,7 @@ export function createBoardView(canvas: HTMLCanvasElement, container: HTMLElemen
 
 export { setVfxTimeScale } from './layers/EffectLayer.js';
 export type { FallenModel } from './layers/FallenLayer.js';
-export type { BoardCombatText } from './layers/CombatTextLayer.js';
+export type { BoardCombatText, CombatTextIcon, CombatTextPart, CombatTextTone } from './layers/CombatTextLayer.js';
 export { targetIconUrl, type TargetIcon, actionIconUrl, bannerSvg, castIconUrl, engineArtUrl, statusIconUrl, troopArtUrl, type ActionIcon } from './art.js';
 export { BRUSH_TERRAINS, sameBrush } from './brush.js';
 export { currentTheme, HIGHLIGHT_STYLES, type BoardTheme } from './theme.js';
