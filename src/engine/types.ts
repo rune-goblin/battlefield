@@ -314,9 +314,11 @@ export interface Activation {
   escape: EscapeOffer | null;
   /** Cells one Step reaches. */
   steps: string[];
+  /** Each cell a Move reaches through the waypoints given. */
   moves: Map<string, MoveReach>;
+  /** Each enemy a Charge reaches through the waypoints given. */
   charges: ChargeOption[];
-  /** Each enemy some melee reaches without waypoints, with its plans. */
+  /** Each enemy some melee reaches through the waypoints given, with its plans. */
   melee: Map<string, MeleePlan[]>;
   verbs: Record<ActivationVerb, VerbAnswer>;
 }

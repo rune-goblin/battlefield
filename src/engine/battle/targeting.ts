@@ -339,8 +339,9 @@ function verbAnswers(state: BattleState, u: Unit, offers: ActionOffer[], steps: 
   return { fight, shoot: offered('shoot'), cast: offered('cast'), step, rally: offered('rally'), guard: offered('guard') };
 }
 
-/** Everything a unit's activation offers: the menu, what movement is left, and where it reaches. */
-export function activation(state: BattleState, unitId?: string): Activation | null {
+/** Everything a unit's activation offers: the menu, what movement is left, and where it reaches
+ * along the waypoints `via` names. */
+export function activation(state: BattleState, unitId?: string, via: readonly string[] = []): Activation | null {
   const u = unitId ? unit(state, unitId) : activeUnit(state);
   if (!u || state.phase !== 'battle' || u.status !== 'active') return null;
   const offers = availableActions(state, u.id);
@@ -348,7 +349,7 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
   const melee = new Map<string, MeleePlan[]>();
   for (const e of state.units) {
     if (e.side === u.side || e.status !== 'active') continue;
-    const plans = meleePlans(state, u, e.id);
+    const plans = meleePlans(state, u, e.id, via);
     if (plans.length) melee.set(e.id, plans);
   }
   return {
@@ -356,8 +357,8 @@ export function activation(state: BattleState, unitId?: string): Activation | nu
     offers,
     escape: escapeOffer(state, u),
     steps,
-    moves: moveReach(state, u),
-    charges: chargeTargets(state, u),
+    moves: moveReach(state, u, via),
+    charges: chargeTargets(state, u, via),
     melee,
     verbs: verbAnswers(state, u, offers, steps, melee),
   };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, chargePath, chargeTargets, createBattle, meleePlans, movePath, moveReach, notation, parse, select, type UnitCard } from '../engine/index.js';
+import { act, activation, chargePath, chargeTargets, createBattle, meleePlans, movePath, moveReach, notation, parse, select, type UnitCard } from '../engine/index.js';
 import { scriptedRng } from '../engine/rng.js';
 import { openBoard } from './helpers.js';
 
@@ -51,5 +51,15 @@ describe('waypoints', () => {
     expect(plan).toMatchObject({ via: 'b2', cell: 'b4', moveActions: 1 });
     const charged = act(select(b, u.id), { type: 'advance', unit: u.id, target: enemy.id, via: 'b2', finish: 'charge', waypoints: ['b4'] }, scriptedRng([10, 10, 10]));
     expect(notation(charged.units[0].square)).toBe('b4');
+  });
+
+  it('carry into the activation answer for melee, move and charge alike', () => {
+    const b = select(battle('c4'), 'u0');
+    const [u, enemy] = b.units;
+    const via = activation(b, u.id, ['b4'])!;
+    expect(via.melee.get(enemy.id)).toEqual(meleePlans(b, u, enemy.id, ['b4']));
+    expect(via.melee.get(enemy.id)).not.toEqual(activation(b, u.id)!.melee.get(enemy.id));
+    expect(via.moves).toEqual(moveReach(b, u, ['b4']));
+    expect(via.charges).toEqual(chargeTargets(b, u, ['b4']));
   });
 });
