@@ -29,7 +29,7 @@
 <div class="reel-position" style:--side={side}>
 <div class="army-reel">
   {#each ready as u (u.id)}
-    {@const bars = statusBars(u.wounds, u.disorder)}
+    {@const bars = statusBars(u.wounds, u.disorder, u.disorder >= ROUTED_AT)}
     <button
       class="unit-card"
       class:on={selected === u.id}

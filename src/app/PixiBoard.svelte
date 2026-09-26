@@ -69,7 +69,7 @@
     const unit = tokens.find((token) => token.cell === hoveredCell);
     if (!unit) return undefined;
     if (unit.kind === 'engine') return `${unit.name}${unit.loading ? `\n${unit.loading.label}` : ''}`;
-    const bars = statusBars(unit.wounds, unit.disorder);
+    const bars = statusBars(unit.wounds, unit.disorder, unit.routed);
     return `${unit.name}\n${bars.health.label}\n${bars.morale.label}${unit.loading ? `\n${unit.engine}: ${unit.loading.label}` : ''}`;
   });
 

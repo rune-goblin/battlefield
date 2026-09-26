@@ -453,7 +453,7 @@ export class Token extends PIXI.Container {
   private drawDecor(model: UnitTokenModel, size: number): void {
     this.decor.clear();
 
-    const bars = statusBars(model.wounds, model.disorder);
+    const bars = statusBars(model.wounds, model.disorder, model.routed);
     const width = size * 0.60;
     const healthHeight = size * 0.08;
     const moraleHeight = size * 0.045;
