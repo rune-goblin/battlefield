@@ -2,7 +2,8 @@
   import type { Snippet } from 'svelte';
   import { MAX_WOUNDS, ROUTED_AT, notation, type Unit } from '../engine/index.js';
   import { bannerSvg, troopArtUrl } from '../board/index.js';
-  import { statusBars, statusColourCss, STATUS_TRACK, STATUS_OUTLINE } from '../board/status-bars.js';
+  import { cssHex } from '../board/layers/color.js';
+  import { statusBars, STATUS_TRACK, STATUS_OUTLINE } from '../board/status-bars.js';
 
   interface Props {
     /** Every standing unit of the side now on turn, in activation order. */
@@ -49,10 +50,10 @@
       <span class="flag" aria-label="Level {u.level}">{@html flag}<span class="level">{u.level}</span></span>
       <img class:desaturated={u.wounds >= MAX_WOUNDS || u.disorder >= ROUTED_AT} src={troopArtUrl(u.name, u.role)} alt="" />
       <span class="name" lang="en">{u.name}</span>
-      <span class="status-bars" style:--track={statusColourCss(STATUS_TRACK)} style:--outline={statusColourCss(STATUS_OUTLINE)}>
+      <span class="status-bars" style:--track={cssHex(STATUS_TRACK)} style:--outline={cssHex(STATUS_OUTLINE)}>
         {#each [bars.health, bars.morale] as bar, i}
           <span class="status-bar" class:morale={i === 1} role="meter" aria-label={bar.label} aria-valuemin={0} aria-valuemax={bar.max} aria-valuenow={bar.remaining} aria-valuetext={bar.label} title={bar.label}>
-            <span class="bar-fill" style:width={`${bar.remaining / bar.max * 100}%`} style:background={statusColourCss(bar.colour)}></span>
+            <span class="bar-fill" style:width={`${bar.remaining / bar.max * 100}%`} style:background={cssHex(bar.colour)}></span>
             {#each Array(bar.max - 1) as _, n (n)}
               <span class="bar-tick" style:left={`${(n + 1) / bar.max * 100}%`}></span>
             {/each}

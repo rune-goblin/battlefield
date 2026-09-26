@@ -1,4 +1,4 @@
-import { seededRandom, type Cell, type Grid, type Point } from '../engine/index.js';
+import { hashSeed, seededRandom, type Cell, type Grid, type Point } from '../engine/index.js';
 
 import { DEFAULT_GRID_SETTINGS, type GridSettings } from './layers/GridLayer.js';
 import {
@@ -205,12 +205,6 @@ const FOOT_PROBES = 12;
 // Rings of probes, in hex pitches, that measure how deep a point sits in its patch.
 const DEPTH_RINGS = [0.3, 0.6, 0.9, 1.2, 1.5];
 
-function seedOf(text: string): number {
-  let seed = 2166136261;
-  for (const char of text) seed = Math.imul(seed ^ char.charCodeAt(0), 16777619);
-  return seed >>> 0;
-}
-
 /** Uniform over the hex, pulled in by `inset`: a random edge, a point along it, and a
  * square-root radius toward it from the centre. */
 function pointIn(grid: Grid, cell: Cell, size: number, inset: number, random: () => number): Point {
@@ -235,7 +229,7 @@ function pointIn(grid: Grid, cell: Cell, size: number, inset: number, random: ()
  * none, and a patch of them fills right across, with no ground kept clear. */
 export function inkPatch(grid: Grid, cells: Cell[], size: number, settings: InkMapSettings, groupScale: number, drawn = true): InkPatch {
   const ordered = [...cells].sort((a, b) => (grid.key(a) < grid.key(b) ? -1 : 1));
-  const random = seededRandom(seedOf(`ink-patch:${grid.key(ordered[0])}`));
+  const random = seededRandom(hashSeed(`ink-patch:${grid.key(ordered[0])}`));
   const gap = (p: Point, others: readonly Point[]): number =>
     others.reduce((least, q) => Math.min(least, Math.hypot(p.x - q.x, p.y - q.y)), Infinity);
   const somewhere = (inset: number): Point =>

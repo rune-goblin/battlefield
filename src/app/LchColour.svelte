@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { lchToRgb, rgbToLch, type Lch } from '../board/layers/color.js';
+  import { cssHex, lchToRgb, rgbToLch, type Lch } from '../board/layers/color.js';
 
   interface Props {
     label: string;
@@ -23,7 +23,6 @@
     lch = { ...lch, ...next };
     value = lchToRgb(lch);
   }
-  const hex = (colour: number) => `#${colour.toString(16).padStart(6, '0')}`;
   // Past the edge of sRGB the channels clip, so the swatch stops answering the dials. Saying
   // so is the difference between a slider that does nothing and a slider that is finished.
   const clipped = $derived.by(() => {
@@ -35,7 +34,7 @@
 <div class="lch">
   <div class="head">
     <span class="name">{label}{#if clipped}<em> outside sRGB</em>{/if}</span>
-    <input type="color" aria-label="{label} as a colour picker" value={hex(value)}
+    <input type="color" aria-label="{label} as a colour picker" value={cssHex(value)}
       oninput={(e) => { value = parseInt(e.currentTarget.value.slice(1), 16); }} />
   </div>
   <label class="slider" for="{id}-l"><span>Lightness</span><output>{lch.l.toFixed(0)}</output></label>

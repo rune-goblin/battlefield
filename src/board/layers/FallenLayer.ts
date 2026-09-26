@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import type { Grid } from '../../engine/index.js';
 import { assetUrl } from '../asset-base.js';
+import { easeInOut } from '../easing.js';
 import { STATUS_INTRO } from '../Token.js';
 
 export interface FallenModel { id: string; name: string; cell: string }
@@ -14,8 +15,6 @@ export interface FallenLayerOptions {
 const SEATED = { ratio: 0.5, alpha: 0.55 };
 // A death the popup queue never came for marks itself after this long.
 const WAIT_MS = 20000;
-
-const easeInOut = (t: number): number => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 interface Mark {
   model: FallenModel;

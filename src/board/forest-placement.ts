@@ -1,4 +1,4 @@
-import { seededRandom, type Cell, type Grid, type Point } from '../engine/index.js';
+import { hashSeed, seededRandom, type Cell, type Grid, type Point } from '../engine/index.js';
 
 import { connectedCells } from './terrain-regions.js';
 
@@ -17,11 +17,6 @@ export interface TreeRange { min: number; max: number; size?: number; variation?
 const DEFAULT_SIZE_VARIATION = 0.1;
 const ATTEMPTS = 8;
 
-function seedOf(text: string): number {
-  let seed = 2166136261;
-  for (const char of text) seed = Math.imul(seed ^ char.charCodeAt(0), 16777619);
-  return seed >>> 0;
-}
 function bounds(range: TreeRange): { min: number; max: number } {
   const clamp = (n: number) => Number.isFinite(n) ? Math.max(0, Math.min(20, Math.round(n))) : 0;
   const min = clamp(range.min);
@@ -75,7 +70,7 @@ export function forestTrees(
   grid: Grid, cell: Cell, size: number, range: TreeRange,
   neighbours: readonly ForestTree[] = [],
 ): ForestTree[] {
-  const random = seededRandom(seedOf(`forest:${grid.key(cell)}`));
+  const random = seededRandom(hashSeed(`forest:${grid.key(cell)}`));
   const { min, max } = bounds(range);
   const count = min + Math.floor(random() * (max - min + 1));
   return scatter(grid, [cell], size, range, random, count, neighbours);
@@ -91,7 +86,7 @@ export function areaTrees(grid: Grid, cells: Cell[], size: number, range: TreeRa
     // Sorted so the patch is sampled the same way however it was walked. Its lowest key is
     // then also the seed, which no other patch can hold.
     const ordered = [...patch].sort((a, b) => grid.key(a) < grid.key(b) ? -1 : 1);
-    const random = seededRandom(seedOf(`forest-area:${grid.key(ordered[0])}`));
+    const random = seededRandom(hashSeed(`forest-area:${grid.key(ordered[0])}`));
     let count = 0;
     for (let i = 0; i < ordered.length; i++) count += min + Math.floor(random() * (max - min + 1));
     trees.push(...scatter(grid, ordered, size, range, random, count, trees));

@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { wallsFor, at, barrierBetween, gridOf, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
+import { wallsFor, at, barrierBetween, gridOf, hashSeed, parse, seededRandom, type Board, type Point, type Random, type Wall } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import { mix, shade } from './color.js';
 import { GATE_HALF_OPENING, gateHandles, gateLeaves } from '../gate-geometry.js';
@@ -139,14 +139,6 @@ function edgePalette(theme: BoardTheme, ink: InkEdges | null): EdgePalette {
 const stroke = (g: PIXI.Graphics, colours: EdgePalette, colour: number, size: number) =>
   g.lineStyle({ width: jointWidth(size) * colours.lineWeight, color: colour, alignment: 0.5, join: PIXI.LINE_JOIN.ROUND });
 
-/** A stable number per wall, so the blocks a battered run has lost — and the lean of the ones
- * left standing — survive a redraw, a resize and a change of map style. */
-function seedOf(key: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
-
 /** The wall's shapes in its own local space, the bar's centre at the origin. `span` is the edge
  * itself and `len` the bar with its mitres, so the blocks are laid along the edge and the two
  * corner blocks sit on its vertices while the spine runs on through the corner.
@@ -254,7 +246,9 @@ function wallGraphics(a: Point, b: Point, size: number, wall: Wall, key: string,
   bar.position.set(mid.x, mid.y);
   bar.rotation = rotation;
   const breached = wall.remaining <= 0;
-  const rnd = seededRandom(seedOf(key));
+  // A stable number per wall, so the blocks a battered run has lost — and the lean of the ones
+  // left standing — survive a redraw, a resize and a change of map style.
+  const rnd = seededRandom(hashSeed(key));
   const shapes = breached ? breach(len, size, rnd) : battlement(len, span, shift, size, wall, rnd);
   if (wall.gate && !breached) {
     shapes.spine = null;

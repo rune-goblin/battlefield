@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { seededRandom, type Cell, type Grid, type Point } from '../../engine/index.js';
+import { hashSeed, seededRandom, type Cell, type Grid, type Point } from '../../engine/index.js';
 import type { BoardTheme } from '../theme.js';
 import type { ScatterKind, TerrainAtlas } from '../terrain-sheet.js';
 
@@ -100,7 +100,7 @@ export function scatterGroup(
 
   for (const cell of group.cells) {
     const centre = grid.center(cell, size);
-    const random = seededRandom(hash(`${group.style ?? group.kind}:${grid.key(cell)}`));
+    const random = seededRandom(hashSeed(`${group.style ?? group.kind}:${grid.key(cell)}`));
     for (let i = 0; i < style.count; i++) {
       const frame = frames[Math.floor(random() * frames.length)];
       const scale = (size * style.foot * FOOT * (0.85 + 0.3 * random())) / Math.max(frame.width, frame.height);
@@ -163,12 +163,3 @@ const grey = (v: number): number => {
   const c = Math.max(0, Math.min(255, Math.round(v * 255)));
   return (c << 16) | (c << 8) | c;
 };
-
-function hash(text: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}

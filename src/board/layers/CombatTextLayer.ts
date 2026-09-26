@@ -3,6 +3,7 @@ import { STATUSES, type Grid, type Point } from '../../engine/index.js';
 import type { CombatTextIcon, CombatTextPart, CombatTextTone } from '../../services/CombatTextService.js';
 import { assetUrl } from '../asset-base.js';
 import type { StatusIcon } from '../art.js';
+import { easeOutBack, easeOutCubic } from '../easing.js';
 import { STATUS_INTRO } from '../Token.js';
 
 export type { CombatTextIcon, CombatTextPart, CombatTextTone };
@@ -171,9 +172,6 @@ interface Live {
    * fades as the last icon settles. */
   caption: number | null;
 }
-
-const easeOutBack = (t: number): number => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
-const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
 
 /** The word a roll came to, popped over the piece it landed on, then lifted and faded. The words
  * of a commit take turns in the order they happened, whichever pieces they land on. */
