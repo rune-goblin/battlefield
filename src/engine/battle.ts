@@ -22,7 +22,7 @@ import {
 import type { Rng } from './rng.js';
 import { siegeModes, siegeDetail, type SiegeMode } from './siege-profiles.js';
 import { siegeTargets } from './siege-targets.js';
-import { ENGINES } from './engines.js';
+import { engineKind, engineNamed } from './engines.js';
 import { clone } from './clone.js';
 import { levelDc } from './tables.js';
 import {
@@ -155,7 +155,7 @@ export function createBattle(setup: BattleSetup): BattleState {
 }
 
 const engineState = (e: SiegeEngineCard, id: string, side: Side | null, square: Square, emplaced: boolean): EngineState => {
-  const card = ENGINES.find(card => card.name === e.name);
+  const card = engineNamed(e.name);
   const steps = (card?.loadSteps ?? e.loadSteps) === 0 ? 0 : card?.loadCost ?? e.loadCost ?? 1;
   return { id, name: e.name, kind: e.kind, launch: e.launch, reach: e.reach, fired: false, status: 'crewed', square, side, emplaced,
     speed: e.speed, loadCost: e.loadCost, loadSteps: steps, loaded: steps, hauling: false };
@@ -358,8 +358,7 @@ function refreshEmplacements(state: BattleState) {
 }
 
 /** Equipment uses its imported movement and loading profile, including older saves. */
-const engineCard = (e: EngineState) => ENGINES.find(card => card.name === e.name);
-export const engineKind = (e: EngineState) => engineCard(e)?.kind ?? e.kind;
+const engineCard = (e: EngineState) => engineNamed(e.name);
 export const engineSpeed = (e: EngineState): number | null => {
   const source = engineCard(e)?.sourceSpeed;
   if (source != null && (e.speed === undefined || e.speed === convertSpeed(source)

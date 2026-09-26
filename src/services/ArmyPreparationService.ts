@@ -1,5 +1,5 @@
 import {
-  canDeploy, canEmplace, deploymentCells, ENGINES, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, parse, seededRandom,
+  canDeploy, canEmplace, deploymentCells, engineNamed, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, parse, seededRandom,
   type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
@@ -55,7 +55,7 @@ export function engineUnder(setup: BattleSetupDraft, unit: SetupUnit): SetupEngi
 }
 
 export const canHaul = (engine: SetupEngine): boolean => {
-  const card = ENGINES.find((e) => e.name === engine.name);
+  const card = engineNamed(engine.name);
   return !!card && !isFixedEngine(card);
 };
 
@@ -149,7 +149,7 @@ export function sideReady(setup: BattleSetupDraft, side: Side): boolean {
 const otherSide = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
 
 function engineCard(name: string) {
-  const card = ENGINES.find((e) => e.name === name);
+  const card = engineNamed(name);
   if (!card) throw new Error(`${name} is not an engine`);
   return card;
 }

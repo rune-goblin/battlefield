@@ -1,5 +1,5 @@
 import { at, gridOf, notation, parse, fortification } from './board.js';
-import { ENGINES } from './engines.js';
+import { engineKind } from './engines.js';
 import { hasSight, sightBlock } from './sight.js';
 import { siegeModes, type SiegeMode } from './siege-profiles.js';
 import { cellTarget, unitTarget, wallName, wallTarget } from './targets.js';
@@ -8,7 +8,7 @@ import { BANDS, type ActivityTarget, type BattleState, type EngineState } from '
 /** Canonical targets are shared by the menu and command validation. A shape is one target. */
 export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode): ActivityTarget[] {
   const g = gridOf(state.board);
-  const kind = ENGINES.find(card => card.name === e.name)?.kind ?? e.kind;
+  const kind = engineKind(e);
   const max = kind === 'ram' ? 1 : BANDS[e.reach ?? 'medium'];
   const inRange = (id: string) => {
     const sq = parse(id), d = g.distance(e.square, sq);
@@ -53,10 +53,10 @@ export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode
 
 /** Why `cell` is no target for this mode: range, sight, then an empty hex. Null when some target covers it. */
 export function siegeCellReason(state: BattleState, e: EngineState, activity: number, cell: string): string | null {
-  const mode = siegeModes(e.name, ENGINES.find(card => card.name === e.name)?.kind ?? e.kind)[activity - 1];
+  const mode = siegeModes(e.name, engineKind(e))[activity - 1];
   if (siegeTargets(state, e, mode).some(t => (t.kind === 'wall' ? t.id.split('|') : t.kind === 'cell' ? t.id.split('+')
     : state.units.filter(u => u.id === t.id).map(u => notation(u.square))).includes(cell))) return null;
-  const g = gridOf(state.board), kind = ENGINES.find(card => card.name === e.name)?.kind ?? e.kind;
+  const g = gridOf(state.board), kind = engineKind(e);
   const max = kind === 'ram' ? 1 : BANDS[e.reach ?? 'medium'];
   const min = mode.minimum ?? (kind === 'ram' ? 0 : 1), d = g.distance(e.square, parse(cell));
   if (d < min) return min > 1 ? `Too close: the ${e.name} needs at least ${min} hexes.` : 'The engine cannot fire on its own hex.';
