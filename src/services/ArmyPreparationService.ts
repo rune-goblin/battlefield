@@ -1,5 +1,5 @@
 import {
-  canDeploy, canEmplace, deploymentCells, engineNamed, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, parse, seededRandom,
+  canDeploy, canEmplace, deploymentCells, engineNamed, generateForce as buildForce, gridOf, isFixedEngine, isSurvivor, notation, opponent, parse, seededRandom,
   type BattleState, type Board, type Side, type Square, type UnitCard,
 } from '../engine/index.js';
 import type { PieceRef } from '../runtime/commands.js';
@@ -146,8 +146,6 @@ export function sideReady(setup: BattleSetupDraft, side: Side): boolean {
   return us.length > 0 && us.every((u) => u.square !== null);
 }
 
-const otherSide = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
-
 function engineCard(name: string) {
   const card = engineNamed(name);
   if (!card) throw new Error(`${name} is not an engine`);
@@ -195,8 +193,8 @@ export function createArmyPreparationService(): ArmyPreparationService {
 
     swapSides: (session) => withSetup(session, {
       ...session.setup,
-      units: session.setup.units.map((u) => ({ ...u, side: otherSide(u.side), square: null })),
-      emplacements: session.setup.emplacements.map((e) => ({ ...e, side: otherSide(e.side), hauled: false })),
+      units: session.setup.units.map((u) => ({ ...u, side: opponent(u.side), square: null })),
+      emplacements: session.setup.emplacements.map((e) => ({ ...e, side: opponent(e.side), hauled: false })),
     }),
 
     addEmplacement: (session, side, engine) => withSetup(session, {
@@ -253,9 +251,8 @@ export function createArmyPreparationService(): ArmyPreparationService {
 
     generateForce: (session, side, seed = randomSeed()) => {
       const setup = session.setup;
-      const other: Side = side === 'attacker' ? 'defender' : 'attacker';
-      const opponent = setup.units.filter((u) => u.side === other).map((u) => u.card);
-      const force = buildForce(opponent, seededRandom(seed), {
+      const rivals = setup.units.filter((u) => u.side === opponent(side)).map((u) => u.card);
+      const force = buildForce(rivals, seededRandom(seed), {
         attacking: side === 'attacker', wallsTier: wallsTier(setup.board),
       });
       return withSetup(session, {

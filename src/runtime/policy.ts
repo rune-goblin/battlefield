@@ -1,4 +1,4 @@
-import type { Side } from '../engine/index.js';
+import { SIDES, type Side } from '../engine/index.js';
 import type { BattleCommand, CommandType, PieceRef } from './commands.js';
 import { assignControl, seatedOn, HOT_SEAT_USER, type ControlAssignment } from './control.js';
 import type { PresencePort } from './ports.js';
@@ -60,8 +60,6 @@ export const COMMAND_SCOPE: Record<CommandType, CommandScope> = {
 const pieceSide = (session: BattleSession, piece: PieceRef): Side | null => (piece.kind === 'unit'
   ? session.setup.units.find((u) => u.id === piece.id)?.side
   : session.setup.emplacements.find((e) => e.id === piece.id)?.side) ?? null;
-
-const SIDES: Side[] = ['attacker', 'defender'];
 
 /** An emplacement belongs to neither army until a unit stands on it, so either army's players
  * may bring one and put it down. Hauling stays with the army whose unit holds the engine. */

@@ -1,5 +1,5 @@
 import {
-  canContinueBattle, MAX_WOUNDS, ROUTED_AT,
+  canContinueBattle, MAX_WOUNDS, opponent, ROUTED_AT,
   type BattleState, type Board, type EngineState, type Side, type Unit,
 } from '../engine/index.js';
 import type { BattleCommand, CommandResult } from '../runtime/commands.js';
@@ -78,8 +78,6 @@ export interface BattleOutcome {
   fallback: { side: Side; units: string[] } | null;
 }
 
-const other = (side: Side): Side => (side === 'attacker' ? 'defender' : 'attacker');
-
 /**
  * The writeback ladder: full, ⌊¾⌋, ⌊½⌋, ⌊¼⌋, 0. `woundsOf` in the PF2e adapter inverts it, so
  * a unit written back at one wound imports at one wound.
@@ -140,7 +138,7 @@ function equipmentOutcome(engine: EngineState, day: number, owners: Map<string, 
   // An attached piece keeps its owner's side when it is captured; a seized emplacement instead
   // holds its captor's side already.
   const after = engine.status === 'abandoned' ? null
-    : engine.status === 'captured' && engine.side ? other(engine.side)
+    : engine.status === 'captured' && engine.side ? opponent(engine.side)
       : engine.side;
   const disposition: EquipmentDisposition = after === null ? 'lost'
     : engine.status === 'captured' || (before !== null && after !== before) ? 'captured'
@@ -171,7 +169,7 @@ export function prepareOutcome(session: BattleSession): BattleOutcome {
   if (battle.phase !== 'ended') throw new Error('the battle is still being fought');
   if (canContinueBattle(battle)) throw new Error('the day ended at dusk and the battle can go on');
 
-  const loser = battle.winner === 'attacker' || battle.winner === 'defender' ? other(battle.winner) : null;
+  const loser = battle.winner === 'attacker' || battle.winner === 'defender' ? opponent(battle.winner) : null;
   const units = battle.units.map((u) => unitOutcome(u, session, loser));
 
   const owners = originalOwners(session);
