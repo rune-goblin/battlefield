@@ -27,7 +27,7 @@ function battle(rolls: number[], board = openBoard()) {
       { card: trolls, side: 'defender', square: 'e7' },
     ],
     board,
-  }, rng);
+  });
   return { state, rng };
 }
 
@@ -1113,8 +1113,8 @@ describe('leaving contact', () => {
     expect(w.modifier).toBe(14);
     expect(w.dc).toBe(23);
     expect(w.holders).toEqual([
-      { unit: 'u2', name: 'Kobolds', dc: 17, pinning: false, follows: false },
-      { unit: 'u3', name: 'Trolls', dc: 23, pinning: false, follows: false },
+      { unit: 'u2', name: 'Kobolds', dc: 17, pinning: false },
+      { unit: 'u3', name: 'Trolls', dc: 23, pinning: false },
     ]);
     const shaken = held();
     unit(shaken, 'u0').disorder = 2;

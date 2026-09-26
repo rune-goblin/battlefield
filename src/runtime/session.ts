@@ -204,10 +204,10 @@ export function migrateMorale(battle: BattleState): BattleState {
     battle.night = Object.fromEntries(SIDES.map((side) => [side, rolled.filter((r) => sideOf(r.unit) === side)]));
   }
   for (const u of battle.units) {
-    u.abilities = validatedAbilities(u.abilities ?? (u.noRetreat ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : []));
-    u.noRetreat = false;
+    const legacy = u as Unit & { noRetreat?: boolean; pace?: boolean; fear?: boolean; quality?: number };
+    u.abilities = validatedAbilities(u.abilities ?? (legacy.noRetreat ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : []));
     u.abilityState ??= freshAbilityMemory(u.wounds);
-    delete (u as Unit & { quality?: number }).quality;
+    delete legacy.noRetreat; delete legacy.pace; delete legacy.fear; delete legacy.quality;
     u.disorder = Math.max(0, Math.min(ROUTED_AT, u.disorder));
     if (u.status === 'active' && u.disorder >= ROUTED_AT) {
       for (const engine of u.engines) if (engine.status === 'crewed') engine.status = 'abandoned';

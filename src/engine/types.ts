@@ -1,5 +1,5 @@
 import type { TroopAbility, AbilityReview, AbilityMemory, AbilityMark, AbilityOutcome } from './abilities.js';
-import type { Board, GridKind, Square } from './board.js';
+import type { Board, Square } from './board.js';
 import type { EngineKind, Reach, Role, Tactic, Tradition, UnitStats, MovementRates, TroopSheet } from './cards.js';
 import type { CheckResult } from './check.js';
 import type { ActivityIndex, Verb } from './ladders.js';
@@ -60,18 +60,12 @@ export interface Unit {
   role: Role;
   stats: UnitStats;
   attackSources?: { strike?: string; volley?: string };
-  pace: boolean;
   /** Feet a single Move action buys. */
   speed: number;
   /** A flier ignores terrain cost and blocked edges. */
   flying: boolean;
   movementRates?: MovementRates;
   sourceSpeed?: Pick<TroopSheet, 'speed' | 'otherSpeeds'>;
-  /** Legacy save field. Migration converts this to Resolve and clears the flag. */
-  noRetreat: boolean;
-  /** Imported off a frightful presence and read by nothing: an aura's effect stays the
-   * statblock's own. */
-  fear: boolean;
 
   tactics: Tactic[];
   /** `null` for a non-caster and for a caster with no tradition set (there is none, per
@@ -232,10 +226,8 @@ export interface Holder {
   name: string;
   /** Its Battle DC, or a pinning shooter's Salvo DC. */
   dc: number;
-  /** Holding at range, by a Pin: its free attack is a Volley, and it never gives chase. */
+  /** Holding at range, by a Pin: its free attack is a Volley. */
   pinning: boolean;
-  /** A `no-retreat` holder follows every Move or Step out of its zone. */
-  follows: boolean;
 }
 
 /** What a Move out of a zone of control rolls: Reflex, less disorder, against the highest holder's DC. */
@@ -380,7 +372,4 @@ export type Range = 'engaged' | 'short' | 'medium' | 'long' | 'extreme' | 'beyon
 export const REACH_RANK: Record<Reach, number> = { short: 1, medium: 2, long: 3, extreme: 4 };
 
 /** Distance-band upper bounds. Weapons prefer one band; spells use a band as a fixed ceiling. */
-export const BANDS: Record<GridKind, Record<Reach, number>> = {
-  square: { short: 3, medium: 6, long: 9, extreme: 12 },
-  hex: { short: 3, medium: 6, long: 9, extreme: 12 },
-};
+export const BANDS: Record<Reach, number> = { short: 3, medium: 6, long: 9, extreme: 12 };

@@ -12,6 +12,7 @@ import { CAST_ACTIVITIES } from '../engine/magic.js';
 import { TargetingService } from '../app/targeting.js';
 import { freshSession, reviveSession } from '../runtime/session.js';
 import { openBoard } from './helpers.js';
+import type { Unit } from '../engine/types.js';
 
 const ability = (kind: TroopAbility['kind'], options: Partial<TroopAbility> = {}): TroopAbility =>
   ({ version: 1, kind, key: kind, label: kind, delivery: 'passive', ...options });
@@ -543,9 +544,9 @@ describe('portable ability imports', () => {
     expect(restored.battle!.units[0].abilityState).toEqual(session.battle.units[0].abilityState);
     const legacy = structuredClone(session);
     delete legacy.battle!.units[0].abilities; delete legacy.battle!.units[0].abilityState;
-    legacy.battle!.units[0].noRetreat = true;
+    (legacy.battle!.units[0] as Unit & { noRetreat?: boolean }).noRetreat = true;
     const migrated = reviveSession(legacy)!;
-    expect(migrated.battle!.units[0].noRetreat).toBe(false);
+    expect(migrated.battle!.units[0]).not.toHaveProperty('noRetreat');
     expect(migrated.battle!.units[0].abilities?.[0]).toMatchObject({ kind: 'resolve', mode: 'ground' });
   });
 });

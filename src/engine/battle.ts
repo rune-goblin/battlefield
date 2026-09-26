@@ -9,7 +9,7 @@ import {
   at, barrierBetween, deployRanks, edgeKey, gridOf, notation, parse, SIZE,
   wallBlocks, structuralDamage, fortification, type Board, type Square, type Wall,
 } from './board.js';
-import { cardTraits, deriveStats, paceOf, speedOf, movementRates, convertSpeed, type SiegeEngineCard, type UnitCard } from './cards.js';
+import { cardTraits, deriveStats, speedOf, movementRates, convertSpeed, type SiegeEngineCard, type UnitCard } from './cards.js';
 import { CELL_FEET, reachable, reachableVia, routedPath, stepFeet, type ReachMap, type Routed, type StepOpts } from './path.js';
 import { check, possessive, readCheck, readTwice, rollTwice, rollLine, succeeded, type CheckResult, type Degree } from './check.js';
 import {
@@ -84,8 +84,7 @@ export function canEmplace(board: Board, sq: Square): boolean {
   return gridOf(board).inBounds(sq) && at(board, sq).terrain !== 'water';
 }
 
-// The rng is unused now that there is no initiative roll; callers still pass one.
-export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
+export function createBattle(setup: BattleSetup): BattleState {
   const roundsPerDay = setup.roundsPerDay ?? LAST_ROUND;
   if (!Number.isInteger(roundsPerDay) || roundsPerDay < 1) throw new Error('rounds per day must be a positive integer');
   const taken = new Set<string>();
@@ -100,7 +99,7 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       id, name: d.card.name, side: d.side, level: d.card.level, role: d.card.role,
       abilities: validatedAbilities(d.card.abilities ?? (traits.signals.includes('no-retreat') ? [{ version: 1, key: 'legacy-hold-ground', kind: 'resolve', label: 'No Retreat', delivery: 'passive', mode: 'ground' }] : [])), abilityReview: d.card.abilityReview ?? [],
       abilityState: freshAbilityMemory(d.card.wounds ?? 0), traits: d.card.traits ?? [], immuneFear: d.card.immuneFear ?? false, attackTags: d.card.attackTags,
-      stats: deriveStats(d.card), pace: paceOf(d.card), fear: traits.fear, tactics: traits.tactics,
+      stats: deriveStats(d.card), tactics: traits.tactics,
       ...(d.card.sheet ? { attackSources: { strike: d.card.sheet.battleName, volley: d.card.sheet.salvoName } } : {}),
       tradition: traits.caster ? traits.tradition : null,
       trees: treesFor(d.card), castTrees: [],
@@ -108,7 +107,6 @@ export function createBattle(setup: BattleSetup, _rng?: Rng): BattleState {
       ...(d.card.sheet ? { movementRates: movementRates(d.card), sourceSpeed: {
         speed: d.card.sheet.speed, otherSpeeds: d.card.sheet.otherSpeeds?.map(s => ({ ...s })),
       } } : {}),
-      noRetreat: false,
       actions: ACTIONS_PER_ACTIVATION, attacked: false, feet: 0,
       engines: (d.engines ?? []).map((e, slot) =>
         engineState(e.card, e.id ?? positionalAttachedId(id, slot), d.side, sq, false)),
@@ -246,7 +244,7 @@ export const engagedEnemies = (state: BattleState, u: Unit) =>
 
 /** Which of the four range bands a distance falls in. Rank 5 is out of range altogether. */
 function bandRank(state: BattleState, d: number): number {
-  const b = BANDS[state.board.grid];
+  const b = BANDS;
   return d <= b.short ? 1 : d <= b.medium ? 2 : d <= b.long ? 3 : d <= b.extreme ? 4 : 5;
 }
 
@@ -596,7 +594,7 @@ const SHOT_BANDS = ['short', 'medium', 'long', 'extreme'] as const;
 
 /** Preferred distance interval: from two hexes out to the weapon's band. */
 function shootPreferred(state: BattleState, u: Unit): { min: number; max: number } {
-  return { min: 2, max: BANDS[state.board.grid][SHOT_BANDS[shootHome(state, u) - 1]] };
+  return { min: 2, max: BANDS[SHOT_BANDS[shootHome(state, u) - 1]] };
 }
 
 /** Weapons flex one hex past their band at −2. Only short weapons flex inward, to a target
@@ -677,7 +675,7 @@ const controllingDc = (u: Unit) => (u.stats.spellDc === null ? levelDc(u.level) 
  * rallying beside a levy. */
 export function routDcFor(state: BattleState, u: Unit): number {
   const enemies = state.units.filter((e) => e.side !== u.side && e.status === 'active');
-  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS[state.board.grid].short);
+  const near = enemies.filter((e) => dist(state, u.square, e.square) <= BANDS.short);
   const pool = near.length ? near : enemies;
   return levelDc(Math.max(0, ...pool.map((e) => e.level)));
 }
@@ -1100,7 +1098,7 @@ export function chargeImpact(u: Unit): boolean {
 }
 /** A charge that ends a short range from where it began has built momentum: +2 on the attack. */
 const runUp = (state: BattleState, from: Square, landing: Square) =>
-  dist(state, from, landing) >= BANDS[state.board.grid].short;
+  dist(state, from, landing) >= BANDS.short;
 
 /** Whether the unit may charge at all. One in contact fights instead, and a pinned, rooted or
  * spent unit charges nothing. */
@@ -1274,8 +1272,6 @@ export function stepTargets(state: BattleState, u: Unit): string[] {
     .map(notation).sort();
 }
 
-const homewardStep = (u: Unit) => u.side === 'attacker' ? -1 : 1;
-
 /** What a shot off this unit rolls: a crewed artillery piece stands in for a Volley the crew
  * may not have, loaded or not — a pinning crew holds its target with the shot it already made. */
 const volleyOf = (state: BattleState, u: Unit) => {
@@ -1383,7 +1379,7 @@ interface TargetSet { needsTarget: boolean; targets: ActivityTarget[] }
  * way "range: 30 feet" reads on any other statblock. */
 export function castCeiling(state: BattleState, tree: Tree): number {
   const band = TREE_RANGE[tree];
-  return band === 'engaged' ? 1 : BANDS[state.board.grid][band];
+  return band === 'engaged' ? 1 : BANDS[band];
 }
 
 // proto: a shape is offered as one target, its hexes joined by '+', so the aim popup needs no
@@ -1662,44 +1658,14 @@ function escape(state: BattleState, rng: Rng, u: Unit, holders: Unit[]): boolean
   return false;
 }
 
-/** After a unit changes hex: the pin ends, a no-retreat holder gives chase, and a routed unit
- * that reached its own edge leaves. */
-function departed(state: BattleState, u: Unit, chasers: Unit[]) {
+/** After a unit changes hex: the pin ends, and a routed unit that reached its own edge leaves. */
+function departed(state: BattleState, u: Unit) {
   if (u.pinnedBy) {
     const pinner = state.units.find((e) => e.id === u.pinnedBy);
     u.pinnedBy = null;
     log(state, u, `${u.name} is out from under ${pinner ? `${pinner.name}'s` : 'the'} pin.`);
   }
-  follow(state, u, chasers);
   if (isRouted(u) && u.square.rank === homeRank(u.side, state.board.squares.length)) leaveField(state, u);
-}
-
-/** Read before anything moves: a pinning shooter never chases. */
-const chasersOf = (u: Unit, holders: Unit[]) => holders.filter((h) => h.noRetreat && h.id !== u.pinnedBy);
-
-/**
- * A `no-retreat` holder gives chase: one free Move of its own Speed, through the ordinary
- * terrain costs, to a cell touching wherever the unit ended. It deals no damage — it
- * only keeps contact, so outrunning it is the only way clear.
- */
-function follow(state: BattleState, u: Unit, chasers: Unit[]) {
-  for (const holder of chasers) {
-    if (u.status !== 'active') return;
-    if (!isStanding(holder) || movementSpeed(holder) === 0 || holder.rooted > 0) continue;
-    if (engagedEnemies(state, holder).length) continue;
-    const reach = reachable(state.board, holder.square, {
-      budget: movementSpeed(holder), ...groundFor(holder), occupied: occupiedBy(state, holder), stopAt: controlCells(state, holder),
-    });
-    let best: { cell: string; feet: number } | null = null;
-    for (const [cell, entry] of reach) {
-      if (cell === notation(holder.square) || !touching(state, parse(cell), u) || !canEndOn(holder, state.board, parse(cell))) continue;
-      if (!best || entry.feet < best.feet || (entry.feet === best.feet && cell < best.cell)) best = { cell, feet: entry.feet };
-    }
-    if (!best) { log(state, holder, `${holder.name} cannot follow ${u.name}.`); continue; }
-    moveTo(state, holder, parse(best.cell));
-    log(state, holder, `${holder.name} gives no retreat and follows ${u.name} to ${best.cell}.`);
-
-  }
 }
 
 /** One cast: the tree is spent for this activation, and its own case resolves it. */
@@ -2045,7 +2011,7 @@ function perform(state: BattleState, rng: Rng, u: Unit, activity: Activity, acti
       if (eff.scope === 'adjacent') {
         reached.push(unit(state, action.target!));
       } else if (eff.scope === 'nearby') {
-        reached.push(...alliesWithin(state, u, BANDS[state.board.grid].short));
+        reached.push(...alliesWithin(state, u, BANDS.short));
       }
       const c = roll(state, rng, u, willModifier(u) + focusBonus, routDcFor(state, u));
       log(state, u, rollLine(u.name, `Will check to ${activity.label}`, c), c);
@@ -2271,17 +2237,16 @@ export function escapeOffer(state: BattleState, u: Unit): EscapeOffer | null {
     dc: Math.max(...holders.map((h) => escapeDcFor(state, h, u))),
     holders: holders.map((h) => ({
       unit: h.id, name: h.name, dc: escapeDcFor(state, h, u),
-      pinning: h.id === u.pinnedBy, follows: h.noRetreat && h.id !== u.pinnedBy,
+      pinning: h.id === u.pinnedBy,
     })),
   };
 }
 
 function doStep(state: BattleState, u: Unit, action: StepAction): number {
   if (!stepTargets(state, u).includes(action.to)) throw new Error(`${u.name} cannot step to ${action.to}`);
-  const chasers = chasersOf(u, holdersOf(state, u));
   moveTo(state, u, parse(action.to));
   log(state, u, `${u.name} steps to ${action.to}.`);
-  departed(state, u, chasers);
+  departed(state, u);
   return 1;
 }
 
@@ -2294,12 +2259,11 @@ function doStride(state: BattleState, rng: Rng, u: Unit, action: MoveAction): nu
   const m = moveReach(state, u, action.waypoints).get(action.to);
   if (!m) throw new Error(`${u.name} cannot reach ${action.to}`);
   const holders = holdersOf(state, u);
-  const chasers = chasersOf(u, holders);
   if (holders.length && !escape(state, rng, u, holders)) return 1;
   spendMovement(u, m);
   moveTo(state, u, parse(action.to));
   log(state, u, `${u.name} strides to ${action.to} — ${m.feet} ft, ${m.actions} action${m.actions === 1 ? '' : 's'}.`);
-  if (holders.length) departed(state, u, chasers);
+  if (holders.length) departed(state, u);
   return m.actions;
 
 }

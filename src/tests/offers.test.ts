@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createBattle, offersAt, select, unit } from '../engine/battle.js';
 import { parse } from '../engine/board.js';
 import { openBoard } from './helpers.js';
-import { scriptedRng } from '../engine/rng.js';
 import type { UnitCard } from '../engine/cards.js';
 import type { BattleState } from '../engine/types.js';
 
@@ -18,7 +17,7 @@ function battle() {
       { card: kobolds, side: 'defender', square: 'c7' },
     ],
     board: openBoard(),
-  }, scriptedRng([10]));
+  });
   const me = state.units.find((u) => u.name === 'Archers')!.id;
   const foe = state.units.find((u) => u.name === 'Kobolds')!.id;
   return { state: select(state, me), me, foe };

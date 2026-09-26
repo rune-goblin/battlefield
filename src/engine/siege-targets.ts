@@ -9,7 +9,7 @@ import { BANDS, type ActivityTarget, type BattleState, type EngineState } from '
 export function siegeTargets(state: BattleState, e: EngineState, mode: SiegeMode): ActivityTarget[] {
   const g = gridOf(state.board);
   const kind = ENGINES.find(card => card.name === e.name)?.kind ?? e.kind;
-  const max = kind === 'ram' ? 1 : BANDS[state.board.grid][e.reach ?? 'medium'];
+  const max = kind === 'ram' ? 1 : BANDS[e.reach ?? 'medium'];
   const inRange = (id: string) => {
     const sq = parse(id), d = g.distance(e.square, sq);
     return d >= (mode.minimum ?? (kind === 'ram' ? 0 : 1)) && d <= max && hasSight(state.board, e.square, sq);
@@ -57,7 +57,7 @@ export function siegeCellReason(state: BattleState, e: EngineState, activity: nu
   if (siegeTargets(state, e, mode).some(t => (t.kind === 'wall' ? t.id.split('|') : t.kind === 'cell' ? t.id.split('+')
     : state.units.filter(u => u.id === t.id).map(u => notation(u.square))).includes(cell))) return null;
   const g = gridOf(state.board), kind = ENGINES.find(card => card.name === e.name)?.kind ?? e.kind;
-  const max = kind === 'ram' ? 1 : BANDS[state.board.grid][e.reach ?? 'medium'];
+  const max = kind === 'ram' ? 1 : BANDS[e.reach ?? 'medium'];
   const min = mode.minimum ?? (kind === 'ram' ? 0 : 1), d = g.distance(e.square, parse(cell));
   if (d < min) return min > 1 ? `Too close: the ${e.name} needs at least ${min} hexes.` : 'The engine cannot fire on its own hex.';
   if (d > max) return `Out of range: ${cell} is ${d} hexes away and the ${e.name} reaches ${max}.`;
