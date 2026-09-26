@@ -1,6 +1,7 @@
 import { freshControl } from '../../runtime/control.js';
 import type { SessionRepository } from '../../runtime/ports.js';
 import { freshSession, migrateSession, type BattleSession } from '../../runtime/session.js';
+import { createJsonStore, UnreadableStore } from '../json-store.js';
 import { gameSettingStorage, SESSION_SETTING, type WorldSettingStorage } from './worldSettings.js';
 
 // proto: the GM's default army is the defender, as an imported battle's is.
@@ -13,19 +14,21 @@ const freshTable = (): BattleSession => ({ ...freshSession(), control: freshCont
  * this setting at either. */
 export function createFoundrySessionRepository(
   storage: WorldSettingStorage = gameSettingStorage(SESSION_SETTING),
+  onUnreadable?: (message: string) => void,
 ): SessionRepository {
+  const store = createJsonStore<BattleSession | null>(storage, {
+    name: 'battle session', empty: () => null, accept: migrateSession, onUnreadable,
+  });
   return {
     async load() {
-      const raw = storage.get();
-      if (!raw) return freshTable();
       try {
-        return migrateSession(JSON.parse(raw)) ?? freshTable();
-      } catch {
-        return freshTable();
+        return store.read() ?? freshTable();
+      } catch (error) {
+        // The fresh table lives in memory only: every save over the setting is refused.
+        if (error instanceof UnreadableStore) return freshTable();
+        throw error;
       }
     },
-    async save(session: BattleSession) {
-      await storage.set(JSON.stringify(session));
-    },
+    save: (session) => store.write(session),
   };
 }

@@ -444,7 +444,10 @@ export function migrateLegacySave(value: unknown, battleId = newBattleId()): Bat
 
 /** Read a save at whatever schema it was written in: the current envelope, or the pre-session
  * `{ stage, setup, battle }` shape. An archived slot can predate the schema running now, the
- * same way `battlefield.v4` can. Nothing else is recognized. */
+ * same way `battlefield.v4` can. Nothing else is recognized. A record from a newer schema is
+ * refused before the legacy path, which would keep its setup and drop the rest. */
 export function migrateSession(value: unknown, battleId = newBattleId()): BattleSession | null {
+  const version = (value as { schemaVersion?: unknown } | null)?.schemaVersion;
+  if (typeof version === 'number' && version > SCHEMA_VERSION) return null;
   return reviveSession(value) ?? migrateLegacySave(value, battleId);
 }

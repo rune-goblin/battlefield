@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createBattle, COMBATANTS, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
 import { submissionOf } from '../runtime/interactions.js';
 import {
-  freshSession, isBattleSession, migrateLegacySave, reviveSession, SCHEMA_VERSION, type BattleSession,
+  freshSession, isBattleSession, migrateLegacySave, migrateSession, reviveSession, SCHEMA_VERSION, type BattleSession,
 } from '../runtime/session.js';
 import {
   createLocalRepository, loadSessionSync, LEGACY_KEY, SESSION_KEY, type WebStorage,
@@ -125,15 +125,18 @@ describe('the browser session repository', () => {
     expect(typeof storage.items[SESSION_KEY]).toBe('string');
   });
 
-  it('yields a fresh session for a corrupt save', async () => {
+  it('loads fresh over a corrupt save and refuses to save over it', async () => {
     const storage = fakeStorage({ [LEGACY_KEY]: '{"setup": ', [SESSION_KEY]: 'not json at all' });
+    const repository = createLocalRepository(storage);
 
-    const session = await createLocalRepository(storage).load();
+    const session = await repository.load();
 
     expect(isBattleSession(session)).toBe(true);
     expect(session.stage).toBe('setup');
     expect(session.battle).toBeNull();
-    expect(session.setup.units.length).toBeGreaterThan(0);
+    await expect(repository.save(session)).rejects.toThrow('could not be read');
+    expect(storage.items[SESSION_KEY]).toBe('not json at all');
+    expect(storage.items[LEGACY_KEY]).toBe('{"setup": ');
   });
 
   it('drops a battle missing a field the board reads and keeps the setup', async () => {
@@ -191,6 +194,10 @@ describe('the session record', () => {
     expect(loaded.interactions.map((i) => i.kind)).toEqual(['night.recovery']);
     expect(submissionOf(loaded.interactions, 'night.recovery', 'attacker')).toEqual([{ unit: 'u0', activity: 'rally' }]);
     expect(submissionOf(loaded.interactions, 'night.recovery', 'defender')).toBeUndefined();
+  });
+
+  it('refuses a record of a newer schema rather than rebuilding it from its setup', () => {
+    expect(migrateSession({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 })).toBeNull();
   });
 
   it('refuses a record of another schema version', () => {

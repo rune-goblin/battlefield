@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { scriptedRng } from '../engine/index.js';
+import { createRuntime } from '../runtime/createRuntime.js';
 import { createFoundryArchive, ARCHIVE_LIMIT, type DownloadFile } from '../adapters/foundry/worldArchive.js';
 import { createFoundrySessionRepository } from '../adapters/foundry/worldSessionRepository.js';
 import type { WorldSettingStorage } from '../adapters/foundry/worldSettings.js';
 import { createSessionWatcher, parseDeliveredSession } from '../adapters/foundry/sessionWatcher.js';
-import { freshSession, type BattleSession } from '../runtime/session.js';
+import { freshControl } from '../runtime/control.js';
+import { freshSession, SCHEMA_VERSION, type BattleSession } from '../runtime/session.js';
 
 function fakeStorage(initial = ''): WorldSettingStorage {
   let value = initial;
@@ -31,9 +34,14 @@ describe('the Foundry session repository', () => {
     expect(session.control).toMatchObject({ mode: 'auto', gmSide: 'defender' });
   });
 
-  it('falls back to a fresh session on a corrupt setting value', async () => {
-    const repo = createFoundrySessionRepository(fakeStorage('not json'));
-    expect((await repo.load()).revision).toBe(0);
+  it('loads fresh over a corrupt setting value and refuses to save over it', async () => {
+    const storage = fakeStorage('not json');
+    const repo = createFoundrySessionRepository(storage);
+    const session = await repo.load();
+
+    expect(session.revision).toBe(0);
+    await expect(repo.save(session)).rejects.toThrow('could not be read');
+    expect(storage.get()).toBe('not json');
   });
 });
 
@@ -74,6 +82,34 @@ describe('the Foundry archive', () => {
     expect(remaining).toHaveLength(ARCHIVE_LIMIT);
     expect(remaining.some((e) => e.slot === firstSlot)).toBe(false);
     expect(downloaded).toHaveLength(1);
+  });
+});
+
+describe('an unreadable world setting', () => {
+  it('keeps the saved battles and a newer session byte for byte and refuses every write over them', async () => {
+    const corrupt = '[{"slot": "slot-1", "name": "Keep", "data": {}}, 42]';
+    const archiveSetting = fakeStorage(corrupt);
+    const newer = JSON.stringify({ ...freshSession(), schemaVersion: SCHEMA_VERSION + 1 });
+    const sessionSetting = fakeStorage(newer);
+    const notices: string[] = [];
+    const notice = (message: string) => notices.push(message);
+    const archive = createFoundryArchive(archiveSetting, () => {}, notice);
+    const repository = createFoundrySessionRepository(sessionSetting, notice);
+    const session = await repository.load();
+    const runtime = createRuntime({ repository, archive, session, dice: scriptedRng([10]) });
+
+    await expect(archive.save('Night one', session)).rejects.toThrow('could not be read');
+    await expect(archive.remove('slot-1')).rejects.toThrow('could not be read');
+    await expect(archive.import(JSON.stringify({ name: 'x', data: session }))).rejects.toThrow('could not be read');
+    expect(await runtime.submit({ type: 'session.load', slot: 'slot-1' })).toMatchObject({ ok: false, reason: 'storage' });
+    expect(archiveSetting.get()).toBe(corrupt);
+
+    const result = await runtime.submit({ type: 'control.assign', control: freshControl('attacker') });
+    expect(result).toMatchObject({ ok: false, reason: 'storage', message: expect.stringContaining('battle session') });
+    expect(sessionSetting.get()).toBe(newer);
+    expect(notices).toEqual([
+      expect.stringContaining('The stored battle session'), expect.stringContaining('The stored saved battles'),
+    ]);
   });
 });
 

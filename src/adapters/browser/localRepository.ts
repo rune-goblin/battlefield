@@ -1,5 +1,6 @@
 import type { SessionRepository } from '../../runtime/ports.js';
 import { freshSession, migrateLegacySave, reviveSession, type BattleSession } from '../../runtime/session.js';
+import { createJsonStore, UnreadableStore, type JsonStore, type TextCell } from '../json-store.js';
 
 /** The pre-session save: `{ stage, setup, battle }`, written by the app before Wave 1.1. */
 export const LEGACY_KEY = 'battlefield.v4';
@@ -11,6 +12,11 @@ export interface WebStorage {
   removeItem(key: string): void;
 }
 
+export const webCell = (storage: WebStorage, key: string): TextCell => ({
+  get: () => storage.getItem(key),
+  set: (value) => storage.setItem(key, value),
+});
+
 function read(storage: WebStorage, key: string): unknown {
   try {
     const raw = storage.getItem(key);
@@ -20,10 +26,19 @@ function read(storage: WebStorage, key: string): unknown {
   }
 }
 
-/** The store answers without waiting, and the app is seeded before its first render, so the
- * read stays synchronous under the promise the port asks for. */
-export function loadSessionSync(storage: WebStorage = globalThis.localStorage): BattleSession {
-  const current = reviveSession(read(storage, SESSION_KEY));
+const sessionStore = (storage: WebStorage): JsonStore<BattleSession | null> =>
+  createJsonStore(webCell(storage, SESSION_KEY), { name: 'battle session', empty: () => null, accept: reviveSession });
+
+function loadFrom(store: JsonStore<BattleSession | null>, storage: WebStorage): BattleSession {
+  let current: BattleSession | null;
+  try {
+    current = store.read();
+  } catch (error) {
+    // Both keys stay as they are, and the fresh session lives in memory: the store refuses
+    // every save over the unreadable one.
+    if (error instanceof UnreadableStore) return freshSession();
+    throw error;
+  }
   if (current) {
     // The pre-session save stands until one written from it has come back intact.
     try { storage.removeItem(LEGACY_KEY); } catch { /* read-only store */ }
@@ -32,13 +47,17 @@ export function loadSessionSync(storage: WebStorage = globalThis.localStorage): 
   return migrateLegacySave(read(storage, LEGACY_KEY)) ?? freshSession();
 }
 
+/** The store answers without waiting, and the app is seeded before its first render, so the
+ * read stays synchronous under the promise the port asks for. */
+export const loadSessionSync = (storage: WebStorage = globalThis.localStorage): BattleSession =>
+  loadFrom(sessionStore(storage), storage);
+
 export function createLocalRepository(storage: WebStorage = globalThis.localStorage): SessionRepository {
+  const store = sessionStore(storage);
   return {
     async load() {
-      return loadSessionSync(storage);
+      return loadFrom(store, storage);
     },
-    async save(session: BattleSession) {
-      storage.setItem(SESSION_KEY, JSON.stringify(session));
-    },
+    save: (session) => store.write(session),
   };
 }

@@ -1,9 +1,11 @@
 import type { CommandEnvelope, CommandResult } from './commands.js';
 import type { BattleSession, LifecycleStage } from './session.js';
 
-/** The one durable copy of the record. `load` always resolves: an unreadable or foreign save
- * yields a fresh session. `save` rejects when the write fails, so the executor can hold the
- * commit rather than acknowledge it. */
+/** The one durable copy of the record. `load` always resolves: an absent save yields a fresh
+ * session, and so does an unreadable one, which the store leaves exactly as it found it. While
+ * the stored value stays unreadable every `save` rejects, so no commit lands over it. `save`
+ * also rejects when the write fails, so the executor can hold the commit rather than
+ * acknowledge it. */
 export interface SessionRepository {
   load(): Promise<BattleSession>;
   save(session: BattleSession): Promise<void>;
