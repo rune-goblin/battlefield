@@ -110,7 +110,7 @@ Gates use double doors viewed from above. Closed leaves meet in a solid line acr
 ```
 src/board/BoardApp.ts          owns PIXI.Application, canvas, resize, theme — the in-app board only
 src/board/BoardContainer.ts    a plain PIXI.Container + LayerManager; mountable anywhere
-src/board/layers/LayerManager.ts   lifted from Reignmaker; owns LAYER_ORDER, the board's whole z-order
+src/board/layers/LayerManager.ts   adapted and trimmed from Reignmaker; owns LAYER_ORDER, the board's whole z-order
 src/board/layers/TerrainLayer.ts   cell fills, procedural texture overlays, elevation, slope hatching
 src/board/layers/InkLayer.ts       the illustrated map: one wash per hex under one pencil drawing
 src/board/layers/EdgeLayer.ts      walls, breached walls, cliffs
@@ -247,19 +247,13 @@ ports across without needing to know anything about what else is listening on th
 Surveyed `pf2e-reignmaker`'s `src/services/map` (~15.8k lines, all against the ambient global
 `PIXI`, v7.4.3). What actually got lifted, and the edit each one needed:
 
-- **`LayerManager.ts`** (`core/LayerManager.ts`) — lifted essentially verbatim. Added the
-  `import * as PIXI from 'pixi.js'` line Reignmaker doesn't need (ambient global there), and
-  swapped its Foundry kingdom-map `LayerId`/`MapLayer` types (which carry icon-path exports
-  that don't apply to a battle board) for a pair scoped to this board's five layers. Everything
-  else — the singleton `createLayer`, `clearLayerContent`/`clearLayer`, z-index handling — is
-  unedited, kept for backport parity.
-- **`MapTextUtils.ts`** (`utils/MapTextUtils.ts`) — lifted `createMapText` and its zoom-
-  invariant scaling. The one seam Reignmaker's survey note flagged (`canvas.stage.scale.x`)
-  now reads a `PIXI.Container`'s own `.scale.x` instead — in-app that's `BoardApp.viewport`,
-  in the mount page it's whatever container `Interaction` pans/zooms — so the same function
-  works whether or not a `canvas` global exists. Dropped `getHexCenter` (Foundry's
-  `canvas.grid` API; this board resolves centres through `Grid.center` instead) and the dead
-  `updateTextScale`. Added one preset (`coordinateLabel`) Reignmaker has no equivalent for.
+- **`LayerManager.ts`** (`core/LayerManager.ts`) — adapted, then trimmed to what this board
+  calls. Added the `import * as PIXI from 'pixi.js'` line Reignmaker doesn't need (ambient
+  global there), and swapped its Foundry kingdom-map `LayerId`/`MapLayer` types (which carry
+  icon-path exports that don't apply to a battle board) for a pair scoped to this board's
+  layers. The singleton `createLayer` and z-index handling stayed; the methods this board
+  never calls (`getLayer`, `removeLayer`, `clearLayerContent`/`clearLayer`, and the id/count/
+  visibility queries) did not.
 - **Terrain palette** (`src/styles/colors.ts`'s `TERRAIN_OVERLAY_COLORS`) — only
   `forest`/`swamp`/`water` map onto Reignmaker hexes with the same name; this board's other
   three terrains (`open`/`shallows`/`settlement`) have no Reignmaker counterpart, so those

@@ -2,8 +2,8 @@ import * as PIXI from 'pixi.js';
 import { LayerManager } from './layers/LayerManager.js';
 
 // A plain PIXI.Container holding the board's layer stack. It makes no assumption about what
-// it is mounted into — BoardApp's stage today, a Foundry "primary" container in the Wave 6
-// portability prototype — so it never touches PIXI.Application or the DOM.
+// it is mounted into — BoardApp's stage today, a Foundry "primary" container in
+// dev/foundry-mount — so it never touches PIXI.Application or the DOM.
 export class BoardContainer extends PIXI.Container {
   readonly layers: LayerManager;
 

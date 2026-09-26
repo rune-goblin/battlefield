@@ -217,9 +217,9 @@ export class Token extends PIXI.Container {
   private reaction: { spec: TokenReaction; start: number } | null = null;
   private flashFilter: PIXI.ColorMatrixFilter | null = null;
 
-  // Wave 5: a battle move tweens from wherever the token is actually sitting (which may
-  // itself be mid-tween from the previous move) to the new cell's centre. `lastCell` is null
-  // until the first `place()`, so mounting never tweens in from the origin.
+  // A battle move tweens from wherever the token is actually sitting (which may itself be
+  // mid-tween from the previous move) to the new cell's centre. `lastCell` is null until the
+  // first `place()`, so mounting never tweens in from the origin.
   private lastCell: string | null = null;
   private tween: Tween | null = null;
 
@@ -547,6 +547,7 @@ export class Token extends PIXI.Container {
           }
           this.layoutArt(size);
         })
+        // proto: a missing silhouette leaves the cast shadow blank; no error UI.
         .catch(() => {});
     }
     this.layoutArt(size);
@@ -704,6 +705,7 @@ export class Token extends PIXI.Container {
           }
           this.layoutChip(size);
         })
+        // proto: a missing chip icon leaves the piece without one; no error UI.
         .catch(() => {});
     }
     if (this.engineChip) {
@@ -739,6 +741,7 @@ export class Token extends PIXI.Container {
           this.statusColumn.addChild(entry.sprite);
           this.layoutStatuses(this.size);
         })
+        // proto: a missing icon leaves the piece without it; no error UI.
         .catch(() => {});
       return entry;
     });

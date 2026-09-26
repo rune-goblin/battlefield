@@ -8,7 +8,7 @@ export type Hit =
 /** Where a piece stands. A click is answered by the hex it lands in and what that hex holds,
  * never by the art: the miniature is drawn taller than its own cell and overhangs the one
  * behind it, so hit-testing its pixels puts part of every piece out of reach and part of the
- * ground behind it inside a piece. Wave 4's TokenLayer supplies these. */
+ * ground behind it inside a piece. TokenLayer supplies these. */
 export interface TokenPlacement {
   id: string;
   cell: string;

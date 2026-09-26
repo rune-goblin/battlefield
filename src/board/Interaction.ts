@@ -170,16 +170,24 @@ export class Interaction {
 
   /** A step of zoom about a screen point, on the same scale and limits as the wheel. */
   zoomBy(factor: number, at: Point): void {
+    if (!this.scaleAbout(factor, at)) return;
+    this.clamp();
+    this.viewportChanged();
+  }
+
+  /** Scales the viewport by `factor` about the viewport-local point under screen point `at`,
+   * clamped to MIN_ZOOM/MAX_ZOOM. False (and no change) when the clamp leaves the scale as it
+   * was — the caller skips its own clamp/notify in that case. */
+  private scaleAbout(factor: number, at: Point): boolean {
     const viewport = this.o.viewport;
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.scale.x * factor));
-    if (next === viewport.scale.x) return;
+    if (next === viewport.scale.x) return false;
     const before = viewport.toLocal(at);
     viewport.scale.set(next);
     const after = viewport.toLocal(at);
     viewport.x += (after.x - before.x) * next;
     viewport.y += (after.y - before.y) * next;
-    this.clamp();
-    this.viewportChanged();
+    return true;
   }
 
   /** Put `box` (viewport-local) in the middle of `into` (screen), as large as the zoom limits
@@ -421,14 +429,8 @@ export class Interaction {
       this.viewportChanged();
       return;
     }
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.scale.x * Math.exp(-e.deltaY * ZOOM_STEP)));
-    if (next === viewport.scale.x) return;
     const screen = this.screenOf(e);
-    const before = viewport.toLocal(screen);
-    viewport.scale.set(next);
-    const after = viewport.toLocal(screen);
-    viewport.x += (after.x - before.x) * next;
-    viewport.y += (after.y - before.y) * next;
+    if (!this.scaleAbout(Math.exp(-e.deltaY * ZOOM_STEP), screen)) return;
     this.lastScreen = screen;
     this.pointerInside = true;
     this.clamp();

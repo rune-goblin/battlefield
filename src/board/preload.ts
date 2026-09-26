@@ -23,6 +23,8 @@ function warmImage(url: string): void {
   image.decode().catch(() => { images.delete(url); });
 }
 
+// proto: a warm-up load failing here leaves nothing cached; the real load at point of use
+// reports its own failure (or is itself marked proto), so this stays silent.
 const quiet = (loading: Promise<unknown>): void => { loading.catch(() => {}); };
 
 let staticStarted = false;
