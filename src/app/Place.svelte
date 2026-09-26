@@ -9,7 +9,10 @@
   import TroopPicker from './TroopPicker.svelte';
   import Modal from './Modal.svelte';
   import { ARMY_TITLE, sideColour } from './presentation.js';
-  import * as store from './game.svelte.js';
+  import {
+    game, addUnit, addEmplacement, autoPlacePiece, generateForce, placePiece, removeEmplacement, removeUnit,
+    setHauling, setEngineLoaded, unplacePiece,
+  } from './game.svelte.js';
   import { resetToExample } from './navigation.svelte.js';
   import type { PieceRef } from '../runtime/commands.js';
   import { onDestroy } from 'svelte';
@@ -24,7 +27,11 @@
   let { side: stepSide, pieces }: Props = $props();
 
   const c = createPlaceController(
-    { ...store, gameMap, resetToExample, notifications: useNotifications() },
+    {
+      game, gameMap, resetToExample, notifications: useNotifications(),
+      addUnit, addEmplacement, autoPlacePiece, generateForce, placePiece, removeEmplacement, removeUnit,
+      setHauling, setEngineLoaded, unplacePiece,
+    },
     { get side() { return stepSide; }, get pieces() { return pieces; } },
   );
   onDestroy(c.close);
