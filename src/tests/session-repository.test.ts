@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, COMBATANTS, OFFICIAL, type BattleState, type UnitCard } from '../engine/index.js';
 import { submissionOf } from '../runtime/interactions.js';
-import {
-  freshSession, isBattleSession, migrateLegacySave, migrateSession, reviveSession, SCHEMA_VERSION, type BattleSession,
-} from '../runtime/session.js';
+import { migrateLegacySave, migrateSession, reviveSession } from '../runtime/migrate.js';
+import { freshSession, isBattleSession, SCHEMA_VERSION, type BattleSession } from '../runtime/session.js';
 import {
   createLocalRepository, loadSessionSync, LEGACY_KEY, SESSION_KEY, type WebStorage,
 } from '../adapters/browser/localRepository.js';
@@ -39,7 +38,7 @@ function fakeStorage(seed: Record<string, string> = {}): WebStorage & { items: R
 
 describe('the browser session repository', () => {
   it('restores source movement modes in old catalogue saves and preserves a custom battle Speed', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const old = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
     delete old.sheet!.otherSpeeds;
     session.setup.units = [{ id: 'flyer', card: old, side: 'attacker', square: 'c2', engines: [] }];
@@ -58,7 +57,7 @@ describe('the browser session repository', () => {
   });
 
   it('upgrades the previous movement scale once and preserves the fraction of a Move in reserve', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const army = structuredClone(COMBATANTS.find(c => c.name === 'Wyvern Flight')!);
     session.setup.units = [{ id: 'flyer', card: army, side: 'attacker', square: 'c2', engines: [] }];
     session.battle = createBattle({ board: openBoard(), units: [{ id: 'flyer', card: army, side: 'attacker', square: 'c2' }] });
@@ -68,7 +67,7 @@ describe('the browser session repository', () => {
     expect(reviveSession(structuredClone(fixed))).toEqual(fixed);
   });
   it('repairs old catalogue spell stats without changing morale, wounds or custom overrides', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const old = structuredClone(OFFICIAL.find(c => c.name === 'Apprentice Magician Clique')!);
     delete old.sheet!.spellAttack;
     delete old.sheet!.spellDc;
@@ -186,7 +185,7 @@ describe('the session record', () => {
     const storage = fakeStorage();
     const { interactions, ...older } = freshSession();
     const held = { nightDeclarations: { attacker: [{ unit: 'u0', activity: 'rally' }] }, nextDeployment: {} };
-    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, ...held, revision: 9 }));
+    storage.setItem(SESSION_KEY, JSON.stringify({ ...older, ...held, schemaVersion: 1, revision: 9 }));
 
     const loaded = loadSessionSync(storage);
 
@@ -209,7 +208,7 @@ describe('the session record', () => {
 
 describe('fortification tier alignment', () => {
   it('migrates barricades across saved maps, preserves breaches, and leaves tiers 1–4 intact', () => {
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     const oldBoard = () => {
       const board = openBoard();
       board.spec.construction = { kind: 'fort', tier: 0 };

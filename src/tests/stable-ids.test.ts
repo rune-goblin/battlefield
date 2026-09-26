@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, ENGINES, type BattleSetup, type UnitCard } from '../engine/index.js';
-import {
-  migrateLegacySave, newEquipmentId, newUnitId, reviveSession, SCHEMA_VERSION,
-  type BattleSetupDraft, type SetupUnit,
-} from '../runtime/session.js';
+import { migrateLegacySave, reviveSession } from '../runtime/migrate.js';
+import { newEquipmentId, newUnitId, type BattleSetupDraft, type SetupUnit } from '../runtime/session.js';
 import { openBoard } from './helpers.js';
 
 const card = (name: string, level: number): UnitCard => ({ name, level, role: 'infantry', tactics: [] });
@@ -83,7 +81,7 @@ describe('stable piece IDs', () => {
 
   it('gives a setup written without IDs one per piece, engines included', () => {
     const legacy = {
-      schemaVersion: SCHEMA_VERSION,
+      schemaVersion: 1,
       rulesVersion: '2026-09-18',
       battleId: 'battle-old',
       revision: 3,

@@ -10,7 +10,8 @@ import { ABILITY_LABELS, abilityDescription, abilityName, abilitySummary, validA
 import { refreshAbilityAuras } from '../engine/ability-effects.js';
 import { CAST_ACTIVITIES } from '../engine/magic.js';
 import { TargetingService } from '../app/targeting.js';
-import { freshSession, reviveSession } from '../runtime/session.js';
+import { reviveSession } from '../runtime/migrate.js';
+import { freshSession } from '../runtime/session.js';
 import { openBoard } from './helpers.js';
 import type { Unit } from '../engine/types.js';
 
@@ -434,7 +435,7 @@ describe('troop ability resolution', () => {
   it('discards retired Sweep assignments from saves and keeps melee damage on its target', () => {
     const retired = { version: 1, key: 'old-sweep', kind: 'sweep', label: 'Trample', delivery: 'attack', attack: 'melee', trigger: 'hit' };
     expect(validAbility(retired)).toBe(false);
-    const session = freshSession();
+    const session = { ...freshSession(), schemaVersion: 1 };
     session.battle = battle([retired as TroopAbility, ability('fear', { delivery: 'attack', attack: 'melee', trigger: 'hit' })]);
     // Simulate an older save that still carries the retired assignment.
     session.battle.units[0].abilities!.push(retired as TroopAbility);
@@ -551,7 +552,7 @@ describe('portable ability imports', () => {
     const restored = reviveSession(JSON.parse(JSON.stringify(session)))!;
     expect(restored.battle!.units[0].abilities).toEqual(session.battle.units[0].abilities);
     expect(restored.battle!.units[0].abilityState).toEqual(session.battle.units[0].abilityState);
-    const legacy = structuredClone(session);
+    const legacy = { ...structuredClone(session), schemaVersion: 1 };
     delete legacy.battle!.units[0].abilities; delete legacy.battle!.units[0].abilityState;
     (legacy.battle!.units[0] as Unit & { noRetreat?: boolean }).noRetreat = true;
     const migrated = reviveSession(legacy)!;
