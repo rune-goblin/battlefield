@@ -217,7 +217,7 @@ export interface Grid {
   edgeKey(a: Cell, b: Cell): string;
   rank(c: Cell): number;
   homeward(c: Cell, side: 'attacker' | 'defender'): Cell[];
-  /** The cell one step past `through`, continuing the same direction — Pace's second square. */
+  /** The cell one step past `through`, continuing the same direction. */
   beyond(from: Cell, through: Cell): Cell | null;
   /** Whether the three lie on one straight line of cells — a Blast's Line out from its caster. */
   collinear(a: Cell, b: Cell, c: Cell): boolean;
