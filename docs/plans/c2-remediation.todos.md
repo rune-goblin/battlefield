@@ -5,7 +5,6 @@ could not answer. An item leaves this list when it is done or answered.
 
 ## Waves
 
-- W9 — Board structure: W9.1–W9.2
 - W10 — Recovery from an unreadable save: W10.1
 
 ## Carried forward from W1
@@ -96,13 +95,6 @@ could not answer. An item leaves this list when it is done or answered.
   (`0 2px 8px rgba(0, 0, 0, .25)`), `BattlePins.svelte:322` (`drop-shadow(0 2px 3px #0004)`) and
   `ActivityChoices.svelte:35` (`0 3px 10px #0004`). Switch them to `--shadow-1` and
   `--icon-shadow`, which now exist.
-- `battle/battle-controller.svelte.ts` builds unit tokens by hand. It picks the engine with
-  `engineOn`, which also checks board engines on the unit's square; it could adopt `unitToken(u,
-  cell, extra)` from `presentation.ts`.
-- `src/app/targeting.ts:41` deep-imports `targetAnchor` from `board/target-point.js`, marked
-  `proto:`. The barrel cannot load under node, because `src/board/Token.ts:145` builds a
-  `ColorMatrixFilter` at import. W9.2 splits `Token`; building the filter lazily there would let
-  this import go through the barrel.
 - `onEscape` in `src/app/keys.ts` listens on the window with no guard, so Escape pressed anywhere
   on a Foundry page closes an open dialog or popover.
 - `Place.svelte` passes the store's commands to the place controller with a namespace import
@@ -110,6 +102,23 @@ could not answer. An item leaves this list when it is done or answered.
 - Two shadows moved to shared tokens: `Dock`'s all-round glow now reads `--shadow-2`, and the
   `MapControls` grid dialog reads the deeper `--shadow-3`. `MapControls`' `::backdrop` reads
   `var(--scrim)` with no literal fallback.
+
+## Carried forward from W9
+
+- Live check: no one has played W9 in the browser or in Foundry, and no screenshot exists. Check
+  token moves, rings, the flag, status bars, the engine chip and its hit box, a routed unit's
+  grey-out, and a stage switch that tears the board down.
+- `src/board/status-bars.ts` sizes the morale track with `ROUTED_AT` and labels a unit at Morale 0
+  " — routed" without checking `status`; `PixiBoard.svelte` shows that label. The routed word
+  could come from the token model's `routed` flag.
+- Board teardown destroys the token layer after the fallen layer, so `FallenLayer.destroy` hands
+  its held pieces back to `TokenLayer`, which renders them once before its own destroy.
+- `src/board/index.ts`: both `setTerrainAppearance` guards test `currentBoard &&` after a
+  non-null layer context, which already implies a board.
+- `dev/two-clients/ClientPanel.svelte` is not type-checked and has gone stale: it builds
+  `UnitTokenModel` without the required `routed` flag and passes `prop: null`. The fixture
+  `dev/foundry-mount/battle-state.json` has no `disorder` or `routed` field and still carries
+  `shaken`.
 
 ## Unreadable save recovery (W10.1)
 

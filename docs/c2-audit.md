@@ -124,17 +124,21 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
 
 **Resolution (2026-09-26):** W1.1 added `createJsonArchive` in `src/adapters/json-store.ts`, the one copy of list, save, load, remove, export and import. Both archives are thin bindings over it, and the Foundry one keeps its ten-slot eviction as `beforeInsert`.
 
-### M11. `Token` is a God Class — Divergent Change `[local]`
+### M11. `Token` is a God Class — Divergent Change `[local]` `[done]`
 - **Where:** `src/board/Token.ts:171`
 - **What:** 37 methods covering art loading, tweening, drag lift, spell reactions, rings, flag, engine chip, pips, status bars, rout arrow and the status-intro handshake.
 - **Direction:** Compose per-concern parts: `StatusColumn`, `MoveTween`, `RingGlow`, `EngineChip`.
 
-### M12. Board layers share no contract, and `destroy()` misses five — Shotgun Surgery / Resource Leak `[cross-cutting]` `[partial]`
+**Resolution (2026-09-26):** W9.2 split `Token` into `MoveTween`, `StatusColumn`, `RingGlow` and `EngineChip` under `src/board/token/`, with the shared offsets in `token/geometry.ts`. `Token.destroy` now destroys the status column and chip with their children, which it used to detach and leak. `TokenLayer.placements()` reads the chip's hit box from `token.chipBounds()` and no longer recomputes it from `Token`'s private geometry. The desaturate filter is built on first use, so `src/app/targeting.ts` imports `targetAnchor` through the board barrel. A freshly loaded chip sprite no longer draws over the flag and ring until the next draw.
+
+### M12. Board layers share no contract, and `destroy()` misses five — Shotgun Surgery / Resource Leak `[cross-cutting]` `[done]`
 - **Where:** `src/board/index.ts:248-289,546-557`
 - **What:** 12 layers use 6 different `setGeometry`/`draw` signatures and repeat their teardown 13 times; `destroy()` skips the overlay, shot, grid, map-line and edge layers and only clears ink, so `OverlayLayer.destroyed` never flips and a late `loadBarred` redraws into a destroyed container.
 - **Direction:** A `BoardLayer { setGeometry(ctx|null); destroy() }` interface and an iterated layer list.
 
 **Resolution (2026-09-26):** W1.6 made `destroy()` tear down the grid, map-line, edge, overlay and shot layers and destroy the ink layer; `EdgeLayer` and `InkLayer` gained a `destroy()`. `OverlayLayer.destroyed` now flips, so a late `loadBarred` stops. The shared layer contract remains for W9.1.
+
+**Resolution (2026-09-26):** W9.1 added `BoardLayer { setGeometry(ctx | null); destroy() }` in `src/board/layers/BoardLayer.ts`. `index.ts` keeps one layer list and iterates it for redraw and teardown; `TerrainLayer` takes its dependencies in its constructor. The token layer is now destroyed after the fallen and combat-text layers, so `FallenLayer.destroy` hands its held pieces to a live `TokenLayer`, which renders them once to no purpose. `clearEffects()` still clears the effect and combat-text layers by name; it drops effects in flight on a stage switch and lies outside the contract.
 
 ### M13. Modal, popover and army-card chrome is copied between components — Copy-and-Paste Programming `[cross-cutting]` `[done]`
 - **Where:** `QuitDialog.svelte:43-55` and `EndBattleDialog.svelte:53-65` are identical; Escape-to-close is written 4 times; `SeatingPanel.svelte:143-148` and `SaveLoadPanel.svelte:109-114` share one panel; `Sides.svelte` and `Summary.svelte` repeat the army card, and the `--side` ternary appears 5 times. `TokenModel` is built by hand in `BattleReport.svelte:117`, `Summary.svelte:46`, `VfxGallery.svelte:15` and `Place.svelte`, which already pick the engine name differently.
@@ -252,8 +256,9 @@ coordinated engine edits, and a new command takes 5 or more across three runtime
   **Resolution (2026-09-26):** W2.6 dropped `BattleSiteArmy` for `KingdomArmy`, kept one `PLAYER_KINGDOM` in `kingdomArmies.ts`, and moved the actor reader into `foundry/armyActor.ts`, which both callers use.
 - `Interaction.ts:172-183`/`424-435` `[local]` `[done]` — zoom-about-point math twice; `board/index.ts:330-347` duplicates `connectedCells`.
   **Resolution (2026-09-26):** W2.4 extracted `scaleAbout` for both zoom paths and rebuilt `region()` on `connectedCells`.
-- `EdgeLayer.ts:467` `[local]` `[partial]` — the cliff test restates `barrierBetween`; `Token.ts:267,272` decide routed without `status`.
+- `EdgeLayer.ts:467` `[local]` `[done]` — the cliff test restates `barrierBetween`; `Token.ts:267,272` decide routed without `status`.
   **Resolution (2026-09-26):** W2.4 routed the cliff test through `barrierBetween`. `Token`'s routed test remains for W9.2.
+  **Resolution (2026-09-26):** W9.2 added a required `routed` flag to the unit token model, set from the engine's `isRouted` in `unitToken`; the battle controller now builds its tokens with `unitToken`. `src/board/status-bars.ts` still labels a unit at Morale 0 "routed" without `status`; the todos file carries it.
 - `ring-controller.svelte.ts:5` `[local]` `[done]` — unused `stage` import.
   **Resolution (2026-09-26):** W2.5 removed the import.
 - `types.ts:383-386` `[local]` `[done]` — `BANDS` square and hex rows are identical.
