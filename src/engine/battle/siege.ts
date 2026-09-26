@@ -2,6 +2,7 @@ import { abilityMemory, hasAbility } from '../ability-effects.js';
 import { wallsFor } from '../walls.js';
 import { at, notation, structuralDamage, fortification } from '../board.js';
 import { CELL_FEET } from '../path.js';
+import { canFly } from '../cards.js';
 import { MAGICAL_CONDITIONS, resetConditions } from '../conditions.js';
 import { rollLine, succeeded } from '../check.js';
 import type { ActivityIndex } from '../ladders.js';
@@ -91,12 +92,7 @@ function siegeEffect(state: BattleState, u: Unit, target: Unit, e: EngineState, 
     case 'stun': target.stunned = true; break;
     case 'expose': target.exposed = true; break;
     case 'sicken': addDisorder(state, target, 1, mode.label); break;
-    case 'nullify': {
-      // A temporary flier over water lands after reaching safe ground.
-      const overWater = at(state.board, target.square).terrain === 'water';
-      resetConditions(target, MAGICAL_CONDITIONS.filter((key) => !(key === 'flies' && overWater)));
-      break;
-    }
+    case 'nullify': resetConditions(target, MAGICAL_CONDITIONS); break;
     case 'push': case 'pull':
       forcedStep(state, e.square, target, mode.effect);
       break;
@@ -128,7 +124,7 @@ function resolveSiege(state: BattleState, rng: Rng, u: Unit, e: EngineState, mod
   }
   if (mode.ignites) state.board.siegeFields = state.board.siegeFields?.map(f => f.kind === 'web' ? { ...f, cells: f.cells.filter(c => !cells.includes(c)) } : f).filter(f => f.cells.length > 0);
   const targets = state.units.filter(t => t.status === 'active' && cells.includes(notation(t.square))
-    && (!mode.groundOnly || (!t.flying && !t.flies)) && (!mode.cavalryOnly || t.role === 'cavalry')
+    && (!mode.groundOnly || !canFly(t)) && (!mode.cavalryOnly || t.role === 'cavalry')
     && (!mode.waterOnly || ['water', 'shallows'].includes(at(state.board, t.square).terrain)));
   if (!targets.length) log(state, u, `${e.name}: ${mode.label} lands on ${cells.join(', ')}.`);
   for (const target of targets) {

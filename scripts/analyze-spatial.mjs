@@ -7,7 +7,7 @@ const e = await import(pathToFileURL(resolve(process.argv[2], 'index.js')).href)
 const samples = Number(process.argv[3] ?? 200);
 if (!Number.isInteger(samples) || samples < 1) throw new Error('seed-count must be a positive integer');
 const { LIBRARY, COMBATANTS, OFFICIAL, ROSTER, generateBoard, gridOf, at, notation, parse,
-  reachable, feetTo, barrierBetween, squaresPerAction, deriveStats, degreeOf, createBattle,
+  reachable, feetTo, barrierBetween, squaresPerAction, movementRates, deriveStats, degreeOf, createBattle,
   select, activation, movePath, engagedEnemies, rangeBetween, shootModifier, defenceOf } = e;
 const tally = values => values.reduce((counts, value) => (counts[value] = (counts[value] ?? 0) + 1, counts), {});
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
@@ -40,7 +40,7 @@ const library = {
   counts:{combatants:COMBATANTS.length,official:OFFICIAL.length,prototype:ROSTER.length,total:LIBRARY.length},
   cellsPerAction:tally(LIBRARY.map(squaresPerAction)), sheetSpeeds:tally(LIBRARY.filter(c=>c.sheet).map(c=>c.sheet.speed)),
   reach:tally(LIBRARY.map(c=>deriveStats(c).reach??'none')),
-  zeroSpeed:LIBRARY.filter(c=>c.sheet?.speed===0).map(c=>({name:c.name,flying:c.sheet.fly,cells:squaresPerAction(c)})),
+  zeroSpeed:LIBRARY.filter(c=>c.sheet?.speed===0).map(c=>({name:c.name,flying:movementRates(c).fly>0,cells:squaresPerAction(c)})),
   defaultUnits:['Line Infantry','Heavy Cavalry','Apprentice Magician Clique','Kobold Warriors','Troll Marauders','Mitflit Vermin Cavalry'].map(name=>{
     const c=LIBRARY.find(c=>c.name===name); const s=deriveStats(c);
     return {name,sheetSpeed:c.sheet.speed,cellsPerAction:squaresPerAction(c),sheetSalvo:c.sheet.salvoFeet,reach:s.reach};

@@ -138,7 +138,6 @@ export function positionNotes(state: BattleState, u: Unit): string[] {
     TERRAIN_NOTE[hex.terrain],
     hauled ? `hauling ${hauled.name}` : '',
     hex.elevation > 0 ? 'attacks +1 and shots +1 hex a level downhill' : '',
-    u.flies ? 'flying' : '',
     state.phase === 'battle' && isOutflanked(state, u) ? 'outflanked' : '',
   ].filter(Boolean);
 }

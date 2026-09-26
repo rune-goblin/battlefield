@@ -5,6 +5,7 @@ import { tick } from 'svelte';
 import { activeUnit, activation, notation, siegeEngines, siegeAttackOffer, engineLoading, type SiegeAction, canFocus, type Unit, type EngineState, statusesOf, unitOutcome, positionNotes, wallName, edgeCells, type TargetRef,
   gateReason, siegeReason, wallsFor, fortification, engineKind, engineSpeed, engineLoadSteps, engineLoadProgress, haulingSpeed, CELL_FEET, levelDc } from '../../engine/index.js';
 import { offerReason } from './action-menu.js';
+import { unitSheet } from './unit-sheet.js';
 import { statusEffectsOf } from '../status-effects.js';
 import { unitToken } from '../presentation.js';
 import { withinApp } from '../app-root.js';
@@ -105,6 +106,7 @@ export function createBattleController(deps: BattleDeps) {
   // The whole engine surface for the active unit in one call: the menu, the movement pool,
   // and where it reaches — `moves`/`charges` drive the drag, `offers` drive the popups.
   const act = $derived(active ? activation(b, active.id) : null);
+  const sheet = $derived(active ? unitSheet(b, active) : null);
   const offers = $derived(act?.offers ?? []);
   const roster = $derived(b.units.filter((u) => u.side === b.pending && u.status === 'active'));
   let gateOpen = $state(false);
@@ -522,6 +524,7 @@ export function createBattleController(deps: BattleDeps) {
     set focus(next) { focus = next; },
     get b() { return b; },
     get active() { return active; },
+    get sheet() { return sheet; },
     get act() { return act; },
     get offers() { return offers; },
     get roster() { return roster; },

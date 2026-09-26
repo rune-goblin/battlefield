@@ -1,4 +1,4 @@
-import { meleePlans, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, type MeleeFinish, meleeFinishes, chargePath, chargeTargets, movePath, moveReach, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
+import { activation, type MeleePlan, type FleePlan, type Unit, dragBlockReason, type ActivityIndex, type PathStep, notation, type ChargeOption, type MeleeFinish, meleeFinishes, chargePath, movePath, fleePlan, fleeBlockReason, parse, engagedEnemies } from '../../engine/index.js';
 import type { BoardEventOf, HighlightStyle } from '../../board/index.js';
 import type { BoardObject, Verb } from '../../engine/index.js';
 import type { Aim } from './picker-controller.svelte.js';
@@ -61,15 +61,11 @@ export function createDragController(ctx: BattleContext, ports: DragPorts) {
   let waypoints = $state.raw<string[]>([]);
   // The waypoints the open melee choice was dropped with, kept after the drag that set them.
   let meleeVia = $state.raw<string[]>([]);
-  const meleeOptions = $derived.by<Map<string, MeleePlan[]>>(() => {
-    const active = ctx.active;
-    if (!meleeVia.length || !active) return ctx.act?.melee ?? new Map();
-    return new Map(ctx.b.units.filter(u => u.status === 'active' && u.side !== active.side)
-      .map(u => [u.id, meleePlans(ctx.b, active, u.id, meleeVia)] as const));
-  });
-  const plansFor = (id: string) => waypoints.length && ctx.active ? meleePlans(ctx.b, ctx.active, id, waypoints) : meleeOptions.get(id) ?? [];
-  const movesVia = $derived(ctx.active && waypoints.length ? moveReach(ctx.b, ctx.active, waypoints) : ctx.act?.moves ?? new Map());
-  const chargesVia = (via: string[]): ChargeOption[] => via.length && ctx.active ? chargeTargets(ctx.b, ctx.active, via) : ctx.act?.charges ?? [];
+  const liveAct = $derived(ctx.active && waypoints.length ? activation(ctx.b, ctx.active.id, waypoints) : ctx.act);
+  const viaAct = $derived(ctx.active && meleeVia.length ? activation(ctx.b, ctx.active.id, meleeVia) : ctx.act);
+  const meleeOptions = $derived<Map<string, MeleePlan[]>>(viaAct?.melee ?? new Map());
+  const plansFor = (id: string) => waypoints.length ? liveAct?.melee.get(id) ?? [] : meleeOptions.get(id) ?? [];
+  const movesVia = $derived(liveAct?.moves ?? new Map());
   let meleeTarget = $state<string | null>(null);
   let meleeSelected = $state<'fight' | 'charge' | null>(null);
   let hoveredBand = $state<MoveBand | null>(null);
@@ -98,7 +94,7 @@ export function createDragController(ctx: BattleContext, ports: DragPorts) {
     if (!meleeTarget || !ctx.active) return null;
     const plan = [...(meleeOptions.get(meleeTarget) ?? [])].sort((x, y) => x.moveActions - y.moveActions)[0];
     if (plan?.via) return advanceRow(plan);
-    const charge = chargesVia(meleeVia).find((c) => c.unit === meleeTarget);
+    const charge = viaAct?.charges.find((c) => c.unit === meleeTarget);
     return charge ? chargeRow(charge, meleeVia) : null;
   });
   let meleeHover = $state<'fight' | 'charge' | null>(null);
@@ -145,7 +141,7 @@ export function createDragController(ctx: BattleContext, ports: DragPorts) {
     ctx.focus = 0; pending = null; ports.picker.closeAim(); meleeSelected = kind;
     if (plan.via) pending = { cell: plan.cell, rows: [advanceRow(plan)], index: 0, activity: null, waypoints: meleeVia };
     else if (kind === 'charge') {
-      const charge = chargesVia(meleeVia).find(c => c.unit === plan.target);
+      const charge = viaAct?.charges.find(c => c.unit === plan.target);
       if (charge) pending = { cell: charge.cell, rows: [chargeRow(charge, meleeVia)], index: 0, activity: null, waypoints: meleeVia };
     } else {
       const enemy = ctx.b.units.find(u => u.id === plan.target)!;
@@ -165,7 +161,7 @@ export function createDragController(ctx: BattleContext, ports: DragPorts) {
       rows.push({ kind: 'move', cell, feet: m.feet, actions: m.actions, path: path.map((s) => s.cell), ...classify(path) });
     }
     // Stopping here and fighting whoever this cell reaches — the same drop, read as a charge.
-    for (const c of chargesVia(waypoints)) if (c.cell === cell) rows.push(chargeRow(c));
+    for (const c of liveAct?.charges ?? []) if (c.cell === cell) rows.push(chargeRow(c));
     // proto: Step and Flee walk their own roads and ignore waypoints; with any set, only the
     // readings that honour them are offered.
     if (waypoints.length) return rows;
@@ -213,7 +209,7 @@ export function createDragController(ctx: BattleContext, ports: DragPorts) {
     if (enemy) {
       const plans = plansFor(enemy.id);
       const plan = [...plans].sort((a, b) => a.moveActions - b.moveActions)[0];
-      const charge = chargesVia(waypoints).find((c) => c.unit === enemy.id);
+      const charge = liveAct?.charges.find((c) => c.unit === enemy.id);
       dragTarget = { id: enemy.id, attack: plans.length > 0 };
       // A charge redraws the route to its approach cell; anything else leaves the trace where
       // it stalled, so the arrow still shows how far the drag did get.

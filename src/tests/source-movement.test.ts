@@ -9,7 +9,7 @@ import { openBoard } from './helpers.js';
 
 const source = COMBATANTS.find(c => c.name === 'Line Infantry')!;
 const card = (land: number, otherSpeeds: { type: string; value: number }[] = []): UnitCard => ({
-  ...source, sheet: { ...source.sheet!, speed: land, otherSpeeds, fly: otherSpeeds.some(s => s.type === 'fly') },
+  ...source, sheet: { ...source.sheet!, speed: land, otherSpeeds },
 });
 const battle = (army: UnitCard) => {
   const b = createBattle({ board: openBoard('hex'), units: [

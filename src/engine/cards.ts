@@ -52,7 +52,6 @@ export interface TroopSheet {
   will: number;
   perception: number;
   speed: number;
-  fly: boolean;
   /** Original movement categories and speeds in feet. Omitted on legacy cards. */
   otherSpeeds?: { type: string; value: number }[];
   /** Source spellcasting statistics. Legacy/custom casters without these use level estimates. */
@@ -157,10 +156,10 @@ export function movementRates(card: UnitCard): MovementRates {
   const sheet = card.sheet;
   if (!sheet) return { land: (cardTraits(card).pace ? 2 : 1) * CELL_FEET, fly: 0, swim: 0 };
   const other = (type: string) => Math.max(0, ...(sheet.otherSpeeds ?? []).filter(s => s.type === type).map(s => s.value));
-  return { land: convertSpeed(sheet.speed),
-    fly: sheet.otherSpeeds === undefined && sheet.fly ? Math.max(CELL_FEET, convertSpeed(sheet.speed)) : convertSpeed(other('fly')),
-    swim: convertSpeed(other('swim')) };
+  return { land: convertSpeed(sheet.speed), fly: convertSpeed(other('fly')), swim: convertSpeed(other('swim')) };
 }
+
+export const canFly = (u: { movementRates?: MovementRates }): boolean => (u.movementRates?.fly ?? 0) > 0;
 
 export function sourceSpeedLabel(sheet: Pick<TroopSheet, 'speed' | 'otherSpeeds'>): string {
   return [{ type: 'land', value: sheet.speed }, ...(sheet.otherSpeeds ?? [])]

@@ -1,59 +1,40 @@
 <script lang="ts">
-  import { abilityDescription, abilitySummary, wallsFor, castCeiling, defenceOf, escapeModifier, fortitudeModifier, MAX_WOUNDS, movementSpeed, ROUTED_AT, TREE_LABEL, CELL_FEET, sourceSpeedLabel, movementRateLabel,
-    shootCeiling, shootFloor, shootModifier, shootRangeLabel, spellAttackModifier, spellDcFor, strikeModifier, willModifier,
-    type BattleState, type Unit } from '../../engine/index.js';
-  import { signed } from '../presentation.js';
+  import type { UnitSheetModel } from './unit-sheet.js';
 
-  let { battle, unit }: { battle: BattleState; unit: Unit } = $props();
-  const fort = $derived(unit.status === 'active' ? wallsFor(battle.board).fortifiedAt(unit.square) : null);
-  const rollNote = 'Roll 1d20 plus this bonus. Target, height, range and action modifiers apply when choosing an attack.';
-  const volley = $derived(shootModifier(battle, unit));
-  const spellRanges = $derived(unit.trees.map(tree => `${TREE_LABEL[tree]}: ${castCeiling(battle, tree)} hexes`).join(' · '));
-  const sourceName = (name?: string) => name?.replace(/\s*\[(Battle|Salvo)\]/g, '');
+  let { sheet }: { sheet: UnitSheetModel } = $props();
 </script>
 
-<section class="unit-sheet" aria-label={`${unit.name} stats`}>
-  {#if unit.tradition}
-    <div class="caster" title={spellRanges}>{unit.tradition[0].toUpperCase() + unit.tradition.slice(1)} caster</div>
+<section class="unit-sheet" aria-label={sheet.label}>
+  {#if sheet.caster}
+    <div class="caster" title={sheet.caster.title}>{sheet.caster.label}</div>
   {/if}
-  {#if fort}
+  {#if sheet.fortified}
     <div class="fortified" title="Cover applies to incoming ranged attacks across an intact, closed wall. Gaps, high-angle attacks and attackers inside bypass that wall. Cover uses the highest bonus, including Guard.">
-      <strong>{fort.label}</strong><span>+{fort.cover}{fort.maxCover !== fort.cover ? `–${fort.maxCover}` : ''} ranged cover</span>
+      <strong>{sheet.fortified.label}</strong><span>{sheet.fortified.cover}</span>
     </div>
   {/if}
-  {#if unit.abilities?.length}
-    <div class="movement-source" aria-label="Troop abilities">{#each unit.abilities as ability, i (i)}<details><summary>{abilitySummary(ability)}</summary><p>{abilityDescription(ability)}</p></details>{/each}</div>
+  {#if sheet.abilities.length}
+    <div class="movement-source" aria-label="Troop abilities">{#each sheet.abilities as ability, i (i)}<details><summary>{ability.summary}</summary><p>{ability.description}</p></details>{/each}</div>
   {/if}
-  {#if unit.abilityState?.buffer}<div class="caster">Damage Absorption: absorbs the next 1 damage</div>{/if}
-  {#if unit.abilityReview?.length}<details><summary>Source ability notes ({unit.abilityReview.length})</summary>{#each unit.abilityReview as note, i (i)}<p><strong>{note.label}</strong>: {note.reason}</p>{/each}</details>{/if}
+  {#if sheet.absorbs}<div class="caster">Damage Absorption: absorbs the next 1 damage</div>{/if}
+  {#if sheet.review.length}<details><summary>Source ability notes ({sheet.review.length})</summary>{#each sheet.review as note, i (i)}<p><strong>{note.label}</strong>: {note.reason}</p>{/each}</details>{/if}
   <dl class="vitals">
-    <div title="Maximum distance per Move; each step uses the fastest legal movement mode."><dt>Move</dt><dd>{movementSpeed(unit) / CELL_FEET} <small>hexes</small></dd></div>
-    <div title="Current armor class, including conditions and terrain. Cover against a ranged attacker can add protection."><dt>AC</dt><dd>{defenceOf(battle, unit, null, false)}</dd></div>
-    <div title="Health remaining"><dt>Health</dt><dd>{MAX_WOUNDS - unit.wounds}<small>/{MAX_WOUNDS}</small></dd></div>
-    <div title="Morale remaining. Lost morale reduces rolls and armor class."><dt>Morale</dt><dd>{Math.max(0, ROUTED_AT - unit.disorder)}<small>/{ROUTED_AT}</small></dd></div>
+    {#each sheet.vitals as figure (figure.label)}
+      <div title={figure.title}><dt>{figure.label}</dt><dd>{figure.value}{#if figure.unit}<small>{figure.unit}</small>{/if}</dd></div>
+    {/each}
   </dl>
-  {#if unit.sourceSpeed}
-    <div class="movement-source"><span>Army Speed: {sourceSpeedLabel(unit.sourceSpeed)}</span>
-      {#if unit.movementRates}<span>{movementRateLabel(unit.movementRates)}</span>{/if}
-    </div>
+  {#if sheet.movement}
+    <div class="movement-source">{#each sheet.movement as line, i (i)}<span>{line}</span>{/each}</div>
   {/if}
   <div class="attacks" aria-label="Attack rolls and weapon ranges">
-    {#if unit.stats.strike !== null}
-      <div class="attack" title={rollNote}><span>{sourceName(unit.attackSources?.strike) ?? 'Melee'}</span><strong>{signed(strikeModifier(battle, unit, unit))}</strong><small>Adjacent</small></div>
-    {/if}
-    {#if unit.stats.volley !== null}
-      <div class="attack" title={`${rollNote} ${shootRangeLabel(battle, unit)}`}><span>{sourceName(unit.attackSources?.volley) ?? 'Shoot'}</span><strong>{signed(volley)}</strong><small>{shootFloor(battle, unit)}–{shootCeiling(battle, unit)} hexes</small></div>
-    {/if}
-    {#if unit.stats.spellAttack !== null}
-      <div class="attack" title={`${rollNote} ${spellRanges}`}><span>Spell attack</span><strong>{signed(spellAttackModifier(unit))}</strong><small>{unit.trees.includes('blast') ? `Blast ${castCeiling(battle, 'blast')} hexes` : 'By spell'}</small></div>
-    {/if}
+    {#each sheet.attacks as attack, i (i)}
+      <div class="attack" title={attack.title}><span>{attack.label}</span><strong>{attack.value}</strong><small>{attack.range}</small></div>
+    {/each}
   </div>
   <dl class="checks" aria-label="Saves and basic checks">
-    <div title="Fortitude save"><dt>Fort</dt><dd>{signed(fortitudeModifier(unit))}</dd></div>
-    <div title="Reflex save, and the roll to leave a zone of control"><dt>Reflex</dt><dd>{signed(escapeModifier(unit))}</dd></div>
-    <div title="Will save and Rally checks"><dt>Will</dt><dd>{signed(willModifier(unit))}</dd></div>
-    <div title="Base Perception"><dt>Perception</dt><dd>{signed(unit.stats.perception)}</dd></div>
-    {#if unit.stats.spellDc !== null}<div title="DC for enemies resisting this unit's spells"><dt>Spell DC</dt><dd>{spellDcFor(unit)}</dd></div>{/if}
+    {#each sheet.checks as figure (figure.label)}
+      <div title={figure.title}><dt>{figure.label}</dt><dd>{figure.value}</dd></div>
+    {/each}
   </dl>
 </section>
 

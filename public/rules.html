@@ -467,7 +467,7 @@
 </svg><figcaption>A hit removes 1 Health, a critical 2. Nothing is rolled for damage.</figcaption></figure>
 <h3 id="melee">Melee</h3>
 <p>Attack an adjacent enemy across a passable edge.</p>
-<div class="wrap"><table><thead><tr><th scope="col">Activity</th><th scope="col">Actions</th><th scope="col">Effect</th></tr></thead><tbody><tr><td>Strike</td><td>1</td><td>Make one attack.</td></tr><tr><td>Press</td><td>2</td><td>Strike. On a hit, the target rolls its Fortitude save twice and keeps the worse result. Failure costs 1 Morale.</td></tr><tr><td>Overrun</td><td>3</td><td>Press. On a hit, push the target one hex directly away and enter its former hex. If the attack destroys it, enter that hex.</td></tr></tbody></table></div>
+<div class="wrap"><table><thead><tr><th scope="col">Activity</th><th scope="col">Actions</th><th scope="col">Effect</th></tr></thead><tbody><tr><td>Strike</td><td>1</td><td>Make one attack.</td></tr><tr><td>Press</td><td>2</td><td>Strike. On a hit, the target rolls its Fortitude save twice and keeps the worse result. Failure costs 1 Morale.</td></tr><tr><td>Overrun</td><td>3</td><td>Press. On a hit, push the target one hex directly away and enter its former hex. If the attack destroys it, enter that hex. A rooted target stays in place and loses no extra Morale.</td></tr></tbody></table></div>
 <p>An occupied hex or the board edge prevents the push without extra Morale loss. Water, a wall or a cliff corners the target: it stays in place and loses 1 extra Morale. Take cover prevents the push and cornering loss. The Press save still applies.</p>
 <h3 id="shooting">Shoot</h3>
 <p>Shoot a visible enemy within your weapon’s range. A shooter in enemy contact must use Melee or move away first. Shooting a target in contact with one of your allies takes <strong>−4</strong>.</p>
@@ -539,7 +539,7 @@
 <tr><td>Inspired</td><td>+2 status bonus to the next roll. Ends after that roll or at the end of the unit’s activation.</td></tr>
 <tr><td>Suppressed</td><td>−2 to rolls and Defence until the shooter’s next activation.</td></tr>
 <tr><td>Pinned</td><td>The shooter holds the target at its Salvo DC until its next activation. It cannot Step or Charge; a Move away must beat the Salvo DC, and ends the pin.</td></tr>
-<tr><td>Rooted</td><td>No Move, Step or Charge on its next activation. A siege engine or troop ability cannot push or pull it.</td></tr>
+<tr><td>Rooted</td><td>No Move, Step or Charge on its next activation. Nothing can push or pull it, and an Overrun leaves it in place.</td></tr>
 <tr><td>Frightened</td><td>&minus;1 to everything the unit rolls and to its Defence until the end of its next activation</td></tr>
 <tr><td>Sure strike</td><td>Roll the next attack twice; keep the better result. Ends after that attack or the recipient’s next activation; a self-cast ends this activation.</td></tr>
 <tr><td>Persistent damage</td><td>A Wrath hit causes 1 damage at the end of the target’s next activation. Then Fortitude against the attacker’s level DC or lose 1 Morale.</td></tr>
@@ -554,7 +554,7 @@
 <tr><td>Swamp</td><td>&minus;1 circumstance Defence and &minus;1 to Melee from it; Brace only</td></tr>
 <tr><td>Shallows</td><td>&minus;1 to Melee from it; Brace only</td></tr>
 
-<tr><td>Cornered</td><td>Water, a cliff or a wall blocks the Overrun push. The target stays in place and loses 1 extra Morale. Take cover prevents this extra loss.</td></tr>
+<tr><td>Cornered</td><td>Water, a cliff or a wall blocks the Overrun push. The target stays in place and loses 1 extra Morale. Take cover or a root prevents this extra loss.</td></tr>
 <tr><td>Into a melee</td><td>&minus;4 shooting at a target engaged with one of your own</td></tr>
 <tr><td>Wall</td><td>Blocks ground movement and contact. Grants ranged cover by tier. Attack and gate rules: <a href="#walls">Walls and fortifications</a>.</td></tr>
 <tr><td>Cliff</td><td>A height difference of 2 blocks ground movement and contact across the edge.</td></tr>
@@ -808,7 +808,7 @@
 <tr><td>Climbing</td><td>Use the higher of terrain cost or 2. Charge cannot climb without Sure footing.</td></tr>
 <tr><td>Intervening hex</td><td>Blocks sight when it stands at least as high as the higher unit and higher than the lower</td></tr>
 <tr><td>Cliff</td><td>A height difference of 2 blocks ground movement and contact across the edge.</td></tr>
-<tr><td>Cornered</td><td>Water, a cliff or a wall blocks the Overrun push. The target stays in place and loses 1 extra Morale. Take cover prevents this extra loss.</td></tr>
+<tr><td>Cornered</td><td>Water, a cliff or a wall blocks the Overrun push. The target stays in place and loses 1 extra Morale. Take cover or a root prevents this extra loss.</td></tr>
 </table></div>
 <h3 id="walls">Walls and fortifications</h3>
 <p>An intact, closed wall blocks ground movement and contact. Flying units can cross it. Ranged attacks can cross it.</p>

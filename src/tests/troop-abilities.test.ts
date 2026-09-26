@@ -337,6 +337,14 @@ describe('troop ability resolution', () => {
     expect(result.units[1].abilityState?.shovedRound).toBe('');
   });
 
+  it('a rooted target resists an Overrun and keeps Hold Ground unspent', () => {
+    const s = battle([], [ability('resolve', { mode: 'ground' })]);
+    s.units[1].rooted = 1;
+    const result = act(s, { type: 'fight', activity: 3, unit: 'u0', target: { kind: 'unit', ids: ['u1'] } }, scriptedRng([10, 20]));
+    expect(notation(result.units[1].square)).toBe('c3');
+    expect(result.units[1].abilityState?.shovedRound).toBe('');
+  });
+
   it('Resolve helps resist routing from pending damage', () => {
     const s = battle([ability('resolve', { mode: 'fear' })]);
     s.units[0].disorder = 2;

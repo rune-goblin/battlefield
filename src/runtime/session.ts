@@ -6,7 +6,7 @@ import type { BattleEvent } from './events.js';
 import type { InteractionRecord } from './interactions.js';
 import type { MintPort } from './ports.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 // proto: the rules document carries no version of its own, so the record dates them. Reserved
 // for review with the rest of the migration shape.
 export const RULES_VERSION = '2026-09-24';

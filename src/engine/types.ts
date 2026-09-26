@@ -82,8 +82,6 @@ export interface Conditions {
   /** Extra movement in feet for the next activation, or this activation after a self-cast. */
   movementBonus?: number;
   sureFooting: boolean;
-  /** Flies on its next activation only; `flying` is the troop that always does. */
-  flies: boolean;
 }
 
 export interface Unit extends Conditions {
@@ -102,8 +100,6 @@ export interface Unit extends Conditions {
   attackSources?: { strike?: string; volley?: string };
   /** Feet a single Move action buys. */
   speed: number;
-  /** A flier ignores terrain cost and blocked edges. */
-  flying: boolean;
   movementRates?: MovementRates;
   sourceSpeed?: Pick<TroopSheet, 'speed' | 'otherSpeeds'>;
 
@@ -318,9 +314,11 @@ export interface Activation {
   escape: EscapeOffer | null;
   /** Cells one Step reaches. */
   steps: string[];
+  /** Each cell a Move reaches through the waypoints given. */
   moves: Map<string, MoveReach>;
+  /** Each enemy a Charge reaches through the waypoints given. */
   charges: ChargeOption[];
-  /** Each enemy some melee reaches without waypoints, with its plans. */
+  /** Each enemy some melee reaches through the waypoints given, with its plans. */
   melee: Map<string, MeleePlan[]>;
   verbs: Record<ActivationVerb, VerbAnswer>;
 }

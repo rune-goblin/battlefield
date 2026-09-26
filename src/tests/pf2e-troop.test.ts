@@ -44,7 +44,7 @@ describe('pf2e troop card', () => {
     actor.system!.attributes!.speed = { value: 20, otherSpeeds: [
       { type: 'fly', value: 60 }, { type: 'swim', value: 15 }, { type: 'climb', value: 10 },
     ] };
-    expect(cardFromActor(actor).sheet).toMatchObject({ speed: 20, fly: true,
+    expect(cardFromActor(actor).sheet).toMatchObject({ speed: 20,
       otherSpeeds: [{ type: 'fly', value: 60 }, { type: 'swim', value: 15 }, { type: 'climb', value: 10 }] });
   });
   it('imports the Clique’s spell attack independently of its two DC-based attacks', () => {
@@ -104,7 +104,7 @@ describe('pf2e troop card', () => {
       fear: false, caster: false, signals: ['formation'], tactics: [],
       sheet: {
         ac: 24, hp: 96, battleDc: 21, salvoDc: 21, salvoFeet: 120,
-        fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false,
+        fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20,
       },
       overrides: { strike: 11, volley: 11, reach: 'long', defence: 24, will: 13, perception: 13 },
     });

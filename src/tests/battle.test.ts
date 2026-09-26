@@ -619,34 +619,11 @@ describe('movement points', () => {
     board.squares[1][1].elevation = 2;
     const { state } = battle([], board);
     const u = unit(state, 'u0');
-    u.flying = true;
+    u.movementRates = { land: 10, fly: 10, swim: 0 };
     u.actions = 1;
     expect([...moves(state, 'u0').keys()].sort()).toContain('c3');
     expect(moves(state, 'u0').get('d2')).toMatchObject({ feet: 10 });
     expect(moves(state, 'u0').get('b2')).toMatchObject({ feet: 10 });
-  });
-
-  it('an unspent Fly crosses water but cannot end a Move there, unlike a native flier', () => {
-    const board = openBoard();
-    board.squares[2][2].terrain = 'water';
-    const { state } = battle([], board);
-    const u = unit(state, 'u0');
-    u.flies = true;
-    u.actions = 2;
-    const reach = moves(state, 'u0');
-    expect(reach.has('c3')).toBe(false);
-    expect(reach.get('c4')).toMatchObject({ feet: 20 });
-  });
-
-  it("carries the cheapest route to a hex beyond water whole, even though the water it crosses is not itself a destination", () => {
-    const board = openBoard();
-    board.squares[2][2].terrain = 'water';
-    const { state } = battle([], board);
-    const u = unit(state, 'u0');
-    u.flies = true;
-    u.actions = 2;
-    expect(movePath(state, u, 'c4').map((p) => p.cell)).toEqual(['c2', 'c3', 'c4']);
-    expect(moveReach(state, u).has('c3')).toBe(false);
   });
 
   it('a unit in contact may Move away but cannot Charge', () => {
@@ -922,6 +899,18 @@ describe('activities carry effects', () => {
     expect(said(held, 'nowhere to give ground')).toBe(true);
   });
 
+  it('a rooted target resists an Overrun even with water behind it, and loses no extra Morale', () => {
+    const wet = engaged();
+    wet.board.squares[3][2].terrain = 'water';
+    unit(wet, 'u2').rooted = 1;
+    const before = unit(wet, 'u2').disorder;
+    const s = act(wet, { type: 'fight', activity: 3, target: { kind: 'unit', ids: ['u2'] }, unit: 'u0' }, scriptedRng([10, 20, 20]));
+    expect(notation(unit(s, 'u2').square)).toBe('c3');
+    expect(notation(unit(s, 'u0').square)).toBe('c2');
+    expect(unit(s, 'u2').disorder).toBe(before);
+    expect(said(s, 'rooted')).toBe(true);
+  });
+
   it('allows Brace alone on wet ground', () => {
     const state = engaged();
     state.board.squares[1][2].terrain = 'shallows';
@@ -1194,7 +1183,7 @@ describe('no retreat', () => {
   // Legacy No Retreat imports retain their position through Resolve.
   const line: UnitCard = upgradeCard({
     name: 'Line', level: 6, role: 'infantry', signals: ['no-retreat'], tactics: [],
-    sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20, fly: false },
+    sheet: { ac: 24, hp: 96, battleDc: 21, salvoDc: null, salvoFeet: null, fortitude: 15, reflex: 14, will: 13, perception: 13, speed: 20 },
   });
   const chased = (runner: UnitCard = infantry) => {
     const state = createBattle({
