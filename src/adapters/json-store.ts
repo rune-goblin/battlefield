@@ -33,8 +33,8 @@ export interface JsonStoreOptions<T> {
 
 /**
  * A JSON value in one cell. An absent value reads as `empty()`. An unreadable one throws
- * `UnreadableStore` on every read and every write, and the cell keeps it byte for byte, so a
- * downgrade or a corrupt write costs the GM a notice rather than the data.
+ * `UnreadableStore` on every read and every write, and the cell keeps it byte for byte: after a
+ * downgrade or a corrupt write the data survives, and the GM sees a notice.
  */
 export function createJsonStore<T>(
   cell: TextCell, { name, empty, accept, onUnreadable }: JsonStoreOptions<T>,
