@@ -89,7 +89,7 @@
     else { sortKey = key; ascending = true; }
   }
 
-  const signed = (n: number | null) => n === null ? '—' : `+${n}`;
+  const signed = (n: number | null) => n === null ? '—' : `${n < 0 ? '−' : '+'}${Math.abs(n)}`;
   function onKey(e: KeyboardEvent) { if (e.key === 'Escape') close(); }
 </script>
 
