@@ -96,7 +96,7 @@ interface Grid {
 }
 ```
 
-`beyond` is the one addition against the plan's sketch: it wasn't listed, but `battle.ts`'s
+`beyond` is the one addition against the plan's sketch: it wasn't listed, but `battle/combat.ts`'s
 Pace step and `Interaction`'s stroke-direction logic both need "the cell one step past this
 one, continuing the same line," which is a reflection on square and a cube-direction step on
 hex — different enough per grid that it earns its own method rather than being reimplemented
