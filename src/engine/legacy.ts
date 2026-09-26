@@ -37,7 +37,7 @@ export function upgradeBoard(board: Board): void {
 }
 
 /** A speed that matches an older scale of the source Speed takes the current one; Wolf Fang
- * once rolled a fixed hex; half-hex rates round up to the whole hexes new imports use. */
+ * once moved a fixed hex; half-hex rates round up to the whole hexes new imports use. */
 function savedEngineSpeed(e: EngineState): number | null {
   const source = engineCard(e)?.sourceSpeed;
   if (source != null && (e.speed === undefined || e.speed === convertSpeed(source)
