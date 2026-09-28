@@ -10,7 +10,7 @@ The tier needs a licensed local Foundry v14 and a migrated world, so CI runs vit
 
 ```
 playwright test
-  ├─ webServer:   bash scripts/start-test-env.sh  → Foundry on :30005, --world=$TEST_WORLD
+  ├─ webServer:   bash scripts/start-test-env.sh  → Foundry on :30006, --world=$TEST_WORLD
   ├─ webServer:   npx vite --port 5199            → the browser app, for browser.spec.ts
   ├─ globalSetup: src/tests/e2e/global-setup.ts   → join as GM, enable the module, fail loud
   └─ specs:       *.spec.ts                       → drive the window, assert game.* and the DOM
@@ -23,7 +23,7 @@ runs `npm run build:foundry` first, so specs exercise current source. `browser.s
 ## Isolated test data
 
 `npm run test:e2e:setup` builds `test/foundry-data/` (gitignored): its own `Config/options.json`
-on port 30005, a copy of `license.json`, and no `admin.txt`. It reads the Foundry data path from
+on port 30006, a copy of `license.json`, and no `admin.txt`. It reads the Foundry data path from
 `.dev-paths.json`, which `npm run setup` writes, or from `FOUNDRY_DATA`.
 
 `systems`, `modules` and the test world are cloned from that data dir. A running Foundry locks
@@ -69,9 +69,15 @@ npm run check:e2e                 # type-check the specs and the scripts
 
 ## Harness health
 
-`reuseExistingServer` is on locally, so a stray Foundry on :30005 gets reused. `global-setup`
+`reuseExistingServer` is on locally, so a stray Foundry on :30006 gets reused. `global-setup`
 asserts `game.world.id === TEST_WORLD` and logs the world and module version it exercised.
-Kill a stray with `lsof -ti:30005 | xargs kill`.
+Kill a stray with `lsof -ti:30006 | xargs kill`. ReignMaker's harness runs its own Foundry on
+:30005 against a world also named `stolen-lands`; the two ports must stay apart, or one suite
+runs inside the other's clone.
+
+`global-setup` also resets Battlefield's world settings in the clone (session, table call,
+battles at sites) before any spec. The clone's Battlefield state is disposable and every run
+rebuilds it; the lifecycle spec creates the battle the other specs open.
 
 ## Spec conventions
 

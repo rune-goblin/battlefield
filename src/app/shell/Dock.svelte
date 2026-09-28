@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { setDock, ui, type DockSide } from './layout.svelte.js';
+  import { rem } from '../rem.js';
 
   interface Props {
     side: DockSide;
@@ -20,7 +21,7 @@
 </script>
 
 {#if state !== 'hidden'}
-  <aside class="dock {side}" class:rail={state === 'rail'} style="--w:{width}rem" aria-label={title}>
+  <aside class="dock {side}" class:rail={state === 'rail'} style:--w={rem(width)} aria-label={title}>
     {#if state === 'rail'}
       <button class="railbtn" title="Open {title}" onclick={() => setDock(side, 'open')}>
         <span class="railtitle">{title}</span>
@@ -46,7 +47,8 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    width: var(--w);
+    /* A dock gives way in a small window, so the map between the two keeps some room. */
+    width: min(var(--w), 34cqw);
     background: color-mix(in srgb, var(--paper) 88%, transparent);
     box-shadow: var(--shadow-2);
   }

@@ -380,7 +380,8 @@ export interface BattleState {
   board: Board;
   phase: Phase;
   winner: Side | 'draw' | null;
-  endedBy: 'rout' | 'dusk' | 'withdrawal' | 'surrender' | null;
+  /** `ruling` is the GM's: a battle the table stops before the rules end it. */
+  endedBy: 'rout' | 'dusk' | 'withdrawal' | 'surrender' | 'ruling' | null;
   log: LogEntry[];
 }
 

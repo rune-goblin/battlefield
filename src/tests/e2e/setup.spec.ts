@@ -1,12 +1,11 @@
 import type { Locator, Page } from '@playwright/test';
 import {
-  beginBattle, closeWindow, endAnyBattle, endBattle, forwardOf, goToStep, openFromSceneControl, shot,
+  closeWindow, forwardOf, goToStep, leaveBattle, openBattleWindow, openSeedBattle, shot,
 } from './fixtures/battle-window';
 import { test, expect, collectErrors } from './fixtures/foundry-clients';
 
 const armyCard = (win: Locator, title: string): Locator => win.locator('.army-card', { has: win.page().locator('h3', { hasText: title }) });
 
-const popover = (win: Locator, label: string): Locator => win.locator('.popover', { has: win.page().getByRole('button', { name: label, exact: true }) });
 
 const chatInput = (page: Page): Locator => page.locator('#chat-message .ProseMirror');
 
@@ -15,12 +14,11 @@ test.describe('The setup wizard on two clients', () => {
     test.setTimeout(240_000);
     const gmErrors = collectErrors(gmPage);
     const playerErrors = collectErrors(playerPage);
-    const gm = await openFromSceneControl(gmPage);
-    await endAnyBattle(gm);
+    const gm = await openSeedBattle(gmPage);
     await goToStep(gm, 'Review and begin');
-    await expect(forwardOf(gm)).toHaveText('Begin');
+    await expect(forwardOf(gm)).toHaveText('Start');
 
-    const player = await openFromSceneControl(playerPage);
+    const player = await openBattleWindow(playerPage);
     await goToStep(player, 'Review and begin');
     const ready = forwardOf(player);
     await expect(ready).toHaveText('My army is ready');
@@ -32,24 +30,21 @@ test.describe('The setup wizard on two clients', () => {
     await expect(armyCard(player, 'Attacking army').locator('.ready')).toHaveText('ready');
     await expect(armyCard(gm, 'Attacking army').locator('.ready')).toHaveText('ready');
     await expect(armyCard(gm, 'Defending army').locator('.ready')).toHaveCount(0);
-    await expect(forwardOf(gm)).toHaveText('Begin');
+    await expect(forwardOf(gm)).toHaveText('Start');
     await shot(playerPage, 'W7-player-ready');
     await shot(gmPage, 'W7-player-ready-gm');
 
-    // Beginning clears the word, so the world clone keeps no readiness between runs.
-    await beginBattle(gm);
-    await endBattle(gm);
+    // Closing without saving drops the word with the rest of the live changes.
+    await leaveBattle(gmPage);
     await closeWindow(playerPage);
-    await closeWindow(gmPage);
     expect(gmErrors).toEqual([]);
     expect(playerErrors).toEqual([]);
   });
 
-  test('the GM sees the setup chrome, and Escape closes a popover only inside the window', async ({ gmPage }) => {
+  test('the GM sees the setup chrome, and Escape closes a dialog only inside the window', async ({ gmPage }) => {
     test.setTimeout(180_000);
     const errors = collectErrors(gmPage);
-    const gm = await openFromSceneControl(gmPage);
-    await endAnyBattle(gm);
+    const gm = await openSeedBattle(gmPage);
 
     await goToStep(gm, 'Sides');
     await expect(armyCard(gm, 'Attacking army')).toBeVisible();
@@ -70,20 +65,19 @@ test.describe('The setup wizard on two clients', () => {
     await expect(gm, 'Escape in the grid settings closed the window').toBeVisible();
 
     for (const [label, name] of [['Seating', 'W8-seating'], ['Save / Load', 'W8-save-load']] as const) {
-      const pop = popover(gm, label);
-      const toggle = pop.getByRole('button', { name: label, exact: true });
-      await toggle.click();
-      await expect(pop.locator('.panel')).toBeVisible();
+      await gm.getByRole('button', { name: label, exact: true }).click();
+      const dialog = gm.getByRole('dialog', { name: label });
+      await expect(dialog).toBeVisible();
       await shot(gmPage, name);
 
       await chatInput(gmPage).focus();
       await gmPage.keyboard.press('Escape');
-      await expect(pop.locator('.panel'), 'Escape typed into Foundry\'s chat closed the popover').toBeVisible();
+      await expect(dialog, 'Escape typed into Foundry\'s chat closed the dialog').toBeVisible();
 
-      await toggle.focus();
+      await dialog.getByRole('button', { name: 'Done', exact: true }).focus();
       await gmPage.keyboard.press('Escape');
-      await expect(pop.locator('.panel')).toBeHidden();
-      // Foundry's own Escape closes a window with an animation, after the popover has gone.
+      await expect(dialog).toBeHidden();
+      // Foundry's own Escape closes a window with an animation, after the dialog has gone.
       await gmPage.waitForTimeout(1_000);
       await expect(gm, 'Escape inside the window closed the window').toBeVisible();
     }
@@ -124,7 +118,7 @@ test.describe('The setup wizard on two clients', () => {
 
     await goToStep(gm, 'Review and begin');
     await expect(forwardOf(gm), 'the setup the spec touched must stay deployed').toBeEnabled();
-    await closeWindow(gmPage);
+    await leaveBattle(gmPage);
     expect(errors).toEqual([]);
   });
 });

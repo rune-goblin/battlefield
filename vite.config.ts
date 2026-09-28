@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import type { Plugin as PostcssPlugin } from 'postcss';
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
@@ -26,8 +27,21 @@ export const terrainTextures = (): Plugin => ({
   },
 });
 
+// Foundry sets the page's root font size from each client's Font Scale (8px to 32px), and a
+// `rem` follows it while the app's px boxes do not. Every stylesheet `rem` becomes a multiple of
+// `--rem`, which the app's roots set; outside them the fallback is the page's own rem. A size
+// set from script goes through `rem()` in `src/app/rem.ts`. Media queries keep plain rem.
+export const appRem = (): PostcssPlugin => ({
+  postcssPlugin: 'battlefield-app-rem',
+  Declaration(decl) {
+    if (decl.prop === '--rem' || decl.value.includes('var(--rem') || !/\drem\b/.test(decl.value)) return;
+    decl.value = decl.value.replace(/(-?(?:\d+\.?\d*|\.\d+))rem\b/g, 'calc($1 * var(--rem, 1rem))');
+  },
+});
+
 export default defineConfig({
   plugins: [svelte(), terrainTextures()],
+  css: { postcss: { plugins: [appRem()] } },
   base: './',
   build: {
     target: 'es2022',

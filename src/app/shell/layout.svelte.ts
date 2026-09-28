@@ -29,11 +29,14 @@ export const ui = $state({
   has: { left: false, right: false } as Record<DockSide, boolean>,
   /** What the chrome covers, in CSS pixels. Setup and manual framing use the clear area. */
   chrome: { left: 0, right: 0, top: 0, bottom: 0 },
+  /** The shell's own box. Inside Foundry the window is smaller than the browser viewport. */
+  size: { width: 0, height: 0 },
 });
 
 /** The map the player can actually see: the canvas minus the chrome over it. */
-export function visibleRect(width = window.innerWidth, height = window.innerHeight): { x: number; y: number; width: number; height: number } {
+export function visibleRect(): { x: number; y: number; width: number; height: number } {
   const { left, right, top, bottom } = ui.chrome;
+  const { width, height } = ui.size;
   return {
     x: left,
     y: top,

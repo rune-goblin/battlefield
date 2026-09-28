@@ -23,7 +23,7 @@ import { MODULE_ID } from '../src/adapters/foundry/module-id.ts';
 
 const repo = process.cwd();
 const TEST_DATA = join(repo, 'test', 'foundry-data');
-const PORT = Number(process.env.TEST_FOUNDRY_PORT ?? 30005);
+const PORT = Number(process.env.TEST_FOUNDRY_PORT ?? 30006);
 const TEST_WORLD = process.env.TEST_WORLD ?? 'stolen-lands';
 const RESET_WORLD = process.argv.includes('--reset-world');
 

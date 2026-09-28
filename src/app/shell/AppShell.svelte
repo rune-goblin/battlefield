@@ -37,6 +37,8 @@
   let rightW = $state(0);
   let topH = $state(0);
   let bottomH = $state(0);
+  let shellW = $state(0);
+  let shellH = $state(0);
 
   // [ and ] walk one dock through open → rail → hidden → open. The board's own keys are
   // letters and digits, and a field with focus keeps everything it is given.
@@ -52,6 +54,7 @@
   }
 
   $effect(() => { ui.chrome = { left: leftW, right: rightW, top: topH, bottom: bottomH }; });
+  $effect(() => { ui.size = { width: shellW, height: shellH }; });
 
   // Which docks this stage lets the player put away, so the top bar's toggles grey out the
   // rest. The wizard's entry panel stays open. Not persisted: it is a fact about the stage.
@@ -65,6 +68,8 @@
      overlay picks the map's free corner instead of opening behind a dock. -->
 <div
   class="shell"
+  bind:clientWidth={shellW}
+  bind:clientHeight={shellH}
   style="--inset-top:{topH}px; --inset-bottom:{bottomH}px; --inset-left:{leftW}px; --inset-right:{rightW}px"
 >
   <div class="layer map">{@render map()}</div>
@@ -92,20 +97,25 @@
 
   {#if float}<div class="layer float">{@render float()}</div>{/if}
   {#if modal}<div class="layer modal">{@render modal()}</div>{/if}
+  <div class="layer overlay"></div>
 </div>
 
 <style>
-  .shell { position: fixed; inset: 0; overflow: hidden; background: var(--paper); color: var(--ink); }
+  /* A size container, so a popover can hold itself to the window rather than the viewport. */
+  .shell { position: fixed; inset: 0; overflow: hidden; container-type: size; background: var(--paper); color: var(--ink); }
   .layer { position: absolute; inset: 0; }
-  .map { z-index: 0; }
-  .pin { z-index: 1; pointer-events: none; }
-  .pin:has(:global(.board-popup), :global(.radial)) { z-index: 4; }
-  .chrome { z-index: 2; display: grid; grid-template-rows: auto minmax(0, 1fr); pointer-events: none; }
-  .float { z-index: 3; pointer-events: none; }
+  .map { z-index: var(--z-map); }
+  .pin { z-index: var(--z-pin); pointer-events: none; }
+  .pin:has(:global(.board-popup), :global(.radial)) { z-index: var(--z-pin-active); }
+  .chrome { z-index: var(--z-chrome); display: grid; grid-template-rows: auto minmax(0, 1fr); pointer-events: none; }
+  .float { z-index: var(--z-float); pointer-events: none; }
   /* A stage passes its modal snippet whether or not a dialog is open, so the empty layer must
      let the pointer through; an open dialog's own scrim takes it back. */
-  .modal { z-index: 5; pointer-events: none; }
+  .modal { z-index: var(--z-stage-modal); pointer-events: none; }
   .modal > :global(*) { pointer-events: auto; }
+  /* The portal target for popovers and dialogs; empty, it lets the pointer through. */
+  .overlay { z-index: var(--z-overlay); pointer-events: none; }
+  .overlay > :global(*) { pointer-events: auto; }
 
   .bar { pointer-events: auto; background: color-mix(in srgb, var(--paper) 88%, transparent); }
   .bar.top { border-bottom: 1px solid var(--rule); }

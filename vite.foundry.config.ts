@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { cpSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { terrainTextures } from './vite.config.ts';
+import { appRem, terrainTextures } from './vite.config.ts';
 import { MODULE_ID } from './src/adapters/foundry/module-id.ts';
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
@@ -90,6 +90,7 @@ export default defineConfig(({ command }) => ({
     terrainTextures(),
     moduleFiles(),
   ],
+  css: { postcss: { plugins: [appRem()] } },
   // `public/` is copied by the plugin above, under the one folder the board reads from.
   publicDir: false,
   // Pre-bundling would resolve the filters' `@pixi/core` import past the shim.

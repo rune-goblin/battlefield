@@ -15,6 +15,7 @@
   import TargetMarkers from '../TargetMarkers.svelte';
   import { targetingIcon } from '../targeting.js';
   import MeleeChoices from '../MeleeChoices.svelte';
+  import { rem } from '../rem.js';
   import type { BattleController } from './battle-controller.svelte.js';
 
   let { c }: { c: BattleController } = $props();
@@ -24,7 +25,7 @@
   <div class="popup-head">
     <span>{label}</span>
     <span class="popup-actions" title="Actions left this activation">
-      <ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size="1.25rem" />
+      <ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size={rem(1.25)} />
     </span>
   </div>
 {/snippet}
@@ -35,7 +36,7 @@
       <img src={tree ? castIconUrl(tree) : actionIconUrl(treatment)} alt="" />
     </span>
     <span class="picker-heading-text"><span class="picker-kicker">{ability ? 'Ability' : treatment === 'cast' ? 'Cast' : treatment === 'rally' ? 'Command' : 'Ranged attack'}</span><strong>{label}</strong></span>
-    <span class="picker-budget" title="Actions left this activation"><ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size="1.25rem" /></span>
+    <span class="picker-budget" title="Actions left this activation"><ActionBudget remaining={c.actionsLeft} bonus={c.active?.haste ? 1 : 0} size={rem(1.25)} /></span>
   </div>
 {/snippet}
 

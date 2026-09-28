@@ -1,8 +1,9 @@
 <script lang="ts">
   import { ACTIONS_PER_ACTIVATION } from '../engine/index.js';
   import ActionCost from './ActionCost.svelte';
+  import { rem } from './rem.js';
 
-  let { remaining, bonus = 0, size = '2.2rem' }: { remaining: number; bonus?: number; size?: string } = $props();
+  let { remaining, bonus = 0, size = rem(2.2) }: { remaining: number; bonus?: number; size?: string } = $props();
   const total = $derived(Math.max(ACTIONS_PER_ACTIVATION + bonus, remaining));
 </script>
 

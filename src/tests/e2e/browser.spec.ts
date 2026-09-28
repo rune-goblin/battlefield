@@ -47,7 +47,7 @@ test.describe('The browser app', () => {
 
     await placeEvery(root);
     await goToStep(root, 'Review and begin');
-    await expect(forwardOf(root)).toHaveText('Begin');
+    await expect(forwardOf(root)).toHaveText('Start');
     await forwardOf(root).click();
     await expect(railOf(root)).toBeHidden();
     await expect(root.locator('.army-reel')).toBeVisible();

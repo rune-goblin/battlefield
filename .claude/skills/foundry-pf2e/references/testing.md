@@ -30,7 +30,7 @@ npm run check:e2e                 # type-check the specs and scripts/*.ts
 
 ```
 playwright test
-  ├─ webServer:   scripts/start-test-env.sh      → Foundry on :30005, --world=$TEST_WORLD
+  ├─ webServer:   scripts/start-test-env.sh      → Foundry on :30006, --world=$TEST_WORLD
   ├─ globalSetup: src/tests/e2e/global-setup.ts  → join as GM, enable the module, fail loud
   └─ specs:       *.spec.ts                      → drive the window, assert game.* and the DOM
 ```
@@ -51,11 +51,11 @@ runs beside the suite. `src/tests/e2e/README.md` has the full account.
 
 ## Harness health
 
-`reuseExistingServer` is on locally, so a stray Foundry on :30005 gets reused.
+`reuseExistingServer` is on locally, so a stray Foundry on :30006 gets reused.
 
 - `global-setup.ts` asserts `game.world.id === TEST_WORLD` and logs the world and module
   version it exercised. Read that line.
-- Kill a stray: `lsof -ti:30005 | xargs kill`.
+- Kill a stray: `lsof -ti:30006 | xargs kill`.
 - The clone is a point-in-time copy. A change made in the desktop Foundry reaches the harness
   after the next setup run; a world change needs `--reset-world`.
 - When a result surprises you, suspect the harness first.

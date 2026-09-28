@@ -1,5 +1,6 @@
 import type { StoreClient, TableSummons } from '../../app/client.js';
 import type { BattleArchive, PresencePort } from '../../runtime/ports.js';
+import type { SiteLifecycle } from '../../services/SiteLifecycleService.js';
 import type { BattlefieldHost } from './host.js';
 import type { SessionWatcher } from './sessionWatcher.js';
 import type { TableUsers } from './table.js';
@@ -11,6 +12,7 @@ export interface FoundryStoreClientOptions {
   presence: PresencePort;
   archive: BattleArchive;
   table: TableSummons;
+  lifecycle: SiteLifecycle;
 }
 
 /**
@@ -19,7 +21,7 @@ export interface FoundryStoreClientOptions {
  * on every client, the primary GM's included: the setting change is the one state channel.
  */
 export function foundryStoreClient(
-  { host, watcher, users, presence, archive, table }: FoundryStoreClientOptions,
+  { host, watcher, users, presence, archive, table, lifecycle }: FoundryStoreClientOptions,
 ): StoreClient {
   return {
     get session() { return watcher.session; },
@@ -35,5 +37,6 @@ export function foundryStoreClient(
     subscribe: (listener) => watcher.subscribe(listener),
     archive,
     table,
+    lifecycle,
   };
 }

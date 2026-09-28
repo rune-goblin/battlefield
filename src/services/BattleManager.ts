@@ -1,5 +1,5 @@
 import {
-  canContinueBattle, createBattle, engineNamed, nextDayBattlefield, SIDES,
+  canContinueBattle, createBattle, engineNamed, nextDayBattlefield, ruleBattle, SIDES,
   startNextDay as beginNextDay,
   type BattleState,
 } from '../engine/index.js';
@@ -9,7 +9,7 @@ import { submissionOf } from '../runtime/interactions.js';
 import { migrateSession } from '../runtime/migrate.js';
 import type { MintPort } from '../runtime/ports.js';
 import type { BattleManager } from '../runtime/servicePorts.js';
-import { defaultSetup, writebackComplete, type BattleSession } from '../runtime/session.js';
+import { defaultSetup, sessionWith, writebackComplete, type BattleSession } from '../runtime/session.js';
 import { clearWaterPlacements, deploymentProblem, sideReady } from './ArmyPreparationService.js';
 import { applyStroke } from './MapPreparationService.js';
 import { battleOf, withSetup } from './session-helpers.js';
@@ -84,6 +84,13 @@ export function createBattleManager({ mint }: { mint: MintPort }): BattleManager
       return { ...session, ...cleared(), stage: 'finalized' };
     },
 
+    rule: (session, winner) => ({ ...session, ...cleared(), battle: ruleBattle(battleOf(session), winner) }),
+
+    close: (session, presence) => {
+      const fresh = sessionWith(defaultSetup(mint), mint.id('battle'), mint);
+      return { ...fresh, revision: session.revision, control: seatUsers(fresh.control, presence) };
+    },
+
     paint: (session, stroke) => {
       const board = session.setup.board;
       if (!board) throw new Error('no board to paint');
@@ -112,17 +119,15 @@ export function createBattleManager({ mint }: { mint: MintPort }): BattleManager
     },
 
     moveToRefusal: (session, site) => {
-      if (session.site === site) return 'that battle is already open';
+      // A battle ended here stands no longer, so the hex opens afresh.
+      if (session.site === site && session.stage !== 'finalized') return 'that battle is already open';
       if (session.site === null && session.battle && session.stage !== 'finalized') {
         return 'a battle on no site is under way; save or end it first';
       }
       return null;
     },
 
-    departure: (session) => {
-      if (session.site === null) return null;
-      return session.stage === 'finalized' ? 'remove' : 'park';
-    },
+    departure: (session) => (session.site !== null && session.stage === 'finalized' ? 'remove' : null),
 
     moveTo: (session, raw, { site, battleId, opening }, presence) => {
       const parked = raw === null ? null : migrateSession(raw, undefined, mint);

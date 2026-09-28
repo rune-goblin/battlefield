@@ -49,7 +49,7 @@ export class BattlefieldApp extends ApplicationV2 {
     classes: [MODULE_ID],
     window: {
       title: 'Battlefield',
-      icon: 'fa-solid fa-chess-rook',
+      icon: 'fa-solid fa-swords',
       resizable: true,
       minimizable: true,
       contentClasses: ['battlefield-content'],

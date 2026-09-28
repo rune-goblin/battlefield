@@ -10,7 +10,7 @@ import { MODULE_ID, joinAsFirstGm, waitForGameReady } from './fixtures/foundry-c
  * never loaded.
  */
 export default async function globalSetup(config: FullConfig): Promise<void> {
-  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://127.0.0.1:30005';
+  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://127.0.0.1:30006';
   const browser = await chromium.launch();
   const page = await browser.newPage({ baseURL, viewport: { width: 1440, height: 900 } });
 
@@ -23,7 +23,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   try {
     await joinAsFirstGm(page);
 
-    // Guard against a stale/stray server being silently reused (reuseExistingServer): if :30005
+    // Guard against a stale/stray server being silently reused (reuseExistingServer): if :30006
     // is some other Foundry or a different world, fail loud instead of testing the wrong target.
     const env = await page.evaluate(() => {
       const g = (window as any).game;
@@ -32,7 +32,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     if (env.world !== expectedWorld) {
       throw new Error(
         `Connected to world "${env.world}" but TEST_WORLD is "${expectedWorld}". A stray Foundry is being reused — ` +
-          `kill it (e.g. lsof -ti:30005 | xargs kill) and re-run, or set TEST_WORLD to match.`,
+          `kill it (e.g. lsof -ti:30006 | xargs kill) and re-run, or set TEST_WORLD to match.`,
       );
     }
 
@@ -52,6 +52,25 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
             `Open the test world once, enable the module in Manage Modules, return to setup, and re-run.`,
         );
       }
+    }
+
+    // Battlefield's state in the clone is disposable: every run starts with no battle, no call
+    // and no battles at sites, whatever an earlier run or the desktop world left there.
+    await page.evaluate(async (id) => {
+      const settings = (window as any).game.settings;
+      await settings.set(id, 'tableCall', '');
+      await settings.set(id, 'sites', '{}');
+      await settings.set(id, 'session', '');
+    }, MODULE_ID);
+    await page.reload();
+    await waitForGameReady(page);
+    const left = await page.evaluate((id) => {
+      const settings = (window as any).game.settings;
+      const session = settings.get(id, 'session');
+      return { call: settings.get(id, 'tableCall'), sites: settings.get(id, 'sites'), site: session ? JSON.parse(session).site ?? null : null };
+    }, MODULE_ID);
+    if (left.call !== '' || left.sites !== '{}' || left.site !== null) {
+      throw new Error(`[e2e] the Battlefield reset did not hold: ${JSON.stringify(left)}`);
     }
 
     const version = await page.evaluate((id) => (window as any).game?.modules?.get(id)?.version ?? '?', MODULE_ID);

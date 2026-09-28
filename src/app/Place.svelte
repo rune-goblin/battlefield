@@ -8,6 +8,7 @@
   import WizardSteps from './WizardSteps.svelte';
   import TroopPicker from './TroopPicker.svelte';
   import Modal from './Modal.svelte';
+  import { rem } from './rem.js';
   import { ARMY_TITLE, sideColour } from './presentation.js';
   import {
     game, addUnit, addEmplacement, autoPlacePiece, generateForce, placePiece, removeEmplacement, removeUnit,
@@ -121,7 +122,7 @@
   {#if c.haulEngine && c.haulUnit}
     {@const haulEngine = c.haulEngine}
     {@const haulUnit = c.haulUnit}
-    <Modal title="{haulUnit.card.name} stands on the {haulEngine.name}" layer="stage" width="26rem" tone={sideColour(haulUnit.side)}>
+    <Modal title="{haulUnit.card.name} stands on the {haulEngine.name}" width={rem(26)} tone={sideColour(haulUnit.side)}>
       <p>The unit works the engine from this square. Hauling takes the engine along when the unit moves, at the slower of the two speeds.</p>
       {#snippet actions()}
         <button class="primary" onclick={() => void c.answerHaul(true)}>Haul it</button>
@@ -357,7 +358,8 @@
   .stats { grid-area: stats; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem .4rem; margin: .5rem 0 0; }
   .statcell { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--side) 60%, transparent); padding-left: .35rem; }
   .statcell dt { font-size: var(--type-small); color: var(--muted); }
-  .statcell dd { margin: 0; font-size: var(--type-1); font-weight: 700; line-height: var(--leading-compact); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* A value is data: it wraps onto a second line rather than clip. */
+  .statcell dd { margin: 0; font-size: var(--type-1); font-weight: 700; line-height: var(--leading-compact); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
   .plate { grid-area: plate; display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
   /* The miniature stands on the card itself: the art is cut out, so a plate behind it would

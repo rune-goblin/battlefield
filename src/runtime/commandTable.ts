@@ -219,9 +219,19 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     stage: 'setup', scope: 'gm', history: 'clear',
     run: (s, _c, { services }) => services.manager.reset(s),
   },
+  // The stored copy goes once the record is sure to finalize, so a resolved battle leaves the
+  // map with the commit that resolves it.
   'battle.finalize': {
     stage: 'battle', scope: 'gm', history: 'clear',
+    prepare: async (s, _c, { services, sites }) => {
+      if (s.site !== null && finalizes(() => services.manager.finalize(s))) await sites.remove(s.site);
+    },
     run: (s, _c, { services }) => services.manager.finalize(s),
+  },
+  'battle.rule': {
+    stage: 'battle', scope: 'gm', history: 'clear',
+    run: (s, c, { services }) => services.manager.rule(s, c.winner),
+    events: (_p, next) => [{ type: 'battleEnded', winner: next.battle!.winner, endedBy: next.battle!.endedBy }],
   },
   // The campaign holds part of this result the moment the first target lands, so undo closes
   // at the start of the writeback rather than at its end.
@@ -256,21 +266,36 @@ export const COMMANDS: { readonly [T in CommandType]: CommandDescriptor<T> } = {
     refuse: (s, _c, { services }) => services.manager.installRefusal(s),
     run: (s, c, { services, presence }) => services.manager.install(s, c.battleId, c.request, presence),
   },
-  // The record the table leaves is parked before the session write, so a failure between the
-  // two leaves a spare copy and loses nothing.
+  // Leaving a battle writes nothing to its site: the stored copy stays as its last Save left it.
   'session.moveTo': {
     stage: 'any', scope: 'gm', history: 'clear', afterFinal: true,
     refuse: (s, c, { services }) => services.manager.moveToRefusal(s, c.site),
-    prepare: async (s, c, { services, sites }) => {
-      const site = s.site;
-      const departure = services.manager.departure(s);
-      if (departure === 'park') await sites.park(s);
-      if (departure === 'remove' && site !== null) await sites.remove(site);
-      return sites.load(c.site);
+    prepare: async (s, c, ctx) => {
+      await depart(s, ctx);
+      return ctx.sites.load(c.site);
     },
     run: (s, c, { services, presence }, parked) => services.manager.moveTo(s, parked, c, presence),
   },
+  'session.close': {
+    stage: 'any', scope: 'gm', history: 'clear', afterFinal: true,
+    prepare: (s, _c, ctx) => depart(s, ctx),
+    run: (s, _c, { services, presence }) => services.manager.close(s, presence),
+  },
 };
+
+/** A finalize that would throw is left to `run`, which refuses it as the engine's. */
+function finalizes(attempt: () => unknown): boolean {
+  try {
+    attempt();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function depart(session: BattleSession, { services, sites }: CommandContext): Promise<void> {
+  if (services.manager.departure(session) === 'remove' && session.site !== null) await sites.remove(session.site);
+}
 
 /** One command's descriptor, widened so a caller holding the whole union can call it. */
 export const descriptorOf = (command: BattleCommand): CommandDescriptor<CommandType> => COMMANDS[command.type];

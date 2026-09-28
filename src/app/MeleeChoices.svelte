@@ -18,7 +18,7 @@
       const point = screenOf(target);
       if (point) {
         const halfWidth = plans.length * 40;
-        const x = Math.max(ui.chrome.left + halfWidth + 8, Math.min(window.innerWidth - ui.chrome.right - halfWidth - 8, point.x));
+        const x = Math.max(ui.chrome.left + halfWidth + 8, Math.min(ui.size.width - ui.chrome.right - halfWidth - 8, point.x));
         const y = Math.max(ui.chrome.top + 92, point.y - (radiusOf(target) ?? 42) - 8);
         if (!anchor || anchor.x !== x || anchor.y !== y) anchor = { x, y };
       }

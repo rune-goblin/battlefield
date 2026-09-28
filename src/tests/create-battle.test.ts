@@ -11,6 +11,7 @@ import { memorySites } from '../runtime/memorySites.js';
 import type { PresencePort } from '../runtime/ports.js';
 import { reviveSession } from '../runtime/migrate.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
+import { createSiteLifecycle } from '../services/SiteLifecycleService.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
 const GM = 'gm';
@@ -231,6 +232,11 @@ describe('installing a requested battle', () => {
   });
 });
 
+const idleLifecycle = createSiteLifecycle({
+  session: () => freshSession(), submit: () => Promise.reject(new Error('unused')), sites: memorySites(),
+  applyOutcome: () => null,
+});
+
 describe('the campaign seam', () => {
   it('answers with the battle ID it sent, and sends nothing when the request is bad', async () => {
     const sent: BattleCommand[] = [];
@@ -263,7 +269,7 @@ describe('the campaign seam', () => {
     let opened = 0;
     const api = createModuleApi({
       submit: () => (command) => runtime.submit(command),
-      session: () => runtime.session, sites: memorySites(),
+      session: () => runtime.session, sites: memorySites(), lifecycle: idleLifecycle,
       open: async () => { opened += 1; },
       close: async () => {}, callTable: async () => {}, dismissTable: async () => {},
     });
@@ -277,7 +283,7 @@ describe('the campaign seam', () => {
   });
 
   it('refuses createBattle before the host is built', async () => {
-    const api = createModuleApi({ submit: () => null, session: () => freshSession(), sites: memorySites(), open: async () => {}, close: async () => {}, callTable: async () => {}, dismissTable: async () => {} });
+    const api = createModuleApi({ submit: () => null, session: () => freshSession(), sites: memorySites(), lifecycle: idleLifecycle, open: async () => {}, close: async () => {}, callTable: async () => {}, dismissTable: async () => {} });
 
     expect(await api.createBattle(request())).toMatchObject({ ok: false, reason: 'battle' });
   });

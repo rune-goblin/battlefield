@@ -15,6 +15,25 @@ export function canContinueBattle(state: BattleState): boolean {
     && SIDES.every((side) => state.units.some((u) => u.side === side && isStanding(u)));
 }
 
+/** A battle the rules have not settled: one still fought, or one that dusk left open. */
+export const awaitsRuling = (state: BattleState): boolean => state.phase !== 'ended' || canContinueBattle(state);
+
+/** The GM ends a battle the rules have not settled, naming the winner or a draw. */
+export function ruleBattle(input: BattleState, winner: Side | 'draw'): BattleState {
+  if (!awaitsRuling(input)) throw new Error('the rules have already ended this battle');
+  if (winner !== 'draw' && !SIDES.includes(winner)) throw new Error('invalid ruling');
+  const state = clone(input);
+  state.phase = 'ended';
+  state.endedBy = 'ruling';
+  state.winner = winner;
+  state.active = null;
+  state.begun = false;
+  state.nextBoard = null;
+  state.log.push({ round: state.round, text: winner === 'draw' ? 'The GM ends the battle as a draw.'
+    : `The GM ends the battle. The ${winner} holds the field.` });
+  return state;
+}
+
 /** Whether that army has rolled its recovery tonight. */
 export const hasRecovered = (state: BattleState, side: Side): boolean => state.night?.[side] !== undefined;
 

@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { createTableCall } from '../adapters/foundry/tableCall.js';
 
 function tableFor(role: { gm: boolean; openFails?: Error }) {
-  const state = { value: '', window: false, chip: false, battle: false };
+  const state = { value: '', window: false, chip: false, id: 'a', battle: false };
   const errors: unknown[] = [];
   const table = createTableCall({
     storage: { get: () => state.value, set: async (next) => { state.value = next; table.handleChange(next); } },
     isGm: () => role.gm,
-    battleRunning: () => state.battle,
+    battle: () => ({ id: state.id, running: state.battle }),
     windowOpen: () => state.window,
     openWindow: async () => {
       if (role.openFails) throw role.openFails;
@@ -55,53 +55,54 @@ describe('the GM\'s call to the table', () => {
     expect(gm.state).toMatchObject({ window: true, chip: false });
   });
 
-  it('holds the chip while a battle runs, with no call', () => {
+  it('shows no chip for a running battle the players were not called to', () => {
     const { table, state } = tableFor({ gm: false });
     state.battle = true;
 
     table.handleSession();
-
-    expect(state).toMatchObject({ window: false, chip: true });
-  });
-
-  it('opens the window on a start it witnesses and keeps the chip after the player shuts it', async () => {
-    const { table, state } = tableFor({ gm: false });
-    table.handleSession();
-
-    state.battle = true;
-    table.handleSession();
-    await settled();
-    expect(state).toMatchObject({ window: true, chip: false });
-
-    state.window = false;
-    table.sync();
-    expect(state.chip).toBe(true);
-  });
-
-  it('shuts a player\'s window and drops the chip when the GM ends the battle', async () => {
-    const { table, state } = tableFor({ gm: false });
-    state.battle = true;
-    state.window = true;
-    table.handleSession();
-
-    state.battle = false;
-    table.handleSession();
-    await settled();
 
     expect(state).toMatchObject({ window: false, chip: false });
   });
 
-  it('withdraws the call when the battle ends on the GM\'s client', async () => {
+  it('calls the table on a start the GM witnesses and withdraws it when the battle ends', async () => {
     const { table, state } = tableFor({ gm: true });
-    await table.call();
+    table.handleSession();
+
     state.battle = true;
     table.handleSession();
+    await settled();
+    expect(state.value).toBe('called');
 
     state.battle = false;
     table.handleSession();
     await settled();
+    expect(state.value).toBe('');
+  });
+
+  it('withdraws the call when the GM opens another battle, running or not', async () => {
+    const { table, state } = tableFor({ gm: true });
+    state.battle = true;
+    table.handleSession();
+    await table.call();
+
+    state.id = 'b';
+    table.handleSession();
+    await settled();
 
     expect(state.value).toBe('');
+  });
+
+  it('shuts a player\'s window on dismissal while the battle still runs', async () => {
+    const { table, state } = tableFor({ gm: false });
+    state.battle = true;
+    table.handleSession();
+    await table.call();
+    await settled();
+
+    await table.dismiss();
+    await settled();
+
+    expect(state).toMatchObject({ window: false, chip: false });
   });
 
   it('reports a window that fails to open and still shows the chip', async () => {

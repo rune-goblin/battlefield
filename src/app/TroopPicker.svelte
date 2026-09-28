@@ -4,6 +4,7 @@
   import { allTroops, campaignTroops, type TroopEntry } from './troop-library.svelte.js';
   import { sideColour, signed } from './presentation.js';
   import Modal from './Modal.svelte';
+  import { rem } from './rem.js';
 
   interface Props {
     side: Side;
@@ -92,7 +93,7 @@
   }
 </script>
 
-<Modal title="Choose troops" layer="stage" width="64rem" bare tone={sideColour(side)} {close}>
+<Modal title="Choose troops" width={rem(64)} bare tone={sideColour(side)} {close}>
   <div class="picker" style:--side={sideColour(side)}>
     <header>
       <h2>Choose troops for the {side === 'attacker' ? 'attacking' : 'defending'} army</h2>
@@ -141,7 +142,7 @@
           {#each shown as r (r.entry.id)}
             {@const card = r.card}
             <tr>
-              <td class="troop">
+              <td><div class="troop">
                 <img src={r.entry.art ?? troopArtUrl(r.entry.name, card?.role ?? 'infantry')} alt="" loading="lazy" />
                 <span>
                   <span class="name">{r.entry.name}</span>
@@ -149,7 +150,7 @@
                   {#if card?.tactics?.length || card?.caster}<span class="tags">{[...(card.tactics ?? []), ...(card.caster ? [`${card.tradition ?? ''} caster`.trim()] : [])].join(' · ')}</span>{/if}
                   {#if r.entry.problem ?? failed[r.entry.id]}<span class="tags bad">Cannot be fielded: {r.entry.problem ?? failed[r.entry.id]}</span>{/if}
                 </span>
-              </td>
+              </div></td>
               <td>{groupOf(r.entry)}</td>
               <td class="num">{r.entry.level}</td>
               <td>{card?.role ?? '—'}</td>

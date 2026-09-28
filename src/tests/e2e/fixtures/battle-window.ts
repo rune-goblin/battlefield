@@ -4,10 +4,11 @@ import { MODULE_ID } from './foundry-clients';
 
 export const windowOf = (page: Page): Locator => page.locator(`#${MODULE_ID}`);
 
-export async function openFromSceneControl(page: Page): Promise<Locator> {
+// Players have no scene control, and the GM's runs the ReignMaker hex pick when that module is on.
+export async function openBattleWindow(page: Page): Promise<Locator> {
   const win = windowOf(page);
   if (!(await win.isVisible())) {
-    await page.locator(`#scene-controls-tools button[data-tool="${MODULE_ID}"]`).click();
+    await page.evaluate((id) => (window as any).game.modules.get(id).api.open(), MODULE_ID);
   }
   await expect(win.locator('.battlefield-root')).toBeVisible();
   return win;
@@ -27,22 +28,75 @@ export async function goToStep(win: Locator, label: string): Promise<void> {
   await expect(step).toHaveClass(/\bon\b/);
 }
 
-/** The stage panel's forward button: Next, the GM's Begin, or a player's word that the army is ready. */
+/** The stage panel's forward button: Next, the GM's Start, or a player's word that the army is ready. */
 export const forwardOf = (win: Locator): Locator => win.locator('.steps .primary');
 
 export async function beginBattle(gm: Locator): Promise<void> {
   await goToStep(gm, 'Review and begin');
   const begin = forwardOf(gm);
-  await expect(begin).toHaveText('Begin');
-  await expect(begin, 'the world clone holds no deployed setup; deploy both armies once by hand').toBeEnabled();
+  await expect(begin).toHaveText('Start');
+  await expect(begin, 'open the seed battle first: openSeedBattle').toBeEnabled();
   await begin.click();
   await expect(railOf(gm)).toBeHidden();
 }
 
-/** A run that died mid-battle leaves one open in the world clone. */
-export async function endAnyBattle(gm: Locator): Promise<void> {
-  if (!(await railOf(gm).isVisible())) await endBattle(gm);
-  await expect(railOf(gm)).toBeVisible();
+const api = <T>(page: Page, verb: string, ...args: unknown[]): Promise<T> =>
+  page.evaluate(([id, name, rest]) => (window as any).game.modules.get(id).api[name](...rest), [MODULE_ID, verb, args] as const);
+
+/** The hex `seed.spec.ts` leaves a deployed battle at, for every spec that needs one. */
+export const SEED_SITE = 'e2e-seed';
+
+/** Take off the map every test hex a spec left, except the seed. */
+export const clearTestSites = (page: Page): Promise<void> => page.evaluate(async ([id, seed]) => {
+  const bf = (window as any).game.modules.get(id).api;
+  for (const entry of await bf.battles()) {
+    if (entry.site.startsWith('e2e-') && entry.site !== seed) await bf.removeBattle(entry.site);
+  }
+}, [MODULE_ID, SEED_SITE] as const);
+
+/** Place every piece the wizard lists, on a board generated if the draft has none. */
+export async function deployAll(gm: Locator): Promise<void> {
+  const review = stepOf(gm, 'Review and begin').locator('button');
+  await goToStep(gm, 'Battlefield');
+  if (await review.isDisabled()) {
+    await gm.getByRole('button', { name: 'Generate', exact: true }).click();
+    await expect(review).toBeEnabled();
+  }
+  for (const label of ['Siege engines', 'Defending army', 'Attacking army']) {
+    await goToStep(gm, label);
+    const place = gm.locator('.unitlist button.deploy:not(.set):not(:disabled)');
+    for (let n = await place.count(); n > 0; n = await place.count()) {
+      await place.first().click();
+      await expect(place).toHaveCount(n - 1);
+    }
+  }
+  await goToStep(gm, 'Review and begin');
+  await expect(forwardOf(gm), 'every piece must be on the board').toBeEnabled();
+}
+
+/** Leave whatever battle the table holds without saving, and open the seed battle at its stored
+ * copy on the wizard, with no players called. */
+export async function openSeedBattle(page: Page): Promise<Locator> {
+  if (await api(page, 'activeSite') !== null) await api(page, 'closeBattle');
+  const opened = await api<{ ok: boolean; message?: string }>(page, 'openBattleAt', SEED_SITE, {
+    board: { base: 'plains', size: 9, feature: 'none', seed: 1 },
+  });
+  expect(opened, 'seed.spec.ts leaves a battle at the seed hex').toMatchObject({ ok: true });
+  const win = await openBattleWindow(page);
+  await win.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(railOf(win)).toBeVisible();
+  await api(page, 'dismissTable');
+  // Start opened every player's window and the dismissal shuts it; a spec that opens one before
+  // it has gone would catch it closing.
+  const others = page.context().browser()?.contexts().flatMap((c) => c.pages()).filter((p) => p !== page) ?? [];
+  for (const other of others) await expect(windowOf(other)).toBeHidden();
+  return win;
+}
+
+/** Close the battle without saving, so the seed stays as `seed.spec.ts` stored it. */
+export async function leaveBattle(page: Page): Promise<void> {
+  expect(await api(page, 'closeBattle')).toMatchObject({ ok: true });
+  await expect(windowOf(page)).toBeHidden();
 }
 
 export async function endBattle(gm: Locator): Promise<void> {

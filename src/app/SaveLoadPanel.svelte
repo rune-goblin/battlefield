@@ -5,7 +5,7 @@
   import { commandReporter } from './command-notices.js';
   import { downloadText } from './download.js';
   import { viewer } from './viewer.svelte.js';
-  import Popover from './Popover.svelte';
+  import DialogButton from './DialogButton.svelte';
 
   const run = commandReporter(useNotifications());
 
@@ -63,7 +63,7 @@
   const progress = (entry: ArchiveEntry) => entry.day === null ? 'Setup' : `Day ${entry.day}${entry.round === null ? '' : ` · round ${entry.round}`}`;
 </script>
 
-<Popover label="Save / Load" onopen={() => void guard(refresh)}>
+<DialogButton label="Save / Load" onopen={() => void guard(refresh)}>
   <div class="row">
     <input placeholder="Name this save" bind:value={name} onkeydown={(e) => e.key === 'Enter' && void doSave()} />
     <button class="primary" onclick={() => void doSave()}>Save</button>
@@ -87,7 +87,7 @@
     {/each}
   </ul>
   <button onclick={pickImport}>Import…</button>
-</Popover>
+</DialogButton>
 
 <style>
   .row { display: flex; gap: .4rem; }

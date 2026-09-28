@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 
 import { activation, notation, ROUTED_AT } from '../../engine/index';
-import { beginBattle, closeWindow, endAnyBattle, goToStep, openFromSceneControl, railOf, shot } from './fixtures/battle-window';
+import { beginBattle, closeWindow, goToStep, leaveBattle, openSeedBattle, railOf, shot } from './fixtures/battle-window';
 import { battleOn, cellOf, screenOf, settle, shotAround } from './fixtures/board';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
@@ -10,7 +10,6 @@ const SAVE_NAME = 'e2e routed';
 // `Token.chipBounds`: the chip sits up and to the left, CHIP_OFFSET along the footprint radius.
 const CHIP_REACH = 0.72 * 0.82 / 2;
 
-const saveLoad = (win: Locator): Locator => win.locator('.popover', { has: win.page().getByRole('button', { name: 'Save / Load', exact: true }) });
 
 const readArchive = (page: Page): Promise<string> =>
   page.evaluate((id) => (window as any).game.settings.get(id, 'archive') as string, MODULE_ID);
@@ -24,18 +23,22 @@ test.describe('The board in a Foundry battle', () => {
     const errors = collectErrors(gmPage);
     const archive = await readArchive(gmPage);
     try {
-      const gm = await openFromSceneControl(gmPage);
-      await endAnyBattle(gm);
+      const gm = await openSeedBattle(gmPage);
       await beginBattle(gm);
 
-      await gm.locator('.army-reel .unit-card', { hasText: 'Line Infantry' }).click();
-      await expect(gm.locator('.army-reel .unit-card.on')).toContainText('Line Infantry');
+      // The attacker a single stride brings onto the Catapult, wherever the seed placed them.
+      const deployed = await battleOn(gmPage);
+      const catapult = notation(deployed.engines.find((e) => e.name === 'Catapult')!.square);
+      const [runner] = deployed.units
+        .filter((u) => u.side === 'attacker' && activation(deployed, u.id)?.moves.has(catapult))
+        .sort((a, b) => activation(deployed, a.id)!.moves.get(catapult)!.feet - activation(deployed, b.id)!.moves.get(catapult)!.feet);
+      expect(runner, `no attacker can reach the Catapult on ${catapult}`).toBeTruthy();
+      await gm.locator('.army-reel .unit-card', { hasText: runner.name }).click();
+      await expect(gm.locator('.army-reel .unit-card.on')).toContainText(runner.name);
       await expect.poll(async () => (await battleOn(gmPage)).active).toBeTruthy();
       const picked = await battleOn(gmPage);
       const unit = picked.active!;
       const from = cellOf(picked, unit);
-      const catapult = notation(picked.engines.find((e) => e.name === 'Catapult')!.square);
-      expect(activation(picked, unit)!.moves.has(catapult), `Line Infantry cannot reach the Catapult on ${catapult}`).toBe(true);
       await settle(gmPage, from);
 
       const start = await screenOf(gmPage, from);
@@ -81,14 +84,15 @@ test.describe('The board in a Foundry battle', () => {
       await expect(gm.locator('.radial')).toBeHidden();
 
       // The API offers no way to spend Morale, so a save of this battle is edited and loaded back.
-      const panel = saveLoad(gm);
-      const toggle = panel.getByRole('button', { name: 'Save / Load', exact: true });
+      const toggle = gm.getByRole('button', { name: 'Save / Load', exact: true });
+      const panel = gm.getByRole('dialog', { name: 'Save / Load' });
+      const done = panel.getByRole('button', { name: 'Done', exact: true });
       await toggle.click();
       await panel.getByPlaceholder('Name this save').fill(SAVE_NAME);
       await panel.getByRole('button', { name: 'Save', exact: true }).click();
       const row = panel.locator('li', { hasText: SAVE_NAME });
       await expect(row).toBeVisible();
-      await toggle.click();
+      await done.click();
 
       const entries = JSON.parse(await readArchive(gmPage)) as { name: string; data: { battle: { units: { name: string; disorder: number }[] } } }[];
       const routed = entries.find((e) => e.name === SAVE_NAME)!.data.battle.units.find((u) => u.name === 'Kobold Warriors')!;
@@ -100,23 +104,34 @@ test.describe('The board in a Foundry battle', () => {
       await expect.poll(async () => (await battleOn(gmPage)).units.find((u) => u.name === 'Kobold Warriors')!.disorder).toBe(ROUTED_AT);
       await row.getByRole('button', { name: 'Remove', exact: true }).click();
       await expect(row).toBeHidden();
-      await toggle.click();
+      await done.click();
 
       const kobolds = cellOf(await battleOn(gmPage), (await battleOn(gmPage)).units.find((u) => u.name === 'Kobold Warriors')!.id);
+      // The enemy's home row can sit off the window or under the army reel: the board scrolls
+      // to it, and the reel lets the pointer through for this one hover.
+      await gmPage.evaluate(([id, cell]) => (window as any).game.modules.get(id).api.centerOn(cell), [MODULE_ID, kobolds]);
+      await settle(gmPage, kobolds);
+      const through = await gmPage.addStyleTag({ content: '.army-reel, .army-reel * { pointer-events: none !important; }' });
       const at = await screenOf(gmPage, kobolds);
       await gmPage.mouse.move(at.x, at.y);
       await expect(gm.locator('canvas[aria-label="Battle board"]')).toHaveAttribute('title', /Morale 0\/3 — routed/);
+      await through.evaluate((el) => (el as HTMLStyleElement).remove());
       await shotAround(gmPage, kobolds, pitch, 'W9-routed');
       const cavalry = await battleOn(gmPage).then((b) => cellOf(b, b.units.find((u) => u.name === 'Heavy Cavalry')!.id));
       await shotAround(gmPage, cavalry, pitch, 'W9-flag-status-bars');
       await shot(gmPage, 'W9-board');
 
-      await gm.getByRole('button', { name: 'End battle', exact: true }).first().click();
+      // A ruling would take the seed off the map, so the prompt is shown and cancelled, and the
+      // battle closes without saving back to the seed's stored copy.
+      await gm.getByRole('button', { name: 'Battle', exact: true }).click();
+      await gm.getByRole('button', { name: 'End battle', exact: true }).click();
       const dialog = gm.getByRole('alertdialog');
       await expect(dialog).toContainText('End the battle');
       await shot(gmPage, 'W8-end-battle');
-      await dialog.getByRole('button', { name: /^(End battle|End without saving)$/ }).click();
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
       await expect(dialog).toBeHidden();
+      await leaveBattle(gmPage);
+      await openSeedBattle(gmPage);
       await expect(railOf(gm)).toBeVisible();
 
       for (const label of ['Battlefield', 'Paint the map', 'Siege engines', 'Review and begin']) await goToStep(gm, label);

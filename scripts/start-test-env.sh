@@ -1,5 +1,5 @@
 #!/bin/bash
-# Boot Foundry headlessly against test/foundry-data on port 30005, auto-launching
+# Boot Foundry headlessly against test/foundry-data on port 30006, auto-launching
 # a world. Used by the Playwright harness (and handy for manual debugging).
 #
 # This Mac's Foundry is the UNVERSIONED app bundle, so we detect that first and fall
@@ -9,7 +9,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_DATA="$REPO_ROOT/test/foundry-data"
-PORT="${TEST_FOUNDRY_PORT:-30005}"
+PORT="${TEST_FOUNDRY_PORT:-30006}"
 FOUNDRY_VERSION="${FOUNDRY_VERSION:-14}"
 
 # Re-clone systems/modules from the real Data dir before every boot. Idempotent and cheap

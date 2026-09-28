@@ -62,6 +62,8 @@ export type BattleCommand =
   | { type: 'battle.returnToSetup' }
   | { type: 'battle.reset' }
   | { type: 'battle.finalize' }
+  /** The GM ends a battle the rules have not settled, naming the winner or a draw. */
+  | { type: 'battle.rule'; winner: Side | 'draw' }
   /** Seat the table by hand, or switch back to the automatic split. */
   | { type: 'control.assign'; control: ControlAssignment }
   /** Hand the open turn to another seat on the pending side, for a player who has dropped. */
@@ -86,7 +88,10 @@ export type BattleCommand =
   /** Open the battle standing at a site, parking the one the table holds at its own. A site
    * with no battle opens on `opening` under `battleId`. One command, so no client ever sees
    * the table between battles. */
-  | { type: 'session.moveTo'; site: string; battleId: string; opening: SiteOpening };
+  | { type: 'session.moveTo'; site: string; battleId: string; opening: SiteOpening }
+  /** The table leaves the battle it holds. What was not saved to the site is dropped, and the
+   * record opens a fresh draft on no site, so no battle is active. */
+  | { type: 'session.close' };
 
 export type CommandType = BattleCommand['type'];
 

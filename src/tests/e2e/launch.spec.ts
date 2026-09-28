@@ -1,9 +1,11 @@
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 test.describe('Module launches', () => {
-  test('the scene control opens the window on the GM client', async ({ gmPage }) => {
+  // With ReignMaker on, the GM's scene control picks a hex (table.spec.ts checks the control), so
+  // the window opens through the module API.
+  test('the module API opens the window on the GM client', async ({ gmPage }) => {
     const errors = collectErrors(gmPage);
-    await gmPage.locator(`#scene-controls-tools button[data-tool="${MODULE_ID}"]`).click();
+    await gmPage.evaluate((id) => (window as any).game.modules.get(id).api.open(), MODULE_ID);
     const win = gmPage.locator(`#${MODULE_ID}`);
     await expect(win).toBeVisible();
     await expect(win.locator('.battlefield-root')).toBeVisible();

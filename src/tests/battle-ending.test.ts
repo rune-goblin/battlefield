@@ -76,6 +76,7 @@ describe('battle ending presentation', () => {
     const ending = createBattleEnding(() => 0, publish);
     ending.update('saved:1', true);
     expect(publish).toHaveBeenLastCalledWith('report');
+    expect(ending.opened).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
   });
 

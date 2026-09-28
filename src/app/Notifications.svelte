@@ -32,7 +32,7 @@
 </div>
 
 <style>
-  .notifications { position: fixed; z-index: 20; left: calc(var(--left) + .85rem); bottom: calc(var(--bottom) + .85rem); display: flex; flex-direction: column; gap: .5rem; width: min(32rem, calc(100% - var(--left) - var(--right) - 1.7rem)); max-height: 50vh; overflow-y: auto; pointer-events: none; }
+  .notifications { position: fixed; z-index: var(--z-toast); left: calc(var(--left) + .85rem); bottom: calc(var(--bottom) + .85rem); display: flex; flex-direction: column; gap: .5rem; width: min(32rem, calc(100% - var(--left) - var(--right) - 1.7rem)); max-height: 50vh; overflow-y: auto; pointer-events: none; }
   .notification { display: flex; gap: .6rem; align-items: flex-start; padding: .65rem .8rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); color: var(--ink); font-size: var(--type-body); box-shadow: var(--shadow-1); }
   .notification[data-tone='error'] { border-color: var(--bad); }
   .notification[data-tone='warning'] { border-color: var(--caution); }

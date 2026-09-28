@@ -4,8 +4,9 @@
   import SaveLoadPanel from '../SaveLoadPanel.svelte';
   import SeatingPanel from '../SeatingPanel.svelte';
   import QuitDialog from '../QuitDialog.svelte';
+  import SiteMenu from '../SiteMenu.svelte';
   import { setDock, toggleDock, ui } from './layout.svelte.js';
-  import { quitGame, sessionUnsaved, tableCalled, tableSummons } from '../game.svelte.js';
+  import { game, quitGame, sessionUnsaved, siteLifecycle, tableCalled, tableSummons } from '../game.svelte.js';
   import { viewer } from '../viewer.svelte.js';
   import { assetUrl } from '../../board/index.js';
 
@@ -61,6 +62,7 @@
         onclick={() => void (called ? table.dismiss() : table.call())}
       >{called ? 'Dismiss players' : 'Call players'}</button>
     {/if}
+    {#if viewer.isGm && game.site !== null && siteLifecycle()}<SiteMenu />{/if}
     <SeatingPanel />
     <SaveLoadPanel />
     <button onclick={quit} title="Leave this game">Quit</button>
@@ -86,7 +88,11 @@
      board say the same things at more length. */
   .status { min-width: 0; font-size: var(--type-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tools { flex: 0 1 auto; max-width: 100%; margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .6rem; }
-  .tools :global(button) { white-space: nowrap; }
+  /* Compact, so the GM's full set holds to two rows in a 1024px window. `:where` keeps each
+     control's own padding ahead of this. */
+  .tools :global(:where(button)) { white-space: nowrap; font-size: var(--type-small); padding: .3rem .6rem; }
+  /* Foundry's window header already names the app. */
+  @container (max-width: 75rem) { h1 { display: none; } }
   nav { display: flex; }
   nav a { color: var(--muted); font-size: var(--type-small); margin-left: .7rem; }
   nav a:hover { color: var(--ink); }

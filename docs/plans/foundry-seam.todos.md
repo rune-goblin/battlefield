@@ -64,10 +64,10 @@ controllers.
 
 ## 5. Battle sites, from the 2026-09-20 multi-battle change
 
-- The battle markers ride ReignMaker's Fortifications toggle through its `setBattleMarkers`
-  (built 2026-09-26, uncommitted in pf2e-reignmaker). Never seen on a live map: check the
-  swords' size, the top-left offset on a fortified hex, and that a player sees no marker in a
-  hex hidden to them.
+- The battle markers go through ReignMaker's `setMapMarkers` on its `map-markers` overlay
+  (built 2026-09-28 on ReignMaker branch `map-markers`, uncommitted). Never seen on a live map:
+  check the swords' size, the top-left offset on a fortified hex, that a player sees no marker
+  in a hex hidden to them, and that a click opens the popup on a player's client.
 - No UI removes a planned battle. `api.removeBattle(site)` exists for a macro; a list of
   battles in the app's top bar could offer Open and Remove.
 - The `sites` setting holds every parked record in one string and has no cap.

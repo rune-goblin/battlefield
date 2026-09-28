@@ -13,3 +13,6 @@ _pf2e-source
 _foundry-data
 _foundry-modules
 .vercel
+
+# layout.spec.ts rewrites 92 screenshots (~67 MB) on every run; causes.md is the record.
+docs/plans/foundry-gameplay-shots/*.png

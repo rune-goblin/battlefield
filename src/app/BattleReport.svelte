@@ -7,8 +7,9 @@
   import { onDestroy } from 'svelte';
   import { useNotifications } from './notification-context.js';
   import { createBattleReport, DAY_OPTIONS, STEPS } from './battle-report.svelte.js';
-  let { backdrop = true }: { backdrop?: boolean } = $props();
-  const report = createBattleReport({ notifications: useNotifications() });
+  import SitePrompts from './SitePrompts.svelte';
+  let { backdrop = true, resumed = false }: { backdrop?: boolean; resumed?: boolean } = $props();
+  const report = createBattleReport({ notifications: useNotifications(), resumed: () => resumed });
   onDestroy(() => report.destroy());
 </script>
 
@@ -173,8 +174,15 @@
         <p class="decision-status" role="status">{report.ordersStatus}</p>
       {/if}
       <div class="footer-actions">
-        <button class="end-battle" disabled={!viewer.isGm} onclick={report.endBattle}>End battle</button>
-        {#if report.continuing && report.resolved}<button class="save-day" onclick={() => void report.saveForAnotherDay()}>Save for another day</button>{/if}
+        <div class="aside">
+          {#if !report.finalized}<button disabled={!viewer.isGm || report.siteMenu.busy} onclick={report.endBattle}>End battle</button>{/if}
+          {#if report.atSite}
+            {#if !report.finalized}<button disabled={report.siteMenu.busy} onclick={() => void report.siteMenu.save()} title="Write this battle to its hex">Save</button>{/if}
+            <button disabled={report.siteMenu.busy} onclick={() => void report.siteMenu.requestClose()} title="End the session for every player and leave the battle at its hex">Close</button>
+          {:else if report.continuing && report.resolved}
+            <button onclick={() => void report.saveForAnotherDay()}>Save for another day</button>
+          {/if}
+        </div>
         {#if report.stage === 'deployment'}
           <button class="primary" disabled={!report.deployReady || !viewer.isGm} onclick={report.beginNextDay}>Begin day {report.b.day + 1}</button>
         {:else if report.stage === 'recovery'}
@@ -197,6 +205,8 @@
     </footer>
   </section>
 </div>
+
+<SitePrompts menu={report.siteMenu} />
 
 <style>
   .report-scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 1.25rem; background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(3px); }
@@ -281,8 +291,7 @@
   .deployment-preview { position: relative; height: 18rem; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-bottom: 1rem; }
   footer { padding: 1rem 1.6rem; border-top: 1px solid var(--rule); background: var(--card); }
   .footer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
-  .end-battle, .save-day { margin-right: auto; }
-  .end-battle:has(+ .save-day) { margin-right: 0; }
+  .aside { display: flex; flex-wrap: wrap; gap: .6rem; margin-right: auto; }
   @media (max-width: 650px) {
     .armies, .map-choices, .field-layout { grid-template-columns: 1fr; }
     .report-scrim { padding: .5rem; }

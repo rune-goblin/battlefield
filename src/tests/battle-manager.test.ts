@@ -224,10 +224,10 @@ describe('the lifecycle transitions', () => {
     expect(manager.moveToRefusal({ ...fought(), site: 'b' }, 'a')).toBeNull();
   });
 
-  it('takes a finalized battle off the map, parks a live one and leaves a record on no site alone', () => {
+  it('takes a finalized battle off the map and leaves every other stored copy alone', () => {
     expect(manager.departure({ ...fought(), site: 'a', stage: 'finalized' })).toBe('remove');
-    expect(manager.departure({ ...fought(), site: 'a' })).toBe('park');
-    expect(manager.departure({ ...table(), site: 'a' })).toBe('park');
+    expect(manager.departure({ ...fought(), site: 'a' })).toBeNull();
+    expect(manager.departure({ ...table(), site: 'a' })).toBeNull();
     expect(manager.departure(fought())).toBeNull();
   });
 

@@ -1,5 +1,5 @@
 import { activation } from '../../engine/index';
-import { beginBattle, endBattle, openFromSceneControl, shot, windowOf } from './fixtures/battle-window';
+import { beginBattle, leaveBattle, openSeedBattle, shot, windowOf } from './fixtures/battle-window';
 import { battleOn, cellOf, drag, screenOf, settle } from './fixtures/board';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
@@ -8,11 +8,7 @@ test.describe('An activation on two clients', () => {
     test.setTimeout(240_000);
     const gmErrors = collectErrors(gmPage);
     const playerErrors = collectErrors(playerPage);
-    const gm = await openFromSceneControl(gmPage);
-    const rail = gm.locator('nav.wizard');
-
-    // A run that died mid-battle leaves one open in the world clone.
-    if (!(await rail.isVisible())) await endBattle(gm);
+    const gm = await openSeedBattle(gmPage);
     await beginBattle(gm);
     const player = windowOf(playerPage);
     await expect(player.locator('.battlefield-root')).toBeVisible();
@@ -37,9 +33,10 @@ test.describe('An activation on two clients', () => {
     const here = await screenOf(gmPage, to);
     await gmPage.mouse.click(here.x, here.y);
     const slices = gm.locator('.radial .slice');
-    await expect(slices).toHaveCount(6);
+    await expect(slices.first()).toBeVisible();
     await shot(gmPage, 'W9-ring-radial');
-    await slices.nth(5).click();
+    // A slice's label is the unit's own name for the action; its key is fixed.
+    await gm.locator('.radial .slice[aria-describedby$="-guard"]').click();
     await gm.locator('.popup-foot .primary').click();
     await expect.poll(async () => (await battleOn(gmPage)).units.find((u) => u.id === unit)!.guard).toBeTruthy();
 
@@ -48,9 +45,7 @@ test.describe('An activation on two clients', () => {
     expect(cellOf(await battleOn(playerPage), unit)).toBe(to);
     await shot(playerPage, 'W9-token-move-player');
 
-    await endBattle(gm);
-    await expect(rail).toBeVisible();
-    await gmPage.evaluate((id) => (window as any).game.modules.get(id).api.close(), MODULE_ID);
+    await leaveBattle(gmPage);
     expect(gmErrors).toEqual([]);
     expect(playerErrors).toEqual([]);
   });

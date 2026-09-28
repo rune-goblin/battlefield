@@ -30,7 +30,8 @@
   onDestroy(c.close);
 
   let endingPhase = $state<EndingPhase>('playing');
-  const ending = createBattleEnding(() => stage.board?.remainingMs() ?? 0, phase => { endingPhase = phase; });
+  let reportOpened = $state(false);
+  const ending = createBattleEnding(() => stage.board?.remainingMs() ?? 0, phase => { endingPhase = phase; reportOpened = ending.opened; });
   const outcome = $derived(battleOutcome(c.b, game.control, gmUserId(), viewer.userId));
   $effect(() => { ending.update(`${game.battleId}:${c.b.day}`, c.b.phase === 'ended'); });
   onDestroy(ending.dispose);
@@ -47,7 +48,7 @@
 {#snippet result()}
   {#if endingPhase === 'announcement' || endingPhase === 'report'}
     <BattleOutcome {outcome} phase={endingPhase} onfinish={ending.announcementFinished}>
-      <BattleReport backdrop={false} />
+      <BattleReport backdrop={false} resumed={reportOpened} />
     </BattleOutcome>
   {/if}
 {/snippet}
@@ -67,7 +68,10 @@
     {/snippet}
     {#snippet tools()}
       <button onclick={c.undoLast} disabled={!viewer.isGm || !game.history.length} title="Undo the last action">Undo</button>
-      <button onclick={() => (c.ending = true)} disabled={!viewer.isGm} title="End this battle for the whole table">End battle</button>
+      <!-- A battle at a campaign site ends through the top bar's Battle menu. -->
+      {#if game.site === null}
+        <button onclick={() => (c.ending = true)} disabled={!viewer.isGm} title="End this battle for the whole table">End battle</button>
+      {/if}
     {/snippet}
   </TopBar>
 {/snippet}

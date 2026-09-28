@@ -22,7 +22,8 @@ export function createBattleEnding(remainingMs: () => number, publish: (phase: E
   let timer: ReturnType<typeof setInterval> | undefined;
   let closed = false;
   const cancel = () => { clearInterval(timer); timer = undefined; };
-  const set = (next: EndingPhase) => { phase = next; publish(next); };
+  let opened = false;
+  const set = (next: EndingPhase, fromOpening = false) => { phase = next; opened = fromOpening; publish(next); };
 
   return {
     update(nextKey: string, nextEnded: boolean) {
@@ -32,7 +33,7 @@ export function createBattleEnding(remainingMs: () => number, publish: (phase: E
       key = nextKey;
       ended = nextEnded;
       if (!ended) { set('playing'); return; }
-      if (opening) { set('report'); return; }
+      if (opening) { set('report', true); return; }
       set('waiting');
       let quietSince: number | undefined;
       timer = setInterval(() => {
@@ -43,6 +44,8 @@ export function createBattleEnding(remainingMs: () => number, publish: (phase: E
         set('announcement');
       }, POLL_MS);
     },
+    /** The report stands for a result that ended before this view saw it. */
+    get opened() { return opened; },
     announcementFinished() {
       if (!closed && phase === 'announcement') set('report');
     },

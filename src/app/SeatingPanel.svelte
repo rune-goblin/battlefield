@@ -5,7 +5,7 @@
   import { assignSeating, game, reassignTurn, tableUsers } from './game.svelte.js';
   import { useNotifications } from './notification-context.js';
   import { viewer } from './viewer.svelte.js';
-  import Popover from './Popover.svelte';
+  import DialogButton from './DialogButton.svelte';
 
   const run = commandReporter(useNotifications());
 
@@ -65,7 +65,7 @@
   let picked = $state<Record<Side, string>>({ attacker: '', defender: '' });
 </script>
 
-<Popover label="Seating">
+<DialogButton label="Seating">
   {#if viewer.isGm}
     <div class="modes">
       {#each GM_SIDES as choice (choice)}
@@ -129,7 +129,7 @@
   {#if viewer.isGm && control.mode === 'auto'}
     <button class="hand" onclick={() => void send({ mode: 'manual' })}>Seat players by hand</button>
   {/if}
-</Popover>
+</DialogButton>
 
 <style>
   .hand { align-self: flex-start; }

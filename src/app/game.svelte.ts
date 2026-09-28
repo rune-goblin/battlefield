@@ -8,6 +8,7 @@ import type { HistorySnapshot } from '../runtime/executeCommand.js';
 import { submissionOf } from '../runtime/interactions.js';
 import type { ControlAssignment } from '../runtime/control.js';
 import type { ArchiveEntry, BattleArchive, TableUser } from '../runtime/ports.js';
+import type { SiteLifecycle } from '../services/SiteLifecycleService.js';
 import { freshSession, type BattleSession, type BattleSetupDraft, type SetupEngine, type SetupUnit } from '../runtime/session.js';
 
 export type Setup = BattleSetupDraft;
@@ -47,6 +48,8 @@ export const game = $state({
   setup: copySetup(unbound.session.setup),
   battle: unbound.session.battle,
   battleId: unbound.session.battleId,
+  site: unbound.session.site,
+  stage: unbound.session.stage,
   history: [] as HistorySnapshot[],
   /** The shared decisions this stage is waiting on. A panel reads its side's submission here
    * rather than holding one of its own. */
@@ -73,6 +76,8 @@ export const onRecord = (listener: () => void): void => { recordListeners.add(li
 function adopt(session: BattleSession): void {
   game.battle = session.battle;
   game.battleId = session.battleId;
+  game.site = session.site;
+  game.stage = session.stage;
   game.history = [...runtime.history];
   game.interactions = session.interactions;
   game.turn = session.turn;
@@ -237,11 +242,16 @@ export const loadBattle = (slot: string) => submit({ type: 'session.load', slot 
 // once more than they need to be.
 let savedAt = '';
 let savedTick = $state(0);
-/** Whether the battle under way has moved since this client last saved it. */
-export const battleUnsaved = (): boolean => {
-  void savedTick;
+/** Whether the battle differs from its saved copy: the stored copy at its site where it stands
+ * on one, and otherwise this client's last archive save. */
+export const battleUnsaved = async (): Promise<boolean> => {
+  const lifecycle = runtime.lifecycle;
+  if (lifecycle && runtime.session.site !== null) return lifecycle.unsaved();
   return game.battle !== null && savedAt !== `${runtime.session.battleId}:${runtime.session.revision}`;
 };
+
+/** Save, Close and End battle, where the host places battles on a campaign map. */
+export const siteLifecycle = (): SiteLifecycle | null => runtime.lifecycle ?? null;
 /** Whether the record has moved since this client last saved it, at any stage. */
 export const sessionUnsaved = (): boolean => {
   void savedTick;

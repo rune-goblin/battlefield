@@ -57,7 +57,7 @@
   <TopBar>
     {#snippet status()}
       {#if SIDES.every((side) => sideReady(side))}
-        Both armies stand on the field. Begin the battle when the table is ready.
+        Both armies stand on the field. Start the battle to call the table to it.
       {:else}
         An army is still forming up. Finish its step before the battle begins.
       {/if}

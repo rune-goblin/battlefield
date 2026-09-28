@@ -85,6 +85,10 @@ export interface BattleManager {
   startNextDay(session: BattleSession): BattleSession;
   /** Close a battle that has ended for good. The campaign outcome is prepared from here. */
   finalize(session: BattleSession): BattleSession;
+  /** The GM's ruling on a battle the rules have not settled. */
+  rule(session: BattleSession, winner: Side | 'draw'): BattleSession;
+  /** Leave the battle for a fresh draft on no site. */
+  close(session: BattleSession, presence: PresencePort): BattleSession;
   /** A terrain edit and the placements it invalidates, as one change. */
   paint(session: BattleSession, stroke: PaintStroke): BattleSession;
   /** The saved record `raw` in place of this one. A foreign or corrupt slot throws, so it
@@ -94,9 +98,9 @@ export interface BattleManager {
   /** The battle a campaign asked for. A malformed request throws. */
   install(session: BattleSession, battleId: string, request: BattleRequest, presence: PresencePort): BattleSession;
   moveToRefusal(session: BattleSession, site: string): string | null;
-  /** What becomes of the record the table leaves for another site. A resolved battle leaves the
-   * map, and any other is kept for the GM to come back to. */
-  departure(session: BattleSession): 'park' | 'remove' | null;
+  /** What becomes of the site's stored copy as the table leaves the battle. A resolved battle
+   * leaves the map; any other keeps the copy its last Save wrote, and the live changes drop. */
+  departure(session: BattleSession): 'remove' | null;
   /** Open the battle parked at the command's site, or a new one there when `parked` is null. */
   moveTo(session: BattleSession, parked: unknown | null, command: MoveTo, presence: PresencePort): BattleSession;
 }

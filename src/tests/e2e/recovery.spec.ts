@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import type { Locator, Page } from '@playwright/test';
 
 import { STORED_NAMES, type StoredRecord } from '../../runtime/ports';
-import { closeWindow, openFromSceneControl, shot } from './fixtures/battle-window';
+import { closeWindow, openBattleWindow, shot } from './fixtures/battle-window';
 import { test, expect, MODULE_ID, collectErrors, reloadClient } from './fixtures/foundry-clients';
 
 // `worldSettings.ts`: SESSION_SETTING, ARCHIVE_SETTING and SITES_SETTING carry the record's own name.
@@ -56,7 +56,7 @@ test.describe('An unreadable world setting', () => {
         await expect(toast(gmPage, record)).toHaveCount(1);
         await shotWithToasts(gmPage, `W10-${record}-toast`);
 
-        const gm = await openFromSceneControl(gmPage);
+        const gm = await openBattleWindow(gmPage);
         const gmNotice = notice(gm, title);
         await expect(gmNotice).toBeVisible();
         await expect(gmNotice.getByRole('button')).toHaveText(['Export the broken save', 'Start fresh']);
@@ -78,7 +78,7 @@ test.describe('An unreadable world setting', () => {
 
         await reloadClient(playerPage);
         await expect(toast(playerPage, record), 'the Foundry toast is the GM\'s alone').toHaveCount(0);
-        const player = await openFromSceneControl(playerPage);
+        const player = await openBattleWindow(playerPage);
         const warning = notice(player, title);
         await expect(warning).toContainText('The GM must export or clear it');
         await expect(warning.locator('.actions')).toHaveCount(0);
@@ -98,15 +98,15 @@ test.describe('An unreadable world setting', () => {
 
       // A record found unreadable with the window open shows the notice and no toast.
       await reloadClient(gmPage);
-      const gm = await openFromSceneControl(gmPage);
+      const gm = await openBattleWindow(gmPage);
       await setRaw(gmPage, 'archive', BROKEN);
-      const panel = gm.locator('.popover', { has: gmPage.getByRole('button', { name: 'Save / Load', exact: true }) });
-      await panel.getByRole('button', { name: 'Save / Load', exact: true }).click();
+      await gm.getByRole('button', { name: 'Save / Load', exact: true }).click();
+      const panel = gm.getByRole('dialog', { name: 'Save / Load' });
       const gmNotice = notice(gm, `The stored ${STORED_NAMES.archive} cannot be read`);
       await expect(gmNotice).toBeVisible();
       await expect(toast(gmPage, 'archive')).toHaveCount(0);
       await shotWithToasts(gmPage, 'W10-archive-window-open');
-      await panel.getByRole('button', { name: 'Save / Load', exact: true }).click();
+      await panel.getByRole('button', { name: 'Done', exact: true }).click();
       await closeWindow(gmPage);
     } finally {
       const now = await readRaw(gmPage);

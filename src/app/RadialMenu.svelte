@@ -156,6 +156,8 @@
   .name small { display: block; font-size: var(--type-small); font-weight: 400; color: var(--muted); }
   .slice:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
   .name.show { opacity: 1; }
+  /* Each slice's transform makes its own stacking context, so the labelled one rises whole. */
+  .slice:has(.name.show) { z-index: 1; }
 
   /* Growth is the highlight: the hovered icon lifts off the ring instead of lighting a disc. */
   .slice:hover:not(.dim) .face {

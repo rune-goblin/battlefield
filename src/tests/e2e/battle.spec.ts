@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { beginBattle, endBattle, openFromSceneControl, shot, windowOf } from './fixtures/battle-window';
+import { beginBattle, leaveBattle, openSeedBattle, shot, windowOf } from './fixtures/battle-window';
 import { test, expect, MODULE_ID, collectErrors } from './fixtures/foundry-clients';
 
 const STEPS = [
@@ -14,12 +14,8 @@ test.describe('A battle on two clients', () => {
     test.setTimeout(240_000);
     const gmErrors = collectErrors(gmPage);
     const playerErrors = collectErrors(playerPage);
-    const gm = await openFromSceneControl(gmPage);
+    const gm = await openSeedBattle(gmPage);
     const rail = gm.locator('nav.wizard');
-
-    // A run that died mid-battle leaves one open in the world clone.
-    if (!(await rail.isVisible())) await endBattle(gm);
-    await expect(rail).toBeVisible();
 
     // Foundry builds a window's header menu once, so the call lives in the app's own top bar.
     const dismiss = gm.getByRole('button', { name: 'Dismiss players' });
@@ -68,12 +64,10 @@ test.describe('A battle on two clients', () => {
     await expect(player.locator('.battlefield-root')).toBeVisible();
     await expect(chipOf(playerPage)).toBeHidden();
 
-    await endBattle(gm);
-    await expect(rail).toBeVisible();
+    // Close without saving keeps the seed as it was stored and sends everyone away.
+    await leaveBattle(gmPage);
     await expect(chipOf(playerPage)).toBeHidden();
     await expect(player).toBeHidden();
-
-    await gmPage.evaluate((id) => (window as any).game.modules.get(id).api.close(), MODULE_ID);
     expect(gmErrors).toEqual([]);
     expect(playerErrors).toEqual([]);
   });

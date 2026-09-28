@@ -117,19 +117,23 @@ Wall state carries remaining boxes, an optional interior cell, and optional gate
 ## Foundry table and ReignMaker hex pick
 
 `game.modules.get('battlefield').api` offers `open`, `close`, `createBattle`, `callTable`,
-`dismissTable`, `battles`, `openBattleAt`, `removeBattle`, and `screenOf`. `screenOf(cell)` gives a cell's centre on the open board in viewport pixels, for a macro or the e2e specs to point at the map. `callTable` sets the `tableCall` world setting: every client opens its window
+`dismissTable`, `battles`, `openBattleAt`, `removeBattle`, `screenOf` and `centerOn`. `screenOf(cell)` gives a cell's centre on the open board in viewport pixels, and `centerOn(cell)` scrolls the board to it, for a macro or the e2e specs to point at the map. `callTable` sets the `tableCall` world setting: every client opens its window
 once, and a client whose window is shut keeps a floating Battlefield chip until `dismissTable`.
-The GM reaches the same two calls from the window's header menu. The setting stands outside the
-session record, so a reset or a loaded save leaves the players where they are.
+The GM reaches the same two calls from the app's top bar. The setting stands outside the
+session record, so a player who joins or reconnects reads it and gets the chip. The GM's client
+calls the table when a battle starts and dismisses it when the battle ends or the session moves
+to another battle: a hex pick, Close, or a loaded save.
 
-The hex pick reads three functions ReignMaker adds to its own module API, plus the
+Battlefield reads three functions ReignMaker adds to its own module API, plus the
 `pf2e-reignmaker.apiReady` hook it fires once that API is complete:
 
 | ReignMaker API | Use |
 |---|---|
-| `registerMapToolbarButton(button)` | The GM-only Battle button on the kingdom map's toolbar. |
 | `selectHexes({ colorType: 'battle', count: 1, getHexInfo })` | The pick itself; answers with `["i.j"]` or null. `getHexInfo` names the battle standing in a hovered hex. |
 | `getBattleSite(hexId)` | Terrain, holder, fortification tier, and every army in the hex with its banner. |
+| `setMapMarkers('battlefield', { icon, hexIds, describe })` | A crossed-swords marker on every unresolved battle's hex, on every client. A click calls `describe(hexId)` on the clicking client, and ReignMaker's popup shows each side's armies under their factions, read from the stored battle. |
+
+The GM opens the pick from the crossed-swords tool among the token controls.
 
 `src/adapters/reignmaker/battleSite.ts` turns the site into a `BattleRequest`. The holder of the
 hex defends; on ground nobody holds the player kingdom attacks. Each unit carries its banner as

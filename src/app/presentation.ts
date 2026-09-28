@@ -72,6 +72,17 @@ export function setupTokens(
   ];
 }
 
+/** A battle's standing pieces, bare of the play-time rings and marks. */
+export function battleTokens(battle: BattleState): TokenModel[] {
+  const standing = battle.units.filter((u) => u.status === 'active');
+  const crewed = new Set(standing.map((u) => notation(u.square)));
+  return [
+    ...standing.map((u) => unitToken(u, notation(u.square))),
+    ...battle.engines.filter((e) => !crewed.has(notation(e.square)))
+      .map((e): TokenModel => ({ kind: 'engine', id: e.id, side: e.side, name: e.name, cell: notation(e.square), ring: null })),
+  ];
+}
+
 function cellOf(battle: BattleState, id: string): string | null {
   const u = unitOf(battle, id);
   return u ? notation(u.square) : null;

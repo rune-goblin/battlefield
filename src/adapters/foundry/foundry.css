@@ -18,15 +18,27 @@
    rule of the app's outranks it wherever it lands in the bundle. SVG is left alone: a `fill`
    or `stroke` attribute weighs nothing either and sits earlier, so the revert would beat it. */
 :where(.battlefield-root) :where(:not(svg, svg *)) { all: revert; }
+/* Foundry draws its checkbox and radio as a Font Awesome `::before` over the native box, and the
+   element's revert leaves pseudo-elements alone. */
+:where(.battlefield-root) :where(:not(svg, svg *))::before,
+:where(.battlefield-root) :where(:not(svg, svg *))::after,
+:where(.battlefield-root) :where(:not(svg, svg *))::placeholder { all: revert; }
+
+/* A Battlefield element mounted in Foundry's own interface, outside the root, is a surface: it
+   takes the root's tokens from app.css and the same reset here, on itself and inside. A Font
+   Awesome glyph keeps Foundry's icon font, which lives in a class rule the revert would beat. */
+:where(.battlefield-surface), :where(.battlefield-surface) :where(:not(svg, svg *, [class*='fa-'])) { all: revert; }
+:where(.battlefield-surface) :where(:not(svg, svg *, [class*='fa-']))::before,
+:where(.battlefield-surface) :where(:not(svg, svg *, [class*='fa-']))::after { all: revert; }
 
 .battlefield-chip {
   pointer-events: auto; flex: none; align-self: flex-end; margin: .5rem;
   width: 3rem; height: 3rem; min-height: 3rem; padding: 0; border-radius: 50%;
   display: grid; place-items: center;
   border: 2px solid var(--color-border-highlight, #c9a227);
-  background: rgba(20, 18, 16, .92); color: #f0e6d2; font-size: 1.3rem; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+  background: var(--chip); color: var(--chip-ink); font: 700 var(--type-2)/1 var(--sans); cursor: pointer;
+  box-shadow: var(--shadow-2); color-scheme: dark;
 }
 /* Outside Foundry's own column the chip has nothing to sit in. */
 body > .battlefield-chip { position: fixed; top: .5rem; right: .5rem; z-index: 90; }
-.battlefield-chip:hover { background: rgba(48, 40, 28, .96); }
+.battlefield-chip:hover { background: color-mix(in srgb, var(--chip) 80%, var(--caution)); }

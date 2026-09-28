@@ -1,7 +1,7 @@
 /* Every rule here hangs off the app's root element, so nothing reaches Foundry's interface
    around the window. `:where` adds no specificity, so each selector still weighs what it did
    before the scope and a component's own styles still override it. */
-:where(.battlefield-root) {
+:where(.battlefield-root, .battlefield-surface) {
   --ink:#1f1a17; --paper:#f8f4ec; --rule:#b9ab93; --accent:#7a2e1f; --muted:#5f5347; --band:#efe7d8; --card:#fffdf8; --edge:#8c7e68;
   --att:#8f3a2e; --def:#3a5f8f; --good:#3b6e3b; --bad:#9a3a2a;
   /* The move-band amber, one shade per extra action — matches the board's 'moveFar'/'moveFar3'. */
@@ -12,23 +12,26 @@
      rules page reads at 1.25; the app is dense interface and steps at 1.125. Text reads at
      --type-body; --type-small is the floor; --type-label is for badges in fixed boxes alone. */
   --type-ratio:1.125;
+  /* The app's own base: every stylesheet rem is a multiple of it (see `appRem` in
+     vite.config.ts), so Foundry's per-client Font Scale on the page root reaches nothing here. */
+  --rem:16px;
   --type-body:1rem;
-  --type-small:calc(var(--type-1) / var(--type-ratio));
-  --type-label:calc(var(--type-body) / var(--type-ratio));
-  --type-1:calc(var(--type-1) * var(--type-ratio));
-  --type-2:calc(var(--type-2) * var(--type-ratio));
-  --type-3:calc(var(--type-3) * var(--type-ratio));
-  --type-4:calc(var(--type-4) * var(--type-ratio));
-  --type-5:calc(var(--type-5) * var(--type-ratio));
-  --type-6:calc(var(--type-6) * var(--type-ratio));
-  --type-7:calc(var(--type-7) * var(--type-ratio));
-  --type-8:calc(var(--type-8) * var(--type-ratio));
-  --type-9:calc(var(--type-9) * var(--type-ratio));
-  --type-10:calc(var(--type-10) * var(--type-ratio));
-  --type-11:calc(var(--type-11) * var(--type-ratio));
-  --type-12:calc(var(--type-12) * var(--type-ratio));
-  --type-13:calc(var(--type-13) * var(--type-ratio));
-  --type-14:calc(var(--type-14) * var(--type-ratio));
+  --type-small:calc(var(--type-body) / var(--type-ratio));
+  --type-label:calc(var(--type-small) / var(--type-ratio));
+  --type-1:calc(var(--type-body) * var(--type-ratio));
+  --type-2:calc(var(--type-1) * var(--type-ratio));
+  --type-3:calc(var(--type-2) * var(--type-ratio));
+  --type-4:calc(var(--type-3) * var(--type-ratio));
+  --type-5:calc(var(--type-4) * var(--type-ratio));
+  --type-6:calc(var(--type-5) * var(--type-ratio));
+  --type-7:calc(var(--type-6) * var(--type-ratio));
+  --type-8:calc(var(--type-7) * var(--type-ratio));
+  --type-9:calc(var(--type-8) * var(--type-ratio));
+  --type-10:calc(var(--type-9) * var(--type-ratio));
+  --type-11:calc(var(--type-10) * var(--type-ratio));
+  --type-12:calc(var(--type-11) * var(--type-ratio));
+  --type-13:calc(var(--type-12) * var(--type-ratio));
+  --type-14:calc(var(--type-13) * var(--type-ratio));
   --leading-body:1.5; --leading-compact:1.35; --leading-heading:1.2;
   --ink-2:color-mix(in srgb, var(--ink) 80%, var(--paper));
   /* Chrome that floats over the map: readable, but the ground still shows through it. Resolved
@@ -44,18 +47,28 @@
   /* A dialog's backdrop and the outcome scene's deeper hold. */
   --scrim:rgb(0 0 0 / .5);
   --scrim-deep:rgb(0 0 0 / .88);
+  /* The shell's stacking order, bottom to top. Popovers and dialogs portal into the overlay
+     layer, so whatever opens them, nothing on the board paints over them. */
+  --z-map:0; --z-pin:1; --z-chrome:2; --z-float:3; --z-pin-active:4; --z-stage-modal:5;
+  --z-overlay:10; --z-toast:20;
   /* The radial menu and army reel read as physical chips over the board, dark in both themes. */
   --chip:rgb(24 22 20 / .92); --chip-glass:rgb(26 23 20 / .78); --chip-ink:#ece6dc; --chip-muted:#b5ab9c; --chip-rim:rgb(150 143 132 / .5);
   --caution:#b78939;
   --popup-cast:#66539b; --popup-rally:#87611d; --popup-shoot:#66714b;
-  /* The root itself draws nothing: the stages are fixed layers, and a box here would only sit
-     between them and the window's content root. */
+  /* Foundry's body sets `color-scheme: dark`, and it inherits: native checkboxes, sliders and
+     scrollbars would draw dark on the light cards. */
+  color-scheme:light;
+  accent-color:var(--accent);
+}
+/* The root itself draws nothing: the stages are fixed layers, and a box here would only sit
+   between them and the window's content root. */
+:where(.battlefield-root) {
   display:contents;
   color:var(--ink);
   font:var(--type-body)/var(--leading-body) var(--sans);
 }
 @media (prefers-color-scheme: dark) {
-  :where(.battlefield-root) { --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#b5a898; --band:#2a2520; --card:#23201c; --edge:#7a6e5e; --att:#d9705c; --def:#6f9bd1; --good:#7fb77f; --bad:#e08a78; --warn:#e0a75c; --warn2:#cf6a1f;
+  :where(.battlefield-root, .battlefield-surface) { color-scheme:dark; --ink:#e8e1d5; --paper:#1d1a17; --rule:#4c4338; --accent:#d98b6e; --muted:#b5a898; --band:#2a2520; --card:#23201c; --edge:#7a6e5e; --att:#d9705c; --def:#6f9bd1; --good:#7fb77f; --bad:#e08a78; --warn:#e0a75c; --warn2:#cf6a1f;
     --popup-cast:#b5a3e2; --popup-rally:#d5b36e; --popup-shoot:#b4bd93; }
 }
 /* The radial menu animates its two radii, and only a registered property interpolates.
@@ -69,14 +82,15 @@
 :where(.battlefield-root) h2 { font-size:var(--type-2); margin:.75rem 0 .4rem; border-bottom:2px solid var(--rule); padding-bottom:.15rem; }
 :where(.battlefield-root) h2:first-child { margin-top:0; }
 :where(.battlefield-root) h3 { font-size:var(--type-1); margin:.75rem 0 .35rem; color:var(--ink); }
-:where(.battlefield-root) button { font:inherit; font-size:var(--type-body); font-weight:500; color:var(--ink); background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:.4rem .8rem; cursor:pointer; }
+/* A label wraps inside its button rather than spilling out of it, and the box grows to hold it. */
+:where(.battlefield-root) button { font:inherit; font-size:var(--type-body); font-weight:500; color:var(--ink); background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:.4rem .8rem; cursor:pointer; height:auto; overflow-wrap:break-word; }
 :where(.battlefield-root) button:hover:not(:disabled) { border-color:var(--accent); }
 :where(.battlefield-root) button:disabled { opacity:.45; cursor:default; }
 :where(.battlefield-root) button.primary { background:var(--accent); color:var(--paper); border-color:var(--accent); font-weight:600; }
 :where(.battlefield-root) select, :where(.battlefield-root) input { font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--edge); border-radius:6px; padding:.3rem .5rem; }
 :where(.battlefield-root) label { display:inline-flex; gap:.4rem; align-items:center; }
 :where(.battlefield-root) .muted { color:var(--muted); font-size:var(--type-small); }
-:where(.battlefield-root) .card { background:var(--card); border:1px solid var(--rule); border-radius:8px; padding:.9rem 1rem; }
+:where(.battlefield-root) .card { background:var(--card); border:1px solid var(--rule); border-radius:8px; padding:.9rem 1rem; min-width:0; overflow-wrap:break-word; }
 :where(.battlefield-root) .row { display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; }
 :where(.battlefield-root) .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
 @media (max-width:52rem){ :where(.battlefield-root) .grid2 { grid-template-columns:1fr; } }

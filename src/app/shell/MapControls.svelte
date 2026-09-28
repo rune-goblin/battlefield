@@ -107,17 +107,17 @@
     transition: right .18s ease, bottom .18s ease;
   }
 
-  button {
+  .mapcontrols button {
     width: 2.1rem; height: 2.1rem; padding: 0;
     display: grid; place-items: center;
     border: 0; border-radius: 0; background: none; color: var(--muted);
   }
-  button:hover:not(:disabled) { background: var(--band); color: var(--ink); }
-  button + button { border-top: 1px solid color-mix(in srgb, var(--rule) 60%, transparent); }
+  .mapcontrols button:hover:not(:disabled) { background: var(--band); color: var(--ink); }
+  .mapcontrols button + button { border-top: 1px solid color-mix(in srgb, var(--rule) 60%, transparent); }
   /* The two zooms are one control; framing is another. */
-  button.rule { border-top-width: 3px; border-top-style: double; }
+  .mapcontrols button.rule { border-top-width: 3px; border-top-style: double; }
 
-  svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  .mapcontrols svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 
   .grid-settings {
     min-width: 15rem;

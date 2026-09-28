@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { onEscape } from './keys.js';
+  import { rem } from './rem.js';
+  import { portal } from './shell/overlay.js';
 
   interface Props {
     title: string;
@@ -9,27 +11,28 @@
     close?: () => void;
     tone?: string;
     width?: string;
-    /** `window` covers the whole page; `stage` fills the stage's modal layer. */
-    layer?: 'window' | 'stage';
     /** The caller draws its own heading and spacing; the title becomes the dialog's label. */
     bare?: boolean;
     actions?: Snippet;
     children: Snippet;
   }
   let {
-    title, alert = false, close, tone = 'var(--accent)', width = '28rem', layer = 'window', bare = false, actions, children,
+    title, alert = false, close, tone = 'var(--accent)', width = rem(28), bare = false, actions, children,
   }: Props = $props();
 
   const id = $props.id();
+  const focusFirst = (frame: HTMLElement) => {
+    frame.querySelector<HTMLElement>('[data-autofocus], .primary:not(:disabled), button:not(:disabled)')?.focus();
+  };
 </script>
 
 <svelte:document onkeydown={onEscape(() => close?.())} />
 
-<div class="scrim" class:window={layer === 'window'} class:stage={layer === 'stage'} role="presentation" onclick={(e) => { if (close && e.target === e.currentTarget) close(); }}>
+<div class="scrim" role="presentation" {@attach portal} onclick={(e) => { if (close && e.target === e.currentTarget) close(); }}>
   <div
     class="frame" class:bare role={alert ? 'alertdialog' : 'dialog'} aria-modal="true"
     aria-labelledby={bare ? undefined : id} aria-label={bare ? title : undefined}
-    style:--tone={tone} style:width="min({width}, 100%)"
+    style:--tone={tone} style:width="min({width}, 100%)" {@attach focusFirst}
   >
     {#if !bare}<h2 {id}>{title}</h2>{/if}
     {@render children()}
@@ -38,11 +41,9 @@
 </div>
 
 <style>
-  .scrim { inset: 0; display: grid; place-items: center; }
-  .window { position: fixed; z-index: 60; padding: 1rem; background: var(--scrim); pointer-events: auto; }
-  .stage { position: absolute; padding: 2rem; background: var(--scrim); }
+  .scrim { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; background: var(--scrim); }
   .frame {
-    max-height: 100%; min-height: 0; display: flex; flex-direction: column;
+    max-height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: auto;
     background: var(--card); border: 1px solid var(--rule); border-top: 3px solid var(--tone);
     border-radius: 10px; box-shadow: var(--shadow-3);
   }

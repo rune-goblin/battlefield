@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-const PORT = Number(process.env.TEST_FOUNDRY_PORT ?? 30005);
+const PORT = Number(process.env.TEST_FOUNDRY_PORT ?? 30006);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
@@ -14,6 +14,12 @@ export default defineConfig({
   // Joins a world as GM and ensures this module is enabled (one-time, persisted) before any
   // spec runs. Fails loud if it can't.
   globalSetup: './src/tests/e2e/global-setup.ts',
+  // The seed spec leaves the deployed battle every Foundry spec opens; the browser spec needs none.
+  projects: [
+    { name: 'seed', testMatch: 'seed.spec.ts' },
+    { name: 'foundry', testIgnore: ['seed.spec.ts', 'browser.spec.ts'], dependencies: ['seed'] },
+    { name: 'browser', testMatch: 'browser.spec.ts' },
+  ],
   use: {
     baseURL: BASE_URL,
     // Foundry refuses to init below 1366×768 (logs an error that can halt module load).
@@ -22,7 +28,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  // Two services. A headless test Foundry on :30005 serves the built `dist-foundry` through the
+  // Two services. A headless test Foundry on :30006 serves the built `dist-foundry` through the
   // `modules/battlefield` link `scripts/setup-test-env.ts` makes; `npm run test:e2e` rebuilds
   // `dist-foundry` first. Vite on :5199 serves the browser app to `browser.spec.ts`.
   webServer: [

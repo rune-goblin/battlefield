@@ -4,13 +4,15 @@ import { followArt } from '../../app/art-preload.js';
 import { reportAuthority } from '../../app/authority.svelte.js';
 import { bindClient, bindQuit, presenceChanged, tableChanged } from '../../app/game.svelte.js';
 import { stage } from '../../app/stage-view.svelte.js';
+import { brief } from '../../app/navigation.svelte.js';
 import { bindRecovery } from '../../app/store-recovery.js';
 import { createStoreRecovery } from '../store-recovery.js';
-import { STORED_NAMES } from '../../runtime/ports.js';
+import { STORED_NAMES, type BattleSites } from '../../runtime/ports.js';
 import { freshSession } from '../../runtime/session.js';
 import { BattlefieldApp } from './BattlefieldApp.js';
-import { pickBattleSite, registerBattleSitePicker, reignMakerActive } from './battleSitePicker.js';
+import { pickBattleSite, reignMakerActive } from './battleSitePicker.js';
 import { syncBattleMarkers } from './battleMarkers.js';
+import { standingBattles } from '../reignmaker/mapMarkers.js';
 import type { BattlefieldModuleApi } from './moduleApi.js';
 import { foundryChatPoster } from './chat.js';
 import { foundryDice } from './foundryDice.js';
@@ -28,6 +30,7 @@ import { createFoundryArchive } from './worldArchive.js';
 import { createTableCall, domReopenChip } from './tableCall.js';
 import { createFoundrySites } from './worldSites.js';
 import { createFoundrySessionRepository } from './worldSessionRepository.js';
+import { createSiteLifecycle } from '../../services/SiteLifecycleService.js';
 import { gameSettingStorage, registerFoundrySettings, SESSION_SETTING, TABLE_CALL_SETTING } from './worldSettings.js';
 import './foundry.css';
 import '../../app/app.css';
@@ -49,7 +52,7 @@ function reportFailure(error: unknown): void {
 const tableCall = createTableCall({
   storage: gameSettingStorage(TABLE_CALL_SETTING),
   isGm: () => game.user?.isGM === true,
-  battleRunning: () => sessionWatcher.session.battle !== null,
+  battle: () => ({ id: sessionWatcher.session.battleId, running: sessionWatcher.session.battle !== null }),
   windowOpen: () => BattlefieldApp.current !== null,
   openWindow: () => BattlefieldApp.open(),
   closeWindow: () => BattlefieldApp.close(),
@@ -70,7 +73,8 @@ const recovery = createStoreRecovery({
   },
 });
 
-const markBattles = syncBattleMarkers(() => (hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
+let markerSites: BattleSites | null = null;
+const markBattles = syncBattleMarkers(() => markerSites && standingBattles(sessionWatcher.session, markerSites));
 
 Hooks.once('init', () => {
   blockPageZoom();
@@ -88,21 +92,36 @@ Hooks.once('init', () => {
     precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY,
   });
   const sites = createFoundrySites(undefined, recovery);
+  markerSites = sites;
+  const lifecycle = createSiteLifecycle({
+    // The primary GM reads its own executor, which holds a commit before the setting delivers it.
+    session: () => host?.runtime?.session ?? sessionWatcher.session,
+    submit: (command) => (host ? host.submit(command) : Promise.reject(new Error('the battle module is still loading'))),
+    sites,
+    applyOutcome: () => {
+      const runtime = host?.runtime;
+      return runtime ? (outcome, revision) => runtime.applyOutcome(outcome, revision) : null;
+    },
+  });
   const module = hostModule(MODULE_ID);
   if (module) {
     module.api = createModuleApi({
       submit: () => { const client = host; return client ? (command) => client.submit(command) : null; },
       session: () => sessionWatcher.session,
       sites,
+      lifecycle,
       open: () => BattlefieldApp.open(),
       close: () => BattlefieldApp.close(),
       callTable: async () => { await BattlefieldApp.open(); await tableCall.call(); },
       dismissTable: () => tableCall.dismiss(),
+      brief,
+      tableCalled: () => tableCall.called,
       screenOf: (cell) => {
         const point = stage.board?.screenOf(cell);
         const rect = document.querySelector(`#${MODULE_ID} canvas[aria-label="Battle board"]`)?.getBoundingClientRect();
         return point && rect ? { x: rect.left + point.x, y: rect.top + point.y } : null;
       },
+      centerOn: (cell) => stage.board?.centerOn(cell),
     });
   }
   registerFoundrySettings(
@@ -129,7 +148,7 @@ Hooks.once('init', () => {
   });
   bindQuit(() => { BattlefieldApp.close().catch(reportFailure); });
   bindRecovery(recovery);
-  bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive, table: tableCall }));
+  bindClient(foundryStoreClient({ host, watcher: sessionWatcher, users, presence: foundryPresence(users), archive, table: tableCall, lifecycle }));
   channel.on((message) => host?.handleMessage(message));
   sessionWatcher.subscribe(() => tableCall.handleSession());
   sessionWatcher.subscribe(createTurnAnnouncer({
@@ -140,8 +159,6 @@ Hooks.once('init', () => {
 });
 
 Hooks.once('ready', () => {
-  // First, so nothing later in this hook can keep the button off ReignMaker's toolbar.
-  registerBattleSitePicker(() => (hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
   registerTroopSources(foundryTroopSources());
   sessionWatcher.handleChange(game.settings.get(MODULE_ID, SESSION_SETTING));
   // Players too: the settings are readable by all, and this is how a player learns the GM must act.
@@ -164,24 +181,20 @@ Hooks.on('createUser', () => { host?.reseat().catch(reportFailure); });
 Hooks.on('updateUser', () => { host?.reseat().catch(reportFailure); });
 Hooks.on('deleteUser', () => { host?.reseat().catch(reportFailure); });
 
+// The GM's one control. With ReignMaker the swords pick a hex; without it they open the builder.
 Hooks.on('getSceneControlButtons', (controls) => {
   const tools = controls['tokens']?.tools;
-  if (!tools) return;
+  if (!tools || game.user?.isGM !== true) return;
+  const pick = reignMakerActive();
   tools[MODULE_ID] = {
     name: MODULE_ID,
-    title: 'Battlefield',
-    icon: 'fa-solid fa-chess-rook',
-    order: Object.keys(tools).length,
-    button: true,
-    onChange: () => { BattlefieldApp.open().catch(reportFailure); },
-  };
-  if (!reignMakerActive() || game.user?.isGM !== true) return;
-  tools[`${MODULE_ID}-pick-hex`] = {
-    name: `${MODULE_ID}-pick-hex`,
-    title: 'Pick a hex for battle',
+    title: pick ? 'Pick a hex for battle' : 'Battlefield',
     icon: 'fa-solid fa-swords',
     order: Object.keys(tools).length,
     button: true,
-    onChange: () => pickBattleSite((hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null),
+    onChange: () => {
+      if (pick) pickBattleSite((hostModule(MODULE_ID)?.api as BattlefieldModuleApi | undefined) ?? null);
+      else BattlefieldApp.open().catch(reportFailure);
+    },
   };
 });

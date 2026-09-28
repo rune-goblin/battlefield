@@ -9,7 +9,8 @@
 
   const notifications = useNotifications();
   const run = commandReporter(notifications);
-  const unsaved = battleUnsaved();
+  let unsaved = $state(false);
+  battleUnsaved().then((value) => { unsaved = value; }, () => {});
   let name = $state('');
   let busy = $state(false);
 

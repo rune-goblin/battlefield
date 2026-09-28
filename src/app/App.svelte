@@ -6,9 +6,10 @@
   import Place from './Place.svelte';
   import Sides from './Sides.svelte';
   import Summary from './Summary.svelte';
+  import Briefing from './Briefing.svelte';
   import Battle from './Battle.svelte';
   import { game, gmUserId, presentation, viewerId } from './game.svelte.js';
-  import { nav, STAGE_SIDE } from './navigation.svelte.js';
+  import { briefed, nav, STAGE_SIDE } from './navigation.svelte.js';
   import { provideNotifications } from './notification-context.js';
   import Notifications from './Notifications.svelte';
   import { setAppRoot } from './app-root.js';
@@ -21,9 +22,6 @@
   import { followArt } from './art-preload.js';
   import { visibleRect } from './shell/layout.svelte.js';
   import { selectionCss } from '../board/index.js';
-
-  let viewportWidth = $state(window.innerWidth);
-  let viewportHeight = $state(window.innerHeight);
 
   const notifications = provideNotifications();
   presentation.connectNotices(notifications, { get userId() { return viewerId(); }, get isGm() { return gmUserId() === viewerId(); } });
@@ -49,8 +47,6 @@
   }
 </script>
 
-<svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
-
 <!-- App owns the one AppShell and the one PixiBoard, so the GL context and every uploaded
      texture outlive a stage switch. A stage renders nothing of its own: it presents its
      panels, board props and handlers through `stage-view`. The root is what the app's CSS
@@ -62,6 +58,8 @@
     {#await vfxGallery then { default: VfxGallery }}
       <VfxGallery />
     {/await}
+  {:else if briefed() && (game.battle || game.setup.board)}
+    <Briefing />
   {:else if nav.stage === 'battle' && game.battle}
     <Battle />
   {:else if STAGE_SIDE[nav.stage] && game.setup.board}
@@ -89,7 +87,7 @@
     >
       {#snippet map()}
         <div class="mapwrap" class:aiming={view.aiming}><PixiBoard bind:this={stage.board} fill {...view.board}
-          frameWithin={nav.stage === 'battle' ? null : visibleRect(viewportWidth, viewportHeight)} /></div>
+          frameWithin={nav.stage === 'battle' ? null : visibleRect()} /></div>
       {/snippet}
     </AppShell>
   {/if}

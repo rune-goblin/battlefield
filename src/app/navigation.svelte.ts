@@ -1,6 +1,6 @@
 import { SIDES, type Side } from '../engine/index.js';
 import type { CommandResult } from '../runtime/commands.js';
-import { declaredReady, declareReady, endBattle, game, loadBattle, onRecord, resetSetup, sideReady, startBattle } from './game.svelte.js';
+import { declaredReady, declareReady, endBattle, game, loadBattle, onRecord, resetSetup, sideReady, startBattle, tableSummons } from './game.svelte.js';
 import { viewer } from './viewer.svelte.js';
 
 /** Which panel is open. The record keeps the lifecycle stage; which setup tab a client looks
@@ -40,7 +40,24 @@ function openingStage(): Stage {
 const stepsThrough = (stage: Stage): Stage[] => STAGES.slice(0, STAGES.indexOf(stage) + 1);
 
 const opening = openingStage();
-export const nav = $state({ stage: opening, visited: stepsThrough(opening) });
+export const nav = $state({
+  stage: opening, visited: stepsThrough(opening),
+  /** The site whose standing battle the GM is being briefed on, until Start. */
+  briefing: null as string | null,
+});
+
+/** The GM opened the standing battle at a site. Keyed by site, so the briefing waits for the
+ * record to arrive there and leaves when the record moves anywhere else. */
+export function brief(site: string): void { nav.briefing = site; }
+
+export const briefed = (): boolean => nav.briefing !== null && nav.briefing === game.site;
+
+/** Start from the briefing: call the table and hand the GM the stage the battle stands at. */
+export async function startFromBriefing(): Promise<void> {
+  const table = tableSummons();
+  if (table && !table.called) await table.call();
+  nav.briefing = null;
+}
 
 function enter(stage: Stage, restart = false) {
   nav.stage = stage;
@@ -151,8 +168,8 @@ export function forward(): ForwardStep {
     return { label: 'Next', enabled, go: page };
   }
   const deployed = SIDES.every((side) => sideReady(side));
-  if (viewer.isGm) return { label: 'Begin', enabled: deployed, go: beginBattle };
-  // proto: a seated player's Begin gives their own army's word; the GM's starts the battle.
+  if (viewer.isGm) return { label: 'Start', enabled: deployed, go: beginBattle };
+  // proto: a seated player's button gives their own army's word; the GM's starts the battle.
   const mine = SIDES.filter((side) => viewer.seatedOn(side));
   return {
     label: mine.every((side) => declaredReady(side)) ? 'Ready — waiting for the GM' : 'My army is ready',

@@ -3,7 +3,8 @@ import { canContinueBattle, canRecover, deploymentCells, hasRecovered, isSurvivo
   recoveryDc, recoveryModifier, recoveryPenalty, ROUTED_AT, SIDES, suggestDeployment, unitOutcome, unitStatusLabel,
   type BoardSpec, type DayOrder, type NightRecovery, type RecoveryActivity, type RecoveryChoice, type Side, type Unit } from '../engine/index.js';
 import type { TokenModel } from '../board/index.js';
-import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, saveBattle, startNextDay } from './game.svelte.js';
+import { chooseDayOrder, chooseNextBattlefield, confirmDayOrders, declareDeployment, declareRecovery, game, respondToSurrender, saveBattle, siteLifecycle, startNextDay } from './game.svelte.js';
+import { createTableSiteMenu } from './site-menu.svelte.js';
 import { allSubmitted, submissionOf } from '../runtime/interactions.js';
 import { viewer } from './viewer.svelte.js';
 import { leaveBattle } from './navigation.svelte.js';
@@ -29,12 +30,21 @@ const RECOVERY_OPTIONS: { id: Choice; label: string; mark: string }[] = [
 
 const nightOutcome = (r: NightRecovery) => r.recovered === 0 ? 'fails to recover' : `recovers ${r.recovered} ${r.activity === 'rally' ? 'morale' : 'health'}`;
 
-export function createBattleReport(deps: { notifications: NotificationService }) {
+export function createBattleReport(deps: {
+  notifications: NotificationService;
+  /** The report opened on a day that ended before this view saw it, as when the table resumes a stored battle. */
+  resumed: () => boolean;
+}) {
   const { notifications } = deps;
   const attempt = commandReporter(notifications);
+  const siteMenu = createTableSiteMenu(notifications);
 
   const b = $derived(game.battle!);
-  let step = $state<Step>('report');
+  // A day resumed from its hex picks up at recovery; the survivors' report was read when dusk fell.
+  let step = $state<Step>(deps.resumed() && canContinueBattle(game.battle!) && !nightResolved(game.battle!) ? 'recovery' : 'report');
+  /** The GM's Save, Close and End battle belong to a battle standing at a hex. */
+  const atSite = $derived(viewer.isGm && game.site !== null && siteLifecycle() !== null);
+  const finalized = $derived(game.stage === 'finalized');
   let choices = $state<Record<string, Choice>>({});
   let positions = $state<Record<string, string>>({});
   let content: HTMLElement | undefined;
@@ -44,7 +54,7 @@ export function createBattleReport(deps: { notifications: NotificationService })
   const stage = $derived<Step>(!continuing ? 'report' : resolved && step === 'report' ? (b.dayOrders?.confirmed ? 'deployment' : 'orders') : step);
   const title = $derived(stage === 'orders' ? 'Choose your next move' : stage === 'battlefield' ? 'Choose tomorrow’s battlefield' : stage === 'recovery' ? 'Tend to your armies'
     : stage === 'deployment' ? `Deploy for day ${b.day + 1}` : b.endedBy === 'surrender' && b.winner !== null && b.winner !== 'draw' ? `The ${opponent(b.winner)} surrenders.`
-    : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);
+    : b.winner === 'draw' ? (b.endedBy === 'dusk' ? 'Dusk. The field is contested.' : b.endedBy === 'withdrawal' ? 'Both armies withdraw.' : b.endedBy === 'ruling' ? 'The GM rules a draw.' : 'Both armies are spent.') : `The ${b.winner} holds the field.`);
   const intro = $derived(continuing
     ? (stage === 'orders' ? 'Recovery is complete. Choose an end-of-day decision for each army.' : 'Review the survivors, then recover before choosing your next move.')
     : b.endedBy === 'surrender' ? 'The opponent accepted the surrender. Agree campaign terms together; surviving troops keep their Health and Morale.'
@@ -234,6 +244,9 @@ export function createBattleReport(deps: { notifications: NotificationService })
     get bothHold() { return bothHold; },
     get ordersStatus() { return ordersStatus; },
     get positions() { return positions; },
+    get atSite() { return atSite; },
+    get finalized() { return finalized; },
+    siteMenu,
     get content() { return content; },
     set content(el) { content = el; },
     go,
@@ -248,7 +261,7 @@ export function createBattleReport(deps: { notifications: NotificationService })
     respond: (side: Side, accept: boolean) => void attempt(respondToSurrender(side, accept)),
     submitDeployment: (side: Side) => void attempt(declareDeployment(side, placementOf(side))),
     beginNextDay: () => void attempt(startNextDay()),
-    endBattle: () => void attempt(leaveBattle()),
+    endBattle: () => { if (atSite) siteMenu.requestEnd(); else void attempt(leaveBattle()); },
     saveForAnotherDay,
     finishDecisions,
     destroy() {

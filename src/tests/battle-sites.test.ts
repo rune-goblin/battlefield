@@ -10,6 +10,7 @@ import { memorySites } from '../runtime/memorySites.js';
 import type { BattleSites, PresencePort } from '../runtime/ports.js';
 import { reviveSession } from '../runtime/migrate.js';
 import { freshSession, type BattleSession } from '../runtime/session.js';
+import { createSiteLifecycle } from '../services/SiteLifecycleService.js';
 import { fakeArchive, openBoard } from './helpers.js';
 
 const GM = 'gm';
@@ -89,11 +90,13 @@ describe('moving the table to a site', () => {
     expect(runtime.session.setup.units).toEqual([]);
   });
 
-  it('parks the battle it leaves and opens it again as it stood', async () => {
+  it('leaves the stored copy as its Save wrote it and opens it again from there', async () => {
     const { runtime, sites, moveTo } = tableOf();
     await moveTo('12.07');
     await runtime.submit({ type: 'army.removeUnit', unitId: runtime.session.setup.units[0].id });
+    await sites.park(runtime.session);
     const left = runtime.session;
+    await runtime.submit({ type: 'army.removeUnit', unitId: runtime.session.setup.units[0].id });
 
     await moveTo('03.03', ground);
 
@@ -110,7 +113,8 @@ describe('moving the table to a site', () => {
 
   it('carries a battle under way across the move and back', async () => {
     const running: BattleSession = { ...freshSession(), site: '12.07', stage: 'battle', battle: fought() };
-    const { runtime, moveTo } = tableOf(running);
+    const { runtime, sites, moveTo } = tableOf(running);
+    await sites.park(running);
 
     expect((await moveTo('03.03')).ok).toBe(true);
     expect(runtime.session.battle).toBeNull();
@@ -180,6 +184,18 @@ describe('moving the table to a site', () => {
     expect((await sites.list()).map((e) => e.site)).toEqual([]);
   });
 
+  it('opens a new battle at the hex whose battle just ended there', async () => {
+    const sites = memorySites();
+    const resolved: BattleSession = { ...freshSession(), site: 'a', stage: 'finalized', battle: fought() };
+    await sites.park({ ...resolved, stage: 'battle' });
+    const { runtime, moveTo } = tableOf(resolved, sites);
+
+    expect((await moveTo('a', armies, 'battle-a2')).ok).toBe(true);
+
+    expect(runtime.session).toMatchObject({ site: 'a', battleId: 'battle-a2', stage: 'setup' });
+    expect(await sites.list()).toEqual([]);
+  });
+
   it('refuses a player', async () => {
     const { runtime, as } = tableOf();
     const before = runtime.session;
@@ -210,9 +226,10 @@ describe('moving the table to a site', () => {
     expect(runtime.session).toBe(before);
   });
 
-  it('holds the open battle when the session write fails, with the parked copy spare', async () => {
+  it('holds the open battle and its stored copy when the session write fails', async () => {
     const { runtime, sites, moveTo, failSaves } = tableOf();
     await moveTo('a');
+    await sites.park(runtime.session);
     const before = runtime.session;
     failSaves();
 
@@ -223,7 +240,7 @@ describe('moving the table to a site', () => {
   });
 
   it('answers a failing sites store as a storage refusal', async () => {
-    const broken: BattleSites = { ...memorySites(), park: async () => { throw new Error('setting refused'); } };
+    const broken: BattleSites = { ...memorySites(), load: async () => { throw new Error('setting refused'); } };
     const { runtime, moveTo } = tableOf({ ...freshSession(), site: 'a' }, broken);
 
     expect(await moveTo('b')).toMatchObject({ ok: false, reason: 'storage' });
@@ -289,21 +306,30 @@ describe('the sites world setting', () => {
   });
 });
 
+const lifecycleOf = (runtime: ReturnType<typeof createRuntime>, sites: BattleSites) => createSiteLifecycle({
+  session: () => runtime.session, submit: (command) => runtime.submit(command), sites,
+  applyOutcome: () => (outcome, revision) => runtime.applyOutcome(outcome, revision),
+});
+
 describe('the module API over sites', () => {
-  function apiOver() {
+  function apiOver(called = false) {
     const table = tableOf();
+    const briefed: string[] = [];
     const api = createModuleApi({
       submit: () => (command) => table.runtime.submit(command),
-      session: () => table.runtime.session, sites: table.sites,
+      session: () => table.runtime.session, sites: table.sites, lifecycle: lifecycleOf(table.runtime, table.sites),
       open: async () => {}, close: async () => {}, callTable: async () => {}, dismissTable: async () => {},
+      brief: (site) => { briefed.push(site); }, tableCalled: () => called,
     });
-    return { ...table, api };
+    return { ...table, api, briefed };
   }
 
-  it('lists the open battle with the parked ones, once each', async () => {
-    const { api } = apiOver();
+  it('lists the open battle with the saved ones, once each', async () => {
+    const { api, runtime, sites } = apiOver();
     await api.openBattleAt('a', armies);
+    await sites.park(runtime.session);
     await api.openBattleAt('b', ground);
+    await sites.park(runtime.session);
     await api.openBattleAt('a', ground);
 
     expect((await api.battles()).map((e) => e.site).sort()).toEqual(['a', 'b']);
@@ -333,5 +359,25 @@ describe('the module API over sites', () => {
     expect(await api.removeBattle('b')).toBe(false);
     expect(await api.removeBattle('a')).toBe(true);
     expect((await api.battles()).map((e) => e.site)).toEqual(['b']);
+  });
+
+  it('briefs the GM on a battle already standing at the site, and on no new one', async () => {
+    const { api, briefed, runtime, sites } = apiOver();
+    await api.openBattleAt('a', armies);
+    await sites.park(runtime.session);
+    await api.openBattleAt('b', ground);
+    expect(briefed).toEqual([]);
+
+    await api.openBattleAt('a', ground);
+    await api.openBattleAt('a', ground);
+    expect(briefed).toEqual(['a', 'a']);
+  });
+
+  it('skips the briefing on the open site once the table is called to it', async () => {
+    const { api, briefed } = apiOver(true);
+    await api.openBattleAt('a', armies);
+    await api.openBattleAt('a', armies);
+
+    expect(briefed).toEqual([]);
   });
 });
